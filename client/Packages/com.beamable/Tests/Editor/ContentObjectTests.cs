@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
 using NUnit.Framework;
 
 namespace Beamable.Editor.Tests

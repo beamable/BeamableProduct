@@ -231,7 +231,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
-
+      
       [Test]
       [NonParallelizable]
       public async Task Call_PromiseMethod()
@@ -261,7 +261,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
-
+      
       [Test]
       [NonParallelizable]
       public async Task Call_TypelessPromiseMethod()
@@ -290,7 +290,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
-
+      
       [Test]
       [NonParallelizable]
       public async Task Call_MethodWithJSON_AsParameter()
@@ -303,10 +303,10 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             testIntVal1 = 12345,
             testIntVal2 = 12345
          };
-
+         
          string serialized = JsonConvert.SerializeObject(req);
          JToken  json = JToken.Parse(serialized);
-
+         
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                testSocket = socket;
@@ -335,14 +335,14 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
-
+      
       [Test]
       [NonParallelizable]
       public async Task Call_MethodWithRegularString_AsParameter()
       {
          LoggingUtil.Init();
          TestSocket testSocket = null;
-
+         
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
             testSocket = socket;
@@ -359,41 +359,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
-
+         
          testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithRegularString_AsParameter", 1, 0, "test_String"));
-
-         // simulate shutdown event...
-         await ms.OnShutdown(this, null);
-         Assert.IsTrue(testSocket.AllMocksCalled());
-      }
-
-      [Test]
-      [NonParallelizable]
-      public async Task XYZ()
-      {
-         LoggingUtil.Init();
-         TestSocket testSocket = null;
-
-         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
-         {
-            testSocket = socket;
-            socket.AddStandardMessageHandlers()
-               .AddMessageHandler(
-                  MessageMatcher
-                     .WithReqId(1)
-                     .WithStatus(200)
-                     .WithPayload<string>(n => string.Equals(n, "test_String")),
-                  MessageResponder.NoResponse(),
-                  MessageFrequency.OnlyOnce()
-               );
-         }));
-
-         await ms.Start<SimpleMicroserviceNonLegacy>(new TestArgs());
-         Assert.IsTrue(ms.HasInitialized);
-
-         // testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithRegularString_AsParameter", 1, 0, "test_String"));
-
-         testSocket.SendToClient(ClientRequest.ClientCallablePayloadArgs("micro_sample", "MethodWithRegularString_AsParameter", 1, 0, "[\"test_String\"]"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -406,7 +373,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       {
          LoggingUtil.Init();
          TestSocket testSocket = null;
-
+         
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
             testSocket = socket;
@@ -423,7 +390,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
-
+         
          testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithVector2Int_AsParameter", 1, 0, new Vector2Int(10, 20)));
 
          // simulate shutdown event...

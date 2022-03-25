@@ -3,7 +3,7 @@
     "references": [
         "Beamable.Pooling",
         "Beamable.Extensions",
-        "Unity.Beamable.Runtime.Common",
+        "Beamable.Spew",
         "Beamable.Service",
         "Beamable.SmallerJSON"
     ],

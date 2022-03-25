@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.Environment;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -10,7 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -21,7 +21,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
-	[Serializable]
+	[System.Serializable]
 	public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
 	{
 		[SerializeField]
@@ -121,7 +121,7 @@ namespace Beamable.Editor.UI.Model
 			EditorAPI.Instance.Then(de =>
 			{
 				var url =
-					$"{BeamableEnvironment.PortalUrl}/{de.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
+					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
 				Application.OpenURL(url);
 			});
 		}
@@ -153,22 +153,12 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
-			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
-			{
-				BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
-			});
+
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
-			evt.menu.BeamableAppendAction("Build", pos => Build());
-			evt.menu.BeamableAppendAction(IncludeDebugTools
-											  ? BUILD_DISABLE_DEBUG
-											  : BUILD_ENABLE_DEBUG, pos =>
-										  {
-											  IncludeDebugTools = !IncludeDebugTools;
-										  });
 			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
 			{
 				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>
@@ -190,20 +180,15 @@ namespace Beamable.Editor.UI.Model
 		}
 		// TODO === END
 
-		private void RunSnykTests(bool suppressOutput = false)
+		private void RunSnykTests()
 		{
 			var snykCommand = new SnykTestCommand(ServiceDescriptor);
-			if (!suppressOutput)
-			{
-				Debug.Log($"Starting Docker Snyk tests for {ServiceDescriptor.Name}. The test results will appear momentarily.");
-			}
-
 			snykCommand.Start(null).Then(res =>
 			{
 				if (res.RequiresLogin)
 				{
 					var onLogin = new Promise<Unit>();
-					onLogin.Then(_ => RunSnykTests(true)).Error(_ =>
+					onLogin.Then(_ => RunSnykTests()).Error(_ =>
 					{
 						Debug.LogError("Cannot run Snyk Tests without being logged into DockerHub");
 					});
@@ -212,7 +197,6 @@ namespace Beamable.Editor.UI.Model
 				}
 				else
 				{
-					Debug.Log("Docker Snyk tests complete");
 					Debug.Log(res.Output);
 					var date = DateTime.UtcNow.ToFileTimeUtc().ToString();
 					var filePath =
@@ -221,9 +205,6 @@ namespace Beamable.Editor.UI.Model
 					File.WriteAllText(filePath, res.Output);
 					EditorUtility.OpenWithDefaultApp(filePath);
 				}
-			}).Error(err =>
-			{
-				Debug.LogError($"Failed to run Docker Snyk tests for {ServiceDescriptor.Name}. Reason=[{err?.Message}]");
 			});
 		}
 		private void CopyVSCodeDebugTool()
@@ -256,7 +237,7 @@ $@"{{
 			EditorAPI.Instance.Then(api =>
 			{
 				var path =
-					$"{BeamableEnvironment.PortalUrl}/{api.Alias}/" +
+					$"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/" +
 					$"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
 					$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
 				Application.OpenURL(path);

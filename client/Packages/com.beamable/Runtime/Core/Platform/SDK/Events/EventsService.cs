@@ -2,9 +2,12 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Events;
 using Beamable.Common.Dependencies;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Events
 {
+
 	public class EventSubscription : PlatformSubscribable<EventsGetResponse, EventsGetResponse>
 	{
 		public EventSubscription(IDependencyProvider provider) : base(provider, AbsEventsApi.SERVICE_NAME)

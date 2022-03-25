@@ -2,6 +2,7 @@ using Beamable.Tournaments;
 using Beamable.UI;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Beamable.Tests.Modules.Tournaments.TournamentScoreUtilTests
 {

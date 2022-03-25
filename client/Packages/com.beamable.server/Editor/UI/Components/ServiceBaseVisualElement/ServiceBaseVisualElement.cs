@@ -1,8 +1,15 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.ManagerClient;
+using Beamable.Server.Editor.UI.Components;
+using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
@@ -12,8 +19,6 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
-using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -31,21 +36,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private const float DETACHED_HEIGHT = 100.0f;
 		protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
 
+		protected Button _stopButton;
 		protected LoadingBarElement _loadingBar;
 		protected VisualElement _statusIcon;
+		protected Label _statusLabel;
+		protected Label _remoteStatusLabel;
 		protected VisualElement _remoteStatusIcon;
 		protected LabeledCheckboxVisualElement _checkbox;
 		protected Button _moreBtn;
-		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
 		private VisualElement _logContainerElement;
 		private LogVisualElement _logElement;
 		private VisualElement _header;
 		private VisualElement _rootVisualElement;
+		private Button _dependentServicesBtn;
+		private Label _nameTextField;
+		private VisualElement _dependentServicesContainer;
+		private Button _collapseButton;
+		private Image _collapseBtnIcon;
 		private VisualElement _mainParent;
-		private VisualElement _serviceCard;
-		private Button _foldButton;
-		private VisualElement _foldIcon;
 
 		public Action OnServiceStartFailed { get; set; }
 		public Action OnServiceStopFailed { get; set; }
@@ -77,19 +86,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
+			_dependentServicesBtn = Root.Q<Button>("dependentServicesBtn");
+			_nameTextField = Root.Q<Label>("microserviceTitle");
+			_stopButton = Root.Q<Button>("stopBtn");
 			_moreBtn = Root.Q<Button>("moreBtn");
-			_startButton = Root.Q<Button>("startBtn");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
+			_statusLabel = Root.Q<Label>("statusTitle");
+			_remoteStatusLabel = Root.Q<Label>("remoteStatusTitle");
 			_statusIcon = Root.Q<VisualElement>("statusIcon");
 			_remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
 			_header = Root.Q("logHeader");
 			_separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
-			_serviceCard = Root.Q("serviceCard");
 			_loadingBar = new LoadingBarElement();
-			_serviceCard.Add(_loadingBar);
-			_foldButton = Root.Q<Button>("foldButton");
-			_foldIcon = Root.Q("foldIcon");
+			_rootVisualElement.Add(_loadingBar);
+			_dependentServicesContainer = Root.Q("dependentServicesContainer");
+			_collapseButton = Root.Q<Button>("collapseBtn");
+			_collapseBtnIcon = Root.Q<Image>("collapseBtnIcon");
 			_mainParent = _rootVisualElement.parent.parent;
 		}
 		private void InjectStyleSheets()
@@ -108,11 +121,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.OnStop -= SetupProgressBarForStop;
 			Model.OnStop += SetupProgressBarForStop;
 
+			_stopButton.clickable.clicked += HandleStopButtonClicked;
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
-			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
+			_moreBtn.tooltip = "More...";
+
+			var dependentServicesBtnState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
+										   MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+
+			_dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
+			_dependentServicesBtn.SetEnabled(dependentServicesBtnState);
 
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
@@ -129,9 +149,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_separator.Setup(OnDrag);
 			_separator.Refresh();
 
-			_foldButton.clickable.clicked += HandleCollapseButton;
-			_mainParent.AddToClassList("folded");
-			_rootVisualElement.AddToClassList("folded");
+			_collapseButton.clickable.clicked += HandleCollapseButton;
+			_mainParent.AddToClassList("collapsedMain");
+			_rootVisualElement.AddToClassList("collapsedMain");
 
 			CreateLogSection(Model.AreLogsAttached);
 			UpdateLocalStatus();
@@ -143,6 +163,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected abstract void UpdateRemoteStatusIcon();
 		protected virtual void UpdateButtons()
 		{
+			_stopButton.text = Model.IsRunning ? STOP : START;
 		}
 		protected virtual void UpdateLocalStatus()
 		{
@@ -158,7 +179,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
 		{
 			_statusIcon.ClearClassList();
-			// _header.EnableInClassList("building", isBuilding);
 
 			string statusClassName;
 			string statusText;
@@ -168,26 +188,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 			switch (status)
 			{
 				case "localRunning":
-					statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
+					statusText = "Local Running";
 					statusClassName = "localRunning";
 					break;
 				case "localBuilding":
-					statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
 					statusClassName = "localBuilding";
+					statusText = "Local Building";
 					break;
 				case "localStopped":
-					statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
 					statusClassName = "localStopped";
+					statusText = "Local Stopped";
 					break;
 				default:
-					statusText = Tooltips.Microservice.ICON_DIFFERENT;
 					statusClassName = "different";
+					statusText = "Different";
 					break;
 			}
 
-			_statusIcon.tooltip = statusText;
+			_statusIcon.tooltip = _statusLabel.text = statusText;
 			_statusIcon.AddToClassList(statusClassName);
-			_startButton.EnableInClassList("running", isBuilding || isRunning);
 		}
 		private void OnDrag(float value)
 		{
@@ -282,10 +301,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_logContainerElement.EnableInClassList("--positionHidden", Model.IsCollapsed);
 			_separator.EnableInClassList("--positionHidden", Model.IsCollapsed);
-			_foldIcon.EnableInClassList("foldIcon", Model.IsCollapsed);
-			_foldIcon.EnableInClassList("unfoldIcon", !Model.IsCollapsed);
-			_rootVisualElement.EnableInClassList("folded", Model.IsCollapsed);
-			_mainParent.EnableInClassList("folded", Model.IsCollapsed);
+			_collapseBtnIcon.EnableInClassList("foldIcon", !Model.IsCollapsed);
+			_collapseBtnIcon.EnableInClassList("unfoldIcon", Model.IsCollapsed);
+			_rootVisualElement.EnableInClassList("collapsedMain", Model.IsCollapsed);
+			_mainParent.EnableInClassList("collapsedMain", Model.IsCollapsed);
+			_dependentServicesBtn.visible = !Model.IsCollapsed;
 		}
 	}
 }

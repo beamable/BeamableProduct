@@ -364,24 +364,24 @@ namespace Beamable.Editor.Content.Components
 			if (item.LocalStatus == HostStatus.AVAILABLE) // cannot rename something that we don't have locally...
 			{
 				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_DELETE_ITEM,
-											  (Action<Vector2>)((pos) => { ContentVisualElement_OnItemDelete((ContentItemDescriptor)item); }));
+				                              (Action<Vector2>)((pos) => { ContentVisualElement_OnItemDelete((ContentItemDescriptor)item); }));
 				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_RENAME_ITEM,
-											  (Action<Vector2>)((pos) =>
-											  {
-												  ContentVisualElement_OnItemRenameGestureBegin((ContentItemDescriptor)item);
-											  }));
+				                              (Action<Vector2>)((pos) =>
+				                              {
+					                              ContentVisualElement_OnItemRenameGestureBegin((ContentItemDescriptor)item);
+				                              }));
 
 				if (item.Status == ContentModificationStatus.MODIFIED)
 				{
 					evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_REVERT_ITEM,
-												  (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
+					                              (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
 				}
 			}
 
 			if (item.LocalStatus == HostStatus.NOT_AVAILABLE && item.ServerStatus == HostStatus.AVAILABLE)
 			{
 				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_DOWNLOAD_ITEM,
-											  (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
+				                              (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
 			}
 		}
 

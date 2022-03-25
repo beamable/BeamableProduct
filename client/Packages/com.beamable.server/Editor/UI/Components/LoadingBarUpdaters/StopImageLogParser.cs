@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -32,12 +33,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public override bool DetectFailure(string message)
 		{
-			var hasError = errorElements.Any(message.Contains);
-			if (hasError)
-			{
-				UnityEngine.Debug.LogError("FOUND ERROR: " + message);
-			}
-			return hasError;
+			return errorElements.Any(message.Contains);
 		}
 
 		public override bool DetectStep(string message, out int step)

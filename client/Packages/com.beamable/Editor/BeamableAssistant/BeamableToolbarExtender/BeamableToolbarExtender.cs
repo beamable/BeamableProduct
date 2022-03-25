@@ -36,7 +36,7 @@ namespace Beamable.Editor.ToolbarExtender
 		private static ListRequest _packageListRequest;
 		private static bool _hasPreviewPackages = false;
 #endif
-
+		
 		private static Action _repaint;
 
 		public static void Repaint() => _repaint();
@@ -130,9 +130,9 @@ namespace Beamable.Editor.ToolbarExtender
 				_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
 				_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
 
-#if UNITY_2019_4_OR_NEWER
+				#if UNITY_2019_4_OR_NEWER
 				_packageListRequest = Client.List(true);
-#endif
+				#endif
 			});
 		}
 
@@ -165,8 +165,8 @@ namespace Beamable.Editor.ToolbarExtender
 #else
 		public const float versionControlWidth = 78;
 #endif
-
-
+		
+	
 #if UNITY_2020_1_OR_NEWER
 		public const float previewPackagesWarningWidth = 175;
 #elif UNITY_2019_4_OR_NEWER

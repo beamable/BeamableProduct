@@ -25,14 +25,14 @@ namespace Beamable.Editor.UI.Components
 			$"{BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
 		{ }
 
-		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet, bool editMode)
+		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet)
 		{
 			base.Init();
 
 			_styleRule = styleRule;
 			_styleSheet = styleSheet;
 
-			if (!editMode)
+			if (!_styleRule.EditMode)
 			{
 				TextElement textLabel = new TextElement();
 				textLabel.name = "styleId";

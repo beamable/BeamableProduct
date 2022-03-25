@@ -1,11 +1,14 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
+using Beamable.Editor.Content;
 using Beamable.Editor.Content.SaveRequest;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor;
 using static Beamable.Common.Constants.Directories;
 
 namespace Beamable.Editor.Content.Models

@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Matchmaking;

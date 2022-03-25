@@ -1,9 +1,12 @@
 using Beamable.Common.Player;
+using Beamable.Player;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.Player
 {
+	// [CustomPropertyDrawer(typeof(PlayerAnnouncements))]
+	// [CustomPropertyDrawer(typeof(PlayerCurrencyGroup))]
 	[CustomPropertyDrawer(typeof(AbsRefreshableObservable), true)]
 	public class ObservableReadonlyListPropertyDrawer : PropertyDrawer
 	{

@@ -35,8 +35,4 @@
 
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="System.CodeDom" Version="6.0.0" />
-    </ItemGroup>
-
 </Project>

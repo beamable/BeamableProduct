@@ -1,7 +1,10 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {

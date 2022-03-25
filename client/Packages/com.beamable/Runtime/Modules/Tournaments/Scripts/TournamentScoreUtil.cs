@@ -1,9 +1,14 @@
-﻿using UnityEngine;
+﻿using Beamable.Platform.SDK;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Tournaments
 {
 	public static class TournamentScoreUtil
 	{
+
 		private const float THOUSAND = 1000;
 		private const float MILLION = 1000000;
 		private const float BILLION = 1000000000;
@@ -71,7 +76,9 @@ namespace Beamable.Tournaments
 				}
 			}
 
+
 			return $"{count:.##}{Units[unitIndex]}";
+
 		}
 	}
 }

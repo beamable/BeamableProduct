@@ -1,9 +1,11 @@
 ﻿using Beamable.Common.Content;
+using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Components;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace Beamable.Editor.Tests.Content
 {

@@ -1,4 +1,8 @@
 using Beamable.Common.Dependencies;
+using Beamable.Service;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Beamable.ConsoleCommands

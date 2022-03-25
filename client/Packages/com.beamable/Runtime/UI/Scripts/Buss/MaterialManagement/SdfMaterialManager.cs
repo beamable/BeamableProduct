@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.UI.Sdf
+namespace Beamable.UI.Sdf.MaterialManagement
 {
 	public static class SdfMaterialManager
 	{

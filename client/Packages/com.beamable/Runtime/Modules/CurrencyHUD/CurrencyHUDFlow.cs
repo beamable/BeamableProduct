@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Inventory;
+﻿using Beamable;
+using Beamable.Common.Inventory;
 using Beamable.UI.Scripts;
 using System.Collections;
 using TMPro;
@@ -7,6 +8,7 @@ using UnityEngine.UI;
 using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.CurrencyHUD
+
 {
 	[HelpURL(Documentations.URL_DOC_CURRENCY_HUD)]
 	public class CurrencyHUDFlow : MonoBehaviour
@@ -56,14 +58,17 @@ namespace Beamable.CurrencyHUD
 				currentAmount += deltaStep;
 
 				if (deltaTotal > 0 && currentAmount > targetAmount)
+
 				{
 					currentAmount = targetAmount;
 				}
 
 				else if (deltaTotal < 0 && currentAmount < targetAmount)
+
 				{
 					currentAmount = targetAmount;
 				}
+
 
 				txtAmount.text = currentAmount.ToString();
 				yield return _waitForSeconds;

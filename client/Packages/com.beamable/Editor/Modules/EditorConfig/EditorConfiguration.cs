@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEngine;
 
 namespace Beamable.Editor.Modules.EditorConfig

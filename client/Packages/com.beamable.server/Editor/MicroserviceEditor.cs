@@ -273,9 +273,9 @@ namespace Beamable.Server.Editor
 		}
 	}
 
-	// public enum ServiceType
-	// {
-	// 	MicroService,
-	// 	StorageObject
-	// }
+	public enum ServiceType
+	{
+		MicroService,
+		StorageObject
+	}
 }

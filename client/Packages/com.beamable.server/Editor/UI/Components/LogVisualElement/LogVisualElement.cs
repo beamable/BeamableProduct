@@ -12,8 +12,6 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 #endif
 
-using static Beamable.Common.Constants;
-
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class LogVisualElement : MicroserviceComponent
@@ -97,7 +95,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_popupBtn = Root.Q<Button>("popupBtn");
 			_popupBtn.clickable.clicked += OnPopoutButton_Clicked;
 			_popupBtn.AddToClassList(Model.AreLogsAttached ? "attached" : "detached");
-			_popupBtn.tooltip = Model.AreLogsAttached ? Tooltips.Logs.POP_OUT : Tooltips.Logs.ATTACH;
+			_popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
 
 			_infoCountLbl = Root.Q<Label>("infoCount");
 			_warningCountLbl = Root.Q<Label>("warningCount");
@@ -112,19 +110,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				_debugViewBtn = Root.Q<Button>("debug");
 				_debugViewBtn.clickable.clicked += Model.Logs.ToggleViewDebugEnabled;
-				_debugViewBtn.tooltip = Tooltips.Logs.ICON_DEBUG;
+				_debugViewBtn.tooltip = "Debug Logs";
 
 				_infoViewBtn = Root.Q<Button>("info");
 				_infoViewBtn.clickable.clicked += Model.Logs.ToggleViewInfoEnabled;
-				_infoViewBtn.tooltip = Tooltips.Logs.ICON_INFO;
+				_infoViewBtn.tooltip = "Info Logs";
 
 				_warningViewBtn = Root.Q<Button>("warning");
 				_warningViewBtn.clickable.clicked += Model.Logs.ToggleViewWarningEnabled;
-				_warningViewBtn.tooltip = Tooltips.Logs.ICON_WARNING;
+				_warningViewBtn.tooltip = "Warning Logs";
 
 				_errorViewBtn = Root.Q<Button>("error");
 				_errorViewBtn.clickable.clicked += Model.Logs.ToggleViewErrorEnabled;
-				_errorViewBtn.tooltip = Tooltips.Logs.ICON_ERROR;
+				_errorViewBtn.tooltip = "Error Logs";
 			}
 
 			// Log
@@ -206,7 +204,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				Model.AttachLogs();
 			}
-			_popupBtn.tooltip = Model.AreLogsAttached ? Tooltips.Logs.POP_OUT : Tooltips.Logs.ATTACH;
+			_popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
 		}
 
 		private void LogsOnOnViewFilterChanged()

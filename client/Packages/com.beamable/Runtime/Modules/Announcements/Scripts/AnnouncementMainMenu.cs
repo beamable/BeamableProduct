@@ -1,8 +1,18 @@
+using Beamable.AccountManagement;
 using Beamable.Api;
 using Beamable.Common.Api.Announcements;
+using Beamable.Coroutines;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
+using Beamable.UI.Layouts;
 using Beamable.UI.Scripts;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace Beamable.Announcements
 {
@@ -37,7 +47,7 @@ namespace Beamable.Announcements
 
 		private void OnDestroy()
 		{
-			Subscription?.Unsubscribe();
+			Subscription.Unsubscribe();
 		}
 
 		public async void OnReadAll()

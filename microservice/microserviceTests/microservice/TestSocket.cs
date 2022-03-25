@@ -71,11 +71,6 @@ namespace Beamable.Microservice.Tests.Socket
             return And(matcher, MessageMatcher.WithDelete());
         }
 
-        public static TestSocketMessageMatcher WithFrom(this TestSocketMessageMatcher matcher, long fromId)
-        {
-            return And(matcher, MessageMatcher.WithFrom(fromId));
-        }
-
         public static TestSocketMessageMatcher WithBody<T>(this TestSocketMessageMatcher matcher,
            Func<T, bool> bodyMatcher)
         {
@@ -187,15 +182,8 @@ namespace Beamable.Microservice.Tests.Socket
                             }
                             else
                             {
-                               // var payload = JsonConvert.DeserializeObject<T>(tmpJson);
-                               if (json is T x)
-                               {
-                                   return matcher(x);
-                               }
-                               else
-                               {
-                                   return false;
-                               }
+                                var payload = JsonConvert.DeserializeObject<T>(tmpJson);
+                                return matcher(payload);
                             }
                         }
                     case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken):
@@ -246,11 +234,6 @@ namespace Beamable.Microservice.Tests.Socket
         public static TestSocketMessageMatcher WithMethod(Method method)
         {
             return req => method.ToString().ToLower().Equals(req.method?.ToLower());
-        }
-
-        public static TestSocketMessageMatcher WithFrom(long from)
-        {
-            return req => req.from == from;
         }
 
         public static TestSocketMessageMatcher WithPost()
@@ -437,37 +420,6 @@ namespace Beamable.Microservice.Tests.Socket
                 body = new
                 {
                     payload = args
-                },
-                from = dbid,
-                method = "post"
-            };
-        }
-
-        public static WebsocketRequest ClientCallableAsAdmin(string serviceName, string methodName, int reqId, int dbid, params object[] args)
-        {
-            return new WebsocketRequest
-            {
-                id = reqId,
-                path = $"{serviceName}/{methodName}",
-                body = new
-                {
-                    payload = args
-                },
-                from = dbid,
-                method = "post",
-                scopes = new[]{"*"}
-            };
-        }
-
-        public static WebsocketRequest ClientCallablePayloadArgs(string serviceName, string methodName, int reqId, int dbid, string payloadArgs)
-        {
-            return new WebsocketRequest
-            {
-                id = reqId,
-                path = $"{serviceName}/{methodName}",
-                body = new
-                {
-                    payload = payloadArgs
                 },
                 from = dbid,
                 method = "post"

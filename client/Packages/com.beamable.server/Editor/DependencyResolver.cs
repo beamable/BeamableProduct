@@ -1,6 +1,8 @@
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Content;
+using Beamable.Platform.SDK;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor;
@@ -10,16 +12,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
-	[Serializable]
-	public class AssemblyDefinitionInfo : IEquatable<AssemblyDefinitionInfo>
+
+	public class AssemblyDefinitionInfo
 	{
 		public string Name;
 		public string[] References = new string[] { };
@@ -28,46 +33,6 @@ namespace Beamable.Server
 
 		public string[] IncludePlatforms = new string[] { };
 		public bool AutoReferenced = false;
-
-		public bool Equals(AssemblyDefinitionInfo other)
-		{
-			if (ReferenceEquals(null, other))
-			{
-				return false;
-			}
-
-			if (ReferenceEquals(this, other))
-			{
-				return true;
-			}
-
-			return Name == other.Name;
-		}
-
-		public override bool Equals(object obj)
-		{
-			if (ReferenceEquals(null, obj))
-			{
-				return false;
-			}
-
-			if (ReferenceEquals(this, obj))
-			{
-				return true;
-			}
-
-			if (obj.GetType() != this.GetType())
-			{
-				return false;
-			}
-
-			return Equals((AssemblyDefinitionInfo)obj);
-		}
-
-		public override int GetHashCode()
-		{
-			return (Name != null ? Name.GetHashCode() : 0);
-		}
 	}
 
 	public class AssemblyDefinitionInfoGroup
@@ -206,33 +171,6 @@ namespace Beamable.Server
 		public List<MicroserviceFileDependency> FilesToCopy;
 		public AssemblyDefinitionInfoGroup Assemblies;
 		public List<PluginImporter> DllsToCopy;
-
-		public string GetDependencyChecksum()
-		{
-			var sb = new StringBuilder();
-			foreach (var fileDep in FilesToCopy)
-			{
-				sb.Append(fileDep.Agnostic.SourcePath);
-			}
-
-			foreach (var asm in Assemblies.ToCopy)
-			{
-				sb.Append(asm.Location);
-			}
-
-			foreach (var dll in DllsToCopy)
-			{
-				sb.Append(dll.assetPath);
-			}
-
-			using (var md5 = MD5.Create())
-			{
-				var bytes = Encoding.ASCII.GetBytes(sb.ToString());
-				var hash = md5.ComputeHash(bytes);
-				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-				return checksum;
-			}
-		}
 	}
 
 	public class DependencyResolver : MonoBehaviour
@@ -463,7 +401,7 @@ namespace Beamable.Server
 			return dllImporters;
 		}
 
-		public static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(MicroserviceDescriptor descriptor)
+		private static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(MicroserviceDescriptor descriptor)
 		{
 			/*
             * We can crawl the assembly definition itself...

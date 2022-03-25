@@ -1,5 +1,13 @@
+using Beamable.AccountManagement;
 using Beamable.Avatars;
+using Beamable.Console;
 using Beamable.Editor.Config.Model;
+using Beamable.Editor.Environment;
+using Beamable.Inventory.Scripts;
+using Beamable.Shop;
+using Beamable.Sound;
+using Beamable.Theme;
+using Beamable.Tournaments;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,3 +1,6 @@
+using System.Linq;
+using UnityEngine;
+
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class DockerCopyCommand : DockerCommandReturnable<bool>

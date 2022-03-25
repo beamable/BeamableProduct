@@ -1,9 +1,11 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Beamable.Server
 {

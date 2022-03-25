@@ -1,7 +1,12 @@
+using Beamable.Editor.Content;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
+using UnityEngine;
 using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;

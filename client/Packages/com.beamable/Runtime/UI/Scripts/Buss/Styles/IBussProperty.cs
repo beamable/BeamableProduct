@@ -1,4 +1,4 @@
-﻿using Beamable.UI.Sdf;
+﻿using Beamable.UI.Sdf.Styles;
 using System;
 using TMPro;
 using UnityEngine;

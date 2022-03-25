@@ -1,4 +1,4 @@
-﻿using Beamable.Common.Spew;
+﻿using Beamable.Spew;
 using UnityEngine;
 
 namespace Beamable.Service

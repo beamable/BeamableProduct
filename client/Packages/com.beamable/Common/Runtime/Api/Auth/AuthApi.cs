@@ -417,8 +417,7 @@ namespace Beamable.Common.Api.Auth
 	[System.Serializable]
 	public class CustomerRegistrationResponse
 	{
-		public long cid;
-		public string pid;
+		public string cid, pid;
 		public TokenResponse token;
 	}
 

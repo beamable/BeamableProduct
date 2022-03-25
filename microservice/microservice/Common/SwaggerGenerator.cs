@@ -308,14 +308,6 @@ namespace microservice.Common
             return schema;
         }
 
-        public static void InvalidateSwagger(BeamableMicroService service)
-        {
-            if (_serviceToDoc.TryGetValue(service, out var _))
-            {
-                _serviceToDoc.Remove(service);
-            }
-        }
-
         public static OpenApiDocument GenerateDocument(BeamableMicroService service)
         {
             if (_serviceToDoc.TryGetValue(service, out var existing))

@@ -11,7 +11,7 @@ namespace Beamable.Common
 				public const string SCHEDULES_PATH = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Schedules";
 				public const string SCHEDULES_WINDOW_HEADER = "Schedules";
 				public static readonly Vector2 SCHEDULES_WINDOW_SIZE = new Vector2(450, 420);
-
+				
 			}
 		}
 	}

@@ -945,7 +945,7 @@ namespace Beamable.Editor.Content
 			{
 				if (ex is PlatformRequesterException err && err.Status == 404)
 				{
-					return new ClientManifest { entries = new List<ClientContentInfo>() };
+					return new ClientManifest {entries = new List<ClientContentInfo>()};
 				}
 
 				throw ex;
@@ -993,9 +993,9 @@ namespace Beamable.Editor.Content
 			if (objectsToBake.Count != contentList.Count)
 			{
 				bool continueBaking = EditorUtility.DisplayDialog("Local changes",
-																  "You have local changes in your content. " +
-																  "Do you want to proceed with baking using only the unchanged data?",
-																  "Yes", "No");
+				                                                  "You have local changes in your content. " +
+				                                                  "Do you want to proceed with baking using only the unchanged data?",
+				                                                  "Yes", "No");
 				if (!continueBaking)
 				{
 					return;
@@ -1021,9 +1021,9 @@ namespace Beamable.Editor.Content
 		}
 
 		private static bool Bake(List<ContentObject> contentList,
-								 ClientManifest clientManifest,
-								 bool compress,
-								 out int objectsBaked)
+		                         ClientManifest clientManifest,
+		                         bool compress,
+		                         out int objectsBaked)
 		{
 			Directory.CreateDirectory(BEAMABLE_RESOURCES_PATH);
 
@@ -1036,12 +1036,12 @@ namespace Beamable.Editor.Content
 				if (serverReference == null)
 				{
 					throw new Exception($"Content object with ID {content.Id} is missing in a remote manifest." +
-										"Reset your content and try again.");
+					                    "Reset your content and try again.");
 				}
 
 				var version = serverReference.version;
 				content.SetIdAndVersion(content.Id, version);
-				contentData[i] = new ContentDataInfo { contentId = content.Id, data = content.ToJson() };
+				contentData[i] = new ContentDataInfo {contentId = content.Id, data = content.ToJson()};
 			}
 
 			ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };

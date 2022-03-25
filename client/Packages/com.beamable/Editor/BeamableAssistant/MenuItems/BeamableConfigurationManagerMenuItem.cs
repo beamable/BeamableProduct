@@ -1,5 +1,6 @@
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Config;
+using Beamable.Editor.Toolbox.UI;
 using UnityEditor;
 using UnityEngine;
 

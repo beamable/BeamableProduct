@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -6,8 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using static Beamable.Common.Constants.MenuItems.Assets;
 using Debug = System.Diagnostics.Debug;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Reflection
 {

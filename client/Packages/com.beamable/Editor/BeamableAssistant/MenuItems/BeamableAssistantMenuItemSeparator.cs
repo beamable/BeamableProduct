@@ -1,3 +1,4 @@
+using Beamable.Editor;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender

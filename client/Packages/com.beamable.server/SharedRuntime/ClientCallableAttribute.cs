@@ -79,7 +79,7 @@ namespace Beamable.Server
 				var message = $"The unsupported parameters are: {string.Join(", ", detectedUnsupportedTypes.Select(p => $"{p.ParameterType.Name} {p.Name}"))}";
 				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Error, message);
 			}
-
+			
 			// Check for void signatures to send out warning.
 			if (methodInfo.IsAsyncMethodOfType(typeof(void)))
 			{

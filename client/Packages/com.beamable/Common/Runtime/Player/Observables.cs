@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Content;
 using System;
 using System.Collections;

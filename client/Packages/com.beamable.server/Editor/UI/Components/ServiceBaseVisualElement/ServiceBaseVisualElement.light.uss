@@ -50,20 +50,6 @@
     border-color: rgba(141, 141, 141, 0);
 }
 
-#buildImage {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");
-}
-
-.running,
-.building {
-    background-color: rgba(0,0,0,.5);
-}
-.building #buildImage,
-.running #buildImage {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/PlayButton_Active_L.png");
-}
-
-
 .localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building D.png");
 }
@@ -79,7 +65,6 @@
 .remoteEnabled{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running D.png");
 }
-
 .remoteStopped{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped D.png");
 }
@@ -95,6 +80,20 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable D.png");
 }
 
+#dependentServicesBtn {
+    border-color: #000000;
+}
+
+/* TODO - Add light icons*/
+.foldIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold.png");
+}
+
+.unfoldIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold.png");
+}
+
 #leftDashLine, #rightDashLine {
     background-color: #4A4A4A;
 }
+/* END TODO*/

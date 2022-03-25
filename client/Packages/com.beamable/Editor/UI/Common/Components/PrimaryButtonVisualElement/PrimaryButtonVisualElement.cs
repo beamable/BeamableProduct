@@ -1,10 +1,13 @@
+
 using Beamable.Common;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 #if UNITY_2018
@@ -15,7 +18,6 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants;
-
 namespace Beamable.Editor.UI.Components
 {
 	public class PrimaryButtonVisualElement : BeamableVisualElement
@@ -61,16 +63,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			Text = text;
 			Button.text = text;
-		}
-
-		public bool CheckGateKeepers()
-		{
-			foreach (var constraint in _constraints)
-			{
-				constraint.Check(true);
-			}
-
-			return Button.enabledSelf;
 		}
 
 		public void AddGateKeeper(params FormConstraint[] constraints)

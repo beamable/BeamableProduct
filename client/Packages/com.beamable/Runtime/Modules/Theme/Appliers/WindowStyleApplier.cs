@@ -1,5 +1,6 @@
 using Beamable.Theme.Palettes;
 using Beamable.UI.Scripts;
+using UnityEngine;
 
 namespace Beamable.Theme.Appliers
 {
@@ -42,6 +43,7 @@ namespace Beamable.Theme.Appliers
 				component.WindowTransform.anchorMin = style.AnchorMin;
 				component.WindowTransform.sizeDelta = style.SizeDelta;
 				component.WindowTransform.anchoredPosition3D = style.AnchoredPosition3D;
+
 				component.WindowTransform.offsetMax = style.OffsetMax;
 				component.WindowTransform.offsetMin = style.OffsetMin;
 				component.WindowTransform.ForceUpdateRectTransforms();

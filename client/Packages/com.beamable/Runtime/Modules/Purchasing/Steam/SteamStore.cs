@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Dependencies;
 using Beamable.Common.Steam;
+using Beamable.Service;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;

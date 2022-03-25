@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using System.Collections;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace Beamable.UI.TextField
@@ -6,6 +8,7 @@ namespace Beamable.UI.TextField
 	[ExecuteInEditMode]
 	public class DeTextFieldBehaviour : MonoBehaviour
 	{
+
 		public string LabelText = "Label";
 		public string InitialText;
 		public string PlaceholderText = "enter text...";

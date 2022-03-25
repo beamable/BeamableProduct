@@ -1,4 +1,6 @@
 ﻿using Beamable.UI.Scripts;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,6 +13,7 @@ namespace Beamable.Tournaments
 
 		private TournamentInfoPageSection _infoPageSection;
 		private TournamentsBehaviour _root;
+
 
 		public void Set(TournamentsBehaviour root, TournamentInfoPageSection infoPageSection)
 		{

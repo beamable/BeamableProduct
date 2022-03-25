@@ -1,9 +1,11 @@
 using Beamable.Api;
+using Beamable.Api.Stats;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.Tests;
-using Beamable.Tests.Runtime.Api;
 using NUnit.Framework;
+using Packages.Beamable.Runtime.Tests.Beamable;
+using System.Collections.Generic;
 
 namespace Beamable.Tests.Runtime
 {
@@ -26,7 +28,7 @@ namespace Beamable.Tests.Runtime
 			MockPlatformUser = new User { id = 12 };
 			MockPlatform.User = MockPlatformUser;
 			MockApi.User = MockPlatform.User;
-			MockApi.Token = new AccessToken(null, "123", "testpid", "testtoken", "refresh", 0);
+			MockApi.Token = new AccessToken(null, "testcid", "testpid", "testtoken", "refresh", 0);
 			MockRequester = new MockPlatformAPI();
 			MockRequester.Token = MockApi.Token;
 			MockApi.Requester = MockRequester;

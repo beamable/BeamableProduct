@@ -2,9 +2,11 @@ using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
 using System;
 
-namespace Beamable.Tests.Runtime.Api
+namespace Packages.Beamable.Runtime.Tests.Beamable
 {
 	public class MockAuthService : IAuthService
 	{

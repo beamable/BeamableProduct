@@ -1,8 +1,11 @@
-﻿using TMPro;
+﻿using System.Collections;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace Beamable.Tournaments
 {
+
 	public class TournamentNumbersBehaviour : MonoBehaviour
 	{
 		public TextMeshProUGUI Text;

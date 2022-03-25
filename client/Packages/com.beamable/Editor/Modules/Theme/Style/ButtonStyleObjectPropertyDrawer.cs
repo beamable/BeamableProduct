@@ -1,3 +1,5 @@
+
+using Beamable.Theme;
 using Beamable.Theme.Palettes;
 using UnityEditor;
 using UnityEngine;

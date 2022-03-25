@@ -1,5 +1,8 @@
+using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
 using Beamable.Stats;
 using System;
 using System.Collections.Generic;

@@ -3,10 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 #if UNITY_EDITOR
+
 using System.Reflection;
 using UnityEditor;
+
 #endif
 
 namespace Beamable.Service

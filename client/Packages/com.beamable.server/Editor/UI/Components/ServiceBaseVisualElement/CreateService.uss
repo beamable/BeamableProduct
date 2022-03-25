@@ -1,17 +1,18 @@
+#buttonRow {
+    flex-grow: 1;
+}
 PrimaryButtonVisualElement {
     width: 80px;
-    height: 23px;
-    align-self: center;
+    margin-bottom: 3px;
 }
-
 #logHeader #leftArea {
     flex-direction: column-reverse;
 }
 
+
 CreateStorageObjectVisualElement > TemplateContainer > #mainVisualElement,
 CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
-    margin-top: 20px;
-    margin-bottom: 20px;
+    padding-top: 20px;
 }
 
 #logHeader .beamableErrorLabel {

@@ -1,5 +1,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
 using System.Collections;
 using UnityEngine.TestTools;

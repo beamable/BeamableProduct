@@ -29,6 +29,11 @@ namespace Beamable.Editor.Realms
 
 		public Promise<CustomerView> GetCustomerData()
 		{
+			if (string.IsNullOrEmpty(_api.CidOrAlias))
+			{
+				return Promise<CustomerView>.Successful(new CustomerView());
+			}
+
 			return _requester.Request<GetCustomerResponseDTO>(Method.GET, $"/basic/realms/customer", useCache: true).Map(resp => new CustomerView
 			{
 				Cid = resp.customer.cid.ToString(),
@@ -40,7 +45,7 @@ namespace Beamable.Editor.Realms
 
 		public Promise<List<RealmView>> GetGames()
 		{
-			if (string.IsNullOrEmpty(_api.Alias))
+			if (string.IsNullOrEmpty(_api.CidOrAlias))
 			{
 				return Promise<List<RealmView>>.Failed(new Exception("No Cid Available"));
 			}
@@ -64,7 +69,7 @@ namespace Beamable.Editor.Realms
 
 		public Promise<RealmView> GetRealm()
 		{
-			if (string.IsNullOrEmpty(_api.Alias))
+			if (string.IsNullOrEmpty(_api.CidOrAlias))
 			{
 				return Promise<RealmView>.Failed(new RealmServiceException("No Cid Available"));
 			}

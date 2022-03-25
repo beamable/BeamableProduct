@@ -38,7 +38,7 @@ namespace Beamable.Common
 				// Confirmation window content
 				public const string CONFIRM_WINDOW_HEADER = "Confirmation";
 				public const string CONFIRM_ITEM_DELETION = "Are You sure You want to delete this item?";
-
+				
 				public static class Download
 				{
 					public const string DOWNLOAD_SUMMARY_LABEL_TEXT = "summary";
@@ -47,7 +47,7 @@ namespace Beamable.Common
 					public const string DOWNLOAD_COMPLETE_TEXT = "All content has finished downloading.";
 					public const string DOWNLOAD_LOAD_TEXT = "Getting latest server data...";
 				}
-
+				
 				public static class Validate
 				{
 					public const string VALIDATE_START_MESSAGE = "Starting validation...";
@@ -58,7 +58,7 @@ namespace Beamable.Common
 					public const string VALIDATE_BUTTON_DONE_WITH_ERRORS_TEXT = "View Failures";
 					public const string VALIDATE_BUTTON_DONE_WITHOUT_ERRORS_TEXT = "Okay";
 				}
-
+				
 				public static class Publish
 				{
 					public const string PUBLISH_MESSAGE_LOADING = "Preparing Content for Publish...";
@@ -67,13 +67,13 @@ namespace Beamable.Common
 					public const string PUBLISH_MESSAGE_IN_PROGRESS = "Publishing content...";
 					public const string PUBLISH_NO_DATA_TEXT = "There is no content to Publish.";
 				}
-
+				
 				public static class Reset
 				{
 					public const string RESET_CONTENT_MESSAGE_PREVIEW = "This operation will remove all your local changes. You can't undo this operation. Are you sure you want to proceed?";
 					public const string RESET_CONTENT_COMPLETE_MESSAGE = "All Local Content has been successfully synchronized.";
 				}
-
+				
 				public static class ContentList
 				{
 					public const string CONTENT_LIST_HEADER_TEXT = "Object Name                       Path                                     Tag";
@@ -85,7 +85,7 @@ namespace Beamable.Common
 					public const string CONTENT_LIST_REVERT_ITEM = "Revert Item";
 					public const string CONTENT_LIST_DOWNLOAD_ITEMS = "Download Items";
 				}
-
+				
 				public static class ActionNames
 				{
 					public const string DOWNLOAD_CONTENT = "Download Content";
@@ -94,7 +94,7 @@ namespace Beamable.Common
 					public const string ARCHIVE_MANIFESTS = "Archive Manifests";
 					public const string REMOVE_LOCAL_CONTENT = "Reset Content";
 				}
-
+				
 				/// <summary>
 				/// Creates a name with NO SPACES. Spaces are not allowed by the backend - srivello
 				/// </summary>

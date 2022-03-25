@@ -1,15 +1,29 @@
 ﻿using Beamable.UI.Scripts;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Tournaments
 {
+
 	public class TournamentInfoDetailContainerBehaviour : MonoBehaviour
 	{
 		public TextReference Title;
 		public RectTransform Container;
 
 		private Dictionary<TournamentInfoPageSection, GameObject> _instanceTable = new Dictionary<TournamentInfoPageSection, GameObject>();
+
+		// Start is called before the first frame update
+		void Start()
+		{
+
+		}
+
+		// Update is called once per frame
+		void Update()
+		{
+
+		}
 
 		public void Set(TournamentInfoPageSection infoPageSection)
 		{

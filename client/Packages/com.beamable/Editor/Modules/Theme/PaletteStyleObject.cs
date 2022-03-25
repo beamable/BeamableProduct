@@ -1,5 +1,8 @@
 using Beamable.Theme;
+using Beamable.Theme.Palettes;
+using System;
 using UnityEngine;
+using FontStyle = Beamable.Theme.Palettes.FontStyle;
 
 namespace Beamable.Editor.Modules.Theme
 {

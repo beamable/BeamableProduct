@@ -1,4 +1,8 @@
 using Beamable.Editor.Assistant;
+using Beamable.Editor.Config;
+using Beamable.Editor.Content;
+using Beamable.Editor.Toolbox.UI;
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender

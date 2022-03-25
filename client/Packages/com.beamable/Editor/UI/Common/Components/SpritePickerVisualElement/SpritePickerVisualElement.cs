@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Beamable.Editor.UI.Buss;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -7,7 +8,6 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants;
-
 namespace Beamable.Editor.UI.Components
 {
 	public class SpritePickerVisualElement : BeamableVisualElement

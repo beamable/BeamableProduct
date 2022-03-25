@@ -1,3 +1,4 @@
+using Beamable;
 using Beamable.Common;
 using NUnit.Framework;
 

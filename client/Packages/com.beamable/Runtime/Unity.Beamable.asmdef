@@ -7,6 +7,7 @@
         "Beamable.Platform",
         "Beamable.Service",
         "Beamable.Pooling",
+        "Beamable.Spew",
         "Beamable.JsonSerializable",
         "Beamable.SmallerJSON",
         "Beamable.Runtime.Input",

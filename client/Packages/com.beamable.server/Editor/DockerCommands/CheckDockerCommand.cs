@@ -1,3 +1,5 @@
+using System;
+
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class CheckDockerCommand : DockerCommandReturnable<bool>

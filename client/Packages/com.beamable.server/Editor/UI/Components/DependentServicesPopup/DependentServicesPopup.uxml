@@ -16,8 +16,8 @@
             <engine:VisualElement name="microservicesContainer" />
         </engine:VisualElement>
         <engine:VisualElement name="buttonsContainer">
-            <engine:Button name="cancelBtn" text="CANCEL"/>
             <beamable:PrimaryButtonVisualElement name="confirmBtn" text="CONFIRM"/>
+            <engine:Button name="cancelBtn" text="CANCEL"/>
         </engine:VisualElement>
     </engine:VisualElement>
 

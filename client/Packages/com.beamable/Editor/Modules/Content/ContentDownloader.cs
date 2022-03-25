@@ -2,9 +2,11 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 
 namespace Beamable.Editor.Content

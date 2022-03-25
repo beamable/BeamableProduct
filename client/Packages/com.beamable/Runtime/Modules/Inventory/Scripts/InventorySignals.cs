@@ -1,9 +1,15 @@
 ﻿using Beamable.AccountManagement;
+using Beamable.Api.Inventory;
 using Beamable.Common.Api.Inventory;
+using Beamable.Platform.SDK;
 using Beamable.Signals;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 // TODO, we can share one toggle event
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace Beamable.Inventory.Scripts
 {

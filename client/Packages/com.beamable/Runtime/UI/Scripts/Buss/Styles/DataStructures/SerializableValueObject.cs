@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Beamable.UI.Sdf
+namespace Beamable.UI.Sdf.Styles
 {
 	[Serializable]
 	public class SerializableValueObject : ISerializationCallbackReceiver
