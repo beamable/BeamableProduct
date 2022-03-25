@@ -755,8 +755,8 @@ namespace Beamable
 		public Exception[] Exceptions { get; }
 
 		public BeamContextInitException(BeamContext ctx, Exception[] exceptions) : base($"Could not initialize " +
-		                                                                                $"BeamContext=[{ctx?.PlayerCode}]. " +
-		                                                                                $"Errors=[{string.Join("\n", exceptions.Where(e => e != null).Select(e => e.Message))}]")
+																						$"BeamContext=[{ctx?.PlayerCode}]. " +
+																						$"Errors=[{string.Join("\n", exceptions.Where(e => e != null).Select(e => e.Message))}]")
 		{
 			Ctx = ctx;
 			Exceptions = exceptions;
