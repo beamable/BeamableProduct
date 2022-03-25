@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Config;
 using Beamable.Editor;
@@ -168,7 +169,24 @@ namespace Beamable.Server.Editor
 						SshPort = 11100 + Microservices.Count
 					}
 				};
-				Microservices.Add(existing);
+
+				var isPotentialGenerator = serviceName.EndsWith(Features.Services.GENERATOR_SUFFIX);
+				var serializeEntry = true;
+				if (isPotentialGenerator)
+				{
+					var generatedServiceName = serviceName.Substring(0, serviceName.Length - Features.Services.GENERATOR_SUFFIX.Length);
+					var existingService = Microservices.FirstOrDefault(s => s.ServiceName == generatedServiceName);
+					if (existingService != null)
+					{
+						// yes, this is a generator, and therefor, we shouldn't serialize its data.
+						serializeEntry = false;
+					}
+				}
+
+				if (serializeEntry)
+				{
+					Microservices.Add(existing);
+				}
 			}
 			return existing;
 		}
