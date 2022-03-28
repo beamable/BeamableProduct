@@ -44,7 +44,7 @@ jobs:
   build:
     name: Build for ${{ matrix.targetPlatform }}
     needs: start-runner
-    runs-on: ${{ needs.start-runner.outputs.label }}
+    runs-on: test-1
     timeout-minutes: 60
     concurrency:
       group: device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
