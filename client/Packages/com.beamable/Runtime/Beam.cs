@@ -47,6 +47,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Beamable.Common.Api.Presence;
 using Beamable.Experimental.Api.Lobbies;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -150,8 +151,12 @@ namespace Beamable
 															  UnityUserDataCache<Dictionary<string, string>>
 																  .CreateInstance));
 			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
-				// the matchmaking service needs a special instance of the beamable api requester
+				// the lobby service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>()));
+			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
+				// the presence service needs a special instance of the beamable api requester
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
 																 new AnalyticsTracker(
 																	 provider.GetService<IPlatformService>(),
