@@ -1,8 +1,7 @@
-using Beamable.Common.Api.Auth;
 using UnityEngine;
+using Beamable.Common.Api.Auth;
 #if UNITY_IOS
 using Beamable.Api;
-using Beamable.Common.Api.Auth;
 using Beamable.Platform.SDK.Auth;
 #endif
 
