@@ -18,14 +18,7 @@ namespace Beamable.Server.Editor.Uploader
 	/// </summary>
 	public class ContainerUploadHarness
 	{
-		private readonly CommandRunnerWindow _context;
-
 		public event Action<float, long, long> onProgress;
-
-		public ContainerUploadHarness(CommandRunnerWindow context)
-		{
-			_context = context;
-		}
 
 		/// <summary>
 		/// Log a message to the progress panel.
@@ -54,7 +47,7 @@ namespace Beamable.Server.Editor.Uploader
 		public async Task<string> GetImageId(MicroserviceDescriptor descriptor)
 		{
 			var command = new GetImageIdCommand(descriptor);
-			var imageId = await command.Start(null);
+			var imageId = await command.StartAsync();
 
 			return imageId;
 		}
@@ -68,7 +61,7 @@ namespace Beamable.Server.Editor.Uploader
 
 			var saveImageCommand = new SaveImageCommand(descriptor, imageId, outputPath);
 
-			await saveImageCommand.Start(_context);
+			await saveImageCommand.StartAsync();
 		}
 
 

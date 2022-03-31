@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using Beamable.Config;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
+using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -182,12 +183,14 @@ namespace Beamable.Server.Editor
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
-				EditorApplication.delayCall += () =>
+
+				BeamEditorWindow<MicroserviceWindow>.DelayedInitializationCall(SaveConfig, true);
+				void SaveConfig()
 				{
 					// using delayCall to avoid Unity warning about sending messages from OnValidate()
 					var api = BeamEditorContext.Default;
-					BeamEditorContext.Default.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
-				};
+					api.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
+				}
 			}
 
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
@@ -196,7 +199,8 @@ namespace Beamable.Server.Editor
 				_dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
 				if (MicroserviceWindow.IsInstantiated)
 				{
-					MicroserviceWindow.Instance.RefreshWindow(true);
+					var tempQualifier = EditorWindow.GetWindow<MicroserviceWindow>();
+					tempQualifier.RefreshWindowContent();
 				}
 			}
 

@@ -195,7 +195,7 @@ namespace Beamable.Editor.UI.Model
 				Debug.Log($"Starting Docker Snyk tests for {ServiceDescriptor.Name}. The test results will appear momentarily.");
 			}
 
-			snykCommand.Start(null).Then(res =>
+			snykCommand.StartAsync().Then(res =>
 			{
 				if (res.RequiresLogin)
 				{

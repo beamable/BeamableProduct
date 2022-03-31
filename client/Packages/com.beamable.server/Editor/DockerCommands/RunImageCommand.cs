@@ -369,7 +369,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				EditorApplication.delayCall += () =>
 				{
 					var prune = new PruneImageCommand(_descriptor);
-					var _ = prune.Start(null).Then(__ =>
+					var _ = prune.StartAsync().Then(__ =>
 					{
 
 					});

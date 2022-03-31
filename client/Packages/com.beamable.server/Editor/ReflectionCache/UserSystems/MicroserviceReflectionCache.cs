@@ -310,7 +310,7 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
+			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -352,7 +352,7 @@ namespace Beamable.Server.Editor
 					var buildCommand = new BuildImageCommand(descriptor, false, false);
 					try
 					{
-						await buildCommand.Start(context);
+						await buildCommand.StartAsync();
 					}
 					catch (Exception e)
 					{
@@ -370,7 +370,7 @@ namespace Beamable.Server.Editor
 						return;
 					}
 
-					var uploader = new ContainerUploadHarness(context);
+					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
 					uploader.onProgress += (_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
@@ -618,7 +618,7 @@ namespace Beamable.Server.Editor
 			public async Promise<string> GetConnectionString(StorageObjectDescriptor storage)
 			{
 				var storageCheck = new CheckImageReturnableCommand(storage);
-				var isStorageRunning = await storageCheck.Start(null);
+				var isStorageRunning = await storageCheck.StartAsync();
 				if (isStorageRunning)
 				{
 					var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);

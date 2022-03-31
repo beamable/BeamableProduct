@@ -184,7 +184,7 @@ namespace Beamable
 			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
 
 			// Hook up editor play-mode-warning feature.
-			void OnPlayModeStateChanged(PlayModeStateChange change)
+			async void OnPlayModeStateChanged(PlayModeStateChange change)
 			{
 				if (!coreConfiguration.EnablePlayModeWarning) return;
 
@@ -205,7 +205,7 @@ namespace Beamable
 						if (res == 0)
 						{
 							EditorApplication.isPlaying = false;
-							BeamableAssistantWindow.ShowWindow();
+							await BeamableAssistantWindow.Init();
 						}
 						else if (res == 1)
 						{
@@ -309,6 +309,8 @@ namespace Beamable
 		public static Dictionary<string, BeamEditorContext> EditorContexts = new Dictionary<string, BeamEditorContext>();
 		public static List<BeamEditorContext> All => EditorContexts.Values.ToList();
 		public static BeamEditorContext Default => Instantiate(string.Format(EDITOR_PLAYER_CODE_TEMPLATE, "0"));
+		public static BeamEditorContext ForEditorUser(int idx) => Instantiate(string.Format(EDITOR_PLAYER_CODE_TEMPLATE, idx));
+		public static BeamEditorContext ForEditorUser(string code) => Instantiate(code);
 
 		public static bool ConfigFileExists { get; private set; }
 
@@ -431,17 +433,16 @@ namespace Beamable
 			return await Login(email, password);
 		}
 
-		public Promise Login(string email, string password)
+		public async Promise Login(string email, string password)
 		{
 			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 			var requester = ServiceScope.GetService<PlatformRequester>();
-			return authService.Login(email, password, customerScoped: true).FlatMap(tokenRes =>
-			{
-				var token = new AccessToken(accessTokenStorage, requester.Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
-				// use this token.
-				return ApplyToken(token);
-			}).ToPromise();
+			var tokenRes = await authService.Login(email, password, customerScoped: true);
+			var token = new AccessToken(accessTokenStorage, requester.Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
+			// use this token.
+			await Login(token);
+			
 		}
 
 		public async Promise Login(AccessToken token)

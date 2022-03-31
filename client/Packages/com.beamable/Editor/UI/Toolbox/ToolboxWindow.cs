@@ -3,6 +3,8 @@ using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
+using Beamable.Editor.UI;
+using System;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -18,43 +20,26 @@ using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Toolbox.UI
 {
-	public class ToolboxWindow : EditorWindow
+	public class ToolboxWindow : BeamEditorWindow<ToolboxWindow>
 	{
+		
+		static ToolboxWindow()
+		{
+			WindowDefaultConfig = new BeamEditorWindowInitConfig()
+			{
+				Title = MenuItems.Windows.Names.TOOLBOX, DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName, FocusOnShow = false, RequireLoggedUser = true,
+			};
+		}
+		
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.TOOLBOX,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1
 		)]
-		public static async void Init()
-		{
-			await LoginWindow.CheckLogin(typeof(SceneView));
-
-			// Ensure at most one Beamable ContentManagerWindow exists
-			// If exists, rebuild it from scratch (easy refresh mechanism)
-			if (ToolboxWindow.IsInstantiated)
-			{
-				if (ToolboxWindow.Instance != null && Instance &&
-					EditorWindow.FindObjectOfType(typeof(ToolboxWindow)) != null)
-				{
-					ToolboxWindow.Instance.Close();
-				}
-
-				ToolboxWindow.Instance.Close();
-			}
-
-			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
-			var contentManagerWindow = GetWindow<ToolboxWindow>(MenuItems.Windows.Names.TOOLBOX, true, typeof(SceneView));
-
-			contentManagerWindow.Show(true);
-		}
-
-		public static ToolboxWindow Instance { get; private set; }
-
-		public static bool IsInstantiated
-		{
-			get { return Instance != null; }
-		}
+		public static async void Init() => await GetFullyInitializedWindow();
+		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
+		
 
 		private VisualElement _windowRoot;
 
@@ -65,27 +50,34 @@ namespace Beamable.Editor.Toolbox.UI
 
 		private ToolboxModel _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
-
-		private void OnEnable()
+		
+		protected override void Build()
 		{
-			Instance = this;
+			Debug.Log("TOOLBOX WINDOW BUILD!!!!!!");
 			minSize = new Vector2(560, 300);
 
 			// Refresh if/when the user logs-in or logs-out while this window is open
-			var de = BeamEditorContext.Default;
-			de.OnUserChange += _ => Refresh();
+			ActiveContext.OnUserChange += _ => BuildWithContext();
 			
 			// Force refresh to build the initial window
-			Refresh();
+			_model?.Destroy();
+			
+			_model = new ToolboxModel();
+			_model.UseDefaultWidgetSource();
+			_model.Initialize();
+
+			SetForContent();
 
 			CheckAnnouncements();
 			CheckForDeps();
 			CheckForUpdate();
 		}
+
 		private void OnDisable()
 		{
 			BeamablePackageUpdateMeta.OnPackageUpdated -= ShowWhatsNewAnnouncement;
 		}
+		
 		private void CheckAnnouncements()
 		{
 			BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
@@ -99,37 +91,7 @@ namespace Beamable.Editor.Toolbox.UI
 				}
 			});
 		}
-		private async void Refresh()
-		{
-			if (Instance != null)
-			{
-				Instance._model?.Destroy();
-			}
-
-			Instance._model = new ToolboxModel();
-			Instance._model.UseDefaultWidgetSource();
-			Instance._model.Initialize();
-
-			var de = BeamEditorContext.Default; 
-			await de.InitializePromise;
-			
-			var isLoggedIn = de.CurrentUser != null;
-			if (isLoggedIn)
-			{
-				SetForContent();
-			}
-			else
-			{
-				SetForLogin();
-			}
-		}
-		private void SetForLogin()
-		{
-			var root = this.GetRootVisualContainer();
-			root.Clear();
-			var noUserVisualElement = new NoUserVisualElement();
-			root.Add(noUserVisualElement);
-		}
+		
 		private void SetForContent()
 		{
 			var root = this.GetRootVisualContainer();
@@ -219,8 +181,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 			welcomeAnnouncement.OnImport = () =>
 			{
-				var api = BeamEditorContext.Default;
-				api.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
+				ActiveContext.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
 			};
 			_model.AddAnnouncement(welcomeAnnouncement);
 			

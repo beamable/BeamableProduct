@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.Modules.Account;
+using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -125,11 +126,12 @@ namespace Beamable.Editor.Content
 		/// Refresh the data and thus rendering of the <see cref="ContentManagerWindow"/>
 		/// </summary>
 		/// <param name="isHardRefresh">TODO: My though there is that false means keep the currently selected item. TBD if possible. - srivello</param>
-		public void RefreshWindow(bool isHardRefresh)
+		public async void RefreshWindow(bool isHardRefresh)
 		{
 			if (isHardRefresh)
 			{
-				ContentManagerWindow.Instance.Refresh();
+				var contentManagerWindow = await BeamEditorWindow<ContentManagerWindow>.GetFullyInitializedWindow();
+				contentManagerWindow.BuildWithContext();
 			}
 			else
 			{

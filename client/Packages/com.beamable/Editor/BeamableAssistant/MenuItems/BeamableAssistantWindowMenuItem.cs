@@ -24,9 +24,9 @@ namespace Beamable.Editor.ToolbarExtender
 			return new GUIContent(label);
 		}
 
-		public override void OnItemClicked(BeamEditorContext beamableApi)
+		public override async void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			BeamableAssistantWindow.ShowWindow();
+			await BeamableAssistantWindow.Init();
 		}
 	}
 }

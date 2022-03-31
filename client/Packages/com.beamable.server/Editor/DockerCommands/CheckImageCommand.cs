@@ -52,7 +52,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public new Promise<bool> Start()
 		{
-			return Start(null);
+			return StartAsync();
 		}
 	}
 }

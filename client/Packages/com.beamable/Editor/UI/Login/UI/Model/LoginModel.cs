@@ -132,7 +132,7 @@ namespace Beamable.Editor.Login.UI.Model
 				});
 			}
 
-			if (b.HasToken)
+			if (b.HasToken && b.HasCustomer)
 			{
 				Customer.Role = b.CurrentUser.roleString;
 				Customer.SetUserInfo(b.CurrentUser.id, b.CurrentUser.email);

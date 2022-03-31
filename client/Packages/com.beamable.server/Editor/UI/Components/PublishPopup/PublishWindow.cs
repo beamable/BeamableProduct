@@ -21,7 +21,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-	public class PublishWindow : CommandRunnerWindow
+	public class PublishWindow : EditorWindow
 	{
 		protected const float DEFAULT_ROW_HEIGHT = 47.0f;
 		protected const int MAX_ROW = 6;
@@ -102,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
 				_element.PrepareForPublish();
 				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, _element.HandleServiceDeployed, logger);
+				await microservicesRegistry.Deploy(model, _tokenSource.Token, _element.HandleServiceDeployed, logger);
 			};
 
 			container.Add(_element);

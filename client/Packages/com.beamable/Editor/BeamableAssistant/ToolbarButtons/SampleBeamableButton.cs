@@ -19,7 +19,7 @@ namespace Beamable.Editor.ToolbarExtender
 		public override GenericMenu GetDropdownOptions(BeamEditorContext editorAPI)
 		{
 			GenericMenu menu = new GenericMenu();
-			menu.AddItem(new GUIContent("Open Beamable Assistant 😃"), false, () => BeamableAssistantWindow.ShowWindow());
+			menu.AddItem(new GUIContent("Open Beamable Assistant 😃"), false, async () => await BeamableAssistantWindow.Init());
 			menu.AddItem(new GUIContent("Open Beamable Content 💼"), false, async () => await ContentManagerWindow.Init());
 
 			return menu;

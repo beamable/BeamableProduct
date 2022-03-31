@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Microservice.UI;
+using Beamable.Editor.UI;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -319,11 +320,13 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				await DockerCheckTask;
 
-				EditorApplication.delayCall += () =>
+				EditorApplication.delayCall += async () =>
 				{
 					Debug.Log("Docker Desktop was closed!");
 					DockerNotRunning = true;
-					MicroserviceWindow.Instance.RefreshWindow(true);
+					
+					var tempQualifier = await BeamEditorWindow<MicroserviceWindow>.GetFullyInitializedWindow();
+					tempQualifier.RefreshWindowContent();
 				};
 			};
 

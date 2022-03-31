@@ -84,7 +84,7 @@ namespace Beamable.Editor.UI.Model
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			try
 			{
-				await command.Start(null);
+				await command.StartAsync();
 				await TryToGetLastImageId();
 
 				// Update the config with the code handle identifying the version of the code this is building with (see BeamServicesCodeWatcher).
@@ -124,7 +124,7 @@ namespace Beamable.Editor.UI.Model
 			var getChecksum = new GetImageIdCommand(Descriptor);
 			try
 			{
-				LastBuildImageId = await getChecksum.Start(null);
+				LastBuildImageId = await getChecksum.StartAsync();
 			}
 			catch (Exception e)
 			{
