@@ -139,7 +139,7 @@ EXPOSE 80 2222
 		private string GetWatchDockerFile()
 		{
 			var text = $@"
-FROM beamservice:latest AS build-env
+FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
 RUN dotnet --version
 WORKDIR /subapp
 
@@ -147,8 +147,6 @@ COPY {Descriptor.ImageName}.csproj .
 RUN cp /src/baseImageDocs.xml .
 
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
-RUN mkdir /client-output
-RUN chmod -R a=rw /client-output
 
 {GetDebugLayer()}
 

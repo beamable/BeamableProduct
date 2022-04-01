@@ -1,4 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -64,10 +65,21 @@ namespace Beamable.Editor.UI.Components
 			_colorBlock = Root.Q<VisualElement>("colorBlock");
 
 			_removeButton = Root.Q<VisualElement>("removeButton");
+			_removeButton.tooltip = Tooltips.Buss.REMOVE;
+
 			_editButton = Root.Q<VisualElement>("editButton");
+			_editButton.tooltip = Tooltips.Buss.EDIT;
+
 			_wizardButton = Root.Q<VisualElement>("wizardButton");
+			if (_wizardButton != null)
+				_wizardButton.tooltip = Tooltips.Buss.WIZARD_SYSTEM;
+
 			_undoButton = Root.Q<VisualElement>("undoButton");
+			_undoButton.tooltip = Tooltips.Buss.UNDO;
+
 			_cleanAllButton = Root.Q<VisualElement>("cleanAllButton");
+			_cleanAllButton.tooltip = Tooltips.Buss.ERASE_ALL_STYLE;
+
 			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");

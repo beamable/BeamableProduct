@@ -40,7 +40,7 @@ namespace Beamable.Editor.Toolbox.UI
 					ToolboxWindow.Instance.Close();
 				}
 
-				DestroyImmediate(ToolboxWindow.Instance);
+				ToolboxWindow.Instance.Close();
 			}
 
 			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
