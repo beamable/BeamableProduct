@@ -152,7 +152,8 @@ namespace Beamable
 																  .CreateInstance));
 			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
 				// the lobby service needs a special instance of the beamable api requester
-				provider.GetService<IBeamableApiRequester>()));
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
 				// the presence service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),

@@ -10,10 +10,12 @@ namespace Beamable.Experimental.Api.Lobbies
   public class LobbyService : ILobbyApi
   {
     private readonly IBeamableRequester _requester;
+    private readonly IUserContext _userContext;
 
-    public LobbyService(IBeamableRequester requester)
+    public LobbyService(IBeamableRequester requester, IUserContext userContext)
     {
       _requester = requester;
+      _userContext = userContext;
     }
 
     /// <summary>
@@ -83,12 +85,27 @@ namespace Beamable.Experimental.Api.Lobbies
     /// Notify the given lobby that the player intends to leave.
     /// </summary>
     /// <param name="lobbyId"></param>
-    /// <returns></returns>
     public Promise<Unit> LeaveLobby(string lobbyId)
     {
       return _requester.Request<Unit>(
         Method.DELETE,
-        $"/lobbies/{lobbyId}"
+        $"/lobbies/{lobbyId}",
+        new RemoveFromLobbyRequest(_userContext.UserId.ToString())
+      );
+    }
+
+    /// <summary>
+    /// Send a request to the given lobby to remove the player with the given playerId. If the
+    /// requesting player doesn't have the capability to boot players, this will throw an exception.
+    /// </summary>
+    /// <param name="lobbyId">The lobby to remove the player from</param>
+    /// <param name="playerId">The player to remove</param>
+    public Promise<Unit> BootPlayer(string lobbyId, string playerId)
+    {
+      return _requester.Request<Unit>(
+        Method.DELETE,
+        $"/lobbies/{lobbyId}",
+        new RemoveFromLobbyRequest(playerId)
       );
     }
   }

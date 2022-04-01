@@ -1,5 +1,4 @@
 using System;
-using Beamable.Common.Content;
 
 namespace Beamable.Experimental.Api.Lobbies
 {

@@ -51,9 +51,15 @@ namespace Beamable.Player
         return;
       }
 
-      await _lobbyApi.LeaveLobby(State.lobbyId);
-      State = null;
-      // TODO: Need to unsubscribe from lobby messages
+      try
+      {
+        await _lobbyApi.LeaveLobby(State.lobbyId);
+      }
+      finally
+      {
+        State = null;
+        // TODO: Need to unsubscribe from lobby messages
+      }
     }
 
     public async Promise Refresh()
