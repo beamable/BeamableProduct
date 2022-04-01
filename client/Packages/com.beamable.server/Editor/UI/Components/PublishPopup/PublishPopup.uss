@@ -228,8 +228,8 @@ LoadingBarElement {
     min-height: 200px;
 }
 .splitWrapper.rightSplit {
-    flex-grow: 1;
-    min-height: 50px;
+    flex-grow: 0;
+    height: 150px;
 }
 .splitWrapper.rightSplit > * {
     flex-grow: 1;
