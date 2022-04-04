@@ -11,13 +11,10 @@
             <engine:VisualElement name="enabledC" class="column">
                 <beamable:BeamableCheckboxVisualElement name="checkbox"/>
             </engine:VisualElement>
-    
-            <engine:VisualElement name="typeC" class="column">
-                <engine:Image name="typeImage"/>
-            </engine:VisualElement>
             
             <engine:VisualElement name="nameColumn" class="column" display="none">
-                    <engine:Label name="nameMS" text="Angie's Test"/>
+                <engine:Image name="typeImage"/>
+                <engine:Label name="nameMS" text="Angie's Test"/>
             </engine:VisualElement>
     
             <engine:VisualElement name="depsColumn" class="column">
@@ -34,6 +31,7 @@
     
             <engine:VisualElement name="CheckC" class="column">
                 <engine:Image name="checkImage"/>
+                <engine:Label name="stateLabel"/>
             </engine:VisualElement>
             
         </engine:VisualElement>
