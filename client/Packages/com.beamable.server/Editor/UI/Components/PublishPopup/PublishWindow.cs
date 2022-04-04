@@ -54,7 +54,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			loadPromise.Then(model =>
 			{
 				float maxHeight = Mathf.Max(model.Services.Values.Count * ROW_HEIGHT, ROW_HEIGHT) + HEIGHT_BASE;
-				var maxSize = new Vector2(MIN_SIZE.x, maxHeight);
+				var maxSize = new Vector2(4000, maxHeight);
 				maxSize.y = Mathf.Max(maxSize.y, wnd.minSize.y);
 				wnd.maxSize = maxSize;
 				

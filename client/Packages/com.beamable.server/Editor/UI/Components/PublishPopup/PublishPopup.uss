@@ -20,12 +20,12 @@
 #nameMS {
     align-self: center;
     margin-left: 3px;
-    flex: auto;
+    flex-grow: 1;
 }
 
 #nameC, #depsC {
     flex-direction: row;
-    flex: auto;
+    flex-grow: 1;
 }
 
 #depsColumn > * {
