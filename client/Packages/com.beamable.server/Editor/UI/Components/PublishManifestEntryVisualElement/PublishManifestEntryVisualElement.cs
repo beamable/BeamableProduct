@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -34,10 +35,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{ServicePublishState.InProgress, "publish-inProgress"},
 				{ServicePublishState.Failed, "publish-failed"},
 			};
-
-		private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
-		private const string STORAGE_IMAGE_CLASS = "storageImage";
-		private const string CHECKBOX_TOOLTIP = "Enable/disable the service";
 
 		public IEntryModel Model { get; }
 		public int Index => _index;
@@ -139,12 +136,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			float width = evt.newRect.width;
 			int maxCharacters = Mathf.CeilToInt(width / 10);
+			
 			if (Model.Name.TryEllipseText(maxCharacters, out string labelText))
 			{
 				_nameLabel.text = labelText;
+				_nameLabel.tooltip = Model.Name;
 				return;
 			}
 			
+			_nameLabel.tooltip = string.Empty;
 			_nameLabel.text = Model.Name;
 		}
 
