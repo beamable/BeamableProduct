@@ -113,13 +113,13 @@ namespace Beamable.AccountManagement
 				case AuthThirdParty.Google:
 					// On non-iOS platforms, just honor the Google checkbox.
 					return Google;
-				
+
 #if UNITY_EDITOR
 				case AuthThirdParty.Apple:
 					return Apple;	
-#endif	
+#endif
 #endif // UNITY_IOS
-				
+
 				default:
 					return false;
 			}
