@@ -25,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		protected const float DEFAULT_ROW_HEIGHT = 55.0f;
 		protected const int MAX_ROW = 6;
-		private static readonly Vector2 MIN_SIZE = new Vector2(900, 400);
+		private static readonly Vector2 MIN_SIZE = new Vector2(900, 440);
 		private const float ROW_HEIGHT = 65;
 		private const float HEIGHT_BASE = 380;
 

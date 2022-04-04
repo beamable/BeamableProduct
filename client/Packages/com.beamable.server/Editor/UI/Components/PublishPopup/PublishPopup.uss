@@ -224,7 +224,7 @@ LoadingBarElement {
 }
 
 .splitWrapper.leftSplit{
-    flex-grow: 0;
+    flex-grow: 1;
     min-height: 200px;
 }
 .splitWrapper.rightSplit {
