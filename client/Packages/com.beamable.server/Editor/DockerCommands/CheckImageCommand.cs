@@ -1,11 +1,12 @@
 using Beamable.Common;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class CheckImageReturnableCommand : DockerCommandReturnable<bool>
 	{
 		public string ContainerName { get; }
-		public bool IsRunning { get; private set; }
+		public bool IsRunning { get; protected set; }
 
 		public CheckImageReturnableCommand(IDescriptor descriptor)
 		   : this(descriptor.ContainerName)
@@ -37,11 +38,34 @@ namespace Beamable.Server.Editor.DockerCommands
 				IsRunning = true;
 			}
 		}
-
+		
 		protected override void Resolve()
 		{
 			Promise.CompleteSuccess(IsRunning);
 		}
+	}
+	
+	public class CheckImageCodeGenErrorCommand : CheckImageReturnableCommand
+	{
+		public override string GetCommandString()
+		{
+			var command = $"{DockerCmd} logs {ContainerName} -f --tail 100";
+			return command;
+		}
+
+		protected override void HandleStandardOut(string data)
+		{
+			base.HandleStandardOut(data);
+			
+			// dependency errors
+			if (data != null && (data.Contains("CS0012") || data.Contains("CS0246")))
+			{
+				IsRunning = true;
+			}
+		}
+
+		public CheckImageCodeGenErrorCommand(IDescriptor descriptor) : base(descriptor) { }
+		public CheckImageCodeGenErrorCommand(string containerName) : base(containerName) { }
 	}
 
 	public class CheckImageCommand : CheckImageReturnableCommand
