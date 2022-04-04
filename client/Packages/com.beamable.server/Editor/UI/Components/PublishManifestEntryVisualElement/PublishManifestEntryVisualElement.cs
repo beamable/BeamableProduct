@@ -131,19 +131,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 				UpdateStatus(ServicePublishState.Unpublished);
 			}
 		}
-		
+
 		private void OnLabelSizeChanged(GeometryChangedEvent evt)
 		{
 			float width = evt.newRect.width;
 			int maxCharacters = Mathf.CeilToInt(width / 10);
-			
+
 			if (Model.Name.TryEllipseText(maxCharacters, out string labelText))
 			{
 				_nameLabel.text = labelText;
 				_nameLabel.tooltip = Model.Name;
 				return;
 			}
-			
+
 			_nameLabel.tooltip = string.Empty;
 			_nameLabel.text = Model.Name;
 		}
@@ -186,7 +186,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					break;
 				}
 			}
-			
+
 			PublishState = state;
 
 			RemoveFromClassList(_currentPublishState);

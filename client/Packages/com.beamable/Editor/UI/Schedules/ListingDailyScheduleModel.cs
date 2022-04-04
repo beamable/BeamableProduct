@@ -48,7 +48,7 @@ namespace Beamable.Editor.Models.Schedules
 			int toHour = 0;
 			int fromMinute = 0;
 			int toMinute = 0;
-			
+
 			if (!_allDayComponent.Value)
 			{
 				fromHour = int.Parse(_periodFromHourComponent.Hour);
