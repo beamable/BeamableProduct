@@ -23,10 +23,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class PublishWindow : CommandRunnerWindow
 	{
-		protected const float DEFAULT_ROW_HEIGHT = 47.0f;
-		protected const int MAX_ROW = 6;
-		private static readonly Vector2 MIN_SIZE = new Vector2(860, 330);
-
 		[SerializeField] private bool isSet;
 		private CancellationTokenSource _tokenSource;
 
@@ -45,11 +41,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 			wnd.Refresh();
 
 			var size = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(servicesRegistry.AllDescriptors.Count, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
-
+			
 			wnd.minSize = size;
 			wnd.position = BeamablePopupWindow.GetCenteredScreenRectForWindow(parent, size);
+			
 			loadPromise.Then(model =>
 			{
+				float maxHeight = Mathf.Max(model.Services.Values.Count * ROW_HEIGHT, ROW_HEIGHT) + HEIGHT_BASE;
+				var maxSize = new Vector2(4000, maxHeight);
+				maxSize.y = Mathf.Max(maxSize.y, wnd.minSize.y);
+				wnd.maxSize = maxSize;
+				
 				wnd._model = model;
 				wnd._element.Model = model;
 				wnd.RefreshElement();

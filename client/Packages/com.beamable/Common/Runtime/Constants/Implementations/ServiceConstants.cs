@@ -1,4 +1,6 @@
-﻿namespace Beamable.Common
+﻿using UnityEngine;
+
+namespace Beamable.Common
 {
 	public static partial class Constants
 	{
@@ -27,6 +29,16 @@
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";
 				public const string CANT_UPLOAD_CONTAINER_MESSAGE = "Can't upload container service=[{0}]";
 				public const string USING_REMOTE_SERVICE_MESSAGE = "Using remote service";
+				
+				public const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
+				public const string STORAGE_IMAGE_CLASS = "storageImage";
+				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
+				
+				public const float DEFAULT_ROW_HEIGHT = 55.0f;
+				public const int MAX_ROW = 6;
+				public static readonly Vector2 MIN_SIZE = new Vector2(900, 440);
+				public const float ROW_HEIGHT = 65;
+				public const float HEIGHT_BASE = 380;
 
 				public static string GetBuildButtonString(bool includeDebugTools, string text) => includeDebugTools
 					? $"{BUILD_DEBUG_PREFIX} {text}"
