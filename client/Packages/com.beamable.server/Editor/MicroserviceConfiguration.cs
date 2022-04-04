@@ -29,7 +29,7 @@ namespace Beamable.Server.Editor
 	public class MicroserviceConfiguration : AbsModuleConfigurationObject<MicroserviceConfigConstants>
 	{
 #if UNITY_EDITOR_OSX
-      const string DOCKER_LOCATION = "/usr/local/bin/docker";
+		const string DOCKER_LOCATION = "/usr/local/bin/docker";
 #else
 		const string DOCKER_LOCATION = "docker";
 #endif
@@ -87,7 +87,30 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
 		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
 
-		public string DockerCommand = DOCKER_LOCATION;
+
+		public string DockerCommand
+		{
+			get
+			{
+#if UNITY_EDITOR_WIN
+				return WindowsDockerCommand;
+#else
+				return UnixDockerCommand;
+#endif
+			}
+			set
+			{
+#if UNITY_EDITOR_WIN
+				WindowsDockerCommand = value;
+#else
+				UnixDockerCommand = value;
+#endif
+			}
+		}
+#pragma warning disable CS0219
+		public string WindowsDockerCommand = DOCKER_LOCATION;
+		public string UnixDockerCommand = "/usr/local/bin/docker";
+#pragma warning restore CS0219
 		private string _dockerCommandCached = DOCKER_LOCATION;
 		private bool _dockerCheckCached = true;
 
