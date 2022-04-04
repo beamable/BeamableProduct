@@ -1,11 +1,13 @@
 using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
 using UnityEngine;
+using Object = System.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -16,15 +18,19 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 {
 	public class BussConfiguration : ModuleConfigurationObject
 	{
+		[SerializeField] private BussStyleSheet _globalStyleSheet = null;
 
-		private static BussConfiguration Instance => Get<BussConfiguration>();
+		private static Dictionary<string, SelectorWeight> _weights = new Dictionary<string, SelectorWeight>();
+
+		private List<BussElement> _rootBussElements = new List<BussElement>();
+
 		public static Optional<BussConfiguration> OptionalInstance
 		{
 			get
 			{
 				try
 				{
-					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
+					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -33,25 +39,30 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 		}
 
-		private static Dictionary<string, SelectorWeight> _weights = new Dictionary<string, SelectorWeight>();
-
-		public static void UseConfig(Action<BussConfiguration> callback)
-		{
-			OptionalInstance.DoIfExists(callback);
-		}
-
-		[SerializeField] private BussStyleSheet globalStyleSheet = null;
-
-		private List<BussElement> _rootBussElements = new List<BussElement>();
+		private static BussConfiguration Instance => Get<BussConfiguration>();
 
 		public List<BussElement> RootBussElements => _rootBussElements;
+		public BussStyleSheet GlobalStyleSheet => _globalStyleSheet;
 
 #if UNITY_EDITOR
 		static BussConfiguration()
 		{
 			// temporary solution to refresh the list of BussElements on scene change
 			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
-			EditorSceneManager.sceneClosed += scene =>  UseConfig(config => config.RefreshBussElements());
+			EditorSceneManager.sceneClosed += scene => UseConfig(config => config.RefreshBussElements());
+			
+			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+			EditorApplication.hierarchyChanged += OnHierarchyChanged;
+		}
+
+		private static void OnHierarchyChanged()
+		{
+			List<BeamableModule> prefabs = FindObjectsOfType<BeamableModule>().ToList();
+
+			foreach (BeamableModule prefab in prefabs)
+			{
+				BussStyleSheetUtility.ValidateStyleSheets(prefab.gameObject);
+			}
 		}
 
 		void RefreshBussElements()
@@ -64,7 +75,17 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
 			EditorUtility.SetDirty(this);
 		}
+
+		public void SetGlobalStyleSheet(BussStyleSheet bussStyleSheet)
+		{
+			_globalStyleSheet = bussStyleSheet;
+		}
 #endif
+
+		public static void UseConfig(Action<BussConfiguration> callback)
+		{
+			OptionalInstance.DoIfExists(callback);
+		}
 
 		public void RegisterObserver(BussElement bussElement)
 		{
@@ -86,7 +107,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			// this should happen only in editor
 			if (styleSheet == null) return;
-			if (styleSheet == globalStyleSheet)
+			if (styleSheet == _globalStyleSheet)
 			{
 				foreach (var bussElement in _rootBussElements)
 				{
@@ -120,17 +141,17 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
 		private void OnDestroy()
 		{
-			if (globalStyleSheet != null)
+			if (_globalStyleSheet != null)
 			{
-				globalStyleSheet.Change -= OnGlobalStyleChanged;
+				_globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
 		private void OnDisable()
 		{
-			if (globalStyleSheet != null)
+			if (_globalStyleSheet != null)
 			{
-				globalStyleSheet.Change -= OnGlobalStyleChanged;
+				_globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
@@ -152,9 +173,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			element.Style.Clear();
 			element.PseudoStyles.Clear();
 
-			if (globalStyleSheet != null)
+			if (_globalStyleSheet != null)
 			{
-				ApplyStyleSheet(element, globalStyleSheet);
+				ApplyStyleSheet(element, _globalStyleSheet);
 			}
 
 			foreach (var styleSheet in element.AllStyleSheets)
@@ -204,9 +225,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		}
 
 		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-														  string pseudoClass,
-														  BussStyleDescription descriptor,
-														  SelectorWeight weight)
+		                                                   string pseudoClass,
+		                                                   BussStyleDescription descriptor,
+		                                                   SelectorWeight weight)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (var property in descriptor.Properties)

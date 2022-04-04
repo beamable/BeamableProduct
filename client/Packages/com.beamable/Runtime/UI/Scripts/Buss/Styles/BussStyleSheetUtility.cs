@@ -1,19 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Common;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Beamable.UI.Buss
 {
 	public static class BussStyleSheetUtility
 	{
 		public static bool TryAddProperty(this BussStyleDescription target,
-										  string key,
-										  IBussProperty property,
-										  out BussPropertyProvider propertyProvider)
+		                                  string key,
+		                                  IBussProperty property,
+		                                  out BussPropertyProvider propertyProvider)
 		{
 			var isKeyValid = BussStyle.IsKeyValid(key) || IsValidVariableName(key);
 			if (isKeyValid && !target.HasProperty(key) &&
-				BussStyle.GetBaseType(key).IsAssignableFrom(property.GetType()))
+			    BussStyle.GetBaseType(key).IsAssignableFrom(property.GetType()))
 			{
 				propertyProvider = BussPropertyProvider.Create(key, property.CopyProperty());
 				target.Properties.Add(propertyProvider);
@@ -46,14 +51,16 @@ namespace Beamable.UI.Buss
 			return target.Properties.Where(p => IsValidVariableName(p.Key));
 		}
 
-		public static void AssignAssetReferencesFromReferenceList(this BussStyleDescription style, List<Object> assetReferences)
+		public static void AssignAssetReferencesFromReferenceList(this BussStyleDescription style,
+		                                                          List<Object> assetReferences)
 		{
 			foreach (BussPropertyProvider propertyProvider in style.Properties)
 			{
 				var property = propertyProvider.GetProperty();
 				if (property is BaseAssetProperty assetProperty)
 				{
-					if (assetProperty.AssetSerializationKey >= 0 && assetProperty.AssetSerializationKey < assetReferences.Count)
+					if (assetProperty.AssetSerializationKey >= 0 &&
+					    assetProperty.AssetSerializationKey < assetReferences.Count)
 					{
 						assetProperty.GenericAsset = assetReferences[assetProperty.AssetSerializationKey];
 					}
@@ -66,12 +73,14 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public static void PutAssetReferencesInReferenceList(this BussStyleDescription style, List<Object> assetReferences)
+		public static void PutAssetReferencesInReferenceList(this BussStyleDescription style,
+		                                                     List<Object> assetReferences)
 		{
 			if (style == null || style.Properties == null)
 			{
 				return;
 			}
+
 			foreach (BussPropertyProvider propertyProvider in style.Properties)
 			{
 				var property = propertyProvider.GetProperty();
@@ -96,5 +105,72 @@ namespace Beamable.UI.Buss
 				}
 			}
 		}
+
+#if UNITY_EDITOR
+		public static void ValidateStyleSheets(GameObject gameObject)
+		{
+			List<BussElement> bussElements = gameObject.GetComponentsInChildren<BussElement>(true).ToList();
+
+			foreach (BussElement bussElement in bussElements)
+			{
+				if (bussElement == null)
+				{
+					continue;
+				}
+
+				if (bussElement.StyleSheet == null)
+				{
+					continue;
+				}
+
+				if (!bussElement.StyleSheet.IsReadOnly)
+				{
+					continue;
+				}
+
+				if (!Directory.Exists(Constants.Features.Buss.STYLE_SHEETS_PATH))
+				{
+					Directory.CreateDirectory(Constants.Features.Buss.STYLE_SHEETS_PATH);
+				}
+
+				if (BussConfiguration.OptionalInstance.Value.GlobalStyleSheet == null)
+				{
+					BussConfiguration.OptionalInstance.Value.SetGlobalStyleSheet(CreateGlobalStyleSheet());
+				}
+
+				CopyStyles(bussElement.StyleSheet,
+				                                 BussConfiguration.OptionalInstance.Value.GlobalStyleSheet);
+
+				bussElement.StyleSheet = null;
+			}
+		}
+
+		public static void CopyStyles(BussStyleSheet sourceStyleSheet, BussStyleSheet targetStyleSheet)
+		{
+			foreach (BussStyleRule bussStyleRule in sourceStyleSheet.Styles)
+			{
+				BussStyleRule existingStyleRule =
+					targetStyleSheet.Styles.Find(style => style.SelectorString == bussStyleRule.SelectorString);
+
+				if (existingStyleRule != null)
+				{
+					BeamableLogger.Log(
+						$"Style with selector {bussStyleRule.SelectorString} already exists in target style sheet. Bypassing...");
+					continue;
+				}
+
+				BussStyleRule rule = BussStyleRule.Create(bussStyleRule.SelectorString, bussStyleRule.Properties);
+				targetStyleSheet.Styles.Add(rule);
+			}
+		}
+
+		private static BussStyleSheet CreateGlobalStyleSheet()
+		{
+			string globalStyleSheetPath = $"{Constants.Features.Buss.BEAMABLE_GLOBAL_STYLE_SHEET_PATH}";
+			BussStyleSheet globalStyleSheet = ScriptableObject.CreateInstance<BussStyleSheet>();
+			AssetDatabase.CreateAsset(globalStyleSheet, globalStyleSheetPath);
+			return globalStyleSheet;
+		}
+#endif
 	}
 }
