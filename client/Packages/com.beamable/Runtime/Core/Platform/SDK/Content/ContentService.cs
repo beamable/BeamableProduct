@@ -48,6 +48,13 @@ namespace Beamable.Content
 			ManifestID = manifestID;
 		}
 
+		/// <summary>
+		/// This method is obsolete. The scope field won't do anything, and there is no support for subscribing to individual content type updates.
+		/// You should simply use the variant of this method that doesn't accept the scope field. <see cref="PlatformSubscribable{ScopedRsp,Data}.Subscribe()"/>
+		/// </summary>
+		/// <param name="scope"></param>
+		/// <param name="callback"></param>
+		/// <returns></returns>
 		[Obsolete("The ManifestSubscription doesn't support the scope field. Please use " + nameof(Subscribe) + " instead.")]
 		public override PlatformSubscription<ClientManifest> Subscribe(string scope, Action<ClientManifest> callback)
 		{
