@@ -43,9 +43,15 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
-			string manifestID) : base(provider, "content")
+		                            string manifestID) : base(provider, "content")
 		{
 			ManifestID = manifestID;
+		}
+
+		[Obsolete("The ManifestSubscription doesn't support the scope field. Please use " + nameof(Subscribe) + " instead.")]
+		public override PlatformSubscription<ClientManifest> Subscribe(string scope, Action<ClientManifest> callback)
+		{
+			return base.Subscribe(callback);
 		}
 
 		public bool TryGetContentId(string contentId, out ClientContentInfo clientInfo)
