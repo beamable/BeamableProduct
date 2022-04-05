@@ -18,7 +18,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 		{
 			var attemptCounter = 0;
 			var expectedExceptionReceived = false;
-			var retryAttemptFalloffTimers = new[] { .01f, .05f, .1f, .2f };
+			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
 
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.
@@ -86,10 +86,9 @@ namespace Beamable.Tests.Runtime.PromiseTests
 		[UnityTest]
 		public IEnumerator RecoverWithFalloff_ShouldReuseFallOffValueThenThrow()
 		{
-			
 			var attemptCounter = 0;
 			var expectedExceptionReceived = false;
-			var retryAttemptFalloffTimers = new[] { .01f, .05f, .1f, .2f };
+			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
 
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.
