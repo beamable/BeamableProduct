@@ -45,11 +45,25 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 	}
 	
-	public class CheckImageCodeGenErrorCommand : CheckImageReturnableCommand
+	public class CheckImageCodeGenErrorCommand : DockerCommandReturnable<bool>
 	{
+		public string ContainerName { get; }
+		public bool HasCodeGenError { get; private set; }
+
+		public CheckImageCodeGenErrorCommand(IDescriptor descriptor)
+			: this(descriptor.ContainerName)
+		{
+
+		}
+
+		public CheckImageCodeGenErrorCommand(string containerName)
+		{
+			ContainerName = containerName;
+		}
+
 		public override string GetCommandString()
 		{
-			var command = $"{DockerCmd} logs {ContainerName} -f --tail 100";
+			var command = $"{DockerCmd} logs --tail=50 {ContainerName}";
 			return command;
 		}
 
@@ -57,15 +71,16 @@ namespace Beamable.Server.Editor.DockerCommands
 		{
 			base.HandleStandardOut(data);
 			
-			// dependency errors
+			// dependency or code gen errors
 			if (data != null && (data.Contains("CS0012") || data.Contains("CS0246")))
 			{
-				IsRunning = true;
+				HasCodeGenError = true;
 			}
 		}
-
-		public CheckImageCodeGenErrorCommand(IDescriptor descriptor) : base(descriptor) { }
-		public CheckImageCodeGenErrorCommand(string containerName) : base(containerName) { }
+		protected override void Resolve()
+		{
+			Promise.CompleteSuccess(HasCodeGenError);
+		}
 	}
 
 	public class CheckImageCommand : CheckImageReturnableCommand
