@@ -2,6 +2,8 @@
 using System;
 using Beamable.UI.Buss;
 using UnityEditor;
+using UnityEngine;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,6 +19,11 @@ namespace Beamable.Editor.UI.Buss
 	{
 		private BussStyleListVisualElement _styleList;
 		private AddStyleButton _addStyleButton;
+		private VisualContainer _parent;
+		private ScrollView _scroll;
+		[SerializeField]
+		
+		private BussStyleSheet _styleSheet;
 
 		public static void Open(BussStyleSheet styleSheet)
 		{
@@ -30,20 +37,41 @@ namespace Beamable.Editor.UI.Buss
 		private void OnEnable()
 		{
 			_styleList = new BussStyleListVisualElement();
+			_parent = new VisualContainer();
+			_parent.style.positionLeft = _parent.style.positionRight = StyleValue<float>.Create(0f);
+			
+			AddSelectorButton(
+				_parent, _styleList);
+			
+			_parent.contentContainer.Add(_styleList);
+			
+			_scroll = new ScrollView();
+			_scroll.style.flexGrow = StyleValue<float>.Create(1f);
+			
+			this.GetRootVisualContainer().Add(_scroll);
+			_scroll.SetContents(_parent);
 
-			AddSelectorButton(this.GetRootVisualContainer(), _styleList);
-
-			this.GetRootVisualContainer().Add(_styleList);
+			if (_styleSheet != null)
+			{
+				SetStyleSheet(_styleSheet);
+			}
 		}
 
 		private void OnDisable()
 		{
 			_styleList.Destroy();
 			_styleList = null;
+			
+			_addStyleButton.Destroy();
+			_addStyleButton = null;
+			
+			_scroll.RemoveFromHierarchy();
+			_scroll = null;
 		}
 
 		public void SetStyleSheet(BussStyleSheet styleSheet)
 		{
+			_styleSheet = styleSheet;
 			_styleList.StyleSheets = new[] { styleSheet };
 			_addStyleButton.CheckEnableState();
 		}
