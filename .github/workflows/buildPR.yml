@@ -190,6 +190,11 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      - name: Clean the build directory
+        continue-on-error: true
+        run: |
+          rm -rf /github/workspace/dist
+        shell: bash
       - uses: game-ci/unity-builder@v2
         timeout-minutes: 30
         env:

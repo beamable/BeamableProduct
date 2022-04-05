@@ -6,3 +6,7 @@
 .splitWrapper.leftSplit {
     flex-grow: 1;
 }
+
+#depsC {
+    margin-left: 20px;
+}
