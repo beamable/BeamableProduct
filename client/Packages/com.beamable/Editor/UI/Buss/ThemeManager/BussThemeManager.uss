@@ -35,3 +35,18 @@
     -unity-font-style: bold;
     -unity-text-align: middle-right;
 }
+
+BussElementHierarchyVisualElement {
+    flex-grow: 1;
+}
+
+#themeManagerContainer > ScrollView > #ContentViewport > #ContentView.content-view {
+    flex-grow: 1;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+}
+
+#themeManagerContainerScrollView {
+    flex-grow: 1;
+}
