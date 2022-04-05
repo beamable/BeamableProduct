@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Buss
 	{
 		private BussStyleListVisualElement _styleList;
 		private AddStyleButton _addStyleButton;
-		private VisualContainer _parent;
+		private VisualElement _parent;
 		private ScrollView _scroll;
 		[SerializeField]
 		
@@ -38,8 +38,9 @@ namespace Beamable.Editor.UI.Buss
 		private void OnEnable()
 		{
 			_styleList = new BussStyleListVisualElement();
-			_parent = new VisualContainer();
-			_parent.style.positionLeft = _parent.style.positionRight = StyleValue<float>.Create(0f);
+			_parent = new VisualElement();
+			_parent.style.SetLeft(0f);
+			_parent.style.SetRight(0f);
 			
 			AddSelectorButton(
 				_parent, _styleList);
