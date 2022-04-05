@@ -13,6 +13,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public abstract class ServiceBaseVisualElement : MicroserviceComponent
@@ -105,12 +107,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.OnStart += SetupProgressBarForStart;
 			Model.OnStop -= SetupProgressBarForStop;
 			Model.OnStop += SetupProgressBarForStop;
-			
+
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
+			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
-			_moreBtn.tooltip = "More...";
 
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
@@ -156,6 +158,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
 		{
 			_statusIcon.ClearClassList();
+			// _header.EnableInClassList("building", isBuilding);
 
 			string statusClassName;
 			string statusText;
@@ -165,26 +168,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 			switch (status)
 			{
 				case "localRunning":
-					statusText = "Local Running";
+					statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
 					statusClassName = "localRunning";
 					break;
 				case "localBuilding":
+					statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
 					statusClassName = "localBuilding";
-					statusText = "Local Building";
 					break;
 				case "localStopped":
+					statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
 					statusClassName = "localStopped";
-					statusText = "Local Stopped";
 					break;
 				default:
+					statusText = Tooltips.Microservice.ICON_DIFFERENT;
 					statusClassName = "different";
-					statusText = "Different";
 					break;
 			}
 
 			_statusIcon.tooltip = statusText;
 			_statusIcon.AddToClassList(statusClassName);
-			_startButton.EnableInClassList("running", !isBuilding && isRunning);
+			_startButton.EnableInClassList("running", isBuilding || isRunning);
 		}
 		private void OnDrag(float value)
 		{
@@ -264,7 +267,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void SetupProgressBarForStop(Task task)
 		{
-			new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
+			var parser = new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
+			task?.ContinueWith(_ =>
+			{
+				_loadingBar.Hidden = true;
+				parser.Kill();
+			});
 		}
 		private void OnStopFailed()
 		{

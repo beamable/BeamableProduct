@@ -24,9 +24,10 @@ namespace Beamable.Editor.UI.Buss
 		private BussStyleListVisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
+        private ScrollView _scrollView;
 		private SelectedBussElementVisualElement _selectedBussElement;
 
-		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
+        private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
 		private BeamablePopupWindow _confirmationPopup;
@@ -66,34 +67,35 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 
-			ScrollView scrollView = new ScrollView();
-			scrollView.name = "themeManagerContainerScrollView";
-			mainVisualElement.Add(scrollView);
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
-			scrollView.Add(navigationGroup);
+            mainVisualElement.Add(navigationGroup);
 
 			_navigationWindow = new BussElementHierarchyVisualElement();
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
-			
-			_selectedBussElement = new SelectedBussElementVisualElement();
-			_selectedBussElement.Setup(_navigationWindow);
-			scrollView.Add(_selectedBussElement);
-			
+
 			_filterToggle = new LabeledCheckboxVisualElement("Filter by selected element");
 			_filterToggle.name = "filterToggle";
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
 			_filterToggle.OnValueChanged += OnFilterToggleClicked;
 			_filterToggle.Refresh();
 			_filterToggle.SetWithoutNotify(_filterMode);
-			scrollView.Add(_filterToggle);
+            mainVisualElement.Add(_filterToggle);
+            
+            _selectedBussElement = new SelectedBussElementVisualElement();
+            _selectedBussElement.Setup(_navigationWindow);
+            mainVisualElement.Add(_selectedBussElement);
 
-			_stylesGroup = new BussStyleListVisualElement();
+            _scrollView = new ScrollView();
+            _scrollView.name = "themeManagerContainerScrollView";
+            mainVisualElement.Add(_scrollView);
+
+            _stylesGroup = new BussStyleListVisualElement();
 			_stylesGroup.name = "stylesGroup";
 			_stylesGroup.Filter = CardFilter;
-			scrollView.Add(_stylesGroup);
+			_scrollView.Add(_stylesGroup);
 
 			root.Add(mainVisualElement);
 
@@ -102,12 +104,15 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
+			
+			_navigationWindow.SelectionChanged -= SetScroll;
+			_navigationWindow.SelectionChanged += SetScroll;
 
 			_navigationWindow.SelectionChanged -= CacheSelectedGameObject;
 			_navigationWindow.SelectionChanged += CacheSelectedGameObject;
 
 			RefreshStyleSheets();
-			AddSelectorButton(scrollView);
+			AddSelectorButton(mainVisualElement);
 		}
 
 		private void CacheSelectedGameObject(GameObject go)
@@ -147,6 +152,24 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton.CheckEnableState();
 			parent.Insert(parent.Children().Count() - 1, _addStyleButton);
 		}
+		
+		private void SetScroll(GameObject _ = null)
+		{
+			if (!_filterMode)
+			{
+				EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
+			}
+		}
+		
+		private void UpdateScroll(float scrollValue)
+		{
+			EditorApplication.delayCall += () =>
+			{
+				_scrollView.verticalScroller.value = scrollValue;
+				_scrollView.MarkDirtyRepaint();
+			};
+		}
+
 
 		private void OnFocus()
 		{
@@ -160,6 +183,7 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
+			_navigationWindow.SelectionChanged -= SetScroll;
 
 			_navigationWindow.Destroy();
 			UndoSystem<BussStyleRule>.DeleteAllRecords();
