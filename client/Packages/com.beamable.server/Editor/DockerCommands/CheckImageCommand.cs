@@ -1,6 +1,8 @@
 using Beamable.Common;
 using UnityEngine;
 
+using static Beamable.Common.Constants.Features.Docker;
+
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class CheckImageReturnableCommand : DockerCommandReturnable<bool>
@@ -72,7 +74,8 @@ namespace Beamable.Server.Editor.DockerCommands
 			base.HandleStandardOut(data);
 			
 			// dependency or code gen errors
-			if (data != null && (data.Contains("CS0012") || data.Contains("CS0246")))
+			if (data != null && (data.Contains(COMPILER_ASSEMBLY_REFERENCE_ERROR_CODE) 
+			                     || data.Contains(COMPILER_TYPE_NAMESPACE_ERROR_CODE)))
 			{
 				HasCodeGenError = true;
 			}
