@@ -164,7 +164,7 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		private static BussStyleSheet CreateGlobalStyleSheet()
+		public static BussStyleSheet CreateGlobalStyleSheet()
 		{
 			string globalStyleSheetPath = $"{Constants.Features.Buss.BEAMABLE_GLOBAL_STYLE_SHEET_PATH}";
 			BussStyleSheet globalStyleSheet = ScriptableObject.CreateInstance<BussStyleSheet>();

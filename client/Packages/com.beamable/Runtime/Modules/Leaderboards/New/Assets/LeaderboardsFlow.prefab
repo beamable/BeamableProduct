@@ -74,7 +74,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
     BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -83,7 +83,7 @@ MonoBehaviour:
     _drawerMode: 1
   threshold: 0
   rounding: 0
-  backgroundSprite: {fileID: 0}
+  backgroundSprite: {fileID: 21300000, guid: 847db4468a5744b659edd02f10023968, type: 3}
   backgroundMode: 0
   meshFrame: 0
   outlineWidth: 0
@@ -121,7 +121,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 5688538834932390783}
   _children: []
 --- !u!1 &5688538833308535119
 GameObject:
@@ -311,7 +311,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
     BottomRightColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
@@ -356,10 +356,11 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: a7fe1dcd1f354484eaafbdf62056f45c, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 5688538835178993142}
+  _children:
+  - {fileID: 5688538834880844659}
 --- !u!1 &5688538833554606370
 GameObject:
   m_ObjectHideFlags: 0
@@ -434,24 +435,24 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
-    _drawerMode: 1
-  threshold: 0
-  rounding: 0
+    BottomLeftColor: {r: 0.21960784, g: 0.56078434, b: 0.050980393, a: 1}
+    BottomRightColor: {r: 0.21960784, g: 0.56078434, b: 0.050980393, a: 1}
+    TopLeftColor: {r: 0.7058824, g: 0.8745098, b: 0.3137255, a: 1}
+    TopRightColor: {r: 0.7058824, g: 0.8745098, b: 0.3137255, a: 1}
+    _drawerMode: 3
+  threshold: -1
+  rounding: 5
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
-  outlineWidth: 0
+  outlineWidth: 1
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
+    BottomRightColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
+    TopLeftColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
+    TopRightColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
     _drawerMode: 1
   shadowColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -482,7 +483,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 5688538834932390783}
   _children: []
 --- !u!1 &5688538833871938567
 GameObject:
@@ -558,12 +559,12 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.9716981, g: 0.5967219, b: 0.0779192, a: 1}
+    BottomRightColor: {r: 0.9716981, g: 0.5967219, b: 0.0779192, a: 1}
+    TopLeftColor: {r: 0.9716981, g: 0.5967219, b: 0.0779192, a: 1}
+    TopRightColor: {r: 0.9716981, g: 0.5967219, b: 0.0779192, a: 1}
     _drawerMode: 1
   threshold: 0
   rounding: 0
@@ -605,7 +606,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 5688538834484492737}
   _children: []
 --- !u!1 &5688538833874825000
 GameObject:
@@ -681,24 +682,24 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
-    _drawerMode: 1
-  threshold: 0
-  rounding: 0
+    BottomLeftColor: {r: 0.21960784, g: 0.56078434, b: 0.050980393, a: 1}
+    BottomRightColor: {r: 0.21960784, g: 0.56078434, b: 0.050980393, a: 1}
+    TopLeftColor: {r: 0.7058824, g: 0.8745098, b: 0.3137255, a: 1}
+    TopRightColor: {r: 0.7058824, g: 0.8745098, b: 0.3137255, a: 1}
+    _drawerMode: 3
+  threshold: -1
+  rounding: 5
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
-  outlineWidth: 0
+  outlineWidth: 1
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
+    BottomRightColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
+    TopLeftColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
+    TopRightColor: {r: 0.6784314, g: 0.8627451, b: 0.25882354, a: 1}
     _drawerMode: 1
   shadowColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -729,7 +730,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 5688538835172806950}
   _children: []
 --- !u!1 &5688538834484492743
 GameObject:
@@ -787,10 +788,13 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: a7fe1dcd1f354484eaafbdf62056f45c, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 0}
-  _children: []
+  _children:
+  - {fileID: 5688538835178993142}
+  - {fileID: 5688538833871938561}
+  - {fileID: 5688538835172806950}
 --- !u!114 &5688538834484492738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -876,9 +880,9 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: a7fe1dcd1f354484eaafbdf62056f45c, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 5688538833514261960}
   _children: []
 --- !u!114 &5688538834880844658
 MonoBehaviour:
@@ -900,8 +904,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: LEADERBOARD
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -926,7 +930,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 22
+  m_fontSize: 16
   m_fontSizeBase: 18
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1067,7 +1071,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.6431373, g: 0.41960785, b: 0.21176471, a: 1}
     BottomRightColor: {r: 0.5568628, g: 0.30980393, b: 0.14117648, a: 1}
@@ -1112,10 +1116,12 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: dea7a2c70377c5c4ab779feaff37904c, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 5688538835178993142}
+  _children:
+  - {fileID: 8894142972801680685}
+  - {fileID: 5688538833554606380}
 --- !u!114 &5688538834932390776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1233,7 +1239,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.6431373, g: 0.41960785, b: 0.21176471, a: 1}
     BottomRightColor: {r: 0.5568628, g: 0.30980393, b: 0.14117648, a: 1}
@@ -1278,10 +1284,12 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: dea7a2c70377c5c4ab779feaff37904c, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 5688538834484492737}
+  _children:
+  - {fileID: 5688538833874824981}
+  - {fileID: 5336066369238115907}
 --- !u!114 &5688538835172806946
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1400,18 +1408,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
+    BottomRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
+    TopLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
+    TopRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 25
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
+  meshFrame: 5
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -1420,14 +1428,14 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0.87058824}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0.87058824}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0.87058824}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0.87058824}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
-  shadowThreshold: 0
-  shadowSoftness: 0
+  shadowOffset: {x: 0, y: -3}
+  shadowThreshold: 2
+  shadowSoftness: 8
   shadowMode: 0
 --- !u!114 &5688538835178993142
 MonoBehaviour:
@@ -1447,8 +1455,11 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 5688538834484492737}
+  _children:
+  - {fileID: 5688538833514261960}
+  - {fileID: 5688538834932390783}
+  - {fileID: 1041953648900621959}
 --- !u!1 &7689657195915062387
 GameObject:
   m_ObjectHideFlags: 0
@@ -1523,7 +1534,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
     BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -1532,7 +1543,7 @@ MonoBehaviour:
     _drawerMode: 1
   threshold: 0
   rounding: 0
-  backgroundSprite: {fileID: 0}
+  backgroundSprite: {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}
   backgroundMode: 0
   meshFrame: 0
   outlineWidth: 0
@@ -1570,7 +1581,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 5688538835172806950}
   _children: []
 --- !u!1 &8826773309014651140
 GameObject:
@@ -1654,7 +1665,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1041953648900621959}
     - target: {fileID: 128048127508573319, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.data[0]
@@ -1669,37 +1680,167 @@ PrefabInstance:
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 7790310660082697072}
     - target: {fileID: 1778758998277112066, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 3145051897327688965}
     - target: {fileID: 2516669601012151872, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.size
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2516669601012151872, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1041953648900621959}
     - target: {fileID: 2516669601012151872, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.data[0]
       value: 
       objectReference: {fileID: 6425897620929126058}
+    - target: {fileID: 2943725495185274461, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2943725495185274461, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2943725495185274461, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2943725495185274461, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopLeftColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2943725495185274461, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopRightColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2943725495185274461, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: rounding
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopLeftColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopRightColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: rounding
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: meshFrame
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineWidth
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.BottomLeftColor.r
+      value: 0.6627451
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.BottomLeftColor.g
+      value: 0.30588236
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.BottomLeftColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.r
+      value: 0.6627451
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.g
+      value: 0.30588236
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.TopLeftColor.r
+      value: 0.6627451
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.TopLeftColor.g
+      value: 0.30588236
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.TopLeftColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.TopRightColor.r
+      value: 0.6627451
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.TopRightColor.g
+      value: 0.30588236
+      objectReference: {fileID: 0}
+    - target: {fileID: 3897512164474668761, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: outlineColor.TopRightColor.a
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.size
-      value: 0
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 5688538835178993142}
     - target: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: m_Enabled
@@ -1709,26 +1850,101 @@ PrefabInstance:
         type: 3}
       propertyPath: _children.Array.data[0]
       value: 
-      objectReference: {fileID: 1310894597323750607}
+      objectReference: {fileID: 7790310660082697072}
     - target: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.data[1]
       value: 
-      objectReference: {fileID: 3145051897327688965}
+      objectReference: {fileID: 5708124483877607863}
     - target: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.data[2]
       value: 
-      objectReference: {fileID: 5708124483877607863}
+      objectReference: {fileID: 1310894597323750607}
     - target: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.data[3]
       value: 
-      objectReference: {fileID: 7790310660082697072}
+      objectReference: {fileID: 4199152828914934062}
+    - target: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: _styleSheet
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5133919447647978365, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: backgroundSprite
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.r
+      value: 0.8901961
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.g
+      value: 0.5254902
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.b
+      value: 0.12941177
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.r
+      value: 0.8901961
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.g
+      value: 0.5254902
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.b
+      value: 0.12941177
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopLeftColor.r
+      value: 0.8901961
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopLeftColor.g
+      value: 0.5254902
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopLeftColor.b
+      value: 0.12941177
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopRightColor.r
+      value: 0.8901961
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopRightColor.g
+      value: 0.5254902
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: colorRect.TopRightColor.b
+      value: 0.12941177
+      objectReference: {fileID: 0}
+    - target: {fileID: 5470351351798228915, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: rounding
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 6419486298360361203, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
@@ -1739,22 +1955,42 @@ PrefabInstance:
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1041953648900621959}
     - target: {fileID: 7301680694132205621, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.size
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7301680694132205621, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 4199152828914934062}
     - target: {fileID: 7301680694132205621, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _children.Array.data[0]
       value: 
       objectReference: {fileID: 6223644883750958130}
+    - target: {fileID: 8410433622103577630, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: _children.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8410433622103577630, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: _parent
+      value: 
+      objectReference: {fileID: 1041953648900621959}
+    - target: {fileID: 8410433622103577630, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: _children.Array.data[0]
+      value: 
+      objectReference: {fileID: 3145051897327688965}
+    - target: {fileID: 8958582576552422757, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+        type: 3}
+      propertyPath: mode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 9045432837133318405, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: m_fontMaterial
@@ -1988,7 +2224,7 @@ PrefabInstance:
     - target: {fileID: 9045432838100322773, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: m_fontSize
-      value: 16
+      value: 17.7
       objectReference: {fileID: 0}
     - target: {fileID: 9045432838100322773, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
@@ -2061,21 +2297,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e24f0ff68ce64de482a88d4ffd47a396, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &5708124483877607863 stripped
+--- !u!114 &1310894597323750607 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 128048127508573319, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+  m_CorrespondingSourceObject: {fileID: 6683487388595161599, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
     type: 3}
   m_PrefabInstance: {fileID: 5688538834635158832}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
+  m_Script: {fileID: 11500000, guid: e24f0ff68ce64de482a88d4ffd47a396, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1310894597323750607 stripped
+--- !u!114 &4199152828914934062 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6683487388595161599, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+  m_CorrespondingSourceObject: {fileID: 8410433622103577630, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
     type: 3}
   m_PrefabInstance: {fileID: 5688538834635158832}
   m_PrefabAsset: {fileID: 0}
@@ -2109,6 +2345,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e24f0ff68ce64de482a88d4ffd47a396, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &5708124483877607863 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 128048127508573319, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+    type: 3}
+  m_PrefabInstance: {fileID: 5688538834635158832}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &3708268801500537100 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 9045432837593568316, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
@@ -2125,6 +2373,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f536b70e3aa4ce6beaded3dacef25b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1041953648900621959 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4648977866180375479, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+    type: 3}
+  m_PrefabInstance: {fileID: 5688538834635158832}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &6381055770869107270

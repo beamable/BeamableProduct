@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 #if UNITY_EDITOR
+using Beamable.Common;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
@@ -50,9 +51,32 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			// temporary solution to refresh the list of BussElements on scene change
 			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
 			EditorSceneManager.sceneClosed += scene => UseConfig(config => config.RefreshBussElements());
-			
+
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
+		}
+
+		public override void OnFreshCopy()
+		{
+			try
+			{
+				AssetDatabase.StartAssetEditing();
+				
+				BussStyleSheet globalStyleSheet = BussStyleSheetUtility.CreateGlobalStyleSheet();
+
+				BussStyleSheet defaultGlobalStyleSheet =
+					AssetDatabase.LoadAssetAtPath<BussStyleSheet>(
+						Constants.Features.Buss.DEFAULT_GLOBAL_STYLE_SHEET_PATH);
+
+				BussStyleSheetUtility.CopyStyles(defaultGlobalStyleSheet, globalStyleSheet);
+
+				_globalStyleSheet = globalStyleSheet;
+			}
+			finally
+			{
+				AssetDatabase.StopAssetEditing();
+				AssetDatabase.SaveAssets();
+			}
 		}
 
 		private static void OnHierarchyChanged()

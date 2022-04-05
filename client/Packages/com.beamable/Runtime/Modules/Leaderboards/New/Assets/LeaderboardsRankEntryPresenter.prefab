@@ -147,15 +147,15 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 0}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 0}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 5
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -194,8 +194,9 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 4648977866180375479}
+  _children:
+  - {fileID: 1719495695111777178}
 --- !u!1 &2385742401537090233
 GameObject:
   m_ObjectHideFlags: 0
@@ -270,24 +271,24 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 0}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 0}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 2
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
-  outlineWidth: 0
+  meshFrame: 2
+  outlineWidth: 2
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
+    BottomRightColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
+    TopLeftColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
+    TopRightColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
     _drawerMode: 1
   shadowColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -317,7 +318,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 4648977866180375479}
   _children: []
 --- !u!1 &3615916778075815345
 GameObject:
@@ -457,15 +458,15 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
+    BottomRightColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
+    TopLeftColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
+    TopRightColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 5
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -504,8 +505,9 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 8410433622103577630}
+  _children:
+  - {fileID: 1778758998277112066}
 --- !u!1 &9045432837133318407
 GameObject:
   m_ObjectHideFlags: 0
@@ -678,9 +680,9 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 2516669601012151872}
   _children: []
 --- !u!1 &9045432837350611405
 GameObject:
@@ -854,9 +856,9 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 4648977866180375479}
   _children: []
 --- !u!1 &9045432837586729715
 GameObject:
@@ -1022,7 +1024,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
     BottomRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
@@ -1067,10 +1069,14 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 0}
-  _children: []
+  _children:
+  - {fileID: 8410433622103577630}
+  - {fileID: 128048127508573319}
+  - {fileID: 2516669601012151872}
+  - {fileID: 6683487388595161599}
 --- !u!114 &8172603869501750570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1316,7 +1322,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 16
+  m_fontSize: 17.7
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1396,9 +1402,9 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
+  _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 7301680694132205621}
   _children: []
 --- !u!1 &9045432838653577710
 GameObject:
@@ -1576,8 +1582,9 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 4648977866180375479}
+  _children:
+  - {fileID: 7301680694132205621}
 --- !u!114 &3298521197891112389
 MonoBehaviour:
   m_ObjectHideFlags: 0

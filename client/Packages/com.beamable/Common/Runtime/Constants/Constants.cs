@@ -21,6 +21,8 @@
 			public const string BEAMABLE_PACKAGE_EDITOR = BEAMABLE_PACKAGE + "/Editor";
 			public const string BEAMABLE_PACKAGE_EDITOR_UI = BEAMABLE_PACKAGE_EDITOR + "/UI";
 
+			public const string BEAMABLE_PACKAGE_EDITOR_CONFIG = BEAMABLE_PACKAGE_EDITOR + "/Config";
+
 			public const string BEAMABLE_SERVER_PACKAGE = "Packages/com.beamable.server";
 			public const string BEAMABLE_SERVER_PACKAGE_EDITOR = BEAMABLE_SERVER_PACKAGE + "/Editor";
 			public const string BEAMABLE_SERVER_PACKAGE_EDITOR_UI = BEAMABLE_SERVER_PACKAGE_EDITOR + "/UI";
