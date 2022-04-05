@@ -29,11 +29,11 @@ namespace Beamable.Common
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";
 				public const string CANT_UPLOAD_CONTAINER_MESSAGE = "Can't upload container service=[{0}]";
 				public const string USING_REMOTE_SERVICE_MESSAGE = "Using remote service";
-				
+
 				public const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
 				public const string STORAGE_IMAGE_CLASS = "storageImage";
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
-				
+
 				public const float DEFAULT_ROW_HEIGHT = 55.0f;
 				public const int MAX_ROW = 6;
 				public static readonly Vector2 MIN_SIZE = new Vector2(900, 440);
