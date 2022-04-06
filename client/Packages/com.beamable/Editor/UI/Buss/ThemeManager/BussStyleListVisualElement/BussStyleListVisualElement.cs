@@ -128,7 +128,7 @@ namespace Beamable.Editor.UI.Buss
 				styleCardVisualElement.SetHidden(!visible);
 			}
 		}
-		
+
 		public float GetSelectedElementPosInScroll()
 		{
 			if (_currentSelected == null)
