@@ -6,6 +6,7 @@ using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
