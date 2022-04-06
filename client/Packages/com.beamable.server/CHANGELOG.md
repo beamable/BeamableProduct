@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue on Re-Import All with `BeamableAssistantWindow` opened that required reopening the window for it to work.
 - Fixed issue that caused `StatsService.SearchStats` to fail whenever a match occurred.
 - Cannot create invalid service name before validation occurs
+- Progress bar in publish window now correctly displays the progress of services publication
 
 ## [1.0.7]
 no changes
