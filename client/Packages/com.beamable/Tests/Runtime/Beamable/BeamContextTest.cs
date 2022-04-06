@@ -23,7 +23,7 @@ namespace Beamable.Tests.Runtime
 
 		}
 
-		protected void TriggerContextInit(Action<IDependencyBuilder> buildDelegate=null, Action<MockBeamContext> initDelegate=null)
+		protected void TriggerContextInit(Action<IDependencyBuilder> buildDelegate = null, Action<MockBeamContext> initDelegate = null)
 		{
 			Context = MockBeamContext.Create(
 				mutateDependencies: buildDelegate ?? OnRegister,
