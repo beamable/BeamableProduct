@@ -8,7 +8,6 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
 using UnityEngine;
-using Object = System.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -41,9 +40,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		}
 
 		private static BussConfiguration Instance => Get<BussConfiguration>();
-
-		public List<BussElement> RootBussElements => _rootBussElements;
 		public BussStyleSheet GlobalStyleSheet => _globalStyleSheet;
+		public List<BussElement> RootBussElements => _rootBussElements;
 
 #if UNITY_EDITOR
 		static BussConfiguration()

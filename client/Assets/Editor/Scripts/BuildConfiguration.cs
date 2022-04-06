@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
@@ -14,12 +15,36 @@ public class BuildSampleProject
 		return scenes;
 	}
 
+	private static string GetBuildPathForTarget(BuildTarget target)
+	{
+		var prefix = "/github/workspace/dist";
+		switch (target)
+		{
+			case BuildTarget.iOS:
+				return prefix + "/iOS/iOS";
+			case BuildTarget.Android:
+				return prefix + "/Android";
+			case BuildTarget.StandaloneWindows:
+				return prefix + "/StandaloneWindows";
+			case BuildTarget.StandaloneOSX:
+				return prefix + "/StandaloneOSX";
+			case BuildTarget.WebGL:
+				return prefix + "/WebGL";
+			default:
+				throw new Exception(
+					$"Invalid Build Target! Cannot get an output directory for this target. Target=[{target}]");
+		}
+	}
+
 	private static void BuildActiveTarget()
 	{
 		try
 		{
 			//Build
-			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), "/github/workspace/dist/iOS/iOS", BuildTarget.iOS, BuildOptions.None);
+
+			var activeTarget = EditorUserBuildSettings.activeBuildTarget;
+			var distPath = GetBuildPathForTarget(activeTarget);
+			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), distPath, activeTarget, BuildOptions.None);
 
 			if (results.summary.result != BuildResult.Succeeded)
 			{
