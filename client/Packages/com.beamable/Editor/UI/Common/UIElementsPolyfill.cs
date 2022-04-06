@@ -139,6 +139,10 @@ namespace UnityEngine.Experimental.UIElements
 			self.flexDirection = direction;
 		}
 
+		public static void SetFlexGrow(this IStyle self, float value){
+			self.flexGrow = StyleValue<float>.Create(value);
+		}
+
 		public static void SetImage(this Image self, Texture texture)
 		{
 			self.image = StyleValue<Texture>.Create(texture);
@@ -358,6 +362,11 @@ namespace UnityEngine.UIElements
     public static void SetFlexDirection(this IStyle self, FlexDirection direction)
     {
 	    self.flexDirection = direction;
+    }
+
+    public static void SetFlexGrow(this IStyle self, float value)
+    {
+	    self.flexGrow = new StyleFloat(value);
     }
 
     public static void SetImage(this Image self, Texture texture)
