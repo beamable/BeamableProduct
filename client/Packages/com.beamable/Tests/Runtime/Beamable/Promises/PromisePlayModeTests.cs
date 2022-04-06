@@ -16,8 +16,8 @@ namespace Beamable.Tests.Runtime.PromiseTests
 	public class PromisePlayModeTests
 	{
 		private CoroutineService _coroutineService;
-		
-		
+
+
 		[SetUp]
 		public void SetUp()
 		{
