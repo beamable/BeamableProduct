@@ -276,7 +276,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void HandleServiceDeployed(IDescriptor descriptor)
 		{
 			EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
-			_publishManifestElements.Values.First(x => x.Model.Name == descriptor.Name).LoadingBar.UpdateProgress(1);
+			_servicesToPublish.First(x => x.Model.Name == descriptor.Name).LoadingBar.UpdateProgress(1);
 			HandleServiceDeployProgress(descriptor);
 		}
 
