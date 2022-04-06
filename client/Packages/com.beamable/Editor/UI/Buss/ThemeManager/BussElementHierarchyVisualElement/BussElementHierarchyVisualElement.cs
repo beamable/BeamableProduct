@@ -29,6 +29,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			StyleSheets.Clear();
 			RefreshTree();
+			OnBussStyleSheetChange();
 
 			if (selectedGameObject != null)
 			{
@@ -51,8 +52,8 @@ namespace Beamable.Editor.UI.Components
 
 		protected override void OnHierarchyChanged()
 		{
-			StyleSheets.Clear();
 			base.OnHierarchyChanged();
+			OnBussStyleSheetChange();
 		}
 
 		protected override void OnSelectionChanged()
