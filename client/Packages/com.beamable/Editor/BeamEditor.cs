@@ -20,6 +20,7 @@ using Beamable.Editor.Modules.EditorConfig;
 using Beamable.Editor.Realms;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
+using Beamable.Editor.UI;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
 using Beamable.Serialization;
@@ -303,6 +304,39 @@ namespace Beamable
 				});
 			}
 		}
+
+		/// <summary>
+		/// Utility function to delay an initialization call (from within any of Unity's callbacks) until we have initialized our default <see cref="BeamEditorContext"/>.
+		/// This must be used to wrap any logic dependent on <see cref="BeamEditorContext"/> or <see cref="BeamEditor"/> systems that is being executed from within a unity event function that initializes things.
+		/// These are: OnEnable, OnValidate, OnAfterDeserialize and others like it. Essentially, this guarantees our initialization has finished running, before the given action runs.
+		/// <para/>
+		/// This is especially used to handle first-import cases and several other edge-cases that happen when these unity event functions are called with our windows opened. In these cases, if we don't delay
+		/// our windows cases, the following issues have arisen in the past:
+		/// <list type="bullet">
+		/// <item><see cref="BeamEditorContext.Default"/> is null; which should be impossible, but happens (probably has to do with DomainReloads)</item>
+		/// <item>The window tries to make calls to a partially initialized <see cref="BeamEditorContext"/> and throws.</item>
+		/// </list>  
+		/// </summary>
+		/// <param name="onInitializationFinished">
+		/// The that must be scheduled to run from a Unity callback, but is dependent on our initialization being done.
+		/// </param>
+		/// <param name="forceDelay">
+		/// Whether or not we should force the call to be delayed. This is used to guarantee that the callback in <see cref="BeamEditorWindow{TWindow}.OnEnable"/> is
+		/// called only after the <see cref="BeamEditorWindow{TWindow}.InitializedConfig"/> was set during the <see cref="BeamEditorWindow{TWindow}.InitBeamEditorWindow"/> flow.
+		/// </param>
+		public static void DelayedInitializationCall(Action onInitializationFinished, bool forceDelay, DelayClause customDelay = null)
+		{
+			var hasCustomDelay = customDelay != null;
+			if (!IsInitialized || forceDelay || (hasCustomDelay && customDelay()))
+			{
+				EditorApplication.delayCall += () => DelayedInitializationCall(onInitializationFinished, false);
+				return;
+			}
+
+			onInitializationFinished?.Invoke();
+		}
+
+		public delegate bool DelayClause();
 	}
 
 	public class BeamEditorContext

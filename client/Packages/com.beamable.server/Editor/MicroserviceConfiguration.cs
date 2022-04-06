@@ -184,7 +184,7 @@ namespace Beamable.Server.Editor
 				_cachedContainerPrefix = CustomContainerPrefix;
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
 
-				BeamEditorWindow<MicroserviceWindow>.DelayedInitializationCall(SaveConfig, true);
+				BeamEditor.DelayedInitializationCall(SaveConfig, true);
 				void SaveConfig()
 				{
 					// using delayCall to avoid Unity warning about sending messages from OnValidate()

@@ -72,7 +72,7 @@ namespace Beamable.Editor.Assistant
 
 		private void OnFocus()
 		{
-			DelayedInitializationCall(RunFocus, true);
+			BeamEditor.DelayedInitializationCall(RunFocus, true);
 			void RunFocus()
 			{
 				if (_windowRoot != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);

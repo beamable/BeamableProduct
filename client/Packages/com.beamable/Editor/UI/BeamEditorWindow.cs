@@ -17,17 +17,15 @@ namespace Beamable.Editor.UI
 	/// <typeparam name="TWindow"></typeparam>
 	public abstract class BeamEditorWindow<TWindow> : EditorWindow, ISerializationCallbackReceiver where TWindow : BeamEditorWindow<TWindow>, new()
 	{
-		public delegate bool DelayClause();
-
 		/// <summary>
 		/// The default <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that is used when initializing this window via <see cref="GetFullyInitializedWindow"/>.  
 		/// </summary>
 		protected static BeamEditorWindowInitConfig WindowDefaultConfig;
 
 		/// <summary>
-		/// Static function to be set on any sub-type's initialization. It's used to add constraints to the generic-constrained version of this type's <see cref="DelayedInitializationCall"/>.
+		/// Static function to be set on any sub-type's initialization. It's used to add constraints to the generic-constrained version of this type's <see cref="BeamEditor.DelayedInitializationCall"/>.
 		/// </summary>
-		protected static DelayClause CustomDelayClause;
+		protected static BeamEditor.DelayClause CustomDelayClause;
 
 		/// <summary>
 		/// Whether or not the current window is instantiated. TODO: once we no longer support Unity 2018, change this into HasOpenInstance<TWindow>.
@@ -101,40 +99,10 @@ namespace Beamable.Editor.UI
 			_instance.Show(true);
 		}
 
-		/// <summary>
-		/// Utility function to delay an initialization call (from within any of Unity's callbacks) until we have initialized our default <see cref="BeamEditorContext"/>.
-		/// This must be used to wrap any logic dependent on <see cref="BeamEditorContext"/> or <see cref="BeamEditor"/> systems that is being executed from within a unity event function that initializes things.
-		/// These are: OnEnable, OnValidate, OnAfterDeserialize and others like it. Essentially, this guarantees our initialization has finished running, before the given action runs.
-		/// <para/>
-		/// This is especially used to handle first-import cases and several other edge-cases that happen when these unity event functions are called with our windows opened. In these cases, if we don't delay
-		/// our windows cases, the following issues have arisen in the past:
-		/// <list type="bullet">
-		/// <item><see cref="BeamEditorContext.Default"/> is null; which should be impossible, but happens (probably has to do with DomainReloads)</item>
-		/// <item>The window tries to make calls to a partially initialized <see cref="BeamEditorContext"/> and throws.</item>
-		/// </list>  
-		/// </summary>
-		/// <param name="onInitializationFinished">
-		/// The that must be scheduled to run from a Unity callback, but is dependent on our initialization being done.
-		/// </param>
-		/// <param name="forceDelay">
-		/// Whether or not we should force the call to be delayed. This is used to guarantee that the callback in <see cref="OnEnable"/> is
-		/// called only after the <see cref="InitializedConfig"/> was set during the <see cref="InitBeamEditorWindow"/> flow.
-		/// </param>
-		public static void DelayedInitializationCall(Action onInitializationFinished, bool forceDelay, DelayClause customDelay = null)
-		{
-			var hasCustomDelay = customDelay != null;
-			if (!BeamEditor.IsInitialized || forceDelay || (hasCustomDelay && customDelay()))
-			{
-				EditorApplication.delayCall += () => DelayedInitializationCall(onInitializationFinished, false);
-				return;
-			}
-
-			onInitializationFinished?.Invoke();
-		}
-		
 		public virtual void OnEnable()
 		{
-			DelayedInitializationCall(() =>
+			Debug.Log($"On Enable => {GetType().Name}");
+			BeamEditor.DelayedInitializationCall(() =>
 			{
 				BuildWithDefaultContext();
 				
@@ -164,7 +132,7 @@ namespace Beamable.Editor.UI
 		
 		/// <summary>
 		/// Implement this instead of <see cref="OnEnable"/>. The <see cref="OnEnable"/> implementation for <see cref="BeamEditorWindow{T}"/> contains the guard described in
-		/// <see cref="DelayedInitializationCall"/>.
+		/// <see cref="BeamEditor.DelayedInitializationCall"/>.
 		///
 		/// The default implementation here guarantees this window has an <see cref="ActiveContext"/> to fill out it's data. 
 		/// </summary>
