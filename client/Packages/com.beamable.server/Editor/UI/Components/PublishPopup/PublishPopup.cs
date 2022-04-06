@@ -67,6 +67,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private LogVisualElement _logger;
 		private Dictionary<IBeamableService, Action> _logForwardActions = new Dictionary<IBeamableService, Action>();
 
+		private List<PublishManifestEntryVisualElement> _servicesToPublish = new List<PublishManifestEntryVisualElement>();
+		
 		public PublishPopup() : base(nameof(PublishPopup)) { }
 
 		public void PrepareParent()
@@ -267,12 +269,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
 				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
+				_servicesToPublish.Add(kvp.Value);
 			}
 		}
 
 		public void HandleServiceDeployed(IDescriptor descriptor)
 		{
 			EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
+			_servicesToPublish.First(x => x.Model.Name == descriptor.Name).LoadingBar.UpdateProgress(1);
 			HandleServiceDeployProgress(descriptor);
 		}
 
@@ -305,8 +309,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
-			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly && !(element.Model is StorageEntryModel))
-										   .Average(x => x.LoadingBar.Progress);
+			return _servicesToPublish.Average(x => x.LoadingBar.Progress);
 		}
 	}
 }

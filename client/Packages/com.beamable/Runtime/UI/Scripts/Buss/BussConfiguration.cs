@@ -40,7 +40,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			OptionalInstance.DoIfExists(callback);
 		}
 
-		[SerializeField] private BussStyleSheet globalStyleSheet = null;
+		[SerializeField] private BussStyleSheet _globalStyleSheet = null;
+		public BussStyleSheet GlobalStyleSheet => _globalStyleSheet;
 
 		private List<BussElement> _rootBussElements = new List<BussElement>();
 
@@ -86,7 +87,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			// this should happen only in editor
 			if (styleSheet == null) return;
-			if (styleSheet == globalStyleSheet)
+			if (styleSheet == _globalStyleSheet)
 			{
 				foreach (var bussElement in _rootBussElements)
 				{
@@ -120,17 +121,17 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
 		private void OnDestroy()
 		{
-			if (globalStyleSheet != null)
+			if (_globalStyleSheet != null)
 			{
-				globalStyleSheet.Change -= OnGlobalStyleChanged;
+				_globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
 		private void OnDisable()
 		{
-			if (globalStyleSheet != null)
+			if (_globalStyleSheet != null)
 			{
-				globalStyleSheet.Change -= OnGlobalStyleChanged;
+				_globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
@@ -152,9 +153,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			element.Style.Clear();
 			element.PseudoStyles.Clear();
 
-			if (globalStyleSheet != null)
+			if (_globalStyleSheet != null)
 			{
-				ApplyStyleSheet(element, globalStyleSheet);
+				ApplyStyleSheet(element, _globalStyleSheet);
 			}
 
 			foreach (var styleSheet in element.AllStyleSheets)

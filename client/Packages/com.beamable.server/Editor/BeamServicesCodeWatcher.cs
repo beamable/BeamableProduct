@@ -390,22 +390,40 @@ namespace Beamable.Server.Editor
 				Directory.CreateDirectory(clientPath);
 			}
 
-
 			var check = new CheckImageReturnableCommand(generatorDesc);
+
 			check.Start(null).Then(isRunning =>
 			{
-				if (isRunning && !force) return;
-				// definately stop the image, even if there was doubt it was running. Because if we do a "build", any existing image will ABSOLUTELY be ruined by the overcopy.
-				new StopImageReturnableCommand(generatorDesc).Start(null).Then(__ =>
+				if (isRunning && !force)
 				{
-					var buildCommand = new BuildImageCommand(generatorDesc, false, true);
-					buildCommand.Start(null).Then(_ =>
+					var codeGenCheck = new CheckImageCodeGenErrorCommand(generatorDesc);
+
+					codeGenCheck.Start(null).Then(hasCodeError =>
 					{
-						var clientCommand = new RunClientGenerationCommand(generatorDesc);
-						clientCommand.Start();
-						// TODO: add some sort of "cleanup" operation
-						// TODO: consider add info hint when the generator image is running
+						if (hasCodeError)
+						{
+							RebuildAndRegenerate(generatorDesc);
+						}
 					});
+				}
+				else
+					RebuildAndRegenerate(generatorDesc);
+
+			});
+		}
+
+		private static void RebuildAndRegenerate(MicroserviceDescriptor generatorDesc)
+		{
+			// definately stop the image, even if there was doubt it was running. Because if we do a "build", any existing image will ABSOLUTELY be ruined by the overcopy.
+			new StopImageReturnableCommand(generatorDesc).Start(null).Then(__ =>
+			{
+				var buildCommand = new BuildImageCommand(generatorDesc, false, true);
+				buildCommand.Start(null).Then(_ =>
+				{
+					var clientCommand = new RunClientGenerationCommand(generatorDesc);
+					clientCommand.Start();
+					// TODO: add some sort of "cleanup" operation
+					// TODO: consider add info hint when the generator image is running
 				});
 			});
 		}

@@ -57,12 +57,7 @@ namespace Beamable.Editor.Models.Schedules
 				toMinute = int.Parse(_periodToHourComponent.Minute);
 			}
 
-			if (!_allDayComponent.Value)
-			{
-				ScheduleParser.PrepareListingDailyModeData(newSchedule, fromHour, toHour, fromMinute,
-					toMinute);
-			}
-
+			ScheduleParser.PrepareListingDailyModeData(newSchedule, fromHour, toHour, fromMinute, toMinute);
 			return newSchedule;
 		}
 	}

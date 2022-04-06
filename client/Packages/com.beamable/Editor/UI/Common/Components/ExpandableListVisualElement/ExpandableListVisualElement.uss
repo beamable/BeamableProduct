@@ -3,20 +3,17 @@
 }
 
 #mainContainer {
-    min-width: 100px;
     min-height: 30px;
     flex-direction: row;
-    justify-content: space-around;
 }
 
 #valueContainer {
-    flex-grow: 1;
-    min-width: 100px;
+    flex: 1;
     flex-direction: row;
 }
 
 #value {
-    flex-grow: 1;
+    flex: 1;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
 }
