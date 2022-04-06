@@ -158,6 +158,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void Traverse(GameObject gameObject, int currentLevel)
 		{
+			if (!gameObject) return; // if the gameobject has been destroyed, we cannot traverse it.
+
 			T foundComponent = gameObject.GetComponent<T>();
 
 			if (foundComponent != null)
