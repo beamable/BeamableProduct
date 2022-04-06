@@ -389,7 +389,7 @@ namespace Beamable.Server.Editor
 			{
 				Directory.CreateDirectory(clientPath);
 			}
-			
+
 			var check = new CheckImageReturnableCommand(generatorDesc);
 
 			check.Start(null).Then(isRunning =>
