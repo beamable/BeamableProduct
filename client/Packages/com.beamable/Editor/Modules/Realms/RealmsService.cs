@@ -130,7 +130,11 @@ namespace Beamable.Editor.Realms
 
 		public Promise<List<RealmView>> GetRealms(RealmView game = null)
 		{
-			var pid = game?.Pid ?? _requester.Pid;
+			var pid = game?.Pid ?? _requester.Pid ?? _requester.AccessToken?.Pid;
+			return GetRealms(pid);
+		} 
+		public Promise<List<RealmView>> GetRealms(string pid)
+		{
 			if (string.IsNullOrEmpty(pid))
 			{
 				return Promise<List<RealmView>>.Successful(new List<RealmView>());
@@ -152,6 +156,7 @@ namespace Beamable.Editor.Realms
 		}
 	}
 
+	[Serializable]
 	public class CustomerView
 	{
 		public string Cid;
@@ -160,6 +165,7 @@ namespace Beamable.Editor.Realms
 		public List<RealmView> Projects;
 	}
 
+	[Serializable]
 	public class RealmView : ISearchableElement
 	{
 		private const string PRODUCTION_DROPDOWN_CLASS_NAME = "production";

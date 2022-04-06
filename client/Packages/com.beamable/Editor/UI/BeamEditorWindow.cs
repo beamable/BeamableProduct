@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI
 	/// <typeparam name="TWindow"></typeparam>
 	public abstract class BeamEditorWindow<TWindow> : EditorWindow, ISerializationCallbackReceiver where TWindow : BeamEditorWindow<TWindow>, new()
 	{
-		protected delegate bool DelayClause();
+		public delegate bool DelayClause();
 
 		/// <summary>
 		/// The default <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that is used when initializing this window via <see cref="GetFullyInitializedWindow"/>.  
@@ -120,10 +120,10 @@ namespace Beamable.Editor.UI
 		/// Whether or not we should force the call to be delayed. This is used to guarantee that the callback in <see cref="OnEnable"/> is
 		/// called only after the <see cref="InitializedConfig"/> was set during the <see cref="InitBeamEditorWindow"/> flow.
 		/// </param>
-		public static void DelayedInitializationCall(Action onInitializationFinished, bool forceDelay)
+		public static void DelayedInitializationCall(Action onInitializationFinished, bool forceDelay, DelayClause customDelay = null)
 		{
-			var hasCustomDelay = CustomDelayClause != null;
-			if (!BeamEditor.IsInitialized || forceDelay || (hasCustomDelay && CustomDelayClause()))
+			var hasCustomDelay = customDelay != null;
+			if (!BeamEditor.IsInitialized || forceDelay || (hasCustomDelay && customDelay()))
 			{
 				EditorApplication.delayCall += () => DelayedInitializationCall(onInitializationFinished, false);
 				return;
@@ -149,7 +149,7 @@ namespace Beamable.Editor.UI
 				// So the promise here won't be null and we can complete it.
 				else
 					FullyInitializedWindowPromise.CompleteSuccess();
-			}, true);
+			}, true, CustomDelayClause);
 		}
 
 		public virtual void OnDestroy() => IsInstantiated = false;

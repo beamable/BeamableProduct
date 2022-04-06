@@ -22,6 +22,8 @@ using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
+using Beamable.Serialization;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Sessions;
 using Beamable.Shop;
 using Beamable.Sound;
@@ -33,6 +35,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
@@ -408,16 +411,40 @@ namespace Beamable
 			requester.Pid = pid;
 			requester.Host = platform;
 
-			// Attempts to login with recovery.
-			// TODO: use newly added recover with extension with these timings new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
-			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
-			InitializePromise = accessTokenStorage.LoadTokenForCustomer(cid).FlatMap(token =>
+			async Promise Initialize()
 			{
-				if (token != null) return Login(token);
+				// Attempts to login with recovery.
+				// TODO: use newly added recover with extension with these timings new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
+				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
+				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
 
-				requester.Token = null; // show state as logged out.
-				return Promise.Success;
-			}).ToPromise();
+				if (accessToken == null)
+				{
+					requester.Token = null;
+					await Promise.Success;
+				}
+				else
+				{
+					LoadLastAuthenticatedUserDataForToken(accessToken, pid, out CurrentUser, out CurrentCustomer, out CurrentRealm);
+					
+
+					if (CurrentUser == null || CurrentCustomer == null || CurrentRealm == null || accessToken.IsExpired)
+						await Login(accessToken);	
+					else
+					{
+						// Set the token manually as we already have all the data we need be considered initialized (Serialized CurrentUser/CurrentCustomer/CurrentRealm data. 
+						requester.Token = accessToken;
+						
+						// Disable this warning as we do want to run this in the background silently.
+#pragma warning disable CS4014
+						Login(accessToken, pid);
+#pragma warning restore CS4014
+						await Promise.Success;
+					}
+				}
+			}
+			
+			InitializePromise = Initialize();
 		}
 
 		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
@@ -445,12 +472,14 @@ namespace Beamable
 			
 		}
 
-		public async Promise Login(AccessToken token)
+		public async Promise Login(AccessToken token, string pid = null)
 		{
 			var realmService = ServiceScope.GetService<RealmsService>();
-			await ApplyToken(token);
-			RealmView realm;
+			var requester = ServiceScope.GetService<PlatformRequester>();
+			requester.Pid = pid;
 			
+			await ApplyToken(token);
+			RealmView realm = null;
 			try
 			{
 				realm = await realmService.GetRealm();
@@ -462,13 +491,98 @@ namespace Beamable
 					// there is no realm.
 					return;
 				}
+			}
 
-				throw ex;
+			if (realm == null)
+			{
+				var games = await realmService.GetGames();
+				
+				if (pid == null)
+				{
+					var realms = await realmService.GetRealms(games.First());
+					realm = realms.First();
+				}
+				else
+					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
 			}
 
 			await (realm == null ? Promise.Success : SwitchRealm(realm));
+			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
+
+			await requester.Token.SaveAsCustomerScoped();
+			await SaveLastAuthenticatedUserDataForToken(token, CurrentUser, CurrentCustomer, CurrentRealm);
 		}
 
+		private void LoadLastAuthenticatedUserDataForToken(AccessToken token, string pid, out EditorUser authUserData, out CustomerView authCustomerData, out RealmView authRealmView)
+		{
+			var cid = token.Cid;
+
+			var userSerializedData = PlayerPrefs.GetString($"{PlayerCode}{cid}.{pid}.auth_user_data", null);
+			var customerSerializedData = PlayerPrefs.GetString($"{PlayerCode}{cid}.{pid}.auth_customer_data", null);
+			var realmSerializedData = PlayerPrefs.GetString($"{PlayerCode}{cid}.{pid}.auth_realm_data", null);
+
+			try
+			{
+				authUserData = DeserializeFromString<EditorUser>(userSerializedData);
+				authCustomerData = DeserializeFromString<CustomerView>(customerSerializedData);
+				authRealmView = DeserializeFromString<RealmView>(realmSerializedData);
+			}
+			catch
+			{
+				authUserData = null;
+				authCustomerData = null;
+				authRealmView = null;
+			}
+		}
+
+		private static TData DeserializeFromString<TData>(string settings)
+		{
+			byte[] b = Convert.FromBase64String(settings);
+			using (var stream = new MemoryStream(b))
+			{
+				var formatter = new BinaryFormatter();
+				stream.Seek(0, SeekOrigin.Begin);
+				return (TData)formatter.Deserialize(stream);
+			}
+		}
+
+		private static string SerializeToString<TData>(TData settings)
+		{
+			using (var stream = new MemoryStream())
+			{
+				var formatter = new BinaryFormatter();
+				formatter.Serialize(stream, settings);
+				stream.Flush();
+				stream.Position = 0;
+				return Convert.ToBase64String(stream.ToArray());
+			}
+		}
+		
+
+		private Promise<Unit> SaveLastAuthenticatedUserDataForToken(AccessToken token, EditorUser authUserData, CustomerView authCustomerData, RealmView authRealmView)
+		{
+			var cid = token.Cid;
+			var pid = authRealmView.Pid;
+
+			var userSerializedData = SerializeToString(authUserData);// JsonUtility.ToJson(authUserData);
+			var customerSerializedData = SerializeToString(authCustomerData);// JsonUtility.ToJson(authCustomerData);
+			var realmSerializedData = SerializeToString(authRealmView); //JsonUtility.ToJson(authRealmView); 
+			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_user_data", userSerializedData);
+			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_customer_data", customerSerializedData);
+			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_realm_data", realmSerializedData);
+
+			return Promise.Success;
+		}
+
+		private void ClearLastAuthenticatedUserDataForToken(AccessToken token, string pid)
+		{
+			var cid = token.Cid;
+
+			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_user_data");
+			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_customer_data");
+			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_realm_data");
+		}
+		
 		private async Promise ApplyToken(AccessToken token)
 		{
 			await token.SaveAsCustomerScoped();
@@ -521,6 +635,7 @@ namespace Beamable
 		public void Logout()
 		{
 			var requester = ServiceScope.GetService<PlatformRequester>();
+			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm.Pid);
 			requester.DeleteToken();
 			CurrentUser = null;
 			OnUserChange?.Invoke(null);
@@ -763,6 +878,10 @@ namespace Beamable
 			CurrentRealm = realm;
 			ProductionRealm = game;
 			OnRealmChange?.Invoke(realm);
+			
+			// Ensure we save the current cached data for domain reloads. 
+			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
+			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid:CurrentCustomer.Cid);
 		}
 
 		#endregion

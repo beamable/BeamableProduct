@@ -57,8 +57,8 @@ namespace Beamable.Editor.Content
 		{
 			if (ActiveContext == null) return;
 			
-			_actionBarVisualElement.RefreshPublishDropdownVisibility();
-			_explorerElement.RefreshManifestButton();
+			_actionBarVisualElement?.RefreshPublishDropdownVisibility();
+			_explorerElement?.RefreshManifestButton();
 		}
 		
 		
