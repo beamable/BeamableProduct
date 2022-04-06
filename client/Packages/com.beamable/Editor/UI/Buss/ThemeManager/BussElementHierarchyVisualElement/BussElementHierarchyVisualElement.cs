@@ -78,6 +78,15 @@ namespace Beamable.Editor.UI.Components
 		private void RefreshStyleSheets()
 		{
 			StyleSheets.Clear();
+
+			BussConfiguration.OptionalInstance.DoIfExists(config =>
+			{
+				if (config.GlobalStyleSheet != null)
+				{
+					StyleSheets.Add(config.GlobalStyleSheet);
+				}
+			});
+
 			foreach (BussElement component in Components)
 			{
 				var styleSheet = component.StyleSheet;
