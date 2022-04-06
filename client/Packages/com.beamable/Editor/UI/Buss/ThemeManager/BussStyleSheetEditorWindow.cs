@@ -22,8 +22,8 @@ namespace Beamable.Editor.UI.Buss
 		private AddStyleButton _addStyleButton;
 		private VisualElement _parent;
 		private ScrollView _scroll;
-		[SerializeField]
-		private BussStyleSheet _styleSheet;
+
+		[SerializeField] private BussStyleSheet _styleSheet;
 
 		public static void Open(BussStyleSheet styleSheet)
 		{
@@ -40,15 +40,15 @@ namespace Beamable.Editor.UI.Buss
 			_parent = new VisualElement();
 			_parent.style.SetLeft(0f);
 			_parent.style.SetRight(0f);
-			
+
 			AddSelectorButton(
 				_parent, _styleList);
-			
+
 			_parent.contentContainer.Add(_styleList);
-			
+
 			_scroll = new ScrollView();
 			_scroll.style.SetFlexGrow(0f);
-			
+
 			this.GetRootVisualContainer().Add(_scroll);
 #if UNITY_2019_1_OR_NEWER
 			_scroll.contentContainer.Add(_parent);
@@ -66,10 +66,10 @@ namespace Beamable.Editor.UI.Buss
 		{
 			_styleList.Destroy();
 			_styleList = null;
-			
+
 			_addStyleButton.Destroy();
 			_addStyleButton = null;
-			
+
 			_scroll.RemoveFromHierarchy();
 			_scroll = null;
 		}
