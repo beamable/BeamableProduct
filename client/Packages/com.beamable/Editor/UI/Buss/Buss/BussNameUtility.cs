@@ -30,7 +30,7 @@ namespace Beamable.Editor.UI.Buss
 			if (string.IsNullOrWhiteSpace(input)) return "";
 			return "--" + CleanString(input);
 		}
-		
+
 		public static List<string> AsClassesList(List<string> classesList)
 		{
 			List<string> finalList = new List<string>();
