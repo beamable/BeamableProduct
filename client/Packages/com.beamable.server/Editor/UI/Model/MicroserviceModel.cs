@@ -165,7 +165,7 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction("Build", pos => Build());
 
 			evt.menu.AppendSeparator();
-			
+
 			var isFirst = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) == 0;
 			var isLast = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroservicesDataModel.Instance.Services.Count - 1;
 
@@ -189,15 +189,15 @@ namespace Beamable.Editor.UI.Model
 				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Services.Count - 1, ServiceType.MicroService);
 				OnSortChanged?.Invoke();
 			}, isLast);
-			
+
 			evt.menu.AppendSeparator();
-			
-			evt.menu.BeamableAppendAction(IncludeDebugTools 
-				                              ? BUILD_DISABLE_DEBUG
-				                              : BUILD_ENABLE_DEBUG, pos =>
-			                              {
-				                              IncludeDebugTools = !IncludeDebugTools;
-			                              });
+
+			evt.menu.BeamableAppendAction(IncludeDebugTools
+											  ? BUILD_DISABLE_DEBUG
+											  : BUILD_ENABLE_DEBUG, pos =>
+										  {
+											  IncludeDebugTools = !IncludeDebugTools;
+										  });
 
 			if (!AreLogsAttached)
 			{
