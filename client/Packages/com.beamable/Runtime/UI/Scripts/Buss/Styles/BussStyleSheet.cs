@@ -9,7 +9,8 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style",
+	                 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
@@ -108,9 +109,8 @@ namespace Beamable.UI.Buss
 	{
 #pragma warning disable CS0649
 		// TODO: can we remove that FormerlySerializedAs attribute before release??
-		[FormerlySerializedAs("_name")]
-		[SerializeField]
-		private string _selector;
+		[FormerlySerializedAs("_name")] 
+		[SerializeField] private string _selector;
 #pragma warning restore CS0649
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
@@ -123,7 +123,7 @@ namespace Beamable.UI.Buss
 
 		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
 		{
-			return new BussStyleRule { _selector = selector, _properties = properties };
+			return new BussStyleRule {_selector = selector, _properties = properties};
 		}
 
 		public bool RemoveProperty(IBussProperty bussProperty)
@@ -161,7 +161,7 @@ namespace Beamable.UI.Buss
 		{
 			var propertyProvider = new SerializableValueObject();
 			propertyProvider.Set(property);
-			return new BussPropertyProvider() { key = key, property = propertyProvider };
+			return new BussPropertyProvider() {key = key, property = propertyProvider};
 		}
 
 		public IBussProperty GetProperty()

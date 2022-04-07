@@ -118,16 +118,6 @@ namespace Beamable.UI.Buss
 					continue;
 				}
 
-				if (bussElement.StyleSheet == null)
-				{
-					continue;
-				}
-
-				if (!bussElement.StyleSheet.IsReadOnly)
-				{
-					continue;
-				}
-
 				if (!Directory.Exists(Constants.Features.Buss.STYLE_SHEETS_PATH))
 				{
 					Directory.CreateDirectory(Constants.Features.Buss.STYLE_SHEETS_PATH);
@@ -135,13 +125,26 @@ namespace Beamable.UI.Buss
 
 				if (BussConfiguration.OptionalInstance.Value.GlobalStyleSheet == null)
 				{
-					BussConfiguration.OptionalInstance.Value.SetGlobalStyleSheet(CreateGlobalStyleSheet());
+					BussStyleSheet globalStyleSheet = CreateGlobalStyleSheet();
+
+					if (globalStyleSheet == null)
+					{
+						BeamableLogger.LogError("Problem while trying to create global style sheet. Terminating...");
+						return;
+					}
+					
+					BussConfiguration.OptionalInstance.Value.SetGlobalStyleSheet(globalStyleSheet);
 				}
 
-				CopyStyles(bussElement.StyleSheet,
-				                                 BussConfiguration.OptionalInstance.Value.GlobalStyleSheet);
-
-				bussElement.StyleSheet = null;
+				BussStyleSheet defaultGlobalStyleSheet = AssetDatabase.LoadAssetAtPath<BussStyleSheet>(
+					Constants.Features.Buss.DEFAULT_GLOBAL_STYLE_SHEET_PATH);
+				
+				CopySingleStyle(defaultGlobalStyleSheet, BussConfiguration.OptionalInstance.Value.GlobalStyleSheet, bussElement.Id);
+			
+				foreach (string classSelector in bussElement.Classes)
+				{
+					CopySingleStyle(defaultGlobalStyleSheet, BussConfiguration.OptionalInstance.Value.GlobalStyleSheet, classSelector);
+				}
 			}
 		}
 
@@ -149,26 +152,51 @@ namespace Beamable.UI.Buss
 		{
 			foreach (BussStyleRule bussStyleRule in sourceStyleSheet.Styles)
 			{
-				BussStyleRule existingStyleRule =
-					targetStyleSheet.Styles.Find(style => style.SelectorString == bussStyleRule.SelectorString);
-
-				if (existingStyleRule != null)
-				{
-					BeamableLogger.Log(
-						$"Style with selector {bussStyleRule.SelectorString} already exists in target style sheet. Bypassing...");
-					continue;
-				}
-
-				BussStyleRule rule = BussStyleRule.Create(bussStyleRule.SelectorString, bussStyleRule.Properties);
-				targetStyleSheet.Styles.Add(rule);
+				CopySingleStyle(sourceStyleSheet, targetStyleSheet, bussStyleRule.SelectorString);
 			}
+		}
+
+		public static void CopySingleStyle(BussStyleSheet sourceStyleSheet,
+		                                   BussStyleSheet targetStyleSheet,
+		                                   string styleId)
+		{
+			BussStyleRule sourceStyle = sourceStyleSheet.Styles.Find(style => style.SelectorString == styleId);
+
+			if (sourceStyle == null)
+			{
+				BeamableLogger.Log($"Source style sheet doesn't contain style with id {styleId}");
+				return;
+			}
+
+			BussStyleRule targetStyle = targetStyleSheet.Styles.Find(style => style.SelectorString == styleId);
+
+			if (targetStyle != null)
+			{
+				BeamableLogger.Log($"Target style sheet already contains style with id {styleId}. Skipping...");
+				return;
+			}
+
+			BussStyleRule rule = BussStyleRule.Create(sourceStyle.SelectorString, sourceStyle.Properties);
+			targetStyleSheet.Styles.Add(rule);
 		}
 
 		public static BussStyleSheet CreateGlobalStyleSheet()
 		{
-			string globalStyleSheetPath = $"{Constants.Features.Buss.BEAMABLE_GLOBAL_STYLE_SHEET_PATH}";
-			BussStyleSheet globalStyleSheet = ScriptableObject.CreateInstance<BussStyleSheet>();
-			AssetDatabase.CreateAsset(globalStyleSheet, globalStyleSheetPath);
+			BussStyleSheet globalStyleSheet;
+			
+			try
+			{
+				AssetDatabase.StartAssetEditing();
+				string globalStyleSheetPath = $"{Constants.Features.Buss.BEAMABLE_GLOBAL_STYLE_SHEET_PATH}";
+				globalStyleSheet = ScriptableObject.CreateInstance<BussStyleSheet>();
+				AssetDatabase.CreateAsset(globalStyleSheet, globalStyleSheetPath);
+			}
+			finally
+			{
+				AssetDatabase.StopAssetEditing();
+				AssetDatabase.SaveAssets();
+			}
+
 			return globalStyleSheet;
 		}
 #endif

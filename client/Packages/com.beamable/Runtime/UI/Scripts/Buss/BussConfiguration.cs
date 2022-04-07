@@ -54,29 +54,6 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 		}
 
-		public override void OnFreshCopy()
-		{
-			try
-			{
-				AssetDatabase.StartAssetEditing();
-				
-				BussStyleSheet globalStyleSheet = BussStyleSheetUtility.CreateGlobalStyleSheet();
-
-				BussStyleSheet defaultGlobalStyleSheet =
-					AssetDatabase.LoadAssetAtPath<BussStyleSheet>(
-						Constants.Features.Buss.DEFAULT_GLOBAL_STYLE_SHEET_PATH);
-
-				BussStyleSheetUtility.CopyStyles(defaultGlobalStyleSheet, globalStyleSheet);
-
-				_globalStyleSheet = globalStyleSheet;
-			}
-			finally
-			{
-				AssetDatabase.StopAssetEditing();
-				AssetDatabase.SaveAssets();
-			}
-		}
-
 		private static void OnHierarchyChanged()
 		{
 			List<BeamableModule> prefabs = FindObjectsOfType<BeamableModule>().ToList();

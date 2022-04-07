@@ -12,10 +12,10 @@
 				public const string GLOBAL_STYLE_SHEET_NAME = "BeamableGlobalStyleSheet";
 
 				public const string DEFAULT_GLOBAL_STYLE_SHEET_PATH =
-					Directories.BEAMABLE_PACKAGE_EDITOR_CONFIG + GLOBAL_STYLE_SHEET_NAME + ".asset";
+					Directories.BEAMABLE_PACKAGE_EDITOR_CONFIG + "/" + GLOBAL_STYLE_SHEET_NAME + ".asset";
 				
 				public const string STYLE_SHEETS_PATH = Directories.BEAMABLE_ASSETS + "/BussStyleSheets";
-				public const string BEAMABLE_GLOBAL_STYLE_SHEET_PATH = STYLE_SHEETS_PATH + GLOBAL_STYLE_SHEET_NAME + ".asset";
+				public const string BEAMABLE_GLOBAL_STYLE_SHEET_PATH = STYLE_SHEETS_PATH + "/" + GLOBAL_STYLE_SHEET_NAME + ".asset";
 			}
 		}
 	}
