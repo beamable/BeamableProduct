@@ -62,12 +62,41 @@ namespace Beamable.Editor
 				}
 				else
 				{
-					fieldInfo = parentType?.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+					fieldInfo = parentType.FindField(pathParts[i]);
 					parentType = fieldInfo?.FieldType;
 				}
 			}
 
 			return fieldInfo;
+		}
+
+		public static FieldInfo FindField(this Type type, string fieldName, Type baseTypeLimit = null)
+		{
+			if (baseTypeLimit == null)
+			{
+				baseTypeLimit = typeof(object);
+			}
+
+			while (type != null)
+			{
+				var field = type.GetField(
+					fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				if (field != null)
+				{
+					return field;
+				}
+
+				if (type != baseTypeLimit)
+				{
+					type = type.BaseType;
+				}
+				else
+				{
+					type = null;
+				}
+			}
+
+			return null;
 		}
 
 		public static Type GetParentType(this SerializedProperty property)
@@ -76,7 +105,7 @@ namespace Beamable.Editor
 			var pathParts = property.propertyPath.Split('.');
 			for (int i = 0; i < pathParts.Length - 1; i++)
 			{
-				var fieldInfo = parentType.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				var fieldInfo = parentType.FindField(pathParts[i]);
 				parentType = fieldInfo.FieldType;
 			}
 
@@ -97,7 +126,7 @@ namespace Beamable.Editor
 				}
 				else
 				{
-					var fieldInfo = parent?.GetType().GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+					var fieldInfo = parent?.GetType().FindField(pathParts[i]);
 					parent = fieldInfo?.GetValue(parent);
 				}
 			}
