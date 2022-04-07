@@ -234,6 +234,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
 		{
 			var children = new List<LoadingBarUpdater>();
+
+			foreach (var storage in Model.Storages)
+			{
+				if (!storage.IsSelected)
+					continue;
+
+				if (!storage.IsRunning)
+					storage.Start();
+			}
+				
 			foreach (var microservice in Model.Services)
 			{
 				if (!microservice.IsSelected)
