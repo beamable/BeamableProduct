@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
@@ -26,8 +27,7 @@ namespace Beamable.Editor.UI.Components
 		private int? _selectedClassListIndex;
 
 		public SelectedBussElementVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss")
-		{ }
+			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss") { }
 
 		public void Setup(BussElementHierarchyVisualElement navigationWindow)
 		{
@@ -68,14 +68,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void CreateButtons()
 		{
-			VisualElement buttonsContainer = new VisualElement { name = "buttonsContainer" };
+			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
 
-			VisualElement removeButton = new VisualElement { name = "removeButton" };
+			VisualElement removeButton = new VisualElement {name = "removeButton"};
 			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
 
-			VisualElement addButton = new VisualElement { name = "addButton" };
+			VisualElement addButton = new VisualElement {name = "addButton"};
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
@@ -159,7 +159,9 @@ namespace Beamable.Editor.UI.Components
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
 				itemHeight = 24,
-				itemsSource = _currentBussElement != null ? _currentBussElement.Classes.ToList() : new List<string>()
+				itemsSource = _currentBussElement != null
+					? _currentBussElement.Classes.ToList()
+					: new List<string>()
 			};
 			view.name = "classesList";
 
@@ -189,13 +191,22 @@ namespace Beamable.Editor.UI.Components
 
 		private void RefreshClassesList()
 		{
-			_classesList.itemsSource = _currentBussElement ? _currentBussElement.Classes.ToList() : new List<string>();
+			_classesList.itemsSource = _currentBussElement
+				? FormatClassesList(_currentBussElement.Classes.ToList())
+				: new List<string>();
 			_classesList.Refresh();
+		}
+
+		private List<string> FormatClassesList(List<string> classesList)
+		{
+			List<string> finalList = new List<string>();
+			finalList.AddRange(classesList.Select(BussNameUtility.AsClassSelector));
+			return finalList;
 		}
 
 		private VisualElement CreateListViewElement()
 		{
-			VisualElement classElement = new VisualElement { name = "classElement" };
+			VisualElement classElement = new VisualElement {name = "classElement"};
 			classElement.Add(new TextField());
 			return classElement;
 		}
@@ -203,7 +214,7 @@ namespace Beamable.Editor.UI.Components
 		private void BindListViewElement(VisualElement element, int index)
 		{
 			TextField textField = (TextField)element.Children().ToList()[0];
-			textField.value = _classesList.itemsSource[index] as string;
+			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
 
 #if UNITY_2018
 			textField.OnValueChanged(ClassValueChanged);
@@ -213,7 +224,10 @@ namespace Beamable.Editor.UI.Components
 
 			void ClassValueChanged(ChangeEvent<string> evt)
 			{
-				_classesList.itemsSource[index] = evt.newValue;
+				string newValue = BussNameUtility.AsClassSelector(evt.newValue);
+				_classesList.itemsSource[index] = newValue;
+				textField.SetValueWithoutNotify(newValue);
+				textField.SelectRange(newValue.Length, newValue.Length);
 				_currentBussElement.UpdateClasses((List<string>)_classesList.itemsSource);
 				_navigationWindow.RefreshSelectedLabel();
 			}
@@ -226,7 +240,9 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
-			_currentBussElement.Id = _idField.Value;
+			string value = BussNameUtility.AsIdSelector(_idField.Value);
+			_idField.SetWithoutNotify(value);
+			_currentBussElement.Id = value;
 			_navigationWindow.RefreshSelectedLabel();
 		}
 

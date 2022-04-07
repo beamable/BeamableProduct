@@ -100,5 +100,11 @@ namespace Beamable.Editor.UI.Components
 		{
 			_labelComponent?.style.SetWidth(width);
 		}
+
+		public void SetWithoutNotify(string value)
+		{
+			_value = value;
+			_textFieldComponent?.SetValueWithoutNotify(value);
+		}
 	}
 }
