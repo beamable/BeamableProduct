@@ -50,7 +50,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(header);
 
 			_idField = new LabeledTextField();
-			_idField.Setup("Id", String.Empty, OnValueChanged);
+			_idField.Setup("Id", String.Empty, OnValueChanged, true);
 			_idField.Refresh();
 			Root.Add(_idField);
 
@@ -192,16 +192,9 @@ namespace Beamable.Editor.UI.Components
 		private void RefreshClassesList()
 		{
 			_classesList.itemsSource = _currentBussElement
-				? FormatClassesList(_currentBussElement.Classes.ToList())
+				? BussNameUtility.AsClassesList(_currentBussElement.Classes.ToList())
 				: new List<string>();
 			_classesList.Refresh();
-		}
-
-		private List<string> FormatClassesList(List<string> classesList)
-		{
-			List<string> finalList = new List<string>();
-			finalList.AddRange(classesList.Select(BussNameUtility.AsClassSelector));
-			return finalList;
 		}
 
 		private VisualElement CreateListViewElement()
@@ -215,6 +208,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			TextField textField = (TextField)element.Children().ToList()[0];
 			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
+			textField.isDelayed = true;
 
 #if UNITY_2018
 			textField.OnValueChanged(ClassValueChanged);
@@ -227,8 +221,7 @@ namespace Beamable.Editor.UI.Components
 				string newValue = BussNameUtility.AsClassSelector(evt.newValue);
 				_classesList.itemsSource[index] = newValue;
 				textField.SetValueWithoutNotify(newValue);
-				textField.SelectRange(newValue.Length, newValue.Length);
-				_currentBussElement.UpdateClasses((List<string>)_classesList.itemsSource);
+				_currentBussElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
 				_navigationWindow.RefreshSelectedLabel();
 			}
 		}
@@ -242,7 +235,7 @@ namespace Beamable.Editor.UI.Components
 
 			string value = BussNameUtility.AsIdSelector(_idField.Value);
 			_idField.SetWithoutNotify(value);
-			_currentBussElement.Id = value;
+			_currentBussElement.Id = BussNameUtility.CleanString(value);
 			_navigationWindow.RefreshSelectedLabel();
 		}
 
