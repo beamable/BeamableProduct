@@ -29,3 +29,7 @@
 LabeledTextField #label {
     color: #ffffff;
 }
+
+LabeledObjectField #label {
+    color: #ffffff;
+}
