@@ -21,6 +21,8 @@ namespace Beamable.Editor.UI.Components
 {
 	public class SelectedBussElementVisualElement : BeamableBasicVisualElement
 	{
+		private const float BASE_COMPONENT_HEIGHT = 179.0f;
+		
 		private LabeledTextField _idField;
 		private LabeledObjectField _currentStyleSheet;
 		private ListView _classesList;
@@ -158,7 +160,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_classesList.style.SetHeight(0.0f);
 
-			float height = 170.0f;
+			float height = BASE_COMPONENT_HEIGHT;
 
 			if (_currentBussElement != null)
 			{
