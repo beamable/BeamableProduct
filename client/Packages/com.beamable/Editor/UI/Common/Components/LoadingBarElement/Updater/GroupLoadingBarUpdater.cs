@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				if (child.LoadingBar != null)
 					child.LoadingBar.OnUpdated += HandleUpdates;
-				
+
 				child.OnKilledEvent += HandleUpdates;
 			}
 		}
@@ -108,7 +108,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				if (child.LoadingBar != null)
 					child.LoadingBar.OnUpdated -= HandleUpdates;
-				
+
 				child.OnKilledEvent -= HandleUpdates;
 			}
 		}
