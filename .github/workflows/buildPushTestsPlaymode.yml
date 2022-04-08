@@ -1,0 +1,126 @@
+name: Push Build Tests Playmode
+
+on:
+  push:
+    branches:
+      - 'feature/beam-1819'
+      #- 'main'
+      #- 'staging'
+      #- 'production'
+    #paths:
+      #- 'client/**'
+      #- 'microservice/**'
+
+jobs:
+  start-runner:
+    name: Start self-hosted EC2 runner
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: machulav/ec2-github-runner@v2.3.2
+        with:
+          mode: start
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          ec2-image-id: ami-008ff34fc89dcbac1
+          ec2-instance-type: m5a.large
+          subnet-id: subnet-0c788721cbfee4398
+          security-group-id: sg-05d57d25289cd8aa0
+          aws-resource-tags: > # optional, requires additional permissions
+            [
+              {"Key": "Name", "Value": "ec2-github-runner"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"}
+            ]
+
+  testPlayMode:
+    timeout-minutes: 30
+    name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
+    needs: start-runner
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    concurrency:
+      group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        projectPath:
+          - client
+        testMode:
+          - playmode
+        unityVersion:
+          - 2018.4.36f1
+          - 2019.4.30f1
+          - 2020.3.19f1
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Cache Unity Folders
+        uses: actions/cache@v2
+        with:
+          path: ${{ matrix.projectPath }}/Library
+          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+          restore-keys: |
+            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+      - name: Run script file
+        run: |
+          chmod +x ./build/clean_iap.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
+        shell: bash
+      - uses: game-ci/unity-test-runner@v2
+        id: tests
+        timeout-minutes: 20
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          customParameters: -warnaserror+
+          projectPath: ${{ matrix.projectPath }}
+          testMode: ${{ matrix.testMode }}
+          unityVersion: ${{ matrix.unityVersion }}
+          artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
+          path: ${{ steps.tests.outputs.artifactsPath }}
+          retention-days: 3
+          
+  stop-runner:
+    name: Stop self-hosted EC2 runner
+    needs:
+      - start-runner # required to get output from the start-runner job
+      - testPlayMode
+    runs-on: ubuntu-latest
+    if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@v2.3.2
+        with:
+          mode: stop
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
+          
+  
