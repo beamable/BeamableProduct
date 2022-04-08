@@ -88,16 +88,16 @@ namespace Beamable.Editor.Content.Components
 			_listView.AddManipulator(manipulator);
 
 			_listView.Refresh();
-			
+
 			RegisterCallback<KeyDownEvent>(RegisterKeyDown, TrickleDown.TrickleDown);
 			RegisterCallback<KeyUpEvent>(RegisterKeyUp, TrickleDown.TrickleDown);
 		}
-		
+
 		private void RegisterKeyDown(KeyDownEvent evt)
 		{
 			if (_isKeyboardInputBlocked)
 				return;
-			
+
 			if (evt.actionKey && evt.keyCode == KeyCode.D)
 			{
 				_isKeyboardInputBlocked = true;
@@ -365,12 +365,12 @@ namespace Beamable.Editor.Content.Components
 
 			evt.menu.BeamableAppendAction("Duplicate item", (Action<Vector2>)((pos) => Duplicate(selectedItem)));
 		}
-		
+
 		private void Duplicate(ContentItemDescriptor contentItem)
 		{
 			if (contentItem.LocalStatus != HostStatus.AVAILABLE) // cannot duplicate something that we don't have locally...
 				return;
-			
+
 			var nextPath = Model.ContentIO.GetAvailableFileName(contentItem.AssetPath, contentItem.Id, Model.LocalManifest);
 			var didCopy = AssetDatabase.CopyAsset(contentItem.AssetPath, nextPath);
 			if (didCopy)
@@ -431,7 +431,7 @@ namespace Beamable.Editor.Content.Components
 					(Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadMany(modifiedOrServerOnly); }));
 			}
 		}
-		
+
 		private void ContentVisualElement_OnContextMenuOpen(ContextualMenuPopulateEvent evt)
 		{
 			switch (Model.SelectedContents.Count)
@@ -494,7 +494,7 @@ namespace Beamable.Editor.Content.Components
 			SelectItemInInspectorWindow(contentItemDescriptor);
 			PingItemInProjectWindow(contentItemDescriptor);
 		}
-		
+
 		/// <summary>
 		/// Handles single-click of an <see cref="ContentItemDescriptor"/>
 		/// </summary>
