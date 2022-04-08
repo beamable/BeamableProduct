@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
@@ -50,7 +51,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(header);
 
 			_idField = new LabeledTextField();
-			_idField.Setup("Id", String.Empty, OnValueChanged);
+			_idField.Setup("Id", String.Empty, OnValueChanged, true);
 			_idField.Refresh();
 			Root.Add(_idField);
 
@@ -159,7 +160,9 @@ namespace Beamable.Editor.UI.Components
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
 				itemHeight = 24,
-				itemsSource = _currentBussElement != null ? _currentBussElement.Classes.ToList() : new List<string>()
+				itemsSource = _currentBussElement != null
+					? _currentBussElement.Classes.ToList()
+					: new List<string>()
 			};
 			view.name = "classesList";
 
@@ -189,7 +192,9 @@ namespace Beamable.Editor.UI.Components
 
 		private void RefreshClassesList()
 		{
-			_classesList.itemsSource = _currentBussElement ? _currentBussElement.Classes.ToList() : new List<string>();
+			_classesList.itemsSource = _currentBussElement
+				? BussNameUtility.AsClassesList(_currentBussElement.Classes.ToList())
+				: new List<string>();
 			_classesList.Refresh();
 		}
 
@@ -203,7 +208,8 @@ namespace Beamable.Editor.UI.Components
 		private void BindListViewElement(VisualElement element, int index)
 		{
 			TextField textField = (TextField)element.Children().ToList()[0];
-			textField.value = _classesList.itemsSource[index] as string;
+			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
+			textField.isDelayed = true;
 
 #if UNITY_2018
 			textField.OnValueChanged(ClassValueChanged);
@@ -213,8 +219,10 @@ namespace Beamable.Editor.UI.Components
 
 			void ClassValueChanged(ChangeEvent<string> evt)
 			{
-				_classesList.itemsSource[index] = evt.newValue;
-				_currentBussElement.UpdateClasses((List<string>)_classesList.itemsSource);
+				string newValue = BussNameUtility.AsClassSelector(evt.newValue);
+				_classesList.itemsSource[index] = newValue;
+				textField.SetValueWithoutNotify(newValue);
+				_currentBussElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
 				_navigationWindow.RefreshSelectedLabel();
 			}
 		}
@@ -226,7 +234,9 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
-			_currentBussElement.Id = _idField.Value;
+			string value = BussNameUtility.AsIdSelector(_idField.Value);
+			_idField.SetWithoutNotify(value);
+			_currentBussElement.Id = BussNameUtility.CleanString(value);
 			_navigationWindow.RefreshSelectedLabel();
 		}
 
