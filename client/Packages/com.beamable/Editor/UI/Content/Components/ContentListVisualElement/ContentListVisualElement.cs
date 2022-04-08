@@ -44,7 +44,6 @@ namespace Beamable.Editor.Content.Components
 		private VisualElement _mainVisualElement;
 		private HeaderVisualElement _headerVisualElement;
 		private ExtendedListView _listView;
-		// private List<ContentItemDescriptor> _contentItemDescriptorList;
 		private List<HeaderSizeChange> _headerSizeChanges;
 		private bool _isKeyboardInputBlocked;
 
@@ -180,8 +179,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			ContentVisualElement contentVisualElement = (ContentVisualElement)elem;
 
-			contentVisualElement.ContentItemDescriptor =
-				Model.FilteredContents[index]; //_contentItemDescriptorList[index];
+			contentVisualElement.ContentItemDescriptor = Model.FilteredContents[index];
 			contentVisualElement.OnRightMouseButtonClicked -= ContentVisualElement_OnRightMouseButtonClicked;
 			contentVisualElement.OnRightMouseButtonClicked += ContentVisualElement_OnRightMouseButtonClicked;
 			contentVisualElement.Refresh();
