@@ -75,9 +75,6 @@ namespace Beamable.Server.Editor
 		[Tooltip("It will enable checking if docker desktop is running before you can start microservices.")]
 		public bool DockerDesktopCheckInMicroservicesWindow = true;
 
-		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
-		public string DockerDesktopPath;
-
 		[Tooltip("When you run a microservice, automatically reload code changes. This will not change how services are deployed to the realm.")]
 		public bool EnableHotModuleReload = true;
 
@@ -98,18 +95,25 @@ namespace Beamable.Server.Editor
 				return UnixDockerCommand;
 #endif
 			}
-			set
+		}
+		public string DockerDesktopPath
+		{
+			get
 			{
 #if UNITY_EDITOR_WIN
-				WindowsDockerCommand = value;
+				return WindowsDockerDesktopPath;
 #else
-				UnixDockerCommand = value;
+				return UnixDockerDesktopPath;
 #endif
 			}
 		}
 #pragma warning disable CS0219
 		public string WindowsDockerCommand = DOCKER_LOCATION;
 		public string UnixDockerCommand = "/usr/local/bin/docker";
+		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
+		public string WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
+		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
+		public string UnixDockerDesktopPath = "/Applications/Docker.app/";
 #pragma warning restore CS0219
 		private string _dockerCommandCached = DOCKER_LOCATION;
 		private bool _dockerCheckCached = true;
@@ -150,7 +154,7 @@ namespace Beamable.Server.Editor
             LogStandardOutColor = new Color(.4f, .4f, 1f);
             LogStandardErrColor = new Color(1, .44f, .4f);
          }
-         _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
+         _dockerCommandCached = ValidatedDockerCommand;
          _dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
       }
 #endif
@@ -237,14 +241,10 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-			if (string.IsNullOrEmpty(DockerDesktopPath))
-			{
-#if UNITY_EDITOR_OSX
-				DockerDesktopPath = "/Applications/Docker.app/";
-#else
-				DockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
-#endif
-			}
+			if (string.IsNullOrEmpty(WindowsDockerDesktopPath))
+				WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
+			if (string.IsNullOrEmpty(UnixDockerDesktopPath))
+				UnixDockerDesktopPath = "/Applications/Docker.app/";
 		}
 
 		public int GetIndex(string serviceName, ServiceType serviceType)
