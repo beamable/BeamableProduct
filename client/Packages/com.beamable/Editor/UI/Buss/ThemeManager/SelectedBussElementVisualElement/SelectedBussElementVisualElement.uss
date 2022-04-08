@@ -75,4 +75,18 @@ LabeledTextField #label {
     width: 160px;
 }
 
+LabeledObjectField {
+    margin-left: 20px;
+    margin-right: 20px;
+    flex-direction: row;
+    align-items: center;
+}
+
+LabeledObjectField #label {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    font-size: 12px;
+    width: 160px;
+}
+
 
