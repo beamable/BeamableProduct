@@ -11,7 +11,8 @@ namespace Beamable.Experimental.Api.Lobbies
       string name,
       LobbyRestriction restriction,
       SimGameTypeRef gameTypeRef = null,
-      string description = null);
+      string description = null,
+      List<string> statsToInclude = null);
     Promise<Lobby> JoinLobby(string lobbyId);
     // Promise<Lobby> JoinLobbyByPasscode(string passcode);
     Promise<Lobby> GetLobby(string lobbyId);

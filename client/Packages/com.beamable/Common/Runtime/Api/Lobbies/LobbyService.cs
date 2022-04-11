@@ -41,7 +41,8 @@ namespace Beamable.Experimental.Api.Lobbies
       string name,
       LobbyRestriction restriction,
       SimGameTypeRef gameTypeRef = null,
-      string description = null)
+      string description = null,
+      List<string> statsToInclude = null)
     {
       return _requester.Request<Lobby>(
         Method.POST,
