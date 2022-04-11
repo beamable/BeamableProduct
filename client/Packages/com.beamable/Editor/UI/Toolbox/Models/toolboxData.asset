@@ -39,7 +39,7 @@ MonoBehaviour:
     OrientationSupport: 1
     Tags: 5
     Icon: {fileID: 2800000, guid: 94635fee32c4e435ebb24c0a0979ff3d, type: 3}
-    Prefab: {fileID: 5536497098831726557, guid: 658e52cdd751b48478d9da3300ff9c59,
+    Prefab: {fileID: 5536497098831726557, guid: 5fc060f5d55695249ae78906f8db96b3,
       type: 3}
   - Name: Leaderboard Flow
     Description: Allow user to manage leaderboard
