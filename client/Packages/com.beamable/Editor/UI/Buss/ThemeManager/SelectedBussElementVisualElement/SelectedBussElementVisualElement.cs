@@ -22,7 +22,7 @@ namespace Beamable.Editor.UI.Components
 	public class SelectedBussElementVisualElement : BeamableBasicVisualElement
 	{
 		private const float BASE_COMPONENT_HEIGHT = 179.0f;
-		
+
 		private LabeledTextField _idField;
 		private LabeledObjectField _currentStyleSheet;
 		private ListView _classesList;
@@ -89,7 +89,7 @@ namespace Beamable.Editor.UI.Components
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
-			
+
 			Root.Add(buttonsContainer);
 		}
 
