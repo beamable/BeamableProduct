@@ -39,6 +39,9 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (var child in _children)
 			{
+				if (child == null)
+					continue;
+
 				if (child.LoadingBar != null)
 					child.LoadingBar.OnUpdated += HandleUpdates;
 
