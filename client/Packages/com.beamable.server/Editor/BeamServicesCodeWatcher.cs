@@ -143,18 +143,23 @@ namespace Beamable.Server.Editor
 		{
 			var config = MicroserviceConfiguration.Instance;
 			var currCodeHandles = config.ServiceCodeHandlesOnLastDomainReload;
-			var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
 
-			var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
-												  .Select(asmName => currCodeHandles.FirstOrDefault(c => c.AsmDefInfo.Name == asmName))
-												  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
-												  .ToList();
+			if (currCodeHandles != null && currCodeHandles.Count > 0)
+			{
+				var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
 
-			config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
-			config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+				var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
+				                                      .Select(asmName => currCodeHandles.FirstOrDefault(
+					                                              c => c.AsmDefInfo.Name == asmName))
+				                                      .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
+				                                      .ToList();
 
-			config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
-			config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+				config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
+				config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+
+				config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
+				config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+			}
 		}
 
 		public void CheckForLocalChangesNotYetDeployed()
