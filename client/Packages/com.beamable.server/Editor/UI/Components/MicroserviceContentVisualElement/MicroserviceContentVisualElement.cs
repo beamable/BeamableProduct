@@ -234,19 +234,57 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
 		{
 			var children = new List<LoadingBarUpdater>();
+			var dependencyStorages = new List<string>();
+
 			foreach (var microservice in Model.Services)
 			{
 				if (!microservice.IsSelected)
 					continue;
 
-				if (microservice.IsRunning)
-					microservice.BuildAndRestart();
+				if (microservice.Dependencies.Count > 0)
+				{
+					foreach (MongoStorageModel dependencyService in microservice.Dependencies)
+					{
+						dependencyStorages.Add(dependencyService.Name);
+
+						void OnDependencyRunFinished(bool isFinished)
+						{
+							if (isFinished)
+							{
+								if (microservice.IsRunning)
+									microservice.BuildAndRestart();
+								else
+									microservice.BuildAndStart();
+							}
+
+							dependencyService.Builder.OnStartingFinished -= OnDependencyRunFinished;
+						};
+
+						dependencyService.Builder.OnStartingFinished += OnDependencyRunFinished;
+						dependencyService.Start();
+					}
+
+				}
 				else
-					microservice.BuildAndStart();
+				{
+					if (microservice.IsRunning)
+						microservice.BuildAndRestart();
+					else
+						microservice.BuildAndStart();
+				}
 
 				var element = _modelToVisual[microservice];
 				var subLoader = element.Q<LoadingBarElement>();
 				children.Add(subLoader.Updater);
+			}
+
+			foreach (var storage in Model.Storages)
+			{
+				if (!storage.IsSelected)
+					continue;
+
+				if (!storage.IsRunning && !dependencyStorages.Contains(storage.Name))
+					storage.Start();
 			}
 
 			var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());

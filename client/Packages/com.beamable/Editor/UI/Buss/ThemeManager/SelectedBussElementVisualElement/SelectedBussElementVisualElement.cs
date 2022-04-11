@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements;
@@ -20,7 +21,10 @@ namespace Beamable.Editor.UI.Components
 {
 	public class SelectedBussElementVisualElement : BeamableBasicVisualElement
 	{
+		private const float BASE_COMPONENT_HEIGHT = 179.0f;
+
 		private LabeledTextField _idField;
+		private LabeledObjectField _currentStyleSheet;
 		private ListView _classesList;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private BussElement _currentBussElement;
@@ -64,6 +68,11 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(_classesList);
 
 			CreateButtons();
+
+			_currentStyleSheet = new LabeledObjectField();
+			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), OnStylesheetChanged);
+			Root.Add(_currentStyleSheet);
+
 			RefreshHeight();
 		}
 
@@ -116,6 +125,7 @@ namespace Beamable.Editor.UI.Components
 			_selectedClassListIndex = null;
 
 			_idField.Value = string.Empty;
+			_currentStyleSheet.Reset();
 
 			RefreshClassesList();
 			RefreshHeight();
@@ -129,17 +139,28 @@ namespace Beamable.Editor.UI.Components
 			if (_currentBussElement != null)
 			{
 				_idField.Value = _currentBussElement.Id;
+				_currentStyleSheet.SetValue(_currentBussElement.StyleSheet);
+				RefreshClassesList();
 			}
 
-			RefreshClassesList();
 			RefreshHeight();
+		}
+
+		private void OnStylesheetChanged(Object styleSheet)
+		{
+			BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
+
+			if (_currentBussElement != null)
+			{
+				_currentBussElement.StyleSheet = newStyleSheet;
+			}
 		}
 
 		private void RefreshHeight()
 		{
 			_classesList.style.SetHeight(0.0f);
 
-			float height = 130.0f;
+			float height = BASE_COMPONENT_HEIGHT;
 
 			if (_currentBussElement != null)
 			{
