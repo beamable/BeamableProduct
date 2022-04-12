@@ -238,14 +238,14 @@ namespace Beamable.Editor.UI.Components
 			var codeProvider = new CSharpCodeProvider();
 			string sFixedName = codeProvider.CreateValidIdentifier(name);
 			var codeType = new CodeTypeDeclaration(sFixedName);
-			
+
 			if (!string.Equals(codeType.Name, name))
 			{
 				return "Cannot use reserved C# words";
 			}
 
-			if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name) || 
-			    !Regex.IsMatch(name, CLASS_NAME_REGEX))
+			if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name) ||
+				!Regex.IsMatch(name, CLASS_NAME_REGEX))
 			{
 				return "Must be a valid C# class name";
 			}
