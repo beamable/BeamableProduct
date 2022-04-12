@@ -88,8 +88,6 @@
     background-color: rgb(162,162,162); 
 }
 
-
-
 .remove {
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png"); 
     margin-right: 10px;

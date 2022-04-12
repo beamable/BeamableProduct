@@ -137,7 +137,7 @@ namespace Beamable.Editor.UI.Buss
 
 			if (selectedElement == null || !_filterMode) return true;
 
-			return (styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false);
+			return styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
 		}
 
 		private void RefreshStyleSheets()

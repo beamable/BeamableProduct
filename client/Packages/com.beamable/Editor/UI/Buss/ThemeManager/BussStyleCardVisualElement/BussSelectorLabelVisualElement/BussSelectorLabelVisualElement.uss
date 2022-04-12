@@ -1,4 +1,17 @@
-﻿#styleId {
+﻿BussSelectorLabelVisualElement {
+    flex-direction: row;
+}
+
+#root {
     margin-left: 10px;
+    flex-direction: row;
+}
+
+#separator {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+TextField {
     min-width: 50px;
 }
