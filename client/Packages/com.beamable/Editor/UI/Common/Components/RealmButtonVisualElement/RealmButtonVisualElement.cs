@@ -87,6 +87,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void HandleRealmChanged(ISearchableElement view)
 		{
+			if (view == null) return;
+			
 			RealmView realm = (RealmView)view;
 
 			_realmLabel.text = realm.DisplayName;
