@@ -39,7 +39,12 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (var child in _children)
 			{
-				child.LoadingBar.OnUpdated += HandleUpdates;
+				if (child == null)
+					continue;
+
+				if (child.LoadingBar != null)
+					child.LoadingBar.OnUpdated += HandleUpdates;
+
 				child.OnKilledEvent += HandleUpdates;
 			}
 		}
@@ -104,7 +109,9 @@ namespace Beamable.Editor.UI.Components
 		{
 			foreach (var child in _children)
 			{
-				child.LoadingBar.OnUpdated -= HandleUpdates;
+				if (child.LoadingBar != null)
+					child.LoadingBar.OnUpdated -= HandleUpdates;
+
 				child.OnKilledEvent -= HandleUpdates;
 			}
 		}

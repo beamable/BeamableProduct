@@ -1,8 +1,5 @@
-﻿using System;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using System.IO;
-using System.Reflection;
-using UnityEditor;
 using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -19,7 +16,7 @@ namespace Beamable.Editor.UI.Common
 	{
 		protected VisualElement Root { get; set; }
 		protected string UssPath { get; }
-		private bool _createRoot;
+		private readonly bool _createRoot;
 
 		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{
