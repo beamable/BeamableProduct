@@ -1,3 +1,4 @@
+using Beamable.Editor.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using System;
@@ -46,12 +47,14 @@ namespace Beamable.Editor.UI.Components
 		private bool _sorted;
 		private bool _showAllMode;
 		private bool _editMode;
+		private IEnumerable<BussStyleSheet> _writableStyleSheets;
 
 		public BussStyleSheet StyleSheet => _styleSheet;
 		public BussStyleRule StyleRule => _styleRule;
 		public bool EditMode => _editMode;
 
-		public BussStyleCardVisualElement() : base($"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
+		public BussStyleCardVisualElement() : base(
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
 
 		public override void Refresh()
 		{
@@ -111,14 +114,16 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
-						  VariableDatabase variableDatabase,
-						  Action onUndoRequest)
+		                  BussStyleRule styleRule,
+		                  VariableDatabase variableDatabase,
+		                  Action onUndoRequest,
+		                  IEnumerable<BussStyleSheet> writableStyleSheets)
 		{
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
 			_onUndoRequest = onUndoRequest;
+			_writableStyleSheets = writableStyleSheets;
 
 			Refresh();
 		}
@@ -170,9 +175,8 @@ namespace Beamable.Editor.UI.Components
 				BeamablePopupWindow.CloseConfirmationWindow
 			);
 
-			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
-				DELETE_STYLE_HEADER,
-				confirmationPopup, this.GetEditorWindowWithReflection());
+			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup,
+			                                            this.GetEditorWindowWithReflection());
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -192,7 +196,7 @@ namespace Beamable.Editor.UI.Components
 				var baseType = BussStyle.GetBaseType(key);
 				var data = SerializableValueImplementationHelper.Get(baseType);
 				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-													 t != typeof(FractionFloatBussProperty));
+				                                     t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -295,10 +299,34 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(StyleRule, _styleSheet, _editMode);
+
+			List<GenericMenuCommand> commands = PrepareCommands(StyleRule, _styleSheet, _writableStyleSheets.ToList());
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet, _editMode, commands);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 
-			_selectorLabelComponent.OnChangeSubmit += () => SetEditMode(false);
+			_selectorLabelComponent.ChangeSubmit += () => SetEditMode(false);
+		}
+
+		// TODO: move to some helper maybe?
+		private List<GenericMenuCommand> PrepareCommands(BussStyleRule styleRule,
+		                                                 BussStyleSheet sourceStyleSheet,
+		                                                 List<BussStyleSheet> targetStyleSheets)
+		{
+			targetStyleSheets.Remove(sourceStyleSheet);
+			
+			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
+
+			commands.Add(new GenericMenuCommand("Duplicate style", () => { Debug.Log("Duplicate"); }));
+
+			foreach (BussStyleSheet targetStyleSheet in targetStyleSheets)
+			{
+				commands.Add(new GenericMenuCommand($"Copy style to/{targetStyleSheet.name}",
+				                                    () => { Debug.Log($"Copy to/{targetStyleSheet.name}"); }));
+			}
+
+			commands.Add(new GenericMenuCommand("Remove style", () => { RemoveButtonClicked(null); }));
+
+			return commands;
 		}
 
 		public void RefreshProperties()
@@ -313,9 +341,8 @@ namespace Beamable.Editor.UI.Components
 				}
 				else
 				{
-
 					remove = !_showAllMode ||
-							 _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
+					         _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
 				}
 
 				if (remove)
@@ -388,7 +415,7 @@ namespace Beamable.Editor.UI.Components
 
 						var keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
-							   Array.IndexOf(keys, p2.PropertyProvider.Key);
+						       Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
 
 					return p2.PropertyIsInStyle ? 1 : -1;
@@ -422,12 +449,6 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		public bool CheckPropertyIsInStyle(VariableDatabase.PropertyReference reference)
-		{
-			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
-			return property != null && property.PropertyIsInStyle;
-		}
-
 		public void OnBussElementSelected(BussElement element)
 		{
 			if (_colorBlock == null) return;
@@ -439,6 +460,11 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_colorBlock.EnableInClassList("active", active);
+		}
+
+		public void RefreshWritableStyleSheets(IEnumerable<BussStyleSheet> writableStyleSheets)
+		{
+			_writableStyleSheets = writableStyleSheets;
 		}
 	}
 }

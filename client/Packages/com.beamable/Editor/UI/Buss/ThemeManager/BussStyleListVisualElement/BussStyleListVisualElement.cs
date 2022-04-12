@@ -102,6 +102,7 @@ namespace Beamable.Editor.UI.Buss
 					{
 						spawned.RefreshProperties();
 						spawned.RefreshButtons();
+						spawned.RefreshWritableStyleSheets(WritableStyleSheets);
 					}
 					else
 					{
@@ -156,7 +157,7 @@ namespace Beamable.Editor.UI.Buss
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, _variableDatabase, callback);
+			styleCard.Setup(styleSheet, styleRule, _variableDatabase, callback, WritableStyleSheets);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
 
