@@ -26,6 +26,8 @@ namespace Beamable.Editor.UI.Components
 		private Dictionary<string, bool> _fieldValid = new Dictionary<string, bool>();
 		private List<FormConstraint> _constraints = new List<FormConstraint>();
 
+		private const string CLASS_NAME_REGEX = "^[A-Za-z_][A-Za-z0-9_]*$";
+
 		public string Text { get; private set; }
 
 		public Button Button { get; private set; }
@@ -233,9 +235,6 @@ namespace Beamable.Editor.UI.Components
 
 		public static string IsValidClassName(string name)
 		{
-			/*
-			 * A class name must be alphaNumeric and have _ and not start with a number
-			 */
 			var codeProvider = new CSharpCodeProvider();
 			string sFixedName = codeProvider.CreateValidIdentifier(name);
 			var codeType = new CodeTypeDeclaration(sFixedName);
@@ -244,11 +243,12 @@ namespace Beamable.Editor.UI.Components
 			{
 				return "Cannot use reserved C# words";
 			}
-			if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name))
+
+			if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name) ||
+				!Regex.IsMatch(name, CLASS_NAME_REGEX))
 			{
 				return "Must be a valid C# class name";
 			}
-
 			return null;
 		}
 

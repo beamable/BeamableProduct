@@ -12,20 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Added `RecoverWith` extension method overloads to `Promise<T>` that allow for configuring  a promise to recover from failure over multiple attempts.
+- Selected Buss Element section in Buss Theme Manager
 
 ### Changed
-- Changed behaviour of Add Style button in Buss Theme Manager
-- Add Style button moved above Buss Style Cards in Buss Theme Manager
+- Behaviour of Add Style button in Buss Theme Manager
+- Add Style button moved above Buss Style Cards section in Buss Theme Manager
 - Buss Element selection improvement in Buss Theme Manager   
 - Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
 - All implementations of `[BeamContextSystem]` or `[RegisterBeamableDependencies]` will be preserved durring Unity code stripping
 - Updated C#MS Publish window UI/UX
+- Properties in Buss Style Card sorted alphabetically by default
 
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
 - Compilation error when using new `com.unity.inputsystem`
 - Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
 - Content string fields can contain escaped characters, and won't be double escaped after download
+- Fixed issue with `ReflectionCache` that happened on certain platforms when `IEnumerable` returning functions had to be parsed for `AttributesOfInterest`.
 
 ## [1.0.7]
 ### Added

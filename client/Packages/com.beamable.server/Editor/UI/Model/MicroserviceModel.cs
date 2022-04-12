@@ -163,32 +163,47 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 			evt.menu.BeamableAppendAction("Build", pos => Build());
+
+			evt.menu.AppendSeparator();
+
+			var isFirst = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) == 0;
+			var isLast = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroservicesDataModel.Instance.Services.Count - 1;
+
+			evt.menu.BeamableAppendAction($"Move up", pos =>
+			{
+				MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move down", pos =>
+			{
+				MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, isLast);
+			evt.menu.BeamableAppendAction($"Move to top", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, 0, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move to bottom", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Services.Count - 1, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, isLast);
+
+			evt.menu.AppendSeparator();
+
 			evt.menu.BeamableAppendAction(IncludeDebugTools
 											  ? BUILD_DISABLE_DEBUG
 											  : BUILD_ENABLE_DEBUG, pos =>
 										  {
 											  IncludeDebugTools = !IncludeDebugTools;
 										  });
-			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
-			{
-				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) > 0);
-				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
-			}
 
 			if (!AreLogsAttached)
 			{
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
 			}
 		}
-		// TODO === END
 
 		private void RunSnykTests(bool suppressOutput = false)
 		{

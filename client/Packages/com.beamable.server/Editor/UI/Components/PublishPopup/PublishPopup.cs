@@ -68,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Dictionary<IBeamableService, Action> _logForwardActions = new Dictionary<IBeamableService, Action>();
 
 		private List<PublishManifestEntryVisualElement> _servicesToPublish = new List<PublishManifestEntryVisualElement>();
-		
+
 		public PublishPopup() : base(nameof(PublishPopup)) { }
 
 		public void PrepareParent()

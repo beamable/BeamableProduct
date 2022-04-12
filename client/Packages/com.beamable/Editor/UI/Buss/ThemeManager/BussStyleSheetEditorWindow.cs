@@ -47,7 +47,7 @@ namespace Beamable.Editor.UI.Buss
 			_parent.contentContainer.Add(_styleList);
 
 			_scroll = new ScrollView();
-			_scroll.style.SetFlexGrow(0f);
+			_scroll.style.SetFlexGrow(1f);
 
 			this.GetRootVisualContainer().Add(_scroll);
 #if UNITY_2019_1_OR_NEWER
