@@ -17,6 +17,7 @@ namespace Beamable.Editor.UI.Components
 	public class BussSelectorLabelVisualElement : BeamableBasicVisualElement
 	{
 		private TextField _editableLabel;
+		private TextElement _styleSheetLabel;
 		private BussStyleRule _styleRule;
 		private BussStyleSheet _styleSheet;
 		private List<GenericMenuCommand> _commands;
@@ -42,14 +43,12 @@ namespace Beamable.Editor.UI.Components
 			if (_styleSheet.IsReadOnly)
 			{
 				TextElement styleId = new TextElement();
-				styleId.name = "styleId";
 				styleId.text = _styleRule.SelectorString;
 				Root.Add(styleId);
 			}
 			else
 			{
 				_editableLabel = new TextField();
-				_editableLabel.name = "styleId";
 				_editableLabel.value = _styleRule.SelectorString;
 				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
 				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);	
@@ -61,11 +60,10 @@ namespace Beamable.Editor.UI.Components
 			separator01.text = "|";
 			Root.Add(separator01);
 
-			TextElement styleSheetLabel = new TextElement();
-			styleSheetLabel.name = "styleSheetLabel";
-			styleSheetLabel.text = $"{_styleSheet.name}";
-			styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);
-			Root.Add(styleSheetLabel);
+			_styleSheetLabel = new TextElement();
+			_styleSheetLabel.text = $"{_styleSheet.name}";
+			_styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);
+			Root.Add(_styleSheetLabel);
 
 			if (_styleSheet.IsReadOnly)
 			{
@@ -75,7 +73,6 @@ namespace Beamable.Editor.UI.Components
 				Root.Add(separator02);
 
 				TextElement readonlyLabel = new TextElement();
-				readonlyLabel.name = "readonlyLabel";
 				readonlyLabel.text = "readonly";
 				Root.Add(readonlyLabel);
 			}
@@ -110,6 +107,7 @@ namespace Beamable.Editor.UI.Components
 		protected override void OnDestroy()
 		{
 			_editableLabel.UnregisterValueChangedCallback(StyleIdChanged);
+			_styleSheetLabel.UnregisterCallback<MouseDownEvent>(OnStyleSheetClicked);
 		}
 
 		private void StyleIdChanged(ChangeEvent<string> evt)

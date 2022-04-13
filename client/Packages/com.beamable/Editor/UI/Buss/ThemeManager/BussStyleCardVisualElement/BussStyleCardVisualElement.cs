@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
@@ -260,30 +261,8 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			List<GenericMenuCommand> commands = PrepareCommands(StyleRule, _styleSheet, _writableStyleSheets.ToList());
-			_selectorLabelComponent.Setup(StyleRule, _styleSheet, commands);
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet, new List<GenericMenuCommand>());
 			_selectorLabelParent.Add(_selectorLabelComponent);
-		}
-
-		private List<GenericMenuCommand> PrepareCommands(BussStyleRule styleRule,
-		                                                 BussStyleSheet sourceStyleSheet,
-		                                                 List<BussStyleSheet> targetStyleSheets)
-		{
-			targetStyleSheets.Remove(sourceStyleSheet);
-
-			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
-
-			commands.Add(new GenericMenuCommand("Duplicate style", () => { Debug.Log("Duplicate"); }));
-
-			foreach (BussStyleSheet targetStyleSheet in targetStyleSheets)
-			{
-				commands.Add(new GenericMenuCommand($"Copy style to/{targetStyleSheet.name}",
-				                                    () => { Debug.Log($"Copy to/{targetStyleSheet.name}"); }));
-			}
-
-			commands.Add(new GenericMenuCommand("Remove style", RemoveButtonClicked));
-
-			return commands;
 		}
 
 		public void RefreshProperties()

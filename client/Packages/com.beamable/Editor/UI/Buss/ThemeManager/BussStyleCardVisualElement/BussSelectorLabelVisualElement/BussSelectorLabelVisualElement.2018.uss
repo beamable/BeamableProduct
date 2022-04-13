@@ -21,7 +21,6 @@ TextElement {
 }
 
 TextField {
-    min-width: 50px;
     background-image: none;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
@@ -29,12 +28,12 @@ TextField {
     height: 14px;
     font-size: 12px;
     flex-grow: 1;
-    padding-bottom: 0;
-    padding-left: 0;
-    padding-top: 0;
-    padding-right: 0;
-    margin-bottom: 0;
-    margin-left: 0;
-    margin-top: 0;
-    margin-right: 0;
+    padding-bottom: 0px;
+    padding-left: 0px;
+    padding-top: 0px;
+    padding-right: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-right: 0px;
 }

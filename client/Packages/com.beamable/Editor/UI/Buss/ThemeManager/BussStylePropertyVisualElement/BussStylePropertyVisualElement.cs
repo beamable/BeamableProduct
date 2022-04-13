@@ -1,5 +1,10 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Common;
+using Beamable.Editor.Common;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -44,6 +49,7 @@ namespace Beamable.Editor.UI.Components
 
 			_labelComponent = new TextElement();
 			_labelComponent.name = "propertyLabel";
+			_labelComponent.RegisterCallback<MouseDownEvent>(LabelClicked);
 			Root.Add(_labelComponent);
 
 			_valueParent = new VisualElement();
@@ -57,6 +63,27 @@ namespace Beamable.Editor.UI.Components
 			Root.parent.EnableInClassList("exists", PropertyIsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !PropertyIsInStyle);
 			Refresh();
+		}
+
+		private void LabelClicked(MouseDownEvent evt)
+		{
+			if (_styleSheet.IsReadOnly)
+			{
+				return;
+			}
+
+			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
+			commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveProperty));
+			
+			GenericMenu context = new GenericMenu();
+
+			foreach (GenericMenuCommand command in commands)
+			{
+				GUIContent label = new GUIContent(command.Name);
+				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+			}
+
+			context.ShowAsContext();
 		}
 
 		public override void Refresh()
@@ -136,10 +163,11 @@ namespace Beamable.Editor.UI.Components
 			if (_propertyVisualElement != null)
 			{
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
+				_labelComponent.UnregisterCallback<MouseDownEvent>(LabelClicked);
 			}
 		}
 
-		private void OnRemoveButtonClicked()
+		private void RemoveProperty()
 		{
 			IBussProperty bussProperty = _propertyProvider.GetProperty();
 			_styleSheet.RemoveStyleProperty(bussProperty, _styleRule.SelectorString);
