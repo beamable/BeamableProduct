@@ -82,7 +82,7 @@ namespace Editor.UI.Buss.ThemeManager
 			
 			public SelectorWeight CurrentPropertyWeight = SelectorWeight.Min;
 			public PropertyReference UsedProperty { get; private set; }
-			// public List<PropertyReference> OverridenProperties = new List<PropertyReference>();
+			public List<PropertyReference> OverridenProperties = new List<PropertyReference>();
 			
 			public SourceData(string key) {
 				this.key = key;
@@ -94,12 +94,12 @@ namespace Editor.UI.Buss.ThemeManager
 				if (weight.CompareTo(CurrentPropertyWeight) >= 0)
 				{
 					CurrentPropertyWeight = weight;
-					// OverridenProperties.Add(UsedProperty);
+					OverridenProperties.Add(UsedProperty);
 					UsedProperty = propertyReference;
 				}
 				else
 				{
-					// OverridenProperties.Add(propertyReference);
+					OverridenProperties.Add(propertyReference);
 				}
 			}
 		}
