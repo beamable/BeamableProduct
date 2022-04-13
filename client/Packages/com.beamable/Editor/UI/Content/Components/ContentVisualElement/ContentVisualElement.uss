@@ -10,7 +10,7 @@ ContentVisualElement #resizable{
 }
 
 ContentVisualElement #resizable *{
-    font-size: 11;
+    font-size: 11px;
 }
 
 ContentVisualElement > TemplateContainer {
