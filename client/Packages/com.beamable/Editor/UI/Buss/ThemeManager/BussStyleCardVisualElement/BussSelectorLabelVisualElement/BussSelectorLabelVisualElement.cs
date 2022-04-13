@@ -1,8 +1,6 @@
 ﻿using Beamable.Editor.Common;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
-using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -23,12 +21,10 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private List<GenericMenuCommand> _commands;
 
-		public event Action ChangeSubmit;
-
 		public BussSelectorLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss") { }
 
-		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet, bool editMode, List<GenericMenuCommand> commands)
+		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet, List<GenericMenuCommand> commands)
 		{
 			base.Init();
 
@@ -36,51 +32,52 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet = styleSheet;
 			_commands = commands;
 
-			if (!editMode)
+			Refresh();
+		}
+
+		private new void Refresh()
+		{
+			Root.Clear();
+
+			_editableLabel = new TextField();
+			_editableLabel.name = "styleId";
+			_editableLabel.value = _styleRule.SelectorString;
+			_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
+			_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);
+			
+
+			Root.Add(_editableLabel);
+
+			TextElement separator01 = new TextElement();
+			separator01.name = "separator";
+			separator01.text = "|";
+			Root.Add(separator01);
+
+			TextElement styleSheetLabel = new TextElement();
+			styleSheetLabel.name = "styleSheetLabel";
+			styleSheetLabel.text = $"{_styleSheet.name}";
+			styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);
+			Root.Add(styleSheetLabel);
+
+			if (_styleSheet.IsReadOnly)
 			{
-				TextElement textLabel = new TextElement();
-				textLabel.name = "styleId";
-				textLabel.text = styleRule.SelectorString;
-				Root.Add(textLabel);
+				TextElement separator02 = new TextElement();
+				separator02.name = "separator";
+				separator02.text = "|";
+				Root.Add(separator02);
 
-				TextElement separator01 = new TextElement();
-				separator01.name = "separator";
-				separator01.text = "|";
-				Root.Add(separator01);
-
-				TextElement styleSheetLabel = new TextElement();
-				styleSheetLabel.name = "styleSheetLabel";
-				styleSheetLabel.text = $"{styleSheet.name}";
-				styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);
-				Root.Add(styleSheetLabel);
-
-				if (styleSheet.IsReadOnly)
-				{
-					TextElement separator02 = new TextElement();
-					separator02.name = "separator";
-					separator02.text = "|";
-					Root.Add(separator02);
-
-					TextElement readonlyLabel = new TextElement();
-					readonlyLabel.name = "readonlyLabel";
-					readonlyLabel.text = "readonly";
-					Root.Add(readonlyLabel);
-				}
+				TextElement readonlyLabel = new TextElement();
+				readonlyLabel.name = "readonlyLabel";
+				readonlyLabel.text = "readonly";
+				Root.Add(readonlyLabel);
 			}
-			else
+		}
+
+		private void KeyboardPressed(KeyDownEvent evt)
+		{
+			if (evt.keyCode == KeyCode.Return)
 			{
-				_editableLabel = new TextField();
-				_editableLabel.name = "styleId";
-				_editableLabel.value = styleRule.SelectorString;
-				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
-				_editableLabel.RegisterCallback<KeyDownEvent>(evt =>
-				{
-					if (evt.keyCode == KeyCode.Return)
-					{
-						ChangeSubmit?.Invoke();
-					}
-				});
-				Root.Add(_editableLabel);
+				Focus();
 			}
 		}
 
@@ -90,7 +87,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				return;
 			}
-			
+
 			GenericMenu context = new GenericMenu();
 
 			foreach (GenericMenuCommand command in _commands)

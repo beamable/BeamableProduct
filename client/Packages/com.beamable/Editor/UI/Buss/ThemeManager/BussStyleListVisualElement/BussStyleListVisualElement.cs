@@ -160,17 +160,6 @@ namespace Beamable.Editor.UI.Buss
 			styleCard.Setup(styleSheet, styleRule, _variableDatabase, callback, WritableStyleSheets);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
-
-			styleCard.EnterEditMode += () =>
-			{
-				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
-				{
-					if (other != styleCard && other.EditMode)
-					{
-						other.SetEditMode(false);
-					}
-				}
-			};
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)

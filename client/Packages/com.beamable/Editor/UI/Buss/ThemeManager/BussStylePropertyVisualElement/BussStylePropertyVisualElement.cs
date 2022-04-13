@@ -25,7 +25,6 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
 		private BussStyleSheet _externalVariableSource;
-		private bool _editMode;
 
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
@@ -42,14 +41,6 @@ namespace Beamable.Editor.UI.Components
 
 			VisualElement buttonContainer = new VisualElement();
 			buttonContainer.name = "removeButtonContainer";
-
-			_removeButton = new VisualElement();
-			_removeButton.name = "removeButton";
-			buttonContainer.Add(_removeButton);
-			Root.Add(buttonContainer);
-
-			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
-			buttonContainer.SetHidden(!_editMode);
 
 			_labelComponent = new TextElement();
 			_labelComponent.name = "propertyLabel";
@@ -80,10 +71,8 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussStyleSheet styleSheet,
 						  BussStyleRule styleRule,
 						  BussPropertyProvider property,
-						  VariableDatabase variableDatabase,
-						  bool editMode)
+						  VariableDatabase variableDatabase)
 		{
-			_editMode = editMode;
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
@@ -148,10 +137,9 @@ namespace Beamable.Editor.UI.Components
 			{
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
 			}
-			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
 		}
 
-		private void OnRemoveButtonClicked(MouseDownEvent evt)
+		private void OnRemoveButtonClicked()
 		{
 			IBussProperty bussProperty = _propertyProvider.GetProperty();
 			_styleSheet.RemoveStyleProperty(bussProperty, _styleRule.SelectorString);
