@@ -39,6 +39,8 @@ namespace Beamable
 		public static string Environment => Data.Environment;
 		public static PackageVersion SdkVersion => Data.SdkVersion;
 		public static string DockerRegistryUrl => Data.DockerRegistryUrl;
+		public static bool IsUnityVsp => Data.IsUnityVsp;
+		public static string UnityVspId => Data.UnityVspId;
 
 		// See https://disruptorbeam.atlassian.net/browse/PLAT-3838
 		public static string SocketUrl => $"{Data.ApiUrl.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
@@ -64,14 +66,14 @@ namespace Beamable
 	[Serializable]
 	public class EnvironmentData : JsonSerializable.ISerializable
 	{
-		private const string BUILD__SDK__VERSION__STRING = "BUILD__SDK__VERSION__STRING";
-
 		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
 		[SerializeField] private string beamMongoExpressUrl;
 		[SerializeField] private string sdkVersion;
 		[SerializeField] private string dockerRegistryUrl;
+		[SerializeField] private bool isUnityVsp;
+		[SerializeField] private string unityVspId;
 
 		private PackageVersion _version;
 
@@ -81,6 +83,8 @@ namespace Beamable
 		public string BeamMongoExpressUrl => beamMongoExpressUrl;
 		public PackageVersion SdkVersion => _version ?? (_version = sdkVersion);
 		public string DockerRegistryUrl => dockerRegistryUrl;
+		public bool IsUnityVsp => isUnityVsp;
+		public string UnityVspId => unityVspId;
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
@@ -90,8 +94,10 @@ namespace Beamable
 			s.Serialize("sdkVersion", ref sdkVersion);
 			s.Serialize("beamMongoExpressUrl", ref beamMongoExpressUrl);
 			s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
+			s.Serialize("unityVspId", ref unityVspId);
 
-			if (sdkVersion.Equals(BUILD__SDK__VERSION__STRING))
+			isUnityVsp = !unityVspId.Equals(Constants.Environment.UNITY__VSP__UID);
+			if (sdkVersion.Equals(Constants.Environment.BUILD__SDK__VERSION__STRING))
 			{
 				sdkVersion = "0.0.0";
 			}
