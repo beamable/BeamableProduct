@@ -261,8 +261,18 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			_selectorLabelComponent.Setup(StyleRule, _styleSheet, new List<GenericMenuCommand>());
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet, PrepareCommands());
 			_selectorLabelParent.Add(_selectorLabelComponent);
+		}
+
+		private List<GenericMenuCommand> PrepareCommands()
+		{
+			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
+
+			commands.Add(new GenericMenuCommand(Features.Buss.MenuItems.DUPLICATE, ()=> {Debug.Log("Duplicate");}));
+			commands.Add(new GenericMenuCommand(Features.Buss.MenuItems.COPY_TO, ()=>{Debug.Log("Copy to");}));
+			
+			return commands;
 		}
 
 		public void RefreshProperties()
