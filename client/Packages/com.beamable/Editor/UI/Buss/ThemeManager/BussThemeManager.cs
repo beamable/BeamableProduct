@@ -4,6 +4,7 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -60,13 +61,11 @@ namespace Beamable.Editor.UI.Buss
 			root.Clear();
 			_styleCardsVisualElements.Clear();
 			_addStyleButton = null;
-
 			VisualElement mainVisualElement = new VisualElement();
 			mainVisualElement.name = "themeManagerContainer";
 
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
-
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
@@ -169,7 +168,6 @@ namespace Beamable.Editor.UI.Buss
 				_scrollView.MarkDirtyRepaint();
 			};
 		}
-
 
 		private void OnFocus()
 		{

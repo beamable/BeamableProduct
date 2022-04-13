@@ -21,5 +21,19 @@ TextElement {
 }
 
 TextField {
-    min-width: 50px;
+    background-image: none;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-left;
+    color: rgba(256,256,256,1);
+    height: 14px;
+    font-size: 12px;
+    flex-grow: 1;
+    padding-bottom: 0px;
+    padding-left: 0px;
+    padding-top: 0px;
+    padding-right: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-right: 0px;
 }

@@ -1,5 +1,10 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Common;
+using Beamable.Editor.Common;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -25,7 +30,6 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
 		private BussStyleSheet _externalVariableSource;
-		private bool _editMode;
 
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
@@ -43,16 +47,9 @@ namespace Beamable.Editor.UI.Components
 			VisualElement buttonContainer = new VisualElement();
 			buttonContainer.name = "removeButtonContainer";
 
-			_removeButton = new VisualElement();
-			_removeButton.name = "removeButton";
-			buttonContainer.Add(_removeButton);
-			Root.Add(buttonContainer);
-
-			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
-			buttonContainer.SetHidden(!_editMode);
-
 			_labelComponent = new TextElement();
 			_labelComponent.name = "propertyLabel";
+			_labelComponent.RegisterCallback<MouseDownEvent>(LabelClicked);
 			Root.Add(_labelComponent);
 
 			_valueParent = new VisualElement();
@@ -68,6 +65,27 @@ namespace Beamable.Editor.UI.Components
 			Refresh();
 		}
 
+		private void LabelClicked(MouseDownEvent evt)
+		{
+			if (_styleSheet.IsReadOnly)
+			{
+				return;
+			}
+
+			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
+			commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveProperty));
+			
+			GenericMenu context = new GenericMenu();
+
+			foreach (GenericMenuCommand command in commands)
+			{
+				GUIContent label = new GUIContent(command.Name);
+				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+			}
+
+			context.ShowAsContext();
+		}
+
 		public override void Refresh()
 		{
 			_labelComponent.text = _propertyProvider.Key;
@@ -80,10 +98,8 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussStyleSheet styleSheet,
 						  BussStyleRule styleRule,
 						  BussPropertyProvider property,
-						  VariableDatabase variableDatabase,
-						  bool editMode)
+						  VariableDatabase variableDatabase)
 		{
-			_editMode = editMode;
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
@@ -147,11 +163,11 @@ namespace Beamable.Editor.UI.Components
 			if (_propertyVisualElement != null)
 			{
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
+				_labelComponent.UnregisterCallback<MouseDownEvent>(LabelClicked);
 			}
-			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
 		}
 
-		private void OnRemoveButtonClicked(MouseDownEvent evt)
+		private void RemoveProperty()
 		{
 			IBussProperty bussProperty = _propertyProvider.GetProperty();
 			_styleSheet.RemoveStyleProperty(bussProperty, _styleRule.SelectorString);

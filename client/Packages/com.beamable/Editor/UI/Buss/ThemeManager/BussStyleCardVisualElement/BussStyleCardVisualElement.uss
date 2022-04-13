@@ -21,6 +21,7 @@
 #colorBlock {
     margin-top: 5px;
     margin-bottom: 5px;
+    margin-left:10px;
     width: 5px;
     background-color: rgb(144, 144, 144);
 }
