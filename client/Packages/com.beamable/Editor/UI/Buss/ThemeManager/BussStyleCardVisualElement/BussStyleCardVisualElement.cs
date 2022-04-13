@@ -96,6 +96,7 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton.SetEnabled(enabled);
 			_addRuleButton.SetEnabled(enabled);
 			_showAllButton.SetEnabled(enabled);
+			_sortButton.SetEnabled(enabled);
 		}
 
 		public void Setup(BussStyleSheet styleSheet,

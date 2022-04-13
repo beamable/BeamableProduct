@@ -39,14 +39,22 @@ namespace Beamable.Editor.UI.Components
 		{
 			Root.Clear();
 
-			_editableLabel = new TextField();
-			_editableLabel.name = "styleId";
-			_editableLabel.value = _styleRule.SelectorString;
-			_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
-			_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);
-			
-
-			Root.Add(_editableLabel);
+			if (_styleSheet.IsReadOnly)
+			{
+				TextElement styleId = new TextElement();
+				styleId.name = "styleId";
+				styleId.text = _styleRule.SelectorString;
+				Root.Add(styleId);
+			}
+			else
+			{
+				_editableLabel = new TextField();
+				_editableLabel.name = "styleId";
+				_editableLabel.value = _styleRule.SelectorString;
+				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
+				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);	
+				Root.Add(_editableLabel);
+			}
 
 			TextElement separator01 = new TextElement();
 			separator01.name = "separator";
