@@ -20,7 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
 - All implementations of `[BeamContextSystem]` or `[RegisterBeamableDependencies]` will be preserved durring Unity code stripping
 - Updated C#MS Publish window UI/UX
+- AccountHud logs a warning when pressed if there isn't an AccountManagementFlow in the scene.
 - Increased the AdminFlow scroll speed
+
 
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
