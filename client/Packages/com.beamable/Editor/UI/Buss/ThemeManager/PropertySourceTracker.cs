@@ -35,7 +35,7 @@ namespace Editor.UI.Buss.ThemeManager
 					AddStyleSheet(bussStyleSheet);
 				}
 			}
-			
+
 			AddStyleDescription(null, Element.InlineStyle);
 		}
 
@@ -79,12 +79,13 @@ namespace Editor.UI.Buss.ThemeManager
 		public class SourceData
 		{
 			public readonly string key;
-			
+
 			public SelectorWeight CurrentPropertyWeight = SelectorWeight.Min;
 			public PropertyReference UsedProperty { get; private set; }
 			public List<PropertyReference> OverridenProperties = new List<PropertyReference>();
-			
-			public SourceData(string key) {
+
+			public SourceData(string key)
+			{
 				this.key = key;
 			}
 

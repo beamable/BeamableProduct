@@ -198,7 +198,7 @@ namespace Beamable.Server
 				return (T)result;
 			}
 
-			if (json.Equals("null") || json.Length == 0 )
+			if (json.Equals("null") || json.Length == 0)
 				return defaultInstance;
 
 			if (json.StartsWith("[") && json.EndsWith("]"))
