@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -37,17 +36,20 @@ namespace Beamable.Experimental.Api.Lobbies
     /// <param name="restriction">The privacy value for the created lobby.</param>
     /// <param name="gameTypeRef">If this lobby should be subject to matchmaking, a gametype ref should be provided</param>
     /// <param name="description">Short optional description of what the lobby is for.</param>
+    /// <param name="playerTags"></param>
+    /// <param name="statsToInclude"></param>
     public Promise<Lobby> CreateLobby(
       string name,
       LobbyRestriction restriction,
       SimGameTypeRef gameTypeRef = null,
       string description = null,
+      List<Tag> playerTags = null,
       List<string> statsToInclude = null)
     {
       return _requester.Request<Lobby>(
         Method.POST,
         $"/lobbies",
-        new CreateLobbyRequest(name, description, restriction.ToString(), gameTypeRef?.Id)
+        new CreateLobbyRequest(name, description, restriction.ToString(), gameTypeRef?.Id, playerTags)
       );
     }
 
@@ -55,12 +57,14 @@ namespace Beamable.Experimental.Api.Lobbies
     /// Join a lobby given its lobby id.
     /// </summary>
     /// <param name="lobbyId"></param>
+    /// <param name="playerTags"></param>
     /// <returns></returns>
-    public Promise<Lobby> JoinLobby(string lobbyId)
+    public Promise<Lobby> JoinLobby(string lobbyId, List<Tag> playerTags = null)
     {
       return _requester.Request<Lobby>(
         Method.PUT,
-        $"/lobbies/{lobbyId}"
+        $"/lobbies/{lobbyId}",
+        new JoinLobbyRequest(playerTags)
       );
     }
 

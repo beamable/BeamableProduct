@@ -24,5 +24,11 @@ namespace Beamable.Experimental.Api.Lobbies
   {
     public string name;
     public string value;
+
+    public Tag(string name, string value)
+    {
+      this.name = name;
+      this.value = value;
+    }
   }
 }

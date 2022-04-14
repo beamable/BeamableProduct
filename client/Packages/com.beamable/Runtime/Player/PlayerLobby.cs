@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
@@ -28,14 +29,17 @@ namespace Beamable.Player
 
     private static string UpdateName(string lobbyId) => $"lobbies.update.{lobbyId}";
 
-    public Lobby State
+    private Lobby State
     {
       get => _state;
-      private set
+      set
       {
         if (value != null)
         {
-          _notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
+          if (_state == null)
+          {
+            _notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
+          }
         }
         else
         {
@@ -50,20 +54,38 @@ namespace Beamable.Player
     }
 
     public bool IsInLobby => State != null;
+    public string Id => SafeAccess(State?.lobbyId);
+    public string Name => SafeAccess(State?.name);
+    public string Description => SafeAccess(State?.description);
+    public LobbyRestriction Restriction => SafeAccess(State.Restriction);
+    public string Host => SafeAccess(State?.host);
+    public List<LobbyPlayer> Players => SafeAccess(State?.players);
+    public string Passcode => SafeAccess(State?.passcode);
+
+    private T SafeAccess<T>(T value)
+    {
+      if (!IsInLobby)
+      {
+        throw new NotInLobby();
+      }
+
+      return value;
+    }
 
     public async Promise Create(
       string name,
       LobbyRestriction restriction,
       SimGameTypeRef gameTypeRef = null,
       string description = null,
+      List<Tag> playerTags = null,
       List<string> statsToInclude = null)
     {
-      State = await _lobbyApi.CreateLobby(name, restriction, gameTypeRef, description, statsToInclude);
+      State = await _lobbyApi.CreateLobby(name, restriction, gameTypeRef, description, playerTags, statsToInclude);
     }
 
-    public async Promise Join(string lobbyId)
+    public async Promise Join(string lobbyId, List<Tag> playerTags = null)
     {
-      State = await _lobbyApi.JoinLobby(lobbyId);
+      State = await _lobbyApi.JoinLobby(lobbyId, playerTags);
     }
 
     // public async Promise JoinByPasscode(string passcode)
@@ -103,17 +125,10 @@ namespace Beamable.Player
       _state = null;
     }
 
-    private void OnRawUpdate(object message)
+    private async void OnRawUpdate(object message)
     {
-      var serialized = Json.Serialize(message, new StringBuilder());
-      Debug.Log($"Received update: {serialized}");
-      var deserialized = JsonUtility.FromJson<LobbyNotification>(serialized);
-      OnUpdate(deserialized);
-    }
-
-    private void OnUpdate(LobbyNotification notification)
-    {
-
+      Debug.Log($"Received update: {message}");
+      await Refresh();
     }
   }
 }
