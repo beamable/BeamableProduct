@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Common;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -6,14 +7,16 @@ namespace Beamable.UI.Buss
 {
 	public static class BussStyleSheetUtility
 	{
+		public static bool IsValidVariableName(string name) => name?.StartsWith("--") ?? false;
+
 		public static bool TryAddProperty(this BussStyleDescription target,
-										  string key,
-										  IBussProperty property,
-										  out BussPropertyProvider propertyProvider)
+		                                  string key,
+		                                  IBussProperty property,
+		                                  out BussPropertyProvider propertyProvider)
 		{
 			var isKeyValid = BussStyle.IsKeyValid(key) || IsValidVariableName(key);
 			if (isKeyValid && !target.HasProperty(key) &&
-				BussStyle.GetBaseType(key).IsAssignableFrom(property.GetType()))
+			    BussStyle.GetBaseType(key).IsInstanceOfType(property))
 			{
 				propertyProvider = BussPropertyProvider.Create(key, property.CopyProperty());
 				target.Properties.Add(propertyProvider);
@@ -38,8 +41,6 @@ namespace Beamable.UI.Buss
 		{
 			return target.GetPropertyProvider(key)?.GetProperty();
 		}
-
-		public static bool IsValidVariableName(string name) => name?.StartsWith("--") ?? false;
 
 		public static IEnumerable<BussPropertyProvider> GetVariablePropertyProviders(this BussStyleDescription target)
 		{
@@ -95,6 +96,30 @@ namespace Beamable.UI.Buss
 					}
 				}
 			}
+		}
+		
+		public static void CopyStyles(BussStyleSheet sourceStyleSheet, BussStyleSheet targetStyleSheet)
+		{
+			foreach (BussStyleRule bussStyleRule in sourceStyleSheet.Styles)
+			{
+				BussStyleRule existingStyleRule =
+					targetStyleSheet.Styles.Find(style => style.SelectorString == bussStyleRule.SelectorString);
+
+				if (existingStyleRule != null)
+				{
+					BeamableLogger.Log(
+						$"Style with selector {bussStyleRule.SelectorString} already exists in target style sheet. Bypassing...");
+					continue;
+				}
+
+				BussStyleRule rule = BussStyleRule.Create(bussStyleRule.SelectorString, bussStyleRule.Properties);
+				targetStyleSheet.Styles.Add(rule);
+			}
+		}
+
+		public static void CopySingleStyle(BussStyleSheet sourceStyleSheet, BussStyleSheet targetStyle)
+		{
+			
 		}
 	}
 }

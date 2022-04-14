@@ -201,9 +201,11 @@ namespace Beamable.Editor.UI.Components
 			var window = NewVariableWindow.ShowWindow();
 			window?.Init(_styleRule, (key, property) =>
 			{
-				StyleRule.TryAddProperty(key, property, out _);
-				AssetDatabase.SaveAssets();
-				_styleSheet.TriggerChange();
+				if (StyleRule.TryAddProperty(key, property, out _))
+				{
+					AssetDatabase.SaveAssets();
+					_styleSheet.TriggerChange();
+				}
 			});
 		}
 

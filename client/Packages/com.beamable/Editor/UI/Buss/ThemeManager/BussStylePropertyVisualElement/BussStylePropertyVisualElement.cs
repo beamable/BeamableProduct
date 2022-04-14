@@ -153,8 +153,10 @@ namespace Beamable.Editor.UI.Components
 
 			if (!PropertyIsInStyle)
 			{
-				_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _);
-				_styleSheet.TriggerChange();
+				if (_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _))
+				{
+					_styleSheet.TriggerChange();
+				}
 			}
 		}
 
