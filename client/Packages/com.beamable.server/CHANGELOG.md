@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Progress bar in publish window now correctly displays the progress of services publication
 - Client code can handle receiving a `null` response from a `ClientCallable`
 
-## [1.0.7]
+## [1.0.8]
 no changes
 
 ## [1.0.7]
