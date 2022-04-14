@@ -49,7 +49,6 @@ namespace Beamable
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-			BeamableVsp.TryToEmitAttribution(); // this will no-op if the package isn't a VSP package.
 
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:

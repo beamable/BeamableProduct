@@ -25,7 +25,7 @@ public static class AssetStoreTools
 
 	public static EnvironmentType Environment = EnvironmentType.STAGE;
 	public static string VersionString = "0.1.0";
-	public static string VspUid = "fakeIdToBeReplaced";
+	public static bool Vsp = true;
 
 	[MenuItem("Asset Store Tools/Build")]
 	public static void BuildFlow()
@@ -88,7 +88,7 @@ public static class AssetStoreTools
 		var guid = AssetDatabase.AssetPathToGUID(envDefaultsPath);
 		var sourceEnv = File.ReadAllText(sourceEnvPath);
 		sourceEnv = sourceEnv.Replace(Constants.Environment.BUILD__SDK__VERSION__STRING, VersionString);
-		sourceEnv = sourceEnv.Replace(Constants.Environment.UNITY__VSP__UID, VspUid);
+		sourceEnv = sourceEnv.Replace(Constants.Environment.UNITY__VSP__UID, Vsp ? "true" : "false");
 		File.WriteAllText(Path.GetFullPath(Path.Combine(TempDirectory, "temp", guid, "asset")),sourceEnv);
 	}
 
@@ -165,7 +165,7 @@ public static class AssetStoreTools
 			EditorGUILayout.LabelField("Build Asset Store .UnityPackage");
 			Environment = (EnvironmentType)EditorGUILayout.EnumPopup("Environment", Environment);
 			VersionString = EditorGUILayout.TextField("Version String", VersionString);
-			VspUid = EditorGUILayout.TextField("VSP UID", VspUid);
+			Vsp = EditorGUILayout.Toggle("VSP", Vsp);
 			if (GUILayout.Button("BUILD"))
 			{
 				BuildPackage();

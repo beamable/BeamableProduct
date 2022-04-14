@@ -15,6 +15,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.MenuItems.Windows;
@@ -482,26 +483,27 @@ namespace Beamable.Editor
 			return ApplyToken(token)
 			   .FlatMap(_ =>
 			   {
+				   BeamableVsp.TryToEmitAttribution("login", token?.Cid); // this will no-op if the package isn't a VSP package.
 				   return RealmService.GetRealm()
-				   .Recover(ex =>
-				   {
-					   if (ex is RealmServiceException err)
-					   {
-						   // there is no realm.
-						   return null;
-					   }
+				                      .Recover(ex =>
+				                      {
+					                      if (ex is RealmServiceException err)
+					                      {
+						                      // there is no realm.
+						                      return null;
+					                      }
 
-					   throw ex;
-				   })
-				   .FlatMap(realm =>
-				   {
-					   if (realm == null)
-					   {
-						   return Promise<Unit>.Successful(PromiseBase.Unit); // nothing to do.
-					   }
+					                      throw ex;
+				                      })
+				                      .FlatMap(realm =>
+				                      {
+					                      if (realm == null)
+					                      {
+						                      return Promise<Unit>.Successful(PromiseBase.Unit); // nothing to do.
+					                      }
 
-					   return SwitchRealm(realm);
-				   });
+					                      return SwitchRealm(realm);
+				                      });
 			   })
 			   .Map(_ => this);
 		}

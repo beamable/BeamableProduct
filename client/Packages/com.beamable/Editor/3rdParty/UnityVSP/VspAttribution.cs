@@ -8,7 +8,7 @@ namespace UnityEditor.VspAttribution.Beamable
 	public static class VspAttribution
 	{
 		const int k_VersionId = 4;
-		const int k_MaxEventsPerHour = 10;
+		const int k_MaxEventsPerHour = 2;
 		const int k_MaxNumberOfElements = 1000;
 
 		const string k_VendorKey = "unity.vsp-attribution";

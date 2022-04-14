@@ -40,7 +40,6 @@ namespace Beamable
 		public static PackageVersion SdkVersion => Data.SdkVersion;
 		public static string DockerRegistryUrl => Data.DockerRegistryUrl;
 		public static bool IsUnityVsp => Data.IsUnityVsp;
-		public static string UnityVspId => Data.UnityVspId;
 
 		// See https://disruptorbeam.atlassian.net/browse/PLAT-3838
 		public static string SocketUrl => $"{Data.ApiUrl.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
@@ -73,7 +72,7 @@ namespace Beamable
 		[SerializeField] private string sdkVersion;
 		[SerializeField] private string dockerRegistryUrl;
 		[SerializeField] private bool isUnityVsp;
-		[SerializeField] private string unityVspId;
+		[SerializeField] private string isUnityVspStr;
 
 		private PackageVersion _version;
 
@@ -84,7 +83,7 @@ namespace Beamable
 		public PackageVersion SdkVersion => _version ?? (_version = sdkVersion);
 		public string DockerRegistryUrl => dockerRegistryUrl;
 		public bool IsUnityVsp => isUnityVsp;
-		public string UnityVspId => unityVspId;
+
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
@@ -94,9 +93,9 @@ namespace Beamable
 			s.Serialize("sdkVersion", ref sdkVersion);
 			s.Serialize("beamMongoExpressUrl", ref beamMongoExpressUrl);
 			s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
-			s.Serialize("unityVspId", ref unityVspId);
+			s.Serialize("isUnityVsp", ref isUnityVspStr);
+			bool.TryParse(isUnityVspStr, out isUnityVsp);
 
-			isUnityVsp = !unityVspId.Equals(Constants.Environment.UNITY__VSP__UID);
 			if (sdkVersion.Equals(Constants.Environment.BUILD__SDK__VERSION__STRING))
 			{
 				sdkVersion = "0.0.0";
