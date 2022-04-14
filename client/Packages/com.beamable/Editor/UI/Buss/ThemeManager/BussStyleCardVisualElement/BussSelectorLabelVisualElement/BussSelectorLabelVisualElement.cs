@@ -40,6 +40,13 @@ namespace Beamable.Editor.UI.Components
 		{
 			Root.Clear();
 
+#if BEAMABLE_DEVELOPER
+			_editableLabel = new TextField();
+			_editableLabel.value = _styleRule.SelectorString;
+			_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
+			_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);
+			Root.Add(_editableLabel);
+#else
 			if (_styleSheet.IsReadOnly)
 			{
 				TextElement styleId = new TextElement();
@@ -54,6 +61,7 @@ namespace Beamable.Editor.UI.Components
 				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);	
 				Root.Add(_editableLabel);
 			}
+#endif
 
 			TextElement separator01 = new TextElement();
 			separator01.name = "separator";
@@ -88,10 +96,12 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnStyleSheetClicked(MouseDownEvent evt)
 		{
+#if !BEAMABLE_DEVELOPER
 			if (_styleSheet.IsReadOnly)
 			{
 				return;
 			}
+#endif
 
 			GenericMenu context = new GenericMenu();
 

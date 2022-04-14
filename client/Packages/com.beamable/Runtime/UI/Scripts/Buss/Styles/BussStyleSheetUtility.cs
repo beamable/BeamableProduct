@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -97,29 +98,26 @@ namespace Beamable.UI.Buss
 				}
 			}
 		}
-		
-		public static void CopyStyles(BussStyleSheet sourceStyleSheet, BussStyleSheet targetStyleSheet)
+
+		public static void CopySingleStyle(BussStyleSheet targetStyleSheet, BussStyleRule style)
 		{
-			foreach (BussStyleRule bussStyleRule in sourceStyleSheet.Styles)
+			if (style == null)
 			{
-				BussStyleRule existingStyleRule =
-					targetStyleSheet.Styles.Find(style => style.SelectorString == bussStyleRule.SelectorString);
-
-				if (existingStyleRule != null)
-				{
-					BeamableLogger.Log(
-						$"Style with selector {bussStyleRule.SelectorString} already exists in target style sheet. Bypassing...");
-					continue;
-				}
-
-				BussStyleRule rule = BussStyleRule.Create(bussStyleRule.SelectorString, bussStyleRule.Properties);
-				targetStyleSheet.Styles.Add(rule);
+				BeamableLogger.LogWarning($"Style to copy can't be null");
+				return;
 			}
+
+			BussStyleRule rule = BussStyleRule.Create(style.SelectorString, style.Properties);
+			targetStyleSheet.Styles.Add(rule);
+			AssetDatabase.SaveAssets();
+			targetStyleSheet.TriggerChange();
 		}
 
-		public static void CopySingleStyle(BussStyleSheet sourceStyleSheet, BussStyleSheet targetStyle)
+		public static void RemoveSingleStyle(BussStyleSheet targetStyleSheet, BussStyleRule style)
 		{
-			
+			targetStyleSheet.RemoveStyle(style);
+			AssetDatabase.SaveAssets();
+			targetStyleSheet.TriggerChange();
 		}
 	}
 }

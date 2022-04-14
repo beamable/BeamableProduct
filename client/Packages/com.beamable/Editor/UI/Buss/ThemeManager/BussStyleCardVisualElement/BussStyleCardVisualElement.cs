@@ -144,24 +144,6 @@ namespace Beamable.Editor.UI.Components
 			_sortButton?.UnregisterCallback<MouseDownEvent>(SortButtonClicked);
 		}
 
-		private void RemoveButtonClicked()
-		{
-			BeamablePopupWindow.CloseConfirmationWindow();
-
-			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				DELETE_STYLE_MESSAGE,
-				() =>
-				{
-					_styleSheet.RemoveStyle(StyleRule);
-					AssetDatabase.SaveAssets();
-				},
-				BeamablePopupWindow.CloseConfirmationWindow
-			);
-
-			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup,
-			                                            this.GetEditorWindowWithReflection());
-		}
-
 		private void AddRuleButtonClicked(MouseDownEvent evt)
 		{
 			var keys = new HashSet<string>();
@@ -271,10 +253,42 @@ namespace Beamable.Editor.UI.Components
 		{
 			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
 
-			commands.Add(new GenericMenuCommand(Features.Buss.MenuItems.DUPLICATE, ()=> {Debug.Log("Duplicate");}));
-			commands.Add(new GenericMenuCommand(Features.Buss.MenuItems.COPY_TO, ()=>{Debug.Log("Copy to");}));
-			
+			commands.Add(new GenericMenuCommand(Features.Buss.MenuItems.DUPLICATE, () =>
+			{
+				BussStyleSheetUtility.CopySingleStyle(_styleSheet, _styleRule);
+			}));
+
+			List<BussStyleSheet> writableStyleSheets = new List<BussStyleSheet>(_writableStyleSheets);
+			writableStyleSheets.Remove(_styleSheet);
+
+			foreach (BussStyleSheet targetStyleSheet in writableStyleSheets)
+			{
+				commands.Add(new GenericMenuCommand($"{Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}", () =>
+				{
+					BussStyleSheetUtility.CopySingleStyle(targetStyleSheet, _styleRule);
+				}));
+			}
+
+			commands.Add(new GenericMenuCommand(Features.Buss.MenuItems.REMOVE, RemoveStyleClicked));
+
 			return commands;
+		}
+
+		private void RemoveStyleClicked()
+		{
+			BeamablePopupWindow.CloseConfirmationWindow();
+
+			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
+				DELETE_STYLE_MESSAGE,
+				() =>
+				{
+					BussStyleSheetUtility.RemoveSingleStyle(_styleSheet, _styleRule);
+				},
+				BeamablePopupWindow.CloseConfirmationWindow
+			);
+
+			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup,
+			                                            this.GetEditorWindowWithReflection());
 		}
 
 		public void RefreshProperties()
