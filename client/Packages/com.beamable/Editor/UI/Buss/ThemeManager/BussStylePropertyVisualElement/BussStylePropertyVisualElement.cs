@@ -1,5 +1,7 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using Editor.UI.Buss.ThemeManager;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -21,16 +23,23 @@ namespace Beamable.Editor.UI.Components
 		private TextElement _labelComponent;
 
 		private VariableDatabase _variableDatabase;
+		private PropertySourceTracker _propertySourceTracker;
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
-		private BussStyleSheet _externalVariableSource;
+		private BussStyleSheet _externalVariableSource = null;
 		private bool _editMode;
 
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
 
 		public bool PropertyIsInStyle => _styleRule.Properties.Contains(_propertyProvider);
+
+		public string VariableSource
+		{
+			get => _labelComponent.tooltip;
+			set => _labelComponent.tooltip = value;
+		}
 
 		public BussStylePropertyVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss")
@@ -63,6 +72,10 @@ namespace Beamable.Editor.UI.Components
 			_variableParent.name = "globalVariable";
 			Root.Add(_variableParent);
 
+			var overrideIndicator = new VisualElement();
+			overrideIndicator.AddToClassList("overrideIndicator");
+			Root.Add(overrideIndicator);
+
 			Root.parent.EnableInClassList("exists", PropertyIsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !PropertyIsInStyle);
 			Refresh();
@@ -81,10 +94,12 @@ namespace Beamable.Editor.UI.Components
 						  BussStyleRule styleRule,
 						  BussPropertyProvider property,
 						  VariableDatabase variableDatabase,
+						  PropertySourceTracker propertySourceTracker,
 						  bool editMode)
 		{
 			_editMode = editMode;
 			_variableDatabase = variableDatabase;
+			_propertySourceTracker = propertySourceTracker;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_propertyProvider = property;
@@ -92,32 +107,126 @@ namespace Beamable.Editor.UI.Components
 			Init();
 		}
 
+		public void SetPropertySourceTracker(PropertySourceTracker tracker)
+		{
+			_propertySourceTracker = tracker;
+			SetupEditableField();
+		}
+
 		private void SetupEditableField()
 		{
-			var baseType = BussStyle.GetBaseType(_propertyProvider.Key);
-			if (_propertyVisualElement != null)
+			PropertySourceTracker context = null;
+			if (_propertySourceTracker != null && _propertySourceTracker.Element != null)
 			{
-				if (_propertyVisualElement.BaseProperty ==
-					_propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule, out _externalVariableSource))
+				if (_styleRule.Selector?.CheckMatch(_propertySourceTracker.Element) ?? false)
 				{
-					_propertyVisualElement.OnPropertyChangedExternally();
-					return;
+					context = _propertySourceTracker;
 				}
+			}
+			
+			var result =
+				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleRule, _variableDatabase,
+				                                                     context, out var property, out var variableSource);
 
-				_propertyVisualElement.RemoveFromHierarchy();
-				_propertyVisualElement.Destroy();
+			if (_propertyProvider.HasVariableReference && variableSource.propertyProvider != null)
+			{
+				if (variableSource.styleSheet == null)
+				{
+					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
+					                 "Declared in inline style.";
+				}
+				else
+				{
+					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
+					                 $"Selector: {variableSource.styleRule.SelectorString}\n" +
+					                 $"Style sheet: {variableSource.styleSheet.name}";
+				}
+			}
+			else
+			{
+				VariableSource = null;
 			}
 
-			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, _styleRule, out _externalVariableSource, baseType);
+			var overriten = false;
+			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
+			{
+				overriten = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
+			}
+			EnableInClassList("overriten", overriten);
 
+			if (result != BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
+			{
+				string text;
+				switch (result)
+				{
+					case BussStylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
+						text = "Multiple possible values.";
+						break;
+					case BussStylePropertyVisualElementUtility.PropertyValueState.NoResult:
+						text = "No possible value.";
+						break;
+					case BussStylePropertyVisualElementUtility.PropertyValueState.VariableLoopDetected:
+						text = "Variable loop-reference detected.";
+						break;
+					default:
+						text = "Something is wrong here.";
+						break;
+				}
+				CreateMessageField(text);
+				return;
+			}
+			
+			
+			if (_propertyVisualElement == null)
+			{
+				CreateEditableField(property);
+				return;
+			}
+			
+			if (property == _propertyVisualElement.BaseProperty)
+			{
+				_propertyVisualElement.OnPropertyChangedExternally();
+			}
+			else
+			{
+				CreateEditableField(property);
+			}
+		}
+
+		private void DestroyEditableField()
+		{
+			if (_propertyVisualElement == null) return;
+			_propertyVisualElement.RemoveFromHierarchy();
+			_propertyVisualElement.Destroy();
+			_propertyVisualElement = null;
+		}
+
+		private void CreateEditableField(IBussProperty property) {
 			if (_propertyVisualElement != null)
 			{
+				DestroyEditableField();
+			}
+			_propertyVisualElement = property.GetVisualElement();
+
+			if (_propertyVisualElement != null) {
 				_propertyVisualElement.UpdatedStyleSheet = PropertyIsInStyle ? _styleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Init();
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
 				_propertyVisualElement.OnValueChanged += HandlePropertyChanged;
 			}
+		}
+
+		private void CreateMessageField(string text)
+		{
+			if (_propertyVisualElement != null)
+			{
+				DestroyEditableField();
+			}
+
+			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
+			_valueParent.Add(_propertyVisualElement);
+			_propertyVisualElement.Init();
 		}
 
 		void HandlePropertyChanged()
