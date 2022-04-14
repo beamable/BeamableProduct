@@ -168,6 +168,26 @@ namespace Beamable.UI.Buss
 				this.styleRule = styleRule;
 				this.propertyProvider = propertyProvider;
 			}
+
+			public SelectorWeight GetWeight()
+			{
+				if (styleRule == null)
+				{
+					return SelectorWeight.Max;
+				}
+				else
+				{
+					return styleRule.Selector.GetWeight();
+				}
+			}
+		}
+
+		public enum PropertyValueState
+		{
+			NoResult,
+			SingleResult,
+			MultipleResults,
+			VariableLoopDetected
 		}
 	}
 }

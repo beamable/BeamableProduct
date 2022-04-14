@@ -39,6 +39,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.ServiceBuilder.OnIsBuildingChanged -= OnIsBuildingChanged;
 			_microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
+			_microserviceModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 		}
 		protected override void QueryVisualElements()
 		{
