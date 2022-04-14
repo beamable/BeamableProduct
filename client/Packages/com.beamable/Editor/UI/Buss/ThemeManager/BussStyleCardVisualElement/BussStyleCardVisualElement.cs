@@ -183,7 +183,7 @@ namespace Beamable.Editor.UI.Components
 			var window = NewVariableWindow.ShowWindow();
 			window?.Init(_styleRule, (key, property) =>
 			{
-				if (StyleRule.TryAddProperty(key, property, out _))
+				if (StyleRule.TryAddProperty(key, property))
 				{
 					AssetDatabase.SaveAssets();
 					_styleSheet.TriggerChange();

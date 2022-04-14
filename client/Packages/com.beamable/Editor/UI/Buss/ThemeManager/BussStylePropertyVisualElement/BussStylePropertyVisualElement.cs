@@ -37,8 +37,7 @@ namespace Beamable.Editor.UI.Components
 		public bool PropertyIsInStyle => _styleRule.Properties.Contains(_propertyProvider);
 
 		public BussStylePropertyVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss")
-		{ }
+			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
 
 		public override void Init()
 		{
@@ -67,14 +66,16 @@ namespace Beamable.Editor.UI.Components
 
 		private void LabelClicked(MouseDownEvent evt)
 		{
+#if !BEAMABLE_DEVELOPER
 			if (_styleSheet.IsReadOnly)
 			{
 				return;
 			}
+#endif
 
 			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
 			commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveProperty));
-			
+
 			GenericMenu context = new GenericMenu();
 
 			foreach (GenericMenuCommand command in commands)
@@ -96,9 +97,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
-						  BussPropertyProvider property,
-						  VariableDatabase variableDatabase)
+		                  BussStyleRule styleRule,
+		                  BussPropertyProvider property,
+		                  VariableDatabase variableDatabase)
 		{
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
@@ -114,7 +115,8 @@ namespace Beamable.Editor.UI.Components
 			if (_propertyVisualElement != null)
 			{
 				if (_propertyVisualElement.BaseProperty ==
-					_propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule, out _externalVariableSource))
+				    _propertyProvider.GetProperty()
+				                     .GetEndProperty(_variableDatabase, _styleRule, out _externalVariableSource))
 				{
 					_propertyVisualElement.OnPropertyChangedExternally();
 					return;
@@ -124,7 +126,9 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.Destroy();
 			}
 
-			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, _styleRule, out _externalVariableSource, baseType);
+			_propertyVisualElement =
+				_propertyProvider.GetVisualElement(_variableDatabase, _styleRule, out _externalVariableSource,
+				                                   baseType);
 
 			if (_propertyVisualElement != null)
 			{
@@ -153,7 +157,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (!PropertyIsInStyle)
 			{
-				if (_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _))
+				if (_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty()))
 				{
 					_styleSheet.TriggerChange();
 				}
@@ -172,7 +176,7 @@ namespace Beamable.Editor.UI.Components
 		private void RemoveProperty()
 		{
 			IBussProperty bussProperty = _propertyProvider.GetProperty();
-			_styleSheet.RemoveStyleProperty(bussProperty, _styleRule.SelectorString);
+			_styleSheet.RemoveStyleProperty(bussProperty, _styleRule);
 		}
 
 		private void SetupVariableConnection()
