@@ -94,7 +94,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_servicesListElement = Root.Q<VisualElement>("listRoot");
 			_servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
 			_dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow
-			                      || !DockerCommand.DockerNotRunning;
+								  || !DockerCommand.DockerNotRunning;
 
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
@@ -104,9 +104,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			else if (!isInit)
 			{
 				Refresh();
-				return;;	
+				return; ;
 			}
-			
+
 			if (DockerCommand.DockerNotInstalled)
 				return;
 
@@ -372,7 +372,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var dockerAnnouncement = new DockerAnnouncementModel();
 			dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
 			Root.Q<VisualElement>("announcementList").Clear();
-			
+
 			if (DockerCommand.DockerNotInstalled)
 			{
 				dockerAnnouncement.OnInstall = () =>
