@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
 - Content string fields can contain escaped characters, and won't be double escaped after download
 - Fixed issue with `ReflectionCache` that happened on certain platforms when `IEnumerable` returning functions had to be parsed for `AttributesOfInterest`.
+- Possible `DivideByZero` exxception that was thrown durring Toolbox usage
 
 ## [1.0.8]
 ### Added
