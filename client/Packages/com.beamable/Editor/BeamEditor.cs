@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 using Logger = Beamable.Common.Spew.Logger;
 #if UNITY_2019_3_OR_NEWER
