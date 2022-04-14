@@ -55,11 +55,14 @@ namespace Beamable.Content
 		/// <param name="scope"></param>
 		/// <param name="callback"></param>
 		/// <returns></returns>
+#pragma warning disable 0809
 		[Obsolete("The ManifestSubscription doesn't support the scope field. Please use " + nameof(Subscribe) + " instead.")]
 		public override PlatformSubscription<ClientManifest> Subscribe(string scope, Action<ClientManifest> callback)
 		{
 			return base.Subscribe(callback);
 		}
+#pragma warning restore 0809
+
 
 		public bool TryGetContentId(string contentId, out ClientContentInfo clientInfo)
 		{
