@@ -76,7 +76,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+			SetView();
+		}
 
+		private void RefreshView()
+		{
+			SetView(false);
+		}
+
+		private void SetView(bool isInit = true) // we don't want to destroy & recreate whole view every time when docker is disabled
+		{
 			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
 				DockerCommand.CheckDockerAppRunning();
 
@@ -85,22 +94,29 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_servicesListElement = Root.Q<VisualElement>("listRoot");
 			_servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
 			_dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow
-								  || !DockerCommand.DockerNotRunning;
+			                      || !DockerCommand.DockerNotRunning;
 
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
 				ShowDockerNotInstalledAnnouncement();
-				EditorDebouncer.Debounce("Refresh C#MS Window", Refresh, 1f);
+				EditorDebouncer.Debounce("Refresh C#MS Window", RefreshView, 1f);
 			}
+			else if (!isInit)
+			{
+				Refresh();
+				return;;	
+			}
+			
 			if (DockerCommand.DockerNotInstalled)
 				return;
 
-			CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
-			CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
-
-			_modelToVisual.Clear();
-
-			SetupServicesStatus();
+			if (isInit)
+			{
+				CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
+				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
+				_modelToVisual.Clear();
+				SetupServicesStatus();
+			}
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
@@ -355,6 +371,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var dockerAnnouncement = new DockerAnnouncementModel();
 			dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
+			Root.Q<VisualElement>("announcementList").Clear();
+			
 			if (DockerCommand.DockerNotInstalled)
 			{
 				dockerAnnouncement.OnInstall = () =>
