@@ -266,11 +266,8 @@ namespace Beamable.Server.Editor
 		[DidReloadScripts]
 		private static void WatchMicroserviceFiles()
 		{
-			bool dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow
-			                           || !DockerCommand.DockerNotRunning;
-			
 			// If we are not initialized, delay the call until we are.
-			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized || !dockerHubIsRunning)
+			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 			{
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
