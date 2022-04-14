@@ -2,7 +2,6 @@
 RemoteStorageObjectVisualElement > TemplateContainer > #mainVisualElement,
 CreateStorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     margin-right: 10px;
-    margin-left: 10px;
 }
 
 LabeledCheckboxVisualElement #icon {

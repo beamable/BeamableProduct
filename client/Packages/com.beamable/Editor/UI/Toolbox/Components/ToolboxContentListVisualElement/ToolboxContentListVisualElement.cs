@@ -67,6 +67,10 @@ namespace Beamable.Editor.Toolbox.Components
 			var totalElements = TotalWidgets;
 
 			var elementsPerRow = (int)(totalWidth / elementSize);
+
+			if (totalWidth < 1f || elementsPerRow <= 0)
+				return;
+
 			var completedRows = (int)(totalElements / elementsPerRow);
 			var correctElements = completedRows * elementsPerRow;
 			var leftOverElements = totalElements - correctElements;

@@ -1,13 +1,10 @@
-
 using Beamable.Common;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 #if UNITY_2018
@@ -18,6 +15,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.UI.Components
 {
 	public class PrimaryButtonVisualElement : BeamableVisualElement
@@ -27,6 +25,8 @@ namespace Beamable.Editor.UI.Components
 
 		private Dictionary<string, bool> _fieldValid = new Dictionary<string, bool>();
 		private List<FormConstraint> _constraints = new List<FormConstraint>();
+
+		private const string CLASS_NAME_REGEX = "^[A-Za-z_][A-Za-z0-9_]*$";
 
 		public string Text { get; private set; }
 
@@ -63,6 +63,16 @@ namespace Beamable.Editor.UI.Components
 		{
 			Text = text;
 			Button.text = text;
+		}
+
+		public bool CheckGateKeepers()
+		{
+			foreach (var constraint in _constraints)
+			{
+				constraint.Check(true);
+			}
+
+			return Button.enabledSelf;
 		}
 
 		public void AddGateKeeper(params FormConstraint[] constraints)
@@ -225,9 +235,6 @@ namespace Beamable.Editor.UI.Components
 
 		public static string IsValidClassName(string name)
 		{
-			/*
-			 * A class name must be alphaNumeric and have _ and not start with a number
-			 */
 			var codeProvider = new CSharpCodeProvider();
 			string sFixedName = codeProvider.CreateValidIdentifier(name);
 			var codeType = new CodeTypeDeclaration(sFixedName);
@@ -236,11 +243,12 @@ namespace Beamable.Editor.UI.Components
 			{
 				return "Cannot use reserved C# words";
 			}
-			if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name))
+
+			if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name) ||
+				!Regex.IsMatch(name, CLASS_NAME_REGEX))
 			{
 				return "Must be a valid C# class name";
 			}
-
 			return null;
 		}
 

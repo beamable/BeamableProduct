@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Samples.SampleProjectBase
@@ -11,7 +10,7 @@ namespace Beamable.Samples.SampleProjectBase
 	/// Inspired by Unity's "Learn" Sample Projects
 	///
 	/// </summary>
-	[CustomEditor(typeof(Beamable.Samples.SampleProjectBase.Readme))]
+	[CustomEditor(typeof(Readme))]
 	[InitializeOnLoad]
 	public class BeamableReadmeEditor : UnityEditor.Editor
 	{

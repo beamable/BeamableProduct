@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -27,6 +29,20 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (string.IsNullOrWhiteSpace(input)) return "";
 			return "--" + CleanString(input);
+		}
+
+		public static List<string> AsClassesList(List<string> classesList)
+		{
+			List<string> finalList = new List<string>();
+			finalList.AddRange(classesList.Select(AsClassSelector));
+			return finalList;
+		}
+
+		public static List<string> AsCleanList(List<string> list)
+		{
+			List<string> finalList = new List<string>();
+			finalList.AddRange(list.Select(CleanString));
+			return finalList;
 		}
 	}
 }

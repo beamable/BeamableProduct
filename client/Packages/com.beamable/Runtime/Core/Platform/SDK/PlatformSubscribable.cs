@@ -1,14 +1,11 @@
-//#define PLATFORM_SUBSCRIBABLE_RETRIES_TEST
-
 using Beamable.Api;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Spew;
 using Beamable.Coroutines;
-using Beamable.Service;
-using Beamable.Spew;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -245,9 +242,15 @@ namespace Beamable.Api
 			if (nextRefreshScopes.Count == 0)
 				return Promise<Unit>.Successful(PromiseBase.Unit);
 
+
 			if (nextRefreshPromise == null)
 			{
 				nextRefreshPromise = new Promise<Unit>();
+
+				// Need this null-check to cover errors that happen when leaving play-mode (where this method can run after Unity has already destroyed the CoroutineService's GameObject).
+#if UNITY_EDITOR
+				if(coroutineService != null) 
+#endif
 				coroutineService.StartCoroutine(ExecuteRefresh());
 			}
 
@@ -263,7 +266,7 @@ namespace Beamable.Api
 			var sentScopes = nextRefreshScopes.ToArray();
 			var scope = string.Join(",", nextRefreshScopes);
 			nextRefreshScopes.Clear();
-			
+
 			ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
 			{
 				var delay = SubscribableConsts.RETRY_DELAYS[Math.Min(retry, SubscribableConsts.RETRY_DELAYS.Length - 1)];

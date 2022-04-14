@@ -1,7 +1,6 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Shop;
 using Beamable.Editor.Models.Schedules;
-using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Validation;
 using System;
 using System.Collections.Generic;
@@ -168,18 +167,8 @@ namespace Beamable.Editor.UI.Components
 
 			if (_allDayComponent.Value)
 			{
-				if (!_neverExpiresComponent.Value && _currentModel.Mode == ScheduleWindowModel.WindowMode.Daily)
-				{
-					_isPeriodValid = true;
-					_invalidPeriodMessage = string.Empty;
-				}
-				else
-				{
-					_isPeriodValid = _currentModel.Mode != ScheduleWindowModel.WindowMode.Daily;
-					_invalidPeriodMessage = _currentModel.Mode == ScheduleWindowModel.WindowMode.Daily
-						? "Daily mode can't have All day option selected"
-						: string.Empty;
-				}
+				_isPeriodValid = true;
+				_invalidPeriodMessage = string.Empty;
 			}
 			else
 			{

@@ -1,15 +1,11 @@
 using Beamable.Common;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
 using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
-using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -19,6 +15,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class MicroserviceVisualElement : ServiceBaseVisualElement
@@ -27,12 +25,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{ }
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
 
-		private Action _defaultBuildAction;
-		private bool _mouseOverBuildDropdown;
-
-		private Label _buildDefaultLabel;
-		private Button _buildDropDown;
-		private Image _buildDropDownIcon;
 		private MicroserviceModel _microserviceModel;
 
 		protected override void OnDestroy()
@@ -47,25 +39,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.ServiceBuilder.OnIsBuildingChanged -= OnIsBuildingChanged;
 			_microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
+			_microserviceModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 		}
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			_buildDropDown = Root.Q<Button>("buildDropDown");
-			_buildDefaultLabel = _buildDropDown.Q<Label>();
-			_buildDropDownIcon = _buildDropDown.Q<Image>();
 			_microserviceModel = (MicroserviceModel)Model;
 		}
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
-			_buildDropDownIcon.RegisterCallback<MouseEnterEvent>(evt => _mouseOverBuildDropdown = true);
-			_buildDropDownIcon.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverBuildDropdown = false);
-			var buildBtnManipulator = new ContextualMenuManipulator(HandleBuildButtonClicked);
-			buildBtnManipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_buildDropDown.clickable.activators.Clear();
-			_buildDropDown.AddManipulator(buildBtnManipulator);
-
+			Root.Q("leftArea")?.RemoveFromHierarchy();
+			_startButton.clickable.clicked -= HandleStartButtonClicked;
+			_startButton.clickable.clicked += HandleStartButtonClicked;
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndStart += SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndRestart -= SetupProgressBarForBuildAndRestart;
@@ -101,20 +87,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateRemoteStatusIcon()
 		{
 			_remoteStatusIcon.ClearClassList();
-			string statusClassName;
-
-			if (_microserviceModel.RemoteReference?.enabled ?? false)
-			{
-				statusClassName = "remoteEnabled";
-				_remoteStatusLabel.text = REMOTE_ENABLED;
-			}
-			else
-			{
-				statusClassName = "remoteDisabled";
-				_remoteStatusLabel.text = REMOTE_NOT_ENABLED;
-			}
-
-			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+			bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
+			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
+			_remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 		protected override void UpdateLocalStatus()
@@ -141,41 +116,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			new StepLogParser(_loadingBar, Model, task);
 		}
-		private void HandleBuildButtonClicked(ContextualMenuPopulateEvent evt)
+		private void HandleStartButtonClicked()
 		{
-			if (_mouseOverBuildDropdown)
+			if (_microserviceModel.IsRunning)
 			{
-				evt.menu.BeamableAppendAction("Build", pos => _microserviceModel.Build());
-				evt.menu.BeamableAppendAction(_microserviceModel.IncludeDebugTools
-					? BUILD_DISABLE_DEBUG
-					: BUILD_ENABLE_DEBUG, pos =>
-				{
-					_microserviceModel.IncludeDebugTools = !_microserviceModel.IncludeDebugTools;
-					UpdateLocalStatus();
-				});
+				_microserviceModel.Stop();
 			}
 			else
 			{
-				_defaultBuildAction?.Invoke();
+				_microserviceModel.BuildAndStart();
 			}
 		}
+
 		protected override void UpdateButtons()
 		{
 			base.UpdateButtons();
-			_stopButton.visible = Model.IsRunning;
-			_buildDefaultLabel.text = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-				_microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
-
-			if (_microserviceModel.IsRunning)
-			{
-				_defaultBuildAction = () => _microserviceModel.BuildAndRestart();
-			}
-			else
-			{
-				_defaultBuildAction = () => _microserviceModel.BuildAndStart();
-			}
-			_stopButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
-			_buildDropDown.SetEnabled(!_microserviceModel.IsBuilding);
+			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
+													 _microserviceModel.IsRunning ? STOP : Constants.Tooltips.Microservice.PLAY);
+			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
 		}
 	}
 }

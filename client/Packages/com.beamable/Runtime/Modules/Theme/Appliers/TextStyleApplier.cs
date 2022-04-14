@@ -1,12 +1,12 @@
 using Beamable.Theme.Palettes;
-using System.Linq;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.Theme.Appliers
 {
-	[System.Serializable]
+	[Serializable]
 	public class TextStyleApplier : StyleApplier<TextMeshProUGUI>
 	{
 		public TextBinding TextBinding;
@@ -42,7 +42,6 @@ namespace Beamable.Theme.Appliers
 			}
 
 			component.color = textStyle.BlendMode.Blend(colorStyle.Color, textStyle.TintColor);
-
 			component.SetAllDirty();
 
 			if (Application.isPlaying)
@@ -53,8 +52,6 @@ namespace Beamable.Theme.Appliers
 					LayoutRebuilder.ForceRebuildLayoutImmediate(parentLayout.GetComponent<RectTransform>());
 				}
 			}
-
-
 		}
 	}
 }

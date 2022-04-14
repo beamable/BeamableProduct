@@ -2,7 +2,6 @@ using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization;
-using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -21,13 +20,11 @@ namespace Beamable.Server.Editor.ManagerClient
 			Requester = requester;
 		}
 
-
-
 		public Promise<ServiceManifest> GetCurrentManifest()
 		{
 			return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest/current", "{}")
 			   .Map(res => res.manifest)
-			   .RecoverFrom404(ex => new ServiceManifest());
+			   .RecoverFrom40x(ex => new ServiceManifest());
 		}
 
 		[Obsolete(Constants.Commons.OBSOLETE_WILL_BE_REMOVED)]
@@ -51,7 +48,7 @@ namespace Beamable.Server.Editor.ManagerClient
 		{
 			return Requester.Request<GetManifestsResponse>(Method.GET, $"{SERVICE}/manifests")
 			   .Map(res => res.manifests)
-			   .RecoverFrom404(err => new List<ServiceManifest>());
+			   .RecoverFrom40x(err => new List<ServiceManifest>());
 		}
 
 		public Promise<Unit> Deploy(ServiceManifest manifest)
@@ -68,11 +65,11 @@ namespace Beamable.Server.Editor.ManagerClient
 		public Promise<GetStatusResponse> GetStatus()
 		{
 			return Requester.Request<GetStatusResponse>(Method.GET, $"{SERVICE}/status")
-			   .RecoverFrom404(err => new GetStatusResponse
-			   {
-				   isCurrent = false,
-				   services = new List<ServiceStatus>()
-			   });
+							.RecoverFrom40x(err => new GetStatusResponse
+							{
+								isCurrent = false,
+								services = new List<ServiceStatus>()
+							});
 		}
 
 	}

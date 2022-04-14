@@ -4,51 +4,21 @@
         <name>BeamableMicroserviceBase</name>
     </assembly>
     <members>
-        <member name="M:Beamable.Server.EasyWebSocket.Create(System.String)">
+        <member name="M:Beamable.Server.BeamableMicroService.ResolveCustomInitializationHook">
             <summary>
-            Creates a new instance.
-            </summary>
-            <param name="uri">The URI of the WebSocket server.</param>
-            <returns></returns>
-        </member>
-        <member name="M:Beamable.Server.EasyWebSocket.Connect">
-            <summary>
-            Connects to the WebSocket server.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})">
-            <summary>
-            Set the Action to call when the connection has been established.
-            </summary>
-            <param name="onConnect">The Action to call.</param>
-            <returns></returns>
-        </member>
-        <member name="M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})">
-            <summary>
-            Set the Action to call when the connection has been terminated.
-            </summary>
-            <param name="onDisconnect">The Action to call</param>
-            <returns></returns>
-        </member>
-        <member name="M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.String,System.Int64})">
-            <summary>
-            Set the Action to call when a messages has been received.
-            </summary>
-            <param name="onMessage">The Action to call.</param>
-            <returns></returns>
-        </member>
-        <member name="M:Beamable.Server.EasyWebSocket.SendMessage(System.String)">
-            <summary>
-            Send a message to the WebSocket server.
-            </summary>
-            <param name="message">The message to send</param>
-        </member>
-        <member name="M:Beamable.Server.EasyWebSocket.Close">
-            <summary>
-            Terminate the socket in a friendly way.
+            Handles custom initialization hooks. Makes the following assumptions:
+              - User defined at least one <see cref="T:Beamable.Server.InitializeServicesAttribute"/> over a static async method that returns a <see cref="T:Beamable.Common.Promise`1"/> and receives a <see cref="T:Beamable.Server.IServiceInitializer"/>.
+              - Any exception will fail loudly and prevent the C#MS from receiving traffic.
+            <para/>
             </summary>
         </member>
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Create(System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Connect" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.String,System.Int64})" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.SendMessage(System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Close" -->
         <member name="T:Beamable.Server.MicroserviceLogFormatter">
             <summary>
             Taken from the compact renderer; and adapted to work without @ symbols

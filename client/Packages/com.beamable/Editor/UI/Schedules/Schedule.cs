@@ -1,6 +1,5 @@
 ﻿using Beamable.Common.Content;
 using System;
-using System.Collections.Generic;
 
 namespace Beamable.Editor.Schedules
 {

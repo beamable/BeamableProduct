@@ -1,8 +1,4 @@
-using Beamable.UI.Layouts;
-using System;
 using TMPro;
-using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace Beamable.UI.Scripts
 {
