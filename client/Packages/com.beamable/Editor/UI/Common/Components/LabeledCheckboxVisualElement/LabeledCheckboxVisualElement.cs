@@ -1,9 +1,7 @@
-﻿using Beamable.Editor.UI.Buss;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -46,6 +44,9 @@ namespace Beamable.Editor.UI.Components
 			readonly UxmlBoolAttributeDescription _flip = new UxmlBoolAttributeDescription
 			{ name = "flip", defaultValue = false };
 
+			readonly UxmlBoolAttributeDescription _flipIcon = new UxmlBoolAttributeDescription
+			{ name = "flip-icon", defaultValue = false };
+
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
 				get { yield break; }
@@ -59,6 +60,7 @@ namespace Beamable.Editor.UI.Components
 					component.Label = _label.GetValueFromBag(bag, cc);
 					component.Flip = _flip.GetValueFromBag(bag, cc);
 					component.Icon = _icon.GetValueFromBag(bag, cc);
+					component.FlipIconCheckbox = _flipIcon.GetValueFromBag(bag, cc);
 				}
 			}
 		}
@@ -69,6 +71,7 @@ namespace Beamable.Editor.UI.Components
 		private string _labelText;
 
 		private bool Flip { get; set; }
+		private bool FlipIconCheckbox { get; set; }
 		private string Label { get; set; }
 		private string Icon { get; set; }
 
@@ -78,14 +81,11 @@ namespace Beamable.Editor.UI.Components
 		{
 		}
 
-		public LabeledCheckboxVisualElement(string labelText = "", bool isFlipped = false) : base(ComponentPath)
+		public LabeledCheckboxVisualElement(string labelText = "", bool isFlipped = false, bool isIconFlipped = false) : base(ComponentPath)
 		{
 			_labelText = labelText;
 			Flip = isFlipped;
-		}
-
-		public LabeledCheckboxVisualElement(string uxmlPath, string ussPath) : base(uxmlPath, ussPath)
-		{
+			FlipIconCheckbox = isIconFlipped;
 		}
 
 		public override void Refresh()
@@ -103,11 +103,26 @@ namespace Beamable.Editor.UI.Components
 			_checkbox.OnValueChanged += OnChanged;
 			_checkbox.Refresh();
 
+			if (FlipIconCheckbox)
+			{
+				_checkbox.SendToBack();
+				_icon.SendToBack();
+				_label.SendToBack();
+			}
 			if (Flip)
 			{
-				_icon.SendToBack();
-				_checkbox.SendToBack();
+				if (FlipIconCheckbox)
+				{
+					_checkbox.SendToBack();
+					_icon.SendToBack();
+				}
+				else
+				{
+					_icon.SendToBack();
+					_checkbox.SendToBack();
+				}
 			}
+
 		}
 
 		private void OnChanged(bool value)

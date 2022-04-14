@@ -1,8 +1,5 @@
-using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
 using Beamable.Stats;
 using System;
 using System.Collections.Generic;
@@ -116,7 +113,13 @@ namespace Beamable.AccountManagement
 				case AuthThirdParty.Google:
 					// On non-iOS platforms, just honor the Google checkbox.
 					return Google;
+
+#if UNITY_EDITOR
+				case AuthThirdParty.Apple:
+					return Apple;	
+#endif
 #endif // UNITY_IOS
+
 				default:
 					return false;
 			}

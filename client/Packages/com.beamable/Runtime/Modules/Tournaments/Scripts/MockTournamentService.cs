@@ -1,9 +1,6 @@
-using Beamable.Api.Tournaments;
 using Beamable.Common;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Tournaments;
-using Beamable.Content;
-using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -5,7 +5,6 @@
         "Beamable.Coroutines",
         "Beamable.Platform",
         "Beamable.Service",
-        "Beamable.Spew",
         "Unity.Beamable.Runtime.Common",
         "UnityEngine.Purchasing",
         "UnityEngine.Purchasing.Stores"

@@ -1,9 +1,5 @@
-
-using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Dependencies;
-using Beamable.Platform.SDK;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
@@ -142,6 +138,9 @@ namespace Beamable.Server
 
 			if (type == typeof(string))
 			{
+				if (json.StartsWith("\"") && json.EndsWith("\""))
+					return (T)(object)Json.Deserialize(json);
+
 				return (T)(object)json;
 			}
 
@@ -198,6 +197,9 @@ namespace Beamable.Server
 
 				return (T)result;
 			}
+
+			if (json.Equals("null") || json.Length == 0)
+				return defaultInstance;
 
 			if (json.StartsWith("[") && json.EndsWith("]"))
 			{

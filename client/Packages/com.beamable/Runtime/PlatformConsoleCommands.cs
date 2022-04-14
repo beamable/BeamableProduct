@@ -6,22 +6,17 @@ using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
 using Beamable.Api.Stats;
 using Beamable.Common;
-using Beamable.Common.Api;
 using Beamable.Common.Api.Groups;
 using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
 using Beamable.ConsoleCommands;
 using Beamable.Coroutines;
-using Beamable.Service;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Playables;
 using UnityEngine.Profiling;
-using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 
 namespace Beamable.Api

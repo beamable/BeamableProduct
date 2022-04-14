@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
-using UnityEngine;
 
 namespace Beamable.Api.Auth
 {
@@ -25,7 +24,7 @@ namespace Beamable.Api.Auth
 		Promise<User> RemoveDeviceId();
 		Promise<User> RemoveDeviceIds(string[] deviceIds);
 		Promise<User> RemoveAllDeviceIds();
-		Promise<TokenResponse> LoginDeviceId();
+		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true);
 	}
 
 	/// <summary>
@@ -46,7 +45,7 @@ namespace Beamable.Api.Auth
 		const string DEVICE_ID_URI = ACCOUNT_URL + "/me";
 		const string DEVICE_DELETE_URI = ACCOUNT_URL + "/me/device";
 
-		public AuthService(IBeamableRequester requester, IDeviceIdResolver deviceIdResolver=null, IAuthSettings settings = null) : base(requester, settings)
+		public AuthService(IBeamableRequester requester, IDeviceIdResolver deviceIdResolver = null, IAuthSettings settings = null) : base(requester, settings)
 		{
 			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
 		}
@@ -60,7 +59,7 @@ namespace Beamable.Api.Auth
 				.Map(resp => resp.available);
 		}
 
-		public async Promise<TokenResponse> LoginDeviceId()
+		public async Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true)
 		{
 			var deviceId = await _deviceIdResolver.GetDeviceId();
 
@@ -69,7 +68,7 @@ namespace Beamable.Api.Auth
 				grant_type = "device",
 				device_id = deviceId
 			};
-			return await Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req);
+			return await Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, includeAuthHeader: mergeGamerTagToAccount);
 		}
 
 		public class LoginDeviceIdRequest

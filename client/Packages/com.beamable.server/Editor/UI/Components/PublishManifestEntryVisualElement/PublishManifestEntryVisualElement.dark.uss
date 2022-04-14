@@ -14,10 +14,6 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Database_light.png");
 }
 
-.unpublished {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_light.png");
-}
-
-.publish-inProgress #checkImage, .publish-failed #checkImage  {
+.unpublished #checkImage, .publish-inProgress #checkImage, .publish-failed #checkImage {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_light.png");
 }

@@ -25,29 +25,8 @@
     flex-grow: 1;
 }
 
-#addStyleButton {
-    margin-top: 15px;
-    padding-top: 3px;
-    align-self: center;
-    justify-content: center;
-    width: 200px;
-    height: 26px;
-    border-radius: 2px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-color: #000000;
-}
-
-#addStyleButton > Label {
-    -unity-font-style: bold;
-    align-self: center;
-}
-
 #filterToggle {
     align-self: flex-end;
-    margin-bottom: 10px;
     margin-right: 10px;
 }
 
@@ -55,4 +34,19 @@
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     -unity-text-align: middle-right;
+}
+
+BussElementHierarchyVisualElement {
+    flex-grow: 1;
+}
+
+#themeManagerContainer > ScrollView > #ContentViewport > #ContentView.content-view {
+    flex-grow: 1;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+}
+
+#themeManagerContainerScrollView {
+    flex-grow: 1;
 }

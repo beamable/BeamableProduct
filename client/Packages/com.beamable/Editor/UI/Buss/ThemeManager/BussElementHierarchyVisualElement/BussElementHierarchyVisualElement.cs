@@ -3,6 +3,7 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -24,14 +25,23 @@ namespace Beamable.Editor.UI.Components
 			get;
 		} = new List<BussStyleSheet>();
 
-		public void ForceRebuild()
+		public void ForceRebuild(GameObject selectedGameObject = null)
 		{
 			StyleSheets.Clear();
 			RefreshTree();
+			OnBussStyleSheetChange();
+
+			if (selectedGameObject != null)
+			{
+				Selection.activeGameObject = selectedGameObject;
+				OnSelectionChanged();
+			}
 		}
 
 		protected override string GetLabel(BussElement component)
 		{
+			if (!component) return String.Empty; // if the component has been destroyed, we cannot reason about it.
+
 			string label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
 
 			foreach (string className in component.Classes)
@@ -44,8 +54,8 @@ namespace Beamable.Editor.UI.Components
 
 		protected override void OnHierarchyChanged()
 		{
-			StyleSheets.Clear();
 			base.OnHierarchyChanged();
+			OnBussStyleSheetChange();
 		}
 
 		protected override void OnSelectionChanged()
@@ -71,6 +81,15 @@ namespace Beamable.Editor.UI.Components
 		private void RefreshStyleSheets()
 		{
 			StyleSheets.Clear();
+
+			BussConfiguration.OptionalInstance.DoIfExists(config =>
+			{
+				if (config.GlobalStyleSheet != null)
+				{
+					StyleSheets.Add(config.GlobalStyleSheet);
+				}
+			});
+
 			foreach (BussElement component in Components)
 			{
 				var styleSheet = component.StyleSheet;
@@ -126,6 +145,11 @@ namespace Beamable.Editor.UI.Components
 			{
 				bussElement.StyleSheetsChanged -= OnBussStyleSheetChange;
 			}
+		}
+
+		public void RefreshSelectedLabel()
+		{
+			SelectedLabel.RefreshLabel();
 		}
 	}
 }

@@ -1,5 +1,4 @@
 using Beamable.Common;
-using Beamable.Editor.Content;
 using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -19,6 +18,8 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BeamablePopupWindow : EditorWindow, ISerializationCallbackReceiver
 	{
+		private static BeamablePopupWindow _currentConfirmationWindow;
+
 		public event Action OnClosing;
 
 		private BeamableVisualElement _contentElement;
@@ -152,12 +153,25 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public static BeamablePopupWindow ShowConfirmationUtility(string title, ConfirmationPopupVisualElement element,
-			EditorWindow parent, Action<BeamablePopupWindow> onDomainReload = null)
+																  EditorWindow parent, Action<BeamablePopupWindow> onDomainReload = null)
 		{
 			var window = ShowUtility(title, element, parent, ConfirmationPopupSize,
 				onDomainReload).FitToContent();
 
+			CloseConfirmationWindow();
+			_currentConfirmationWindow = window;
+
 			return window;
+		}
+
+		public static void CloseConfirmationWindow()
+		{
+			if (_currentConfirmationWindow != null)
+			{
+				_currentConfirmationWindow.Close();
+			}
+
+			_currentConfirmationWindow = null;
 		}
 
 		public BeamablePopupWindow FitToContent()

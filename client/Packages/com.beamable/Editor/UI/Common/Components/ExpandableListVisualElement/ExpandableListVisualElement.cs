@@ -1,12 +1,13 @@
-﻿using Beamable.Editor.UI.Buss;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 #endif
 using static Beamable.Common.Constants;
 
@@ -23,6 +24,7 @@ namespace Beamable.Editor.UI.Components
 		private Label label;
 		private Label plusLabel;
 		private VisualElement arrowImage;
+		private VisualElement valueContainer;
 
 		public new class UxmlFactory : UxmlFactory<ExpandableListVisualElement, UxmlTraits>
 		{
@@ -38,6 +40,7 @@ namespace Beamable.Editor.UI.Components
 			base.Refresh();
 
 			label = Root.Q<Label>("value");
+			valueContainer = Root.Q<VisualElement>("valueContainer");
 			arrowImage = Root.Q<VisualElement>("arrowImage");
 			plusLabel = Root.Q<Label>("plusLabel");
 
@@ -62,7 +65,7 @@ namespace Beamable.Editor.UI.Components
 
 		private int GetMaxNumberOfCharacters(float width)
 		{
-			float charactersNumberFactor = elements.Count > 1 ? width / 11 : width / 10;
+			float charactersNumberFactor = elements.Count > 1 ? width / 9 : width / 8;
 			return Mathf.CeilToInt(charactersNumberFactor);
 		}
 
@@ -77,6 +80,7 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			label.text = displayValues[0];
+			label.UnregisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 			label.RegisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 
 			if (displayValues.Length == 1)
@@ -93,10 +97,24 @@ namespace Beamable.Editor.UI.Components
 					label.text += "\n" + displayValues[i];
 				}
 
+#if UNITY_2019_1_OR_NEWER
+				label.style.maxWidth = new StyleLength(GetMaxWidth(elements.ToArray()));
+				valueContainer.style.maxWidth = new StyleLength(GetMaxWidth(elements.ToArray()));
+#elif UNITY_2018
+				label.style.maxWidth = new StyleValue<float>(GetMaxWidth(elements.ToArray()));
+				valueContainer.style.maxWidth = new StyleValue<float>(GetMaxWidth(elements.ToArray()));
+#endif
 				arrowImage.AddToClassList(EXPANDED_CLASS);
 			}
 			else
 			{
+#if UNITY_2019_1_OR_NEWER
+				label.style.maxWidth = new StyleLength(GetMaxWidth(elements[0]));
+				valueContainer.style.maxWidth = new StyleLength(GetMaxWidth(elements[0]));
+#elif UNITY_2018
+				label.style.maxWidth = new StyleValue<float>(GetMaxWidth(elements[0]));
+				valueContainer.style.maxWidth = new StyleValue<float>(GetMaxWidth(elements[0]));
+#endif
 				plusLabel.text = $"{displayValues.Length - 1}+";
 			}
 		}
@@ -124,6 +142,20 @@ namespace Beamable.Editor.UI.Components
 
 			return text.Length > maxCharacters ?
 				text.Substring(0, maxCharacters) + "..." : text;
+		}
+
+		private float GetMaxWidth(params string[] values)
+		{
+			int max = 0;
+			foreach (var element in values)
+			{
+				if (element.Length > max)
+				{
+					max = element.Length;
+				}
+			}
+
+			return max * 9;
 		}
 	}
 }

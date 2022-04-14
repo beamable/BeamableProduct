@@ -1,15 +1,7 @@
-﻿
-using Beamable.Common;
-using Beamable.Editor.Environment;
-using Beamable.Server;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.DockerCommands;
+﻿using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using System;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -18,7 +10,6 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
 
 namespace Beamable.Editor.UI.Model
 {
@@ -112,19 +103,29 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 
-			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
+			var isFirst = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) == 0;
+			var isLast = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroservicesDataModel.Instance.Storages.Count - 1;
+
+			evt.menu.BeamableAppendAction($"Move up", pos =>
 			{
-				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) > 0);
-				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
-			}
+				MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move down", pos =>
+			{
+				MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, isLast);
+			evt.menu.BeamableAppendAction($"Move to top", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, 0, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move to bottom", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Storages.Count - 1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, isLast);
 		}
 
 		public override void Refresh(IDescriptor descriptor)

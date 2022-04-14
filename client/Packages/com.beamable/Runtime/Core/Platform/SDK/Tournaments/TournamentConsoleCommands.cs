@@ -1,8 +1,6 @@
 ﻿using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.ConsoleCommands;
-using Beamable.Service;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 

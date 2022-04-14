@@ -13,6 +13,18 @@ using UnityEngine;
 
 namespace microserviceTests.microservice
 {
+   [Microservice("simple")]
+   public class SimpleMicroserviceNonLegacy : Microservice
+   {
+      public static MicroserviceFactory<SimpleMicroserviceNonLegacy> Factory => () => new SimpleMicroserviceNonLegacy();
+
+      [ClientCallable]
+      public string MethodWithRegularString_AsParameter(string str)
+      {
+         return str;
+      }
+   }
+
    [Microservice("simple", UseLegacySerialization = true)]
    public class SimpleMicroservice : Microservice
    {
@@ -56,13 +68,13 @@ namespace microserviceTests.microservice
          await Task.Delay(ms);
          return ms;
       }
-      
+
       [ClientCallable]
       public async Promise<int> PromiseTestMethod()
       {
          return await Promise<int>.Successful(1);
       }
-      
+
       [ClientCallable]
       public Promise PromiseTypelessTestMethod()
       {
@@ -70,13 +82,13 @@ namespace microserviceTests.microservice
          pr.CompleteSuccess();
          return pr;
       }
-      
+
       [ClientCallable]
       public string MethodWithJSON_AsParameter(string jsonString)
       {
          return jsonString;
       }
-      
+
       [ClientCallable]
       public string MethodWithRegularString_AsParameter(string str)
       {
@@ -99,7 +111,7 @@ namespace microserviceTests.microservice
 
          return x.ItemContent.Id;
       }
-      
+
       [AdminOnlyCallable]
       public async Task LeaderboardCreateTest(string boardId, LeaderboardRef templateBoardRef)
       {
@@ -118,6 +130,13 @@ namespace microserviceTests.microservice
       {
          var content = await Services.Content.GetContent(id);
          return "Echo: " + content.Id;
+      }
+
+      [ClientCallable]
+      public async Task TestAssumeUser(long otherId, bool force)
+      {
+         var ctx = AssumeUser(otherId, force);
+         await ctx.Requester.Request<EmptyResponse>(Method.GET, "x");
       }
 
       [ClientCallable]

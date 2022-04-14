@@ -1,11 +1,8 @@
 ﻿using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEditor;
-using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -60,6 +57,7 @@ namespace Beamable.Editor.UI.Model
 			if (IsRunning) return;
 			if (_runProcess != null) return;
 
+			IsRunning = true;
 			_runProcess = await PrepareRunCommand();
 			_runProcess.OnStandardOut += message => MicroserviceLogHelper.HandleRunCommandOutput(this, message);
 			_runProcess.OnStandardErr += message => MicroserviceLogHelper.HandleRunCommandOutput(this, message);

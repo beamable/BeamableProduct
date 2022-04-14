@@ -1,9 +1,9 @@
-using Beamable.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
-using Beamable.Spew;
 using UnityEngine;
+#if UNITY_IOS
+using Beamable.Api;
+using Beamable.Platform.SDK.Auth;
+#endif
 
 namespace Beamable.AccountManagement
 {
@@ -46,7 +46,18 @@ namespace Beamable.AccountManagement
 #else
 		public void StartAppleLogin(ThirdPartyLoginPromise promise)
 		{
-			// we aren't on apple, so don't do _anything_
+			if (promise.ThirdParty != AuthThirdParty.Apple)
+			{
+				return;
+			}
+
+			if (Application.isEditor) // we aren't on apple, so don't do _anything_ except unity editor
+			{
+				Debug.LogError("Apple Sign-In is not functional in Editor. Please build to device.");
+
+				ThirdPartyLoginResponse response = ThirdPartyLoginResponse.CANCELLED;
+				promise.CompleteSuccess(response);
+			}
 		}
 #endif
 	}

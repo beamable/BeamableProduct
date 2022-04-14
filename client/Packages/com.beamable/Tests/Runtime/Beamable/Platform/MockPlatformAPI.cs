@@ -1,5 +1,4 @@
 using Beamable.Api;
-using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -12,7 +11,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using AccessToken = Beamable.Api.AccessToken;
-using AuthService = Beamable.Api.Auth.AuthService;
 
 namespace Beamable.Platform.Tests
 {
@@ -55,6 +53,7 @@ namespace Beamable.Platform.Tests
 		public bool IncludeAuthHeader = true;
 		public string Token;
 		protected object _response;
+		protected RequesterException _errorResponse;
 
 		public int CallCount { get; protected set; }
 		public bool Called => CallCount > 0;
@@ -78,6 +77,12 @@ namespace Beamable.Platform.Tests
 		public MockPlatformRoute<T> WithResponse(T response)
 		{
 			_response = response;
+			return this;
+		}
+
+		public MockPlatformRoute<T> WithResponse(RequesterException err)
+		{
+			_errorResponse = err;
 			return this;
 		}
 
@@ -176,12 +181,20 @@ namespace Beamable.Platform.Tests
 		public override Promise<T1> Invoke<T1>(object body, bool includeAuth, IAccessToken token)
 		{
 			CallCount++;
+			if (_errorResponse != null)
+			{
+				throw _errorResponse;
+			}
 			return Promise<T1>.Successful((T1)_response);
 		}
 
 		public override string Invoke(object body, bool includeAuth, IAccessToken token)
 		{
 			CallCount++;
+			if (_errorResponse != null)
+			{
+				throw _errorResponse;
+			}
 			return _response.ToString();
 		}
 
@@ -189,6 +202,10 @@ namespace Beamable.Platform.Tests
 		{
 			var tokenMatch = string.Equals(Token, token);
 			var authMatch = includeAuthHeader == IncludeAuthHeader;
+			if (authMatch && !includeAuthHeader)
+			{
+				tokenMatch = true; // it doesn't matter what the token is, because we aren't going to send it anyway.
+			}
 			var uriMatch = Uri == null || Uri.Equals(uri);
 
 			var typeMatch = typeof(T1) == typeof(T);
@@ -324,10 +341,16 @@ namespace Beamable.Platform.Tests
 
 			if (route != null)
 			{
-				if (parser == null) return route.Invoke<T>(body, includeAuthHeader, AccessToken);
-
-				var output = route.Invoke(body, includeAuthHeader, AccessToken);
-				return Promise<T>.Successful(parser(output));
+				try
+				{
+					if (parser == null) return route.Invoke<T>(body, includeAuthHeader, AccessToken);
+					var output = route.Invoke(body, includeAuthHeader, AccessToken);
+					return Promise<T>.Successful(parser(output));
+				}
+				catch (RequesterException err)
+				{
+					return Promise<T>.Failed(err);
+				}
 			}
 			else
 			{

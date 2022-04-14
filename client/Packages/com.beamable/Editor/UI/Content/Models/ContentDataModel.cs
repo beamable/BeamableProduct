@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
-using UnityEngine;
 
 namespace Beamable.Editor.Content.Models
 {
