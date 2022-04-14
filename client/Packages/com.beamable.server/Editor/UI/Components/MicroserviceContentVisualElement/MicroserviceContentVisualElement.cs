@@ -129,7 +129,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_modelToVisual[service] = serviceElement;
 			service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
-			serviceElement.Refresh();
+			serviceElement.Refresh(_dockerHubIsRunning);
 			service.OnSelectionChanged -= HandleSelectionChanged;
 			service.OnSelectionChanged += HandleSelectionChanged;
 
@@ -150,7 +150,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
 
 				_modelToVisual[service] = serviceElement;
-				serviceElement.Refresh();
+				serviceElement.Refresh(_dockerHubIsRunning);
 
 				service.OnSortChanged -= SortMicroservices;
 				service.OnSortChanged += SortMicroservices;
@@ -171,7 +171,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
-				mongoServiceElement.Refresh();
+				mongoServiceElement.Refresh(_dockerHubIsRunning);
 				mongoService.OnSelectionChanged -= HandleSelectionChanged;
 				mongoService.OnSelectionChanged += HandleSelectionChanged;
 
@@ -195,7 +195,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
-				mongoServiceElement.Refresh();
+				mongoServiceElement.Refresh(_dockerHubIsRunning);
 
 				mongoService.OnSortChanged -= SortStorages;
 				mongoService.OnSortChanged += SortStorages;
