@@ -37,3 +37,11 @@ TextField {
     margin-top: 0px;
     margin-right: 0px;
 }
+
+TextField:hover {
+    color: rgba(180,180,180,1);
+}
+
+#styleSheetName:hover {
+    color: rgba(180,180,180,1);
+}

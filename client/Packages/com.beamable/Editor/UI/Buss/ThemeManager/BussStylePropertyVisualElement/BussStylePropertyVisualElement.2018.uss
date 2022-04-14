@@ -9,10 +9,13 @@
 #propertyLabel {
     width: 140px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    -unity-font-style: bold;
     -unity-text-align: middle-left;
     font-size: 12px;
     height: 20px;
+}
+
+#propertyLabel:hover {
+    color: rgba(180,180,180,1);
 }
 
 #value {

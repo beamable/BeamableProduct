@@ -69,6 +69,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(separator01);
 
 			_styleSheetLabel = new TextElement();
+			_styleSheetLabel.name = "styleSheetName";
 			_styleSheetLabel.text = $"{_styleSheet.name}";
 			_styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);
 			Root.Add(_styleSheetLabel);
