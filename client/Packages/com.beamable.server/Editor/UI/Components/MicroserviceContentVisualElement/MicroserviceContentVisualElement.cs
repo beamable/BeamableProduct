@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Toolbox.Components;
@@ -39,6 +40,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
 		private MicroserviceActionPrompt _actionPrompt;
 		private bool _dockerHubIsRunning;
+		private Promise<DockerStatus> _dockerStatusPromise;
 
 		public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
 			_servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
@@ -105,8 +107,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			EditorApplication.delayCall +=
 				() =>
 				{
+					if (_dockerStatusPromise != null && !_dockerStatusPromise.IsCompleted)
+						return;
+
 					var command = new GetDockerLocalStatus();
-					command.Start();
+					_dockerStatusPromise = command.Start(null);
 				};
 		}
 
