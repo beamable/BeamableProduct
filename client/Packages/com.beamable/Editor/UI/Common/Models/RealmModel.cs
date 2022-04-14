@@ -22,6 +22,7 @@ namespace Beamable.Editor.UI.Common.Models
 
 			EditorAPI.Instance.Then(api =>
 			{
+				api.OnRealmChange -= HandleRealmChanged;
 				api.OnRealmChange += HandleRealmChanged;
 				Current = api.Realm;
 				OnElementChanged?.Invoke(Current);

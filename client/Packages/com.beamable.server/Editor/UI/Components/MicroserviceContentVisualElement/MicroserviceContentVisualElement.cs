@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Toolbox.Components;
@@ -39,6 +40,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
 		private MicroserviceActionPrompt _actionPrompt;
 		private bool _dockerHubIsRunning;
+		private Promise<DockerStatus> _dockerStatusPromise;
 
 		public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
 			_servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
@@ -74,7 +76,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+			SetView();
+		}
 
+		private void RefreshView()
+		{
+			SetView(false);
+		}
+
+		private void SetView(bool isInit = true) // we don't want to destroy & recreate whole view every time docker is disabled
+		{
 			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
 				DockerCommand.CheckDockerAppRunning();
 
@@ -88,25 +99,35 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
 				ShowDockerNotInstalledAnnouncement();
-				EditorDebouncer.Debounce("Refresh C#MS Window", Refresh, 1f);
+				EditorDebouncer.Debounce("Refresh C#MS Window", RefreshView, 1f);
 			}
+			else if (!isInit)
+			{
+				Refresh();
+				return; ;
+			}
+
 			if (DockerCommand.DockerNotInstalled)
 				return;
 
-			CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
-			CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
-
-			_modelToVisual.Clear();
-
-			SetupServicesStatus();
+			if (isInit)
+			{
+				CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
+				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
+				_modelToVisual.Clear();
+				SetupServicesStatus();
+			}
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
 			EditorApplication.delayCall +=
 				() =>
 				{
+					if (_dockerStatusPromise != null && !_dockerStatusPromise.IsCompleted)
+						return;
+
 					var command = new GetDockerLocalStatus();
-					command.Start();
+					_dockerStatusPromise = command.Start(null);
 				};
 		}
 
@@ -129,7 +150,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_modelToVisual[service] = serviceElement;
 			service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
-			serviceElement.Refresh();
+			serviceElement.Refresh(_dockerHubIsRunning);
 			service.OnSelectionChanged -= HandleSelectionChanged;
 			service.OnSelectionChanged += HandleSelectionChanged;
 
@@ -150,7 +171,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
 
 				_modelToVisual[service] = serviceElement;
-				serviceElement.Refresh();
+				serviceElement.Refresh(_dockerHubIsRunning);
 
 				service.OnSortChanged -= SortMicroservices;
 				service.OnSortChanged += SortMicroservices;
@@ -171,7 +192,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
-				mongoServiceElement.Refresh();
+				mongoServiceElement.Refresh(_dockerHubIsRunning);
 				mongoService.OnSelectionChanged -= HandleSelectionChanged;
 				mongoService.OnSelectionChanged += HandleSelectionChanged;
 
@@ -195,7 +216,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
-				mongoServiceElement.Refresh();
+				mongoServiceElement.Refresh(_dockerHubIsRunning);
 
 				mongoService.OnSortChanged -= SortStorages;
 				mongoService.OnSortChanged += SortStorages;
@@ -350,6 +371,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var dockerAnnouncement = new DockerAnnouncementModel();
 			dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
+			Root.Q<VisualElement>("announcementList").Clear();
+
 			if (DockerCommand.DockerNotInstalled)
 			{
 				dockerAnnouncement.OnInstall = () =>
