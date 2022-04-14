@@ -47,6 +47,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _foldButton;
 		private VisualElement _foldIcon;
 
+		private bool _isDockerRunning;
+
 		public Action OnServiceStartFailed { get; set; }
 		public Action OnServiceStopFailed { get; set; }
 
@@ -72,6 +74,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			InjectStyleSheets();
 			UpdateVisualElements();
 		}
+
+		public void Refresh(bool isDockerRunning)
+		{
+			_isDockerRunning = isDockerRunning;
+			Refresh();
+		}
+
 		protected virtual void QueryVisualElements()
 		{
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
@@ -151,6 +160,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected async void UpdateModel()
 		{
+			if (!_isDockerRunning)
+				return;
+			
 			await Model.Builder.CheckIfIsRunning();
 			UpdateLocalStatus();
 		}
