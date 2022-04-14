@@ -56,7 +56,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		private static MicroserviceWindow _instance;
 		private Promise<bool> checkDockerPromise;
-		
+
 		public static MicroserviceWindow Instance
 		{
 			get
@@ -225,7 +225,7 @@ namespace Beamable.Editor.Microservice.UI
 			throw new NotImplementedException();
 		}
 
-		
+
 		private void Refresh()
 		{
 			if (checkDockerPromise == null || checkDockerPromise.IsCompleted)

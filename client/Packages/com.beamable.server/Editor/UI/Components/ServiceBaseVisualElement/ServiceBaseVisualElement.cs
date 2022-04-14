@@ -162,7 +162,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			if (!_isDockerRunning)
 				return;
-			
+
 			await Model.Builder.CheckIfIsRunning();
 			UpdateLocalStatus();
 		}
