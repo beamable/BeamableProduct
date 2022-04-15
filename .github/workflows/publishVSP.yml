@@ -1,0 +1,18 @@
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The semantic version of the package. Should always be a production version number. Should be in the form of major.minor.patch, like 1.1.0'     
+        required: true
+      storeUrl:
+        description: 'The Asset Store url for Beamable'  
+        default: 'https://assetstore.unity.com/packages/tools/animation/final-ik-14290'
+jobs:
+  - name: Create VSP Metadata file
+    uses: jsdaniell/create-json@1.1.2
+    with:
+      name: 'vsp-metadata.json
+      json: '{"version":"${{ github.event.inputs.version }}", "storeUrl":"${{ github.event.inputs.storeUrl }}"}'
+  - name: Update VSP Metadata on S3
+    run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./vsp-metadata.json s3://${{secrets.AWS_BUCKET_VSP_METADATA}}
+      
