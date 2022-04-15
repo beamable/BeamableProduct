@@ -1,3 +1,4 @@
+name: vsp
 on: 
   workflow_dispatch:
     inputs:
