@@ -179,7 +179,14 @@ namespace Beamable.Editor.UI.Components
 					break;
 			}
 
-			CreateMessageField(text);
+			if (_propertyVisualElement != null)
+			{
+				DestroyEditableField();
+			}
+
+			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
+			_valueParent.Add(_propertyVisualElement);
+			_propertyVisualElement.Init();
 		}
 
 		private void SetVariableSource(VariableDatabase.PropertyReference variableSource) {
@@ -221,18 +228,6 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
 				_propertyVisualElement.OnValueChanged += HandlePropertyChanged;
 			}
-		}
-
-		private void CreateMessageField(string text)
-		{
-			if (_propertyVisualElement != null)
-			{
-				DestroyEditableField();
-			}
-
-			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
-			_valueParent.Add(_propertyVisualElement);
-			_propertyVisualElement.Init();
 		}
 
 		void HandlePropertyChanged()
