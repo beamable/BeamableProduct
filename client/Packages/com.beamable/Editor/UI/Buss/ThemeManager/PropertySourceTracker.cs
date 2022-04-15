@@ -37,7 +37,7 @@ namespace Beamable.UI.Buss
 					AddStyleSheet(bussStyleSheet);
 				}
 			}
-			
+
 			AddStyleDescription(null, Element.InlineStyle);
 		}
 
@@ -124,8 +124,9 @@ namespace Beamable.UI.Buss
 		{
 			public readonly string key;
 			public List<PropertyReference> Properties = new List<PropertyReference>();
-			
-			public SourceData(string key) {
+
+			public SourceData(string key)
+			{
 				this.key = key;
 			}
 
@@ -152,7 +153,7 @@ namespace Beamable.UI.Buss
 		public PropertySourceTracker GetTracker(BussElement bussElement)
 		{
 			if (bussElement == null) return null;
-			
+
 			if (!_trackers.TryGetValue(bussElement, out var tracker))
 			{
 				tracker = new PropertySourceTracker(bussElement);
@@ -165,7 +166,7 @@ namespace Beamable.UI.Buss
 
 		public void Discard()
 		{
-			foreach (KeyValuePair<BussElement,PropertySourceTracker> pair in _trackers)
+			foreach (KeyValuePair<BussElement, PropertySourceTracker> pair in _trackers)
 			{
 				if (pair.Key != null)
 				{

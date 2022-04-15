@@ -441,7 +441,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				propertyVisualElement.SetPropertySourceTracker(tracker);
 			}
-			
+
 			if (_colorBlock == null) return;
 
 			bool active = false;
