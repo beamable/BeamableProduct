@@ -8,18 +8,22 @@ on:
         description: 'The Asset Store url for Beamable'  
         default: 'https://assetstore.unity.com/packages/tools/animation/final-ik-14290'
 jobs:
-  - name: Update version
-    uses: jossef/action-set-json-field@v1
-    with:
-      file: ./build/vsp-metadata.json
-      field: version
-      value: ${{ github.event.inputs.version }}
-  - name: Update storeUrl
-    uses: jossef/action-set-json-field@v1
-    with:
-      file: ./build/vsp-metadata.json
-      field: storeUrl
-      value: ${{ github.event.inputs.storeUrl }}
-  - name: Update VSP Metadata on S3
-    run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./build/vsp-metadata.json s3://${{secrets.AWS_BUCKET_VSP_METADATA}}
-      
+  commit-vsp-metadat:
+    runs-on: ubuntu-latest
+    name: 'Save VSP Metadata to S3'
+    steps:
+      - name: Update version
+        uses: jossef/action-set-json-field@v1
+        with:
+          file: ./build/vsp-metadata.json
+          field: version
+          value: ${{ github.event.inputs.version }}
+      - name: Update storeUrl
+        uses: jossef/action-set-json-field@v1
+        with:
+          file: ./build/vsp-metadata.json
+          field: storeUrl
+          value: ${{ github.event.inputs.storeUrl }}
+      - name: Upload file to S3
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp ./build/vsp-metadata.json s3://${{secrets.AWS_BUCKET_VSP_METADATA}}
+            
