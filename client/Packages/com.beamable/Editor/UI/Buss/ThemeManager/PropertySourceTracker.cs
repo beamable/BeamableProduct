@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using PropertyReference = Beamable.UI.Buss.VariableDatabase.PropertyReference;
 
-namespace Editor.UI.Buss.ThemeManager
+namespace Beamable.UI.Buss
 {
 	public class PropertySourceTracker
 	{
