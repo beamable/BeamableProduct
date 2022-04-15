@@ -128,51 +128,13 @@ namespace Beamable.Editor.UI.Components
 				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleRule, _variableDatabase,
 				                                                     context, out var property, out var variableSource);
 
-			if (_propertyProvider.HasVariableReference && variableSource.propertyProvider != null)
-			{
-				if (variableSource.styleSheet == null)
-				{
-					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
-					                 "Declared in inline style.";
-				}
-				else
-				{
-					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
-					                 $"Selector: {variableSource.styleRule.SelectorString}\n" +
-					                 $"Style sheet: {variableSource.styleSheet.name}";
-				}
-			}
-			else
-			{
-				VariableSource = null;
-			}
+			SetVariableSource(variableSource);
 
-			var overriten = false;
-			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
-			{
-				overriten = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
-			}
-			EnableInClassList("overriten", overriten);
+			SetOverritenClass(context, result);
 
 			if (result != BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
 			{
-				string text;
-				switch (result)
-				{
-					case BussStylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
-						text = "Multiple possible values.";
-						break;
-					case BussStylePropertyVisualElementUtility.PropertyValueState.NoResult:
-						text = "No possible value.";
-						break;
-					case BussStylePropertyVisualElementUtility.PropertyValueState.VariableLoopDetected:
-						text = "Variable loop-reference detected.";
-						break;
-					default:
-						text = "Something is wrong here.";
-						break;
-				}
-				CreateMessageField(text);
+				CreateMessageField(result);
 				return;
 			}
 			
@@ -190,6 +152,52 @@ namespace Beamable.Editor.UI.Components
 			else
 			{
 				CreateEditableField(property);
+			}
+		}
+
+		private void SetOverritenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result) {
+			var overriten = false;
+			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult) {
+				overriten = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
+			}
+
+			EnableInClassList("overriten", overriten);
+		}
+
+		private void CreateMessageField(BussStylePropertyVisualElementUtility.PropertyValueState result) {
+			string text;
+			switch (result) {
+				case BussStylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
+					text = "Multiple possible values.";
+					break;
+				case BussStylePropertyVisualElementUtility.PropertyValueState.NoResult:
+					text = "No possible value.";
+					break;
+				case BussStylePropertyVisualElementUtility.PropertyValueState.VariableLoopDetected:
+					text = "Variable loop-reference detected.";
+					break;
+				default:
+					text = "Something is wrong here.";
+					break;
+			}
+
+			CreateMessageField(text);
+		}
+
+		private void SetVariableSource(VariableDatabase.PropertyReference variableSource) {
+			if (_propertyProvider.HasVariableReference && variableSource.propertyProvider != null) {
+				if (variableSource.styleSheet == null) {
+					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
+					                 "Declared in inline style.";
+				}
+				else {
+					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
+					                 $"Selector: {variableSource.styleRule.SelectorString}\n" +
+					                 $"Style sheet: {variableSource.styleSheet.name}";
+				}
+			}
+			else {
+				VariableSource = null;
 			}
 		}
 
