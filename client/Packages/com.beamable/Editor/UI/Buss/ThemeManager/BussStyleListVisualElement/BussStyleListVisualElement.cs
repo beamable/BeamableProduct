@@ -3,7 +3,6 @@ using Beamable.Editor.Common;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
-using Editor.UI.Buss.ThemeManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
