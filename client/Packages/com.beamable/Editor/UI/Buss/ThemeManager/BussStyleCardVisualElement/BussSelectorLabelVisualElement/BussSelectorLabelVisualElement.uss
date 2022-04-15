@@ -16,6 +16,7 @@ TextField {
     background-image: none;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
+    -unity-font-style: normal;
     height: 14px;
     font-size: 12px;
     flex-grow: 1;
@@ -29,4 +30,8 @@ TextField>#unity-text-input {
     border-right-width: 0px;
     border-top-width: 0px;
     border-bottom-width: 0px;
+}
+
+TextElement {
+    -unity-font-style: normal;
 }

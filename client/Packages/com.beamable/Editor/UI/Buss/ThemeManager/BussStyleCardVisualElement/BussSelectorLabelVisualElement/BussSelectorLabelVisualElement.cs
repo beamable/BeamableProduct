@@ -56,6 +56,10 @@ namespace Beamable.Editor.UI.Components
 			else
 			{
 				_editableLabel = new TextField();
+				if (!_styleSheet.IsReadOnly)
+				{
+					_editableLabel.AddToClassList("interactable");
+				}
 				_editableLabel.value = _styleRule.SelectorString;
 				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
 				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);	
@@ -69,6 +73,10 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(separator01);
 
 			_styleSheetLabel = new TextElement();
+			if (!_styleSheet.IsReadOnly)
+			{
+				_styleSheetLabel.AddToClassList("interactable");
+			}
 			_styleSheetLabel.name = "styleSheetName";
 			_styleSheetLabel.text = $"{_styleSheet.name}";
 			_styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);

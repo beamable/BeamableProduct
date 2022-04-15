@@ -1,7 +1,11 @@
-﻿TextField>#unity-text-input:hover {
+﻿.interactable>#unity-text-input:hover {
     color: rgba(180,180,180,1);
 }
 
-#styleSheetName:hover {
+.interactable:hover {
     color: rgba(180,180,180,1);
+}
+
+TextField>#unity-text-input {
+    color: rgba(256,256,256,1);
 }
