@@ -14,10 +14,6 @@
     height: 20px;
 }
 
-#propertyLabel:hover {
-    color: rgba(180,180,180,1);
-}
-
 #value {
     justify-content: center;
     min-width: 200px;
