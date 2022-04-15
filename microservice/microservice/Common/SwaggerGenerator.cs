@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 
@@ -20,7 +21,7 @@ namespace microservice.Common
         private const string INTEGER = "integer";
         private const string NUMBER = "number";
         private const string STRING = "string";
-        private const string BOOL = "bool";
+        private const string BOOLEAN = "boolean";
         private const string ARRAY = "array";
         private const string RESPONSE_200 = "200";
         private const string JSON_CONTENT_TYPE = "application/json";
@@ -54,7 +55,7 @@ namespace microservice.Common
             [typeof(float)] = NUMBER,
             [typeof(double)] = NUMBER,
             [typeof(string)] = STRING,
-            [typeof(bool)] = BOOL
+            [typeof(bool)] = BOOLEAN
         };
 
         private static Dictionary<Type, OpenApiSchema> _typeToSchema = new Dictionary<Type, OpenApiSchema>();
@@ -252,7 +253,7 @@ namespace microservice.Common
 
             if (_typeToSchema.TryGetValue(type, out var existingSchema))
             {
-                return new OpenApiSchema
+                var tmp =  new OpenApiSchema
                 {
                     Reference = new OpenApiReference
                     {
@@ -260,6 +261,11 @@ namespace microservice.Common
                         Id = existingSchema.Title
                     }
                 };
+
+                if (type == typeof(bool))
+                    tmp.Default = new OpenApiBoolean(false);
+                
+                return tmp;
             }
 
             var jsonType = GetJsonTypeName(type);
@@ -268,6 +274,9 @@ namespace microservice.Common
                 Title = type.GetTypeString(),
                 Type = jsonType
             };
+            
+            if (type == typeof(bool))
+                schema.Default = new OpenApiBoolean(false);
 
             void HandleArray()
             {
@@ -289,6 +298,10 @@ namespace microservice.Common
                 foreach (var field in fields)
                 {
                     var fieldSchema = CreateSchema(field.FieldType);
+                    
+                    if (field.FieldType == typeof(bool))
+                        fieldSchema.Default = new OpenApiBoolean(false);
+                    
                     schema.Properties.Add(field.Name, fieldSchema);
                 }
             }
