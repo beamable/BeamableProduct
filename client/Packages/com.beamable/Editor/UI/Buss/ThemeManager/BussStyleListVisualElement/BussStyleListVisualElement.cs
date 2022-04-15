@@ -18,6 +18,7 @@ namespace Beamable.Editor.UI.Buss
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
+		private readonly PropertySourceDatabase _propertyDatabase = new PropertySourceDatabase();
 		private bool _inStyleSheetChangedLoop;
 
 		private IEnumerable<BussStyleSheet> _styleSheets;
@@ -156,7 +157,7 @@ namespace Beamable.Editor.UI.Buss
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, _variableDatabase, callback);
+			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _propertyDatabase, callback);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
 
@@ -234,6 +235,7 @@ namespace Beamable.Editor.UI.Buss
 		protected override void OnDestroy()
 		{
 			Selection.selectionChanged -= OnSelectionChange;
+			_propertyDatabase.Discard();
 		}
 	}
 }

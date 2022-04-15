@@ -13,7 +13,7 @@ namespace Beamable.UI.Buss
 			return GetVisualElement(property);
 		}
 
-		private static BussPropertyVisualElement GetVisualElement(this IBussProperty property)
+		public static BussPropertyVisualElement GetVisualElement(this IBussProperty property)
 		{
 			if (property is FloatBussProperty floatProperty)
 			{

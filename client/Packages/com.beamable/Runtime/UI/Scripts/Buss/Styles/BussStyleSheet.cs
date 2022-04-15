@@ -176,5 +176,10 @@ namespace Beamable.UI.Buss
 		{
 			property.Set(bussProperty);
 		}
+
+		public bool IsPropertyOfType(Type type)
+		{
+			return type.IsInstanceOfType(GetProperty());
+		}
 	}
 }
