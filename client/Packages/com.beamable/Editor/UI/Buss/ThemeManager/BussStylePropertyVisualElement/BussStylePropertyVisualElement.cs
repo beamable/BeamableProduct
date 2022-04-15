@@ -128,7 +128,7 @@ namespace Beamable.Editor.UI.Components
 
 			SetVariableSource(variableSource);
 
-			SetOverritenClass(context, result);
+			SetOverridenClass(context, result);
 
 			if (result != BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
 			{
@@ -153,13 +153,13 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		private void SetOverritenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result) {
-			var overriten = false;
+		private void SetOverridenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result) {
+			var overriden = false;
 			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult) {
-				overriten = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
+				overriden = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
 			}
 
-			EnableInClassList("overriten", overriten);
+			EnableInClassList("overriden", overriden);
 		}
 
 		private void CreateMessageField(BussStylePropertyVisualElementUtility.PropertyValueState result) {

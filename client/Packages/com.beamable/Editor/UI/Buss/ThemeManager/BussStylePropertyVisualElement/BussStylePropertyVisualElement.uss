@@ -60,6 +60,6 @@
     display: none;
 }
 
-.overriten .overrideIndicator{
+.overriden .overrideIndicator{
     display: flex;
 }
