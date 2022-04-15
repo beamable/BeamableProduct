@@ -275,9 +275,6 @@ namespace microservice.Common
                 Type = jsonType
             };
             
-            if (type == typeof(bool))
-                schema.Default = new OpenApiBoolean(false);
-
             void HandleArray()
             {
                 // need to get element type.
@@ -315,6 +312,9 @@ namespace microservice.Common
                     break;
                 case ARRAY:
                     HandleArray();
+                    break;
+                case BOOLEAN:
+                    schema.Default = new OpenApiBoolean(false);
                     break;
             }
 
