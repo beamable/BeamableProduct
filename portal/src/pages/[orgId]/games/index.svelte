@@ -72,7 +72,7 @@
     {#if $realms }
     {#each $realms as realm, i (realm.name)}
 
-      {#if !realm.parent}
+      {#if !realm.parent && !realm.archived}
 
         <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
           <Link href="./{realm.name}" let:href>
