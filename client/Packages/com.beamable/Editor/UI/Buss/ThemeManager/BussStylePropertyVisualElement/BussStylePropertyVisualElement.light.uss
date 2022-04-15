@@ -1,5 +1,9 @@
 #propertyLabel {
-    color:#252525;
+    color:rgba(0,0,0,1);
+}
+
+#propertyLabel:hover {
+    color: rgba(100,100,100,1);
 }
 
 #propertyLabel:disabled{

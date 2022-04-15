@@ -5,3 +5,7 @@
 .interactable:hover {
     color: rgba(100,100,100,1);
 }
+
+TextElement {
+    color: rgba(0,0,0,1);
+}
