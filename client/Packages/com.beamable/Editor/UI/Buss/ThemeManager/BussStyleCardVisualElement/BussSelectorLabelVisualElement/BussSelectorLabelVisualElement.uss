@@ -16,7 +16,6 @@ TextField {
     background-image: none;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    color: rgba(256,256,256,1);
     height: 14px;
     font-size: 12px;
     flex-grow: 1;
@@ -25,18 +24,9 @@ TextField {
 }
 
 TextField>#unity-text-input {
-    color: rgba(256,256,256,1);
     background-color: rgba(0,0,0,0);
     border-left-width: 0px;
     border-right-width: 0px;
     border-top-width: 0px;
     border-bottom-width: 0px;
-}
-
-TextField>#unity-text-input:hover {
-    color: rgba(180,180,180,1);
-}
-
-#styleSheetName:hover {
-    color: rgba(180,180,180,1);
 }

@@ -24,7 +24,7 @@ TextField {
     background-image: none;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    color: rgba(256,256,256,1);
+    /*color: rgba(256,256,256,1);*/
     height: 14px;
     font-size: 12px;
     flex-grow: 1;
@@ -38,10 +38,10 @@ TextField {
     margin-right: 0px;
 }
 
-TextField:hover {
-    color: rgba(180,180,180,1);
-}
+/*TextField:hover {*/
+/*    color: rgba(180,180,180,1);*/
+/*}*/
 
-#styleSheetName:hover {
-    color: rgba(180,180,180,1);
-}
+/*#styleSheetName:hover {*/
+/*    color: rgba(180,180,180,1);*/
+/*}*/
