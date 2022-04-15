@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
@@ -84,7 +85,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (styleSheetCount == 1)
 			{
-				CreateEmptyStyle(_styleList.WritableStyleSheets.First());
+				CreateEmptyStyle(_styleList.WritableStyleSheets.First(), Constants.Features.Buss.NEW_STYLE_NAME);
 			}
 			else if (styleSheetCount > 1)
 			{
@@ -100,16 +101,16 @@ namespace Beamable.Editor.UI.Components
 			{
 				context.AddItem(new GUIContent(styleSheet.name), false, () =>
 				{
-					CreateEmptyStyle(styleSheet);
+					CreateEmptyStyle(styleSheet, Constants.Features.Buss.NEW_STYLE_NAME);
 				});
 			}
 
 			context.ShowAsContext();
 		}
 
-		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet)
+		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string newName = "")
 		{
-			BussStyleRule selector = BussStyleRule.Create(String.Empty, new List<BussPropertyProvider>());
+			BussStyleRule selector = BussStyleRule.Create(newName, new List<BussPropertyProvider>());
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
 			_onSelectorAdded?.Invoke(selector);
