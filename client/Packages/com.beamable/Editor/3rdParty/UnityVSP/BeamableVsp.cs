@@ -1,4 +1,5 @@
 using Beamable;
+using Beamable.Common;
 
 namespace UnityEditor.VspAttribution.Beamable
 {
@@ -14,6 +15,15 @@ namespace UnityEditor.VspAttribution.Beamable
 				action,
 				"beamable",
 				cid);
+		}
+
+		public static PackageVersion GetLatestVersion()
+		{
+#if !UNITY_EDITOR
+			return BeamableEnvironment.SdkVersion;
+#endif
+
+			return "";
 		}
 	}
 }
