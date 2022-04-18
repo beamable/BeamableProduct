@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ManifestSubscription` subscription no longer accepts the scope field
 - AccountHud logs a warning when pressed if there isn't an AccountManagementFlow in the scene.
 - Increased the AdminFlow scroll speed
-
+- InventoryFlow can now be configured at the GameObject level. 
 
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
