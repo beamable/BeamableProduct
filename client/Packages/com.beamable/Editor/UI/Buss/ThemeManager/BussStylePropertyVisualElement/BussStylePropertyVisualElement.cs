@@ -43,7 +43,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public BussStylePropertyVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
+			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss")
+		{ }
 
 		public override void Init()
 		{
@@ -130,15 +131,15 @@ namespace Beamable.Editor.UI.Components
 			PropertySourceTracker context = null;
 			if (_propertySourceTracker != null && _propertySourceTracker.Element != null)
 			{
-				if(_styleRule.Selector?.CheckMatch(_propertySourceTracker.Element) ?? false)
+				if (_styleRule.Selector?.CheckMatch(_propertySourceTracker.Element) ?? false)
 				{
 					context = _propertySourceTracker;
 				}
 			}
-			
+
 			var result =
 				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleRule, _variableDatabase,
-				                                                     context, out var property, out var variableSource);
+																	 context, out var property, out var variableSource);
 
 			SetVariableSource(variableSource);
 
@@ -149,14 +150,14 @@ namespace Beamable.Editor.UI.Components
 				CreateMessageField(result);
 				return;
 			}
-			
-			
+
+
 			if (_propertyVisualElement == null)
 			{
 				CreateEditableField(property);
 				return;
 			}
-			
+
 			if (property == _propertyVisualElement.BaseProperty)
 			{
 				_propertyVisualElement.OnPropertyChangedExternally();
@@ -166,19 +167,23 @@ namespace Beamable.Editor.UI.Components
 				CreateEditableField(property);
 			}
 		}
-		
-		private void SetOverridenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result) {
+
+		private void SetOverridenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result)
+		{
 			var overriden = false;
-			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult) {
+			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
+			{
 				overriden = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
 			}
 
 			EnableInClassList("overriden", overriden);
 		}
 
-		private void CreateMessageField(BussStylePropertyVisualElementUtility.PropertyValueState result) {
+		private void CreateMessageField(BussStylePropertyVisualElementUtility.PropertyValueState result)
+		{
 			string text;
-			switch (result) {
+			switch (result)
+			{
 				case BussStylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
 					text = "Multiple possible values.";
 					break;
@@ -203,19 +208,24 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement.Init();
 		}
 
-		private void SetVariableSource(VariableDatabase.PropertyReference variableSource) {
-			if (_propertyProvider.HasVariableReference && variableSource.propertyProvider != null) {
-				if (variableSource.styleSheet == null) {
+		private void SetVariableSource(VariableDatabase.PropertyReference variableSource)
+		{
+			if (_propertyProvider.HasVariableReference && variableSource.propertyProvider != null)
+			{
+				if (variableSource.styleSheet == null)
+				{
 					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
-					                 "Declared in inline style.";
+									 "Declared in inline style.";
 				}
-				else {
+				else
+				{
 					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
-					                 $"Selector: {variableSource.styleRule.SelectorString}\n" +
-					                 $"Style sheet: {variableSource.styleSheet.name}";
+									 $"Selector: {variableSource.styleRule.SelectorString}\n" +
+									 $"Style sheet: {variableSource.styleSheet.name}";
 				}
 			}
-			else {
+			else
+			{
 				VariableSource = null;
 			}
 		}
@@ -228,14 +238,16 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement = null;
 		}
 
-		private void CreateEditableField(IBussProperty property) {
+		private void CreateEditableField(IBussProperty property)
+		{
 			if (_propertyVisualElement != null)
 			{
 				DestroyEditableField();
 			}
 			_propertyVisualElement = property.GetVisualElement();
 
-			if (_propertyVisualElement != null) {
+			if (_propertyVisualElement != null)
+			{
 				_propertyVisualElement.UpdatedStyleSheet = PropertyIsInStyle ? _styleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Init();

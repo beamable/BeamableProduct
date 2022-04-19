@@ -5,7 +5,7 @@ namespace Beamable.Editor.Common
 	public class GenericMenuCommand
 	{
 		private readonly Action _onClick;
-		
+
 		public string Name { get; }
 
 		public GenericMenuCommand(string name, Action onClick)
