@@ -77,12 +77,10 @@ namespace Beamable.Editor.UI.Components
 
 		private void LabelClicked(MouseDownEvent evt)
 		{
-#if !BEAMABLE_DEVELOPER
-			if (_styleSheet.IsReadOnly)
+			if (!_styleSheet.IsWritable)
 			{
 				return;
 			}
-#endif
 
 			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
 			commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveProperty));

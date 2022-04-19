@@ -111,12 +111,10 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnStyleSheetClicked(MouseDownEvent evt)
 		{
-#if !BEAMABLE_DEVELOPER
-			if (_styleSheet.IsReadOnly)
+			if (_styleSheet.IsWritable)
 			{
 				return;
 			}
-#endif
 
 			GenericMenu context = new GenericMenu();
 

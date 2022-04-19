@@ -27,7 +27,7 @@ namespace Beamable.UI.Buss
 
 		public bool IsReadOnly => _isReadOnly;
 
-		private bool IsWritable
+		public bool IsWritable
 		{
 			get
 			{
