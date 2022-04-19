@@ -85,7 +85,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (styleSheetCount == 1)
 			{
-				CreateEmptyStyle(_styleList.WritableStyleSheets.First(), Constants.Features.Buss.NEW_STYLE_NAME);
+				CreateEmptyStyle(_styleList.WritableStyleSheets.First(), Constants.Features.Buss.NEW_SELECTOR_NAME);
 			}
 			else if (styleSheetCount > 1)
 			{
@@ -101,7 +101,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				context.AddItem(new GUIContent(styleSheet.name), false, () =>
 				{
-					CreateEmptyStyle(styleSheet, Constants.Features.Buss.NEW_STYLE_NAME);
+					CreateEmptyStyle(styleSheet, Constants.Features.Buss.NEW_SELECTOR_NAME);
 				});
 			}
 
