@@ -45,6 +45,10 @@ namespace Beamable
 			t.ContinueWith(_ => _uncaughtTasks.Remove(t));
 		}
 
+		/// <summary>
+		/// Returns a promise that will complete successfully in <paramref name="seconds"/>.
+		/// Don't use this version when writing tests, instead use <see cref="WaitForSeconds{T}(Beamable.Common.Promise{T},float,CoroutineService)"/>.
+		/// </summary>
 		public static Promise<T> WaitForSeconds<T>(this Promise<T> promise, float seconds)
 		{
 			var result = new Promise<T>();
@@ -59,6 +63,9 @@ namespace Beamable
 			return result;
 		}
 
+		/// <summary>
+		/// Returns a promise that will complete successfully in <paramref name="seconds"/> by kicking off a coroutine via the given Coroutine <paramref name="service"/>.
+		/// </summary>
 		public static Promise<T> WaitForSeconds<T>(this Promise<T> promise, float seconds, CoroutineService service)
 		{
 			var result = new Promise<T>();

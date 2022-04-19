@@ -26,6 +26,7 @@ namespace Beamable.Editor.UI.Components
 		private TextElement _labelComponent;
 
 		private VariableDatabase _variableDatabase;
+		private PropertySourceTracker _propertySourceTracker;
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
@@ -35,6 +36,12 @@ namespace Beamable.Editor.UI.Components
 		public string PropertyKey => PropertyProvider.Key;
 
 		public bool PropertyIsInStyle => _styleRule.Properties.Contains(_propertyProvider);
+
+		public string VariableSource
+		{
+			get => _labelComponent.tooltip;
+			set => _labelComponent.tooltip = value;
+		}
 
 		public BussStylePropertyVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
@@ -58,6 +65,10 @@ namespace Beamable.Editor.UI.Components
 			_variableParent = new VisualElement();
 			_variableParent.name = "globalVariable";
 			Root.Add(_variableParent);
+
+			var overrideIndicator = new VisualElement();
+			overrideIndicator.AddToClassList("overrideIndicator");
+			Root.Add(overrideIndicator);
 
 			Root.parent.EnableInClassList("exists", PropertyIsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !PropertyIsInStyle);
@@ -97,11 +108,13 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  BussPropertyProvider property,
-		                  VariableDatabase variableDatabase)
+						  BussStyleRule styleRule,
+						  BussPropertyProvider property,
+						  VariableDatabase variableDatabase,
+						  PropertySourceTracker propertySourceTracker)
 		{
 			_variableDatabase = variableDatabase;
+			_propertySourceTracker = propertySourceTracker;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_propertyProvider = property;
@@ -109,29 +122,125 @@ namespace Beamable.Editor.UI.Components
 			Init();
 		}
 
+		public void SetPropertySourceTracker(PropertySourceTracker tracker)
+		{
+			_propertySourceTracker = tracker;
+			SetupEditableField();
+		}
+
 		private void SetupEditableField()
 		{
-			var baseType = BussStyle.GetBaseType(_propertyProvider.Key);
-			if (_propertyVisualElement != null)
+			PropertySourceTracker context = null;
+			if (_propertySourceTracker != null && _propertySourceTracker.Element != null)
 			{
 				if (_propertyVisualElement.BaseProperty ==
 				    _propertyProvider.GetProperty()
 				                     .GetEndProperty(_variableDatabase, _styleRule, out _externalVariableSource))
 				{
-					_propertyVisualElement.OnPropertyChangedExternally();
-					return;
+					context = _propertySourceTracker;
 				}
+			}
+			
+			var result =
+				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleRule, _variableDatabase,
+				                                                     context, out var property, out var variableSource);
 
-				_propertyVisualElement.RemoveFromHierarchy();
-				_propertyVisualElement.Destroy();
+			SetVariableSource(variableSource);
+
+			SetOverridenClass(context, result);
+
+			if (result != BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
+			{
+				CreateMessageField(result);
+				return;
+			}
+			
+			
+			if (_propertyVisualElement == null)
+			{
+				CreateEditableField(property);
+				return;
+			}
+			
+			if (property == _propertyVisualElement.BaseProperty)
+			{
+				_propertyVisualElement.OnPropertyChangedExternally();
+			}
+			else
+			{
+				CreateEditableField(property);
+			}
+		}
+		
+		private void SetOverridenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result) {
+			var overriden = false;
+			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult) {
+				overriden = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
 			}
 
-			_propertyVisualElement =
-				_propertyProvider.GetVisualElement(_variableDatabase, _styleRule, out _externalVariableSource,
-				                                   baseType);
+			EnableInClassList("overriden", overriden);
+		}
+
+		private void CreateMessageField(BussStylePropertyVisualElementUtility.PropertyValueState result) {
+			string text;
+			switch (result) {
+				case BussStylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
+					text = "Multiple possible values.";
+					break;
+				case BussStylePropertyVisualElementUtility.PropertyValueState.NoResult:
+					text = "No possible value.";
+					break;
+				case BussStylePropertyVisualElementUtility.PropertyValueState.VariableLoopDetected:
+					text = "Variable loop-reference detected.";
+					break;
+				default:
+					text = "Something is wrong here.";
+					break;
+			}
 
 			if (_propertyVisualElement != null)
 			{
+				DestroyEditableField();
+			}
+
+			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
+			_valueParent.Add(_propertyVisualElement);
+			_propertyVisualElement.Init();
+		}
+
+		private void SetVariableSource(VariableDatabase.PropertyReference variableSource) {
+			if (_propertyProvider.HasVariableReference && variableSource.propertyProvider != null) {
+				if (variableSource.styleSheet == null) {
+					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
+					                 "Declared in inline style.";
+				}
+				else {
+					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
+					                 $"Selector: {variableSource.styleRule.SelectorString}\n" +
+					                 $"Style sheet: {variableSource.styleSheet.name}";
+				}
+			}
+			else {
+				VariableSource = null;
+			}
+		}
+
+		private void DestroyEditableField()
+		{
+			if (_propertyVisualElement == null) return;
+			_propertyVisualElement.RemoveFromHierarchy();
+			_propertyVisualElement.Destroy();
+			_propertyVisualElement = null;
+		}
+
+		private void CreateEditableField(IBussProperty property) {
+			if (_propertyVisualElement != null)
+			{
+				DestroyEditableField();
+			}
+			_propertyVisualElement = property.GetVisualElement();
+
+			if (_propertyVisualElement != null) {
 				_propertyVisualElement.UpdatedStyleSheet = PropertyIsInStyle ? _styleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Init();

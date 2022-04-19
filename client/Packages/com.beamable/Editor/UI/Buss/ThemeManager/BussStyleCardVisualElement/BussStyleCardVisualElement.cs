@@ -1,11 +1,9 @@
-using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -36,8 +34,11 @@ namespace Beamable.Editor.UI.Components
 		private TextElement _showAllButtonText;
 
 		private VariableDatabase _variableDatabase;
+		private PropertySourceDatabase _propertyDatabase;
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
+
+		private BussElement _selectedElement;
 
 		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
 		private Action _onUndoRequest;
@@ -101,14 +102,16 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  VariableDatabase variableDatabase,
-		                  Action onUndoRequest,
-		                  IEnumerable<BussStyleSheet> writableStyleSheets)
+						  BussStyleRule styleRule,
+						  VariableDatabase variableDatabase,
+						  PropertySourceDatabase propertySourceDatabase,
+						  Action onUndoRequest,
+						  IEnumerable<BussStyleSheet> writableStyleSheets)
 		{
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
+			_propertyDatabase = propertySourceDatabase;
 			_onUndoRequest = onUndoRequest;
 			_writableStyleSheets = writableStyleSheets;
 
@@ -325,7 +328,7 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				var element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
+				element.Setup(_styleSheet, _styleRule, property, _variableDatabase, _propertyDatabase.GetTracker(_selectedElement));
 				(property.IsVariable ? _variablesParent : _propertiesParent).Add(element);
 				_properties.Add(element);
 			}
@@ -347,7 +350,7 @@ namespace Beamable.Editor.UI.Components
 					var propertyProvider =
 						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 					BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
+					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase, _propertyDatabase.GetTracker(_selectedElement));
 					_propertiesParent.Add(element);
 					_properties.Add(element);
 				}
@@ -413,6 +416,13 @@ namespace Beamable.Editor.UI.Components
 
 		public void OnBussElementSelected(BussElement element)
 		{
+			_selectedElement = element;
+			var tracker = _propertyDatabase.GetTracker(_selectedElement);
+			foreach (BussStylePropertyVisualElement propertyVisualElement in _properties)
+			{
+				propertyVisualElement.SetPropertySourceTracker(tracker);
+			}
+			
 			if (_colorBlock == null) return;
 
 			bool active = false;

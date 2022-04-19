@@ -50,3 +50,17 @@
     display: none;
     visibility: hidden;
 }
+
+.overrideIndicator{
+    background-color: #ffffff;
+    height: 1px;
+    width: 340px;
+    position: absolute;
+    top: 19px;
+    left: 24px;
+    display: none;
+}
+
+.overriden .overrideIndicator{
+    display: flex;
+}

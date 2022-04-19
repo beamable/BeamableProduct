@@ -55,6 +55,7 @@ namespace Beamable.Editor.Microservice.UI
 		public MicroservicesDataModel Model;
 
 		private static MicroserviceWindow _instance;
+		private Promise<bool> checkDockerPromise;
 
 		public static MicroserviceWindow Instance
 		{
@@ -224,14 +225,18 @@ namespace Beamable.Editor.Microservice.UI
 			throw new NotImplementedException();
 		}
 
+
 		private void Refresh()
 		{
-			new CheckDockerCommand().Start(null).Then(_ =>
+			if (checkDockerPromise == null || checkDockerPromise.IsCompleted)
 			{
-				_microserviceBreadcrumbsVisualElement?.Refresh();
-				_actionBarVisualElement?.Refresh();
-				_microserviceContentVisualElement?.Refresh();
-			});
+				checkDockerPromise = new CheckDockerCommand().Start(null).Then(_ =>
+				{
+					_microserviceBreadcrumbsVisualElement?.Refresh();
+					_actionBarVisualElement?.Refresh();
+					_microserviceContentVisualElement?.Refresh();
+				});
+			}
 		}
 
 		private void OnEnable()

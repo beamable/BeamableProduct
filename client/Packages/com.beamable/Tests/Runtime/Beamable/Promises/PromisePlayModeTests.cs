@@ -46,7 +46,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			{
 				attemptCounter += 1;
 
-				var fakeWork = Promise.Success.WaitForSeconds(.00001f).FlatMap(_ =>
+				var fakeWork = Promise.Success.WaitForSeconds(.00001f, _coroutineService).FlatMap(_ =>
 				{
 					var newPromise = new Promise();
 					newPromise.CompleteError(new Exception($"ExceptionDuringRecovery {attempt}"));
@@ -80,7 +80,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			{
 				attemptCounter += 1;
 
-				var fakeWork = Promise.Success.WaitForSeconds(.00001f).FlatMap(_ =>
+				var fakeWork = Promise.Success.WaitForSeconds(.00001f, _coroutineService).FlatMap(_ =>
 				{
 					var newPromise = new Promise();
 					if (attemptIdx < attemptToSucceedAt)
@@ -119,7 +119,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			{
 				attemptCounter += 1;
 
-				var fakeWork = Promise.Success.WaitForSeconds(.00001f).FlatMap(_ =>
+				var fakeWork = Promise.Success.WaitForSeconds(.00001f, _coroutineService).FlatMap(_ =>
 				{
 					var newPromise = new Promise();
 					newPromise.CompleteError(new Exception($"ExceptionDuringRecovery {attempt}"));
