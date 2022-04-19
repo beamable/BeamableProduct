@@ -60,13 +60,11 @@ namespace Beamable.Editor.UI.Buss
 			root.Clear();
 			_styleCardsVisualElements.Clear();
 			_addStyleButton = null;
-
 			VisualElement mainVisualElement = new VisualElement();
 			mainVisualElement.name = "themeManagerContainer";
 
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
-
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
@@ -137,7 +135,7 @@ namespace Beamable.Editor.UI.Buss
 
 			if (selectedElement == null || !_filterMode) return true;
 
-			return (styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false);
+			return styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
 		}
 
 		private void RefreshStyleSheets()
@@ -169,7 +167,6 @@ namespace Beamable.Editor.UI.Buss
 				_scrollView.MarkDirtyRepaint();
 			};
 		}
-
 
 		private void OnFocus()
 		{
