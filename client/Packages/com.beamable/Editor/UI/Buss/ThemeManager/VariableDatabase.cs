@@ -124,10 +124,10 @@ namespace Beamable.UI.Buss
 		public void ResetVariableLoopDetector() => _variablesChecked.Clear();
 
 		public PropertyValueState TryGetVariableValue(VariableProperty variableProperty,
-		                                              BussStyleRule styleRule,
-		                                              out IBussProperty result,
-		                                              BussElement context,
-		                                              Type expectedType)
+													  BussStyleRule styleRule,
+													  out IBussProperty result,
+													  BussElement context,
+													  Type expectedType)
 		{
 			if (expectedType == null)
 			{
@@ -135,7 +135,7 @@ namespace Beamable.UI.Buss
 			}
 			result = null;
 			var variableName = variableProperty.VariableName;
-		
+
 			if (_variablesChecked.Contains(variableName))
 			{
 				return PropertyValueState.VariableLoopDetected;
@@ -148,9 +148,9 @@ namespace Beamable.UI.Buss
 		}
 
 		private PropertyValueState TryGetVariableValueWithoutContext(VariableProperty variableProperty,
-		                                                             BussStyleRule styleRule,
-		                                                             out IBussProperty result,
-		                                                             Type expectedType)
+																	 BussStyleRule styleRule,
+																	 out IBussProperty result,
+																	 Type expectedType)
 		{
 			result = null;
 			if (styleRule.HasProperty(variableProperty.VariableName))

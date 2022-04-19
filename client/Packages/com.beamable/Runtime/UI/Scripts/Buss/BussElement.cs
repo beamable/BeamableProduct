@@ -248,7 +248,7 @@ namespace Beamable.UI.Buss
 		{
 			BussConfiguration.UseConfig(c => c.RecalculateStyle(this));
 			ApplyStyle();
-			
+
 			StyleRecalculated?.Invoke();
 
 			foreach (BussElement child in Children)
