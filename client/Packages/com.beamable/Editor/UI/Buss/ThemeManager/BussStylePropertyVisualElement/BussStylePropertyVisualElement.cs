@@ -131,9 +131,7 @@ namespace Beamable.Editor.UI.Components
 			PropertySourceTracker context = null;
 			if (_propertySourceTracker != null && _propertySourceTracker.Element != null)
 			{
-				if (_propertyVisualElement.BaseProperty ==
-				    _propertyProvider.GetProperty()
-				                     .GetEndProperty(_variableDatabase, _styleRule, out _externalVariableSource))
+				if(_styleRule.Selector?.CheckMatch(_propertySourceTracker.Element) ?? false)
 				{
 					context = _propertySourceTracker;
 				}
