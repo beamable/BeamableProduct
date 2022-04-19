@@ -21,12 +21,12 @@ namespace Beamable.Experimental.Api.Lobbies
     ///   Find lobbies for the player to join.
     /// </summary>
     // TODO: This should also allow for all sorts of fun querying
-    public Promise<List<Lobby>> FindLobbies()
+    public Promise<LobbyQueryResponse> FindLobbies()
     {
-      return _requester.Request<GetLobbiesResponse>(
+      return _requester.Request<LobbyQueryResponse>(
         Method.GET,
         $"/lobbies"
-      ).Map(response => response.results);
+      );
     }
 
     /// <summary>
@@ -58,7 +58,6 @@ namespace Beamable.Experimental.Api.Lobbies
     /// </summary>
     /// <param name="lobbyId"></param>
     /// <param name="playerTags"></param>
-    /// <returns></returns>
     public Promise<Lobby> JoinLobby(string lobbyId, List<Tag> playerTags = null)
     {
       return _requester.Request<Lobby>(
@@ -68,16 +67,19 @@ namespace Beamable.Experimental.Api.Lobbies
       );
     }
 
-    public Promise<Lobby> JoinLobbyByPasscode(string passcode)
+    public Promise<Lobby> JoinLobbyByPasscode(string passcode, List<Tag> playerTags = null)
     {
-      throw new System.NotImplementedException();
+      return _requester.Request<Lobby>(
+        Method.PUT,
+        $"/lobbies/passcode",
+        new JoinByPasscodeRequest(passcode, playerTags)
+      );
     }
 
     /// <summary>
     /// Fetch the current status of the given lobbyId
     /// </summary>
     /// <param name="lobbyId"></param>
-    /// <returns></returns>
     public Promise<Lobby> GetLobby(string lobbyId)
     {
       return _requester.Request<Lobby>(
@@ -96,6 +98,38 @@ namespace Beamable.Experimental.Api.Lobbies
         Method.DELETE,
         $"/lobbies/{lobbyId}",
         new RemoveFromLobbyRequest(_userContext.UserId.ToString())
+      );
+    }
+
+    /// <summary>
+    /// Add a list of tags to the given player in the given lobby.
+    /// </summary>
+    /// <param name="lobbyId"></param>
+    /// <param name="tags"></param>
+    /// <param name="playerId"></param>
+    public Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null)
+    {
+      playerId ??= _userContext.UserId.ToString();
+      return _requester.Request<Lobby>(
+        Method.PUT,
+        $"/lobbies/{lobbyId}/tags",
+        new AddTagsRequest(playerId, tags)
+      );
+    }
+
+    /// <summary>
+    /// Remove a list of tags from the given player in the given lobby.
+    /// </summary>
+    /// <param name="lobbyId"></param>
+    /// <param name="tags"></param>
+    /// <param name="playerId"></param>
+    public Promise<Lobby> RemovePlayerTags(string lobbyId, List<string> tags, string playerId = null)
+    {
+      playerId ??= _userContext.UserId.ToString();
+      return _requester.Request<Lobby>(
+        Method.PUT,
+        $"/lobbies/{lobbyId}/tags",
+        new RemoveTagsRequest(playerId, tags)
       );
     }
 

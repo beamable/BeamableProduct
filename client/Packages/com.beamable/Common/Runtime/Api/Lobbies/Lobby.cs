@@ -13,6 +13,7 @@ namespace Beamable.Experimental.Api.Lobbies
     public string host;
     public List<LobbyPlayer> players;
     public string passcode;
+    public int maxPlayers;
 
     public LobbyRestriction Restriction => (LobbyRestriction)Enum.Parse(typeof(LobbyRestriction), restriction);
   }

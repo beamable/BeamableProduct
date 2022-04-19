@@ -29,10 +29,10 @@ namespace Beamable.Player
 
     private static string UpdateName(string lobbyId) => $"lobbies.update.{lobbyId}";
 
-    private Lobby State
+    public Lobby State
     {
       get => _state;
-      set
+      private set
       {
         if (value != null)
         {
@@ -62,6 +62,8 @@ namespace Beamable.Player
     public List<LobbyPlayer> Players => SafeAccess(State?.players);
     public string Passcode => SafeAccess(State?.passcode);
 
+    public int MaxPlayers => SafeAccess(State.maxPlayers);
+
     private T SafeAccess<T>(T value)
     {
       if (!IsInLobby)
@@ -70,6 +72,11 @@ namespace Beamable.Player
       }
 
       return value;
+    }
+
+    public Promise<LobbyQueryResponse> FindLobbies()
+    {
+      return _lobbyApi.FindLobbies();
     }
 
     public async Promise Create(
@@ -88,10 +95,20 @@ namespace Beamable.Player
       State = await _lobbyApi.JoinLobby(lobbyId, playerTags);
     }
 
-    // public async Promise JoinByPasscode(string passcode)
-    // {
-    //   State = await _lobbyApi.JoinLobbyByPasscode(passcode);
-    // }
+    public async Promise JoinByPasscode(string passcode, List<Tag> playerTags = null)
+    {
+      State = await _lobbyApi.JoinLobbyByPasscode(passcode, playerTags);
+    }
+
+    public async Promise AddTags(List<Tag> tags)
+    {
+      State = await _lobbyApi.AddPlayerTags(State.lobbyId, tags);
+    }
+
+    public async Promise RemoveTags(List<string> tags)
+    {
+      State = await _lobbyApi.RemovePlayerTags(State.lobbyId, tags);
+    }
 
     public async Promise Leave()
     {
