@@ -30,7 +30,6 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
-		private BussStyleSheet _externalVariableSource;
 
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
@@ -301,8 +300,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void CheckIfIsReadOnly()
 		{
-			var styleSheet = _externalVariableSource != null ? _externalVariableSource : _styleSheet;
-			var isReadOnly = styleSheet.IsReadOnly;
+			var isReadOnly = _styleSheet.IsReadOnly;
 
 			_labelComponent.SetEnabled(!isReadOnly);
 			_propertyVisualElement.SetEnabled(!isReadOnly);
