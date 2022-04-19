@@ -50,7 +50,8 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleRule StyleRule => _styleRule;
 
 		public BussStyleCardVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
+		{ }
 
 		public override void Refresh()
 		{
@@ -164,7 +165,7 @@ namespace Beamable.Editor.UI.Components
 				var baseType = BussStyle.GetBaseType(key);
 				var data = SerializableValueImplementationHelper.Get(baseType);
 				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                     t != typeof(FractionFloatBussProperty));
+													 t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -208,7 +209,7 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow.ShowConfirmationUtility(CLEAR_ALL_PROPERTIES_HEADER, confirmationPopup,
-			                                            this.GetEditorWindowWithReflection());
+														this.GetEditorWindowWithReflection());
 		}
 
 		private void UndoButtonClicked(MouseDownEvent evt)
@@ -291,7 +292,7 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup,
-			                                            this.GetEditorWindowWithReflection());
+														this.GetEditorWindowWithReflection());
 		}
 
 		public void RefreshProperties()
@@ -307,7 +308,7 @@ namespace Beamable.Editor.UI.Components
 				else
 				{
 					remove = !_showAllMode ||
-					         _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
+							 _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
 				}
 
 				if (remove)
@@ -380,7 +381,7 @@ namespace Beamable.Editor.UI.Components
 
 						var keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
-						       Array.IndexOf(keys, p2.PropertyProvider.Key);
+							   Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
 
 					return p2.PropertyIsInStyle ? 1 : -1;
@@ -422,7 +423,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				propertyVisualElement.SetPropertySourceTracker(tracker);
 			}
-			
+
 			if (_colorBlock == null) return;
 
 			bool active = false;

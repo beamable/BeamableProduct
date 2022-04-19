@@ -22,13 +22,13 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private List<GenericMenuCommand> _commands;
 
-		#if UNITY_2018
+#if UNITY_2018
 		public BussSelectorLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.2018.uss") { }
-		#elif UNITY_2019_1_OR_NEWER
+#elif UNITY_2019_1_OR_NEWER
 				public BussSelectorLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss") { }
-		#endif
+#endif
 
 		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet, List<GenericMenuCommand> commands)
 		{
@@ -68,7 +68,7 @@ namespace Beamable.Editor.UI.Components
 				}
 				_editableLabel.value = _styleRule.SelectorString;
 				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
-				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);	
+				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);
 				Root.Add(_editableLabel);
 			}
 #endif

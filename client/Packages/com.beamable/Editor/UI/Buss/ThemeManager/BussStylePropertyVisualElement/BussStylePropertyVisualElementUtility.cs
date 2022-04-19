@@ -9,11 +9,11 @@ namespace Beamable.Editor.UI.Components
 		private static HashSet<string> _usedVariableNames = new HashSet<string>();
 
 		public static PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
-		                                                BussStyleRule styleRule,
-		                                                VariableDatabase variableDatabase,
-		                                                PropertySourceTracker context,
-		                                                out IBussProperty result,
-		                                                out VariableDatabase.PropertyReference variablePropertyReference)
+														BussStyleRule styleRule,
+														VariableDatabase variableDatabase,
+														PropertySourceTracker context,
+														out IBussProperty result,
+														out VariableDatabase.PropertyReference variablePropertyReference)
 		{
 			if (!basePropertyProvider.HasVariableReference)
 			{
@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Components
 				if (context != null)
 				{
 					return FindVariableEndValueWithContext((VariableProperty)basePropertyProvider.GetProperty(),
-					                                       context, BussStyle.GetBaseType(basePropertyProvider.Key), out result, out variablePropertyReference);
+														   context, BussStyle.GetBaseType(basePropertyProvider.Key), out result, out variablePropertyReference);
 				}
 				return FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
 					styleRule, variableDatabase, out result, out variablePropertyReference);
@@ -41,10 +41,10 @@ namespace Beamable.Editor.UI.Components
 		/// It can search for end value recursively.
 		/// </summary>
 		private static PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-		                                                       BussStyleRule styleRule,
-		                                                       VariableDatabase variableDatabase,
-		                                                       out IBussProperty result,
-		                                                       out VariableDatabase.PropertyReference propertyReference)
+															   BussStyleRule styleRule,
+															   VariableDatabase variableDatabase,
+															   out IBussProperty result,
+															   out VariableDatabase.PropertyReference propertyReference)
 		{
 			result = null;
 			propertyReference = new VariableDatabase.PropertyReference(null, null, null);
@@ -84,22 +84,22 @@ namespace Beamable.Editor.UI.Components
 			{
 				state = FindVariableEndValue(nestedVariableProperty, styleRule, variableDatabase, out result, out propertyReference);
 			}
-			
+
 			_usedVariableNames.Clear();
 
 			return state;
 		}
 
 		private static PropertyValueState FindVariableEndValueWithContext(VariableProperty variableProperty,
-		                                                                  PropertySourceTracker context,
-		                                                                  Type expectedType,
-		                                                                  out IBussProperty result,
-		                                                                  out VariableDatabase.PropertyReference
-			                                                                  propertyReference)
+																		  PropertySourceTracker context,
+																		  Type expectedType,
+																		  out IBussProperty result,
+																		  out VariableDatabase.PropertyReference
+																			  propertyReference)
 		{
 			result = null;
 			propertyReference = new VariableDatabase.PropertyReference(null, null, null);
-			
+
 			while (!_usedVariableNames.Contains(variableProperty.VariableName))
 			{
 				_usedVariableNames.Add(variableProperty.VariableName);
@@ -122,11 +122,11 @@ namespace Beamable.Editor.UI.Components
 					return PropertyValueState.SingleResult;
 				}
 			}
-			
+
 			_usedVariableNames.Clear();
 			return PropertyValueState.VariableLoopDetected;
 		}
-		
+
 		public enum PropertyValueState
 		{
 			NoResult,
