@@ -103,6 +103,7 @@ namespace Beamable.Editor.UI.Buss
 					{
 						spawned.RefreshProperties();
 						spawned.RefreshButtons();
+						spawned.RefreshWritableStyleSheets(WritableStyleSheets);
 					}
 					else
 					{
@@ -157,20 +158,9 @@ namespace Beamable.Editor.UI.Buss
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _propertyDatabase, callback);
+			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _propertyDatabase, callback, WritableStyleSheets);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
-
-			styleCard.EnterEditMode += () =>
-			{
-				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
-				{
-					if (other != styleCard && other.EditMode)
-					{
-						other.SetEditMode(false);
-					}
-				}
-			};
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)

@@ -3,6 +3,7 @@
     justify-content: flex-start;
     align-self: stretch;
     align-items: center;
+    margin-left: 20px;
 }
 
 #propertyLabel {

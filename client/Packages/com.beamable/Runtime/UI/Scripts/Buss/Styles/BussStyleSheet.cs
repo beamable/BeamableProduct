@@ -27,7 +27,7 @@ namespace Beamable.UI.Buss
 
 		public bool IsReadOnly => _isReadOnly;
 
-		private bool IsWritable
+		public bool IsWritable
 		{
 			get
 			{
@@ -63,9 +63,9 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void RemoveStyleProperty(IBussProperty property, string selectorString)
+		public void RemoveStyleProperty(IBussProperty property, BussStyleRule styleRule)
 		{
-			BussStyleRule bussStyleRule = _styles.Find(style => style.SelectorString == selectorString);
+			BussStyleRule bussStyleRule = _styles.Find(style => style == styleRule);
 			if (bussStyleRule.RemoveProperty(property))
 			{
 				TriggerChange();
