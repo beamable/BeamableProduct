@@ -144,6 +144,13 @@ namespace Beamable.Server
 				return (T)(object)json;
 			}
 
+			if (type.IsSubclassOf(typeof(ScriptableObject)))
+			{
+				var so = ScriptableObject.CreateInstance(type);
+				JsonUtility.FromJsonOverwrite(json, so);
+				return  (T)(object)so;
+			}
+
 			switch (defaultInstance)
 			{
 				case float _:
