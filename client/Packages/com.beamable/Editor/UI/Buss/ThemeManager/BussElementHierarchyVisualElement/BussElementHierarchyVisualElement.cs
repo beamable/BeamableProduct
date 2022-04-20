@@ -29,6 +29,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			StyleSheets.Clear();
 			RefreshTree();
+			OnBussStyleSheetChange();
 
 			if (selectedGameObject != null)
 			{
@@ -39,6 +40,8 @@ namespace Beamable.Editor.UI.Components
 
 		protected override string GetLabel(BussElement component)
 		{
+			if (!component) return String.Empty; // if the component has been destroyed, we cannot reason about it.
+
 			string label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
 
 			foreach (string className in component.Classes)
@@ -51,8 +54,8 @@ namespace Beamable.Editor.UI.Components
 
 		protected override void OnHierarchyChanged()
 		{
-			StyleSheets.Clear();
 			base.OnHierarchyChanged();
+			OnBussStyleSheetChange();
 		}
 
 		protected override void OnSelectionChanged()
@@ -78,7 +81,7 @@ namespace Beamable.Editor.UI.Components
 		private void RefreshStyleSheets()
 		{
 			StyleSheets.Clear();
-			
+
 			BussConfiguration.OptionalInstance.DoIfExists(config =>
 			{
 				if (config.GlobalStyleSheet != null)
@@ -86,7 +89,7 @@ namespace Beamable.Editor.UI.Components
 					StyleSheets.Add(config.GlobalStyleSheet);
 				}
 			});
-			
+
 			foreach (BussElement component in Components)
 			{
 				var styleSheet = component.StyleSheet;

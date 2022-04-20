@@ -26,8 +26,14 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected BussPropertyVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss")
+			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss", false)
 		{ }
+
+		public override void Init()
+		{
+			base.Init();
+			AddToClassList("bussPropertyRoot");
+		}
 
 		protected void AddBussPropertyFieldClass(VisualElement ve)
 		{

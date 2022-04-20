@@ -1,5 +1,6 @@
 ﻿using Beamable;
 using Beamable.Common;
+using Beamable.Coroutines;
 using NUnit.Framework;
 using System;
 using System.Collections;
@@ -8,17 +9,33 @@ using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.TestTools;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Tests.Runtime.PromiseTests
 {
 	public class PromisePlayModeTests
 	{
+		private CoroutineService _coroutineService;
+
+
+		[SetUp]
+		public void SetUp()
+		{
+			_coroutineService = new GameObject("__CoroutineService__").AddComponent<CoroutineService>();
+		}
+
+		[TearDown]
+		public void Teardown()
+		{
+			Object.DestroyImmediate(_coroutineService.gameObject);
+		}
+
 		[UnityTest]
 		public IEnumerator RecoverWithFalloff_ShouldThrowAfterMaxAttempts()
 		{
 			var attemptCounter = 0;
 			var expectedExceptionReceived = false;
-			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
+			var retryAttemptFalloffTimers = new[] { .1f, .25f, .5f, .75f };
 
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.
@@ -29,14 +46,14 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			{
 				attemptCounter += 1;
 
-				var fakeWork = Promise.Success.WaitForSeconds(.00001f).FlatMap(_ =>
+				var fakeWork = Promise.Success.WaitForSeconds(.00001f, _coroutineService).FlatMap(_ =>
 				{
 					var newPromise = new Promise();
 					newPromise.CompleteError(new Exception($"ExceptionDuringRecovery {attempt}"));
 					return newPromise;
 				});
 				return fakeWork;
-			}, retryAttemptFalloffTimers).Error(err => expectedExceptionReceived = err.Message == $"ExceptionDuringRecovery {retryAttemptFalloffTimers.Length - 1}");
+			}, retryAttemptFalloffTimers, _coroutineService).Error(err => expectedExceptionReceived = err.Message == $"ExceptionDuringRecovery {retryAttemptFalloffTimers.Length - 1}");
 
 			mainPromise.CompleteError(new Exception("UnexpectedException"));
 			yield return recoveringPromise.ToYielder();
@@ -52,7 +69,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			var attemptCounter = -1;
 			var attemptToSucceedAt = 2;
 			var successWasAchieved = false;
-			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
+			var retryAttemptFalloffTimers = new[] { .1f, .25f, .5f, .75f };
 
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.
@@ -63,7 +80,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			{
 				attemptCounter += 1;
 
-				var fakeWork = Promise.Success.WaitForSeconds(.00001f).FlatMap(_ =>
+				var fakeWork = Promise.Success.WaitForSeconds(.00001f, _coroutineService).FlatMap(_ =>
 				{
 					var newPromise = new Promise();
 					if (attemptIdx < attemptToSucceedAt)
@@ -74,7 +91,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 				});
 
 				return fakeWork;
-			}, retryAttemptFalloffTimers).Then(_ => successWasAchieved = true);
+			}, retryAttemptFalloffTimers, _coroutineService).Then(_ => successWasAchieved = true);
 
 			mainPromise.CompleteError(new Exception("UnexpectedException"));
 			yield return recoveringPromise.ToYielder();
@@ -88,7 +105,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 		{
 			var attemptCounter = 0;
 			var expectedExceptionReceived = false;
-			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
+			var retryAttemptFalloffTimers = new[] { .1f, .25f, .5f, .75f };
 
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.
@@ -102,14 +119,14 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			{
 				attemptCounter += 1;
 
-				var fakeWork = Promise.Success.WaitForSeconds(.00001f).FlatMap(_ =>
+				var fakeWork = Promise.Success.WaitForSeconds(.00001f, _coroutineService).FlatMap(_ =>
 				{
 					var newPromise = new Promise();
 					newPromise.CompleteError(new Exception($"ExceptionDuringRecovery {attempt}"));
 					return newPromise;
 				});
 				return fakeWork;
-			}, retryAttemptFalloffTimers, maxRetries).Error(err =>
+			}, retryAttemptFalloffTimers, _coroutineService, maxRetries).Error(err =>
 			{
 				// We expect the last exception we receive to be the maximum number of retries (minus one since attempts are 0-indexed).
 				expectedExceptionReceived = err.Message == $"ExceptionDuringRecovery {maxRetries - 1}";

@@ -40,13 +40,13 @@ namespace Beamable.Server.Editor.DockerCommands
 				IsRunning = true;
 			}
 		}
-		
+
 		protected override void Resolve()
 		{
 			Promise.CompleteSuccess(IsRunning);
 		}
 	}
-	
+
 	public class CheckImageCodeGenErrorCommand : DockerCommandReturnable<bool>
 	{
 		public string ContainerName { get; }
@@ -72,10 +72,10 @@ namespace Beamable.Server.Editor.DockerCommands
 		protected override void HandleStandardOut(string data)
 		{
 			base.HandleStandardOut(data);
-			
+
 			// dependency or code gen errors
-			if (data != null && (data.Contains(COMPILER_ASSEMBLY_REFERENCE_ERROR_CODE) 
-			                     || data.Contains(COMPILER_TYPE_NAMESPACE_ERROR_CODE)))
+			if (data != null && (data.Contains(COMPILER_ASSEMBLY_REFERENCE_ERROR_CODE)
+								 || data.Contains(COMPILER_TYPE_NAMESPACE_ERROR_CODE)))
 			{
 				HasCodeGenError = true;
 			}
