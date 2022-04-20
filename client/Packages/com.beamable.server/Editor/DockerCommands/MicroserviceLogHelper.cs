@@ -26,7 +26,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		private static readonly Dictionary<string, string> ContextForLogs =
 			new Dictionary<string, string>
 			{
-				{"pull access denied for beamservice", 
+				{"pull access denied for beamservice",
 					"No version of beamservice exists on your computer. Please rebuild the image and try again. " +
 					"Please ignore Docker’s access denied messaging, that is a red herring"}
 			};
