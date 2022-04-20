@@ -56,6 +56,8 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+
+			tooltip = Tooltips.Common.CHANGE_REALM;
 			Model = new RealmModel();
 			Model.Initialize();
 			_realmButton = Root.Q<Button>("realmButton");

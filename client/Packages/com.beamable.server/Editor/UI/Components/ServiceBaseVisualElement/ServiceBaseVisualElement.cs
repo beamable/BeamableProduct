@@ -135,7 +135,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			
 			if (_serviceIcon != null)
 			{
-				_serviceIcon.tooltip = Model.Descriptor.ServiceType == ServiceType.MicroService ? "Microservice" : "Storage";	
+				_serviceIcon.tooltip = Model.Descriptor.ServiceType == ServiceType.MicroService ? 
+					Tooltips.Microservice.MICROSERVICE : Tooltips.Microservice.STORAGE_OBJECT;
 			}
 			UpdateCheckboxTooltip();
 

@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System;
@@ -67,6 +68,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_realmButton.Refresh();
 
 			_servicesFilter = Root.Q<Button>("servicesFilter");
+			_servicesFilter.tooltip = Constants.Tooltips.Microservice.FILTER;
 			_servicesFilterLabel = _servicesFilter.Q<Label>();
 			_servicesFilter.clickable.clicked -= HandleServicesFilterButter;
 			_servicesFilter.clickable.clicked += HandleServicesFilterButter;

@@ -4,6 +4,11 @@
 	{
 		public static partial class Tooltips
 		{
+			public static partial class Common
+			{
+				public const string CHANGE_REALM = "Change realm";
+			}
+			
 			public static partial class Microservice
 			{
 				public const string STORAGE_OBJECT = "Storage Object";
@@ -13,6 +18,7 @@
 				public const string ADD_NEW = "Add New";
 				public const string REFRESH = "Refresh";
 				public const string DOCUMENT = "Document";
+				public const string FILTER = "Filter services";
 
 				public const string PLAY_MICROSERVICE = "Run the Microservice";
 				public const string PLAY_STORAGE = "Run the Storage";
