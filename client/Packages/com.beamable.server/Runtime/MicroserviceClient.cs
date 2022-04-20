@@ -215,7 +215,7 @@ namespace Beamable.Server
 				json = $"{{\"items\": {json}}}";
 				var wrapped = JsonUtility.FromJson<JsonUtilityWrappedList<T>>(json);
 
-				// Handle ScriptableObject List Deserialization (like List or Array of ContententObject)
+				// Handle ScriptableObject List Deserialization (like List of ContententObject)
 				if (wrapped != null && wrapped.items != null)
 				{
 					Type arrayType = wrapped.items.GetType();
