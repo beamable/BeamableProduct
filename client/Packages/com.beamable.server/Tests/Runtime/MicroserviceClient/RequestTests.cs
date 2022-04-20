@@ -289,10 +289,12 @@ namespace Beamable.Server.Tests.Runtime
 			yield return req.ToYielder();
 
 			var tmp = ScriptableObject.CreateInstance<LocalizeContentObject>();
-			tmp.Title = "tst";
+			tmp.Title = "Tst";
 			tmp.RandomSeed = 3;
 			
-			Assert.AreEqual(tmp, req.GetResult());
+			LocalizeContentObject reqTst = req.GetResult();
+			Assert.AreEqual(tmp.Title, reqTst.Title);
+			Assert.AreEqual(tmp.RandomSeed, reqTst.RandomSeed);
 		}
 	}
 }
