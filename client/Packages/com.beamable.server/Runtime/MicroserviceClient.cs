@@ -135,6 +135,13 @@ namespace Beamable.Server
 			{
 				return (T)(object)PromiseBase.Unit;
 			}
+			
+			if (typeof(ScriptableObject).IsAssignableFrom(type))
+			{
+				var so = ScriptableObject.CreateInstance(type);
+				JsonUtility.FromJsonOverwrite(json, so);
+				return  (T)(object)so;
+			}
 
 			if (type == typeof(string))
 			{
@@ -142,13 +149,6 @@ namespace Beamable.Server
 					return (T)(object)Json.Deserialize(json);
 
 				return (T)(object)json;
-			}
-
-			if (type.IsSubclassOf(typeof(ScriptableObject)))
-			{
-				var so = ScriptableObject.CreateInstance(type);
-				JsonUtility.FromJsonOverwrite(json, so);
-				return  (T)(object)so;
 			}
 
 			switch (defaultInstance)
