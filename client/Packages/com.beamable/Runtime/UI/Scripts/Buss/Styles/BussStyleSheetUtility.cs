@@ -1,7 +1,6 @@
 ﻿using Beamable.Common;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -117,14 +116,18 @@ namespace Beamable.UI.Buss
 			}
 
 			targetStyleSheet.Styles.Add(rule);
-			AssetDatabase.SaveAssets();
+#if UNITY_EDITOR
+			UnityEditor.AssetDatabase.SaveAssets();
+#endif
 			targetStyleSheet.TriggerChange();
 		}
 
 		public static void RemoveSingleStyle(BussStyleSheet targetStyleSheet, BussStyleRule style)
 		{
 			targetStyleSheet.RemoveStyle(style);
-			AssetDatabase.SaveAssets();
+#if UNITY_EDITOR
+			UnityEditor.AssetDatabase.SaveAssets();
+#endif
 			targetStyleSheet.TriggerChange();
 		}
 	}
