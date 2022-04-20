@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `PreventAddressableCodeStripping` Core Configuration setting that automatically generates a link.xml file that will preserve addressable types.
+- `TryClaim` method in `EventService` to attempt a claim, even if one is not invalid
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Increased the AdminFlow scroll speed
 - InventoryFlow can now be configured at the GameObject level.
 - Edit mode for Buss Style Card has been removed in favor of context menus for selector label, variables and properties
+- Claiming an event that a player never submitted a score for will report an accurate error message
 
 ### Fixed
 - StoreView prefab now works in landscape mode
