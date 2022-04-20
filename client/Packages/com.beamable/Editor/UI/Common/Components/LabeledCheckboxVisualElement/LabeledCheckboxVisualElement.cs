@@ -45,7 +45,7 @@ namespace Beamable.Editor.UI.Components
 			{ name = "flip", defaultValue = false };
 
 			readonly UxmlBoolAttributeDescription _flipIcon = new UxmlBoolAttributeDescription
-				{ name = "flip-icon", defaultValue = false };
+			{ name = "flip-icon", defaultValue = false };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -81,7 +81,7 @@ namespace Beamable.Editor.UI.Components
 		{
 		}
 
-		public LabeledCheckboxVisualElement(string labelText = "", bool isFlipped = false, bool isIconFlipped=false) : base(ComponentPath)
+		public LabeledCheckboxVisualElement(string labelText = "", bool isFlipped = false, bool isIconFlipped = false) : base(ComponentPath)
 		{
 			_labelText = labelText;
 			Flip = isFlipped;

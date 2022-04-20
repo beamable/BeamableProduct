@@ -324,7 +324,7 @@ namespace Beamable
 		/// Whether or not we should force the call to be delayed. This is used to guarantee that the callback in <see cref="BeamEditorWindow{TWindow}.OnEnable"/> is
 		/// called only after the <see cref="BeamEditorWindow{TWindow}.InitializedConfig"/> was set during the <see cref="BeamEditorWindow{TWindow}.InitBeamEditorWindow"/> flow.
 		/// </param>
-		public static void DelayedInitializationCall(Action onInitializationFinished, bool forceDelay, DelayClause customDelay = null)
+		public static void DelayedInitializationCall(Action onInitializationFinished, bool forceDelay, BeamEditorInitializedDelayClause customDelay = null)
 		{
 			var hasCustomDelay = customDelay != null;
 			if (!IsInitialized || forceDelay || (hasCustomDelay && customDelay()))
@@ -335,9 +335,9 @@ namespace Beamable
 
 			onInitializationFinished?.Invoke();
 		}
-
-		public delegate bool DelayClause();
 	}
+
+	public delegate bool BeamEditorInitializedDelayClause();
 
 	public class BeamEditorContext
 	{

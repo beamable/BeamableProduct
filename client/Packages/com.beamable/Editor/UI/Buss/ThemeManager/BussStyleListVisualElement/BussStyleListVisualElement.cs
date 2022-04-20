@@ -18,9 +18,11 @@ namespace Beamable.Editor.UI.Buss
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
+		private readonly PropertySourceDatabase _propertyDatabase = new PropertySourceDatabase();
 		private bool _inStyleSheetChangedLoop;
 
 		private IEnumerable<BussStyleSheet> _styleSheets;
+		private BussElement _currentSelected;
 
 		public IEnumerable<BussStyleSheet> StyleSheets
 		{
@@ -101,6 +103,7 @@ namespace Beamable.Editor.UI.Buss
 					{
 						spawned.RefreshProperties();
 						spawned.RefreshButtons();
+						spawned.RefreshWritableStyleSheets(WritableStyleSheets);
 					}
 					else
 					{
@@ -128,23 +131,36 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
+		public float GetSelectedElementPosInScroll()
+		{
+			if (_currentSelected == null)
+				return 0;
+
+			int selectedIndex = -1;
+			float selectedHeight = 0;
+
+			for (int i = 0; i < _styleCardsVisualElements.Count; i++)
+			{
+				bool isMatch = _styleCardsVisualElements[i].StyleRule.Selector?.CheckMatch(_currentSelected) ?? false;
+
+				if (selectedIndex != -1)
+					continue;
+
+				if (isMatch)
+					selectedIndex = i;
+				else
+					selectedHeight += _styleCardsVisualElements[i].contentRect.height;
+			}
+
+			return selectedHeight;
+		}
+
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, _variableDatabase, callback);
+			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _propertyDatabase, callback, WritableStyleSheets);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
-
-			styleCard.EnterEditMode += () =>
-			{
-				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
-				{
-					if (other != styleCard && other.EditMode)
-					{
-						other.SetEditMode(false);
-					}
-				}
-			};
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)
@@ -192,16 +208,16 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnSelectionChange()
 		{
-			BussElement element = null;
+			_currentSelected = null;
 			var gameObject = Selection.activeGameObject;
 			if (gameObject != null)
 			{
-				element = gameObject.GetComponent<BussElement>();
+				_currentSelected = gameObject.GetComponent<BussElement>();
 			}
 
 			foreach (var styleCard in _styleCardsVisualElements)
 			{
-				styleCard.OnBussElementSelected(element);
+				styleCard.OnBussElementSelected(_currentSelected);
 			}
 			FilterCards();
 		}
@@ -209,6 +225,7 @@ namespace Beamable.Editor.UI.Buss
 		protected override void OnDestroy()
 		{
 			Selection.selectionChanged -= OnSelectionChange;
+			_propertyDatabase.Discard();
 		}
 	}
 }

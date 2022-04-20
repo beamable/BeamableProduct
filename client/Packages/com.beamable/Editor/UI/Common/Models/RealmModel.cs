@@ -21,6 +21,7 @@ namespace Beamable.Editor.UI.Common.Models
 			RefreshAvailable();
 
 			var api = BeamEditorContext.Default;
+			api.OnRealmChange -= HandleRealmChanged;
 			api.OnRealmChange += HandleRealmChanged;
 			Current = api.CurrentRealm;
 			OnElementChanged?.Invoke(Current);

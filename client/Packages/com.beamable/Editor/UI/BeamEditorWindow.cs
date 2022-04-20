@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI
 		/// <summary>
 		/// Static function to be set on any sub-type's initialization. It's used to add constraints to the generic-constrained version of this type's <see cref="BeamEditor.DelayedInitializationCall"/>.
 		/// </summary>
-		protected static BeamEditor.DelayClause CustomDelayClause;
+		protected static BeamEditorInitializedDelayClause CustomDelayClause;
 
 		/// <summary>
 		/// Whether or not the current window is instantiated. TODO: once we no longer support Unity 2018, change this into HasOpenInstance<TWindow>.

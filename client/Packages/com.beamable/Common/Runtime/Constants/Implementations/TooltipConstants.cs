@@ -33,11 +33,9 @@
 
 			public static partial class Buss
 			{
-				public const string EDIT = "Editing";
 				public const string UNDO = "Undo";
 				public const string WIZARD_SYSTEM = "Wizard System";
 				public const string ERASE_ALL_STYLE = "Erase all style";
-				public const string REMOVE = "Remove";
 				public const string REFRESH = "Refresh";
 				public const string MORE = "More";
 			}

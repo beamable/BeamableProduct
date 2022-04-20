@@ -1,4 +1,5 @@
 using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Config;
 using Beamable.Editor;
@@ -30,7 +31,7 @@ namespace Beamable.Server.Editor
 	public class MicroserviceConfiguration : AbsModuleConfigurationObject<MicroserviceConfigConstants>
 	{
 #if UNITY_EDITOR_OSX
-      const string DOCKER_LOCATION = "/usr/local/bin/docker";
+		const string DOCKER_LOCATION = "/usr/local/bin/docker";
 #else
 		const string DOCKER_LOCATION = "docker";
 #endif
@@ -76,9 +77,6 @@ namespace Beamable.Server.Editor
 		[Tooltip("It will enable checking if docker desktop is running before you can start microservices.")]
 		public bool DockerDesktopCheckInMicroservicesWindow = true;
 
-		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
-		public string DockerDesktopPath;
-
 		[Tooltip("When you run a microservice, automatically reload code changes. This will not change how services are deployed to the realm.")]
 		public bool EnableHotModuleReload = true;
 
@@ -88,7 +86,37 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
 		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
 
-		public string DockerCommand = DOCKER_LOCATION;
+
+		public string DockerCommand
+		{
+			get
+			{
+#if UNITY_EDITOR_WIN
+				return WindowsDockerCommand;
+#else
+				return UnixDockerCommand;
+#endif
+			}
+		}
+		public string DockerDesktopPath
+		{
+			get
+			{
+#if UNITY_EDITOR_WIN
+				return WindowsDockerDesktopPath;
+#else
+				return UnixDockerDesktopPath;
+#endif
+			}
+		}
+#pragma warning disable CS0219
+		public string WindowsDockerCommand = DOCKER_LOCATION;
+		public string UnixDockerCommand = "/usr/local/bin/docker";
+		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
+		public string WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
+		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
+		public string UnixDockerDesktopPath = "/Applications/Docker.app/";
+#pragma warning restore CS0219
 		private string _dockerCommandCached = DOCKER_LOCATION;
 		private bool _dockerCheckCached = true;
 
@@ -128,7 +156,7 @@ namespace Beamable.Server.Editor
             LogStandardOutColor = new Color(.4f, .4f, 1f);
             LogStandardErrColor = new Color(1, .44f, .4f);
          }
-         _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
+         _dockerCommandCached = ValidatedDockerCommand;
          _dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
       }
 #endif
@@ -170,7 +198,24 @@ namespace Beamable.Server.Editor
 						SshPort = 11100 + Microservices.Count
 					}
 				};
-				Microservices.Add(existing);
+
+				var isPotentialGenerator = serviceName.EndsWith(Features.Services.GENERATOR_SUFFIX);
+				var serializeEntry = true;
+				if (isPotentialGenerator)
+				{
+					var generatedServiceName = serviceName.Substring(0, serviceName.Length - Features.Services.GENERATOR_SUFFIX.Length);
+					var existingService = Microservices.FirstOrDefault(s => s.ServiceName == generatedServiceName);
+					if (existingService != null)
+					{
+						// yes, this is a generator, and therefor, we shouldn't serialize its data.
+						serializeEntry = false;
+					}
+				}
+
+				if (serializeEntry)
+				{
+					Microservices.Add(existing);
+				}
 			}
 			return existing;
 		}
@@ -206,14 +251,10 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-			if (string.IsNullOrEmpty(DockerDesktopPath))
-			{
-#if UNITY_EDITOR_OSX
-				DockerDesktopPath = "/Applications/Docker.app/";
-#else
-				DockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
-#endif
-			}
+			if (string.IsNullOrEmpty(WindowsDockerDesktopPath))
+				WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
+			if (string.IsNullOrEmpty(UnixDockerDesktopPath))
+				UnixDockerDesktopPath = "/Applications/Docker.app/";
 		}
 
 		public int GetIndex(string serviceName, ServiceType serviceType)

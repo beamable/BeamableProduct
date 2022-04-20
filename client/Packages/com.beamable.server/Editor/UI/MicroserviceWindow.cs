@@ -13,6 +13,7 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System.Linq;
+using Beamable.Common;
 using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants;
@@ -51,9 +52,11 @@ namespace Beamable.Editor.Microservice.UI
 		[SerializeField]
 		public MicroservicesDataModel Model;
 
+		private Promise<bool> checkDockerPromise;
+
 		public void RefreshWindowContent()
 		{
-			new CheckDockerCommand().StartAsync().Then(_ =>
+			checkDockerPromise = new CheckDockerCommand().StartAsync().Then(_ =>
 			{
 				_microserviceBreadcrumbsVisualElement?.Refresh();
 				_actionBarVisualElement?.Refresh();
@@ -63,7 +66,8 @@ namespace Beamable.Editor.Microservice.UI
 
 		protected override async void Build()
 		{
-			_ = await new CheckDockerCommand().StartAsync();
+			checkDockerPromise = new CheckDockerCommand().StartAsync();
+			await checkDockerPromise;
 			
 			Debug.Log("C#MS WINDOW BUILD!!!!!!");
 

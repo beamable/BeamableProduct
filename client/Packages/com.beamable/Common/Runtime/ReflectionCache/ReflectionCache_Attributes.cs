@@ -103,8 +103,12 @@ namespace Beamable.Common.Reflection
 
 			// Assert instead of failing silently. Failing silently here means we could fail due to the member not having the correct flag. This is a case where we should fail loudly, as it's
 			// supposed to be impossible.
-			Debug.Assert(INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES.ContainsAnyFlag(info.MemberType),
-						 $"Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause. member=[{info.MemberType}] type=[{info.ReflectedType}] attr=[{attribute}]");
+#if UNITY_EDITOR
+			if (!INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES.ContainsAnyFlag(info.MemberType) && info.GetCustomAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute)) == null)
+				throw new ArgumentException(
+					$"Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause. member=[{info.MemberType}] name=[{info.Name}] type=[{info.ReflectedType}] attr=[{attribute}]");
+#endif
+
 			return attribute != null;
 		}
 
