@@ -136,6 +136,7 @@ namespace Beamable.Server
 				return (T)(object)PromiseBase.Unit;
 			}
 			
+			// Handle ScriptableObject Deserialization (like ContententObject)
 			if (typeof(ScriptableObject).IsAssignableFrom(type))
 			{
 				var so = ScriptableObject.CreateInstance(type);
@@ -210,8 +211,35 @@ namespace Beamable.Server
 
 			if (json.StartsWith("[") && json.EndsWith("]"))
 			{
+				string rawJson = json;
 				json = $"{{\"items\": {json}}}";
 				var wrapped = JsonUtility.FromJson<JsonUtilityWrappedList<T>>(json);
+
+				// Handle ScriptableObject List Deserialization (like List or Array of ContententObject)
+				if (wrapped != null && wrapped.items != null)
+				{
+					Type arrayType = wrapped.items.GetType();
+					
+					if (arrayType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(arrayType))
+					{
+						Type scriptableType = arrayType.GetGenericArguments()[0];
+						if (typeof(ScriptableObject).IsAssignableFrom(scriptableType))
+						{
+							var obj = Json.Deserialize(rawJson) as IEnumerable<object>;
+							object instance = Activator.CreateInstance(arrayType);
+							var list = (IList)instance;
+							
+							foreach (var element in obj)
+							{
+								var tmm = ScriptableObject.CreateInstance(scriptableType);
+								JsonUtility.FromJsonOverwrite(Json.Serialize(element, new StringBuilder()), tmm);
+								list.Add(tmm);
+							}
+
+							return (T)list;
+						}
+					}
+				}
 				return wrapped.items;
 			}
 
