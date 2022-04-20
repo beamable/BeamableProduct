@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `PreventAddressableCodeStripping` Core Configuration setting that automatically generates a link.xml file that will preserve addressable types.
-- `TryClaim` method in `EventService` to attempt a claim, even if one is invalid
+- `TryClaim` method in `EventService` to attempt a claim, even if one is not invalid
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
