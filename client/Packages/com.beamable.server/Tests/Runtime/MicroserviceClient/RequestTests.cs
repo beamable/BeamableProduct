@@ -312,27 +312,21 @@ namespace Beamable.Server.Tests.Runtime
 
 			MockRequester.MockRequest<List<LocalizeContentObject>>(Method.POST,
 			                                                       client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("[{\"Title\": \"Tst1\", \"RandomSeed\": 3},{\"Title\": \"Tst2\", \"RandomSeed\": 2} ]");
+			             .WithRawResponse("[{\"Title\": \"Tst1\", \"RandomSeed\": 1},{\"Title\": \"Tst2\", \"RandomSeed\": 2} ]");
 
 			var req = client.Request<List<LocalizeContentObject>>(ROUTE, new string[] { });
 
 			yield return req.ToYielder();
 
 			var tmpList = new List<LocalizeContentObject>();
+
+			for (int i = 1; i <= 2; i++)
+			{
+				var tmp1 = ScriptableObject.CreateInstance<LocalizeContentObject>();
+				tmp1.Title = "Tst" + i;
+				tmp1.RandomSeed = i;
+			}
 			
-			var tmp1 = ScriptableObject.CreateInstance<LocalizeContentObject>();
-			tmp1.Title = "Tst1";
-			tmp1.RandomSeed = 3;
-			
-			tmpList.Add(tmp1);
-			
-			var tmp2 = ScriptableObject.CreateInstance<LocalizeContentObject>();
-			tmp2.Title = "Tst2";
-			tmp2.RandomSeed = 2;
-			
-			tmpList.Add(tmp2);
-			
-			var res = req.GetResult();
 			Assert.AreEqual(tmpList, req.GetResult());
 		}
 	}
