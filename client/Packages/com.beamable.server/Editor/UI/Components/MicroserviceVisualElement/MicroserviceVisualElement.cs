@@ -132,7 +132,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.UpdateButtons();
 			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-													 _microserviceModel.IsRunning ? STOP : Constants.Tooltips.Microservice.PLAY);
+													 _microserviceModel.IsRunning ? STOP : Tooltips.Microservice.PLAY_MICROSERVICE);
 			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
 		}
 	}

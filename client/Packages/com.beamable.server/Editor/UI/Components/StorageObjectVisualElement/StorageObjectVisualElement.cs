@@ -107,5 +107,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.QueryVisualElements();
 			_mongoStorageModel = (MongoStorageModel)Model;
 		}
+		
+		protected override void UpdateButtons()
+		{
+			base.UpdateButtons();
+
+			_startButton.tooltip = Model.IsRunning ? STOP : Tooltips.Microservice.PLAY_STORAGE;
+		}
 	}
 }

@@ -14,15 +14,16 @@
 				public const string REFRESH = "Refresh";
 				public const string DOCUMENT = "Document";
 
-				public const string PLAY = "Run the Microservice or Microstorage";
+				public const string PLAY_MICROSERVICE = "Run the Microservice";
+				public const string PLAY_STORAGE = "Run the Storage";
 				public const string MORE = "More";
 
-				public const string UNCHECK = "Uncheck";
-				public const string CHECKED = "Checked";
+				public const string DESELECT = "Deselect";
+				public const string SELECT = "Select";
 
 				public const string ICON_REMOTE_RUNNING = "Remote Running";
 				public const string ICON_LOCAL_RUNNING = "Local Running";
-				public const string ICON_REMOTE_STOPPING = "Remote Stoppingg";
+				public const string ICON_REMOTE_STOPPING = "Remote Stopping";
 				public const string ICON_LOCAL_STOPPING = "Local Stopping";
 				public const string ICON_REMOTE_DEPLOYING = "Remote Deploying";
 				public const string ICON_LOCAL_BUILDING = "Local Building";
@@ -75,6 +76,7 @@
 				public const string ICON_ERROR = "Error";
 				public const string ICON_WARNING = "Warning";
 				public const string ICON_DEBUG = "Debug";
+				public const string SEARCH_BAR = "Search";
 
 				public const string POP_OUT = "Pop out";
 				public const string ATTACH = "Attach";
