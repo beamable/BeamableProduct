@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compilation error when using new `com.unity.inputsystem`
 - Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
 - Content string fields can contain escaped characters, and won't be double escaped after download
+- StoreView prefab now works in landscape mode
 
 ## [1.0.7]
 ### Added
