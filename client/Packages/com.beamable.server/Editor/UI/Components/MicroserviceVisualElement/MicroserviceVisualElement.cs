@@ -131,6 +131,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateButtons()
 		{
 			base.UpdateButtons();
+			
+			if (!EditorAPI.Instance.GetResult().IsLoggedIn)
+				return;
+			
 			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
 													 _microserviceModel.IsRunning ? STOP : Constants.Tooltips.Microservice.PLAY);
 			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
