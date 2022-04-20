@@ -322,9 +322,10 @@ namespace Beamable.Server.Tests.Runtime
 
 			for (int i = 1; i <= 2; i++)
 			{
-				var tmp1 = ScriptableObject.CreateInstance<LocalizeContentObject>();
-				tmp1.Title = "Tst" + i;
-				tmp1.RandomSeed = i;
+				var tmp = ScriptableObject.CreateInstance<LocalizeContentObject>();
+				tmp.Title = "Tst" + i;
+				tmp.RandomSeed = i;
+				tmpList.Add(tmp);
 			}
 			
 			Assert.AreEqual(tmpList, req.GetResult());
