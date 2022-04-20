@@ -23,6 +23,14 @@ namespace Beamable.Server.Editor.DockerCommands
 			"exception"
 		};
 
+		private static readonly Dictionary<string, string> ContextForLogs =
+			new Dictionary<string, string>
+			{
+				{"pull access denied for beamservice",
+					"No version of beamservice exists on your computer. Please rebuild the image and try again. " +
+					"Please ignore Docker’s access denied messaging, that is a red herring"}
+			};
+
 		private static readonly HashSet<string> ErrorExclusions = new HashSet<string>
 		{
 			"\" >> /etc/supervisor/conf.d/supervisord.conf && echo \"loglevel=error"
@@ -263,6 +271,14 @@ namespace Beamable.Server.Editor.DockerCommands
 				var current = int.Parse(values[0].Value);
 				var total = int.Parse(values[1].Value);
 				builder.OnBuildingProgress?.Invoke(current, total);
+			}
+			else if (ContextForLogs.Keys.Any(message.Contains))
+			{
+				var key = ContextForLogs.Keys.First(message.Contains);
+				EditorApplication.delayCall += () =>
+				{
+					Debug.LogError(ContextForLogs[key]);
+				};
 			}
 			else if (message.Contains("Success"))
 			{
