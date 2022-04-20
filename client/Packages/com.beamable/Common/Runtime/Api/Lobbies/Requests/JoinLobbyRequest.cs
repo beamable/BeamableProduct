@@ -6,11 +6,11 @@ namespace Beamable.Experimental.Api.Lobbies
   [Serializable]
   public class JoinLobbyRequest
   {
-    public List<Tag> playerTags;
+    public List<Tag> tags;
 
-    public JoinLobbyRequest(List<Tag> playerTags)
+    public JoinLobbyRequest(List<Tag> tags)
     {
-      this.playerTags = playerTags;
+      this.tags = tags;
     }
   }
 }

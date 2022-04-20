@@ -8,11 +8,13 @@ namespace Beamable.Experimental.Api.Lobbies
   {
     public string playerId;
     public List<Tag> tags;
+    public bool replace;
 
-    public AddTagsRequest(string playerId, List<Tag> tags)
+    public AddTagsRequest(string playerId, List<Tag> tags, bool replace)
     {
       this.playerId = playerId;
       this.tags = tags;
+      this.replace = replace;
     }
   }
 }

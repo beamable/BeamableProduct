@@ -107,13 +107,13 @@ namespace Beamable.Experimental.Api.Lobbies
     /// <param name="lobbyId"></param>
     /// <param name="tags"></param>
     /// <param name="playerId"></param>
-    public Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null)
+    public Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null, bool replace = false)
     {
       playerId ??= _userContext.UserId.ToString();
       return _requester.Request<Lobby>(
         Method.PUT,
         $"/lobbies/{lobbyId}/tags",
-        new AddTagsRequest(playerId, tags)
+        new AddTagsRequest(playerId, tags, replace)
       );
     }
 

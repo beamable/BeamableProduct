@@ -100,9 +100,9 @@ namespace Beamable.Player
       State = await _lobbyApi.JoinLobbyByPasscode(passcode, playerTags);
     }
 
-    public async Promise AddTags(List<Tag> tags)
+    public async Promise AddTags(List<Tag> tags, bool replace = false)
     {
-      State = await _lobbyApi.AddPlayerTags(State.lobbyId, tags);
+      State = await _lobbyApi.AddPlayerTags(State.lobbyId, tags, replace: replace);
     }
 
     public async Promise RemoveTags(List<string> tags)

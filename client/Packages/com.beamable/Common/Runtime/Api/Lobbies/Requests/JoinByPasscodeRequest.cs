@@ -7,12 +7,12 @@ namespace Beamable.Experimental.Api.Lobbies
   public class JoinByPasscodeRequest
   {
     public string passcode;
-    public List<Tag> playerTags;
+    public List<Tag> tags;
 
-    public JoinByPasscodeRequest(string passcode, List<Tag> playerTags)
+    public JoinByPasscodeRequest(string passcode, List<Tag> tags)
     {
       this.passcode = passcode;
-      this.playerTags = playerTags;
+      this.tags = tags;
     }
   }
 }

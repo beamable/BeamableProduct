@@ -18,7 +18,7 @@ namespace Beamable.Experimental.Api.Lobbies
     Promise<Lobby> JoinLobbyByPasscode(string passcode, List<Tag> playerTags = null);
     Promise<Lobby> GetLobby(string lobbyId);
     Promise<Unit> LeaveLobby(string lobbyId);
-    Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null);
+    Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null, bool replace = false);
     Promise<Lobby> RemovePlayerTags(string lobbyId, List<string> tags, string playerId = null);
     Promise<Unit> BootPlayer(string lobbyId, string playerId);
   }
