@@ -185,11 +185,13 @@ namespace Beamable.Server.Editor
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
 
 				BeamEditor.DelayedInitializationCall(SaveConfig, true);
-				void SaveConfig()
+				async void SaveConfig()
 				{
 					// using delayCall to avoid Unity warning about sending messages from OnValidate()
 					var api = BeamEditorContext.Default;
-					api.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
+					await api.InitializePromise;
+					if(api.IsAuthenticated)
+						api.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
 				}
 			}
 
