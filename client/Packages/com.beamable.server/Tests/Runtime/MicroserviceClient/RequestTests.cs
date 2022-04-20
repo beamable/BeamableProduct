@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using Beamable.Common.Content;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
@@ -180,6 +181,16 @@ namespace Beamable.Server.Tests.Runtime
 
 			public override string ToString() => $"A=[{A}]";
 		}
+		
+		[System.Serializable]
+		public class LocalizeContentObject : ContentObject
+		{
+			[SerializeField]
+			public string Title = "";
+		
+			[SerializeField]
+			public int RandomSeed = 3;
+		}
 
 		[UnityTest]
 		public IEnumerator CanDeserializeBoolean()
@@ -262,6 +273,26 @@ namespace Beamable.Server.Tests.Runtime
 
 			yield return req.ToYielder();
 			Assert.AreEqual(new Vector2(1, 3), req.GetResult());
+		}
+		
+		[UnityTest]
+		public IEnumerator CanDeserializeContentObject()
+		{
+			var client = new TestClient(ROUTE);
+
+			MockRequester.MockRequest<LocalizeContentObject>(Method.POST,
+			                                   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+			             .WithRawResponse("{\"Title\": \"Tst\", \"RandomSeed\": 3}");
+
+			var req = client.Request<LocalizeContentObject>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+
+			var tmp = ScriptableObject.CreateInstance<LocalizeContentObject>();
+			tmp.Title = "tst";
+			tmp.RandomSeed = 3;
+			
+			Assert.AreEqual(tmp, req.GetResult());
 		}
 	}
 }
