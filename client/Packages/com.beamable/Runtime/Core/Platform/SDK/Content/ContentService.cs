@@ -59,7 +59,7 @@ namespace Beamable.Content
 		[Obsolete("The ManifestSubscription doesn't support the scope field. Please use " + nameof(Subscribe) + " instead.")]
 		public override PlatformSubscription<ClientManifest> Subscribe(string scope, Action<ClientManifest> callback)
 		{
-			return base.Subscribe(callback);
+			return base.Subscribe(String.Empty, callback);
 		}
 #pragma warning restore 0809
 
