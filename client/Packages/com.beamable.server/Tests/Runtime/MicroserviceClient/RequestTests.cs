@@ -190,6 +190,16 @@ namespace Beamable.Server.Tests.Runtime
 		
 			[SerializeField]
 			public int RandomSeed = 3;
+			
+			public override bool Equals(object obj)
+			{
+				return obj != null && obj is LocalizeContentObject casted && casted.Title == Title && casted.RandomSeed == RandomSeed;
+			}
+			
+			public override int GetHashCode()
+			{
+				return base.GetHashCode(); // need to override because of Equals override
+			}
 		}
 
 		[UnityTest]
@@ -292,9 +302,7 @@ namespace Beamable.Server.Tests.Runtime
 			tmp.Title = "Tst";
 			tmp.RandomSeed = 3;
 			
-			LocalizeContentObject reqTst = req.GetResult();
-			Assert.AreEqual(tmp.Title, reqTst.Title);
-			Assert.AreEqual(tmp.RandomSeed, reqTst.RandomSeed);
+			Assert.AreEqual(tmp, req.GetResult());
 		}
 	}
 }
