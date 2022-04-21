@@ -34,7 +34,7 @@ namespace Beamable.Editor
 					{
 						Close();
 					});
-					
+
 				}
 			}
 		}

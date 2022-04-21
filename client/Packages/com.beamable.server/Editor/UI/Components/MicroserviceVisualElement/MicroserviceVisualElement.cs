@@ -135,7 +135,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var api = BeamEditorContext.Default;
 			if (!api.IsAuthenticated)
 				return;
-			
+
 			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools, _microserviceModel.IsRunning ? STOP : Constants.Tooltips.Microservice.PLAY);
 			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
 		}

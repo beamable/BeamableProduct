@@ -588,7 +588,7 @@ namespace Beamable.Server.Editor
 						Storages = storageEntries.ToDictionary(s => s.Name)
 					};
 				});
-				
+
 			}
 
 			private void UpdateServiceDeployStatus(MicroserviceDescriptor descriptor, ServicePublishState status)

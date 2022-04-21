@@ -78,7 +78,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 			var api = BeamEditorContext.Default;
 			_editorAPI = api;
-			
+
 			// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
 			var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
 			var menuItemsGuids = BeamableAssetDatabase.FindAssets<BeamableAssistantMenuItem>(menuItemsSearchInFolders);

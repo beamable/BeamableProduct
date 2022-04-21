@@ -235,7 +235,7 @@ namespace Beamable.Server.Editor
 					// using delayCall to avoid Unity warning about sending messages from OnValidate()
 					var api = BeamEditorContext.Default;
 					await api.InitializePromise;
-					if(api.IsAuthenticated)
+					if (api.IsAuthenticated)
 						api.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
 				}
 			}
