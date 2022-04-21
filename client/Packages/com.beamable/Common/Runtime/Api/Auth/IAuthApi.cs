@@ -56,6 +56,7 @@ namespace Beamable.Common.Api.Auth
 		/// <summary>
 		/// Use email and password credentials to retrieve a <see cref="TokenResponse"/>. The resulting token response can
 		/// be used to change the current <see cref="User"/>
+		/// A login will only work after the email and password have been registered by using the <see cref="RegisterDBCredentials"/> method.
 		/// </summary>
 		/// <param name="username">The email address of the <see cref="User"/></param>
 		/// <param name="password">The password the player registered when they associated their email address</param>
@@ -77,6 +78,7 @@ namespace Beamable.Common.Api.Auth
 		/// Use a token issued by a third party to retrieve a <see cref="TokenResponse"/>. The resulting token response
 		/// can be used to change the current <see cref="User"/>. You should get the <see cref="thirdPartyToken"/> directly
 		/// from the third party itself.
+		/// A login will only work after the third party has been registered by using the <see cref="RegisterThirdPartyCredentials"/> method.
 		/// </summary>
 		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> that issued the <see cref="thirdPartyToken"/></param>
 		/// <param name="thirdPartyToken">The token that you received from the given <see cref="AuthThirdParty"/></param>
