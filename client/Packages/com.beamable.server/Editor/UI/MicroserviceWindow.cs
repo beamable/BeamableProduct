@@ -262,9 +262,9 @@ namespace Beamable.Editor.Microservice.UI
 			SetForContent();
 			api.OnUserChange += _ => _microserviceContentVisualElement?.Refresh();
 			api.OnRealmChange += _ => _microserviceContentVisualElement?.StopAllServices(
-				true, 
-				RealmSwitchDialog.TITLE, 
-				RealmSwitchDialog.MESSAGE, 
+				true,
+				RealmSwitchDialog.TITLE,
+				RealmSwitchDialog.MESSAGE,
 				RealmSwitchDialog.OK);
 		}
 
