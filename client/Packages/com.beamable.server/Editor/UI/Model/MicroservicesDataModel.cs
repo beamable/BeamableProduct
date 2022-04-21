@@ -103,61 +103,60 @@ namespace Beamable.Editor.UI.Model
 
 		public void RefreshServerManifest()
 		{
-			EditorAPI.Instance.Then(b =>
+			var b = BeamEditorContext.Default;
+			b.GetMicroserviceManager().GetStatus().Then(status =>
 			{
-				b.GetMicroserviceManager().GetStatus().Then(status =>
-			 {
-				 Status = status;
-				 foreach (var serviceStatus in status.services)
-				 {
-					 GetModel<MicroserviceModel>(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
-				 }
-				 OnStatusUpdated?.Invoke(status);
-			 });
-				b.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
-			 {
-				 ServerManifest = manifest;
-				 foreach (var service in Services)
-				 {
-					 var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
-					 service.EnrichWithRemoteReference(remoteService);
-				 }
-
-				 foreach (var storage in Storages)
-				 {
-					 var remoteStorage = manifest.storageReference.FirstOrDefault(remote => string.Equals(remote.id, storage.Name));
-					 storage.EnrichWithRemoteReference(remoteStorage);
-				 }
-
-				 foreach (var singleManifest in ServerManifest.manifest)
-				 {
-					 if (ContainsRemoteOnlyModel(singleManifest.serviceName))
-						 continue;
-
-					 var descriptor = new MicroserviceDescriptor
-					 {
-						 Name = singleManifest.serviceName
-					 };
-
-					 AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
-				 }
-
-				 foreach (var singleStorageManifest in ServerManifest.storageReference)
-				 {
-					 if (ContainsRemoteOnlyModel(singleStorageManifest.id))
-						 continue;
-
-					 var descriptor = new StorageObjectDescriptor
-					 {
-						 Name = singleStorageManifest.id
-					 };
-
-					 AllRemoteOnlyServices.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
-				 }
-
-				 OnServerManifestUpdated?.Invoke(manifest);
-			 });
+				Status = status;
+				foreach (var serviceStatus in status.services)
+				{
+					GetModel<MicroserviceModel>(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
+				}
+				OnStatusUpdated?.Invoke(status);
 			});
+			b.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
+			{
+			 ServerManifest = manifest;
+			 foreach (var service in Services)
+			 {
+				 var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
+				 service.EnrichWithRemoteReference(remoteService);
+			 }
+
+			 foreach (var storage in Storages)
+			 {
+				 var remoteStorage = manifest.storageReference.FirstOrDefault(remote => string.Equals(remote.id, storage.Name));
+				 storage.EnrichWithRemoteReference(remoteStorage);
+			 }
+
+			 foreach (var singleManifest in ServerManifest.manifest)
+			 {
+				 if (ContainsRemoteOnlyModel(singleManifest.serviceName))
+					 continue;
+
+				 var descriptor = new MicroserviceDescriptor
+				 {
+					 Name = singleManifest.serviceName
+				 };
+
+				 AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
+			 }
+
+			 foreach (var singleStorageManifest in ServerManifest.storageReference)
+			 {
+				 if (ContainsRemoteOnlyModel(singleStorageManifest.id))
+					 continue;
+
+				 var descriptor = new StorageObjectDescriptor
+				 {
+					 Name = singleStorageManifest.id
+				 };
+
+				 AllRemoteOnlyServices.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
+			 }
+
+			 OnServerManifestUpdated?.Invoke(manifest);
+		 });
+			
 		}
 
 		public void AddLogMessage(string name, LogMessage message)

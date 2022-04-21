@@ -29,39 +29,30 @@ namespace Beamable.Editor.UI.Common.Models
 			Default = new AvailableManifestModel() { id = DEFAULT_MANIFEST_ID };
 			RefreshAvailable();
 
-			EditorAPI.Instance.Then(api =>
-			{
-				ContentIO.OnManifestChanged += HandleManifestChanged;
-				ContentIO.OnManifestsListFetched += HandleManifestListFetched;
-				ContentIO.OnArchivedManifestsFetched += HandleArchivedManifestListFetched;
+			var api = BeamEditorContext.Default;
+			ContentIO.OnManifestChanged += HandleManifestChanged;
+			ContentIO.OnManifestsListFetched += HandleManifestListFetched;
+			ContentIO.OnArchivedManifestsFetched += HandleArchivedManifestListFetched;
 
-				Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
-				OnElementChanged?.Invoke(Current);
+			Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
+			OnElementChanged?.Invoke(Current);
 
-				api.OnRealmChange += _ => RefreshAvailable();
-				ContentPublisher.OnContentPublished += () => RefreshAvailable();
-			});
+			api.OnRealmChange += _ => RefreshAvailable();
+			ContentPublisher.OnContentPublished += () => RefreshAvailable();
 		}
 
 		public Promise<List<ISearchableElement>> RefreshAvailable()
 		{
-			return EditorAPI.Instance.FlatMap(api =>
-			{
-				Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
-				return api.ContentIO.GetAllManifestIDs().Map(manifest =>
-				{
-					return manifest.manifests.ToList<ISearchableElement>();
-				});
-			});
+			var api = BeamEditorContext.Default;
+			Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
+			return api.ContentIO.GetAllManifestIDs().Map(manifest => manifest.manifests.ToList<ISearchableElement>());
 		}
 
 		public Promise<AvailableManifests> RefreshAvailableManifests()
 		{
-			return EditorAPI.Instance.FlatMap(api =>
-			{
-				Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
-				return api.ContentIO.GetAllManifestIDs();
-			});
+			var api = BeamEditorContext.Default;
+			Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
+			return api.ContentIO.GetAllManifestIDs();
 		}
 
 		private void HandleManifestChanged(string manifestId)
@@ -99,7 +90,8 @@ namespace Beamable.Editor.UI.Common.Models
 				EditorUtility.DisplayDialog("No manifest id!",
 					$"There is no manifest named '{ContentConfiguration.Instance.EditorManifestID}' in current realm. Switching into 'global' manifest.",
 					"OK");
-				EditorAPI.Instance.Then(api => api.ContentIO.SwitchManifest(DEFAULT_MANIFEST_ID));
+				var api = BeamEditorContext.Default;
+				api.ContentIO.SwitchManifest(DEFAULT_MANIFEST_ID);
 			}
 		}
 
