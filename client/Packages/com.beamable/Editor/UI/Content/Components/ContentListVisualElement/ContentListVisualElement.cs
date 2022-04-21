@@ -1,5 +1,6 @@
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Models;
+using Beamable.Editor.UI;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using System;
@@ -451,20 +452,21 @@ namespace Beamable.Editor.Content.Components
 			}
 		}
 
-		private void ContentVisualElement_OnItemDelete(params ContentItemDescriptor[] contentItemDescriptors)
+		private async void ContentVisualElement_OnItemDelete(params ContentItemDescriptor[] contentItemDescriptors)
 		{
-			ContentManagerWindow.Instance.CloseCurrentWindow();
+			var contentManagerWindow = await BeamEditorWindow<ContentManagerWindow>.GetFullyInitializedWindow();
+			contentManagerWindow.CloseCurrentWindow();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(CONFIRM_ITEM_DELETION,
 				() => contentItemDescriptors.ToList().ForEach(e => OnItemDelete?.Invoke(e)),
-				ContentManagerWindow.Instance.CloseCurrentWindow
+				contentManagerWindow.CloseCurrentWindow
 			);
 
 			BeamablePopupWindow window = BeamablePopupWindow.ShowConfirmationUtility(
 				CONFIRM_WINDOW_HEADER,
-				confirmationPopup, ContentManagerWindow.Instance);
+				confirmationPopup, contentManagerWindow);
 
-			ContentManagerWindow.Instance.SetCurrentWindow(window);
+			contentManagerWindow.SetCurrentWindow(window);
 		}
 
 		private void ContentVisualElement_OnItemRenameGestureBegin(ContentItemDescriptor contentItemDescriptor)

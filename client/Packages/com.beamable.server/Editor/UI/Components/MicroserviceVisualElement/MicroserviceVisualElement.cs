@@ -132,14 +132,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.UpdateButtons();
 
-			EditorAPI.Instance.Then(api =>
-			{
-				if (!api.IsLoggedIn)
-					return;
-
-				_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools, _microserviceModel.IsRunning ? STOP : Constants.Tooltips.Microservice.PLAY);
-				_startButton.SetEnabled(!_microserviceModel.IsBuilding);
-			});
+			var api = BeamEditorContext.Default;
+			if (!api.IsAuthenticated)
+				return;
+			
+			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools, _microserviceModel.IsRunning ? STOP : Constants.Tooltips.Microservice.PLAY);
+			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
 		}
 	}
 }

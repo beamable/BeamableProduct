@@ -15,7 +15,7 @@ namespace Beamable.Editor.Content
 #endif
 	public class ContentRefPropertyDrawer : PropertyDrawer
 	{
-		private static EditorAPI _beamable;
+		private static BeamEditorContext _beamable;
 		private static bool _requestedBeamable;
 		private static Dictionary<Type, HashSet<string>> _typeToContent = new Dictionary<Type, HashSet<string>>();
 		private static Dictionary<Type, double> _typeToRefreshAt = new Dictionary<Type, double>();
@@ -44,7 +44,8 @@ namespace Beamable.Editor.Content
 				if (!_requestedBeamable)
 				{
 					_requestedBeamable = true;
-					EditorAPI.Instance.Then(beamable => { _beamable = beamable; });
+					var beamable = BeamEditorContext.Default;
+					_beamable = beamable;
 				}
 			}
 			else if (!_typeToContent.ContainsKey(referenceType) || time > _typeToRefreshAt[referenceType])
@@ -217,8 +218,9 @@ namespace Beamable.Editor.Content
 
 			var referenceType = FieldValue.GetReferencedBaseType();
 			_typeName = ContentRegistry.TypeToName(referenceType);
-			var de = await EditorAPI.Instance;
-
+			var de = BeamEditorContext.Default;
+			await de.InitializePromise;
+			
 			de.ContentIO.EnsureDefaultContentByType(referenceType);
 			_allContent = de.ContentIO.FindAllContentByType(referenceType).ToList();
 
