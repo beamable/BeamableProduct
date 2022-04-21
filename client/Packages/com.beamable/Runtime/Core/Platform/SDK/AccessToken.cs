@@ -42,6 +42,7 @@ namespace Beamable.Api
 			if (expiresAt >= long.MaxValue - 1)
 			{
 				_neverExpires = true;
+				ExpiresAt = DateTime.MaxValue;
 			}
 			else
 			{
