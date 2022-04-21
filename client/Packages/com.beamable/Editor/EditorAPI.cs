@@ -160,7 +160,7 @@ namespace Beamable.Editor
 			}
 
 			ApplyConfig(alias, cid, pid, platform);
-			BeamableFacebookImporter.SetFlag();
+			BeamableSocialsImporter.SetFlag();
 
 			return _accessTokenStorage.LoadTokenForCustomer(Cid).FlatMap(token =>
 			{
