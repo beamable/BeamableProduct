@@ -114,6 +114,11 @@ namespace Beamable.Tests.Runtime.Api
 			throw new NotImplementedException();
 		}
 
+		public Promise<bool> HasAnyCredentials()
+		{
+			throw new NotImplementedException();
+		}
+
 		public Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount)
 		{
 			throw new NotImplementedException();
@@ -138,6 +143,12 @@ namespace Beamable.Tests.Runtime.Api
 		{
 			throw new NotImplementedException();
 		}
+		
+		public Promise<DeviceIdsResponse> GetRegisteredDeviceIDs()
+		{
+			throw new NotImplementedException();
+		}
+
 
 		public IBeamableRequester Requester { get; }
 	}

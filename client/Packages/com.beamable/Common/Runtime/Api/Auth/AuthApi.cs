@@ -344,7 +344,12 @@ namespace Beamable.Common.Api.Auth
 		public long expires_in;
 		public string refresh_token;
 	}
-
+	
+	[Serializable]
+	public class DeviceIdsResponse
+	{
+		public string[] deviceIds;
+	}
 
 	[Serializable]
 	public class AvailabilityRequest

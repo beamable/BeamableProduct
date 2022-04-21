@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
+using System.Linq;
 
 namespace Beamable.Api.Auth
 {
@@ -19,11 +20,13 @@ namespace Beamable.Api.Auth
 	/// </summary>
 	public interface IAuthService : IAuthApi
 	{
+		Promise<bool> HasAnyCredentials();
 		Promise<bool> IsThisDeviceIdAvailable();
 		Promise<User> RegisterDeviceId();
 		Promise<User> RemoveDeviceId();
 		Promise<User> RemoveDeviceIds(string[] deviceIds);
 		Promise<User> RemoveAllDeviceIds();
+		Promise<DeviceIdsResponse> GetRegisteredDeviceIDs();
 		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true);
 	}
 
@@ -50,6 +53,12 @@ namespace Beamable.Api.Auth
 			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
 		}
 
+		public async Promise<bool> HasAnyCredentials()
+		{
+			string deviceId = await _deviceIdResolver.GetDeviceId();
+			return await GetRegisteredDeviceIDs().Map(response => (response != null && response.deviceIds.Contains(deviceId)));
+		}
+		
 		public async Promise<bool> IsThisDeviceIdAvailable()
 		{
 			var deviceId = await _deviceIdResolver.GetDeviceId();
@@ -87,6 +96,11 @@ namespace Beamable.Api.Auth
 			});
 		}
 
+		public async Promise<DeviceIdsResponse> GetRegisteredDeviceIDs()
+		{
+			return await Requester.Request<DeviceIdsResponse>(Method.GET, DEVICE_ID_URI);
+		}
+		
 		private Promise<User> UpdateDeviceId(RegisterDeviceIdRequest requestBody)
 		{
 			return Requester.Request<User>(Method.PUT, DEVICE_ID_URI, requestBody);
