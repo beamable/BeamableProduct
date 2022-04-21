@@ -14,9 +14,12 @@ using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System.Linq;
 using Beamable.Common;
+using Beamable.Editor.Modules.Account;
+using Beamable.Editor.Realms;
 using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Services.Dialogs;
 
 namespace Beamable.Editor.Microservice.UI
 {
@@ -68,6 +71,15 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;
+
+			void OnUserChange(EditorUser _) => _microserviceContentVisualElement?.Refresh();
+			void OnRealmChange(RealmView _) => _microserviceContentVisualElement?.StopAllServices(true, RealmSwitchDialog.TITLE, RealmSwitchDialog.MESSAGE, RealmSwitchDialog.OK);
+
+			ActiveContext.OnUserChange -= OnUserChange;
+			ActiveContext.OnUserChange += OnUserChange;
+
+			ActiveContext.OnRealmChange -= OnRealmChange;
+			ActiveContext.OnRealmChange += OnRealmChange;
 			
 			Debug.Log("C#MS WINDOW BUILD!!!!!!");
 

@@ -117,9 +117,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual.Clear();
 				SetupServicesStatus();
 			}
-			
+
 			CheckLoginStatus();
-			
+
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
 			EditorApplication.delayCall +=
@@ -132,7 +132,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					_dockerStatusPromise = command.StartAsync();
 				};
 		}
-		
+
 		private void CheckLoginStatus()
 		{
 			var api = BeamEditorContext.Default;
@@ -461,6 +461,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
+		public void StopAllServices(bool showDialog = false, string dialogTitle = "", string dialogMessage = "", string dialogConfirm = "")
+		{
+			var isAnyServiceStopped = false;
+			foreach (var service in _modelToVisual.Keys)
+				if (service.IsRunning)
+				{
+					isAnyServiceStopped = true;
+					service.Stop();
+				}
 
+			if (!showDialog || !isAnyServiceStopped)
+				return;
+
+			EditorUtility.DisplayDialog(dialogTitle, dialogMessage, dialogConfirm);
+		}
 	}
 }
