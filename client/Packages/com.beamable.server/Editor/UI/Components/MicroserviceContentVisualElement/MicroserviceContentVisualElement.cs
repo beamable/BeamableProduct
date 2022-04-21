@@ -117,9 +117,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual.Clear();
 				SetupServicesStatus();
 			}
-			
+
 			CheckLoginStatus();
-			
+
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
 			EditorApplication.delayCall +=
@@ -132,7 +132,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					_dockerStatusPromise = command.Start(null);
 				};
 		}
-		
+
 		private void CheckLoginStatus()
 		{
 			EditorAPI.Instance.Then(api =>
