@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.1.1]
-no changes
+
+### Changed
+- Realm switch now triggers `Microservice Manager` to stop all active services. Guarantees the correct service version association with realm.
 
 ## [1.1.0]
 ### Added
