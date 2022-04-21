@@ -135,16 +135,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		
 		private void CheckLoginStatus()
 		{
-			// If user is logged out, automatically stop all services and disable play button
-			// Otherwise enable play button
-			
-			var isLogged = EditorAPI.Instance.GetResult().IsLoggedIn;
-			foreach (var kvp in _modelToVisual)
+			EditorAPI.Instance.Then(api =>
 			{
-				if (!isLogged && kvp.Key.IsRunning)
-					kvp.Key.Stop();
-				kvp.Value.ChangeStartButtonState(isLogged, Constants.Tooltips.Microservice.PLAY, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
-			}
+				foreach (var kvp in _modelToVisual)
+					kvp.Value.ChangeStartButtonState(api.IsLoggedIn, Constants.Tooltips.Microservice.PLAY, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+			});
 		}
 
 		private void HandleSelectionChanged(bool _)
