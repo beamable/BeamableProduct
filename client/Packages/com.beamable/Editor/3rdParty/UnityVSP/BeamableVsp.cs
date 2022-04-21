@@ -6,12 +6,23 @@ using System;
 
 namespace UnityEditor.VspAttribution.Beamable
 {
-	public static class BeamableVsp
+	public class BeamableVsp
 	{
-		public static void TryToEmitAttribution(string action, string cid)
+		private readonly IBeamableRequester _requester;
+		private readonly IHttpRequester _httpRequester;
+
+		public BeamableVsp(IBeamableRequester requester, IHttpRequester httpRequester)
+		{
+			_requester = requester;
+			_httpRequester = httpRequester;
+		}
+
+		public void TryToEmitAttribution(string action)
 		{
 			if (!BeamableEnvironment.IsUnityVsp) return;
 			if (string.IsNullOrEmpty(action)) return;
+
+			var cid = _requester?.AccessToken?.Cid;
 			if (string.IsNullOrEmpty(cid)) return;
 
 			VspAttribution.SendAttributionEvent(
@@ -20,10 +31,9 @@ namespace UnityEditor.VspAttribution.Beamable
 				cid);
 		}
 
-		public static async Promise<VspMetadata> GetLatestVersion()
+		public async Promise<VspMetadata> GetLatestVersion()
 		{
-			var api = await EditorAPI.Instance;
-			var res = await api.Requester.ManualRequest<VspVersionResponse>(Method.GET, "http://beamable-vsp.beamable.com/vsp-meta.json");
+			var res = await _httpRequester.ManualRequest<VspVersionResponse>(Method.GET, "http://beamable-vsp.beamable.com/vsp-meta.json");
 			var metadata = new VspMetadata {storeUrl = res.storeUrl};
 			try
 			{

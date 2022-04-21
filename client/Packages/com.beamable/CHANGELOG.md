@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - StoreView prefab now works in landscape mode
 
+## [1.1.2]
+### Fixed
+- `AccessTokenStorage` no longer throws `ArgumentOutOfRangeException` when starting in offline mode
+
 ## [1.1.1]
 ### Fixed
 - The namespace for `PropertySourceTracker` no longer invalidates the usage of `UnityEditor.Editor` as a type reference

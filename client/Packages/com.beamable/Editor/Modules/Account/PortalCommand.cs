@@ -18,7 +18,10 @@ namespace Beamable.Editor.Modules.Account
 			});
 			return "Opening portal..";
 		}
-		private Promise<string> GetPortalUrl(string DBID) => EditorAPI.Instance.Map(api =>
-			$"{BeamableEnvironment.PortalUrl}/{api.Alias}/games/{api.ProductionRealm.Pid}/realms/{api.Pid}/players/{DBID}?refresh_token={api.Token.RefreshToken}");
+		private Promise<string> GetPortalUrl(string DBID)
+		{
+			var api = BeamEditorContext.Default;
+			return Promise<string>.Successful($"{BeamableEnvironment.PortalUrl}/{api.CurrentCustomer.Alias}/games/{api.ProductionRealm.Pid}/realms/{api.CurrentRealm.Pid}/players/{DBID}?refresh_token={api.Requester.Token.RefreshToken}");
+		}
 	}
 }
