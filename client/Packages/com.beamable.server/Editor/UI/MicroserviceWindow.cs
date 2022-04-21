@@ -251,6 +251,7 @@ namespace Beamable.Editor.Microservice.UI
 						SetMinSize();
 						CreateModel();
 						SetForContent();
+						api.OnUserChange += _ => _microserviceContentVisualElement?.Refresh();
 					});
 				};
 				return;

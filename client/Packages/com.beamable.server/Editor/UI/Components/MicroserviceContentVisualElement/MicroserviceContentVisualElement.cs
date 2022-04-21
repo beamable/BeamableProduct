@@ -104,7 +104,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			else if (!isInit)
 			{
 				Refresh();
-				return; ;
+				return;
 			}
 
 			if (DockerCommand.DockerNotInstalled)
@@ -117,7 +117,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual.Clear();
 				SetupServicesStatus();
 			}
-
+			
+			CheckLoginStatus();
+			
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
 			EditorApplication.delayCall +=
@@ -129,6 +131,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 					var command = new GetDockerLocalStatus();
 					_dockerStatusPromise = command.Start(null);
 				};
+		}
+		
+		private void CheckLoginStatus()
+		{
+			EditorAPI.Instance.Then(api =>
+			{
+				foreach (var kvp in _modelToVisual)
+					kvp.Value.ChangeStartButtonState(api.IsLoggedIn, Constants.Tooltips.Microservice.PLAY, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+			});
 		}
 
 		private void HandleSelectionChanged(bool _)

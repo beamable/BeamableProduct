@@ -89,6 +89,7 @@ namespace Beamable.Editor
 		public EditorUser User;
 		public AccessToken Token => _requester.Token;
 
+		public bool IsLoggedIn => User != null;
 		public bool HasConfiguration { get; private set; }
 		public bool HasToken => Token != null;
 		public bool HasCustomer => !string.IsNullOrEmpty(Cid);
