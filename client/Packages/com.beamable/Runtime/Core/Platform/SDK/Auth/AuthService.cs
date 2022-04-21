@@ -20,7 +20,6 @@ namespace Beamable.Api.Auth
 	/// </summary>
 	public interface IAuthService : IAuthApi
 	{
-		Promise<bool> HasAnyCredentials();
 		Promise<bool> IsThisDeviceIdAvailable();
 		Promise<User> RegisterDeviceId();
 		Promise<User> RemoveDeviceId();
@@ -52,11 +51,6 @@ namespace Beamable.Api.Auth
 		public AuthService(IBeamableRequester requester, IDeviceIdResolver deviceIdResolver = null, IAuthSettings settings = null) : base(requester, settings)
 		{
 			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
-		}
-
-		public async Promise<bool> HasAnyCredentials()
-		{
-			return await GetRegisteredDeviceIds().Map(response => (response?.deviceIds != null && response.deviceIds.Length > 0));
 		}
 		
 		public async Promise<bool> IsThisDeviceIdAvailable()
