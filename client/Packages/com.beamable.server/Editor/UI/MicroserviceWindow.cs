@@ -18,6 +18,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Services.Dialogs;
 
 
 namespace Beamable.Editor.Microservice.UI
@@ -246,23 +247,25 @@ namespace Beamable.Editor.Microservice.UI
 			{
 				EditorApplication.delayCall += () =>
 				{
-					EditorAPI.Instance.Then(api =>
-					{
-						SetMinSize();
-						CreateModel();
-						SetForContent();
-						api.OnUserChange += _ => _microserviceContentVisualElement?.Refresh();
-					});
+					EditorAPI.Instance.Then(OnEnableUtil);
 				};
 				return;
 			}
 
-			EditorAPI.Instance.Then(api =>
-			{
-				SetMinSize();
-				CreateModel();
-				SetForContent();
-			});
+			EditorAPI.Instance.Then(OnEnableUtil);
+		}
+
+		private void OnEnableUtil(EditorAPI api)
+		{
+			SetMinSize();
+			CreateModel();
+			SetForContent();
+			api.OnUserChange += _ => _microserviceContentVisualElement?.Refresh();
+			api.OnRealmChange += _ => _microserviceContentVisualElement?.StopAllServices(
+				true, 
+				RealmSwitchDialog.TITLE, 
+				RealmSwitchDialog.MESSAGE, 
+				RealmSwitchDialog.OK);
 		}
 
 		private void HandleDeploySuccess(ManifestModel _model, int _totalSteps)
