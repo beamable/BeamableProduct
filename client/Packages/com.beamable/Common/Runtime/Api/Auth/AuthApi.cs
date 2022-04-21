@@ -304,6 +304,7 @@ namespace Beamable.Common.Api.Auth
 
 		/// <summary>
 		/// If the player has associated an email with their account, the email will appear here. Null otherwise.
+		/// The email can be associated with the <see cref="IAuthApi.RegisterDBCredentials"/> method
 		/// </summary>
 		public string email;
 
@@ -324,6 +325,7 @@ namespace Beamable.Common.Api.Auth
 		/// <summary>
 		/// If the player has associated any third party accounts with their account, those will appear here.
 		/// The values of the strings will be taken from the <see cref="AuthThirdPartyMethods.GetString"/> method.
+		/// Third parties can be associated with the <see cref="IAuthApi.RegisterThirdPartyCredentials"/> method.
 		/// </summary>
 		public List<string> thirdPartyAppAssociations;
 
