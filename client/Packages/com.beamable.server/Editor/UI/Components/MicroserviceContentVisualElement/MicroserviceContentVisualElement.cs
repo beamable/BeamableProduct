@@ -117,7 +117,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual.Clear();
 				SetupServicesStatus();
 			}
-
+			
+			CheckLoginStatus();
+			
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
 			EditorApplication.delayCall +=
@@ -129,6 +131,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 					var command = new GetDockerLocalStatus();
 					_dockerStatusPromise = command.StartAsync();
 				};
+		}
+		
+		private void CheckLoginStatus()
+		{
+			var api = BeamEditorContext.Default;
+			
+			foreach (var kvp in _modelToVisual)
+				kvp.Value.ChangeStartButtonState(api.IsAuthenticated, Constants.Tooltips.Microservice.PLAY, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
 		}
 
 		private void HandleSelectionChanged(bool _)
