@@ -16,7 +16,8 @@
 
 				public const string PLAY = "Run the Microservice or Microstorage";
 				public const string MORE = "More";
-
+				public const string PLAY_NOT_LOGGED_IN = "You must be logged in to start the service";
+				
 				public const string UNCHECK = "Uncheck";
 				public const string CHECKED = "Checked";
 

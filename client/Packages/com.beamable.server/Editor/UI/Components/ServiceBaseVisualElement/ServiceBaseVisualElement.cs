@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using System;
@@ -303,6 +304,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_foldIcon.EnableInClassList("unfoldIcon", !Model.IsCollapsed);
 			_rootVisualElement.EnableInClassList("folded", Model.IsCollapsed);
 			_mainParent.EnableInClassList("folded", Model.IsCollapsed);
+		}
+
+		public void ChangeStartButtonState(bool isOn, string enabledTooltip = "", string disabledTooltip = "")
+		{
+			_startButton.SetEnabled(isOn);
+			_startButton.tooltip = isOn ? enabledTooltip : disabledTooltip;
 		}
 	}
 }
