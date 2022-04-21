@@ -462,6 +462,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
+		public void StopAllServices(bool showDialog = false, string dialogTitle = "", string dialogMessage = "", string dialogConfirm = "")
+		{
+			var isAnyServiceStopped = false;
+			foreach (var service in _modelToVisual.Keys)
+				if (service.IsRunning)
+				{
+					isAnyServiceStopped = true;
+					service.Stop();
+				}
 
+			if (!showDialog || !isAnyServiceStopped)
+				return;
+			
+			EditorUtility.DisplayDialog(dialogTitle, dialogMessage, dialogConfirm);
+		}
 	}
 }

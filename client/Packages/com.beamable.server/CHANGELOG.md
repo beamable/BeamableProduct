@@ -10,7 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`
 
 ## [1.1.1]
-no changes
+
+### Changed
+- Realm switch now triggers `Microservice Manager` to stop all active services. Guarantees the correct service version association with realm.
 
 ## [1.1.0]
 ### Added
