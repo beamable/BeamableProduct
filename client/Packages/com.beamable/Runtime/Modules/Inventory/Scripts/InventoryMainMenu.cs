@@ -7,13 +7,21 @@ namespace Beamable.Inventory.Scripts
 	{
 		public RectTransform GroupContainer;
 		public InventoryGroupUI GroupUIPrefab;
+		public InventoryMenuBehaviour RootMenu;
+		public InventoryMenuConfiguration Data => RootMenu.InventoryConfig;
 
 		// Start is called before the first frame update
 		void Start()
 		{
 
 
+		}
+
+		public override void OnOpened()
+		{
+			base.OnOpened();
 			RefreshGroups();
+
 		}
 
 		// Update is called once per frame
@@ -29,9 +37,10 @@ namespace Beamable.Inventory.Scripts
 				Destroy(GroupContainer.GetChild(i).gameObject);
 			}
 
-			foreach (var group in InventoryConfiguration.Instance.Groups)
+			foreach (var group in Data.Groups)
 			{
 				var gob = Instantiate(GroupUIPrefab, GroupContainer);
+				gob.InventoryObjectUIPrefab = Data.ItemPreviewPrefab;
 				gob.Setup(group);
 			}
 		}

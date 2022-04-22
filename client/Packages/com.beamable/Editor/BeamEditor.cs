@@ -38,6 +38,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
 using UnityEngine;
@@ -133,18 +134,36 @@ namespace Beamable
 
 			// Initializes the Config database
 			// This solves the same problem that the try/catch block around the ModuleConfigurations solves.
-			try
+			bool TryInitConfigDatabase(bool allowRetry = true)
 			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException e)
-			{
-				if (e.FileName == ConfigDatabase.GetConfigFileName())
+				try
 				{
-					Logger.DoSpew("Config File not found during initialization dodged!");
-					EditorApplication.delayCall += Initialize;
-					return;
+					ConfigDatabase.Init();
+					return true;
 				}
+				catch (FileNotFoundException e)
+				{
+					if (e.FileName == ConfigDatabase.GetConfigFileName())
+					{
+						if (allowRetry)
+						{
+							BeamEditorContext.WriteConfig("", "");
+							return TryInitConfigDatabase(false);
+						}
+						else
+						{
+							Logger.DoSpew("Config File not found during initialization dodged!");
+							EditorApplication.delayCall += Initialize;
+							return false;
+						}
+					}
+					throw;
+				}
+			}
+
+			if (!TryInitConfigDatabase())
+			{
+				return;
 			}
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
@@ -245,16 +264,18 @@ namespace Beamable
 			);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
+			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
 
 			BeamEditorContextDependencies.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
-			BeamEditorContextDependencies.AddSingleton(provider => new AliasService(provider.GetService<IHttpRequester>()));
+			BeamEditorContextDependencies.AddSingleton<AliasService>();
 			BeamEditorContextDependencies.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
+			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
@@ -316,7 +337,7 @@ namespace Beamable
 		/// <list type="bullet">
 		/// <item><see cref="BeamEditorContext.Default"/> is null; which should be impossible, but happens (probably has to do with DomainReloads)</item>
 		/// <item>The window tries to make calls to a partially initialized <see cref="BeamEditorContext"/> and throws.</item>
-		/// </list>  
+		/// </list>
 		/// </summary>
 		/// <param name="onInitializationFinished">
 		/// The that must be scheduled to run from a Unity callback, but is dependent on our initialization being done.
@@ -422,6 +443,7 @@ namespace Beamable
 			{
 				SaveConfig("", "", BeamableEnvironment.ApiUrl);
 				Logout();
+				InitializePromise = Promise.Success;
 				return;
 			}
 
@@ -437,6 +459,7 @@ namespace Beamable
 			{
 				SaveConfig("", "", BeamableEnvironment.ApiUrl);
 				Logout();
+				InitializePromise = Promise.Success;
 				return;
 			}
 
@@ -445,6 +468,7 @@ namespace Beamable
 			requester.Cid = cid;
 			requester.Pid = pid;
 			requester.Host = platform;
+			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 			async Promise Initialize()
 			{
@@ -467,7 +491,7 @@ namespace Beamable
 						await Login(accessToken);
 					else
 					{
-						// Set the token manually as we already have all the data we need be considered initialized (Serialized CurrentUser/CurrentCustomer/CurrentRealm data. 
+						// Set the token manually as we already have all the data we need be considered initialized (Serialized CurrentUser/CurrentCustomer/CurrentRealm data.
 						requester.Token = accessToken;
 
 						// Disable this warning as we do want to run this in the background silently.
@@ -562,8 +586,9 @@ namespace Beamable
 				authCustomerData = DeserializeFromString<CustomerView>(customerSerializedData);
 				authRealmView = DeserializeFromString<RealmView>(realmSerializedData);
 			}
-			catch
+			catch (Exception e)
 			{
+				Debug.LogException(e);
 				authUserData = null;
 				authCustomerData = null;
 				authRealmView = null;
@@ -601,7 +626,7 @@ namespace Beamable
 
 			var userSerializedData = SerializeToString(authUserData);// JsonUtility.ToJson(authUserData);
 			var customerSerializedData = SerializeToString(authCustomerData);// JsonUtility.ToJson(authCustomerData);
-			var realmSerializedData = SerializeToString(authRealmView); //JsonUtility.ToJson(authRealmView); 
+			var realmSerializedData = SerializeToString(authRealmView); //JsonUtility.ToJson(authRealmView);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_user_data", userSerializedData);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_customer_data", customerSerializedData);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_realm_data", realmSerializedData);
@@ -611,7 +636,10 @@ namespace Beamable
 
 		private void ClearLastAuthenticatedUserDataForToken(AccessToken token, string pid)
 		{
-			var cid = token.Cid;
+
+			if (string.IsNullOrEmpty(pid)) return; // nothing to do if the pid is empty.
+			var cid = token?.Cid;
+			if (string.IsNullOrEmpty(cid)) return; // nothing to do if the cid is empty.
 
 			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_user_data");
 			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_customer_data");
@@ -670,14 +698,14 @@ namespace Beamable
 		public void Logout()
 		{
 			var requester = ServiceScope.GetService<PlatformRequester>();
-			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm.Pid);
+			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm?.Pid);
 			requester.DeleteToken();
 			CurrentUser = null;
 			OnUserChange?.Invoke(null);
 			BeamableEnvironment.ReloadEnvironment();
 		}
 
-		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public static void WriteConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
 		{
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
@@ -745,6 +773,15 @@ namespace Beamable
 				AssetDatabase.Refresh();
 			}
 
+		}
+
+		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		{
+			if (string.IsNullOrEmpty(host))
+			{
+				host = BeamableEnvironment.ApiUrl;
+			}
+			WriteConfig(alias, pid, host, cid, containerPrefix);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
@@ -914,7 +951,8 @@ namespace Beamable
 			ProductionRealm = game;
 			OnRealmChange?.Invoke(realm);
 
-			// Ensure we save the current cached data for domain reloads. 
+
+			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
 		}

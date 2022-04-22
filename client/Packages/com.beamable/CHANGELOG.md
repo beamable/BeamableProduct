@@ -10,6 +10,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `PreventAddressableCodeStripping` Core Configuration setting that automatically generates a link.xml file that will preserve addressable types.
+- `TryClaim` method in `EventService` to attempt a claim, even if one is not invalid
+
+### Changed
+- `ManifestSubscription` subscription no longer accepts the scope field
+- AccountHud logs a warning when pressed if there isn't an AccountManagementFlow in the scene.
+- Increased the AdminFlow scroll speed
+- InventoryFlow can now be configured at the GameObject level.
+- Edit mode for Buss Style Card has been removed in favor of context menus for selector label, variables and properties
+- Claiming an event that a player never submitted a score for will report an accurate error message
+
+### Fixed
+- StoreView prefab now works in landscape mode
+
+## [1.1.2]
 ### Fixed
 - `AccessTokenStorage` no longer throws `ArgumentOutOfRangeException` when starting in offline mode
 
@@ -29,8 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Buss Element selection improvement in Buss Theme Manager   
 - Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
 - All implementations of `[BeamContextSystem]` or `[RegisterBeamableDependencies]` will be preserved durring Unity code stripping
+- Updated C#MS Publish window UI/UX
 - Properties in Buss Style Card sorted alphabetically by default
-- Edit mode for Buss Style Card has been removed in favor of context menus for selector label, variables and properties
 
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.

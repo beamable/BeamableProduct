@@ -186,8 +186,17 @@ namespace Beamable.AccountManagement
 		public void ToggleAccountManagement()
 		{
 			_toggleState = !_toggleState;
+			var count = 0;
+			ForAll<AccountManagementSignals>(signals =>
+			{
+				count += signals?.OnToggleAccountManagement?.GetPersistentEventCount() ?? 0;
+			});
+			if (count == 0)
+			{
+				Debug.LogWarning("There is no account management flow in the scene, so this toggle button does nothing. Please ensure there is an Account Management Flow in the scene.");
+				return;
+			}
 			Broadcast(_toggleState, s => s.OnToggleAccountManagement);
-
 		}
 
 		public void ToggleAccountManagement(bool desiredState)
