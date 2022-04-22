@@ -213,17 +213,22 @@ jobs:
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
 
+      - name: List directory
+        run: ls -R dist
       - name: Save Docker Image If Exits
         if: ${{ !steps.cache_docker.outputs.cache-hit }}
         run: |
           chmod +x ./build/save_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
+      - name: List dist directory
+        run: |
+          ls -R /github/workspace/dist
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}
-          path: dist/${{ matrix.targetPlatform }}
+          path: /github/workspace/dist/${{ matrix.targetPlatform }}
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}
