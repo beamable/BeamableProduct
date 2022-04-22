@@ -32,18 +32,21 @@ namespace Beamable.Editor.Assistant
 	{
 		static BeamableAssistantWindow()
 		{
-			WindowDefaultConfig = new BeamEditorWindowInitConfig() 
+			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = MenuItems.Windows.Names.BEAMABLE_ASSISTANT, FocusOnShow = true, RequireLoggedUser = false, DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName
+				Title = MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
+				FocusOnShow = true,
+				RequireLoggedUser = false,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName
 			};
 		}
-		
+
 		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		          Commons.OPEN + " " +
-		          MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
-		          priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
+				  Commons.OPEN + " " +
+				  MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
+				  priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
 		public static async Task<BeamableAssistantWindow> Init() => await GetFullyInitializedWindow();
-		
+
 		private readonly Vector2 MIN_SIZE = new Vector2(450, 200);
 
 		private VisualElement _windowRoot;
@@ -89,7 +92,7 @@ namespace Beamable.Editor.Assistant
 			if (ActiveContext == null) return;
 
 			var hintNotificationManager = ActiveContext.ServiceScope.GetService<BeamHintNotificationManager>();
-			
+
 			// If there are any new notifications, we refresh to get the new data rendered.
 			if ((hintNotificationManager.AllPendingNotifications.Any()) || _beamHintsDataModel.RefreshDisplayingHints())
 			{
@@ -219,12 +222,12 @@ namespace Beamable.Editor.Assistant
 		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains, List<string> selectedDomains)
 		{
 			var hintDetailsReflectionCache = ActiveContext.ServiceScope.GetService<ReflectionCache>().GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
-			
+
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
 			var selectedIds = new List<int>();
 			var parentCache = new Dictionary<string, BeamHintDomainTreeViewItem>();
 			var id = 1;
-			
+
 			foreach (string domain in sortedDomains)
 			{
 				var currDomainsDepth = BeamHintDomains.GetDomainDepth(domain);

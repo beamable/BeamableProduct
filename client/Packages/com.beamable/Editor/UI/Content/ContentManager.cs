@@ -108,7 +108,7 @@ namespace Beamable.Editor.Content
 				de.ContentIO.FetchManifest();
 				return _;
 			});
-			
+
 		}
 
 		public Promise<Unit> DownloadContent(DownloadSummary summary, HandleContentProgress progressHandler, HandleDownloadFinished finishedHandler)

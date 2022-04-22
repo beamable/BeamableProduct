@@ -62,7 +62,7 @@ namespace Beamable.Editor.UI.Model
 
 		protected override async Task<RunImageCommand> PrepareRunCommand()
 		{
-			var beamable = BeamEditorContext.Default; 
+			var beamable = BeamEditorContext.Default;
 			await beamable.InitializePromise;
 			var secret = await beamable.GetRealmSecret();
 			var cid = beamable.CurrentCustomer.Cid;

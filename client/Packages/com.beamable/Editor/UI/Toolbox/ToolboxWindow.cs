@@ -22,15 +22,18 @@ namespace Beamable.Editor.Toolbox.UI
 {
 	public class ToolboxWindow : BeamEditorWindow<ToolboxWindow>
 	{
-		
+
 		static ToolboxWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = MenuItems.Windows.Names.TOOLBOX, DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName, FocusOnShow = false, RequireLoggedUser = true,
+				Title = MenuItems.Windows.Names.TOOLBOX,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
+				FocusOnShow = false,
+				RequireLoggedUser = true,
 			};
 		}
-		
+
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Commons.OPEN + " " +
@@ -39,7 +42,7 @@ namespace Beamable.Editor.Toolbox.UI
 		)]
 		public static async void Init() => await GetFullyInitializedWindow();
 		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
-		
+
 
 		private VisualElement _windowRoot;
 
@@ -50,7 +53,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 		private ToolboxModel _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
-		
+
 		protected override void Build()
 		{
 			Debug.Log("TOOLBOX WINDOW BUILD!!!!!!");
@@ -58,10 +61,10 @@ namespace Beamable.Editor.Toolbox.UI
 
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += _ => BuildWithContext();
-			
+
 			// Force refresh to build the initial window
 			_model?.Destroy();
-			
+
 			_model = new ToolboxModel();
 			_model.UseDefaultWidgetSource();
 			_model.Initialize();
@@ -77,7 +80,7 @@ namespace Beamable.Editor.Toolbox.UI
 		{
 			BeamablePackageUpdateMeta.OnPackageUpdated -= ShowWhatsNewAnnouncement;
 		}
-		
+
 		private void CheckAnnouncements()
 		{
 			BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
@@ -91,7 +94,7 @@ namespace Beamable.Editor.Toolbox.UI
 				}
 			});
 		}
-		
+
 		private void SetForContent()
 		{
 			var root = this.GetRootVisualContainer();
@@ -184,7 +187,7 @@ namespace Beamable.Editor.Toolbox.UI
 				ActiveContext.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
 			};
 			_model.AddAnnouncement(welcomeAnnouncement);
-			
+
 		}
 		private void CheckForUpdate()
 		{

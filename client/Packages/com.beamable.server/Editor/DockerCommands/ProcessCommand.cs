@@ -324,7 +324,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					Debug.Log("Docker Desktop was closed!");
 					DockerNotRunning = true;
-					
+
 					var tempQualifier = await BeamEditorWindow<MicroserviceWindow>.GetFullyInitializedWindow();
 					tempQualifier.RefreshWindowContent();
 				};
