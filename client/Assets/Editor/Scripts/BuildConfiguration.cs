@@ -46,6 +46,9 @@ public class BuildSampleProject
 			var distPath = GetBuildPathForTarget(activeTarget);
 			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), distPath, activeTarget, BuildOptions.None);
 
+			Debug.Log("PSO testing");
+			Debug.Log(results.summary.outputPath);
+			Debug.Log(results.summary.ToString());
 			if (results.summary.result != BuildResult.Succeeded)
 			{
 				throw new BuildFailedException("Build failed.");
