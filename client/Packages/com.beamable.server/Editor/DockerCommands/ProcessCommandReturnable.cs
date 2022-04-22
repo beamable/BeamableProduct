@@ -10,7 +10,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public Action<string> OnStandardOut;
 		public Action<string> OnStandardErr;
 
-		
+
 		protected Promise<T> Promise { get; private set; }
 
 		protected string StandardOutBuffer { get; private set; }
@@ -29,7 +29,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				return Promise<T>.Failed(new DockerNotInstalledException());
 			}
-			
+
 			Promise = new Promise<T>();
 			base.Start();
 

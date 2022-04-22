@@ -132,7 +132,7 @@ namespace Beamable.Editor.Realms
 		{
 			var pid = game?.Pid ?? _requester.Pid ?? _requester.AccessToken?.Pid;
 			return GetRealms(pid);
-		} 
+		}
 		public Promise<List<RealmView>> GetRealms(string pid)
 		{
 			if (string.IsNullOrEmpty(pid))

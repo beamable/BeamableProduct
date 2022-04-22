@@ -33,12 +33,12 @@ namespace Beamable.Editor.UI.Common.Models
 			Current = api.CurrentRealm;
 
 			return api.ServiceScope.GetService<RealmsService>().GetRealms()
-			          .Map(realms => realms.ToList<ISearchableElement>())
-			          .Then(realms =>
-			          {
-				          Elements = realms.ToList<ISearchableElement>();
-				          OnAvailableElementsChanged?.Invoke(Elements);
-			          });
+					  .Map(realms => realms.ToList<ISearchableElement>())
+					  .Then(realms =>
+					  {
+						  Elements = realms.ToList<ISearchableElement>();
+						  OnAvailableElementsChanged?.Invoke(Elements);
+					  });
 		}
 
 		private void HandleRealmChanged(RealmView realm)
