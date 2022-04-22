@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15a16c2d4a054798aa56c47b2847a379, type: 3}
   m_Name: TestingToolConfig
   m_EditorClassIdentifier: 
-  enableTestingTool: 0
+  enableTestingTool: 1

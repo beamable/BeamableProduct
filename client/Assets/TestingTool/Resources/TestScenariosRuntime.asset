@@ -18,3 +18,42 @@ MonoBehaviour:
     shortDescription: 
     fullDescription: 
     testSteps: []
+  - sceneName: 003 - Sdf Test
+    progress: 0
+    shortDescription: SDF Test
+    fullDescription: Testing SDF Image features.
+    testSteps:
+    - progress: 0
+      description: 'Select group 1.
+
+        Check if background color settings are
+        working.'
+    - progress: 0
+      description: 'Select group 2.
+
+        Check if outline settings are working.'
+    - progress: 0
+      description: 'Select group 3.
+
+        Check if shadow settings are working.'
+    - progress: 0
+      description: 'Select group 4.
+
+        Check if texture shape is working.'
+  - sceneName: 004 - Leaderboards_Buss_Prefab
+    progress: 0
+    shortDescription: 
+    fullDescription: 
+    testSteps:
+    - progress: 0
+      description: From Hierarchy select LeaderboardsPresenter game object and make
+        sure that Test Data value is set to TRUE. If not stop the test, change this
+        value and restart test.
+    - progress: 0
+      description: Leaderboard shows up with data.
+    - progress: 0
+      description: Scroll the list a little to the bottom. Click button in the lower
+        right part of screen. Position of a list shoul reset to the top.
+    - progress: 0
+      description: At the bottom of screen there there is a tile with current player's
+        position and points. The same position in the list above should be highlighted.
