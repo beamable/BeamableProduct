@@ -118,7 +118,7 @@ namespace Beamable.Tests.Runtime.Api
 		{
 			throw new NotImplementedException();
 		}
-
+		
 		public Promise<User> RegisterDeviceId()
 		{
 			throw new NotImplementedException();
@@ -138,7 +138,12 @@ namespace Beamable.Tests.Runtime.Api
 		{
 			throw new NotImplementedException();
 		}
-
+		
+		public Promise<string> GetDeviceId()
+		{
+			throw new NotImplementedException();
+		}
+		
 		public IBeamableRequester Requester { get; }
 	}
 }

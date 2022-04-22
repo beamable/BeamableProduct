@@ -474,7 +474,8 @@ namespace Beamable
 					{
 						id = Random.Range(int.MinValue, 0),
 						scopes = new List<string>(),
-						thirdPartyAppAssociations = new List<string>()
+						thirdPartyAppAssociations = new List<string>(),
+						deviceIds = new List<string>()
 					}, Requester.AccessToken, true);
 					_connectivityService.OnReconnectOnce(async () =>
 					{
@@ -512,7 +513,8 @@ namespace Beamable
 			{
 				id = 0,
 				scopes = new List<string>(),
-				thirdPartyAppAssociations = new List<string>()
+				thirdPartyAppAssociations = new List<string>(),
+				deviceIds = new List<string>()
 			};
 			try
 			{
