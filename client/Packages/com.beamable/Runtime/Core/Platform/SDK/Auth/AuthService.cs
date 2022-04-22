@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
-using System.Linq;
 
 namespace Beamable.Api.Auth
 {
