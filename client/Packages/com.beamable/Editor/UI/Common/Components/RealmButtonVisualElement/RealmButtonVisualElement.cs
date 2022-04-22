@@ -120,7 +120,8 @@ namespace Beamable.Editor.UI.Components
 
 			content.OnElementSelected += (realm) =>
 			{
-				EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); }); });
+				var beamable = BeamEditorContext.Default;
+				beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); });
 			};
 			content.Refresh();
 		}
