@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
-
 namespace System.Runtime.CompilerServices
 {
 	public sealed class AsyncMethodBuilderAttribute : Attribute
