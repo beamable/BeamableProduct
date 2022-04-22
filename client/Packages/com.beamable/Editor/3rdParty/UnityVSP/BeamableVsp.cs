@@ -1,4 +1,5 @@
 using Beamable;
+using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Editor;
@@ -11,7 +12,7 @@ namespace UnityEditor.VspAttribution.Beamable
 		private readonly IBeamableRequester _requester;
 		private readonly IHttpRequester _httpRequester;
 
-		public BeamableVsp(IBeamableRequester requester, IHttpRequester httpRequester)
+		public BeamableVsp(IPlatformRequester requester, IHttpRequester httpRequester)
 		{
 			_requester = requester;
 			_httpRequester = httpRequester;

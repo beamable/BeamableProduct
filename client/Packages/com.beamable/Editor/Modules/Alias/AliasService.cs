@@ -28,9 +28,9 @@ namespace Beamable.Editor.Alias
 
 	public class AliasService : IAliasService
 	{
-		private readonly IHttpRequester _httpRequester;
+		private readonly IBeamableRequester _httpRequester;
 
-		public AliasService(IHttpRequester httpRequester)
+		public AliasService(IBeamableRequester httpRequester)
 		{
 			_httpRequester = httpRequester;
 		}
@@ -61,7 +61,7 @@ namespace Beamable.Editor.Alias
 			AliasHelper.ValidateAlias(alias);
 
 			var url = $"/basic/realms/customer/alias/available?alias={alias}";
-			var res = await _httpRequester.ManualRequest<AliasResolveResponse>(Method.GET, url);
+			var res = await _httpRequester.Request<AliasResolveResponse>(Method.GET, url);
 			return res;
 		}
 

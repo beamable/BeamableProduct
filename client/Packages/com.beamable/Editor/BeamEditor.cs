@@ -134,18 +134,36 @@ namespace Beamable
 
 			// Initializes the Config database
 			// This solves the same problem that the try/catch block around the ModuleConfigurations solves.
-			try
+			bool TryInitConfigDatabase(bool allowRetry = true)
 			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException e)
-			{
-				if (e.FileName == ConfigDatabase.GetConfigFileName())
+				try
 				{
-					Logger.DoSpew("Config File not found during initialization dodged!");
-					EditorApplication.delayCall += Initialize;
-					return;
+					ConfigDatabase.Init();
+					return true;
 				}
+				catch (FileNotFoundException e)
+				{
+					if (e.FileName == ConfigDatabase.GetConfigFileName())
+					{
+						if (allowRetry)
+						{
+							BeamEditorContext.WriteConfig("", "");
+							return TryInitConfigDatabase(false);
+						}
+						else
+						{
+							Logger.DoSpew("Config File not found during initialization dodged!");
+							EditorApplication.delayCall += Initialize;
+							return false;
+						}
+					}
+					throw;
+				}
+			}
+
+			if (!TryInitConfigDatabase())
+			{
+				return;
 			}
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
@@ -245,11 +263,12 @@ namespace Beamable
 			);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
+			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
 
 			BeamEditorContextDependencies.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
-			BeamEditorContextDependencies.AddSingleton(provider => new AliasService(provider.GetService<IHttpRequester>()));
+			BeamEditorContextDependencies.AddSingleton<AliasService>();
 			BeamEditorContextDependencies.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
@@ -686,7 +705,7 @@ namespace Beamable
 			BeamableEnvironment.ReloadEnvironment();
 		}
 
-		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public static void WriteConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
 		{
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
@@ -754,6 +773,15 @@ namespace Beamable
 				AssetDatabase.Refresh();
 			}
 
+		}
+
+		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		{
+			if (string.IsNullOrEmpty(host))
+			{
+				host = BeamableEnvironment.ApiUrl;
+			}
+			WriteConfig(alias, pid, host, cid, containerPrefix);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
