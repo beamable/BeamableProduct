@@ -85,6 +85,9 @@ namespace Beamable
 		/// </summary>
 		CloudSavingService CloudSavingService { get; }
 
+		/// <summary>
+		/// Access the <see cref="ContentService"/> for this player instance
+		/// </summary>
 		ContentService ContentService { get; }
 		InventoryService InventoryService { get; }
 		LeaderboardService LeaderboardService { get; }
