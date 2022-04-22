@@ -67,7 +67,7 @@ namespace Beamable.Common.Api.Auth
 		/// </param>
 		/// <param name="customerScoped">
 		/// The email and password login can return a <see cref="TokenResponse"/> that works for a specific CID / PID combo, or for
-		/// an entire CID, across all PIDs. When <see cref="customerScoped"/> is enabled, the resulting token will be eligable for
+		/// an entire CID, across all PIDs. When <see cref="customerScoped"/> is enabled, the resulting token will be eligible for
 		/// the entire CID, regardless of PID. However, this type of token will only work for <see cref="User"/>'s who are at least
 		/// testers, developers, or admins.
 		/// </param>

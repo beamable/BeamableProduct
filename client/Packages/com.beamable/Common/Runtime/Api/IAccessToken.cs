@@ -12,7 +12,8 @@ namespace Beamable.Common.Api
 		string Token { get; }
 
 		/// <summary>
-		/// When the <see cref="Token"/> expires, the refresh token can be used to issue a new token string.
+		/// When the <see cref="Token"/> expires, the refresh token can be used to issue a new token string
+		/// by using the <see cref="Auth.IAuthApi.LoginRefreshToken"/> method
 		/// </summary>
 		string RefreshToken { get; }
 
@@ -28,6 +29,7 @@ namespace Beamable.Common.Api
 
 		/// <summary>
 		/// The realm id that this token is valid for.
+		/// If this token is a customer scoped token, then the value of the <see cref="Pid"/> will be null
 		/// </summary>
 		string Pid { get; }
 	}

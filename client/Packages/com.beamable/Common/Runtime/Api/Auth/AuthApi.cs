@@ -392,13 +392,13 @@ namespace Beamable.Common.Api.Auth
 		public string access_token;
 
 		/// <summary>
-		/// There are many different types of tokens that Beamable may issue. The most common cases are "access", or "refresh"
+		/// There are two different types of tokens that Beamable may issue. The possible values are "access", or "refresh"
 		/// </summary>
 		public string token_type;
 
 		/// <summary>
 		/// The number of milliseconds from when the <see cref="TokenResponse"/> was sent by the Beamable servers, to when the
-		/// token will be expired. This value informs the <see cref="IAccessToken.ExpiresAt"/>
+		/// token will be expired. This value informs the <see cref="IAccessToken.ExpiresAt"/> property
 		/// </summary>
 		public long expires_in;
 
