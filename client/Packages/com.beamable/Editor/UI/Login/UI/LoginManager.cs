@@ -39,14 +39,14 @@ namespace Beamable.Editor.Login.UI
 			InitializedModel = model.Initialize().Then(initializedModel =>
 			{
 				//            _loginVisualElement = new Components.LoginVisualElement(){Model = initializedModel, Manager = this};
-				_newCustomerVisualElement = new NewCustomerVisualElement() {Model = initializedModel, Manager = this};
-				_existingCustomerVisualElement = new ExistingCustomerVisualElement() {Model = initializedModel, Manager = this};
-				_legalCopyVisualElement = new LegalCopyVisualElement() {Model = initializedModel, Manager = this};
-				_projectSelectVisualElement = new ProjectSelectVisualElement() {Model = initializedModel, Manager = this};
-				_newUserVisualElement = new NewUserVisualElement() {Model = initializedModel, Manager = this};
-				_accountSummaryVisualElement = new AccountSummaryVisualElement {Model = initializedModel, Manager = this};
-				_noRoleVisualElement = new NoRoleVisualElement {Model = initializedModel, Manager = this};
-				_forgotPasswordVisualElement = new ForgotVisualElement {Model = initializedModel, Manager = this};
+				_newCustomerVisualElement = new NewCustomerVisualElement() { Model = initializedModel, Manager = this };
+				_existingCustomerVisualElement = new ExistingCustomerVisualElement() { Model = initializedModel, Manager = this };
+				_legalCopyVisualElement = new LegalCopyVisualElement() { Model = initializedModel, Manager = this };
+				_projectSelectVisualElement = new ProjectSelectVisualElement() { Model = initializedModel, Manager = this };
+				_newUserVisualElement = new NewUserVisualElement() { Model = initializedModel, Manager = this };
+				_accountSummaryVisualElement = new AccountSummaryVisualElement { Model = initializedModel, Manager = this };
+				_noRoleVisualElement = new NoRoleVisualElement { Model = initializedModel, Manager = this };
+				_forgotPasswordVisualElement = new ForgotVisualElement { Model = initializedModel, Manager = this };
 
 				AssumePage(initializedModel);
 			});
@@ -118,10 +118,10 @@ namespace Beamable.Editor.Login.UI
 			var b = BeamEditorContext.Default;
 			var issue = b.SendPasswordResetCode(model.Customer.Code, model.Customer.Password);
 			return UseCommonErrorHandling(model, issue, new LoginErrorHandlers()
-			                                            .OnNotFound(NO_ACCOUNT_FOUND_ERROR)
-			                                            .OnBadRequest(EXCEPTION_TYPE_BADCODE, BAD_CODE_ERROR)
-			                                            .OnBadRequest(NO_ALIAS_FOUND_ERROR),
-			                              false
+														.OnNotFound(NO_ACCOUNT_FOUND_ERROR)
+														.OnBadRequest(EXCEPTION_TYPE_BADCODE, BAD_CODE_ERROR)
+														.OnBadRequest(NO_ALIAS_FOUND_ERROR),
+										  false
 			).Then(res =>
 			{
 				if (!res.Success) return;
@@ -134,9 +134,9 @@ namespace Beamable.Editor.Login.UI
 			var b = BeamEditorContext.Default;
 			var issue = b.SendPasswordReset(model.Customer.CidOrAlias, model.Customer.Email);
 			return UseCommonErrorHandling(model, issue, new LoginErrorHandlers()
-			                                            .OnNotFound(NO_ACCOUNT_FOUND_ERROR)
-			                                            .OnBadRequest(NO_ALIAS_FOUND_ERROR),
-			                              false);
+														.OnNotFound(NO_ACCOUNT_FOUND_ERROR)
+														.OnBadRequest(NO_ALIAS_FOUND_ERROR),
+										  false);
 		}
 
 		public Promise<LoginManagerResult> AttemptProjectSelect(LoginModel model, RealmView game)
@@ -150,14 +150,14 @@ namespace Beamable.Editor.Login.UI
 		{
 			var b = BeamEditorContext.Default;
 			var newCustomer = b.CreateCustomer(model.Customer.CidOrAlias, model.Customer.Pid, model.Customer.Email,
-			                                   model.Customer.Password);
+											   model.Customer.Password);
 
 			return UseCommonErrorHandling(model, newCustomer, new LoginErrorHandlers()
-			                                                  .OnUnknown(CUSTOMER_CREATION_UNKNOWN_ERROR)
-			                                                  .OnBadRequest(EXCEPTION_TYPE_BAD_ALIAS, BAD_ALIAS_ERROR)
-			                                                  .OnBadRequest(EXCEPTION_TYPE_BAD_GAME_NAME, BAD_GAME_NAME_ERROR)
-			                                                  .On(err => err.Status == 500 && err.Error.message == model.Customer.CidOrAlias, CID_TAKEN_ERROR)
-			                                                  );
+															  .OnUnknown(CUSTOMER_CREATION_UNKNOWN_ERROR)
+															  .OnBadRequest(EXCEPTION_TYPE_BAD_ALIAS, BAD_ALIAS_ERROR)
+															  .OnBadRequest(EXCEPTION_TYPE_BAD_GAME_NAME, BAD_GAME_NAME_ERROR)
+															  .On(err => err.Status == 500 && err.Error.message == model.Customer.CidOrAlias, CID_TAKEN_ERROR)
+															  );
 		}
 
 		public Promise<LoginManagerResult> AttemptNewUser(LoginModel model)
@@ -166,8 +166,8 @@ namespace Beamable.Editor.Login.UI
 			var createUser = b.CreateUser(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
 
 			return UseCommonErrorHandling(model, createUser, new LoginErrorHandlers()
-			                                                 .OnBadRequest(EXCEPTION_TYPE_NOCID, NO_ALIAS_FOUND_ERROR)
-			                                                 .OnBadRequest(EXCEPTION_TYPE_EMAIL_TAKEN, EMAIL_TAKEN_ERROR)
+															 .OnBadRequest(EXCEPTION_TYPE_NOCID, NO_ALIAS_FOUND_ERROR)
+															 .OnBadRequest(EXCEPTION_TYPE_EMAIL_TAKEN, EMAIL_TAKEN_ERROR)
 			);
 		}
 
@@ -176,31 +176,31 @@ namespace Beamable.Editor.Login.UI
 			var b = BeamEditorContext.Default;
 			var login = b.LoginCustomer(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
 			return UseCommonErrorHandling(model, login, new LoginErrorHandlers()
-			                                            .OnUnauthorized(INVALID_CREDENTIALS_ERROR)
-			                                            .OnBadRequest(NO_ALIAS_FOUND_ERROR)
-			                                            .OnBadRequest(EXCEPTION_TYPE_INVALID_SCOPE, NO_ALIAS_FOUND_ERROR)
-			                                            .OnNotFound(INVALID_CREDENTIALS_ERROR)
+														.OnUnauthorized(INVALID_CREDENTIALS_ERROR)
+														.OnBadRequest(NO_ALIAS_FOUND_ERROR)
+														.OnBadRequest(EXCEPTION_TYPE_INVALID_SCOPE, NO_ALIAS_FOUND_ERROR)
+														.OnNotFound(INVALID_CREDENTIALS_ERROR)
 			);
 		}
 
 		private Promise<LoginManagerResult> UseCommonErrorHandling<T>(LoginModel model, Promise<T> promise, LoginErrorHandlers handler, bool assumePage = true)
 		{
 			return promise.Map(_ =>
-			              {
-				              if (assumePage)
-				              {
-					              model.Initialize().Then(AssumePage);
-				              }
+						  {
+							  if (assumePage)
+							  {
+								  model.Initialize().Then(AssumePage);
+							  }
 
-				              return LoginManagerResult.Pass;
-			              })
-			              .Recover(ex =>
-			              {
-				              BeamableLogger.LogError(ex);
-				              var message = handler.ProduceError(ex);
-				              return LoginManagerResult.Failed(message);
-			              })
-			              .Error(BeamableLogger.LogError);
+							  return LoginManagerResult.Pass;
+						  })
+						  .Recover(ex =>
+						  {
+							  BeamableLogger.LogError(ex);
+							  var message = handler.ProduceError(ex);
+							  return LoginManagerResult.Failed(message);
+						  })
+						  .Error(BeamableLogger.LogError);
 		}
 
 		public bool HasPreviousPage() => _history.Count > 1;
@@ -275,11 +275,11 @@ namespace Beamable.Editor.Login.UI
 		public bool Success;
 		public string Error;
 
-		public static readonly LoginManagerResult Pass = new LoginManagerResult {Success = true};
+		public static readonly LoginManagerResult Pass = new LoginManagerResult { Success = true };
 
 		public static LoginManagerResult Failed(string reason)
 		{
-			return new LoginManagerResult {Success = false, Error = reason};
+			return new LoginManagerResult { Success = false, Error = reason };
 		}
 	}
 }

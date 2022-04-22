@@ -29,7 +29,10 @@ namespace Beamable.Editor.Toolbox.UI
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = MenuItems.Windows.Names.TOOLBOX, DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName, FocusOnShow = false, RequireLoggedUser = true,
+				Title = MenuItems.Windows.Names.TOOLBOX,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
+				FocusOnShow = false,
+				RequireLoggedUser = true,
 			};
 		}
 

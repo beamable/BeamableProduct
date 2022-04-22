@@ -179,18 +179,18 @@ namespace Beamable
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
 			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
 				coreConfiguration.ReflectionSystemPaths
-				                 .Where(Directory.Exists)
-				                 .ToArray());
+								 .Where(Directory.Exists)
+								 .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-			                                                        {
-				                                                        var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-				                                                        return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-			                                                        })
-			                                                        .Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-			                                                        .Where(system => system.Enabled)
-			                                                        .ToList();
+																	{
+																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+																	})
+																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+																	.Where(system => system.Enabled)
+																	.ToList();
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
 
 			// Inject them into the ReflectionCache system in the correct order.
@@ -220,10 +220,10 @@ namespace Beamable
 						var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
 
 						var res = EditorUtility.DisplayDialogComplex("Beamable Assistant",
-						                                             "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
-						                                             "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
-						                                             "No, I'll take my chances and don't bother me about these specific hints anymore.",
-						                                             "No, I'll take my chances and don't bother me ever again about any hints.");
+																	 "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
+																	 "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
+																	 "No, I'll take my chances and don't bother me about these specific hints anymore.",
+																	 "No, I'll take my chances and don't bother me ever again about any hints.");
 
 						if (res == 0)
 						{
@@ -258,8 +258,9 @@ namespace Beamable
 			BeamEditorContextDependencies = new DependencyBuilder();
 			BeamEditorContextDependencies.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
 			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
-			                                                                                                 provider.GetService<AccessTokenStorage>(),
-			                                                                                                 null) {RequestTimeoutMs = $"{30 * 1000}"}
+																											 provider.GetService<AccessTokenStorage>(),
+																											 null)
+			{ RequestTimeoutMs = $"{30 * 1000}" }
 			);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
@@ -288,8 +289,8 @@ namespace Beamable
 				await BeamEditorContext.Default.InitializePromise;
 
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
 				IsInitialized = true;
 
 				// Initialize toolbar
@@ -502,7 +503,6 @@ namespace Beamable
 				}
 			}
 
-
 			InitializePromise = Initialize();
 		}
 
@@ -677,7 +677,7 @@ namespace Beamable
 				var user = CurrentUser = await authService.GetUserForEditor();
 				OnUserChange?.Invoke(CurrentUser);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				if (ex is PlatformRequesterException err && err.Status == 403)
 				{
@@ -830,7 +830,7 @@ namespace Beamable
 				var cid = CurrentCustomer.Cid;
 				var pid = CurrentRealm.Pid;
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
-				                            tokenResponse.refresh_token, tokenResponse.expires_in);
+											tokenResponse.refresh_token, tokenResponse.expires_in);
 				await this.Login(token);
 			}
 
@@ -906,8 +906,8 @@ namespace Beamable
 
 			// we need to remember the last realm the user was on in this game.
 			var hadSelectedPid = EditorPrefHelper
-			                     .GetMap(REALM_PREFERENCE)
-			                     .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
+								 .GetMap(REALM_PREFERENCE)
+								 .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
 
 			if (!hadSelectedPid)
 				existingPid = game.Pid;
@@ -941,9 +941,9 @@ namespace Beamable
 			await ServiceScope.GetService<ContentIO>().FetchManifest();
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
-			          .GetMap(REALM_PREFERENCE)
-			          .Set($"{game.Cid}.{game.Pid}", pid)
-			          .Save();
+					  .GetMap(REALM_PREFERENCE)
+					  .Set($"{game.Cid}.{game.Pid}", pid)
+					  .Save();
 
 			var realm = realms.FirstOrDefault(r => string.Equals(r.Pid, pid));
 
@@ -951,9 +951,10 @@ namespace Beamable
 			ProductionRealm = game;
 			OnRealmChange?.Invoke(realm);
 
+
 			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
-			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid:CurrentCustomer.Cid);
+			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
 		}
 
 		#endregion

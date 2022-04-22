@@ -222,7 +222,7 @@ namespace Beamable.Editor.Content
 			_typeName = ContentRegistry.TypeToName(referenceType);
 			var de = BeamEditorContext.Default;
 			await de.InitializePromise;
-			
+
 			de.ContentIO.EnsureDefaultContentByType(referenceType);
 			_allContent = de.ContentIO.FindAllContentByType(referenceType).ToList();
 
