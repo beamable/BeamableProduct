@@ -144,11 +144,6 @@ namespace Beamable.Tests.Runtime.Api
 			throw new NotImplementedException();
 		}
 		
-		public Promise<DeviceIdsResponse> GetRegisteredDeviceIds()
-		{
-			throw new NotImplementedException();
-		}
-		
 		public IBeamableRequester Requester { get; }
 	}
 }

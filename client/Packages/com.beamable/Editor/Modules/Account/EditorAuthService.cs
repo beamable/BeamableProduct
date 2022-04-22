@@ -55,6 +55,7 @@ namespace Beamable.Editor.Modules.Account
 			language = user.language;
 			scopes = user.scopes;
 			thirdPartyAppAssociations = user.thirdPartyAppAssociations;
+			deviceIds = user.deviceIds;
 		}
 
 	}

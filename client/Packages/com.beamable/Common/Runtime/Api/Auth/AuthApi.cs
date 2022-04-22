@@ -302,6 +302,8 @@ namespace Beamable.Common.Api.Auth
 		public string language;
 		public List<string> scopes;
 		public List<string> thirdPartyAppAssociations;
+		public List<string> deviceIds;
+		
 		public bool HasDBCredentials()
 		{
 			return !string.IsNullOrEmpty(email);
@@ -314,7 +316,8 @@ namespace Beamable.Common.Api.Auth
 
 		public bool HasAnyCredentials()
 		{
-			return HasDBCredentials() || (thirdPartyAppAssociations != null && thirdPartyAppAssociations.Count > 0);
+			return HasDBCredentials() || (thirdPartyAppAssociations != null && thirdPartyAppAssociations.Count > 0)
+				|| (deviceIds != null && deviceIds.Count > 0);
 		}
 
 		public bool HasScope(string scope)

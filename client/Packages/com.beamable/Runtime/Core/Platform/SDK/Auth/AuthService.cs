@@ -26,7 +26,6 @@ namespace Beamable.Api.Auth
 		Promise<User> RemoveDeviceIds(string[] deviceIds);
 		Promise<User> RemoveAllDeviceIds();
 		Promise<string> GetDeviceId();
-		Promise<DeviceIdsResponse> GetRegisteredDeviceIds();
 		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true);
 	}
 
@@ -93,11 +92,6 @@ namespace Beamable.Api.Auth
 		public async Promise<string> GetDeviceId()
 		{
 			return await _deviceIdResolver.GetDeviceId();
-		}
-		
-		public async Promise<DeviceIdsResponse> GetRegisteredDeviceIds()
-		{
-			return await Requester.Request<DeviceIdsResponse>(Method.GET, DEVICE_ID_URI);
 		}
 
 		private Promise<User> UpdateDeviceId(RegisterDeviceIdRequest requestBody)
