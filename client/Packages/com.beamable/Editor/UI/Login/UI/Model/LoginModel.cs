@@ -53,7 +53,7 @@ namespace Beamable.Editor.Login.UI.Model
 		public Promise<List<RealmView>> ResetGames()
 		{
 			var b = BeamEditorContext.Default;
-			
+
 			return b.ServiceScope.GetService<RealmsService>().GetGames().Map(games =>
 			{
 				Games = games;

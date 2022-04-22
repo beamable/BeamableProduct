@@ -5,7 +5,10 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using Beamable.Common;
 using Beamable.Editor.Microservice.UI.Components;
+using Beamable.Editor.Modules.Account;
+using Beamable.Editor.Realms;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
@@ -13,9 +16,6 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Editor.Modules.Account;
-using Beamable.Editor.Realms;
 using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants;
@@ -30,7 +30,10 @@ namespace Beamable.Editor.Microservice.UI
 			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = MenuItems.Windows.Names.MICROSERVICES_MANAGER, FocusOnShow = false, DockPreferenceTypeName = inspector.AssemblyQualifiedName, RequireLoggedUser = true,
+				Title = MenuItems.Windows.Names.MICROSERVICES_MANAGER,
+				FocusOnShow = false,
+				DockPreferenceTypeName = inspector.AssemblyQualifiedName,
+				RequireLoggedUser = true,
 			};
 
 			CustomDelayClause = () => !MicroserviceEditor.IsInitialized;
@@ -80,7 +83,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
-			
+
 			Debug.Log("C#MS WINDOW BUILD!!!!!!");
 
 			// Set the min size for the window

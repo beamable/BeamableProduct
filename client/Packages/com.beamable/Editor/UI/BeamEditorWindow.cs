@@ -36,7 +36,7 @@ namespace Beamable.Editor.UI
 		/// The <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that was used to initialize this window.
 		/// </summary>
 		public BeamEditorWindowInitConfig InitializedConfig;
-		
+
 		/// <summary>
 		/// A promise that gets completed when the window finishes running it's <see cref="OnEnable"/> method. Await this to guarantee the <see cref="BeamEditorWindow{TWindow}"/> instance is completely initialized.
 		/// TODO: We shouldn't really need this. We have it now as a lot of the Model initialization happens during Window initialization. This model is then accessed, through the window instance, in certain parts
@@ -63,7 +63,7 @@ namespace Beamable.Editor.UI
 			await contentMangerWindow.FullyInitializedWindowPromise;
 			return contentMangerWindow;
 		}
-		
+
 		/// <summary>
 		/// Creates, initializes then waits for the window instance to be completely ready for use before returning that instance.
 		/// See <see cref="FullyInitializedWindowPromise"/> to understand why this is necessary. 
@@ -92,10 +92,10 @@ namespace Beamable.Editor.UI
 
 			var _instance = GetWindow<TWindow>(title, focus, dockPreference);
 			_instance.InitializedConfig = config;
-			
-			if(_instance.FullyInitializedWindowPromise == null || !_instance.FullyInitializedWindowPromise.IsCompleted)
+
+			if (_instance.FullyInitializedWindowPromise == null || !_instance.FullyInitializedWindowPromise.IsCompleted)
 				_instance.FullyInitializedWindowPromise = new Promise();
-			
+
 			_instance.Show(true);
 		}
 
@@ -105,14 +105,14 @@ namespace Beamable.Editor.UI
 			BeamEditor.DelayedInitializationCall(() =>
 			{
 				BuildWithDefaultContext();
-				
+
 				// If the GetWindow call in InitBeamEditorWindow, is called and BeamEditor.IsInitialized is true, this section of code will run as part of that GetWindow call.
 				// This means that the subsequent lines of InitBeamEditorWindow where we initialize the promise wouldn't have run by the time we go through this and the FullyInitializedWindowPromise would be null.
 				// In that case, we can set the FullyInitializedWindowPromise as a successful promise by default.
 				// This is also true of cases in cases where OnEnable runs outside of the InitBeamEditorWindow flow, such as DomainReloads after recompiles or play-mode entering.
-				if(FullyInitializedWindowPromise == null)
+				if (FullyInitializedWindowPromise == null)
 					FullyInitializedWindowPromise = Promise.Success;
-				
+
 				// Otherwise, if we did in fact delay the function call due to BeamEditor.IsInitialized being false, the promise will be set by InitBeamEditorWindow's lines after GetWindow.
 				// So the promise here won't be null and we can complete it.
 				else
@@ -129,7 +129,7 @@ namespace Beamable.Editor.UI
 		/// Without this, the ordering of callbacks can cause two instances of a window to exist and both instances to be incorrectly initialized.
 		/// </summary>
 		public virtual void OnAfterDeserialize() { }
-		
+
 		/// <summary>
 		/// Implement this instead of <see cref="OnEnable"/>. The <see cref="OnEnable"/> implementation for <see cref="BeamEditorWindow{T}"/> contains the guard described in
 		/// <see cref="BeamEditor.DelayedInitializationCall"/>.
