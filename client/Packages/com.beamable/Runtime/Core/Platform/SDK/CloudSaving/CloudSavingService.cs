@@ -44,11 +44,33 @@ namespace Beamable.Api.CloudSaving
 		private string _manifestPath => Path.Combine(localCloudDataPath.manifestPath, "cloudDataManifest.json");
 		private LocalCloudDataPath localCloudDataPath => new LocalCloudDataPath(_platform);
 		private Promise<Unit> _initDone;
+
+		/// <summary>
+		/// An event with a <see cref="ManifestResponse"/> parameter.
+		/// This event triggers anytime cloud data changes on the server.
+		/// </summary>
 		public Action<ManifestResponse> UpdateReceived;
+
+		/// <summary>
+		/// An event with a <see cref="CloudSavingError"/> parameter.
+		/// This event triggers anytime there is an error occurs in the <see cref="CloudSavingService"/>
+		/// </summary>
 		public Action<CloudSavingError> OnError;
+
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> will keep the files located at this file path backed up on Beamable servers.
+		/// You should use this path as the base path for all file read and write operations.
+		/// You should not do any read or write operations until the <see cref="isInitializing"/> is true.
+		/// </summary>
 		public string LocalCloudDataFullPath => localCloudDataPath.dataPath;
 
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> needs to initialize before you should read or write files from the <see cref="LocalCloudDataFullPath"/>.
+		/// This field will be true once the initialization has completed.
+		/// You can re-trigger the init flow by calling the <see cref="Init"/> method.
+		/// </summary>
 		public bool isInitializing = false;
+
 		public CloudSavingService(IPlatformService platform, PlatformRequester requester,
 		   CoroutineService coroutineService, IDependencyProvider provider) : base(provider, ServiceName)
 		{
@@ -58,6 +80,15 @@ namespace Beamable.Api.CloudSaving
 			_connectivityService = new ConnectivityService(_coroutineService);
 		}
 
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> must initialize before you should read or write any files from the <see cref="LocalCloudDataFullPath"/>.
+		/// This method will start the initialization process. You can check the status of the initialization with the <see cref="isInitializing"/> field.
+		/// </summary>
+		/// <param name="pollingIntervalSecs">
+		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
+		/// The <see cref="pollingIntervalSecs"/> controls how often Beamable checks for new or updated files on the local device.
+		/// </param>
+		/// <returns>A <see cref="Promise"/> representing when the initialization has completed. </returns>
 		public Promise<Unit> Init(int pollingIntervalSecs = 10)
 		{
 			if (isInitializing) { return _initDone; }
@@ -164,6 +195,15 @@ namespace Beamable.Api.CloudSaving
 			return (ex) => { InvokeError($"{methodName} Failed: {ex?.Message ?? "unknown reason"}", ex); };
 		}
 
+		/// <summary>
+		/// This method will stop the cloud saving service from picking up local file changes, or receiving remote file updates.
+		/// Then the method will reboot the service by re-running the <see cref="Init"/> method.
+		/// </summary>
+		/// <param name="pollingIntervalSecs">
+		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
+		/// The <see cref="pollingIntervalSecs"/> controls how often Beamable checks for new or updated files on the local device.
+		/// </param>
+		/// <returns>A <see cref="Promise"/> representing when the reboot completes</returns>
 		public Promise<Unit> ReinitializeUserData(int pollingIntervalSecs = 10)
 		{
 			if (isInitializing) { return _initDone; }
@@ -179,6 +219,12 @@ namespace Beamable.Api.CloudSaving
 
 		}
 
+		/// <summary>
+		/// <b> You shouldn't need to call this method, because this will be called by the <see cref="Init"/> method </b>
+		/// This method will be marked as Obsolete in the future.
+		/// </summary>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
 		public Promise<ManifestResponse> EnsureRemoteManifest()
 		{
 			return FetchUserManifest().RecoverWith(error =>
@@ -887,21 +933,60 @@ namespace Beamable.Api.CloudSaving
 		}
 	}
 
+	/// <summary>
+	/// A cloud saving manifest contains a set of <see cref="CloudSavingManifestEntry"/> objects that describe all of the files
+	/// associated with a player's account.
+	/// </summary>
 	[Serializable]
 	public class ManifestResponse
 	{
+		/// <summary>
+		/// The runtime id of the manifest.
+		/// </summary>
 		public string id;
+
+		/// <summary>
+		/// A set of <see cref="CloudSavingManifestEntry"/> objects that describe the player's files.
+		/// </summary>
 		public List<CloudSavingManifestEntry> manifest;
+
+		/// <summary>
+		/// Manifests will be sent back and forth from Beamable to the game client, and used to update local state.
+		/// If the <see cref="replacement"/> field is true, then all of the local <see cref="CloudSavingManifestEntry"/> entries
+		/// will be overwritten.
+		/// </summary>
 		public bool replacement = false;
 	}
 
+	/// <summary>
+	/// A <see cref="CloudSavingManifestEntry"/> describes one file associated with a player's account, on the Beamable server.
+	/// </summary>
 	[Serializable]
 	public class CloudSavingManifestEntry
 	{
+		/// <summary>
+		/// An internal field. This will be marked as Obsolete in a future release.
+		/// </summary>
 		public string bucketName;
+
+		/// <summary>
+		/// The unique key of the file. This can be used to determine which file this represents.
+		/// </summary>
 		public string key;
+
+		/// <summary>
+		/// The size of the file in Bytes
+		/// </summary>
 		public int size;
+
+		/// <summary>
+		/// The timestamp of when the file was last updated on the remote Beamable server
+		/// </summary>
 		public long lastModified;
+
+		/// <summary>
+		/// A checksum of the file contents
+		/// </summary>
 		public string eTag;
 
 		public CloudSavingManifestEntry(string bucketName, string key, int size, long lastModified, string eTag)
