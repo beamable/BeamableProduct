@@ -349,12 +349,6 @@ namespace Beamable.Common.Api.Auth
 	}
 	
 	[Serializable]
-	public class DeviceIdsResponse
-	{
-		public string[] deviceIds;
-	}
-
-	[Serializable]
 	public class AvailabilityRequest
 	{
 		public string email;
