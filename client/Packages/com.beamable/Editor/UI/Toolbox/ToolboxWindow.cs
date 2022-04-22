@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
@@ -6,6 +7,7 @@ using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using System;
 using UnityEditor;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -83,6 +85,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 		private void CheckAnnouncements()
 		{
+			if (BeamableEnvironment.IsUnityVsp) return;
 			BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
@@ -191,6 +194,64 @@ namespace Beamable.Editor.Toolbox.UI
 		}
 		private void CheckForUpdate()
 		{
+			if (BeamableEnvironment.IsUnityVsp)
+			{
+				CheckForUpdateVsp();
+			}
+			else
+			{
+				CheckForUpdateRegistry();
+			}
+		}
+
+		private void CheckForUpdateVsp()
+		{
+			var lastIgnoredVersionStr = EditorPrefs.GetString(VSP_IGNORED_PACKAGE_VERSION, "0.0.0");
+			PackageVersion.TryFromSemanticVersionString(lastIgnoredVersionStr, out var lastIgnoredVersion);
+
+			// use the VSP pathway to check for updates...
+			ActiveContext.ServiceScope.GetService<BeamableVsp>().GetLatestVersion().Then(metadata =>
+			{
+				var currentVersion = BeamableEnvironment.SdkVersion;
+				var latestVersion = metadata.version;
+
+				if (lastIgnoredVersion >= latestVersion)
+				{
+					return; // we've ignored this version.
+				}
+
+				if (latestVersion > currentVersion)
+				{
+					// show the announcement!
+					var versionString = latestVersion.ToString();
+					var isBlog = BeamableWebRequester.IsBlogSpotAvailable(versionString);
+					BeamablePackageUpdateMeta.IsBlogSiteAvailable = isBlog;
+					var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel();
+					updateAvailableAnnouncement.SetDescription(versionString, isBlog);
+
+					updateAvailableAnnouncement.OnIgnore += () =>
+					{
+						EditorPrefs.SetString(VSP_IGNORED_PACKAGE_VERSION, versionString);
+						_model.RemoveAnnouncement(updateAvailableAnnouncement);
+					};
+					updateAvailableAnnouncement.OnWhatsNew += () =>
+					{
+						Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
+						BeamablePackageUpdateMeta.IsBlogVisited = true;
+					};
+					updateAvailableAnnouncement.OnInstall += () =>
+					{
+						Application.OpenURL(metadata.storeUrl);
+						_model.RemoveAnnouncement(updateAvailableAnnouncement);
+					};
+
+					_model.AddAnnouncement(updateAvailableAnnouncement);
+				}
+			});
+		}
+
+		private void CheckForUpdateRegistry()
+		{
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
 				if (isUpdated || BeamablePackageUpdateMeta.IsInstallationIgnored)
@@ -205,6 +266,7 @@ namespace Beamable.Editor.Toolbox.UI
 				ShowUpdateAvailableAnnouncement();
 			});
 		}
+
 		private void ShowUpdateAvailableAnnouncement()
 		{
 			if (_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(UpdateAvailableAnnouncementModel)))
