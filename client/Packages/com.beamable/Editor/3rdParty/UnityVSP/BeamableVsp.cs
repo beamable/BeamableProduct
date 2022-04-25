@@ -35,7 +35,7 @@ namespace UnityEditor.VspAttribution.Beamable
 		public async Promise<VspMetadata> GetLatestVersion()
 		{
 			var res = await _httpRequester.ManualRequest<VspVersionResponse>(Method.GET, "http://beamable-vsp.beamable.com/vsp-meta.json");
-			var metadata = new VspMetadata {storeUrl = res.storeUrl};
+			var metadata = new VspMetadata { storeUrl = res.storeUrl };
 			try
 			{
 				PackageVersion version = res.version;
@@ -43,7 +43,7 @@ namespace UnityEditor.VspAttribution.Beamable
 			}
 			catch
 			{
-				metadata.version = new PackageVersion(0,0,0);
+				metadata.version = new PackageVersion(0, 0, 0);
 			}
 
 			return metadata;

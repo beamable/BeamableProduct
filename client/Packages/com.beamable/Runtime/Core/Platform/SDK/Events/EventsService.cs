@@ -56,7 +56,7 @@ namespace Beamable.Api.Events
 		/// <returns>A <see cref="TryEventClaimResponse"/> containing the claim response, and a boolean flag to let you know if the claim was successful.</returns>
 		public async Promise<TryEventClaimResponse> TryClaim(string eventId)
 		{
-			var res = new TryEventClaimResponse {isClaimed = true};
+			var res = new TryEventClaimResponse { isClaimed = true };
 			try
 			{
 				res.response = await Claim(eventId);
@@ -120,7 +120,7 @@ namespace Beamable.Api.Events
 		public string EventId { get; }
 
 		public PlayerNotInEventException(string eventId)
-		: base ($"You cannot claim rewards on an event that the player hasn't submitted a score for. Make sure the player has set a score on the event before calling claim. event-id=[{eventId}]")
+		: base($"You cannot claim rewards on an event that the player hasn't submitted a score for. Make sure the player has set a score on the event before calling claim. event-id=[{eventId}]")
 		{
 			EventId = eventId;
 		}

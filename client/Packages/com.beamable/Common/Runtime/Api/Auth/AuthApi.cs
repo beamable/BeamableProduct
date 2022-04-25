@@ -328,7 +328,7 @@ namespace Beamable.Common.Api.Auth
 		/// Third parties can be associated with the <see cref="IAuthApi.RegisterThirdPartyCredentials"/> method.
 		/// </summary>
 		public List<string> thirdPartyAppAssociations;
-		
+
 		/// <summary>
 		/// If the player has associated any device Ids with their account, those will appear here.
 		/// </summary>
