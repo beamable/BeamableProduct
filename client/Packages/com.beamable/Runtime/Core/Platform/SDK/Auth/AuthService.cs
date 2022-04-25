@@ -86,6 +86,19 @@ namespace Beamable.Api.Auth
 		/// then the current player will be merged with the player associated with the given device id.
 		/// </param>
 		/// <returns>A <see cref="Promise{TokenResponse}"/> that results in the <see cref="TokenResponse"/> for the requested <see cref="User"/>'s device id</returns>
+		Promise<string> GetDeviceId();
+
+		/// <summary>
+		/// Use the device id to retrieve a <see cref="TokenResponse"/>. The resulting token response can
+		/// be used to change the current <see cref="User"/>
+		/// A login will only work after the device id has have registered by using the <see cref="RegisterDeviceId"/> method.
+		/// </summary>
+		/// <param name="mergeGamerTagToAccount">
+		/// Since this function can only be called from a <see cref="IAuthApi"/> that already exists,
+		/// there must already be some associated <see cref="User"/> account. If the <see cref="mergeGamerTagToAccount"/> is enabled,
+		/// then the current player will be merged with the player associated with the given device id
+		/// </param>
+		/// <returns>A <see cref="Promise{TokenResponse}"/> that results in the <see cref="TokenResponse"/> for the requested <see cref="User"/>'s device id</returns>
 		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true);
 	}
 
@@ -147,6 +160,11 @@ namespace Beamable.Api.Auth
 			{
 				deviceId = deviceId
 			});
+		}
+
+		public async Promise<string> GetDeviceId()
+		{
+			return await _deviceIdResolver.GetDeviceId();
 		}
 
 		private Promise<User> UpdateDeviceId(RegisterDeviceIdRequest requestBody)

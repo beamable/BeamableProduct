@@ -92,7 +92,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 
 			_engineUser.email = "";
 			_engineUser.thirdPartyAppAssociations = new List<string> { "facebook" };
-
+			_engineUser.deviceIds = new List<string>();
 			_signaler.UserAvailable = new UserEvent();
 			_signaler.UserAvailable.AddListener(arg =>
 			{

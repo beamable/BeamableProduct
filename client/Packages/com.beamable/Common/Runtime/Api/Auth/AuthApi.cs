@@ -330,6 +330,11 @@ namespace Beamable.Common.Api.Auth
 		public List<string> thirdPartyAppAssociations;
 
 		/// <summary>
+		/// If the player has associated any device Ids with their account, those will appear here.
+		/// </summary>
+		public List<string> deviceIds;
+
+		/// <summary>
 		/// Check if the player has registered an email address with their account.
 		/// </summary>
 		/// <returns>true if the email address has been provided, false otherwise.</returns>
@@ -349,12 +354,13 @@ namespace Beamable.Common.Api.Auth
 		}
 
 		/// <summary>
-		/// Check if any credentials have been associated with this account, whether email, or third party apps.
+		/// Check if any credentials have been associated with this account, whether email, device ids or third party apps.
 		/// </summary>
 		/// <returns>true if any credentials exist, false otherwise</returns>
 		public bool HasAnyCredentials()
 		{
-			return HasDBCredentials() || (thirdPartyAppAssociations != null && thirdPartyAppAssociations.Count > 0);
+			return HasDBCredentials() || (thirdPartyAppAssociations != null && thirdPartyAppAssociations.Count > 0)
+				|| (deviceIds != null && deviceIds.Count > 0);
 		}
 
 		/// <summary>
