@@ -81,7 +81,7 @@ namespace Beamable.Server.Editor
 					var msWindow = await MicroserviceWindow.GetFullyInitializedWindow();
 					msWindow.Show();
 					msWindow.RefreshWindowContent();
-					
+
 					var model = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(desc);
 					await model.BuildAndRestart();
 					btn.clickable.clicked -= ClickEvent;

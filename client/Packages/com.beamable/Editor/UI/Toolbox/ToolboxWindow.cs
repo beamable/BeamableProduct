@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
@@ -6,6 +7,7 @@ using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using System;
 using UnityEditor;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -22,15 +24,18 @@ namespace Beamable.Editor.Toolbox.UI
 {
 	public class ToolboxWindow : BeamEditorWindow<ToolboxWindow>
 	{
-		
+
 		static ToolboxWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = MenuItems.Windows.Names.TOOLBOX, DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName, FocusOnShow = false, RequireLoggedUser = true,
+				Title = MenuItems.Windows.Names.TOOLBOX,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
+				FocusOnShow = false,
+				RequireLoggedUser = true,
 			};
 		}
-		
+
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Commons.OPEN + " " +
@@ -39,7 +44,7 @@ namespace Beamable.Editor.Toolbox.UI
 		)]
 		public static async void Init() => await GetFullyInitializedWindow();
 		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
-		
+
 
 		private VisualElement _windowRoot;
 
@@ -50,7 +55,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 		private ToolboxModel _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
-		
+
 		protected override void Build()
 		{
 			Debug.Log("TOOLBOX WINDOW BUILD!!!!!!");
@@ -58,10 +63,10 @@ namespace Beamable.Editor.Toolbox.UI
 
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += _ => BuildWithContext();
-			
+
 			// Force refresh to build the initial window
 			_model?.Destroy();
-			
+
 			_model = new ToolboxModel();
 			_model.UseDefaultWidgetSource();
 			_model.Initialize();
@@ -77,9 +82,10 @@ namespace Beamable.Editor.Toolbox.UI
 		{
 			BeamablePackageUpdateMeta.OnPackageUpdated -= ShowWhatsNewAnnouncement;
 		}
-		
+
 		private void CheckAnnouncements()
 		{
+			if (BeamableEnvironment.IsUnityVsp) return;
 			BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
@@ -91,7 +97,7 @@ namespace Beamable.Editor.Toolbox.UI
 				}
 			});
 		}
-		
+
 		private void SetForContent()
 		{
 			var root = this.GetRootVisualContainer();
@@ -184,9 +190,67 @@ namespace Beamable.Editor.Toolbox.UI
 				ActiveContext.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
 			};
 			_model.AddAnnouncement(welcomeAnnouncement);
-			
+
 		}
 		private void CheckForUpdate()
+		{
+			if (BeamableEnvironment.IsUnityVsp)
+			{
+				CheckForUpdateVsp();
+			}
+			else
+			{
+				CheckForUpdateRegistry();
+			}
+		}
+
+		private void CheckForUpdateVsp()
+		{
+			var lastIgnoredVersionStr = EditorPrefs.GetString(VSP_IGNORED_PACKAGE_VERSION, "0.0.0");
+			PackageVersion.TryFromSemanticVersionString(lastIgnoredVersionStr, out var lastIgnoredVersion);
+
+			// use the VSP pathway to check for updates...
+			ActiveContext.ServiceScope.GetService<BeamableVsp>().GetLatestVersion().Then(metadata =>
+			{
+				var currentVersion = BeamableEnvironment.SdkVersion;
+				var latestVersion = metadata.version;
+
+				if (lastIgnoredVersion >= latestVersion)
+				{
+					return; // we've ignored this version.
+				}
+
+				if (latestVersion > currentVersion)
+				{
+					// show the announcement!
+					var versionString = latestVersion.ToString();
+					var isBlog = BeamableWebRequester.IsBlogSpotAvailable(versionString);
+					BeamablePackageUpdateMeta.IsBlogSiteAvailable = isBlog;
+					var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel();
+					updateAvailableAnnouncement.SetDescription(versionString, isBlog);
+
+					updateAvailableAnnouncement.OnIgnore += () =>
+					{
+						EditorPrefs.SetString(VSP_IGNORED_PACKAGE_VERSION, versionString);
+						_model.RemoveAnnouncement(updateAvailableAnnouncement);
+					};
+					updateAvailableAnnouncement.OnWhatsNew += () =>
+					{
+						Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
+						BeamablePackageUpdateMeta.IsBlogVisited = true;
+					};
+					updateAvailableAnnouncement.OnInstall += () =>
+					{
+						Application.OpenURL(metadata.storeUrl);
+						_model.RemoveAnnouncement(updateAvailableAnnouncement);
+					};
+
+					_model.AddAnnouncement(updateAvailableAnnouncement);
+				}
+			});
+		}
+
+		private void CheckForUpdateRegistry()
 		{
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
@@ -202,6 +266,7 @@ namespace Beamable.Editor.Toolbox.UI
 				ShowUpdateAvailableAnnouncement();
 			});
 		}
+
 		private void ShowUpdateAvailableAnnouncement()
 		{
 			if (_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(UpdateAvailableAnnouncementModel)))

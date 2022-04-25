@@ -965,7 +965,7 @@ namespace Beamable.Editor.Content
 
 			var api = BeamEditorContext.Default;
 			await api.InitializePromise;
-			
+
 			var allContent = api.ContentIO.FindAll();
 
 			List<ContentObject> contentList = null;

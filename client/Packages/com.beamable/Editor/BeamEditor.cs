@@ -40,6 +40,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 using static Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
@@ -133,18 +134,36 @@ namespace Beamable
 
 			// Initializes the Config database
 			// This solves the same problem that the try/catch block around the ModuleConfigurations solves.
-			try
+			bool TryInitConfigDatabase(bool allowRetry = true)
 			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException e)
-			{
-				if (e.FileName == ConfigDatabase.GetConfigFileName())
+				try
 				{
-					Logger.DoSpew("Config File not found during initialization dodged!");
-					EditorApplication.delayCall += Initialize;
-					return;
+					ConfigDatabase.Init();
+					return true;
 				}
+				catch (FileNotFoundException e)
+				{
+					if (e.FileName == ConfigDatabase.GetConfigFileName())
+					{
+						if (allowRetry)
+						{
+							BeamEditorContext.WriteConfig("", "");
+							return TryInitConfigDatabase(false);
+						}
+						else
+						{
+							Logger.DoSpew("Config File not found during initialization dodged!");
+							EditorApplication.delayCall += Initialize;
+							return false;
+						}
+					}
+					throw;
+				}
+			}
+
+			if (!TryInitConfigDatabase())
+			{
+				return;
 			}
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
@@ -160,18 +179,18 @@ namespace Beamable
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
 			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
 				coreConfiguration.ReflectionSystemPaths
-				                 .Where(Directory.Exists)
-				                 .ToArray());
+								 .Where(Directory.Exists)
+								 .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-			                                                        {
-				                                                        var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-				                                                        return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-			                                                        })
-			                                                        .Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-			                                                        .Where(system => system.Enabled)
-			                                                        .ToList();
+																	{
+																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+																	})
+																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+																	.Where(system => system.Enabled)
+																	.ToList();
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
 
 			// Inject them into the ReflectionCache system in the correct order.
@@ -201,10 +220,10 @@ namespace Beamable
 						var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
 
 						var res = EditorUtility.DisplayDialogComplex("Beamable Assistant",
-						                                             "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
-						                                             "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
-						                                             "No, I'll take my chances and don't bother me about these specific hints anymore.",
-						                                             "No, I'll take my chances and don't bother me ever again about any hints.");
+																	 "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
+																	 "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
+																	 "No, I'll take my chances and don't bother me about these specific hints anymore.",
+																	 "No, I'll take my chances and don't bother me ever again about any hints.");
 
 						if (res == 0)
 						{
@@ -239,21 +258,24 @@ namespace Beamable
 			BeamEditorContextDependencies = new DependencyBuilder();
 			BeamEditorContextDependencies.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
 			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
-			                                                                                                 provider.GetService<AccessTokenStorage>(),
-			                                                                                                 null) {RequestTimeoutMs = $"{30 * 1000}"}
+																											 provider.GetService<AccessTokenStorage>(),
+																											 null)
+			{ RequestTimeoutMs = $"{30 * 1000}" }
 			);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
+			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
 
 			BeamEditorContextDependencies.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
-			BeamEditorContextDependencies.AddSingleton(provider => new AliasService(provider.GetService<IHttpRequester>()));
+			BeamEditorContextDependencies.AddSingleton<AliasService>();
 			BeamEditorContextDependencies.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
+			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
@@ -267,10 +289,10 @@ namespace Beamable
 				await BeamEditorContext.Default.InitializePromise;
 
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
 				IsInitialized = true;
-				
+
 				// Initialize toolbar
 				BeamableToolbarExtender.LoadToolbarExtender();
 			}
@@ -315,7 +337,7 @@ namespace Beamable
 		/// <list type="bullet">
 		/// <item><see cref="BeamEditorContext.Default"/> is null; which should be impossible, but happens (probably has to do with DomainReloads)</item>
 		/// <item>The window tries to make calls to a partially initialized <see cref="BeamEditorContext"/> and throws.</item>
-		/// </list>  
+		/// </list>
 		/// </summary>
 		/// <param name="onInitializationFinished">
 		/// The that must be scheduled to run from a Unity callback, but is dependent on our initialization being done.
@@ -421,6 +443,7 @@ namespace Beamable
 			{
 				SaveConfig("", "", BeamableEnvironment.ApiUrl);
 				Logout();
+				InitializePromise = Promise.Success;
 				return;
 			}
 
@@ -436,6 +459,7 @@ namespace Beamable
 			{
 				SaveConfig("", "", BeamableEnvironment.ApiUrl);
 				Logout();
+				InitializePromise = Promise.Success;
 				return;
 			}
 
@@ -444,6 +468,7 @@ namespace Beamable
 			requester.Cid = cid;
 			requester.Pid = pid;
 			requester.Host = platform;
+			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 			async Promise Initialize()
 			{
@@ -460,15 +485,15 @@ namespace Beamable
 				else
 				{
 					LoadLastAuthenticatedUserDataForToken(accessToken, pid, out CurrentUser, out CurrentCustomer, out CurrentRealm);
-					
+
 
 					if (CurrentUser == null || CurrentCustomer == null || CurrentRealm == null || accessToken.IsExpired)
-						await Login(accessToken);	
+						await Login(accessToken);
 					else
 					{
-						// Set the token manually as we already have all the data we need be considered initialized (Serialized CurrentUser/CurrentCustomer/CurrentRealm data. 
+						// Set the token manually as we already have all the data we need be considered initialized (Serialized CurrentUser/CurrentCustomer/CurrentRealm data.
 						requester.Token = accessToken;
-						
+
 						// Disable this warning as we do want to run this in the background silently.
 #pragma warning disable CS4014
 						Login(accessToken, pid);
@@ -477,7 +502,7 @@ namespace Beamable
 					}
 				}
 			}
-			
+
 			InitializePromise = Initialize();
 		}
 
@@ -503,7 +528,7 @@ namespace Beamable
 			var token = new AccessToken(accessTokenStorage, requester.Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
 			await Login(token);
-			
+
 		}
 
 		public async Promise Login(AccessToken token, string pid = null)
@@ -511,7 +536,7 @@ namespace Beamable
 			var realmService = ServiceScope.GetService<RealmsService>();
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Pid = pid;
-			
+
 			await ApplyToken(token);
 			RealmView realm = null;
 			try
@@ -530,7 +555,7 @@ namespace Beamable
 			if (realm == null)
 			{
 				var games = await realmService.GetGames();
-				
+
 				if (pid == null)
 				{
 					var realms = await realmService.GetRealms(games.First());
@@ -561,8 +586,9 @@ namespace Beamable
 				authCustomerData = DeserializeFromString<CustomerView>(customerSerializedData);
 				authRealmView = DeserializeFromString<RealmView>(realmSerializedData);
 			}
-			catch
+			catch (Exception e)
 			{
+				Debug.LogException(e);
 				authUserData = null;
 				authCustomerData = null;
 				authRealmView = null;
@@ -591,7 +617,7 @@ namespace Beamable
 				return Convert.ToBase64String(stream.ToArray());
 			}
 		}
-		
+
 
 		private Promise<Unit> SaveLastAuthenticatedUserDataForToken(AccessToken token, EditorUser authUserData, CustomerView authCustomerData, RealmView authRealmView)
 		{
@@ -600,7 +626,7 @@ namespace Beamable
 
 			var userSerializedData = SerializeToString(authUserData);// JsonUtility.ToJson(authUserData);
 			var customerSerializedData = SerializeToString(authCustomerData);// JsonUtility.ToJson(authCustomerData);
-			var realmSerializedData = SerializeToString(authRealmView); //JsonUtility.ToJson(authRealmView); 
+			var realmSerializedData = SerializeToString(authRealmView); //JsonUtility.ToJson(authRealmView);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_user_data", userSerializedData);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_customer_data", customerSerializedData);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_realm_data", realmSerializedData);
@@ -610,13 +636,16 @@ namespace Beamable
 
 		private void ClearLastAuthenticatedUserDataForToken(AccessToken token, string pid)
 		{
-			var cid = token.Cid;
+
+			if (string.IsNullOrEmpty(pid)) return; // nothing to do if the pid is empty.
+			var cid = token?.Cid;
+			if (string.IsNullOrEmpty(cid)) return; // nothing to do if the cid is empty.
 
 			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_user_data");
 			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_customer_data");
 			PlayerPrefs.DeleteKey($"{PlayerCode}{cid}.{pid}.auth_realm_data");
 		}
-		
+
 		private async Promise ApplyToken(AccessToken token)
 		{
 			await token.SaveAsCustomerScoped();
@@ -648,7 +677,7 @@ namespace Beamable
 				var user = CurrentUser = await authService.GetUserForEditor();
 				OnUserChange?.Invoke(CurrentUser);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				if (ex is PlatformRequesterException err && err.Status == 403)
 				{
@@ -669,14 +698,14 @@ namespace Beamable
 		public void Logout()
 		{
 			var requester = ServiceScope.GetService<PlatformRequester>();
-			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm.Pid);
+			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm?.Pid);
 			requester.DeleteToken();
 			CurrentUser = null;
 			OnUserChange?.Invoke(null);
 			BeamableEnvironment.ReloadEnvironment();
 		}
 
-		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public static void WriteConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
 		{
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
@@ -744,6 +773,15 @@ namespace Beamable
 				AssetDatabase.Refresh();
 			}
 
+		}
+
+		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		{
+			if (string.IsNullOrEmpty(host))
+			{
+				host = BeamableEnvironment.ApiUrl;
+			}
+			WriteConfig(alias, pid, host, cid, containerPrefix);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
@@ -792,7 +830,7 @@ namespace Beamable
 				var cid = CurrentCustomer.Cid;
 				var pid = CurrentRealm.Pid;
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
-				                            tokenResponse.refresh_token, tokenResponse.expires_in);
+											tokenResponse.refresh_token, tokenResponse.expires_in);
 				await this.Login(token);
 			}
 
@@ -868,8 +906,8 @@ namespace Beamable
 
 			// we need to remember the last realm the user was on in this game.
 			var hadSelectedPid = EditorPrefHelper
-			                     .GetMap(REALM_PREFERENCE)
-			                     .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
+								 .GetMap(REALM_PREFERENCE)
+								 .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
 
 			if (!hadSelectedPid)
 				existingPid = game.Pid;
@@ -903,19 +941,20 @@ namespace Beamable
 			await ServiceScope.GetService<ContentIO>().FetchManifest();
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
-			          .GetMap(REALM_PREFERENCE)
-			          .Set($"{game.Cid}.{game.Pid}", pid)
-			          .Save();
+					  .GetMap(REALM_PREFERENCE)
+					  .Set($"{game.Cid}.{game.Pid}", pid)
+					  .Save();
 
 			var realm = realms.FirstOrDefault(r => string.Equals(r.Pid, pid));
 
 			CurrentRealm = realm;
 			ProductionRealm = game;
 			OnRealmChange?.Invoke(realm);
-			
-			// Ensure we save the current cached data for domain reloads. 
+
+
+			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
-			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid:CurrentCustomer.Cid);
+			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
 		}
 
 		#endregion

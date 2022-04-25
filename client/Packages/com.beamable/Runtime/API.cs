@@ -31,28 +31,53 @@ using Beamable.Purchasing;
 
 namespace Beamable
 {
+
 	/// <summary>
+	/// This interface represents a collection of Beamable APIs and data structures.
 	/// This type defines the %Client main entry point for the main %Beamable features.
-	///
-	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
 	/// - See Beamable.API script reference
 	///
-	/// ![img beamable-logo]
-	///
+	/// <inheritdoc cref="Beamable.Common.Docs.Logo"/>
 	/// </summary>
 	public interface IBeamableAPI
 	{
+		/// <summary>
+		/// The currently signed in <see cref="User"/> for this <see cref="IBeamableAPI"/> instance.
+		/// </summary>
 		User User { get; }
+
+		/// <summary>
+		/// The <see cref="AccessToken"/> for the <see cref="User"/> object's account.
+		/// </summary>
 		AccessToken Token { get; }
 
+		/// <summary>
+		/// An event that will trigger anytime the <see cref="User"/> for this <see cref="IBeamableAPI"/> instance changes.
+		/// It can change due to user log out, log in, account switch, or whenever a user attaches a new credential to their account.
+		/// </summary>
 		event Action<User> OnUserChanged;
+
+		/// <summary>
+		/// An event that will trigger anytime the <see cref="User"/> for this <see cref="IBeamableAPI"/> instance logs out.
+		/// </summary>
 		event Action<User> OnUserLoggingOut;
 
-
+		/// <summary>
+		/// Access experimental features of Beamable.
+		/// <b> Services from this accessor may be subject to change </b>
+		/// </summary>
 		IExperimentalAPI Experimental { get; }
+
+		/// <summary>
+		/// Access the <see cref="AnnouncementService"/> for this player instance.
+		/// </summary>
 		AnnouncementsService AnnouncementService { get; }
+
+		/// <summary>
+		/// Access the <see cref="IAuthService"/> for this player instance.
+		/// </summary>
 		IAuthService AuthService { get; }
 		CloudSavingService CloudSavingService { get; }
 		ContentService ContentService { get; }
@@ -96,7 +121,7 @@ namespace Beamable
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class API //: IBeamableAPI
+	public class API
 	{
 		private static Promise<IBeamableAPI> _instance;
 

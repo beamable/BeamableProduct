@@ -163,8 +163,10 @@ namespace Beamable.Api
 		/// <param name="scope"></param>
 		/// <param name="callback"></param>
 		/// <returns></returns>
-		public PlatformSubscription<Data> Subscribe(string scope, Action<Data> callback)
+		public virtual PlatformSubscription<Data> Subscribe(string scope, Action<Data> callback)
 		{
+			scope = scope ?? String.Empty;
+
 			List<PlatformSubscription<Data>> subscriptions;
 			if (!scopedSubscriptions.TryGetValue(scope, out subscriptions))
 			{
@@ -249,7 +251,7 @@ namespace Beamable.Api
 
 				// Need this null-check to cover errors that happen when leaving play-mode (where this method can run after Unity has already destroyed the CoroutineService's GameObject).
 #if UNITY_EDITOR
-				if(coroutineService != null) 
+				if(coroutineService != null)
 #endif
 				coroutineService.StartCoroutine(ExecuteRefresh());
 			}
@@ -408,7 +410,6 @@ namespace Beamable.Api
 			object delayRaw = null;
 			object scopesRaw = null;
 			int delay = 0;
-
 			if (payload != null)
 			{
 				if (payload.TryGetValue("scopes", out scopesRaw))

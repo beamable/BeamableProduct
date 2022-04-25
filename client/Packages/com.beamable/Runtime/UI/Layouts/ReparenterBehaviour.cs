@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Beamable.UI.Layouts
@@ -13,14 +14,29 @@ namespace Beamable.UI.Layouts
 
 		public Transform CurrentParent => _parent ?? Origin;
 
+		public List<GameObject> EnabledOnlyAtOrigin, EnabledOnlyAtDest;
+
 		public void MoveToOrigin()
 		{
 			MoveChildren(Destination, Origin);
+			SetEnabledList(EnabledOnlyAtOrigin, true);
+			SetEnabledList(EnabledOnlyAtDest, false);
 		}
 
 		public void MoveToDestination()
 		{
 			MoveChildren(Origin, Destination);
+			SetEnabledList(EnabledOnlyAtOrigin, false);
+			SetEnabledList(EnabledOnlyAtDest, true);
+		}
+
+		private void SetEnabledList(List<GameObject> gobs, bool enable)
+		{
+			foreach (var gob in gobs)
+			{
+				if (!gob) continue;
+				gob.SetActive(enable);
+			}
 		}
 
 		public void Move(bool toDestination)

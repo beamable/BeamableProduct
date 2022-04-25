@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 3104505348093122548}
   - component: {fileID: 3610754241307904668}
   m_Layer: 0
-  m_Name: Button
+  m_Name: StoreButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -101,7 +101,7 @@ MonoBehaviour:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.8301887, g: 0.8301887, b: 0.8301887, a: 1}
     m_PressedColor: {r: 1, g: 1, b: 1, a: 1}
-    m_DisabledColor: {r: 0.6603774, g: 0.6603774, b: 0.6603774, a: 0.7058824}
+    m_DisabledColor: {r: 0.33962262, g: 0.32840866, b: 0.32840866, a: 0.7058824}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
@@ -191,6 +191,7 @@ MonoBehaviour:
   Text: {fileID: 476037675938721117}
   Gradient: {fileID: 0}
   SoundBehaviour: {fileID: 0}
+  RequiresConnectivity: 0
 --- !u!1 &476037675938721119
 GameObject:
   m_ObjectHideFlags: 0
@@ -284,10 +285,10 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 18
+  m_fontSize: 20.15
   m_fontSizeBase: 18
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 17
@@ -298,7 +299,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
+  m_enableWordWrapping: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_firstOverflowCharacterIndex: -1

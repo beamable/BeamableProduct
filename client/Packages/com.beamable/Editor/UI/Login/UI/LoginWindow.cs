@@ -22,7 +22,7 @@ namespace Beamable.Editor.Login.UI
 
 		public static async Task CheckLogin(params Type[] dockLocations)
 		{
-			var b = BeamEditorContext.Default; 
+			var b = BeamEditorContext.Default;
 			await b.InitializePromise;
 			if (b.IsAuthenticated)
 				return; // short circuit.

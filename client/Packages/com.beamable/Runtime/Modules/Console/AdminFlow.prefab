@@ -50,6 +50,8 @@ MonoBehaviour:
   txtOutput: {fileID: 1879866760483718079}
   txtInput: {fileID: 1879866760889838236}
   txtAutoCompleteSuggestion: {fileID: 826148142042879378}
+  consolePortrait: {fileID: 0}
+  consoleLandscape: {fileID: 0}
   acceptSuggestionKey: 9
   historyPreviousKey: 273
   historyNextKey: 274
@@ -455,10 +457,10 @@ MonoBehaviour:
   m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
-  m_Elasticity: 0.1
+  m_Elasticity: 0.05
   m_Inertia: 1
   m_DecelerationRate: 0.135
-  m_ScrollSensitivity: 1
+  m_ScrollSensitivity: 10
   m_Viewport: {fileID: 0}
   m_HorizontalScrollbar: {fileID: 0}
   m_VerticalScrollbar: {fileID: 0}

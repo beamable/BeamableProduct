@@ -137,6 +137,19 @@ namespace Beamable.Common
 			return sb.ToString();
 		}
 
+		public static bool TryFromSemanticVersionString(string semanticVersion, out PackageVersion version)
+		{
+			try
+			{
+				version = semanticVersion;
+				return true;
+			}
+			catch
+			{
+				version = new PackageVersion(0, 0, 0);
+				return false;
+			}
+		}
 		public static PackageVersion FromSemanticVersionString(string semanticVersion)
 		{
 			var major = -1;
