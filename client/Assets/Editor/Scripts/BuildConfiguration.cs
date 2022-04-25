@@ -17,20 +17,22 @@ public class BuildSampleProject
 
 	private static string GetBuildPathForTarget(BuildTarget target)
 	{
-		var prefix = "/github/workspace/dist";
+		string prefix = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName;
+		prefix = string.IsNullOrEmpty(prefix) ? "/github/workspace/dist" : Path.Combine(prefix, "dist");
+		
 		switch (target)
 		{
 			case BuildTarget.iOS:
-				return prefix + "/iOS/iOS";
+				return Path.Combine(prefix, "iOS", "iOS");
 			case BuildTarget.Android:
-				return prefix + "/Android";
+				return Path.Combine(prefix, "Android");
 			case BuildTarget.StandaloneWindows:
 			case BuildTarget.StandaloneWindows64:
-				return Path.Combine(Directory.GetCurrentDirectory(), "dist", "StandaloneWindows");
+				return Path.Combine(prefix, "StandaloneWindows");
 			case BuildTarget.StandaloneOSX:
-				return prefix + "/StandaloneOSX";
+				return Path.Combine(prefix, "StandaloneOSX");
 			case BuildTarget.WebGL:
-				return prefix + "/WebGL";
+				return Path.Combine(prefix, "WebGL");
 			default:
 				throw new Exception(
 					$"Invalid Build Target! Cannot get an output directory for this target. Target=[{target}]");
