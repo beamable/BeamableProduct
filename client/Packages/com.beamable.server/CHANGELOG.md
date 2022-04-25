@@ -5,12 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unrelased]
-
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`
 
-## [1.1.1]
+## [1.1.2]
+### Fixed
+- boolean types are now supported in swagger documentation
 
+## [1.1.1]
 ### Changed
 - Realm switch now triggers `Microservice Manager` to stop all active services. Guarantees the correct service version association with realm.
 
