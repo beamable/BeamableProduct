@@ -9,7 +9,7 @@ namespace Beamable
 {
 	public static class BeamableEnvironment
 	{
-		private const string FilePath = "Packages/com.beamable/Runtime/Environment/Resources/env-default.json";
+		public const string FilePath = "Packages/com.beamable/Runtime/Environment/Resources/env-default.json";
 		private const string ResourcesPath = "env-default";
 
 		private const string ENV_STAGING = "staging";
@@ -39,6 +39,7 @@ namespace Beamable
 		public static string Environment => Data.Environment;
 		public static PackageVersion SdkVersion => Data.SdkVersion;
 		public static string DockerRegistryUrl => Data.DockerRegistryUrl;
+		public static bool IsUnityVsp => Data.IsUnityVsp;
 
 		// See https://disruptorbeam.atlassian.net/browse/PLAT-3838
 		public static string SocketUrl => $"{Data.ApiUrl.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
@@ -64,14 +65,14 @@ namespace Beamable
 	[Serializable]
 	public class EnvironmentData : JsonSerializable.ISerializable
 	{
-		private const string BUILD__SDK__VERSION__STRING = "BUILD__SDK__VERSION__STRING";
-
 		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
 		[SerializeField] private string beamMongoExpressUrl;
 		[SerializeField] private string sdkVersion;
 		[SerializeField] private string dockerRegistryUrl;
+		[SerializeField] private bool isUnityVsp;
+		[SerializeField] private string isUnityVspStr;
 
 		private PackageVersion _version;
 
@@ -81,6 +82,8 @@ namespace Beamable
 		public string BeamMongoExpressUrl => beamMongoExpressUrl;
 		public PackageVersion SdkVersion => _version ?? (_version = sdkVersion);
 		public string DockerRegistryUrl => dockerRegistryUrl;
+		public bool IsUnityVsp => isUnityVsp;
+
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
@@ -90,8 +93,10 @@ namespace Beamable
 			s.Serialize("sdkVersion", ref sdkVersion);
 			s.Serialize("beamMongoExpressUrl", ref beamMongoExpressUrl);
 			s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
+			s.Serialize("isUnityVsp", ref isUnityVspStr);
+			bool.TryParse(isUnityVspStr, out isUnityVsp);
 
-			if (sdkVersion.Equals(BUILD__SDK__VERSION__STRING))
+			if (sdkVersion.Equals(Constants.Environment.BUILD__SDK__VERSION__STRING))
 			{
 				sdkVersion = "0.0.0";
 			}

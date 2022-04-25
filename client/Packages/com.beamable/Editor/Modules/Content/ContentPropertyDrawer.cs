@@ -30,6 +30,8 @@ namespace Beamable.Editor.Content
 			var labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, position.height);
 			var fieldValue = GetTargetObjectOfProperty(property) as BaseContentRef;
 
+			if (fieldValue == null) return;
+
 			label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
 
 			var idVal = fieldValue.GetId();
