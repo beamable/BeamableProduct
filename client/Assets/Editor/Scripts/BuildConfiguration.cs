@@ -47,7 +47,7 @@ public class BuildSampleProject
 
 			var target = EditorUserBuildSettings.activeBuildTarget;
 			var path = GetBuildPathForTarget(target);
-			Directory.CreateDirectory(Path.Combine( Directory.GetParent(Directory.GetCurrentDirectory())?.FullName, "dist"));
+			Directory.Delete(Path.Combine( Directory.GetParent(Directory.GetCurrentDirectory())?.FullName, "dist"), true);
 			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), path, target, BuildOptions.None);
 
 			Debug.Log($"PSO testing[{results.summary.result}]: {results.summary.outputPath}");
