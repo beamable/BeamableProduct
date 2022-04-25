@@ -13,12 +13,6 @@ MonoBehaviour:
   m_Name: TestScenariosCreator
   m_EditorClassIdentifier: 
   scenarios:
-  - name: 001 - NewTestScene_RenameMe
-    progress: 0
-    sceneAsset: {fileID: 102900000, guid: 314edf7d04bfd4d96ab8d76db5a6d6d4, type: 3}
-    shortDescription: 
-    fullDescription: 
-    testSteps: []
   - name: 003 - Sdf Test
     progress: 0
     sceneAsset: {fileID: 102900000, guid: 87082cf671f2b48aea1f2649d5abee00, type: 3}
