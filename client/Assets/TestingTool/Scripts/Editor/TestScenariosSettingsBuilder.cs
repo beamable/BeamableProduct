@@ -167,7 +167,8 @@ namespace TestingTool.Scripts.Editor
             corruptedSceneName = string.Empty;
             foreach (var testScenario in _testScenariosRuntime.Scenarios)
             {
-                if (!Application.CanStreamedLevelBeLoaded(testScenario.SceneName))
+                // if (!Application.CanStreamedLevelBeLoaded(testScenario.SceneName))
+                if(!EditorBuildSettings.scenes.Any(scene => scene.path.Contains(testScenario.SceneName)))
                 {
                     corruptedSceneName = testScenario.SceneName;
                     return true;
