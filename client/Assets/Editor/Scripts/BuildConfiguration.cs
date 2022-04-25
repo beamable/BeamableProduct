@@ -16,11 +16,16 @@ public class BuildSampleProject
 		return scenes;
 	}
 
-	private static string GetBuildPathForTarget(BuildTarget target)
+	private static string GetBaseBuildPath()
 	{
-		string prefix = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName;
-		prefix = string.IsNullOrEmpty(prefix) ? "/github/workspace/dist" : Path.Combine(prefix, "dist");
-		
+		string path = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName;
+		path = string.IsNullOrEmpty(path) ? "/github/workspace/dist" : Path.Combine(path, "dist");
+
+		return path;
+	}
+
+	private static string GetBuildPathForTarget(BuildTarget target, string prefix)
+	{
 		switch (target)
 		{
 			case BuildTarget.iOS:
@@ -44,13 +49,14 @@ public class BuildSampleProject
 	{
 		try
 		{
-			//Build
-
-			var target = EditorUserBuildSettings.activeBuildTarget;
-			var path = GetBuildPathForTarget(target);
-			var basePath = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())?.FullName, "dist");
+			// Clean first
+			var basePath = GetBaseBuildPath();
 			if(Directory.Exists(basePath))
-				Directory.Delete(basePath);
+				Directory.Delete(basePath, true);
+			
+			//Build
+			var target = EditorUserBuildSettings.activeBuildTarget;
+			var path = GetBuildPathForTarget(target, basePath);
 			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), path, target, BuildOptions.None);
 
 			Debug.Log($"PSO testing[{results.summary.result}]: {results.summary.outputPath}");
