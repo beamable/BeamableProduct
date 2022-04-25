@@ -25,7 +25,8 @@ public class BuildSampleProject
 			case BuildTarget.Android:
 				return prefix + "/Android";
 			case BuildTarget.StandaloneWindows:
-				return prefix + "/StandaloneWindows";
+			case BuildTarget.StandaloneWindows64:
+				return Path.Combine(Directory.GetCurrentDirectory(), "dist", "StandaloneWindows");
 			case BuildTarget.StandaloneOSX:
 				return prefix + "/StandaloneOSX";
 			case BuildTarget.WebGL:
