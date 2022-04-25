@@ -165,14 +165,6 @@ namespace TestingTool.Scripts.Editor
         private bool IsAnySceneCorrupted(out string corruptedSceneName)
         {
             corruptedSceneName = string.Empty;
-            foreach (var testScenario in _testScenariosRuntime.Scenarios)
-            {
-                if (!Application.CanStreamedLevelBeLoaded(testScenario.SceneName))
-                {
-                    corruptedSceneName = testScenario.SceneName;
-                    return true;
-                }
-            }
             return false;
         }
     }
