@@ -43,7 +43,7 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
-		                            string manifestID) : base(provider, "content")
+									string manifestID) : base(provider, "content")
 		{
 			ManifestID = manifestID;
 		}

@@ -50,7 +50,7 @@ namespace Beamable.Api.Auth
 		{
 			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
 		}
-		
+
 		public async Promise<bool> IsThisDeviceIdAvailable()
 		{
 			var deviceId = await _deviceIdResolver.GetDeviceId();
