@@ -139,7 +139,7 @@ namespace TestingTool.Scripts.Editor
             _config = TestScenariosSettingsBuilder.GetConfig();
             if (_config == null || !_config.IsTestingToolEnabled)
                 return;
-            _testScenariosRuntime = Resources.Load<TestScenariosRuntime>(Directories.TEST_SCENARIOS_RUNTIME_ASSET_PATH);
+            _testScenariosRuntime = Resources.LoadAll<TestScenariosRuntime>(string.Empty).FirstOrDefault();
             Validate();
             _testScenariosRuntime.ResetForBuild();
         }
