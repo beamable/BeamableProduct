@@ -111,7 +111,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnStyleSheetClicked(MouseDownEvent evt)
 		{
-			if (_styleSheet.IsWritable)
+			if (!_styleSheet.IsWritable)
 			{
 				return;
 			}
