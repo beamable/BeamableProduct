@@ -45,18 +45,16 @@ public class BuildSampleProject
 		{
 			//Build
 
-			var activeTarget = EditorUserBuildSettings.activeBuildTarget;
-			var distPath = GetBuildPathForTarget(activeTarget);
-			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), distPath, activeTarget, BuildOptions.None);
+			var target = EditorUserBuildSettings.activeBuildTarget;
+			var path = GetBuildPathForTarget(target);
+			Directory.CreateDirectory(Path.Combine( Directory.GetParent(Directory.GetCurrentDirectory())?.FullName, "dist"));
+			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), path, target, BuildOptions.None);
 
-			Debug.Log("PSO testing");
-			Debug.Log(results.summary.outputPath);
-			Debug.Log(results.summary.ToString());
+			Debug.Log($"PSO testing[{results.summary.result}]: {results.summary.outputPath}");
 			if (results.summary.result != BuildResult.Succeeded)
 			{
 				throw new BuildFailedException("Build failed.");
 			}
-
 		}
 		catch (BuildFailedException e)
 		{
