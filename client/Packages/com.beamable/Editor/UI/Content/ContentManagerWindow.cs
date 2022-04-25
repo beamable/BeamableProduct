@@ -29,10 +29,13 @@ namespace Beamable.Editor.Content
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = MenuItems.Windows.Names.CONTENT_MANAGER, DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName, FocusOnShow = true, RequireLoggedUser = true,
+				Title = MenuItems.Windows.Names.CONTENT_MANAGER,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
+				FocusOnShow = true,
+				RequireLoggedUser = true,
 			};
 		}
-		
+
 		[MenuItem(
 		MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 		Commons.OPEN + " " +
@@ -40,7 +43,7 @@ namespace Beamable.Editor.Content
 		priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init() => await GetFullyInitializedWindow();
-		
+
 		private ContentManager _contentManager;
 		private VisualElement _windowRoot;
 		private VisualElement _explorerContainer, _statusBarContainer;
@@ -56,12 +59,12 @@ namespace Beamable.Editor.Content
 		private void Update()
 		{
 			if (ActiveContext == null) return;
-			
+
 			_actionBarVisualElement?.RefreshPublishDropdownVisibility();
 			_explorerElement?.RefreshManifestButton();
 		}
-		
-		
+
+
 		protected override void Build()
 		{
 			Debug.Log("CONTENT MANAGER WINDOW BUILD!!!!!!");
@@ -70,9 +73,9 @@ namespace Beamable.Editor.Content
 			ActiveContext.OnUserChange += HandleUserChange;
 			ActiveContext.OnRealmChange += HandleRealmChange;
 			ContentIO.OnManifestChanged += OnManifestChanged;
-			
+
 			minSize = new Vector2(560, 300);
-			
+
 			Refresh();
 		}
 
@@ -80,7 +83,7 @@ namespace Beamable.Editor.Content
 		{
 			Debug.Log("CONTENT MANAGER WINDOW DISABLE!!!!!!!");
 			if (ActiveContext == null) return;
-			
+
 			ActiveContext.OnUserChange -= HandleUserChange;
 			ActiveContext.OnRealmChange -= HandleRealmChange;
 			ContentIO.OnManifestChanged -= OnManifestChanged;
@@ -89,7 +92,7 @@ namespace Beamable.Editor.Content
 		private void HandleRealmChange(RealmView realm) => Refresh();
 		private void HandleUserChange(User user) => Refresh();
 		private void OnManifestChanged(string manifestId) => SoftReset();
-		
+
 
 		public void Refresh()
 		{
@@ -126,12 +129,12 @@ namespace Beamable.Editor.Content
 				}
 
 				_currentWindow = BeamablePopupWindow.ShowUtility(ActionNames.VALIDATE_CONTENT, GetValidateContentVisualElement(), this,
-				                                                 WindowSizeMinimum, async (window) =>
-				                                                 {
-					                                                 // trigger after Unity domain reload
-					                                                 var contentManagerWindow = await GetFullyInitializedWindow();
-					                                                 window?.SwapContent(contentManagerWindow.GetValidateContentVisualElement());
-				                                                 });
+																 WindowSizeMinimum, async (window) =>
+																 {
+																	 // trigger after Unity domain reload
+																	 var contentManagerWindow = await GetFullyInitializedWindow();
+																	 window?.SwapContent(contentManagerWindow.GetValidateContentVisualElement());
+																 });
 
 				_currentWindow.minSize = WindowSizeMinimum;
 			};
@@ -148,12 +151,12 @@ namespace Beamable.Editor.Content
 				_cachedCreateNewManifestFlag = createNew;
 
 				_currentWindow = BeamablePopupWindow.ShowUtility(ActionNames.VALIDATE_CONTENT, GetValidateContentVisualElementWithPublish(), this,
-				                                                 WindowSizeMinimum, async (window) =>
-				                                                 {
-					                                                 // trigger after Unity domain reload
-					                                                 var contentManagerWindow = await GetFullyInitializedWindow();
-					                                                 window?.SwapContent(contentManagerWindow.GetValidateContentVisualElementWithPublish());
-				                                                 });
+																 WindowSizeMinimum, async (window) =>
+																 {
+																	 // trigger after Unity domain reload
+																	 var contentManagerWindow = await GetFullyInitializedWindow();
+																	 window?.SwapContent(contentManagerWindow.GetValidateContentVisualElementWithPublish());
+																 });
 
 				_currentWindow.minSize = WindowSizeMinimum;
 
@@ -172,12 +175,12 @@ namespace Beamable.Editor.Content
 
 				_cachedItemsToDownload = null;
 				_currentWindow = BeamablePopupWindow.ShowUtility(ActionNames.DOWNLOAD_CONTENT, GetDownloadContentVisualElement(), this,
-				                                                 WindowSizeMinimum, async (window) =>
-				                                                 {
-					                                                 // trigger after Unity domain reload
-					                                                 var contentManagerWindow = await GetFullyInitializedWindow();
-					                                                 window?.SwapContent(contentManagerWindow.GetDownloadContentVisualElement());
-				                                                 });
+																 WindowSizeMinimum, async (window) =>
+																 {
+																	 // trigger after Unity domain reload
+																	 var contentManagerWindow = await GetFullyInitializedWindow();
+																	 window?.SwapContent(contentManagerWindow.GetDownloadContentVisualElement());
+																 });
 				_currentWindow.minSize = WindowSizeMinimum;
 			};
 
@@ -324,7 +327,7 @@ namespace Beamable.Editor.Content
 		{
 			var clearPopup = new ResetContentVisualElement();
 			clearPopup.Model = _contentManager.PrepareDownloadSummary();
-			clearPopup.DataModel =_contentManager.Model;
+			clearPopup.DataModel = _contentManager.Model;
 
 			clearPopup.OnRefreshContentManager += () => _contentManager.RefreshWindow(true);
 			clearPopup.OnClosed += () =>
@@ -446,7 +449,7 @@ namespace Beamable.Editor.Content
 						set.ManifestId = publishPopup.ManifestName;
 						_contentManager?.PublishContent(set, prog, finished).Then(__ => SoftReset());
 					});
-					
+
 				}
 				else
 				{

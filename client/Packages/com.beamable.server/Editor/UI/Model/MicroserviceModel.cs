@@ -271,7 +271,7 @@ $@"{{
 				$"games/{api.ProductionRealm.Pid}/realms/{api.CurrentRealm.Pid}/" +
 				$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Requester.Token.RefreshToken}";
 			Application.OpenURL(path);
-			
+
 		}
 		private void OpenInCli()
 		{
