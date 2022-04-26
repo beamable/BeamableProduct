@@ -51,15 +51,16 @@ public class BuildSampleProject
 		{
 			// Clean first
 			var basePath = GetBaseBuildPath();
-			if(Directory.Exists(basePath))
+			if (Directory.Exists(basePath))
+			{
 				Directory.Delete(basePath, true);
-			
+			}
+
 			//Build
 			var target = EditorUserBuildSettings.activeBuildTarget;
 			var path = GetBuildPathForTarget(target, basePath);
 			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), path, target, BuildOptions.None);
 
-			Debug.Log($"PSO testing[{results.summary.result}]: {results.summary.outputPath}");
 			if (results.summary.result != BuildResult.Succeeded)
 			{
 				throw new BuildFailedException("Build failed.");
