@@ -213,8 +213,6 @@ jobs:
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
 
-      - name: List directory
-        run: ls -R dist
       - name: Save Docker Image If Exits
         if: ${{ !steps.cache_docker.outputs.cache-hit }}
         run: |
