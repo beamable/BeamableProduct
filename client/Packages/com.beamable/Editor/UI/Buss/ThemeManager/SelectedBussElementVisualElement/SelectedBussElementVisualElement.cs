@@ -31,7 +31,8 @@ namespace Beamable.Editor.UI.Components
 		private int? _selectedClassListIndex;
 
 		public SelectedBussElementVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss") { }
+			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss")
+		{ }
 
 		public void Setup(BussElementHierarchyVisualElement navigationWindow)
 		{
@@ -64,7 +65,7 @@ namespace Beamable.Editor.UI.Components
 
 			_classesList = CreateClassesList();
 
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 			_classesList.Rebuild();
 #else
 			_classesList.Refresh();
@@ -82,14 +83,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void CreateButtons()
 		{
-			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
+			VisualElement buttonsContainer = new VisualElement { name = "buttonsContainer" };
 
-			VisualElement removeButton = new VisualElement {name = "removeButton"};
+			VisualElement removeButton = new VisualElement { name = "removeButton" };
 			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
 
-			VisualElement addButton = new VisualElement {name = "addButton"};
+			VisualElement addButton = new VisualElement { name = "addButton" };
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
@@ -184,7 +185,7 @@ namespace Beamable.Editor.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 				fixedItemHeight = 24,
 #else
 				itemHeight = 24,
@@ -225,7 +226,7 @@ namespace Beamable.Editor.UI.Components
 				? BussNameUtility.AsClassesList(_currentBussElement.Classes.ToList())
 				: new List<string>();
 
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 			_classesList.Rebuild();
 #else
 			_classesList.Refresh();
@@ -234,7 +235,7 @@ namespace Beamable.Editor.UI.Components
 
 		private VisualElement CreateListViewElement()
 		{
-			VisualElement classElement = new VisualElement {name = "classElement"};
+			VisualElement classElement = new VisualElement { name = "classElement" };
 			classElement.Add(new TextField());
 			return classElement;
 		}

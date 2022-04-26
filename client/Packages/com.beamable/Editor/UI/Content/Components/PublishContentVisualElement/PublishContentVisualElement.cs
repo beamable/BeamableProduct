@@ -129,7 +129,7 @@ namespace Beamable.Editor.Content.Components
 			var addSource = new List<ContentDownloadEntryDescriptor>();
 			var addList = new ListView
 			{
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 				fixedItemHeight = 24,
 #else
 				itemHeight = 24,
@@ -146,7 +146,7 @@ namespace Beamable.Editor.Content.Components
 			var modifySource = new List<ContentDownloadEntryDescriptor>();
 			var modifyList = new ListView
 			{
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 				fixedItemHeight = 24,
 #else
 				itemHeight = 24,
@@ -163,7 +163,7 @@ namespace Beamable.Editor.Content.Components
 			var deleteSource = new List<ContentDownloadEntryDescriptor>();
 			var deleteList = new ListView
 			{
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 				fixedItemHeight = 24,
 #else
 				itemHeight = 24,
@@ -211,7 +211,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 				addFoldoutElem.Q<ListView>().style.height = addList.fixedItemHeight * addSource.Count;
 				addList.Rebuild();
 #else
@@ -235,11 +235,11 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 				modifyFoldoutElem.Q<ListView>().style.height = modifyList.fixedItemHeight * modifySource.Count;
 				modifyList.Rebuild();
 #else
-				modifyFoldoutElem.Q<ListView>().style.height = modifyList.itemHeight * modifySource.Count;modifyList.Refresh();
+				modifyFoldoutElem.Q<ListView>().style.height = modifyList.itemHeight * modifySource.Count; modifyList.Refresh();
 				modifyList.Refresh();
 #endif
 
@@ -259,7 +259,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-#if UNITY_2021_2_OR_NEWER	
+#if UNITY_2021_2_OR_NEWER
 				deleteFoldoutElem.Q<ListView>().style.height = deleteList.fixedItemHeight * deleteSource.Count;
 				deleteList.Rebuild();
 #else
