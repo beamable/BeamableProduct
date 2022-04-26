@@ -88,7 +88,7 @@ namespace Beamable.Editor.Content.Components
 			var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
 			_listView.AddManipulator(manipulator);
 
-			_listView.Refresh();
+			_listView.RefreshPolyfill();
 
 			RegisterCallback<KeyDownEvent>(RegisterKeyDown, TrickleDown.TrickleDown);
 			RegisterCallback<KeyUpEvent>(RegisterKeyUp, TrickleDown.TrickleDown);
@@ -156,7 +156,7 @@ namespace Beamable.Editor.Content.Components
 
 		private void Model_OnFilteredContentChanged()
 		{
-			_listView.Refresh();
+			_listView.RefreshPolyfill();
 		}
 
 		private ExtendedListView CreateListView()
@@ -166,13 +166,13 @@ namespace Beamable.Editor.Content.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Multiple,
-				itemHeight = ListViewItemHeight,
 				itemsSource = Model.FilteredContents
 			};
 
+			view.SetItemHeight(ListViewItemHeight);
 			view.BeamableOnItemChosen(ListView_OnItemChosen);
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
-			view.Refresh();
+			view.RefreshPolyfill();
 			return view;
 		}
 

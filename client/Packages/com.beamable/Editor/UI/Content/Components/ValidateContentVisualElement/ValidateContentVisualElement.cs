@@ -183,7 +183,7 @@ namespace Beamable.Editor.Content.Components
 			_totalErrorCountVisualElement.SetValue(_totalErrorCountVisualElement.Value + errors.Exceptions.Count);
 			_invalidContentCountVisualElement.SetValue(_listSource.Count);
 
-			_listView.Refresh();
+			_listView.RefreshPolyfill();
 		}
 
 		protected override void OnDetach()
@@ -224,7 +224,7 @@ namespace Beamable.Editor.Content.Components
 						var handler = new Action<List<ContentException>>(exceptions =>
 						{
 							err.Exceptions = exceptions;
-							_listView.Refresh();
+							_listView.RefreshPolyfill();
 							UpdateErrorCount();
 						});
 						_validationHandlers.Add(content, handler);

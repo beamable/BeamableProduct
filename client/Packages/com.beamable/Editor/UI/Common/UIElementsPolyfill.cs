@@ -393,6 +393,39 @@ namespace UnityEngine.UIElements
 }
 #endif
 
+
+public static class UIElementsPolyfill2021
+{
+	public static void SetItemHeight(this ListView listView, float newHeight)
+	{
+		#if UNITY_2021_3_OR_NEWER
+		listView.fixedItemHeight = newHeight;
+		#else
+		listView.itemHeight = (int)newHeight;
+		#endif
+	}
+	
+	public static float GetItemHeight(this ListView listView)
+	{
+#if UNITY_2021_3_OR_NEWER
+		return listView.fixedItemHeight;
+#else
+		return (float)listView.itemHeight;
+#endif
+	}
+	
+	
+	public static void RefreshPolyfill(this ListView listView)
+	{
+#if UNITY_2021_3_OR_NEWER
+		listView.Rebuild();
+#else
+		listView.Refresh();
+#endif
+	}
+}
+
+
 #if UNITY_2020_1_OR_NEWER
 public static class UIElementsPolyfill2020
 {
@@ -419,6 +452,8 @@ public static class UIElementsPolyfillPre2020
 	}
 }
 #endif
+
+
 
 public static class UssLoader
 {

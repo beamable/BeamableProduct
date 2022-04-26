@@ -182,7 +182,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_advanceDropDown.RemoveFromHierarchy();
 			}
 
-			_listView.Refresh();
+			_listView.RefreshPolyfill();
 			UpdateCounts();
 		}
 
@@ -251,7 +251,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			EditorApplication.delayCall += () =>
 			{
-				_listView.Refresh();
+				_listView.RefreshPolyfill();
 				_listView.MarkDirtyRepaint();
 			};
 		}
@@ -307,11 +307,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-				itemHeight = 24,
 				itemsSource = NoModel ? new List<LogMessage>() : Model.Logs.FilteredMessages
 			};
+			view.SetItemHeight(24);
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
-			view.Refresh();
+			view.RefreshPolyfill();
 			return view;
 		}
 

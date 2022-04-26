@@ -56,7 +56,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 			_repaint = () =>
 			{
-				toolbarType.GetMethod("RepaintToolbar", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
+				BeamableToolbarCallbacks.m_toolbarType.GetMethod("RepaintToolbar", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
 			};
 
 #if UNITY_2019_3_OR_NEWER
@@ -70,9 +70,8 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
-			BeamableToolbarCallbacks.OnToolbarGUILeft = GUILeft;
-			BeamableToolbarCallbacks.OnToolbarGUIRight = GUIRight;
-
+			
+			
 			if (!BeamEditor.IsInitialized)
 				return;
 
@@ -162,7 +161,9 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 
-#if UNITY_2020_1_OR_NEWER
+#if UNITY_2021_3_OR_NEWER
+		public const float previewPackagesWarningWidth = 190;
+#elif UNITY_2020_1_OR_NEWER
 		public const float previewPackagesWarningWidth = 175;
 #elif UNITY_2019_4_OR_NEWER
 		public const float previewPackagesWarningWidth = 0;
@@ -188,6 +189,8 @@ namespace Beamable.Editor.ToolbarExtender
 
 			Rect leftRect = new Rect(0, 0, screenWidth, Screen.height);
 			leftRect.xMin += space; // Spacing left
+			
+#if !UNITY_2021_3_OR_NEWER
 			leftRect.xMin += buttonWidth * _toolCount; // Tool buttons
 #if UNITY_2019_3_OR_NEWER
 			leftRect.xMin += space; // Spacing between tools and pivot
@@ -195,11 +198,15 @@ namespace Beamable.Editor.ToolbarExtender
 			leftRect.xMin += largeSpace; // Spacing between tools and pivot
 #endif
 			leftRect.xMin += 64 * 2; // Pivot buttons
-			leftRect.xMax = playButtonsPosition;
-
 #if UNITY_2019_3_OR_NEWER
 			leftRect.xMin += buttonWidth; // Spacing grid snapping tool
 #endif
+#else
+			leftRect.xMin += 125; // Login, Services and Plastic SCM buttons
+#endif
+			leftRect.xMax = playButtonsPosition;
+
+
 
 			Rect rightRect = new Rect(0, 0, screenWidth, Screen.height);
 			rightRect.xMin = playButtonsPosition;
@@ -214,16 +221,21 @@ namespace Beamable.Editor.ToolbarExtender
 #else
 			rightRect.xMax -= largeSpace; // Spacing between layers and account
 #endif
+#if UNITY_2021_3_OR_NEWER
+			rightRect.xMax -= buttonWidth; // Account
+#else
 			rightRect.xMax -= dropdownWidth; // Account
 			rightRect.xMax -= space; // Spacing between account and cloud
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
 			rightRect.xMax -= versionControlWidth; // Colab/PlasticSCM button
+#endif
+			
 #if UNITY_2019_4_OR_NEWER // Handling of preview packages
 			if (_hasPreviewPackages || _packageListRequest.IsCompleted)
 			{
 				// Parse package list only if we haven't detected that there are preview packages.
-				_hasPreviewPackages = _hasPreviewPackages || _packageListRequest.Result.Any(pck => pck.version.ToLower().Contains("preview"));
+				_hasPreviewPackages = _hasPreviewPackages || _packageListRequest.Result.Any(pck => pck.version.ToLower().Contains("preview") || string.IsNullOrEmpty(pck.versions.verified));
 				if (_hasPreviewPackages)
 				{
 					rightRect.xMax -= space;
@@ -231,6 +243,12 @@ namespace Beamable.Editor.ToolbarExtender
 				}
 			}
 #endif
+			
+#if UNITY_2021_3_OR_NEWER
+			rightRect.xMax -= buttonWidth; // Cloud
+			rightRect.xMax -= space; // Spacing between cloud and collab
+#endif
+			
 			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
 			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
 
@@ -241,6 +259,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= space;
 
 			// Add top and bottom margins
+#if !UNITY_2021_3_OR_NEWER
 #if UNITY_2019_3_OR_NEWER
 			leftRect.y = 4;
 			leftRect.height = 26;
@@ -250,6 +269,12 @@ namespace Beamable.Editor.ToolbarExtender
 			leftRect.y = 5;
 			leftRect.height = 24;
 			rightRect.y = 5;
+			rightRect.height = 24;
+#endif
+#else
+			leftRect.y = 5;
+			leftRect.height = 24;
+			rightRect.y = 3;
 			rightRect.height = 24;
 #endif
 
@@ -266,7 +291,7 @@ namespace Beamable.Editor.ToolbarExtender
 			if (notificationManager != null && notificationManager.PendingValidationNotifications.Any())
 				btnTexture = _validationTexture;
 
-
+			
 			GUILayout.BeginArea(beamableAssistantButtonRect);
 			if (GUILayout.Button(new GUIContent(" Beamable", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{
@@ -284,7 +309,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 			GUILayout.EndArea();
 
-			if (leftRect.width > 0)
+			//if (leftRect.width > 0)
 			{
 				GUILayout.BeginArea(leftRect);
 				GUILayout.BeginHorizontal();
@@ -300,7 +325,7 @@ namespace Beamable.Editor.ToolbarExtender
 				GUILayout.EndArea();
 			}
 
-			if (rightRect.width > 0)
+			//if (rightRect.width > 0)
 			{
 				GUILayout.BeginArea(rightRect);
 				GUILayout.BeginHorizontal();
@@ -335,28 +360,6 @@ namespace Beamable.Editor.ToolbarExtender
 					}
 				}
 			}
-		}
-
-		public static void GUILeft()
-		{
-			GUILayout.BeginHorizontal();
-			foreach (var handler in LeftToolbarGUI)
-			{
-				handler();
-			}
-
-			GUILayout.EndHorizontal();
-		}
-
-		public static void GUIRight()
-		{
-			GUILayout.BeginHorizontal();
-			foreach (var handler in RightToolbarGUI)
-			{
-				handler();
-			}
-
-			GUILayout.EndHorizontal();
 		}
 	}
 }
