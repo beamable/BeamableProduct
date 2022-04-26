@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - StoreView prefab now works in landscape mode
+- fixed playmode ContentObject refresh with disabled domain reload on Unity 2019 and 2020
 
 ## [1.1.2]
 ### Fixed
