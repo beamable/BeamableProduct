@@ -89,7 +89,7 @@ namespace Beamable.Editor.Content.Components
 				var addSource = new List<ContentDownloadEntryDescriptor>();
 				_addList = new ListView
 				{
-					
+
 					itemsSource = addSource,
 					makeItem = MakeElement,
 					bindItem = CreateBinder(addSource)
