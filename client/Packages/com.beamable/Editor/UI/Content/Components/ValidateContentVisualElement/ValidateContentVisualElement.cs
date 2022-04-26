@@ -180,11 +180,7 @@ namespace Beamable.Editor.Content.Components
 			_totalErrorCountVisualElement.SetValue(_totalErrorCountVisualElement.Value + errors.Exceptions.Count);
 			_invalidContentCountVisualElement.SetValue(_listSource.Count);
 
-#if UNITY_2021_2_OR_NEWER
-			_listView.Rebuild();
-#else
-			_listView.Refresh();
-#endif
+			_listView.RefreshPolyfill();
 		}
 
 		protected override void OnDetach()
@@ -223,11 +219,7 @@ namespace Beamable.Editor.Content.Components
 						var handler = new Action<List<ContentException>>(exceptions =>
 						{
 							err.Exceptions = exceptions;
-#if UNITY_2021_2_OR_NEWER
-							_listView.Rebuild();
-#else
-							_listView.Refresh();
-#endif
+							_listView.RefreshPolyfill();
 							UpdateErrorCount();
 						});
 						_validationHandlers.Add(content, handler);
