@@ -295,9 +295,9 @@ namespace Beamable.Editor.Content.Components
 			_manifestNameField.SetEnabled(false);
 			if (_createNewManifest && _manifestModel.ArchivedManifestModels.Any(m => m.id == ManifestName))
 			{
-				var api = BeamEditorContext.Default; 
+				var api = BeamEditorContext.Default;
 				await api.InitializePromise;
-				
+
 				var unarchiveTask = api.ContentIO.UnarchiveManifest(ManifestName);
 				_publishBtn.Load(unarchiveTask);
 				await unarchiveTask;
@@ -425,7 +425,7 @@ namespace Beamable.Editor.Content.Components
 			_messageLabel.visible = true;
 			_messageLabel.AddTextWrapStyle();
 			_messageLabel.text = string.Format(PUBLISH_MESSAGE_PREVIEW, api.CurrentRealm.DisplayName, ContentConfiguration.Instance.EditorManifestID);
-			
+
 		}
 	}
 }

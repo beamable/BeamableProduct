@@ -13,6 +13,13 @@
 			public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
 			public const string OPEN = "Open";
 		}
+
+		public static class Environment
+		{
+			public const string BUILD__SDK__VERSION__STRING = "BUILD__SDK__VERSION__STRING";
+			public const string UNITY__VSP__UID = "UNITY__VSP__UID";
+		}
+
 		public static class Directories
 		{
 			public const string BEAMABLE_ASSETS = "Assets/Beamable";

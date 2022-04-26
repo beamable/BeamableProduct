@@ -16,6 +16,11 @@ namespace Beamable.Editor
 			{
 				BeamableLinker.GenerateLinkFile();
 			}
+
+			if (CoreConfiguration.Instance.PreventAddressableCodeStripping)
+			{
+				BeamableLinker.GenerateAddressablesLinkFile();
+			}
 		}
 #else
         public async void OnPreprocessBuild(BuildReport report)

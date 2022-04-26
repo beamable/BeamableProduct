@@ -23,7 +23,6 @@ namespace Beamable.Editor.Content.Components
 {
 	public class ValidateContentVisualElement : ContentManagerComponent
 	{
-
 		public ContentDataModel DataModel { get; set; }
 
 		public event Action OnCancelled;
@@ -43,11 +42,11 @@ namespace Beamable.Editor.Content.Components
 
 		private Label _emptyMessageLabel;
 		private Promise<Unit> _completePromise = new Promise<Unit>();
-		private Dictionary<ContentObject, Action<List<ContentException>>> _validationHandlers = new Dictionary<ContentObject, Action<List<ContentException>>>();
 
-		public ValidateContentVisualElement() : base(nameof(ValidateContentVisualElement))
-		{
-		}
+		private Dictionary<ContentObject, Action<List<ContentException>>> _validationHandlers =
+			new Dictionary<ContentObject, Action<List<ContentException>>>();
+
+		public ValidateContentVisualElement() : base(nameof(ValidateContentVisualElement)) { }
 
 		public override void Refresh()
 		{
@@ -88,12 +87,10 @@ namespace Beamable.Editor.Content.Components
 			_emptyMessageLabel.name = "emptyMessage";
 			_errorContainer.Add(_listView);
 			_errorContainer.Add(_emptyMessageLabel);
-
 		}
 
 		private void UpdateErrorCount()
 		{
-
 			var totalContent = 0;
 			int totalErrorCount = 0;
 			foreach (var exceptionObj in _listSource)
@@ -102,6 +99,7 @@ namespace Beamable.Editor.Content.Components
 				totalContent += (count > 0 ? 1 : 0);
 				totalErrorCount += count;
 			}
+
 			_invalidContentCountVisualElement.SetValue(totalContent);
 			_totalErrorCountVisualElement.SetValue(totalErrorCount);
 		}
@@ -172,7 +170,6 @@ namespace Beamable.Editor.Content.Components
 			}
 		}
 
-
 		public void HandleValidationErrors(ContentExceptionCollection errors)
 		{
 			_emptyMessageLabel.AddToClassList("hidden");
@@ -200,7 +197,6 @@ namespace Beamable.Editor.Content.Components
 			}
 		}
 
-
 		public void HandleFinished()
 		{
 			_progressBar.RunWithoutUpdater = false;
@@ -213,7 +209,6 @@ namespace Beamable.Editor.Content.Components
 				_messageLbl.AddToClassList("failed");
 				_okayButton.SetAsFailure();
 				_okayButton.SetText(VALIDATE_BUTTON_DONE_WITH_ERRORS_TEXT);
-
 
 				foreach (var elem in _listSource)
 				{
@@ -231,7 +226,6 @@ namespace Beamable.Editor.Content.Components
 						content.OnValidationChanged += handler;
 					}
 				}
-
 			}
 			else
 			{
@@ -239,11 +233,9 @@ namespace Beamable.Editor.Content.Components
 				_okayButton.Button.text = VALIDATE_BUTTON_DONE_WITHOUT_ERRORS_TEXT;
 			}
 
-
 			UpdateErrorCount();
 
 			_okayButton.Enable();
-
 		}
 	}
 }
