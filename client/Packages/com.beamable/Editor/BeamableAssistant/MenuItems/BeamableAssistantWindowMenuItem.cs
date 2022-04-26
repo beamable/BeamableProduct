@@ -12,7 +12,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableAssistantWindowMenuItem : BeamableAssistantMenuItem
 	{
-		public override GUIContent RenderLabel(EditorAPI beamableApi)
+		public override GUIContent RenderLabel(BeamEditorContext beamableApi)
 		{
 			var _hintNotificationManager = default(BeamHintNotificationManager);
 			BeamEditor.GetBeamHintSystem(ref _hintNotificationManager);
@@ -24,9 +24,9 @@ namespace Beamable.Editor.ToolbarExtender
 			return new GUIContent(label);
 		}
 
-		public override void OnItemClicked(EditorAPI beamableApi)
+		public override async void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			BeamableAssistantWindow.ShowWindow();
+			await BeamableAssistantWindow.Init();
 		}
 	}
 }

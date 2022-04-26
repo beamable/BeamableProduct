@@ -23,6 +23,7 @@
 				public const string PLAY_MICROSERVICE = "Run the Microservice";
 				public const string PLAY_STORAGE = "Run the Storage";
 				public const string MORE = "More";
+				public const string PLAY_NOT_LOGGED_IN = "You must be logged in to start the service";
 
 				public const string DESELECT = "Deselect";
 				public const string SELECT = "Select";

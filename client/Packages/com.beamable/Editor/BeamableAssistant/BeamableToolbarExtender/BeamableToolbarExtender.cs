@@ -23,7 +23,7 @@ namespace Beamable.Editor.ToolbarExtender
 		public static readonly List<Action> LeftToolbarGUI = new List<Action>();
 		public static readonly List<Action> RightToolbarGUI = new List<Action>();
 
-		private static EditorAPI _editorAPI;
+		private static BeamEditorContext _editorAPI;
 		private static List<BeamableAssistantMenuItem> _assistantMenuItems;
 		private static List<BeamableToolbarButton> _leftButtons;
 		private static List<BeamableToolbarButton> _rightButtons;
@@ -39,7 +39,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 		private static Action _repaint;
 
-		public static void Repaint() => _repaint();
+		public static void Repaint() => _repaint?.Invoke();
 
 		public static void LoadToolbarExtender()
 		{
@@ -76,64 +76,59 @@ namespace Beamable.Editor.ToolbarExtender
 			if (!BeamEditor.IsInitialized)
 				return;
 
-			EditorAPI.Instance.Then(api =>
+			var api = BeamEditorContext.Default;
+			_editorAPI = api;
+
+			// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
+			var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
+			var menuItemsGuids = BeamableAssetDatabase.FindAssets<BeamableAssistantMenuItem>(menuItemsSearchInFolders);
+			_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
+			_assistantMenuItems.Sort((mi1, mi2) =>
 			{
-				_editorAPI = api;
+				var orderComp = mi1.Order.CompareTo(mi2.Order);
+				var labelComp = string.Compare(mi1.RenderLabel(_editorAPI).text, mi2.RenderLabel(_editorAPI).text, StringComparison.Ordinal);
 
-				if (!BeamEditor.IsInitialized)
-					return;
+				return orderComp == 0 ? labelComp : orderComp;
+			});
 
-				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
-				var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
-				var menuItemsGuids = BeamableAssetDatabase.FindAssets<BeamableAssistantMenuItem>(menuItemsSearchInFolders);
-				_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
-				_assistantMenuItems.Sort((mi1, mi2) =>
-				{
-					var orderComp = mi1.Order.CompareTo(mi2.Order);
-					var labelComp = string.Compare(mi1.RenderLabel(_editorAPI).text, mi2.RenderLabel(_editorAPI).text, StringComparison.Ordinal);
+			var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
+			var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
+			var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
-					return orderComp == 0 ? labelComp : orderComp;
-				});
+			var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();
+			_leftButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Left)
+										.SelectMany(g => g)
+										.ToList();
 
-				var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
-				var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
-				var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
+			_rightButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Right)
+										 .SelectMany(g => g)
+										 .ToList();
 
-				var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();
-				_leftButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Left)
-											.SelectMany(g => g)
-											.ToList();
+			_leftButtons.Sort((b1, b2) =>
+			{
+				var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
+				var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
+				var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
 
-				_rightButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Right)
-											 .SelectMany(g => g)
-											 .ToList();
+				return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
+			});
 
-				_leftButtons.Sort((b1, b2) =>
-				{
-					var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
-					var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
-					var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
+			_rightButtons.Sort((b1, b2) =>
+			{
+				var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
+				var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
+				var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
 
-					return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
-				});
+				return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
+			});
 
-				_rightButtons.Sort((b1, b2) =>
-				{
-					var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
-					var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
-					var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
-
-					return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
-				});
-
-				_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
-				_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
-				_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
+			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
+			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
+			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
 
 #if UNITY_2019_4_OR_NEWER
-				_packageListRequest = Client.List(true);
+			_packageListRequest = Client.List(true);
 #endif
-			});
 		}
 
 #if UNITY_2019_3_OR_NEWER
@@ -281,7 +276,7 @@ namespace Beamable.Editor.ToolbarExtender
 				_assistantMenuItems
 					.ForEach(item =>
 					{
-						menu.AddItem(item.RenderLabel(_editorAPI), false, data => item.OnItemClicked((EditorAPI)data), _editorAPI);
+						menu.AddItem(item.RenderLabel(_editorAPI), false, data => item.OnItemClicked((BeamEditorContext)data), _editorAPI);
 					});
 
 				menu.ShowAsContext();
@@ -321,9 +316,9 @@ namespace Beamable.Editor.ToolbarExtender
 				GUILayout.EndArea();
 			}
 
-			void RenderBeamableToolbarButtons(List<BeamableToolbarButton> beamableToolbarButtons, EditorAPI editorAPI)
+			void RenderBeamableToolbarButtons(List<BeamableToolbarButton> beamableToolbarButtons, BeamEditorContext editorAPI)
 			{
-				foreach (var button in beamableToolbarButtons.Where(button => button.ShouldDisplayButton(_editorAPI)))
+				foreach (var button in beamableToolbarButtons.Where(button => button.ShouldDisplayButton(editorAPI)))
 				{
 					var size = button.GetButtonSize(editorAPI);
 					var texture = button.GetButtonTexture(editorAPI);

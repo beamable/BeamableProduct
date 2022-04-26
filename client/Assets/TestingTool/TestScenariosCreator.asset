@@ -19,7 +19,7 @@ MonoBehaviour:
     shortDescription: 
     fullDescription: 
     testSteps: []
-  - name: 002 - Sdf Test
+  - name: 003 - Sdf Test
     progress: 0
     sceneAsset: {fileID: 102900000, guid: 87082cf671f2b48aea1f2649d5abee00, type: 3}
     shortDescription: SDF Test
@@ -28,7 +28,8 @@ MonoBehaviour:
     - progress: 0
       description: 'Select group 1.
 
-        Check if background color settings are working.'
+        Check if background color settings are
+        working.'
     - progress: 0
       description: 'Select group 2.
 
@@ -41,3 +42,21 @@ MonoBehaviour:
       description: 'Select group 4.
 
         Check if texture shape is working.'
+  - name: 004 - Leaderboards_Buss_Prefab
+    progress: 0
+    sceneAsset: {fileID: 102900000, guid: 2aad2beaa51c00d46a8bf27bc6fca95b, type: 3}
+    shortDescription: 
+    fullDescription: 
+    testSteps:
+    - progress: 0
+      description: From Hierarchy select LeaderboardsPresenter game object and make
+        sure that Test Data value is set to TRUE. If not stop the test, change this
+        value and restart test.
+    - progress: 0
+      description: Leaderboard shows up with data.
+    - progress: 0
+      description: Scroll the list a little to the bottom. Click button in the lower
+        right part of screen. Position of a list shoul reset to the top.
+    - progress: 0
+      description: At the bottom of screen there there is a tile with current player's
+        position and points. The same position in the list above should be highlighted.

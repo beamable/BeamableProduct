@@ -33,7 +33,8 @@ namespace Beamable.AccountManagement
 						User user = bundle.User;
 						string userType = user.id == de.User.id ? "CURRENT" : "DEVICE";
 						Debug.Log(
-							$"{userType} : EMAIL: [{user.email}] ID: [{user.id}] 3RD PARTIES: [{string.Join(",", user.thirdPartyAppAssociations)}]");
+							$"{userType} : EMAIL: [{user.email}] ID: [{user.id}] 3RD PARTIES: [{string.Join(",", user.thirdPartyAppAssociations)}]" +
+							$" DEVICE IDS: [{string.Join(",", user.deviceIds)}]");
 					});
 				});
 			});
