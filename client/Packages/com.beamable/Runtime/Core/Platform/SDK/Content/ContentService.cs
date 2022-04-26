@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Content;
 
@@ -210,6 +213,11 @@ namespace Beamable.Content
 
 			Subscribables = new Dictionary<string, ManifestSubscription>();
 			AddSubscriber(CurrentDefaultManifestID);
+			
+#if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
+			EditorApplication.playModeStateChanged -= PlayModeChange;
+			EditorApplication.playModeStateChanged += PlayModeChange;
+#endif
 		}
 
 		private void InitializeBakedContent()
@@ -300,6 +308,14 @@ namespace Beamable.Content
 			_testScopeEnabled = true;
 			return ContentServiceTestScope.Instance;
 		}
+		
+		#if UNITY_2019_1_OR_NEWER
+		private void PlayModeChange(PlayModeStateChange state)
+		{
+			if (state == PlayModeStateChange.EnteredPlayMode)
+				_contentCaches?.Clear();
+		}
+		#endif
 #endif
 
 		private void AddSubscriber(string manifestID)
