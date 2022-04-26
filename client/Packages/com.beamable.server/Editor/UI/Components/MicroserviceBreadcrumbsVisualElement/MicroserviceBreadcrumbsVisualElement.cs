@@ -122,7 +122,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void UpdateSelectAllCheckboxValue(int selectedServicesAmount, int servicesAmount)
 		{
-			_selectAllLabeledCheckbox.SetWithoutNotify(selectedServicesAmount == servicesAmount);
+			_selectAllLabeledCheckbox.SetWithoutNotify(servicesAmount > 0 && selectedServicesAmount == servicesAmount);
 			SetSelectAllVisibility(servicesAmount > 0);
 		}
 
