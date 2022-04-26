@@ -11,10 +11,10 @@ namespace Beamable.Common.Content
 	public class PlayerReward
 	{
 		/// <summary>
-		/// An optional textural description of the reward. Use this to quickly summarize for development what the reward grants.
+		/// An optional textual description of the reward. Use this to quickly summarize for development what the reward grants.
 		/// </summary>
 		[ContentField("description")]
-		[Tooltip("An optional textural description of the reward. Use this to quickly summarize for development what the reward grants.")]
+		[Tooltip("An optional textual description of the reward. Use this to quickly summarize for development what the reward grants.")]
 		public OptionalString description;
 
 		/// <summary>
@@ -32,10 +32,10 @@ namespace Beamable.Common.Content
 		public OptionalNewItemList items;
 
 		/// <summary>
-		/// Optionally, when a reward is claimed, the vip bonus can be applied to the currenices
+		/// Optionally, when a reward is claimed, the vip bonus can be applied to the currencies.
 		/// </summary>
 		[ContentField("applyVipBonus")]
-		[Tooltip("Optionally, when a reward is claimed, the vip bonus can be applied to the currenices")]
+		[Tooltip("Optionally, when a reward is claimed, the vip bonus can be applied to the currencies")]
 		public OptionalBoolean applyVipBonus;
 
 		/// <summary>

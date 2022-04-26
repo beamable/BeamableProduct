@@ -85,7 +85,7 @@ namespace Beamable.Common.Api.Announcements
 	}
 
 	/// <summary>
-	/// The <see cref="AnnouncementView"/> is the raw network response from the Beamable Announcement API.
+	/// The <see cref="AnnouncementView"/> is the network response from the Beamable Announcement API.
 	/// It contains details describing the current state of a particular announcement.
 	/// </summary>
 	[Serializable]

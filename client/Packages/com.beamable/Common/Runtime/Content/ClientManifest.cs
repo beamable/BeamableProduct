@@ -172,9 +172,9 @@ namespace Beamable.Common.Content
 		}
 
 		/// <summary>
-		/// This object only describe the content, but doesn't contain the entire content data.
+		/// This object only describes the content, but does not contain the entire content data.
 		/// This method will get the actual <see cref="IContentObject"/> by checking for the data at the <see cref="uri"/>.
-		/// This may result in a network request if the entry haven't been downloaded before.
+		/// This may result in a network request if the entry has not been downloaded before.
 		/// </summary>
 		/// <returns></returns>
 		public Promise<IContentObject> Resolve()

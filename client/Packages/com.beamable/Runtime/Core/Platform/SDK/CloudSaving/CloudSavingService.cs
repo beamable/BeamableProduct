@@ -47,27 +47,25 @@ namespace Beamable.Api.CloudSaving
 
 		/// <summary>
 		/// An event with a <see cref="ManifestResponse"/> parameter.
-		/// This event triggers anytime cloud data changes on the server.
+		/// This event triggers anytime the player's cloud files are updated by another device, or from the Portal.
 		/// </summary>
 		public Action<ManifestResponse> UpdateReceived;
 
 		/// <summary>
 		/// An event with a <see cref="CloudSavingError"/> parameter.
-		/// This event triggers anytime there is an error occurs in the <see cref="CloudSavingService"/>
+		/// This event triggers anytime there is an error in the <see cref="CloudSavingService"/>
 		/// </summary>
 		public Action<CloudSavingError> OnError;
 
 		/// <summary>
 		/// The <see cref="CloudSavingService"/> will keep the files located at this file path backed up on Beamable servers.
 		/// You should use this path as the base path for all file read and write operations.
-		/// You should not do any read or write operations until the <see cref="isInitializing"/> is true.
 		/// </summary>
 		public string LocalCloudDataFullPath => localCloudDataPath.dataPath;
 
 		/// <summary>
 		/// The <see cref="CloudSavingService"/> needs to initialize before you should read or write files from the <see cref="LocalCloudDataFullPath"/>.
-		/// This field will be true once the initialization has completed.
-		/// You can re-trigger the init flow by calling the <see cref="Init"/> method.
+		/// This field is a guard that is true when the <see cref="Init"/> method is running, and false otherwise.
 		/// </summary>
 		public bool isInitializing = false;
 
@@ -82,7 +80,7 @@ namespace Beamable.Api.CloudSaving
 
 		/// <summary>
 		/// The <see cref="CloudSavingService"/> must initialize before you should read or write any files from the <see cref="LocalCloudDataFullPath"/>.
-		/// This method will start the initialization process. You can check the status of the initialization with the <see cref="isInitializing"/> field.
+		/// This method will start the initialization process. The <see cref="isInitializing"/> field value will be true when this method is running.
 		/// </summary>
 		/// <param name="pollingIntervalSecs">
 		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
@@ -196,8 +194,8 @@ namespace Beamable.Api.CloudSaving
 		}
 
 		/// <summary>
-		/// This method will stop the cloud saving service from picking up local file changes, or receiving remote file updates.
-		/// Then the method will reboot the service by re-running the <see cref="Init"/> method.
+		/// This method will clear all local user data, and re-fetch everything from the Beamable server.
+		/// The <see cref="Init"/> method will be called as part of this execution.
 		/// </summary>
 		/// <param name="pollingIntervalSecs">
 		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.

@@ -23,7 +23,7 @@ namespace Beamable.Api.Auth
 		/// Check if the current device id is available to be associated with a <see cref="User"/>.
 		/// Each device id is only assignable to one <see cref="User"/>, so if one player registers the device id,
 		/// that id cannot be registered by any other players.
-		/// Device ids are resolved by the <see cref="IDeviceIdResolver"/> interface.
+		/// Device IDs are resolved by the <see cref="IDeviceIdResolver"/> interface.
 		/// </summary>
 		/// <returns>A promise that will result in true if the device id is available, false otherwise.</returns>
 		Promise<bool> IsThisDeviceIdAvailable();
@@ -53,11 +53,11 @@ namespace Beamable.Api.Auth
 		Promise<User> RemoveDeviceId();
 
 		/// <summary>
-		/// It is possible for a <see cref="User"/> to have multiple device ids, if they have used multiple devices.
-		/// This method will remove some particular subset of the device ids. You can check which device ids exist
+		/// It is possible for a <see cref="User"/> to have multiple device IDs, if they have used multiple devices.
+		/// This method will remove some particular subset of the device IDs. You can check which device IDs exist
 		/// on a user by checking the <see cref="User.deviceIds"/> field.
 		/// </summary>
-		/// <param name="deviceIds">the set of device ids that you want to remove from the <see cref="User"/></param>
+		/// <param name="deviceIds">the set of device IDs that you want to remove from the <see cref="User"/></param>
 		/// <returns>
 		/// A <see cref="Promise{User}"/> that will have the updated <see cref="User"/> data for the current user.
 		/// The resulting <see cref="User"/> object will have the <see cref="User.deviceIds"/> field filled out.
@@ -65,8 +65,8 @@ namespace Beamable.Api.Auth
 		Promise<User> RemoveDeviceIds(string[] deviceIds);
 
 		/// <summary>
-		/// It is possible for a <see cref="User"/> to have multiple device ids, if they have used multiple devices.
-		/// This method will remove <i>all</i> device ids.
+		/// It is possible for a <see cref="User"/> to have multiple device IDs, if they have used multiple devices.
+		/// This method will remove <i>all</i> device IDs.
 		/// </summary>
 		/// <returns>
 		/// A <see cref="Promise{User}"/> that will have the updated <see cref="User"/> data for the current user.

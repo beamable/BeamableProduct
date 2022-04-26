@@ -89,7 +89,7 @@ namespace Beamable.Common.Announcements
 		public AnnouncementPlayerRewards gift;
 
 		/// <summary>
-		/// If specified, stat requirements will limit the audience of this announcement based on player stats
+		/// If specified, stat requirements will limit the audience of this announcement based on player stats.
 		/// </summary>
 		[Tooltip(ContentObject.TooltipOptional0 + "If specified, stat requirements will limit the audience of this announcement based on player stats")]
 		[ContentField("stat_requirements")]
