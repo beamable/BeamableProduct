@@ -31,9 +31,9 @@ namespace Beamable.Editor.ToolbarExtender
 		static FieldInfo m_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler",
 			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 		
-		#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
 		static MethodInfo m_SendEventToIMGUI = typeof(IMGUIContainer).GetMethod("SendEventToIMGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-		#endif
+#endif
 
 		static ScriptableObject m_currentToolbar;
 		
@@ -57,7 +57,7 @@ namespace Beamable.Editor.ToolbarExtender
 				m_currentToolbar = toolbars.Length > 0 ? (ScriptableObject)toolbars[0] : null;
 				if (m_currentToolbar != null)
 				{
-#if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
 					var root = m_currentToolbar.GetType().GetField("m_Root", BindingFlags.NonPublic | BindingFlags.Instance);
 					var rawRoot = root.GetValue(m_currentToolbar);
 					var mRoot = rawRoot as VisualElement;

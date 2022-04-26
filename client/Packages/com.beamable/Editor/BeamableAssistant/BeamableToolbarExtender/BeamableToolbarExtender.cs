@@ -161,7 +161,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
 		public const float previewPackagesWarningWidth = 190;
 #elif UNITY_2020_1_OR_NEWER
 		public const float previewPackagesWarningWidth = 175;
@@ -190,7 +190,7 @@ namespace Beamable.Editor.ToolbarExtender
 			Rect leftRect = new Rect(0, 0, screenWidth, Screen.height);
 			leftRect.xMin += space; // Spacing left
 			
-#if !UNITY_2021_3_OR_NEWER
+#if !UNITY_2021_2_OR_NEWER
 			leftRect.xMin += buttonWidth * _toolCount; // Tool buttons
 #if UNITY_2019_3_OR_NEWER
 			leftRect.xMin += space; // Spacing between tools and pivot
@@ -221,7 +221,7 @@ namespace Beamable.Editor.ToolbarExtender
 #else
 			rightRect.xMax -= largeSpace; // Spacing between layers and account
 #endif
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
 			rightRect.xMax -= buttonWidth; // Account
 #else
 			rightRect.xMax -= dropdownWidth; // Account
@@ -244,7 +244,7 @@ namespace Beamable.Editor.ToolbarExtender
 			}
 #endif
 			
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
 #endif
@@ -259,7 +259,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= space;
 
 			// Add top and bottom margins
-#if !UNITY_2021_3_OR_NEWER
+#if !UNITY_2021_2_OR_NEWER
 #if UNITY_2019_3_OR_NEWER
 			leftRect.y = 4;
 			leftRect.height = 26;
@@ -308,38 +308,32 @@ namespace Beamable.Editor.ToolbarExtender
 			}
 
 			GUILayout.EndArea();
+			
+			GUILayout.BeginArea(leftRect);
+			GUILayout.BeginHorizontal();
 
-			//if (leftRect.width > 0)
+			RenderBeamableToolbarButtons(_leftButtons, _editorAPI);
+
+			foreach (var handler in LeftToolbarGUI)
 			{
-				GUILayout.BeginArea(leftRect);
-				GUILayout.BeginHorizontal();
-
-				RenderBeamableToolbarButtons(_leftButtons, _editorAPI);
-
-				foreach (var handler in LeftToolbarGUI)
-				{
-					handler();
-				}
-
-				GUILayout.EndHorizontal();
-				GUILayout.EndArea();
+				handler();
 			}
 
-			//if (rightRect.width > 0)
+			GUILayout.EndHorizontal();
+			GUILayout.EndArea();
+
+			GUILayout.BeginArea(rightRect);
+			GUILayout.BeginHorizontal();
+
+			foreach (var handler in RightToolbarGUI)
 			{
-				GUILayout.BeginArea(rightRect);
-				GUILayout.BeginHorizontal();
-
-				foreach (var handler in RightToolbarGUI)
-				{
-					handler();
-				}
-
-				RenderBeamableToolbarButtons(_rightButtons, _editorAPI);
-
-				GUILayout.EndHorizontal();
-				GUILayout.EndArea();
+				handler();
 			}
+
+			RenderBeamableToolbarButtons(_rightButtons, _editorAPI);
+
+			GUILayout.EndHorizontal();
+			GUILayout.EndArea();
 
 			void RenderBeamableToolbarButtons(List<BeamableToolbarButton> beamableToolbarButtons, BeamEditorContext editorAPI)
 			{
