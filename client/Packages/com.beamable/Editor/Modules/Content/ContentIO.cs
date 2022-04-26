@@ -963,7 +963,9 @@ namespace Beamable.Editor.Content
 		{
 			void BakeLog(string message) => Debug.Log($"[Bake Content] {message}");
 
-			var api = await EditorAPI.Instance;
+			var api = BeamEditorContext.Default;
+			await api.InitializePromise;
+
 			var allContent = api.ContentIO.FindAll();
 
 			List<ContentObject> contentList = null;
