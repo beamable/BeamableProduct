@@ -1,9 +1,13 @@
+using Beamable.Common;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
+using Beamable.Editor.UI;
+using System;
 using UnityEditor;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -18,43 +22,29 @@ using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Toolbox.UI
 {
-	public class ToolboxWindow : EditorWindow
+	public class ToolboxWindow : BeamEditorWindow<ToolboxWindow>
 	{
+
+		static ToolboxWindow()
+		{
+			WindowDefaultConfig = new BeamEditorWindowInitConfig()
+			{
+				Title = MenuItems.Windows.Names.TOOLBOX,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
+				FocusOnShow = false,
+				RequireLoggedUser = true,
+			};
+		}
+
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.TOOLBOX,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1
 		)]
-		public static async void Init()
-		{
-			await LoginWindow.CheckLogin(typeof(SceneView));
+		public static async void Init() => await GetFullyInitializedWindow();
+		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
 
-			// Ensure at most one Beamable ContentManagerWindow exists
-			// If exists, rebuild it from scratch (easy refresh mechanism)
-			if (ToolboxWindow.IsInstantiated)
-			{
-				if (ToolboxWindow.Instance != null && Instance &&
-					EditorWindow.FindObjectOfType(typeof(ToolboxWindow)) != null)
-				{
-					ToolboxWindow.Instance.Close();
-				}
-
-				DestroyImmediate(ToolboxWindow.Instance);
-			}
-
-			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
-			var contentManagerWindow = GetWindow<ToolboxWindow>(MenuItems.Windows.Names.TOOLBOX, true, typeof(SceneView));
-
-			contentManagerWindow.Show(true);
-		}
-
-		public static ToolboxWindow Instance { get; private set; }
-
-		public static bool IsInstantiated
-		{
-			get { return Instance != null; }
-		}
 
 		private VisualElement _windowRoot;
 
@@ -66,26 +56,35 @@ namespace Beamable.Editor.Toolbox.UI
 		private ToolboxModel _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
 
-		private void OnEnable()
+		protected override void Build()
 		{
-			Instance = this;
 			minSize = new Vector2(560, 300);
 
 			// Refresh if/when the user logs-in or logs-out while this window is open
-			EditorAPI.Instance.Then(de => { de.OnUserChange += _ => Refresh(); });
+			ActiveContext.OnUserChange += _ => BuildWithContext();
+
 			// Force refresh to build the initial window
-			Refresh();
+			_model?.Destroy();
+
+			_model = new ToolboxModel();
+			_model.UseDefaultWidgetSource();
+			_model.Initialize();
+
+			SetForContent();
 
 			CheckAnnouncements();
 			CheckForDeps();
 			CheckForUpdate();
 		}
+
 		private void OnDisable()
 		{
 			BeamablePackageUpdateMeta.OnPackageUpdated -= ShowWhatsNewAnnouncement;
 		}
+
 		private void CheckAnnouncements()
 		{
+			if (BeamableEnvironment.IsUnityVsp) return;
 			BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
@@ -97,34 +96,7 @@ namespace Beamable.Editor.Toolbox.UI
 				}
 			});
 		}
-		private async void Refresh()
-		{
-			if (Instance != null)
-			{
-				Instance._model?.Destroy();
-			}
 
-			Instance._model = new ToolboxModel();
-			Instance._model.UseDefaultWidgetSource();
-			Instance._model.Initialize();
-			var de = await EditorAPI.Instance;
-			var isLoggedIn = de.User != null;
-			if (isLoggedIn)
-			{
-				SetForContent();
-			}
-			else
-			{
-				SetForLogin();
-			}
-		}
-		private void SetForLogin()
-		{
-			var root = this.GetRootVisualContainer();
-			root.Clear();
-			var noUserVisualElement = new NoUserVisualElement();
-			root.Add(noUserVisualElement);
-		}
 		private void SetForContent()
 		{
 			var root = this.GetRootVisualContainer();
@@ -173,58 +145,111 @@ namespace Beamable.Editor.Toolbox.UI
 				return;
 			}
 
-			EditorAPI.Instance.Then(api =>
+			if (BeamEditorContext.HasDependencies() || _model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
+				return;
+
+			var descriptionElement = new VisualElement();
+			descriptionElement.AddToClassList("announcement-descriptionSection");
+
+			var label = new Label("Welcome to Beamable! This package includes official Unity assets");
+			label.AddToClassList("noMarginNoPaddingNoBorder");
+			label.AddToClassList("announcement-text");
+			label.AddTextWrapStyle();
+			descriptionElement.Add(label);
+
+			var button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.textmeshpro.html"));
+			button.text = "TextMeshPro";
+			button.AddToClassList("noMarginNoPaddingNoBorder");
+			button.AddToClassList("announcement-hiddenButton");
+			descriptionElement.Add(button);
+
+			label = new Label("and");
+			label.AddToClassList("noMarginNoPaddingNoBorder");
+			label.AddToClassList("announcement-text");
+			label.AddTextWrapStyle();
+			descriptionElement.Add(label);
+
+			button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.addressables.html"));
+			button.text = "Addressables";
+			button.AddToClassList("noMarginNoPaddingNoBorder");
+			button.AddToClassList("announcement-hiddenButton");
+			descriptionElement.Add(button);
+
+			label = new Label("in order to provide UI prefabs you can easily drag & drop into your game. To complete the installation, we must add them to your project now.");
+			label.AddToClassList("noMarginNoPaddingNoBorder");
+			label.AddToClassList("announcement-text");
+			label.AddTextWrapStyle();
+			descriptionElement.Add(label);
+
+			var welcomeAnnouncement = new WelcomeAnnouncementModel();
+			welcomeAnnouncement.DescriptionElement = descriptionElement;
+
+			welcomeAnnouncement.OnImport = () =>
 			{
-				if (api.HasDependencies() ||
-					_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
-				{
-					return;
-				}
+				ActiveContext.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
+			};
+			_model.AddAnnouncement(welcomeAnnouncement);
 
-				var descriptionElement = new VisualElement();
-				descriptionElement.AddToClassList("announcement-descriptionSection");
-
-				var label = new Label("Welcome to Beamable! This package includes official Unity assets");
-				label.AddToClassList("noMarginNoPaddingNoBorder");
-				label.AddToClassList("announcement-text");
-				label.AddTextWrapStyle();
-				descriptionElement.Add(label);
-
-				var button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.textmeshpro.html"));
-				button.text = "TextMeshPro";
-				button.AddToClassList("noMarginNoPaddingNoBorder");
-				button.AddToClassList("announcement-hiddenButton");
-				descriptionElement.Add(button);
-
-				label = new Label("and");
-				label.AddToClassList("noMarginNoPaddingNoBorder");
-				label.AddToClassList("announcement-text");
-				label.AddTextWrapStyle();
-				descriptionElement.Add(label);
-
-				button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.addressables.html"));
-				button.text = "Addressables";
-				button.AddToClassList("noMarginNoPaddingNoBorder");
-				button.AddToClassList("announcement-hiddenButton");
-				descriptionElement.Add(button);
-
-				label = new Label("in order to provide UI prefabs you can easily drag & drop into your game. To complete the installation, we must add them to your project now.");
-				label.AddToClassList("noMarginNoPaddingNoBorder");
-				label.AddToClassList("announcement-text");
-				label.AddTextWrapStyle();
-				descriptionElement.Add(label);
-
-				var welcomeAnnouncement = new WelcomeAnnouncementModel();
-				welcomeAnnouncement.DescriptionElement = descriptionElement;
-
-				welcomeAnnouncement.OnImport = () =>
-				{
-					api.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
-				};
-				_model.AddAnnouncement(welcomeAnnouncement);
-			});
 		}
 		private void CheckForUpdate()
+		{
+			if (BeamableEnvironment.IsUnityVsp)
+			{
+				CheckForUpdateVsp();
+			}
+			else
+			{
+				CheckForUpdateRegistry();
+			}
+		}
+
+		private void CheckForUpdateVsp()
+		{
+			var lastIgnoredVersionStr = EditorPrefs.GetString(VSP_IGNORED_PACKAGE_VERSION, "0.0.0");
+			PackageVersion.TryFromSemanticVersionString(lastIgnoredVersionStr, out var lastIgnoredVersion);
+
+			// use the VSP pathway to check for updates...
+			ActiveContext.ServiceScope.GetService<BeamableVsp>().GetLatestVersion().Then(metadata =>
+			{
+				var currentVersion = BeamableEnvironment.SdkVersion;
+				var latestVersion = metadata.version;
+
+				if (lastIgnoredVersion >= latestVersion)
+				{
+					return; // we've ignored this version.
+				}
+
+				if (latestVersion > currentVersion)
+				{
+					// show the announcement!
+					var versionString = latestVersion.ToString();
+					var isBlog = BeamableWebRequester.IsBlogSpotAvailable(versionString);
+					BeamablePackageUpdateMeta.IsBlogSiteAvailable = isBlog;
+					var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel();
+					updateAvailableAnnouncement.SetDescription(versionString, isBlog);
+
+					updateAvailableAnnouncement.OnIgnore += () =>
+					{
+						EditorPrefs.SetString(VSP_IGNORED_PACKAGE_VERSION, versionString);
+						_model.RemoveAnnouncement(updateAvailableAnnouncement);
+					};
+					updateAvailableAnnouncement.OnWhatsNew += () =>
+					{
+						Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
+						BeamablePackageUpdateMeta.IsBlogVisited = true;
+					};
+					updateAvailableAnnouncement.OnInstall += () =>
+					{
+						Application.OpenURL(metadata.storeUrl);
+						_model.RemoveAnnouncement(updateAvailableAnnouncement);
+					};
+
+					_model.AddAnnouncement(updateAvailableAnnouncement);
+				}
+			});
+		}
+
+		private void CheckForUpdateRegistry()
 		{
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
@@ -240,6 +265,7 @@ namespace Beamable.Editor.Toolbox.UI
 				ShowUpdateAvailableAnnouncement();
 			});
 		}
+
 		private void ShowUpdateAvailableAnnouncement()
 		{
 			if (_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(UpdateAvailableAnnouncementModel)))

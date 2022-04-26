@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Editor;
+using Beamable.Editor.Realms;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
@@ -77,7 +78,7 @@ namespace Beamable.Server.Editor
 
 		Promise<MicroserviceState> StartBuilding()
 		{
-			StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools));
+			StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools, true));
 			return Promise<MicroserviceState>.Successful(MicroserviceState.BUILDING);
 		}
 
@@ -88,15 +89,12 @@ namespace Beamable.Server.Editor
 			switch (CurrentState)
 			{
 				case MicroserviceState.BUILDING:
-					StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools));
+					StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools, true));
 					break;
 				case MicroserviceState.RUNNING:
-					var cid = "";
-					return EditorAPI.Instance.FlatMap(de =>
-					{
-						cid = de.CustomerView.Cid;
-						return de.GetRealmSecret();
-					}).Map(secret =>
+					var de = BeamEditorContext.Default;
+					var cid = de.CurrentCustomer.Cid;
+					return de.GetRealmSecret().Map(secret =>
 					{
 						var logLevel = UseDebug ? "Debug" : "Information";
 						StartProcess(new RunServiceCommand(ServiceDescriptor, cid, secret, null));

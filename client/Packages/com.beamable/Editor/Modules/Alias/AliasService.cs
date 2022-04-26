@@ -28,9 +28,9 @@ namespace Beamable.Editor.Alias
 
 	public class AliasService : IAliasService
 	{
-		private readonly IHttpRequester _httpRequester;
+		private readonly IBeamableRequester _httpRequester;
 
-		public AliasService(IHttpRequester httpRequester)
+		public AliasService(IBeamableRequester httpRequester)
 		{
 			_httpRequester = httpRequester;
 		}
@@ -39,7 +39,7 @@ namespace Beamable.Editor.Alias
 		{
 			if (AliasHelper.IsCid(cidOrAlias))
 			{
-				return new AliasResolve {Alias = new OptionalString(), Cid = new OptionalString(cidOrAlias)};
+				return new AliasResolve { Alias = new OptionalString(), Cid = new OptionalString(cidOrAlias) };
 			}
 
 			var resolve = await MapAliasToCid(cidOrAlias);
@@ -51,7 +51,8 @@ namespace Beamable.Editor.Alias
 
 			return new AliasResolve
 			{
-				Alias = new OptionalString(resolve.alias), Cid = new OptionalString(resolve.cid.ToString())
+				Alias = new OptionalString(resolve.alias),
+				Cid = new OptionalString(resolve.cid.ToString())
 			};
 		}
 
@@ -60,7 +61,7 @@ namespace Beamable.Editor.Alias
 			AliasHelper.ValidateAlias(alias);
 
 			var url = $"/basic/realms/customer/alias/available?alias={alias}";
-			var res = await _httpRequester.ManualRequest<AliasResolveResponse>(Method.GET, url);
+			var res = await _httpRequester.Request<AliasResolveResponse>(Method.GET, url);
 			return res;
 		}
 

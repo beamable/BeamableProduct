@@ -16,12 +16,14 @@ namespace Beamable.Editor.UI.Common
 	{
 		protected VisualElement Root { get; set; }
 		protected string UssPath { get; }
+		private readonly bool _createRoot;
 
-		protected BeamableBasicVisualElement(string ussPath)
+		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
 
 			UssPath = ussPath;
+			_createRoot = createRoot;
 
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
@@ -37,15 +39,21 @@ namespace Beamable.Editor.UI.Common
 
 		public virtual void Init()
 		{
-			Destroy();
 			Clear();
 
 			this.AddStyleSheet(Files.COMMON_USS_FILE);
 			this.AddStyleSheet(UssPath);
 
-			Root = new VisualElement();
-			Root.name = "root";
-			Add(Root);
+			if (_createRoot)
+			{
+				Root = new VisualElement();
+				Root.name = "root";
+				Add(Root);
+			}
+			else
+			{
+				Root = this;
+			}
 
 			this?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
 			{

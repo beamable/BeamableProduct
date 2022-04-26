@@ -36,7 +36,7 @@ namespace Beamable.Api.CloudSaving
 		private WaitForSecondsRealtime _delay;
 		private CoroutineService _coroutineService;
 		private ConcurrentDictionary<string, string> _pendingUploads = new ConcurrentDictionary<string, string>();
-		private ConcurrentDictionary<string, string> _previouslyDownloaded = new ConcurrentDictionary<string, string>();
+		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
 		private IEnumerator _fileWatchingRoutine;
 		private IEnumerator _fileWebRequestRoutine;
 		private ConnectivityService _connectivityService;
@@ -44,11 +44,31 @@ namespace Beamable.Api.CloudSaving
 		private string _manifestPath => Path.Combine(localCloudDataPath.manifestPath, "cloudDataManifest.json");
 		private LocalCloudDataPath localCloudDataPath => new LocalCloudDataPath(_platform);
 		private Promise<Unit> _initDone;
+
+		/// <summary>
+		/// An event with a <see cref="ManifestResponse"/> parameter.
+		/// This event triggers anytime the player's cloud files are updated by another device, or from the Portal.
+		/// </summary>
 		public Action<ManifestResponse> UpdateReceived;
+
+		/// <summary>
+		/// An event with a <see cref="CloudSavingError"/> parameter.
+		/// This event triggers anytime there is an error in the <see cref="CloudSavingService"/>
+		/// </summary>
 		public Action<CloudSavingError> OnError;
+
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> will keep the files located at this file path backed up on Beamable servers.
+		/// You should use this path as the base path for all file read and write operations.
+		/// </summary>
 		public string LocalCloudDataFullPath => localCloudDataPath.dataPath;
 
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> needs to initialize before you should read or write files from the <see cref="LocalCloudDataFullPath"/>.
+		/// This field is a guard that is true when the <see cref="Init"/> method is running, and false otherwise.
+		/// </summary>
 		public bool isInitializing = false;
+
 		public CloudSavingService(IPlatformService platform, PlatformRequester requester,
 		   CoroutineService coroutineService, IDependencyProvider provider) : base(provider, ServiceName)
 		{
@@ -58,6 +78,15 @@ namespace Beamable.Api.CloudSaving
 			_connectivityService = new ConnectivityService(_coroutineService);
 		}
 
+		/// <summary>
+		/// The <see cref="CloudSavingService"/> must initialize before you should read or write any files from the <see cref="LocalCloudDataFullPath"/>.
+		/// This method will start the initialization process. The <see cref="isInitializing"/> field value will be true when this method is running.
+		/// </summary>
+		/// <param name="pollingIntervalSecs">
+		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
+		/// The <see cref="pollingIntervalSecs"/> controls how often Beamable checks for new or updated files on the local device.
+		/// </param>
+		/// <returns>A <see cref="Promise"/> representing when the initialization has completed. </returns>
 		public Promise<Unit> Init(int pollingIntervalSecs = 10)
 		{
 			if (isInitializing) { return _initDone; }
@@ -103,7 +132,7 @@ namespace Beamable.Api.CloudSaving
 		{
 			_pendingUploads.Clear();
 			_localManifest = null;
-			_previouslyDownloaded.Clear();
+			_previouslyProcessedFiles.Clear();
 			return Promise<Unit>.Successful(PromiseBase.Unit);
 		}
 
@@ -164,6 +193,15 @@ namespace Beamable.Api.CloudSaving
 			return (ex) => { InvokeError($"{methodName} Failed: {ex?.Message ?? "unknown reason"}", ex); };
 		}
 
+		/// <summary>
+		/// This method will clear all local user data, and re-fetch everything from the Beamable server.
+		/// The <see cref="Init"/> method will be called as part of this execution.
+		/// </summary>
+		/// <param name="pollingIntervalSecs">
+		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
+		/// The <see cref="pollingIntervalSecs"/> controls how often Beamable checks for new or updated files on the local device.
+		/// </param>
+		/// <returns>A <see cref="Promise"/> representing when the reboot completes</returns>
 		public Promise<Unit> ReinitializeUserData(int pollingIntervalSecs = 10)
 		{
 			if (isInitializing) { return _initDone; }
@@ -179,6 +217,12 @@ namespace Beamable.Api.CloudSaving
 
 		}
 
+		/// <summary>
+		/// <b> You shouldn't need to call this method, because this will be called by the <see cref="Init"/> method </b>
+		/// This method will be marked as Obsolete in the future.
+		/// </summary>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
 		public Promise<ManifestResponse> EnsureRemoteManifest()
 		{
 			return FetchUserManifest().RecoverWith(error =>
@@ -218,7 +262,7 @@ namespace Beamable.Api.CloudSaving
 				foreach (var entry in _localManifest.manifest)
 				{
 					var localFilePath = Path.Combine(LocalCloudDataFullPath, entry.key);
-					_previouslyDownloaded[localFilePath] = entry.eTag;
+					_previouslyProcessedFiles[localFilePath] = entry.eTag;
 				}
 			}
 			return Promise<Unit>.Successful(PromiseBase.Unit);
@@ -228,18 +272,30 @@ namespace Beamable.Api.CloudSaving
 		{
 			return GenerateUploadObjectRequestWithMapping().FlatMap(response =>
 			{
-				if (response.Item1.request.Count <= 0)
+				var uploadManifestRequest = response.Item1;
+				var fileNameToChecksum = response.Item2;
+
+				if (uploadManifestRequest.request.Count <= 0)
 				{
 					return Promise<ManifestResponse>.Failed(new Exception("Upload is empty"));
 				}
 
-				return HandleRequest(response.Item1,
-				   response.Item2,
+				return HandleRequest(uploadManifestRequest,
+				   fileNameToChecksum,
 				   Method.PUT,
 				   "/data/uploadURL"
-				).FlatMap(_ => CommitManifest(response.Item1))
-				.RecoverWith(_ => UploadUserData())
-				.Error(ProvideErrorCallback(nameof(UploadUserData)));
+				).FlatMap(_ => CommitManifest(uploadManifestRequest))
+				.Error(_ =>
+				{
+					//Clear local known state so we reprocess these files
+					foreach (var filename in fileNameToChecksum)
+					{
+						//Clear the known checksum
+						_previouslyProcessedFiles[filename.Key] = null;
+					}
+					ProvideErrorCallback(nameof(UploadUserData));
+				}
+			   );
 			});
 		}
 
@@ -273,7 +329,7 @@ namespace Beamable.Api.CloudSaving
 				   null,
 				   _platform.User.id,
 				   lastModified);
-					_previouslyDownloaded[fullPathToFile] = checksum;
+					_previouslyProcessedFiles[fullPathToFile] = checksum;
 					uploadRequest.Add(uploadObjectRequest);
 				});
 			}
@@ -376,7 +432,7 @@ namespace Beamable.Api.CloudSaving
 				foreach (var s3Object in _localManifest.manifest)
 				{
 					var fullPathToFile = Path.Combine(LocalCloudDataFullPath, s3Object.key);
-					_previouslyDownloaded[fullPathToFile] = s3Object.eTag;
+					_previouslyProcessedFiles[fullPathToFile] = s3Object.eTag;
 				}
 
 				foreach (var s3Object in response.manifest)
@@ -384,8 +440,8 @@ namespace Beamable.Api.CloudSaving
 					var fullPathToFile = Path.Combine(LocalCloudDataFullPath, s3Object.key);
 
 					string hash;
-					var hasBeenDownloaded = _previouslyDownloaded.TryGetValue(fullPathToFile, out hash);
-					var localContentMatchesServer = s3Object.eTag.Equals(hash);
+					var hasBeenDownloaded = _previouslyProcessedFiles.TryGetValue(fullPathToFile, out hash);
+					var localContentMatchesServer = !String.IsNullOrEmpty(hash) && s3Object.eTag.Equals(hash);
 
 					if (!hasBeenDownloaded || !localContentMatchesServer)
 					{
@@ -683,8 +739,8 @@ namespace Beamable.Api.CloudSaving
 			return GenerateChecksum(filePath).FlatMap(checksum =>
 			{
 
-				var checksumEqual = _previouslyDownloaded.ContainsKey(filePath) && _previouslyDownloaded[filePath].Equals(checksum);
-				var missingKey = !_previouslyDownloaded.ContainsKey(filePath);
+				var checksumEqual = _previouslyProcessedFiles.ContainsKey(filePath) && !String.IsNullOrEmpty(_previouslyProcessedFiles[filePath]) && _previouslyProcessedFiles[filePath].Equals(checksum);
+				var missingKey = !_previouslyProcessedFiles.ContainsKey(filePath) || String.IsNullOrEmpty(_previouslyProcessedFiles[filePath]);
 				var fileLengthNotZero = new FileInfo(filePath).Length > 0;
 				if ((!checksumEqual || missingKey) && fileLengthNotZero)
 				{
@@ -875,21 +931,60 @@ namespace Beamable.Api.CloudSaving
 		}
 	}
 
+	/// <summary>
+	/// A cloud saving manifest contains a set of <see cref="CloudSavingManifestEntry"/> objects that describe all of the files
+	/// associated with a player's account.
+	/// </summary>
 	[Serializable]
 	public class ManifestResponse
 	{
+		/// <summary>
+		/// The runtime id of the manifest.
+		/// </summary>
 		public string id;
+
+		/// <summary>
+		/// A set of <see cref="CloudSavingManifestEntry"/> objects that describe the player's files.
+		/// </summary>
 		public List<CloudSavingManifestEntry> manifest;
+
+		/// <summary>
+		/// Manifests will be sent back and forth from Beamable to the game client, and used to update local state.
+		/// If the <see cref="replacement"/> field is true, then all of the local <see cref="CloudSavingManifestEntry"/> entries
+		/// will be overwritten.
+		/// </summary>
 		public bool replacement = false;
 	}
 
+	/// <summary>
+	/// A <see cref="CloudSavingManifestEntry"/> describes one file associated with a player's account, on the Beamable server.
+	/// </summary>
 	[Serializable]
 	public class CloudSavingManifestEntry
 	{
+		/// <summary>
+		/// An internal field. This will be marked as Obsolete in a future release.
+		/// </summary>
 		public string bucketName;
+
+		/// <summary>
+		/// The unique key of the file. This can be used to determine which file this represents.
+		/// </summary>
 		public string key;
+
+		/// <summary>
+		/// The size of the file in Bytes
+		/// </summary>
 		public int size;
+
+		/// <summary>
+		/// The timestamp of when the file was last updated on the remote Beamable server
+		/// </summary>
 		public long lastModified;
+
+		/// <summary>
+		/// A checksum of the file contents
+		/// </summary>
 		public string eTag;
 
 		public CloudSavingManifestEntry(string bucketName, string key, int size, long lastModified, string eTag)

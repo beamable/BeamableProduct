@@ -3,6 +3,7 @@
     justify-content: flex-start;
     align-self: stretch;
     align-items: center;
+    margin-left: 20px;
 }
 
 #propertyLabel {
@@ -48,4 +49,18 @@
 .doesntExists #globalVariable, .doesntExists #removeButton {
     display: none;
     visibility: hidden;
+}
+
+.overrideIndicator{
+    background-color: #ffffff;
+    height: 1px;
+    width: 340px;
+    position: absolute;
+    top: 19px;
+    left: 24px;
+    display: none;
+}
+
+.overriden .overrideIndicator{
+    display: flex;
 }

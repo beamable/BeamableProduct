@@ -43,10 +43,26 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
-			string manifestID) : base(provider, "content")
+									string manifestID) : base(provider, "content")
 		{
 			ManifestID = manifestID;
 		}
+
+		/// <summary>
+		/// This method is obsolete. The scope field won't do anything, and there is no support for subscribing to individual content type updates.
+		/// You should simply use the variant of this method that doesn't accept the scope field. <see cref="PlatformSubscribable{ScopedRsp,Data}.Subscribe()"/>
+		/// </summary>
+		/// <param name="scope"></param>
+		/// <param name="callback"></param>
+		/// <returns></returns>
+#pragma warning disable 0809
+		[Obsolete("The ManifestSubscription doesn't support the scope field. Please use " + nameof(Subscribe) + " instead.")]
+		public override PlatformSubscription<ClientManifest> Subscribe(string scope, Action<ClientManifest> callback)
+		{
+			return base.Subscribe(String.Empty, callback);
+		}
+#pragma warning restore 0809
+
 
 		public bool TryGetContentId(string contentId, out ClientContentInfo clientInfo)
 		{
@@ -175,7 +191,7 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IDependencyProvider provider,
-		                      IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
+							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
 		{
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
@@ -210,11 +226,11 @@ namespace Beamable.Content
 					{
 						continue;
 					}
-					
+
 					file.Delete();
 				}
 			}
-			
+
 			string contentPath = Path.Combine(contentDirectory, contentFileName);
 
 			if (File.Exists(contentPath))
@@ -236,7 +252,8 @@ namespace Beamable.Content
 				if (isValidJson)
 				{
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-				} else
+				}
+				else
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
@@ -269,7 +286,8 @@ namespace Beamable.Content
 			if (isValidJson)
 			{
 				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
-			} else
+			}
+			else
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
 				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);

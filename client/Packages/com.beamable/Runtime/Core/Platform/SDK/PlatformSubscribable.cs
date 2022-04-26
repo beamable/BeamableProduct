@@ -4,8 +4,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Spew;
 using Beamable.Coroutines;
-using Beamable.Spew;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -163,8 +163,10 @@ namespace Beamable.Api
 		/// <param name="scope"></param>
 		/// <param name="callback"></param>
 		/// <returns></returns>
-		public PlatformSubscription<Data> Subscribe(string scope, Action<Data> callback)
+		public virtual PlatformSubscription<Data> Subscribe(string scope, Action<Data> callback)
 		{
+			scope = scope ?? String.Empty;
+
 			List<PlatformSubscription<Data>> subscriptions;
 			if (!scopedSubscriptions.TryGetValue(scope, out subscriptions))
 			{
@@ -242,9 +244,15 @@ namespace Beamable.Api
 			if (nextRefreshScopes.Count == 0)
 				return Promise<Unit>.Successful(PromiseBase.Unit);
 
+
 			if (nextRefreshPromise == null)
 			{
 				nextRefreshPromise = new Promise<Unit>();
+
+				// Need this null-check to cover errors that happen when leaving play-mode (where this method can run after Unity has already destroyed the CoroutineService's GameObject).
+#if UNITY_EDITOR
+				if(coroutineService != null)
+#endif
 				coroutineService.StartCoroutine(ExecuteRefresh());
 			}
 
@@ -260,7 +268,7 @@ namespace Beamable.Api
 			var sentScopes = nextRefreshScopes.ToArray();
 			var scope = string.Join(",", nextRefreshScopes);
 			nextRefreshScopes.Clear();
-			
+
 			ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
 			{
 				var delay = SubscribableConsts.RETRY_DELAYS[Math.Min(retry, SubscribableConsts.RETRY_DELAYS.Length - 1)];
@@ -402,7 +410,6 @@ namespace Beamable.Api
 			object delayRaw = null;
 			object scopesRaw = null;
 			int delay = 0;
-
 			if (payload != null)
 			{
 				if (payload.TryGetValue("scopes", out scopesRaw))

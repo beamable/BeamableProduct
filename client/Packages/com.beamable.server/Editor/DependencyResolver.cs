@@ -10,13 +10,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
-
+	[Serializable]
 	public class AssemblyDefinitionInfo : IEquatable<AssemblyDefinitionInfo>
 	{
 		public string Name;
@@ -204,6 +206,33 @@ namespace Beamable.Server
 		public List<MicroserviceFileDependency> FilesToCopy;
 		public AssemblyDefinitionInfoGroup Assemblies;
 		public List<PluginImporter> DllsToCopy;
+
+		public string GetDependencyChecksum()
+		{
+			var sb = new StringBuilder();
+			foreach (var fileDep in FilesToCopy)
+			{
+				sb.Append(fileDep.Agnostic.SourcePath);
+			}
+
+			foreach (var asm in Assemblies.ToCopy)
+			{
+				sb.Append(asm.Location);
+			}
+
+			foreach (var dll in DllsToCopy)
+			{
+				sb.Append(dll.assetPath);
+			}
+
+			using (var md5 = MD5.Create())
+			{
+				var bytes = Encoding.ASCII.GetBytes(sb.ToString());
+				var hash = md5.ComputeHash(bytes);
+				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+				return checksum;
+			}
+		}
 	}
 
 	public class DependencyResolver : MonoBehaviour

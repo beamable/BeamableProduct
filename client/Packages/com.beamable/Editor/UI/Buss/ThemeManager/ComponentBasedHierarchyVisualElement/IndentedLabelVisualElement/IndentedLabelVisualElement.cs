@@ -102,7 +102,7 @@ namespace Beamable.Editor.UI.Components
 			_container.SetSelected(false);
 		}
 
-		private void RefreshLabel()
+		public void RefreshLabel()
 		{
 			_labelComponent.text = _getLabelAction.Invoke(_relatedBussElement);
 			_labelComponent.MarkDirtyRepaint();

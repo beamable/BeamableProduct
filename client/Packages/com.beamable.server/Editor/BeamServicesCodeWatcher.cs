@@ -1,11 +1,12 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
-using Beamable.Server.Editor.CodeGen;
+using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Callbacks;
@@ -34,6 +35,13 @@ namespace Beamable.Server.Editor
 		public override int GetHashCode() => (ServiceName != null ? ServiceName.GetHashCode() : 0);
 	}
 
+	[Serializable]
+	public struct ServiceDependencyChecksum
+	{
+		public string ServiceName;
+		public string Checksum;
+	}
+
 	public enum BeamCodeClass
 	{
 		Invalid,
@@ -50,6 +58,9 @@ namespace Beamable.Server.Editor
 
 		private List<BeamServiceCodeHandle> LatestCodeHandles;
 		private Task CheckSumCalculation;
+
+		private Dictionary<MicroserviceDescriptor, ServiceDependencyChecksum> ServiceToChecksum =
+			new Dictionary<MicroserviceDescriptor, ServiceDependencyChecksum>();
 
 		public void OnInitialized()
 		{
@@ -69,6 +80,13 @@ namespace Beamable.Server.Editor
 				AsmDefInfo = desc.ConvertToInfo(),
 				CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
 			}).ToList();
+
+			ServiceToChecksum =
+				registry.Descriptors.ToDictionary(desc => desc, desc => new ServiceDependencyChecksum
+				{
+					ServiceName = desc.Name,
+					Checksum = DependencyResolver.GetDependencies(desc).GetDependencyChecksum()
+				});
 
 			var storageCodeHandles = registry.StorageDescriptors.Select(desc => new BeamServiceCodeHandle()
 			{
@@ -103,8 +121,12 @@ namespace Beamable.Server.Editor
 			tasks.AddRange(LatestCodeHandles.Select((beamServiceCodeHandle, index) => Task.Factory.StartNew(() =>
 			{
 				var path = beamServiceCodeHandle.CodeDirectory;
-				var files = Directory.GetFiles(path);
-
+				var files = Directory.GetFiles(path)
+									 .Where(file => !file.EndsWith(".meta"));
+				if (MicroserviceConfiguration.Instance.EnableHotModuleReload)
+				{
+					files = files.Where(file => !file.EndsWith(".cs")).ToArray();
+				}
 				var filesBytes = files.SelectMany(File.ReadAllBytes).ToArray();
 				var md5 = MD5.Create();
 				var checksum = md5.ComputeHash(filesBytes);
@@ -121,18 +143,23 @@ namespace Beamable.Server.Editor
 		{
 			var config = MicroserviceConfiguration.Instance;
 			var currCodeHandles = config.ServiceCodeHandlesOnLastDomainReload;
-			var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
 
-			var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
-												  .Select(asmName => currCodeHandles.FirstOrDefault(c => c.AsmDefInfo.Name == asmName))
-												  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
-												  .ToList();
+			if (currCodeHandles != null && currCodeHandles.Count > 0)
+			{
+				var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
 
-			config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
-			config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+				var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
+													  .Select(asmName => currCodeHandles.FirstOrDefault(
+																  c => c.AsmDefInfo.Name == asmName))
+													  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
+													  .ToList();
 
-			config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
-			config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+				config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
+				config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+
+				config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
+				config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+			}
 		}
 
 		public void CheckForLocalChangesNotYetDeployed()
@@ -152,7 +179,7 @@ namespace Beamable.Server.Editor
 
 				// If it changes, we need to inform that all services that depend on it must be rebuilt.
 				if (latestCommonCodeHandle.CodeClass != BeamCodeClass.Invalid && serializedCommonCodeHandle.CodeClass != BeamCodeClass.Invalid &&
-					!latestCommonCodeHandle.Equals(serializedCommonCodeHandle.Checksum))
+					!latestCommonCodeHandle.Checksum.Equals(serializedCommonCodeHandle.Checksum))
 				{
 					servicesInNeedOfImageRebuild
 						.AddRange(
@@ -187,11 +214,36 @@ namespace Beamable.Server.Editor
 			}
 
 			// Handle notification of services in need of rebuilds
+			servicesInNeedOfImageRebuild = servicesInNeedOfImageRebuild.Distinct().ToList();
+			if (microserviceConfiguration.EnableHotModuleReload)
 			{
-				servicesInNeedOfImageRebuild = servicesInNeedOfImageRebuild.Distinct().ToList();
+				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				var dirtyServices = registry.Descriptors.Where(desc =>
+				{
+					if (!ServiceToChecksum.TryGetValue(desc, out var currentDependency))
+					{
+						return true;
+					}
+
+					var existingChecksum = microserviceConfiguration.ServiceDependencyChecksums.FirstOrDefault(
+						service => service.ServiceName == desc.Name);
+
+					return !string.Equals(existingChecksum.Checksum, currentDependency.Checksum);
+				}).ToList();
+
+				microserviceConfiguration.ServiceDependencyChecksums =
+					ServiceToChecksum.Select(kvp => kvp.Value).ToList();
+
+				foreach (var service in dirtyServices)
+				{
+					var _ = RebootContainer(service);
+				}
+			}
+			else
+			{
 				if (servicesInNeedOfImageRebuild.Count > 0)
 				{
-					GlobalStorage.AddOrReplaceHint(BeamHintType.Validation,
+					GlobalStorage.AddOrReplaceHint(BeamHintType.Hint,
 												   BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
 												   BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER,
 												   servicesInNeedOfImageRebuild);
@@ -201,6 +253,14 @@ namespace Beamable.Server.Editor
 					GlobalStorage.RemoveAllHints(idRegex: BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER);
 				}
 			}
+		}
+
+		private async Promise RebootContainer(MicroserviceDescriptor descriptor)
+		{
+			var model = MicroservicesDataModel.Instance.GetMicroserviceModel(descriptor);
+			await model.Builder.CheckIfIsRunning();
+			if (!model.IsRunning) return;
+			await model.BuildAndRestart();
 		}
 
 		[DidReloadScripts]
@@ -222,6 +282,8 @@ namespace Beamable.Server.Editor
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
 			}
+
+			EditorApplication.quitting += CleanupRunningContainers;
 
 			// Check for the hint regarding local changes that are not deployed to your local docker environment
 			codeWatcher.CheckForLocalChangesNotYetDeployed();
@@ -251,12 +313,9 @@ namespace Beamable.Server.Editor
 					MicroserviceConfiguration.Instance.Microservices.RemoveAll(s => s.ServiceName == serviceName);
 				}
 
-				// For each C#MS that DOES exist, we see if they are new or if there are were changes made to files in their Assembly.
-				var changedOrNewMSCode = latestMSHandles.Where(h => DetectChangesInCodeHandle(h, msHandlesOnPreviousDomainReload)).ToList();
-
-				// For each changed or new handle, gets the descriptor for the C#MS and [re]-generates the client source code.
-				var changedOrNewMsDescriptors = changedOrNewMSCode.Select(h => registry.Descriptors.FirstOrDefault(d => d.Type.Name == h.ServiceName));
-				foreach (var descriptor in changedOrNewMsDescriptors)
+				// For every handle, simply by existing, gets the descriptor for the C#MS and [re]-generates the client source code.
+				var latestDescriptors = latestMSHandles.Select(h => registry.Descriptors.FirstOrDefault(d => d.Type.Name == h.ServiceName));
+				foreach (var descriptor in latestDescriptors)
 				{
 					Assert.IsTrue(descriptor != null, $"You should never see this! The final substring of the Assembly Name must be the same as the ServiceName.");
 					GenerateClientSourceCode(descriptor);
@@ -285,17 +344,93 @@ namespace Beamable.Server.Editor
 			return (!alreadyExisted || checksumDiffers);
 		}
 
-		private static void GenerateClientSourceCode(MicroserviceDescriptor service)
+		public static void CleanupRunningContainers()
 		{
-			var serviceName = service.Name;
-			Directory.CreateDirectory("Assets/Beamable/AutoGenerated/Microservices");
-			var targetFile = $"Assets/Beamable/Autogenerated/Microservices/{serviceName}Client.cs";
-			var tempFile = Path.Combine("Temp", $"{serviceName}Client.cs");
+			try
+			{
+				// this method should exist in some sort of Docker system. But until we have that...
+				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				foreach (var service in registry.Descriptors)
+				{
+					var generatorDesc = new MicroserviceDescriptor
+					{
+						Name = service.Name + "_generator",
+						AttributePath = service.AttributePath,
+						Type = service.Type
+					};
 
-			var generator = new ClientCodeGenerator(service);
-			generator.GenerateCSharpCode(tempFile);
+					var kill = new StopImageCommand(service);
+					var killGenerator = new StopImageCommand(generatorDesc);
+					kill.StartAsync();
+					killGenerator.StartAsync();
+				}
 
-			File.Copy(tempFile, targetFile, true);
+				foreach (var storage in registry.StorageDescriptors)
+				{
+					var kill = new StopImageCommand(storage);
+					var killTool = new StopImageCommand(storage.LocalToolContainerName);
+					kill.StartAsync();
+					killTool.StartAsync();
+				}
+			}
+			catch
+			{
+				Debug.LogError("Failed to clean up running docker containers");
+			}
+		}
+
+		public static void GenerateClientSourceCode(MicroserviceDescriptor service, bool force = false)
+		{
+			// create silly descriptor
+			var generatorDesc = new MicroserviceDescriptor
+			{
+				Name = service.Name + Constants.Features.Services.GENERATOR_SUFFIX,
+				AttributePath = service.AttributePath,
+				Type = service.Type,
+			};
+
+			var clientPath = Constants.Features.Services.AUTOGENERATED_CLIENT_PATH;
+			if (!Directory.Exists(clientPath))
+			{
+				Directory.CreateDirectory(clientPath);
+			}
+
+			var check = new CheckImageReturnableCommand(generatorDesc);
+
+			check.StartAsync().Then(isRunning =>
+			{
+				if (isRunning && !force)
+				{
+					var codeGenCheck = new CheckImageCodeGenErrorCommand(generatorDesc);
+
+					codeGenCheck.StartAsync().Then(hasCodeError =>
+					{
+						if (hasCodeError)
+						{
+							RebuildAndRegenerate(generatorDesc);
+						}
+					});
+				}
+				else
+					RebuildAndRegenerate(generatorDesc);
+
+			});
+		}
+
+		private static void RebuildAndRegenerate(MicroserviceDescriptor generatorDesc)
+		{
+			// definately stop the image, even if there was doubt it was running. Because if we do a "build", any existing image will ABSOLUTELY be ruined by the overcopy.
+			new StopImageReturnableCommand(generatorDesc).StartAsync().Then(__ =>
+			{
+				var buildCommand = new BuildImageCommand(generatorDesc, false, true);
+				buildCommand.StartAsync().Then(_ =>
+				{
+					var clientCommand = new RunClientGenerationCommand(generatorDesc);
+					clientCommand.Start();
+					// TODO: add some sort of "cleanup" operation
+					// TODO: consider add info hint when the generator image is running
+				});
+			});
 		}
 	}
 }

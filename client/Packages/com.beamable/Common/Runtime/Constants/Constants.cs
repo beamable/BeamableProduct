@@ -13,6 +13,13 @@
 			public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
 			public const string OPEN = "Open";
 		}
+
+		public static class Environment
+		{
+			public const string BUILD__SDK__VERSION__STRING = "BUILD__SDK__VERSION__STRING";
+			public const string UNITY__VSP__UID = "UNITY__VSP__UID";
+		}
+
 		public static class Directories
 		{
 			public const string BEAMABLE_ASSETS = "Assets/Beamable";
@@ -80,7 +87,7 @@
 					public const string BUSS = BEAMABLE + " Styles";
 					public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
 					public const string BUSS_WIZARD = "Theme Wizard";
-					public const string LOGIN = "Beamble Login";
+					public const string LOGIN = "Beamable Login";
 					public const string SDF_GENERATOR = "SDF Generator";
 				}
 				public static class Paths
@@ -129,6 +136,12 @@
 					public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3 = 100;
 					public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST = int.MaxValue;
 				}
+			}
+
+			public static class Icons
+			{
+				public const char ARROW_DOWN_UTF = '\u25BC';
+				public const char ARROW_UP_UTF = '\u25B2';
 			}
 		}
 	}

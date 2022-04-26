@@ -21,6 +21,7 @@
 #colorBlock {
     margin-top: 5px;
     margin-bottom: 5px;
+    margin-left:10px;
     width: 5px;
     background-color: rgb(144, 144, 144);
 }
@@ -87,8 +88,6 @@
 .headerButton:hover {
     background-color: rgb(162,162,162); 
 }
-
-
 
 .remove {
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png"); 

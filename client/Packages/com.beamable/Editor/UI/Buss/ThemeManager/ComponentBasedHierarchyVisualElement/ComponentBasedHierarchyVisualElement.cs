@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
@@ -33,7 +34,7 @@ namespace Beamable.Editor.UI.Components
 			private set;
 		}
 
-		private IndentedLabelVisualElement SelectedLabel
+		protected IndentedLabelVisualElement SelectedLabel
 		{
 			get => _selectedLabel;
 			set
@@ -131,6 +132,11 @@ namespace Beamable.Editor.UI.Components
 					ChangeSelectedLabel(indentedLabelVisualElement, false);
 				}
 			}
+			else
+			{
+				SelectedComponent = null;
+				ChangeSelectedLabel(null, false);
+			}
 		}
 
 		private void ChangeSelectedLabel(IndentedLabelVisualElement newLabel, bool setInHierarchy = true)
@@ -152,6 +158,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void Traverse(GameObject gameObject, int currentLevel)
 		{
+			if (!gameObject) return; // if the gameobject has been destroyed, we cannot traverse it.
+
 			T foundComponent = gameObject.GetComponent<T>();
 
 			if (foundComponent != null)

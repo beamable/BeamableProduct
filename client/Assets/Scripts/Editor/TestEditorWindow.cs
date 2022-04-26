@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 
 /// <summary>
 /// <para>This is class created only for one purpose- make sure that issues like below are detected right away:</para>

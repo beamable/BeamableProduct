@@ -8,6 +8,8 @@
 			{
 				public const string BASE_PATH = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Buss";
 				public const string COMPONENTS_PATH = BASE_PATH + "/Components";
+
+				public const string NEW_SELECTOR_NAME = "[Selector]";
 			}
 		}
 	}

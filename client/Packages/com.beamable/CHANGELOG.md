@@ -2,6 +2,7 @@
 
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -9,23 +10,81 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `PreventAddressableCodeStripping` Core Configuration setting that automatically generates a link.xml file that will preserve addressable types.
+- `TryClaim` method in `EventService` to attempt a claim, even if one is not invalid
+- Added `GetDeviceId` method in `AuthService`
+- Added `deviceIds` field in `User`
+- 
+### Changed
+- `ManifestSubscription` subscription no longer accepts the scope field
+- AccountHud logs a warning when pressed if there isn't an AccountManagementFlow in the scene.
+- Increased the AdminFlow scroll speed
+- InventoryFlow can now be configured at the GameObject level.
+- Edit mode for Buss Style Card has been removed in favor of context menus for selector label, variables and properties
+- Claiming an event that a player never submitted a score for will report an accurate error message
+
+### Fixed
+- StoreView prefab now works in landscape mode
+
+## [1.1.2]
+### Fixed
+- `AccessTokenStorage` no longer throws `ArgumentOutOfRangeException` when starting in offline mode
+
+## [1.1.1]
+### Fixed
+- The namespace for `PropertySourceTracker` no longer invalidates the usage of `UnityEditor.Editor` as a type reference
+
+## [1.1.0]
+### Added
+- Added `RecoverWith` extension method overloads to `Promise<T>` that allow for configuring  a promise to recover from failure over multiple attempts.
+- Selected Buss Element section in Buss Theme Manager
+- Added `AddAsChild(VisualElement, string, params string[])` to `BeamHintVisualsInjectionBag` to allow `BeamHintDetailConverter` functions to build and inject dynamically created `VisualElements` into Hint Details.
+
+### Changed
+- Behaviour of Add Style button in Buss Theme Manager
+- Add Style button moved above Buss Style Cards section in Buss Theme Manager
+- Buss Element selection improvement in Buss Theme Manager   
+- Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
+- All implementations of `[BeamContextSystem]` or `[RegisterBeamableDependencies]` will be preserved durring Unity code stripping
+- Updated C#MS Publish window UI/UX
+- Properties in Buss Style Card sorted alphabetically by default
+
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
 - Compilation error when using new `com.unity.inputsystem`
+- Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
+- Content string fields can contain escaped characters, and won't be double escaped after download
+- Fixed issue with `ReflectionCache` that happened on certain platforms when `IEnumerable` returning functions had to be parsed for `AttributesOfInterest`.
+- Possible `DivideByZero` exxception that was thrown durring Toolbox usage
 
-### Changed
-- Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
+## [1.0.8]
+### Added
+- `CoreConfiguration.EnableInfiniteContextRetries` and `CoreConfiguration.ContextRetryDelays` options to allow developers to override what happens when a BeamContext cannot initialize 
+
+## [1.0.7]
+This is a broken package. It includes changes from the 1.1.0 release. Please do not use this version.
+
+## [1.0.6]
+### Added
+- Optional parameter `mergeGamerTagToAccount` to `IAuthService.LoginDeviceId` to support recovering an old account
+
+## [1.0.5]
+### Fixed
+- Unity IAP failure to initialize on device won't hang `BeamContext.Default.OnReady`
+
+## [1.0.4]
+### Fixed
+- `IBeamableRequester` implementations no longer dispose `UnityWebRequest` too soon
 
 ## [1.0.3]
 ### Fixed 
 - All `IBeamableRequester` implementations dispose `UnityWebRequest` after usage
 - Beamable.Platform assembly definition references Facebook.Unity dll if it exists
 
-
 ## [1.0.2]
 ### Fixed
 - Windows Microservices first time build issue regarding empty build directories
-
 
 ## [1.0.1]
 ### Added

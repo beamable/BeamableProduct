@@ -1,6 +1,9 @@
 using Beamable.Editor.UI.Common;
 using System;
 using System.IO;
+using System.Reflection;
+using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -160,7 +163,7 @@ namespace Beamable.Editor
 			return Check;
 		}
 
-		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker)
+		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker, double debounceTime = .25)
 		{
 			var constraint = new FormConstraint
 			{
@@ -190,7 +193,7 @@ namespace Beamable.Editor
 			{
 				// wait up to .25 seconds.
 				var time = EditorApplication.timeSinceStartup;
-				nextCheckTime = time + .25;
+				nextCheckTime = time + debounceTime;
 				Debounce();
 			}
 
@@ -275,6 +278,53 @@ namespace Beamable.Editor
 				lbl.RemoveFromClassList("hidden");
 				Center();
 			};
+		}
+
+		public static EditorWindow GetEditorWindowWithReflection(this BeamableBasicVisualElement element)
+		{
+			try
+			{
+				var ownerProperty = element.panel.GetType().GetProperty("ownerObject");
+				var owner = ownerProperty.GetValue(element.panel);
+				var window = owner.GetType().BaseType.GetProperty("actualView", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(owner);
+				return (EditorWindow)window;
+			}
+			catch (Exception)
+			{
+				return null;
+			}
+		}
+
+		public static void AssignUIRefs(this BeamableBasicVisualElement element)
+		{
+			var type = element.GetType();
+			while (type != typeof(BeamableBasicVisualElement))
+			{
+				var fields = type.GetFields(
+					BindingFlags.Instance |
+					BindingFlags.NonPublic |
+					BindingFlags.Public |
+					BindingFlags.DeclaredOnly);
+
+				foreach (FieldInfo fieldInfo in fields)
+				{
+					var autoReferenceAttribute = fieldInfo.GetCustomAttribute<UIRefAttribute>();
+
+					if (autoReferenceAttribute == null)
+					{
+						continue;
+					}
+
+					if (!typeof(VisualElement).IsAssignableFrom(fieldInfo.FieldType))
+					{
+						BeamableLogger.LogError($"UIRefAttribute can only be used for fields of type that inherit from BeamableBasicVisualElement!");
+						continue;
+					}
+					autoReferenceAttribute.AssignRef(element, fieldInfo);
+				}
+
+				type = type.BaseType;
+			}
 		}
 	}
 }

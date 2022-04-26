@@ -41,6 +41,11 @@ namespace Beamable
 				 "will not be deleted.")]
 		public bool PreventCodeStripping = true;
 
+		[Tooltip("by default, Beamable won't let Unity Addressables code files be stripped form the project on build. " +
+				 "When this setting is enabled, anything the project is built, a link.xml file will be generated in the Assets/beamable/Resources/AddressableLinker " +
+				 "folder. If you disable this setting, the link file won't be generated. However, any existing link file won't be deleted. ")]
+		public bool PreventAddressableCodeStripping = true;
+
 		public static CoreConfiguration Instance => Get<CoreConfiguration>();
 
 		public enum EventHandlerConfig { Guarantee, Replace, Add, }
@@ -53,6 +58,23 @@ namespace Beamable
 				 "- Add => Adds Beamable's default handler to the list of handlers, but keep existing handlers configured.\n")]
 		public EventHandlerConfig DefaultUncaughtPromiseHandlerConfiguration;
 
+		[Tooltip("When a Beamable Context tries to initialize, but fails for some reason, the " +
+				 "context will automatically attempt to retry the initialization. A retry will be attempted " +
+				 "after the number of seconds in the ContextRetryDelays array, for the index of the current " +
+				 "retry attempt. If the array is exhausted, and this EnableInfiniteContextRetries field is true, " +
+				 "then the last index in the retry timing array will be used on repeat forever, until the context " +
+				 "initializes. If you set this to false, then at after all retries have failed, the BeamContext OnReady " +
+				 "promise will result in an error.")]
+		public bool EnableInfiniteContextRetries = true;
+
+		[Tooltip("When a Beamable Context tries to initialize, but fails for some reason, the " +
+				 "context will automatically attempt to retry the initialization. This array controls " +
+				 "the number, and timing, of the retries. Each value represents a number of seconds to wait " +
+				 "before retrying again. If an retry fails, then the next index in the array will be used " +
+				 "for the next retry delay. Once the array has been exhausted, depending on the value of " +
+				 "EnableInfiniteContextRetries, the OnReady promise will either throw an error, or the last " +
+				 "value in the ContextRetryDelays array will be used forever.")]
+		public double[] ContextRetryDelays = new double[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
 
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +

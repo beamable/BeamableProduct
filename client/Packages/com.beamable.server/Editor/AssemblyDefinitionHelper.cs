@@ -288,6 +288,8 @@ namespace Beamable.Server.Editor
 			{
 				var assemblyDefPath = AssetDatabase.GUIDToAssetPath(assemblyDefGuid);
 				var assemblyDef = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assemblyDefPath);
+				if (assemblyDef == null) continue;
+
 				yield return assemblyDef;
 			}
 		}
@@ -462,7 +464,7 @@ namespace Beamable.Server.Editor
 			var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
 
 			var toolCheck = new CheckImageReturnableCommand(storage.LocalToolContainerName);
-			var isToolRunning = await toolCheck.Start(null);
+			var isToolRunning = await toolCheck.StartAsync();
 
 			if (!isToolRunning)
 			{
@@ -484,15 +486,15 @@ namespace Beamable.Server.Editor
 		public static async Promise<bool> SnapshotMongo(StorageObjectDescriptor storage, string destPath)
 		{
 			var storageCheck = new CheckImageReturnableCommand(storage);
-			var isStorageRunning = await storageCheck.Start(null);
+			var isStorageRunning = await storageCheck.StartAsync();
 			if (!isStorageRunning) return false;
 
 			var dumpCommand = new MongoDumpCommand(storage);
-			var dumpResult = await dumpCommand.Start(null);
+			var dumpResult = await dumpCommand.StartAsync();
 			if (!dumpResult) return false;
 
 			var cpCommand = new DockerCopyCommand(storage, "/beamable/.", destPath);
-			return await cpCommand.Start(null);
+			return await cpCommand.StartAsync();
 		}
 
 		public static async Promise<bool> RestoreMongoSnapshot(StorageObjectDescriptor storage, string srcPath, bool hardReset = true)
@@ -504,7 +506,7 @@ namespace Beamable.Server.Editor
 
 
 			var storageCheck = new CheckImageReturnableCommand(storage);
-			var isStorageRunning = await storageCheck.Start(null);
+			var isStorageRunning = await storageCheck.StartAsync();
 			if (!isStorageRunning)
 			{
 				var restart = new RunStorageCommand(storage);
@@ -513,30 +515,30 @@ namespace Beamable.Server.Editor
 
 			srcPath += "/."; // copy _contents_ of folder.
 			var cpCommand = new DockerCopyCommand(storage, "/beamable", srcPath, DockerCopyCommand.CopyType.HOST_TO_CONTAINER);
-			var cpResult = await cpCommand.Start(null);
+			var cpResult = await cpCommand.StartAsync();
 			if (!cpResult) return false;
 
 			var restoreCommand = new MongoRestoreCommand(storage);
-			return await restoreCommand.Start(null);
+			return await restoreCommand.StartAsync();
 		}
 
 		public static async Promise<bool> ClearMongoData(StorageObjectDescriptor storage)
 		{
 			Debug.Log("Clearing mongo");
 			var storageCheck = new CheckImageReturnableCommand(storage);
-			var isStorageRunning = await storageCheck.Start(null);
+			var isStorageRunning = await storageCheck.StartAsync();
 			if (isStorageRunning)
 			{
 				Debug.Log("Stopping mongo");
 
 				var stopComm = new StopImageCommand(storage);
-				await stopComm.Start(null);
+				await stopComm.StartAsync();
 			}
 
 			Debug.Log("Deleting volumes");
 
 			var deleteVolumes = new DeleteVolumeCommand(storage);
-			var results = await deleteVolumes.Start(null);
+			var results = await deleteVolumes.StartAsync();
 			var err = results.Any(kvp => !kvp.Value);
 			if (err)
 			{

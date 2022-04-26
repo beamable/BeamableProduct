@@ -6,9 +6,15 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		public string ContainerName { get; set; }
 
-		public StopImageReturnableCommand(IDescriptor descriptor)
+		public StopImageReturnableCommand(IDescriptor descriptor) : this(
+			descriptor.ContainerName)
 		{
-			ContainerName = descriptor.ContainerName;
+
+		}
+
+		public StopImageReturnableCommand(string containerName)
+		{
+			ContainerName = containerName;
 			UnityLogLabel = "STOP";
 			WriteCommandToUnity = false;
 			WriteLogToUnity = false;
@@ -30,10 +36,13 @@ namespace Beamable.Server.Editor.DockerCommands
 		public StopImageCommand(IDescriptor descriptor) : base(descriptor)
 		{
 		}
+		public StopImageCommand(string containerName) : base(containerName)
+		{
+		}
 
 		public new Promise<bool> Start()
 		{
-			return Start(null);
+			return StartAsync();
 		}
 	}
 }

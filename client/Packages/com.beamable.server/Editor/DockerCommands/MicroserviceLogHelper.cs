@@ -22,6 +22,19 @@ namespace Beamable.Server.Editor.DockerCommands
 			"Exception",
 			"exception"
 		};
+
+		private static readonly Dictionary<string, string> ContextForLogs =
+			new Dictionary<string, string>
+			{
+				{"pull access denied for beamservice",
+					"No version of beamservice exists on your computer. Please rebuild the image and try again. " +
+					"Please ignore Docker’s access denied messaging, that is a red herring"}
+			};
+
+		private static readonly HashSet<string> ErrorExclusions = new HashSet<string>
+		{
+			"\" >> /etc/supervisor/conf.d/supervisord.conf && echo \"loglevel=error"
+		};
 		private static readonly string[] ExpectedRunLogs = {
 			Logs.STARTING_PREFIX,
 			Logs.SCANNING_CLIENT_PREFIX,
@@ -259,14 +272,34 @@ namespace Beamable.Server.Editor.DockerCommands
 				var total = int.Parse(values[1].Value);
 				builder.OnBuildingProgress?.Invoke(current, total);
 			}
+			else if (ContextForLogs.Keys.Any(message.Contains))
+			{
+				var key = ContextForLogs.Keys.First(message.Contains);
+				EditorApplication.delayCall += () =>
+				{
+					Debug.LogError(ContextForLogs[key]);
+				};
+			}
 			else if (message.Contains("Success"))
 			{
 				builder.OnBuildingFinished?.Invoke(true);
 			}
-			else if (ErrorElements.Any(message.Contains))
+			else if (IsErrorMatch(message))
 			{
 				builder.OnBuildingFinished?.Invoke(false);
 			}
+		}
+
+		private static bool IsErrorMatch(string message)
+		{
+			//" >> /etc/supervisor/conf.d/supervisord.conf && echo "loglevel=error
+			var simpleMatch = ErrorElements.Any(message.Contains);
+			if (simpleMatch)
+			{
+				var isExclusion = ErrorExclusions.Contains(message);
+				return !isExclusion;
+			}
+			return false;
 		}
 
 		public static void HandleRunCommandOutput(IBeamableBuilder builder, string message)

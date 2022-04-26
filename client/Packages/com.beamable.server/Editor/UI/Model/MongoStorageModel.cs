@@ -81,10 +81,8 @@ namespace Beamable.Editor.UI.Model
 
 		protected void OpenRemoteMongo()
 		{
-			EditorAPI.Instance.Then(b =>
-			{
-				UnityEngine.Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.Cid}&pid={b.Pid}&token={b.Token.Token}");
-			});
+			var b = BeamEditorContext.Default;
+			Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.CurrentCustomer.Cid}&pid={b.CurrentRealm.Pid}&token={b.Requester.Token.Token}");
 		}
 
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
@@ -103,19 +101,29 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 
-			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
+			var isFirst = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) == 0;
+			var isLast = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroservicesDataModel.Instance.Storages.Count - 1;
+
+			evt.menu.BeamableAppendAction($"Move up", pos =>
 			{
-				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) > 0);
-				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
-			}
+				MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move down", pos =>
+			{
+				MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, isLast);
+			evt.menu.BeamableAppendAction($"Move to top", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, 0, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move to bottom", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Storages.Count - 1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, isLast);
 		}
 
 		public override void Refresh(IDescriptor descriptor)
