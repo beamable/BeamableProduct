@@ -64,7 +64,7 @@ namespace Beamable.Editor.UI.Components
 
 			_classesList = CreateClassesList();
 
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 			_classesList.Rebuild();
 #else
 			_classesList.Refresh();
@@ -184,7 +184,7 @@ namespace Beamable.Editor.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 				fixedItemHeight = 24,
 #else
 				itemHeight = 24,
@@ -225,7 +225,7 @@ namespace Beamable.Editor.UI.Components
 				? BussNameUtility.AsClassesList(_currentBussElement.Classes.ToList())
 				: new List<string>();
 
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 			_classesList.Rebuild();
 #else
 			_classesList.Refresh();

@@ -182,7 +182,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_advanceDropDown.RemoveFromHierarchy();
 			}
 
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 			_listView.Rebuild();
 #else
 			_listView.Refresh();
@@ -255,7 +255,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			EditorApplication.delayCall += () =>
 			{
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 				_listView.Rebuild();
 #else
 				_listView.Refresh();
@@ -315,7 +315,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 				fixedItemHeight = 24,
 #else
 				itemHeight = 24,
@@ -324,7 +324,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			};
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
 
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 			view.Rebuild();
 #else
 			view.Refresh();

@@ -37,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 				makeItem = () => new ConsoleLogVisualElement(),
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 				fixedItemHeight = 24,
 #else
 				itemHeight = 24,
@@ -45,7 +45,7 @@ namespace Beamable.Editor.UI.Components
 				itemsSource = _logMessages
 			};
 			
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 			_listView.Rebuild();
 #else
 			_listView.Refresh();
@@ -96,7 +96,7 @@ namespace Beamable.Editor.UI.Components
 			_logMessages.Add(message);
 			EditorApplication.delayCall += () =>
 			{
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_2_OR_NEWER	
 				_listView.Rebuild();
 #else
 				_listView.Refresh();
