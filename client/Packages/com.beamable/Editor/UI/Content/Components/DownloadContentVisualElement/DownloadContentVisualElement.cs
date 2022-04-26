@@ -162,10 +162,12 @@ namespace Beamable.Editor.Content.Components
 				source.AddRange(entries);
 #if UNITY_2021_2_OR_NEWER	
 				foldout.Q<ListView>().style.height = _modifiedList.fixedItemHeight * entries.Count();
+				listView.Rebuild();
 #else
 				foldout.Q<ListView>().style.height = _modifiedList.itemHeight * entries.Count();
+				listView.Refresh();
 #endif
-				listView.Rebuild();
+				
 			}
 			else
 			{
