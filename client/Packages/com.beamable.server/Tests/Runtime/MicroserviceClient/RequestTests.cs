@@ -181,21 +181,21 @@ namespace Beamable.Server.Tests.Runtime
 
 			public override string ToString() => $"A=[{A}]";
 		}
-		
+
 		[System.Serializable]
 		public class LocalizeContentObject : ContentObject
 		{
 			[SerializeField]
 			public string Title = "";
-		
+
 			[SerializeField]
 			public int RandomSeed = 3;
-			
+
 			public override bool Equals(object obj)
 			{
 				return obj != null && obj is LocalizeContentObject casted && casted.Title == Title && casted.RandomSeed == RandomSeed;
 			}
-			
+
 			public override int GetHashCode()
 			{
 				return base.GetHashCode(); // need to override because of Equals override
@@ -284,15 +284,15 @@ namespace Beamable.Server.Tests.Runtime
 			yield return req.ToYielder();
 			Assert.AreEqual(new Vector2(1, 3), req.GetResult());
 		}
-		
+
 		[UnityTest]
 		public IEnumerator CanDeserializeContentObject()
 		{
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<LocalizeContentObject>(Method.POST,
-			                                   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("{\"Title\": \"Tst\", \"RandomSeed\": 3}");
+											   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("{\"Title\": \"Tst\", \"RandomSeed\": 3}");
 
 			var req = client.Request<LocalizeContentObject>(ROUTE, new string[] { });
 
@@ -301,18 +301,18 @@ namespace Beamable.Server.Tests.Runtime
 			var tmp = ScriptableObject.CreateInstance<LocalizeContentObject>();
 			tmp.Title = "Tst";
 			tmp.RandomSeed = 3;
-			
+
 			Assert.AreEqual(tmp, req.GetResult());
 		}
-		
+
 		[UnityTest]
 		public IEnumerator CanDeserializeListOf_ContentObject()
 		{
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<List<LocalizeContentObject>>(Method.POST,
-			                                                       client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("[{\"Title\": \"Tst1\", \"RandomSeed\": 1},{\"Title\": \"Tst2\", \"RandomSeed\": 2} ]");
+																   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("[{\"Title\": \"Tst1\", \"RandomSeed\": 1},{\"Title\": \"Tst2\", \"RandomSeed\": 2} ]");
 
 			var req = client.Request<List<LocalizeContentObject>>(ROUTE, new string[] { });
 
@@ -327,7 +327,7 @@ namespace Beamable.Server.Tests.Runtime
 				tmp.RandomSeed = i;
 				tmpList.Add(tmp);
 			}
-			
+
 			Assert.AreEqual(tmpList, req.GetResult());
 		}
 	}

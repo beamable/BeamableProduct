@@ -117,9 +117,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual.Clear();
 				SetupServicesStatus();
 			}
-			
+
 			CheckLoginStatus();
-			
+
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
 			EditorApplication.delayCall +=
@@ -129,17 +129,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 						return;
 
 					var command = new GetDockerLocalStatus();
-					_dockerStatusPromise = command.Start(null);
+					_dockerStatusPromise = command.StartAsync();
 				};
 		}
-		
+
 		private void CheckLoginStatus()
 		{
-			EditorAPI.Instance.Then(api =>
-			{
-				foreach (var kvp in _modelToVisual)
-					kvp.Value.ChangeStartButtonState(api.IsLoggedIn, Constants.Tooltips.Microservice.PLAY, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
-			});
+			var api = BeamEditorContext.Default;
+
+			foreach (var kvp in _modelToVisual)
+				kvp.Value.ChangeStartButtonState(api.IsAuthenticated, Constants.Tooltips.Microservice.PLAY, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
 		}
 
 		private void HandleSelectionChanged(bool _)
@@ -386,23 +385,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (DockerCommand.DockerNotInstalled)
 			{
-				dockerAnnouncement.OnInstall = () =>
+				dockerAnnouncement.OnInstall = async () =>
 				{
-					BeamableAssistantWindow.ShowWindow()
-										   .ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-																					BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-																					BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
+					var window = await BeamableAssistantWindow.Init();
+					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+														 BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
 
 				};
 			}
 			else
 			{
-				dockerAnnouncement.OnInstall = () =>
+				dockerAnnouncement.OnInstall = async () =>
 				{
-					BeamableAssistantWindow.ShowWindow()
-								.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-																		 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-																		 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
+					var window = await BeamableAssistantWindow.Init();
+					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+														 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
 				};
 
 			}
@@ -462,6 +461,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
+		public void StopAllServices(bool showDialog = false, string dialogTitle = "", string dialogMessage = "", string dialogConfirm = "")
+		{
+			var isAnyServiceStopped = false;
+			foreach (var service in _modelToVisual.Keys)
+				if (service.IsRunning)
+				{
+					isAnyServiceStopped = true;
+					service.Stop();
+				}
 
+			if (!showDialog || !isAnyServiceStopped)
+				return;
+
+			EditorUtility.DisplayDialog(dialogTitle, dialogMessage, dialogConfirm);
+		}
 	}
 }
