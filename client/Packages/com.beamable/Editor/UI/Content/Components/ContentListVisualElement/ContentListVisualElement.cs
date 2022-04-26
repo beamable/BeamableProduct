@@ -47,10 +47,7 @@ namespace Beamable.Editor.Content.Components
 		private List<HeaderSizeChange> _headerSizeChanges;
 		private bool _isKeyboardInputBlocked;
 
-
-		public ContentListVisualElement() : base(nameof(ContentListVisualElement))
-		{
-		}
+		public ContentListVisualElement() : base(nameof(ContentListVisualElement)) { }
 
 #if UNITY_2018
         protected override void DoRepaint(IStylePainter painter)
@@ -65,10 +62,10 @@ namespace Beamable.Editor.Content.Components
 
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_mainVisualElement.RegisterCallback<MouseDownEvent>(MainContent_OnMouseDownEvent,
-				TrickleDown.NoTrickleDown);
+			                                                    TrickleDown.NoTrickleDown);
 
 			_headerVisualElement = Root.Q<HeaderVisualElement>("headerVisualElement");
-			_headerVisualElement.Headers = new[] { "Content ID", "Content Type", "Tags" };
+			_headerVisualElement.Headers = new[] {"Content ID", "Content Type", "Tags"};
 			_headerVisualElement.Refresh();
 			_headerVisualElement.OnValuesChanged += Header_OnValuesResized;
 			_headerSizeChanges = GetHeaderSizeChanges();
@@ -87,7 +84,11 @@ namespace Beamable.Editor.Content.Components
 			var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
 			_listView.AddManipulator(manipulator);
 
+#if UNITY_2021_3_OR_NEWER
+			_listView.Rebuild();
+#else
 			_listView.Refresh();
+#endif
 
 			RegisterCallback<KeyDownEvent>(RegisterKeyDown, TrickleDown.TrickleDown);
 			RegisterCallback<KeyUpEvent>(RegisterKeyUp, TrickleDown.TrickleDown);
@@ -133,8 +134,7 @@ namespace Beamable.Editor.Content.Components
 
 		private List<HeaderSizeChange> GetHeaderSizeChanges()
 		{
-			return _headerSizeChanges ??
-				   (_headerSizeChanges = _headerVisualElement.ComputeSizes(new List<float> { 1, .5f, .2f }));
+			return _headerSizeChanges ??= _headerVisualElement.ComputeSizes(new List<float> {1, .5f, .2f});
 		}
 
 		private void ApplyColumnSizes(VisualElement listElement)
@@ -155,7 +155,11 @@ namespace Beamable.Editor.Content.Components
 
 		private void Model_OnFilteredContentChanged()
 		{
+#if UNITY_2021_3_OR_NEWER
+			_listView.Rebuild();
+#else
 			_listView.Refresh();
+#endif
 		}
 
 		private ExtendedListView CreateListView()
@@ -165,13 +169,21 @@ namespace Beamable.Editor.Content.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Multiple,
+#if UNITY_2021_3_OR_NEWER
+				fixedItemHeight = ListViewItemHeight,
+#else
 				itemHeight = ListViewItemHeight,
+#endif
 				itemsSource = Model.FilteredContents
 			};
 
 			view.BeamableOnItemChosen(ListView_OnItemChosen);
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
+#if UNITY_2021_3_OR_NEWER
+			view.Rebuild();
+#else
 			view.Refresh();
+#endif
 			return view;
 		}
 
@@ -203,7 +215,6 @@ namespace Beamable.Editor.Content.Components
 			return contentVisualElement;
 		}
 
-
 		/// <summary>
 		/// Capture when the background (Not an item) is clicked
 		/// with ANY mouse button.
@@ -226,16 +237,16 @@ namespace Beamable.Editor.Content.Components
 				return;
 
 			var selection = contentItemDescriptor
-				.Where(item => !string.IsNullOrEmpty(item?.AssetPath))
-				.Select(item =>
-					new Tuple<UnityEngine.Object, ContentItemDescriptor>(
-						AssetDatabase.LoadMainAssetAtPath(item.AssetPath), item))
-				.ToList();
+			                .Where(item => !string.IsNullOrEmpty(item?.AssetPath))
+			                .Select(item =>
+				                        new Tuple<UnityEngine.Object, ContentItemDescriptor>(
+					                        AssetDatabase.LoadMainAssetAtPath(item.AssetPath), item))
+			                .ToList();
 
 			foreach (var errorCase in selection.Where(obj => obj.Item1 == null))
 			{
 				Debug.LogError(new Exception("ListView_OnItemChosen() Error : " +
-											 "no unityObject for " + errorCase.Item2.Name));
+				                             "no unityObject for " + errorCase.Item2.Name));
 			}
 
 			var objects = selection.Select(x => x.Item1).ToArray();
@@ -247,7 +258,7 @@ namespace Beamable.Editor.Content.Components
 			if (string.IsNullOrEmpty(contentItemDescriptor.AssetPath))
 			{
 				Debug.LogError(new Exception("ListView_OnItemChosen() Error : " +
-											 "no AssetPath for " + contentItemDescriptor.Name));
+				                             "no AssetPath for " + contentItemDescriptor.Name));
 				return;
 			}
 
@@ -257,7 +268,7 @@ namespace Beamable.Editor.Content.Components
 			if (unityObject == null)
 			{
 				Debug.LogError(new Exception("ListView_OnItemChosen() Error :" +
-											 " no unityObject for " + contentItemDescriptor.Name));
+				                             " no unityObject for " + contentItemDescriptor.Name));
 				return;
 			}
 
@@ -287,10 +298,10 @@ namespace Beamable.Editor.Content.Components
 			List<VisualElement> visualElements = _listView.Children().ToList();
 
 			return (ContentVisualElement)visualElements.Find((VisualElement visualElement) =>
-		   {
-			   ContentVisualElement nextContentVisualElement = (ContentVisualElement)visualElement;
-			   return string.Equals(nextContentVisualElement.ContentItemDescriptor?.Id, contentItemDescriptor?.Id);
-		   });
+			{
+				ContentVisualElement nextContentVisualElement = (ContentVisualElement)visualElement;
+				return string.Equals(nextContentVisualElement.ContentItemDescriptor?.Id, contentItemDescriptor?.Id);
+			});
 		}
 
 		private void Model_OnSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
@@ -331,7 +342,7 @@ namespace Beamable.Editor.Content.Components
 			if (selectedTypes.FirstOrDefault() is ContentTypeTreeViewItem selectedType)
 			{
 				types = types.Where(t => selectedType.TypeDescriptor.ContentType.IsAssignableFrom(t.ContentType))
-					.ToList();
+				             .ToList();
 				currentCategoryName = selectedType.displayName;
 
 				evt.menu.BeamableAppendAction(
@@ -348,7 +359,7 @@ namespace Beamable.Editor.Content.Components
 				if (currentCategoryName.Equals(type.ShortName)) continue;
 
 				evt.menu.BeamableAppendAction($"Create/{type.TypeName.Replace(".", "/")}",
-					_ => { OnItemAdd?.Invoke(type); });
+				                              _ => { OnItemAdd?.Invoke(type); });
 			}
 		}
 
@@ -360,7 +371,7 @@ namespace Beamable.Editor.Content.Components
 
 			ContentItemDescriptor selectedItem = selectionList[0];
 			if (selectedItem.LocalStatus !=
-				HostStatus.AVAILABLE) // cannot duplicate something that we don't have locally...
+			    HostStatus.AVAILABLE) // cannot duplicate something that we don't have locally...
 				return;
 
 			evt.menu.BeamableAppendAction("Duplicate item", (Action<Vector2>)((pos) => Duplicate(selectedItem)));
@@ -368,17 +379,19 @@ namespace Beamable.Editor.Content.Components
 
 		private void Duplicate(ContentItemDescriptor contentItem)
 		{
-			if (contentItem.LocalStatus != HostStatus.AVAILABLE) // cannot duplicate something that we don't have locally...
+			if (contentItem.LocalStatus !=
+			    HostStatus.AVAILABLE) // cannot duplicate something that we don't have locally...
 				return;
 
-			var nextPath = Model.ContentIO.GetAvailableFileName(contentItem.AssetPath, contentItem.Id, Model.LocalManifest);
+			var nextPath =
+				Model.ContentIO.GetAvailableFileName(contentItem.AssetPath, contentItem.Id, Model.LocalManifest);
 			var didCopy = AssetDatabase.CopyAsset(contentItem.AssetPath, nextPath);
 			if (didCopy)
 			{
 				ContentObject contentObject = (ContentObject)AssetDatabase.LoadMainAssetAtPath(nextPath);
 				var fileName = Path.GetFileNameWithoutExtension(nextPath);
 				contentObject.SetContentName(fileName);
-				AssetDatabase.ForceReserializeAssets(new[] { nextPath });
+				AssetDatabase.ForceReserializeAssets(new[] {nextPath});
 			}
 		}
 
@@ -392,24 +405,34 @@ namespace Beamable.Editor.Content.Components
 			if (item.LocalStatus == HostStatus.AVAILABLE) // cannot rename something that we don't have locally...
 			{
 				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_DELETE_ITEM,
-											  (Action<Vector2>)((pos) => { ContentVisualElement_OnItemDelete((ContentItemDescriptor)item); }));
+				                              (Action<Vector2>)((pos) =>
+				                              {
+					                              ContentVisualElement_OnItemDelete((ContentItemDescriptor)item);
+				                              }));
 				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_RENAME_ITEM,
-											  (Action<Vector2>)((pos) =>
-											  {
-												  ContentVisualElement_OnItemRenameGestureBegin((ContentItemDescriptor)item);
-											  }));
+				                              (Action<Vector2>)((pos) =>
+				                              {
+					                              ContentVisualElement_OnItemRenameGestureBegin(
+						                              (ContentItemDescriptor)item);
+				                              }));
 
 				if (item.Status == ContentModificationStatus.MODIFIED)
 				{
 					evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_REVERT_ITEM,
-												  (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
+					                              (Action<Vector2>)((pos) =>
+					                              {
+						                              ContentVisualElement_OnDownloadSingle(item);
+					                              }));
 				}
 			}
 
 			if (item.LocalStatus == HostStatus.NOT_AVAILABLE && item.ServerStatus == HostStatus.AVAILABLE)
 			{
 				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_DOWNLOAD_ITEM,
-											  (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
+				                              (Action<Vector2>)((pos) =>
+				                              {
+					                              ContentVisualElement_OnDownloadSingle(item);
+				                              }));
 			}
 		}
 
@@ -419,11 +442,15 @@ namespace Beamable.Editor.Content.Components
 			if (allLocal)
 			{
 				evt.menu.BeamableAppendAction($"{ContentList.CONTENT_LIST_DELETE_ITEMS} ({items.Count})",
-					(Action<Vector2>)((pos) => { ContentVisualElement_OnItemDelete(items.ToArray()); }));
+				                              (Action<Vector2>)((pos) =>
+				                              {
+					                              ContentVisualElement_OnItemDelete(items.ToArray());
+				                              }));
 			}
 
 			var modifiedOrServerOnly = items.Where(i =>
-				i.LocalStatus == HostStatus.NOT_AVAILABLE || i.Status == ContentModificationStatus.MODIFIED).ToList();
+				                                       i.LocalStatus == HostStatus.NOT_AVAILABLE ||
+				                                       i.Status == ContentModificationStatus.MODIFIED).ToList();
 			if (modifiedOrServerOnly.Count > 0)
 			{
 				evt.menu.BeamableAppendAction(
@@ -456,8 +483,8 @@ namespace Beamable.Editor.Content.Components
 			ContentManagerWindow.Instance.CloseCurrentWindow();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(CONFIRM_ITEM_DELETION,
-				() => contentItemDescriptors.ToList().ForEach(e => OnItemDelete?.Invoke(e)),
-				ContentManagerWindow.Instance.CloseCurrentWindow
+					() => contentItemDescriptors.ToList().ForEach(e => OnItemDelete?.Invoke(e)),
+					ContentManagerWindow.Instance.CloseCurrentWindow
 			);
 
 			BeamablePopupWindow window = BeamablePopupWindow.ShowConfirmationUtility(
@@ -474,7 +501,7 @@ namespace Beamable.Editor.Content.Components
 
 		private void ContentVisualElement_OnDownloadSingle(ContentItemDescriptor contentItemDescriptor)
 		{
-			OnItemDownload?.Invoke(new List<ContentItemDescriptor> { contentItemDescriptor });
+			OnItemDownload?.Invoke(new List<ContentItemDescriptor> {contentItemDescriptor});
 		}
 
 		private void ContentVisualElement_OnDownloadMany(List<ContentItemDescriptor> contentItemDescriptors)
