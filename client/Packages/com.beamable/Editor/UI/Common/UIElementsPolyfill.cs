@@ -471,7 +471,7 @@ public static class UssLoader
 
 		if (u2021Available)
 		{
-#if UNITY_2021_1_OR_NEWER // 2021 is the max supported version, so we forward lean and assume all uss works in 2022.
+#if UNITY_2021_2_OR_NEWER // 2021 is the max supported version, so we forward lean and assume all uss works in 2022.
 			ussPaths.Add(u2021Path);
 #endif
 		}
