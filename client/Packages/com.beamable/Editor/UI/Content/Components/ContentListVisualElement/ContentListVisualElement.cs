@@ -134,7 +134,8 @@ namespace Beamable.Editor.Content.Components
 
 		private List<HeaderSizeChange> GetHeaderSizeChanges()
 		{
-			return _headerSizeChanges ??= _headerVisualElement.ComputeSizes(new List<float> {1, .5f, .2f});
+			return _headerSizeChanges ??
+			       (_headerSizeChanges = _headerVisualElement.ComputeSizes(new List<float> { 1, .5f, .2f }));
 		}
 
 		private void ApplyColumnSizes(VisualElement listElement)
