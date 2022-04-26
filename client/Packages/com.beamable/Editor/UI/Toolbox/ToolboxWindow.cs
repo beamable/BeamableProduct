@@ -58,7 +58,6 @@ namespace Beamable.Editor.Toolbox.UI
 
 		protected override void Build()
 		{
-			Debug.Log("TOOLBOX WINDOW BUILD!!!!!!");
 			minSize = new Vector2(560, 300);
 
 			// Refresh if/when the user logs-in or logs-out while this window is open

@@ -101,7 +101,6 @@ namespace Beamable.Editor.UI
 
 		public virtual void OnEnable()
 		{
-			Debug.Log($"On Enable => {GetType().Name}");
 			BeamEditor.DelayedInitializationCall(() =>
 			{
 				BuildWithDefaultContext();

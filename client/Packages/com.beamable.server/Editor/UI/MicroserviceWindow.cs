@@ -84,7 +84,6 @@ namespace Beamable.Editor.Microservice.UI
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
 
-			Debug.Log("C#MS WINDOW BUILD!!!!!!");
 
 			// Set the min size for the window
 			minSize = MIN_SIZE;
