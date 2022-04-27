@@ -70,8 +70,8 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
-			
-			
+
+
 			if (!BeamEditor.IsInitialized)
 				return;
 
@@ -189,7 +189,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 			Rect leftRect = new Rect(0, 0, screenWidth, Screen.height);
 			leftRect.xMin += space; // Spacing left
-			
+
 #if !UNITY_2021_2_OR_NEWER
 			leftRect.xMin += buttonWidth * _toolCount; // Tool buttons
 #if UNITY_2019_3_OR_NEWER
@@ -230,7 +230,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= space; // Spacing between cloud and collab
 			rightRect.xMax -= versionControlWidth; // Colab/PlasticSCM button
 #endif
-			
+
 #if UNITY_2019_4_OR_NEWER // Handling of preview packages
 			if (_hasPreviewPackages || _packageListRequest.IsCompleted)
 			{
@@ -243,12 +243,12 @@ namespace Beamable.Editor.ToolbarExtender
 				}
 			}
 #endif
-			
+
 #if UNITY_2021_2_OR_NEWER
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
 #endif
-			
+
 			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
 			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
 
@@ -291,7 +291,7 @@ namespace Beamable.Editor.ToolbarExtender
 			if (notificationManager != null && notificationManager.PendingValidationNotifications.Any())
 				btnTexture = _validationTexture;
 
-			
+
 			GUILayout.BeginArea(beamableAssistantButtonRect);
 			if (GUILayout.Button(new GUIContent(" Beamable", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{
@@ -308,7 +308,7 @@ namespace Beamable.Editor.ToolbarExtender
 			}
 
 			GUILayout.EndArea();
-			
+
 			GUILayout.BeginArea(leftRect);
 			GUILayout.BeginHorizontal();
 

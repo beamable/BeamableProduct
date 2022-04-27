@@ -398,13 +398,13 @@ public static class UIElementsPolyfill2021
 {
 	public static void SetItemHeight(this ListView listView, float newHeight)
 	{
-		#if UNITY_2021_2_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
 		listView.fixedItemHeight = newHeight;
-		#else
+#else
 		listView.itemHeight = (int)newHeight;
-		#endif
+#endif
 	}
-	
+
 	public static float GetItemHeight(this ListView listView)
 	{
 #if UNITY_2021_2_OR_NEWER
@@ -413,8 +413,8 @@ public static class UIElementsPolyfill2021
 		return (float)listView.itemHeight;
 #endif
 	}
-	
-	
+
+
 	public static void RefreshPolyfill(this ListView listView)
 	{
 #if UNITY_2021_2_OR_NEWER
