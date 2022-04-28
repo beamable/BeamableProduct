@@ -581,8 +581,20 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class Currency
 	{
+		/// <summary>
+		/// The currency content id that is being requested.
+		/// This content id must be included in the <see cref="GroupDonationsContent"/> allowedCurrencies list.
+		/// </summary>
 		public string id;
+
+		/// <summary>
+		/// The amount of currency the player is requesting.
+		/// </summary>
 		public long amount;
+
+		/// <summary>
+		/// Properties about the currency that will be given.
+		/// </summary>
 		public List<CurrencyProperty> properties;
 	}
 
