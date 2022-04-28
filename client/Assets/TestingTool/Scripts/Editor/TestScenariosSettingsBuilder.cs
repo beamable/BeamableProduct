@@ -164,10 +164,12 @@ namespace TestingTool.Scripts.Editor
         }
         private bool IsAnySceneCorrupted(out string corruptedSceneName)
         {
+	        var buildScenes = EditorBuildSettings.scenes.ToList();
             corruptedSceneName = string.Empty;
             foreach (var testScenario in _testScenariosRuntime.Scenarios)
             {
-                if(!EditorBuildSettings.scenes.Any(scene => scene.path.Contains(testScenario.SceneName)))
+	            var index = buildScenes.FindIndex(scene => scene.path.Contains(testScenario.SceneName));
+	            if (index < 0 || !Application.CanStreamedLevelBeLoaded(index))
                 {
                     corruptedSceneName = testScenario.SceneName;
                     return true;
