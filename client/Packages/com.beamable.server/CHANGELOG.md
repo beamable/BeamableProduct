@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unrelased]
 ### Fixed
-- Client code can handle receiving a `ContentObject` response from a `ClientCallable`
+- Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
+- Fixed Microstorage Docker nulls on Unity startup.
 
 ## [1.1.2]
 ### Fixed
