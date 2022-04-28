@@ -1,4 +1,5 @@
 using Beamable.Common.Api.Inventory;
+using System;
 using System.Collections.Generic;
 
 namespace Beamable.Common.Api.Groups
@@ -16,7 +17,10 @@ namespace Beamable.Common.Api.Groups
 		/// <summary>
 		/// Get the <see cref="Group"/> data for some group.
 		/// </summary>
-		/// <param name="groupId">The id of a group that the current player is in.
+		/// <param name="groupId">The id of a group TODO: this isn't authenticated by membership
+		///
+		/// TODO: the response personalized to your accounts membership and stuff
+		///
 		/// The group id can be found with the <see cref="GetUser"/> method,
 		/// or through the <see cref="GetRecommendations"/> and <see cref="Search"/> methods.
 		/// </param>
@@ -50,15 +54,20 @@ namespace Beamable.Common.Api.Groups
 		/// <summary>
 		/// Send a message from the current player to the group to ask to join.
 		/// This method only works when the group's <see cref="Group.enrollmentType"/> is set to "restricted".
+		///
+		/// TODO: This uses entitlements and mail
 		/// </summary>
 		/// <param name="group">The group id to apply to</param>
 		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
+		[Obsolete]
 		Promise<EmptyResponse> Petition(long group);
 
 		/// <summary>
 		/// Get a recommended list of <see cref="Group"/>s for the current player to join.
+		/// TODO: Its not a real recommendation
 		/// </summary>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="GroupSearchResponse"/></returns>
+		[Obsolete]
 		Promise<GroupSearchResponse> GetRecommendations();
 
 		/// <summary>
@@ -86,14 +95,52 @@ namespace Beamable.Common.Api.Groups
 		   int? limit = null
 		);
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="request"></param>
+		/// <returns></returns>
 		Promise<GroupCreateResponse> CreateGroup(GroupCreateRequest request);
+
+
+		/// <summary>
+		/// Are the name and tag available
+		/// </summary>
+		/// <param name="name"></param>
+		/// <param name="tag"></param>
+		/// <returns></returns>
 		Promise<AvailabilityResponse> CheckAvailability(string name, string tag);
 		Promise<EmptyResponse> SetGroupProps(long groupId, GroupUpdateProperties props);
+
+		/// <summary>
+		/// cannot kick someone of the same or higher role.
+		/// </summary>
+		/// <param name="group"></param>
+		/// <param name="gamerTag"></param>
+		/// <returns></returns>
 		Promise<GroupMembershipResponse> Kick(long group, long gamerTag);
+
+		/// <summary>
+		/// ROLE_LEADER, ROLE_OFFICER, ROLE_DEFAULT
+		/// Only 1 leader; multiple officers
+		/// </summary>
+		/// <param name="group"></param>
+		/// <param name="gamerTag"></param>
+		/// <param name="role"></param>
+		/// <returns></returns>
 		Promise<EmptyResponse> SetRole(long group, long gamerTag, string role);
 		Promise<EmptyResponse> MakeDonationRequest(long group, Currency currency);
 		Promise<EmptyResponse> Donate(long group, long recipientId, long amount, bool autoClaim = true);
 		Promise<EmptyResponse> ClaimDonations(long group);
+
+		/// <summary>
+		/// This will be removed in a future version of Beamable. Please do not use.
+		/// </summary>
+		/// <param name="query"></param>
+		/// <param name="key"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		[Obsolete]
 		string AddQuery(string query, string key, string value);
 	}
 }

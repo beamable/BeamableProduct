@@ -17,7 +17,6 @@ namespace Beamable.Common.Api.Groups
 			Ctx = ctx;
 			Requester = requester;
 		}
-
 		public Promise<GroupUser> GetUser(long gamerTag)
 		{
 			return Requester.Request<GroupUser>(
@@ -334,7 +333,15 @@ namespace Beamable.Common.Api.Groups
 		/// The group id
 		/// </summary>
 		public long id;
+
+		/// <summary>
+		/// TODO: must be at least 3 characters
+		/// </summary>
 		public string name;
+
+		/// <summary>
+		/// TODO: must be exactly 3 characters
+		/// </summary>
 		public string tag;
 		public string slogan;
 		public string motd;
@@ -397,6 +404,10 @@ namespace Beamable.Common.Api.Groups
 		public string name;
 		public string tag;
 		public string enrollmentType;
+
+		/// <summary>
+		/// TODO: Don't ever set this above 0.
+		/// </summary>
 		public long requirement;
 		public int maxSize;
 
@@ -463,6 +474,10 @@ namespace Beamable.Common.Api.Groups
 	public class GroupUpdateProperties
 	{
 		public string slogan;
+
+		/// <summary>
+		/// TODO: message of the day
+		/// </summary>
 		public string motd;
 		public string enrollmentType;
 		public string clientData;
