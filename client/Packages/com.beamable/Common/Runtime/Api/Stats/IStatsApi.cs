@@ -34,7 +34,8 @@ namespace Beamable.Common.Api.Stats
 		/// Get all of the stats for a given player id
 		/// </summary>
 		/// <param name="domain">
-		/// "client" or "game". Should always be "client".
+		/// "client" or "game".
+		/// Should always be "client" unless you are executing this method as a privileged user or from a Microservice.
 		/// </param>
 		/// <param name="access">
 		/// "public" or "private". Should always be "public" unless you  are executing this method as a privileged user or from a Microserivce.

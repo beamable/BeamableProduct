@@ -30,7 +30,7 @@ namespace Beamable.Api.Sessions
 		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale);
 
 		/// <summary>
-		/// Get the current <see cref="Session"/> of a player by their gamer tag.
+		/// Get the current <see cref="Session"/> of a player by their gamertag.
 		/// </summary>
 		/// <param name="gamerTag">The gamertag of the player to find the <see cref="Session"/> for.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing the player's <see cref="Session"/></returns>
