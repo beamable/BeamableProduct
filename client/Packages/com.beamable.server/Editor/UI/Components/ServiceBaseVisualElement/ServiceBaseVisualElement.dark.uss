@@ -1,11 +1,3 @@
-#logHeader {
-    background-color: #131313;
-}
-
-#logHeader.running {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/ms_header_green.png");
-}
-
 .squareBtn {
     border-color: #383838;
 }
@@ -32,15 +24,7 @@
     border-left-width: 0px;
 }
 
-#detailWindow {
-    border-color: #383838;
-}
-
-#white {
-    border-color: #383838;
-}
-
-#clearContainer {
+#detailWindow, #white, #clearContainer, #logListRoot {
     border-color: #383838;
 }
 
@@ -49,8 +33,8 @@
     background-color: #383838;
 }
 
-#logListRoot {
-    border-color: #383838;
+.separator {
+    background-color: #838383;
 }
 
 #debug .img {
@@ -97,10 +81,6 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
-.building,
-.running{
-    background-color: rgba(35,74,108,255);
-}
 
 .foldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light_dark.png");

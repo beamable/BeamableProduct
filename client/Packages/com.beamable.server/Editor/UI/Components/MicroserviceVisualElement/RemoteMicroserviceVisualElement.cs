@@ -39,15 +39,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q<Button>("startBtn").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
-
-#if UNITY_2019_1_OR_NEWER
-            Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);
-#elif UNITY_2018
-            Root.Q<VisualElement>("mainVisualElement").style.height = StyleValue<float>.Create(DEFAULT_HEADER_HEIGHT);
-#endif
+			Root.Q("statusSeparator")?.RemoveFromHierarchy();
 			Root.Q("foldContainer").visible = false;
-
 			_statusIcon.RemoveFromHierarchy();
+			Root.Q<VisualElement>("mainVisualElement").style.SetHeight(DEFAULT_HEADER_HEIGHT);
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
