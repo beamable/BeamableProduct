@@ -37,10 +37,10 @@ namespace Beamable.Editor.UI.Components
 				makeItem = () => new ConsoleLogVisualElement(),
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-				itemHeight = 24,
 				itemsSource = _logMessages
 			};
-			_listView.Refresh();
+			_listView.SetItemHeight(24);
+			_listView.RefreshPolyfill();
 			_logListRoot.Add(_listView);
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
@@ -87,7 +87,7 @@ namespace Beamable.Editor.UI.Components
 			_logMessages.Add(message);
 			EditorApplication.delayCall += () =>
 			{
-				_listView.Refresh();
+				_listView.RefreshPolyfill();
 				_listView.MarkDirtyRepaint();
 			};
 		}
