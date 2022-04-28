@@ -260,7 +260,8 @@ namespace Beamable.Common.Api.Mail
 		public long sent;
 
 		/// <summary>
-		/// The timestamp that the message was claimed for rewards
+		/// The timestamp that the message was claimed for rewards.
+		/// The number of milliseconds from 1970-01-01T00:00:00Z.
 		/// </summary>
 		public long claimedTimeMs;
 

@@ -80,7 +80,7 @@ namespace Beamable.Common.Api
 
 		/// <summary>
 		/// Create a new <see cref="IBeamableRequester"/> that will authenticate all requests using the given <see cref="TokenResponse"/> argument.
-		/// <b>DANGER</b>, this method is not supported inside Microservices.
+		/// <b>WARNING</b>, this method is not supported inside Microservices.
 		/// </summary>
 		/// <param name="tokenResponse">A <see cref="TokenResponse"/> that will be used to create the <see cref="AccessToken"/> for the resulting requester.</param>
 		/// <returns>A new <see cref="IBeamableRequester"/></returns>
@@ -183,6 +183,8 @@ namespace Beamable.Common.Api
 	{
 		/// <summary>
 		/// The HTTP status code.
+		/// Successful codes are in the 200 range.
+		/// See <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status"> this MDN article</a> for more HTTP status codes.
 		/// </summary>
 		long Status { get; }
 	}
@@ -207,7 +209,7 @@ namespace Beamable.Common.Api
 
 		/// <summary>
 		/// Add a way to safely recover from a promise that has failed specifically due to a
-		/// <see cref="RequesterException"/> with a 40x <see cref="IRequestErrorWithStatus.Status"/> code.
+		/// <see cref="RequesterException"/> with a 401, 403, or 404 <see cref="IRequestErrorWithStatus.Status"/> code.
 		/// </summary>
 		/// <param name="self">The promise that has failed.</param>
 		/// <param name="recovery">A recovery lambda that accepts the original <see cref="RequesterException"/> and produces a valid
@@ -216,7 +218,7 @@ namespace Beamable.Common.Api
 		/// The promise's inner type
 		/// </typeparam>
 		/// <returns>
-		/// A promise chain that will use the given <see cref="recovery"/> method in the event of the 40x error.
+		/// A promise chain that will use the given <see cref="recovery"/> method in the event of the 401, 403, or 404 error.
 		/// </returns>
 		public static Promise<T> RecoverFrom40x<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
 			=> RecoverFromStatus(self, new long[] { 401, 403, 404 }, recovery);

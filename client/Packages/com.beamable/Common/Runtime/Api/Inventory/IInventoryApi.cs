@@ -216,7 +216,7 @@ namespace Beamable.Common.Api.Inventory
 		/// <summary>
 		///	<inheritdoc cref="Update(InventoryUpdateBuilder,string)"/>
 		/// </summary>
-		/// <param name="action">An configurator for the <see cref="InventoryUpdateBuilder"/>. You should configure the
+		/// <param name="action">A configurator for the <see cref="InventoryUpdateBuilder"/>. You should configure the
 		/// builder with all of the inventory updates. If you already have an instance of the builder, use the
 		/// <see cref="Update(InventoryUpdateBuilder,string)"/> method instead.</param>
 		/// <param name="transaction">an inventory transaction ID</param>
@@ -238,10 +238,10 @@ namespace Beamable.Common.Api.Inventory
 		Promise<Unit> Update(InventoryUpdateBuilder builder, string transaction = null);
 
 		/// <summary>
-		/// Get all  <see cref="InventoryObject{TContent}"/> that are of a specific item content type.
+		/// Get every <see cref="InventoryObject{TContent}"/> that is of a specific item content type.
 		/// </summary>
 		/// <typeparam name="TContent">The type of content to retrieve. All children types will be included the result.</typeparam>
-		/// <returns>A <see cref="Promise"/> containing the <see cref="InventoryObject{TContent}"/> that match the given item type</returns>
+		/// <returns>A <see cref="Promise"/> containing the <see cref="InventoryObject{TContent}"/> that matches the given item type</returns>
 		Promise<List<InventoryObject<TContent>>> GetItems<TContent>()
 			where TContent : ItemContent, new();
 

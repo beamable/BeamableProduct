@@ -96,7 +96,7 @@ namespace Beamable.Common.Api.Leaderboards
 		Promise<LeaderBoardView> GetAssignedBoard(string boardId, int from, int max, long? focus = null, long? outlier = null);
 
 		/// <summary>
-		/// Get a specific list of rankings by player id/gamer tag from a leaderboard
+		/// Get a specific list of rankings by player id/gamertag from a leaderboard
 		/// </summary>
 		/// <param name="leaderBoard"></param>
 		/// <param name="ids"></param>
@@ -104,7 +104,7 @@ namespace Beamable.Common.Api.Leaderboards
 		Promise<LeaderBoardView> GetRanks(LeaderboardRef leaderBoard, List<long> ids);
 
 		/// <summary>
-		/// Get a specific list of rankings by player id/gamer tag from a leaderboard
+		/// Get a specific list of rankings by player id/gamertag from a leaderboard
 		/// </summary>
 		/// <param name="boardId"></param>
 		/// <param name="ids"></param>
@@ -170,7 +170,7 @@ namespace Beamable.Common.Api.Leaderboards
 	public class RankEntry
 	{
 		/// <summary>
-		/// The gamer tag of the player for this entry
+		/// The gamertag of the player for this entry
 		/// </summary>
 		public long gt;
 
@@ -288,9 +288,9 @@ namespace Beamable.Common.Api.Leaderboards
 		public List<RankEntry> rankings;
 
 		/// <summary>
-		/// Convert the <see cref="rankings"/> list into a dictionary from gamer tag to <see cref="RankEntry"/>.
+		/// Convert the <see cref="rankings"/> list into a dictionary from gamertag to <see cref="RankEntry"/>.
 		/// </summary>
-		/// <returns>A dictionary where each key is a gamer tag, pointing the <see cref="RankEntry"/> for that player.</returns>
+		/// <returns>A dictionary where each key is a gamertag, pointing the <see cref="RankEntry"/> for that player.</returns>
 		public Dictionary<long, RankEntry> ToDictionary()
 		{
 			Dictionary<long, RankEntry> result = new Dictionary<long, RankEntry>();

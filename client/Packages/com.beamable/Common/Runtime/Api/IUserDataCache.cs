@@ -30,7 +30,7 @@ namespace Beamable.Common.Api
 		public abstract Promise<T> Get(long gamerTag);
 
 		/// <summary>
-		/// Get multiple player's data.
+		/// Get multiple players' data.
 		/// If the players do not have the data in the cache yet, the <see cref="CacheResolver"/> function will be triggered to resolve all the data.
 		/// </summary>
 		/// <param name="gamerTags">A set of gamertags</param>
