@@ -127,8 +127,20 @@ namespace Beamable
 		/// Access the <see cref="MailService"/> for this player instance.
 		/// </summary>
 		MailService MailService { get; }
+
+		/// <summary>
+		/// Access the <see cref="PushService"/> for this player instance.
+		/// </summary>
 		PushService PushService { get; }
+
+		/// <summary>
+		/// Access the <see cref="CommerceService"/> for this player instance.
+		/// </summary>
 		CommerceService CommerceService { get; }
+
+		/// <summary>
+		/// Access the <see cref="PaymentService"/> for this player instance.
+		/// </summary>
 		PaymentService PaymentService { get; }
 		GroupsService GroupsService { get; }
 		EventsService EventsService { get; }

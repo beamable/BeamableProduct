@@ -260,8 +260,19 @@ namespace Beamable.Common.Api.Groups
 	[Serializable]
 	public class GroupUser
 	{
+		/// <summary>
+		/// The gamertag of this player
+		/// </summary>
 		public long gamerTag;
+
+		/// <summary>
+		/// A collection of <see cref="GroupMembership"/> memberships the player belongs to.
+		/// </summary>
 		public GroupMemberships member;
+
+		/// <summary>
+		/// The timestamp this structure was updated from the Beamable Cloud
+		/// </summary>
 		public long updated;
 	}
 
@@ -274,8 +285,19 @@ namespace Beamable.Common.Api.Groups
 	[Serializable]
 	public class GroupMembership
 	{
+		/// <summary>
+		/// The group id
+		/// </summary>
 		public long id;
+
+		/// <summary>
+		/// A set of group IDs that are sub groups
+		/// </summary>
 		public List<long> subGroups;
+
+		/// <summary>
+		/// The timestamp the player joined this group
+		/// </summary>
 		public long joined;
 	}
 
@@ -308,6 +330,9 @@ namespace Beamable.Common.Api.Groups
 	[Serializable]
 	public class Group
 	{
+		/// <summary>
+		/// The group id
+		/// </summary>
 		public long id;
 		public string name;
 		public string tag;
