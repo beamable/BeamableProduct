@@ -20,7 +20,56 @@ namespace Beamable.Api.Analytics
 	/// </summary>
 	public interface IAnalyticsTracker
 	{
+		/// <summary>
+		/// Report some analytics event to the Beamable Cloud.
+		/// Note that this analytic event may not be reported immediately unless the <see cref="sendImmediately"/> argument is set.
+		/// Otherwise, the event will be recorded during the next analytics batch event.
+		/// </summary>
+		/// <param name="analyticsEvent">
+		/// An instance of a <see cref="IAnalyticsEvent"/>.
+		/// You can create your own types of events. For an example, see, <see cref="SampleCustomEvent"/>
+		/// </param>
+		/// <param name="sendImmediately">If set to <c>true</c> send immediately.</param>
 		void TrackEvent(IAnalyticsEvent analyticsEvent, bool sendImmediately);
+
+		/// <summary>
+		/// Change the <see cref="BatchSettings"/> that the <see cref="IAnalyticsTracker"/> uses to send messages to Beamable.
+		/// You can revert these changes by using the <see cref="RevertBatchSettings"/> method.
+		/// </summary>
+		/// <param name="batchSettings">A new set of <see cref="BatchSettings"/>. This will override the existing settings.</param>
+		/// <param name="flush">Force that any pending analytic events are sent to Beamable at this moment.</param>
+		void UpdateBatchSettings(BatchSettings batchSettings, bool flush = true);
+
+		/// <summary>
+		/// Revert any <see cref="BatchSettings"/> customizations made through the <see cref="UpdateBatchSettings"/> method.
+		/// </summary>
+		/// <param name="flush">Force that any pending analytic events are sent to Beamable at this moment.</param>
+		void RevertBatchSettings(bool flush = true);
+	}
+
+	public struct BatchSettings
+	{
+		/// <summary>
+		/// How many seconds go by before a batch event is forced.
+		/// </summary>
+		public int TimeoutSeconds;
+
+		/// <summary>
+		/// How many analytic events can occur before a batch event is forced.
+		/// </summary>
+		public int MaxSize;
+
+		/// <summary>
+		/// The frequency that the batch events may be processed on.
+		/// </summary>
+		public float HeartbeatInterval;
+
+		public BatchSettings(int timeout, int maxSize, float heartbeat)
+		{
+			TimeoutSeconds = timeout;
+			MaxSize = maxSize;
+			HeartbeatInterval = heartbeat;
+		}
 	}
 
 	/// <summary>
@@ -61,20 +110,6 @@ namespace Beamable.Api.Analytics
 		/// </summary>
 		private PersistentBatchManager<AnalyticsEventRequest> batchManager;
 
-		public struct BatchSettings
-		{
-			public int TimeoutSeconds;
-			public int MaxSize;
-			public float HeartbeatInterval;
-
-			public BatchSettings(int timeout, int maxSize, float heartbeat)
-			{
-				TimeoutSeconds = timeout;
-				MaxSize = maxSize;
-				HeartbeatInterval = heartbeat;
-			}
-		}
-
 		private BatchSettings _defaultBatchSettings;
 		private bool usingDefaultSettings = true;
 
@@ -114,11 +149,6 @@ namespace Beamable.Api.Analytics
 			batchManager.Start();
 		}
 
-		/// <summary>
-		/// Tracks the event.
-		/// </summary>
-		/// <param name="analyticsEvent">Analytics event.</param>
-		/// <param name="sendImmediately">If set to <c>true</c> send immediately.</param>
 		public void TrackEvent(IAnalyticsEvent analyticsEvent, bool sendImmediately = false)
 		{
 			var analyticsEventRequest = BuildRequest(analyticsEvent);

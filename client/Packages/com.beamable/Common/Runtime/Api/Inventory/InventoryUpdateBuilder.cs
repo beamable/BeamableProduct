@@ -105,7 +105,10 @@ namespace Beamable.Common.Api.Inventory
 		[SerializeField]
 		private List<ItemUpdateRequest> _serializedUpdateItems;
 
-
+		/// <summary>
+		/// Checks if the <see cref="InventoryUpdateBuilder"/> has any inventory updates.
+		/// True if there are no updates, false otherwise.
+		/// </summary>
 		public bool IsEmpty
 		{
 			get
@@ -142,6 +145,13 @@ namespace Beamable.Common.Api.Inventory
 			this.updateItems = updateItems;
 		}
 
+		/// <summary>
+		/// Mutate the <see cref="InventoryUpdateBuilder"/>'s <see cref="applyVipBonus"/> field.
+		/// When the vip bonus is enabled, any currencies configured with the <see cref="CurrencyChange"/> method
+		/// will have vip bonus multipliers included in the reward.
+		/// </summary>
+		/// <param name="apply">true to have currencies apply vip bonus, false otherwise</param>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder ApplyVipBonus(bool apply)
 		{
 			applyVipBonus = apply;
@@ -149,6 +159,14 @@ namespace Beamable.Common.Api.Inventory
 			return this;
 		}
 
+		/// <summary>
+		/// Add or remove currency from the player's inventory.
+		/// Multiple calls to this method for the same currency will combine into one currency update.
+		/// <para> For example, if you changed up by 5, and then changed up again by 5, the final result would be 10 </para>
+		/// </summary>
+		/// <param name="contentId">The content ID for a currency value</param>
+		/// <param name="amount">The amount to change the given currency. Positive numbers add currency, and negative numbers subtract currency.</param>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder CurrencyChange(string contentId, long amount)
 		{
 			if (currencies.TryGetValue(contentId, out var currentValue))
@@ -163,6 +181,13 @@ namespace Beamable.Common.Api.Inventory
 			return this;
 		}
 
+		/// <summary>
+		/// Set the <see cref="CurrencyProperty"/> values for a currency.
+		/// This will overwrite the previous currency properties.
+		/// </summary>
+		/// <param name="contentId">The content ID for a currency value</param>
+		/// <param name="properties">A list of <see cref="CurrencyProperty"/> values</param>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder SetCurrencyProperties(string contentId, List<CurrencyProperty> properties)
 		{
 			currencyProperties[contentId] = new CurrencyPropertyList(properties);
@@ -170,6 +195,13 @@ namespace Beamable.Common.Api.Inventory
 			return this;
 		}
 
+		/// <summary>
+		/// Add an item instance to the inventory.
+		/// </summary>
+		/// <param name="contentId">The content ID for an item type</param>
+		/// <param name="properties">A set of instance level item properties</param>
+		/// <param name="requestId">An ID that symbolizes the addition of the item. By default, this will be set to a random GUID. </param>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder AddItem(string contentId, Dictionary<string, string> properties = null, string requestId = null)
 		{
 			newItems.Add(new ItemCreateRequest
@@ -182,10 +214,21 @@ namespace Beamable.Common.Api.Inventory
 			return this;
 		}
 
+		/// <summary>
+		/// Add an item instance to the inventory.
+		/// </summary>
+		/// <param name="itemRef">An <see cref="ItemRef"/> for the item type</param>
+		/// <param name="properties">A set of instance level item properties</param>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder AddItem(ItemRef itemRef, Dictionary<string, string> properties = null)
 			=> AddItem(itemRef.Id, properties);
 
-
+		/// <summary>
+		/// Remove a specific item instance from the inventory
+		/// </summary>
+		/// <param name="contentId">The content ID for an item type</param>
+		/// <param name="itemId">The item instance ID</param>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder DeleteItem(string contentId, long itemId)
 		{
 			deleteItems.Add(new ItemDeleteRequest
@@ -197,18 +240,39 @@ namespace Beamable.Common.Api.Inventory
 			return this;
 		}
 
+		/// <summary>
+		/// Remove a specific item instance from the inventory
+		/// </summary>
+		/// <param name="itemId">The item instance ID</param>
+		/// <typeparam name="TContent">The type of item to remove</typeparam>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder DeleteItem<TContent>(long itemId) where TContent : ItemContent, new()
 		{
 			var contentId = ContentRegistry.TypeToName(typeof(TContent));
 			return DeleteItem(contentId, itemId);
 		}
 
+		/// <summary>
+		/// Remove a specific item instance from the inventory
+		/// </summary>
+		/// <param name="item">The <see cref="InventoryObject{TContent}"/> to remove from the inventory</param>
+		/// <typeparam name="TContent">The type of item to remove</typeparam>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder DeleteItem<TContent>(InventoryObject<TContent> item)
 			where TContent : ItemContent, new()
 		{
 			return DeleteItem(item.ItemContent.Id, item.Id);
 		}
 
+		/// <summary>
+		/// Update the instance properties of a specific item
+		/// </summary>
+		/// <param name="contentId">The content ID for an item type</param>
+		/// <param name="itemId">The item instance ID</param>
+		/// <param name="properties">
+		/// The new instance properties for the item. This will overwrite the existing properties.
+		/// </param>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder UpdateItem(string contentId, long itemId, Dictionary<string, string> properties)
 		{
 			updateItems.Add(new ItemUpdateRequest
@@ -221,6 +285,15 @@ namespace Beamable.Common.Api.Inventory
 			return this;
 		}
 
+		/// <summary>
+		/// Update the instance properties of a specific item
+		/// </summary>
+		/// <param name="itemId">The item instance ID</param>
+		/// <param name="properties">
+		/// The new instance properties for the item. This will overwrite the existing properties.
+		/// </param>
+		/// <typeparam name="TContent">The type of item to remove</typeparam>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder UpdateItem<TContent>(long itemId, Dictionary<string, string> properties)
 			where TContent : ItemContent, new()
 		{
@@ -228,13 +301,19 @@ namespace Beamable.Common.Api.Inventory
 			return UpdateItem(contentId, itemId, properties);
 		}
 
+		/// <summary>
+		/// Update the instance properties of a specific item
+		/// </summary>
+		/// <param name="item">The <see cref="InventoryObject{TContent}"/> to remove from the inventory</param>
+		/// <typeparam name="TContent">The type of item to remove</typeparam>
+		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder UpdateItem<TContent>(InventoryObject<TContent> item)
 			where TContent : ItemContent, new()
 		{
 			return UpdateItem(item.ItemContent.Id, item.Id, item.Properties);
 		}
 
-		public void OnBeforeSerialize()
+		void ISerializationCallbackReceiver.OnBeforeSerialize()
 		{
 			_serializedApplyVipBonus = applyVipBonus == null
 				? SerializableNullableBool.NULL
@@ -247,7 +326,7 @@ namespace Beamable.Common.Api.Inventory
 			_serializedUpdateItems = updateItems;
 		}
 
-		public void OnAfterDeserialize()
+		void ISerializationCallbackReceiver.OnAfterDeserialize()
 		{
 			switch (_serializedApplyVipBonus)
 			{
