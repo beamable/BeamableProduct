@@ -324,17 +324,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		void BindListViewElement(VisualElement elem, int index)
 		{
-			ConsoleLogVisualElement consoleLogVisualElement = (ConsoleLogVisualElement)elem;
+			if (index < 0)
+				return;
+
+			var consoleLogVisualElement = (ConsoleLogVisualElement)elem;
 			consoleLogVisualElement.Refresh();
 			consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
-			if (index % 2 == 0)
-			{
-				consoleLogVisualElement.RemoveFromClassList("oddRow");
-			}
-			else
-			{
-				consoleLogVisualElement.AddToClassList("oddRow");
-			}
+			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
 			consoleLogVisualElement.MarkDirtyRepaint();
 		}
 
