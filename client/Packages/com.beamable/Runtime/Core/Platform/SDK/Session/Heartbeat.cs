@@ -7,8 +7,21 @@ namespace Beamable.Api.Sessions
 {
 	public interface IHeartbeatService
 	{
+		/// <summary>
+		/// Start sending heartbeats with the <see cref="SessionService.SendHeartbeat"/> method.
+		/// </summary>
 		void Start();
+
+		/// <summary>
+		/// Reset the interval between heartbeats to the default value 30 seconds.
+		/// </summary>
 		void ResetInterval();
+
+		/// <summary>
+		/// Change how often a heartbeat is sent to the session.
+		/// <see cref="ResetInterval"/> will revert the interval back to the default setting.
+		/// </summary>
+		/// <param name="seconds">The number of seconds between heartbeats.</param>
 		void UpdateInterval(int seconds);
 	}
 	public class Heartbeat : IHeartbeatService
