@@ -72,15 +72,11 @@ namespace Beamable.Editor.Content.Components
 				var modifiedSource = new List<ContentDownloadEntryDescriptor>();
 				_modifiedList = new ListView
 				{
-#if UNITY_2021_2_OR_NEWER
-					fixedItemHeight = 24,
-#else
-					itemHeight = 24,
-#endif
 					itemsSource = modifiedSource,
 					makeItem = MakeElement,
 					bindItem = CreateBinder(modifiedSource)
 				};
+				_modifiedList.SetItemHeight(24);
 				modifiedFold.contentContainer.Add(_modifiedList);
 
 				var tmpModified = GetModiffiedSource(summary);
@@ -93,15 +89,12 @@ namespace Beamable.Editor.Content.Components
 				var addSource = new List<ContentDownloadEntryDescriptor>();
 				_addList = new ListView
 				{
-#if UNITY_2021_2_OR_NEWER
-					fixedItemHeight = 24,
-#else
-					itemHeight = 24,
-#endif
+
 					itemsSource = addSource,
 					makeItem = MakeElement,
 					bindItem = CreateBinder(addSource)
 				};
+				_addList.SetItemHeight(24);
 				additionFold.contentContainer.Add(_addList);
 
 				var tmpAdditional = GetAdditionSource(summary);
@@ -118,15 +111,11 @@ namespace Beamable.Editor.Content.Components
 				var deleteSource = new List<ContentDownloadEntryDescriptor>();
 				var deleteList = new ListView
 				{
-#if UNITY_2021_2_OR_NEWER
-					fixedItemHeight = 24,
-#else
-					itemHeight = 24,
-#endif
 					itemsSource = deleteSource,
 					makeItem = MakeElement,
 					bindItem = CreateBinder(deleteSource)
 				};
+				deleteList.SetItemHeight(24);
 				deleteFoldoutElem.contentContainer.Add(deleteList);
 
 				var tmpDeletions = GetDeleteSource(summary);
@@ -160,14 +149,8 @@ namespace Beamable.Editor.Content.Components
 			if (entries.Count > 0)
 			{
 				source.AddRange(entries);
-#if UNITY_2021_2_OR_NEWER
-				foldout.Q<ListView>().style.height = _modifiedList.fixedItemHeight * entries.Count();
-				listView.Rebuild();
-#else
-				foldout.Q<ListView>().style.height = _modifiedList.itemHeight * entries.Count();
-				listView.Refresh();
-#endif
-
+				foldout.Q<ListView>().style.height = _modifiedList.GetItemHeight() * entries.Count();
+				listView.RefreshPolyfill();
 			}
 			else
 			{

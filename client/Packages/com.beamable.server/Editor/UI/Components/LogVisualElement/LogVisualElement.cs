@@ -182,11 +182,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_advanceDropDown.RemoveFromHierarchy();
 			}
 
-#if UNITY_2021_2_OR_NEWER
-			_listView.Rebuild();
-#else
-			_listView.Refresh();
-#endif
+			_listView.RefreshPolyfill();
 			UpdateCounts();
 		}
 
@@ -255,11 +251,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			EditorApplication.delayCall += () =>
 			{
-#if UNITY_2021_2_OR_NEWER
-				_listView.Rebuild();
-#else
-				_listView.Refresh();
-#endif
+				_listView.RefreshPolyfill();
 				_listView.MarkDirtyRepaint();
 			};
 		}
@@ -315,20 +307,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-#if UNITY_2021_2_OR_NEWER
-				fixedItemHeight = 24,
-#else
-				itemHeight = 24,
-#endif
 				itemsSource = NoModel ? new List<LogMessage>() : Model.Logs.FilteredMessages
 			};
+			view.SetItemHeight(24);
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
-
-#if UNITY_2021_2_OR_NEWER
-			view.Rebuild();
-#else
-			view.Refresh();
-#endif
+			view.RefreshPolyfill();
 			return view;
 		}
 
@@ -341,17 +324,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		void BindListViewElement(VisualElement elem, int index)
 		{
-			ConsoleLogVisualElement consoleLogVisualElement = (ConsoleLogVisualElement)elem;
+			if (index < 0)
+				return;
+
+			var consoleLogVisualElement = (ConsoleLogVisualElement)elem;
 			consoleLogVisualElement.Refresh();
 			consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
-			if (index % 2 == 0)
-			{
-				consoleLogVisualElement.RemoveFromClassList("oddRow");
-			}
-			else
-			{
-				consoleLogVisualElement.AddToClassList("oddRow");
-			}
+			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
 			consoleLogVisualElement.MarkDirtyRepaint();
 		}
 

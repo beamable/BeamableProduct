@@ -85,11 +85,7 @@ namespace Beamable.Editor.Content.Components
 			var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
 			_listView.AddManipulator(manipulator);
 
-#if UNITY_2021_2_OR_NEWER
-			_listView.Rebuild();
-#else
-			_listView.Refresh();
-#endif
+			_listView.RefreshPolyfill();
 
 			RegisterCallback<KeyDownEvent>(RegisterKeyDown, TrickleDown.TrickleDown);
 			RegisterCallback<KeyUpEvent>(RegisterKeyUp, TrickleDown.TrickleDown);
@@ -157,11 +153,7 @@ namespace Beamable.Editor.Content.Components
 
 		private void Model_OnFilteredContentChanged()
 		{
-#if UNITY_2021_2_OR_NEWER
-			_listView.Rebuild();
-#else
-			_listView.Refresh();
-#endif
+			_listView.RefreshPolyfill();
 		}
 
 		private ExtendedListView CreateListView()
@@ -171,21 +163,13 @@ namespace Beamable.Editor.Content.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Multiple,
-#if UNITY_2021_2_OR_NEWER
-				fixedItemHeight = ListViewItemHeight,
-#else
-				itemHeight = ListViewItemHeight,
-#endif
 				itemsSource = Model.FilteredContents
 			};
 
+			view.SetItemHeight(ListViewItemHeight);
 			view.BeamableOnItemChosen(ListView_OnItemChosen);
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
-#if UNITY_2021_2_OR_NEWER
-			view.Rebuild();
-#else
-			view.Refresh();
-#endif
+			view.RefreshPolyfill();
 			return view;
 		}
 

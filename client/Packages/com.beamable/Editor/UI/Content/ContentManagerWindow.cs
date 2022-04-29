@@ -67,8 +67,6 @@ namespace Beamable.Editor.Content
 
 		protected override void Build()
 		{
-			Debug.Log("CONTENT MANAGER WINDOW BUILD!!!!!!");
-
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += HandleUserChange;
 			ActiveContext.OnRealmChange += HandleRealmChange;
@@ -81,7 +79,6 @@ namespace Beamable.Editor.Content
 
 		private void OnDisable()
 		{
-			Debug.Log("CONTENT MANAGER WINDOW DISABLE!!!!!!!");
 			if (ActiveContext == null) return;
 
 			ActiveContext.OnUserChange -= HandleUserChange;
