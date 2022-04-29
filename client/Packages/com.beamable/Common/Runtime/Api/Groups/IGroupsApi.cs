@@ -44,6 +44,8 @@ namespace Beamable.Common.Api.Groups
 		/// <summary>
 		/// Add the current player to a group.
 		/// A player can only join a group when the group's <see cref="Group.enrollmentType"/> is set to "open".
+		/// A player can only be in one group at a time. If the player is already in a group, they must
+		/// use the <see cref="LeaveGroup"/> method before they can join a new group.
 		/// </summary>
 		/// <param name="group">The group id to join</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="GroupMembershipResponse"/> to check that the Join operation occurred correctly.</returns>
