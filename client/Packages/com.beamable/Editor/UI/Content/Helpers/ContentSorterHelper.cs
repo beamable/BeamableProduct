@@ -25,7 +25,7 @@ namespace Beamable.Editor.Content.Helpers
 			return _sorterOptions[type];
 		}
 	}
-	
+
 	public enum ContentSortType
 	{
 		IdAZ,

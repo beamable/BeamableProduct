@@ -8,10 +8,10 @@ namespace Beamable.Editor.Content.Components
 	public class ContentSorterDropdownVisualElement : ContentManagerComponent
 	{
 		public event Action<ContentSortType, string> OnSortingChanged;
-		
+
 		private VisualElement _popupContent;
 		private ContentDataModel _model;
-		
+
 		public ContentSorterDropdownVisualElement(ContentDataModel model) : base(nameof(ContentSorterDropdownVisualElement))
 		{
 			_model = model;
