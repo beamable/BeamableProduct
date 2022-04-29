@@ -13,12 +13,12 @@ namespace Beamable.Editor.Content.Extensions
 		{
 			if (contentItems == null)
 				return null;
-			
+
 			if (contentItems.Count == 0)
 				return contentItems;
 
 			var sortedContentItems = new List<ContentItemDescriptor>();
-			
+
 			switch (contentSortType)
 			{
 				case ContentSortType.IdAZ:
@@ -40,7 +40,7 @@ namespace Beamable.Editor.Content.Extensions
 					sortedContentItems = contentItems.OrderBy(x => x.Status).ToList();
 					break;
 			}
-			
+
 			contentItems.Clear();
 			contentItems.AddRange(sortedContentItems);
 			return contentItems;

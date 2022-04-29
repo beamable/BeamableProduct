@@ -80,9 +80,9 @@ namespace Beamable.Editor.Content.Components
 			_contentSorterButton = Root.Q<Button>("contentSorter");
 			_contentSorterButton.clickable.clicked -= HandleContentSorterButton;
 			_contentSorterButton.clickable.clicked += HandleContentSorterButton;
-			
+
 			_contentSorterTitle = Root.Q<Label>("contentSorterTitle");
-			_contentSorterTitle.text = ContentSorterHelper.GetContentSorterTitle(Model.CurrentSorter); 
+			_contentSorterTitle.text = ContentSorterHelper.GetContentSorterTitle(Model.CurrentSorter);
 
 			Model_OnSelectedContentTypeBranchChanged(new List<TreeViewItem>());
 			Model.OnSelectedContentTypeBranchChanged += Model_OnSelectedContentTypeBranchChanged;
@@ -190,9 +190,9 @@ namespace Beamable.Editor.Content.Components
 		{
 			_manifestButton.RefreshButtonVisibility();
 		}
-		
+
 		private void HandleContentSorterButton() => HandleContentSorterButton(_contentSorterButton.worldBound);
-		
+
 		private void HandleContentSorterButton(Rect visualElementBounds)
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
