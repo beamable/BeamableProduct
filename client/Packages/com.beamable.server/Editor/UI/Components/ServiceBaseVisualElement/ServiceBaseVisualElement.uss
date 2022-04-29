@@ -5,8 +5,6 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 
 #mainVisualElement {
     flex-direction: row;
-    max-width: 100%;
-    overflow: hidden;
 }
 
 #serviceCard {
