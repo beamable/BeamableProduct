@@ -8,10 +8,14 @@
 
   
   <beamable:HeaderVisualElement name = "headerVisualElement"/>
-    <engine:ScrollView name="scroll">
-      <engine:VisualElement name="statusBar"/>
-      <engine:VisualElement name="mainVisualElement">
-      </engine:VisualElement>
-    </engine:ScrollView>
+  <engine:VisualElement name="showAllContent">
+    <engine:Label name="showAllContentLabel" text="Show all" />
+  </engine:VisualElement>
+  <engine:VisualElement name="separator" />
+  <engine:ScrollView name="scroll">
+    <engine:VisualElement name="statusBar"/>
+    <engine:VisualElement name="mainVisualElement">
+    </engine:VisualElement>
+  </engine:ScrollView>
 
 </engine:UXML>
