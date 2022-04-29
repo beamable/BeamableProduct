@@ -305,9 +305,9 @@ namespace Beamable.Editor.Content.Models
 
 				_filteredContent.Add(content);
 			}
-			
+
 			_filteredContent.Sort(CurrentSorter);
-			 OnFilteredContentsChanged?.Invoke();
+			OnFilteredContentsChanged?.Invoke();
 		}
 
 		public IEnumerable<ContentTagDescriptor> GetAllTagDescriptors()
@@ -873,7 +873,7 @@ namespace Beamable.Editor.Content.Models
 		{
 			if (CurrentSorter == newSorter)
 				return;
-			
+
 			CurrentSorter = newSorter;
 			RefreshFilteredContents();
 		}
