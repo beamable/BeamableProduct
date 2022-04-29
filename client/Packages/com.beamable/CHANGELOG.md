@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TryClaim` method in `EventService` to attempt a claim, even if one is not invalid
 - Added `GetDeviceId` method in `AuthService`
 - Added `deviceIds` field in `User`
-- 
+- Added content sorting option in `Content Manager`
+
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
 - AccountHud logs a warning when pressed if there isn't an AccountManagementFlow in the scene.
