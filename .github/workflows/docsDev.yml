@@ -10,15 +10,7 @@ on:
 
 jobs:
   doxygen:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    concurrency:
-      group: doxygen-dev-${{ github.head_ref }}
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/workflows/docsCommon.yml@main
-        name: Build Docs
-        with:
-          s3Dest: DEV
+    uses: Beamable/BeamableProduct/.github/workflows/docsCommon.yml@main
+    with:
+      s3Dest: DEV
       
