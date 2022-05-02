@@ -1,7 +1,7 @@
 name: Docs
 
 on:
-  pull_request:
+  push:
     branches:
       - 'main'
     paths:
@@ -17,6 +17,7 @@ on:
   #   tags:
   #     - '1.**'
   #     - '!1.**-PREVIEW**'
+  #     - '!0.**'
 
 jobs:
   doxygen:
@@ -29,7 +30,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Resolve S3 Destination
         run: |
-          S3=${{github.event.inputs.logLevel}}
+          S3=${{github.event.inputs.s3Dest}}
           S3=${S3:-DEV}
           echo $S3
           echo '::set-output name=S3_OUTPUT::'${S3}
@@ -42,10 +43,6 @@ jobs:
           additional-packages: graphviz
           working-directory: './client/Packages'
           doxyfile-path: '../Doxyfile'
-      - name: Check LS
-        run: |
-          ls client/Packages/html
-        shell: bash
       - name: Archive
         run: |
           tar cfz docs-html.tar.gz ./client/Packages/html
