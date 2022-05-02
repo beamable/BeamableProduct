@@ -79,7 +79,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// <param name="focus">The gamertag of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are relative the current player's tier and stage.</returns>
 		Promise<TournamentStandingsResponse> GetStandings(string tournamentId, int cycle = -1, int from = -1,
-		                                                  int max = -1, int focus = -1);
+														  int max = -1, int focus = -1);
 
 		/// <summary>
 		/// Retrieve scores for the the group members in the current player's group.
@@ -95,7 +95,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// <param name="focus">The gamertag of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are for the player's group members.</returns>
 		Promise<TournamentStandingsResponse> GetGroupPlayers(string tournamentId, int cycle = -1, int from = -1,
-		                                                     int max = -1, int focus = -1);
+															 int max = -1, int focus = -1);
 
 		/// <summary>
 		/// Retrieve the tournament scores for player groups.
@@ -112,7 +112,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// <param name="focus">The id of a group to focus the results for. A focused response will include the given group, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentGroupsResponse"/> where the inner standings are relative the current player's tier and stage.</returns>
 		Promise<TournamentGroupsResponse> GetGroups(string tournamentId, int cycle = -1, int from = -1,
-		                                            int max = -1, int focus = -1);
+													int max = -1, int focus = -1);
 
 		/// <summary>
 		/// Retrieve a list of unclaimed rewards that the current player has earned from previous cycles of a tournament.

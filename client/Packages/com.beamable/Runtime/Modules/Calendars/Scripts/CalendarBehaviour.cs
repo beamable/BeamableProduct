@@ -26,10 +26,10 @@ namespace Beamable.Experimental.Calendars
 #pragma warning disable CS0618
 			beam.Experimental.CalendarService.Subscribe(Calendar.Id, resp =>
 #pragma warning restore CS0618
-			                                            {
-				                                            view = resp;
-				                                            updateUI();
-			                                            });
+			{
+															view = resp;
+															updateUI();
+														});
 			countdownText.enabled = false;
 		}
 

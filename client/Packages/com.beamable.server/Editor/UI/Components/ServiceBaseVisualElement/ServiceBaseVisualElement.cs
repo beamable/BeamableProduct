@@ -133,10 +133,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkboxElement = _checkbox.Q<BeamableCheckboxVisualElement>();
 			_checkbox.OnValueChanged += SelectedStatusChanged;
 			_serviceIcon = _checkbox.Q<Image>();
-			
+
 			if (_serviceIcon != null)
 			{
-				_serviceIcon.tooltip = Model.Descriptor.ServiceType == ServiceType.MicroService ? 
+				_serviceIcon.tooltip = Model.Descriptor.ServiceType == ServiceType.MicroService ?
 					Tooltips.Microservice.MICROSERVICE : Tooltips.Microservice.STORAGE_OBJECT;
 			}
 			UpdateCheckboxTooltip();
@@ -165,7 +165,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			if (_checkboxElement != null)
 			{
-				_checkboxElement.tooltip = _checkboxElement.Value ? Tooltips.Microservice.DESELECT : Tooltips.Microservice.SELECT;	
+				_checkboxElement.tooltip = _checkboxElement.Value ? Tooltips.Microservice.DESELECT : Tooltips.Microservice.SELECT;
 			}
 		}
 

@@ -8,7 +8,7 @@
 			{
 				public const string CHANGE_REALM = "Change realm";
 			}
-			
+
 			public static partial class Microservice
 			{
 				public const string STORAGE_OBJECT = "Storage Object";
