@@ -23,9 +23,13 @@ jobs:
           additional-packages: graphviz
           working-directory: './client/Packages'
           doxyfile-path: '../Doxyfile'
+      - name: Check LS
+        run: |
+          ls /client/Packages/html
+        shell: bash
       - name: Archive
         run: |
-          tar cfz docs-html.tar.gz ./html
+          tar cfz docs-html.tar.gz ./client/Packages/html
         shell: bash
       - uses: actions/upload-artifact@v2
         name: Keep Artifact
@@ -34,7 +38,7 @@ jobs:
           path: docs-html.tar.gz
           retention-days: 3
       - name: Upload to S3
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 sync --delete html/ s3://${{secrets.S3_DOCS_BUCKET}}/DEV/
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 sync --delete client/Packages/html/ s3://${{secrets.S3_DOCS_BUCKET}}/DEV/
       - name: Prepare Cloudfront Invalidation 
         run: |
           CLOUD_DISTRO=E30NJLEQHJKLSL
