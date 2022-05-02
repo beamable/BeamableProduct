@@ -353,9 +353,20 @@ namespace Beamable.Content
 			var determinedManifestID = DetermineManifestID(manifestID);
 			return GetManifestWithID(determinedManifestID).FlatMap(manifest =>
 			{
-				if (!_connectivityService.HasConnectivity && bakedManifestInfo.TryGetValue(contentId, out var contentInfo))
+				if (!_connectivityService.HasConnectivity)
 				{
-					return rawCache.GetContentObject(contentInfo);
+					// check offline cache
+					var contentInfo = manifest.entries.Find(entry => entry.contentId == contentId);
+					if (contentInfo != null)
+					{
+						return rawCache.GetContentObject(contentInfo);	
+					}
+					
+					// check baked content
+					if (bakedManifestInfo.TryGetValue(contentId, out var bakedInfo))
+					{
+						return rawCache.GetContentObject(bakedInfo);	
+					}
 				}
 
 				var subscribable = GetSubscription(determinedManifestID);
