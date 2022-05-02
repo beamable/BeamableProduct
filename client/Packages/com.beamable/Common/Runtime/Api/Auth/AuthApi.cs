@@ -260,7 +260,14 @@ namespace Beamable.Common.Api.Auth
 	/// </summary>
 	public class UserBundle
 	{
+		/// <summary>
+		/// The <see cref="User"/>
+		/// </summary>
 		public User User;
+
+		/// <summary>
+		/// The stored <see cref="TokenResponse"/> that the <see cref="User"/> last used to sign in.
+		/// </summary>
 		public TokenResponse Token;
 
 		public override bool Equals(object obj)
