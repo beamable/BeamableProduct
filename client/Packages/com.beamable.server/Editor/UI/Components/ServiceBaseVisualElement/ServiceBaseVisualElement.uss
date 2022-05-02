@@ -114,6 +114,11 @@ MicroserviceVisualElement #logHeader > .rightArea {
     margin-right: 5px;
 }
 
+.separator {
+    width: 2px;
+    height: 18px;
+    align-self: center;
+}
 
 #logText{
     min-height: 100px;

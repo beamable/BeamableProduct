@@ -64,11 +64,11 @@
 			}
 			public static partial class ContentManager
 			{
-				public const string STATUS = "Status";
-				public const string TYPE = "Type";
-				public const string TAG = "Tag";
-				public const string DOCUMENT = "Document";
-				public const string REFRESH = "Refresh";
+				public const string STATUS = "Allows to filter content by specific statuses";
+				public const string TYPE = "Allows to filter content by specific types";
+				public const string TAG = "Allows to filter content by specific tags";
+				public const string DOCUMENT = "Opens documentation reference for the Content Manager";
+				public const string REFRESH = "Refreshes the Content Manager";
 				public const string SYNCED = "Synced";
 				public const string NEW_ADD = "New Add";
 				public const string MODIFIED = "Modified";
