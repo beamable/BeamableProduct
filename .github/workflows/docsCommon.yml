@@ -56,7 +56,7 @@ jobs:
         run: |
           CLOUD_DISTRO=E30NJLEQHJKLSL
           CALLER_REFERENCE=${{github.sha}}
-          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}"/*"]}}}' >> cloudfront-invalidation.json
+          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}/*"]}}}' >> cloudfront-invalidation.json
       - name: Preview Cloudfront Invalidation 
         run: |
           cat cloudfront-invalidation.json
