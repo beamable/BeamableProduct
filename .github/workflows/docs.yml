@@ -25,7 +25,7 @@ jobs:
           doxyfile-path: '../Doxyfile'
       - name: Check LS
         run: |
-          ls /client/Packages/html
+          ls client/Packages/html
         shell: bash
       - name: Archive
         run: |
