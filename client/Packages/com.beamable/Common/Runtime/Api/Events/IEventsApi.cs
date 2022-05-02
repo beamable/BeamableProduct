@@ -8,7 +8,7 @@ namespace Beamable.Common.Api.Events
 	{
 		/// <summary>
 		/// Claim the earned rewards for an event.
-		/// This method will an exception if the player has never submitted a score to the event.
+		/// This method will throw an exception if the player has never submitted a score to the event.
 		/// </summary>
 		/// <param name="eventId">The runtime id of the event you'd like to claim</param>
 		/// <returns>A promise representing the rewards the player earned</returns>

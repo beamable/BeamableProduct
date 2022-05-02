@@ -161,7 +161,7 @@ namespace Beamable.Experimental.Api.Sim
 	public class GameRelaySyncMsg
 	{
 		/// <summary>
-		/// The ticket number
+		/// The simulation frame number
 		/// </summary>
 		public long t;
 
@@ -186,7 +186,7 @@ namespace Beamable.Experimental.Api.Sim
 	public class GameRelayEvent
 	{
 		/// <summary>
-		/// The ticket number for the event
+		/// The simulation frame number for the event
 		/// </summary>
 		public long t;
 

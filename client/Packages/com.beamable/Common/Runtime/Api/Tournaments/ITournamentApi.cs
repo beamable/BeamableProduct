@@ -213,7 +213,7 @@ namespace Beamable.Common.Api.Tournaments
 		Promise<TournamentGroupStatusResponse> GetGroupStatuses(List<long> groupIds, string contentId);
 
 		/// <summary>
-		/// A utility function get get the alias for a given player.
+		/// A utility function to get the alias for a given player.
 		/// The alias will be found by looking at the player's public stat values.
 		/// </summary>
 		/// <param name="playerId">The gamertag of the player to get the alias for.</param>
@@ -222,7 +222,7 @@ namespace Beamable.Common.Api.Tournaments
 		Promise<string> GetPlayerAlias(long playerId, string statName = "alias");
 
 		/// <summary>
-		/// A utility function get get the avatar key for a given player.
+		/// A utility function to get the avatar key for a given player.
 		/// The avatar key will be found by looking at the player's public stat values.
 		/// </summary>
 		/// <param name="playerId">The gamertag of the player to get the avatar key for.</param>
@@ -290,7 +290,7 @@ namespace Beamable.Common.Api.Tournaments
 		public double score;
 
 		/// <summary>
-		/// The rewards that TODO
+		/// The rewards that will be given to all members of the group.
 		/// </summary>
 		public List<TournamentRewardCurrency> currencyRewards;
 	}

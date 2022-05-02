@@ -397,6 +397,7 @@ namespace Beamable.Experimental.Api.Sim
 
 		/// <summary>
 		/// Get a deterministically random number.
+		/// The seed for the random values is shared among all players in the relay.
 		/// If all clients use this method to get random values, then all clients will get the same random values.
 		/// </summary>
 		/// <returns>A number</returns>
