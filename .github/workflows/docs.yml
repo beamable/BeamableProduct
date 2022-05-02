@@ -1,0 +1,29 @@
+name: Docs PR
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    # paths:
+    #   - 'client/**'
+    #   - 'microservice/**'
+
+jobs:
+  doxygen:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: doxygen-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v2
+      - uses: mattnotmitt/doxygen-action@v1.9.2
+        with:
+          additional-packages: graphviz
+          # working-directory: 'client/Packages/'
+          doxyfile-path: 'client/Doxyfile'
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          path: ./html
+          retention-days: 3
