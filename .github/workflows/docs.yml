@@ -29,7 +29,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Resolve S3 Destination
         run: |
-          S3=${{github.event.inputs.logLevel::-DEV}}
+          S3=${{github.event.inputs.logLevel}}
+          S3=${S3:-DEV}
           echo $S3
           echo '::set-output name=S3_OUTPUT::${S3}
         id: s3-dest-resolver
