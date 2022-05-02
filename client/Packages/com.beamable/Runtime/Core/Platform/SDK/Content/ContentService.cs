@@ -220,6 +220,8 @@ namespace Beamable.Content
 		private Dictionary<string, ClientContentInfo> bakedManifestInfo =
 			new Dictionary<string, ClientContentInfo>();
 
+		private Dictionary<string, ClientContentInfo> cachedManifestInfo;
+
 		private ClientManifest bakedManifest;
 		private ClientManifest BakedManifest
 		{
@@ -424,17 +426,10 @@ namespace Beamable.Content
 			{
 				if (!_connectivityService.HasConnectivity)
 				{
-					// check offline cache
-					var contentInfo = manifest.entries.Find(entry => entry.contentId == contentId);
-					if (contentInfo != null)
+					// check cached content
+					if (cachedManifestInfo.TryGetValue(contentId, out var cachedInfo))
 					{
-						return rawCache.GetContentObject(contentInfo);	
-					}
-					
-					// check baked content
-					if (bakedManifestInfo.TryGetValue(contentId, out var bakedInfo))
-					{
-						return rawCache.GetContentObject(bakedInfo);	
+						return rawCache.GetContentObject(cachedInfo);
 					}
 				}
 
@@ -477,7 +472,15 @@ namespace Beamable.Content
 		/// </summary>
 		/// <param name="query">A <see cref="ContentQuery"/> that will filter the resulting <see cref="ClientManifest.entries"/> field.</param>
 		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
-		public Promise<ClientManifest> GetManifest(ContentQuery query) => GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
+		public Promise<ClientManifest> GetManifest(ContentQuery query)
+		{
+			if (TryGetCachedManifest(CurrentDefaultManifestID, out var promise))
+			{
+				return promise;
+			}
+			
+			return GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
+		}
 
 		/// <summary>
 		/// <inheritdoc cref="ManifestSubscription.GetManifest(ContentQuery)"/>
@@ -540,12 +543,24 @@ namespace Beamable.Content
 				if (OfflineCache.Exists(key, InternalRequester.AccessToken, true))
 				{
 					promise = OfflineCache.Get<ClientManifest>(key, InternalRequester.AccessToken, true);
+					promise.Then(manifest =>
+					{
+						if (cachedManifestInfo == null)
+						{
+							cachedManifestInfo = new Dictionary<string, ClientContentInfo>();
+							foreach (var entry in manifest.entries)
+							{
+								cachedManifestInfo[entry.contentId] = entry;
+							}
+						}
+					});
 					return true;
 				}
 
 				if (manifestID.Equals("global") && BakedManifest != null)
 				{
 					promise = Promise<ClientManifest>.Successful(BakedManifest);
+					cachedManifestInfo = bakedManifestInfo;
 					return true;
 				}
 			}
