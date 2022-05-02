@@ -12,6 +12,18 @@ namespace Beamable.Coroutines
 		private Dictionary<string, List<IEnumerator>> coroutines = new Dictionary<string, List<IEnumerator>>();
 		private event Action _everySecond;
 
+		/// <summary>
+		/// Start a new Coroutine.
+		/// The Coroutine will be attached to the GameObject that the <see cref="CoroutineService"/> is connected to.
+		/// </summary>
+		/// <param name="context">A context is a semantic grouping of Coroutines. Many Coroutines
+		/// can be running at the same time, so the context helps organize them.
+		/// You can use the <see cref="StopAll"/> method to stop all Coroutines of a given context.
+		/// </param>
+		/// <param name="enumerator">
+		/// The Coroutine function
+		/// </param>
+		/// <returns>A Unity Coroutine</returns>
 		public virtual Coroutine StartNew(string context, IEnumerator enumerator)
 		{
 			List<IEnumerator> contextCoroutines = null;
@@ -25,6 +37,12 @@ namespace Beamable.Coroutines
 			return StartCoroutine(RunCoroutine(contextCoroutines, enumerator));
 		}
 
+		/// <summary>
+		/// Stop all Coroutines for a given context.
+		/// You can start Coroutines with the <see cref="StartNew"/> method.
+		/// </summary>
+		/// <param name="context">A context is a semantic grouping of Coroutines. Many Coroutines
+		/// can be running at the same time, so the context helps organize them.</param>
 		public void StopAll(string context)
 		{
 			List<IEnumerator> contextCoroutines = null;
@@ -38,6 +56,10 @@ namespace Beamable.Coroutines
 			}
 		}
 
+		/// <summary>
+		/// A utility function that triggers every game second.
+		/// The callback in this function will happen in a Coroutine context.
+		/// </summary>
 		public event Action EverySecond
 		{
 			add
