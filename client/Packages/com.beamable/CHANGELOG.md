@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InventoryFlow can now be configured at the GameObject level.
 - Edit mode for Buss Style Card has been removed in favor of context menus for selector label, variables and properties
 - Claiming an event that a player never submitted a score for will report an accurate error message
+- Added tooltips to MMV2 window elements which didn't have them.
+- MMV2 buttons now highlight on hover
 
 ### Fixed
 - StoreView prefab now works in landscape mode

@@ -109,6 +109,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_searchLogBar = Root.Q<SearchBarVisualElement>();
 				_searchLogBar.SetValueWithoutNotify(Model.Logs.Filter);
 				_searchLogBar.OnSearchChanged += Model.Logs.SetSearchLogFilter;
+				_searchLogBar.tooltip = Tooltips.Logs.SEARCH_BAR;
 
 				_debugViewBtn = Root.Q<Button>("debug");
 				_debugViewBtn.clickable.clicked += Model.Logs.ToggleViewDebugEnabled;

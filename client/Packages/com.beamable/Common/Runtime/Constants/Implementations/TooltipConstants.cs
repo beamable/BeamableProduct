@@ -4,6 +4,11 @@
 	{
 		public static partial class Tooltips
 		{
+			public static partial class Common
+			{
+				public const string CHANGE_REALM = "Change realm";
+			}
+			
 			public static partial class Microservice
 			{
 				public const string STORAGE_OBJECT = "Storage Object";
@@ -13,17 +18,19 @@
 				public const string ADD_NEW = "Add New";
 				public const string REFRESH = "Refresh";
 				public const string DOCUMENT = "Document";
+				public const string FILTER = "Filter services";
 
-				public const string PLAY = "Run the Microservice or Microstorage";
+				public const string PLAY_MICROSERVICE = "Run the Microservice";
+				public const string PLAY_STORAGE = "Run the Storage";
 				public const string MORE = "More";
 				public const string PLAY_NOT_LOGGED_IN = "You must be logged in to start the service";
 
-				public const string UNCHECK = "Uncheck";
-				public const string CHECKED = "Checked";
+				public const string DESELECT = "Deselect";
+				public const string SELECT = "Select";
 
 				public const string ICON_REMOTE_RUNNING = "Remote Running";
 				public const string ICON_LOCAL_RUNNING = "Local Running";
-				public const string ICON_REMOTE_STOPPING = "Remote Stoppingg";
+				public const string ICON_REMOTE_STOPPING = "Remote Stopping";
 				public const string ICON_LOCAL_STOPPING = "Local Stopping";
 				public const string ICON_REMOTE_DEPLOYING = "Remote Deploying";
 				public const string ICON_LOCAL_BUILDING = "Local Building";
@@ -76,6 +83,7 @@
 				public const string ICON_ERROR = "Error";
 				public const string ICON_WARNING = "Warning";
 				public const string ICON_DEBUG = "Debug";
+				public const string SEARCH_BAR = "Search";
 
 				public const string POP_OUT = "Pop out";
 				public const string ATTACH = "Attach";
