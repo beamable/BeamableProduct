@@ -1,23 +1,20 @@
 name: Docs
 
 on:
-  push:
-    branches:
-      - 'main'
-    paths:
-      - 'client/**'
-      - 'microservice/**'
+  workflow_call:
+    inputs:
+      s3Dest:
+        description: 'The S3 output directory. Should be "DEV", or a semantic version, like "1.1.2".'     
+        required: true
+        default: 'DEV'
+        type: string
   workflow_dispatch:
     inputs:
       s3Dest:
         description: 'The S3 output directory. Should be "DEV", or a semantic version, like "1.1.2".'     
         required: true
         default: 'DEV'
-  # push:
-  #   tags:
-  #     - '1.**'
-  #     - '!1.**-PREVIEW**'
-  #     - '!0.**'
+        type: string
 
 jobs:
   doxygen:
@@ -30,7 +27,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Resolve S3 Destination
         run: |
-          S3=${{github.event.inputs.s3Dest}}
+          S3=${{inputs.s3Dest}}
           S3=${S3:-DEV}
           echo $S3
           echo '::set-output name=S3_OUTPUT::'${S3}
