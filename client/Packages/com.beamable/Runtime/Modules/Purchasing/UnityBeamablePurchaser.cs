@@ -33,9 +33,6 @@ namespace Beamable.Purchasing
 		static readonly int[] RETRY_DELAYS = { 1, 2, 5, 10, 20 }; // TODO: Just double a few times. ~ACM 2021-03-10
 
 
-		/// <summary>
-		/// Begin initialization of Beamable purchasing.
-		/// </summary>
 		public Promise<Unit> Initialize(IDependencyProvider provider)
 		{
 			_serviceProvider = provider;

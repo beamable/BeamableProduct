@@ -23,11 +23,13 @@ namespace Beamable.Experimental.Calendars
 		public async void Start()
 		{
 			var beam = await API.Instance;
+#pragma warning disable CS0618
 			beam.Experimental.CalendarService.Subscribe(Calendar.Id, resp =>
-			{
-				view = resp;
-				updateUI();
-			});
+#pragma warning restore CS0618
+			                                            {
+				                                            view = resp;
+				                                            updateUI();
+			                                            });
 			countdownText.enabled = false;
 		}
 
@@ -76,7 +78,9 @@ namespace Beamable.Experimental.Calendars
 		public async void onClaim()
 		{
 			var beam = await API.Instance;
+#pragma warning disable CS0618
 			await beam.Experimental.CalendarService.Claim(Calendar.Id);
+#pragma warning restore CS0618
 		}
 	}
 }
