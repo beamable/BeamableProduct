@@ -20,10 +20,13 @@ jobs:
       - uses: mattnotmitt/doxygen-action@v1.9.2
         with:
           additional-packages: graphviz
-          # working-directory: 'client/Packages/'
           doxyfile-path: 'client/Doxyfile'
+      - name: Archive docs
+        run: |
+          tar cfz docs-html.tar.gz ./html'
+        shell: bash
       - uses: actions/upload-artifact@v2
         if: always()
         with:
-          path: ./html
+          path: docs-html.tar.gz
           retention-days: 3
