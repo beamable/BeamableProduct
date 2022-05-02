@@ -1,0 +1,22 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'client/**'
+      - 'microservice/**'
+jobs:
+  doxygen:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: doxygen-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: beamable/BeamableProduct/.github/workflows/docsCommon.yml@main
+        name: Build Docs
+        with:
+          s3Dest: DEV
+      
