@@ -37,7 +37,7 @@ jobs:
           echo $S3_INPUT
           echo $S3_A
           echo $S3_B
-          echo '::set-output name=S3_OUTPUT::${S3_B}'
+          echo '::set-output name=S3_OUTPUT::'$S3_B
         id: s3-dest-resolver
       - name: Check S3
         run: echo "The selected s3 dest is ${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}"
