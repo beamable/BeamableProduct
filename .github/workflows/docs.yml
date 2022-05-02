@@ -21,6 +21,7 @@ jobs:
         name: Doxygen
         with:
           additional-packages: graphviz
+          working-directory: './client/Packages'
           doxyfile-path: 'client/Doxyfile'
       - name: Archive
         run: |
