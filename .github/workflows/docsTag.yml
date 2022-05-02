@@ -15,13 +15,14 @@ jobs:
       group: doxygen-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
+      - uses: actions/checkout@v2
       - name: Identify Tag
         id: vars
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - name: Check Tag
         run: echo ${{ steps.vars.outputs.tag }}
-      # - uses: beamable/BeamableProduct/.github/workflows/docsCommon.yml@main
-      #   name: Build Docs
-      #   with:
-      #     s3Dest: ${{ steps.vars.outputs.tag }}
+      - uses: ./.github/workflows/docsCommon.yml@main
+        name: Build Docs
+        with:
+          s3Dest: ${{ steps.vars.outputs.tag }}
       

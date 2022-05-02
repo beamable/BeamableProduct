@@ -7,7 +7,7 @@ on:
     paths:
       - 'client/**'
       - 'microservice/**'
-      
+
 jobs:
   doxygen:
     timeout-minutes: 10
@@ -16,7 +16,9 @@ jobs:
       group: doxygen-dev-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
+      - uses: actions/checkout@v2
       - uses: ./.github/workflows/docsCommon.yml@main
+        name: Build Docs
         with:
           s3Dest: DEV
       
