@@ -13,10 +13,10 @@ on:
         description: 'The S3 output directory. Should be "DEV", or a semantic version, like "1.1.2".'     
         required: true
         default: 'DEV'
-  push:
-    tags:
-      - '1.**'
-      - '!1.**-PREVIEW**'
+  # push:
+  #   tags:
+  #     - '1.**'
+  #     - '!1.**-PREVIEW**'
 
 jobs:
   doxygen:
@@ -29,15 +29,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Resolve S3 Destination
         run: |
-          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-          S3_INPUT=${{github.event.inputs.logLevel}}
-          S3_A=${S3_INPUT:-$GITHUB_ENV}
-          S3_B=${S3_A:-DEV}
-          echo $GITHUB_ENV
-          echo $S3_INPUT
-          echo $S3_A
-          echo $S3_B
-          echo '::set-output name=S3_OUTPUT::'$S3_B
+          echo '::set-output name=S3_OUTPUT::${{github.event.inputs.logLevel:-DEV}}
         id: s3-dest-resolver
       - name: Check S3
         run: echo "The selected s3 dest is ${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}"
