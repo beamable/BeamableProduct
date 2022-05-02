@@ -29,7 +29,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Resolve S3 Destination
         run: |
-          echo '::set-output name=S3_OUTPUT::${{github.event.inputs.logLevel:-DEV}}
+          S3=${{github.event.inputs.logLevel::-DEV}}
+          echo $S3
+          echo '::set-output name=S3_OUTPUT::${S3}
         id: s3-dest-resolver
       - name: Check S3
         run: echo "The selected s3 dest is ${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}"
