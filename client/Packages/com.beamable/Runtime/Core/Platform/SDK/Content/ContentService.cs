@@ -478,7 +478,7 @@ namespace Beamable.Content
 			{
 				return promise;
 			}
-			
+
 			return GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
 		}
 
