@@ -32,7 +32,7 @@ jobs:
           S3=${{github.event.inputs.logLevel}}
           S3=${S3:-DEV}
           echo $S3
-          echo '::set-output name=S3_OUTPUT::${S3}
+          echo '::set-output name=S3_OUTPUT::'${S3}
         id: s3-dest-resolver
       - name: Check S3
         run: echo "The selected s3 dest is ${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}"
