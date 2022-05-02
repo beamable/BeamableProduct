@@ -107,7 +107,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.QueryVisualElements();
 			_mongoStorageModel = (MongoStorageModel)Model;
 		}
-		
+
 		protected override void UpdateButtons()
 		{
 			base.UpdateButtons();
