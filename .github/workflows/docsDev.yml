@@ -7,6 +7,7 @@ on:
     paths:
       - 'client/**'
       - 'microservice/**'
+      
 jobs:
   doxygen:
     timeout-minutes: 10
@@ -15,8 +16,7 @@ jobs:
       group: doxygen-dev-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - name: Build Docs
-        uses: ./.github/workflows/docsCommon.yml@main
+      - uses: ./.github/workflows/docsCommon.yml@main
         with:
           s3Dest: DEV
       
