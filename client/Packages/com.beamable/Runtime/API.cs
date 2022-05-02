@@ -86,19 +86,46 @@ namespace Beamable
 		CloudSavingService CloudSavingService { get; }
 
 		/// <summary>
-		/// Access the <see cref="ContentService"/> for this player instance
+		/// Access the <see cref="ContentService"/> for this player instance.
 		/// </summary>
 		ContentService ContentService { get; }
+
+		/// <summary>
+		/// Access the <see cref="InventoryService"/> for this player instance.
+		/// </summary>
 		InventoryService InventoryService { get; }
+
+		/// <summary>
+		/// Access the <see cref="LeaderboardService"/> for this player instance.
+		/// </summary>
 		LeaderboardService LeaderboardService { get; }
+
+		/// <summary>
+		/// Access the <see cref="IBeamableRequester"/> for this player instance.
+		/// </summary>
 		IBeamableRequester Requester { get; }
+
+		/// <summary>
+		/// Access the <see cref="StatsService"/> for this player instance.
+		/// </summary>
 		StatsService StatsService { get; }
 
 		[Obsolete("Use " + nameof(StatsService) + " instead.")]
 		StatsService Stats { get; }
 
+		/// <summary>
+		/// Access the <see cref="SessionService"/> for this player instance.
+		/// </summary>
 		SessionService SessionService { get; }
+
+		/// <summary>
+		/// Access the <see cref="IAnalyticsTracker"/> for this player instance.
+		/// </summary>
 		IAnalyticsTracker AnalyticsTracker { get; }
+
+		/// <summary>
+		/// Access the <see cref="MailService"/> for this player instance.
+		/// </summary>
 		MailService MailService { get; }
 		PushService PushService { get; }
 		CommerceService CommerceService { get; }
