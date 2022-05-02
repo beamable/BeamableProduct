@@ -22,17 +22,9 @@ jobs:
         with:
           additional-packages: graphviz
           doxyfile-path: 'client/Doxyfile'
-      - name: ls a
-        run: |
-          ls -a
-        shell: bash
-      - name: ls r
-        run: |
-          ls -R
-        shell: bash
       - name: Archive
         run: |
-          tar cfz docs-html.tar.gz ./html'
+          tar cfz docs-html.tar.gz ./html
         shell: bash
       - uses: actions/upload-artifact@v2
         name: Keep Artifact
