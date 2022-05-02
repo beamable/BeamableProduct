@@ -22,7 +22,7 @@ jobs:
         with:
           additional-packages: graphviz
           working-directory: './client/Packages'
-          doxyfile-path: 'client/Doxyfile'
+          doxyfile-path: '../Doxyfile'
       - name: Archive
         run: |
           tar cfz docs-html.tar.gz ./html
