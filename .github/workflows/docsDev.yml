@@ -15,6 +15,6 @@ jobs:
       group: doxygen-${{ github.head_ref }}
       cancel-in-progress: true
     uses: beamable/BeamableProduct/.github/workflows/docsCommon.yml@main
-      with:
-        s3Dest: DEV
+    with:
+      s3Dest: DEV
       
