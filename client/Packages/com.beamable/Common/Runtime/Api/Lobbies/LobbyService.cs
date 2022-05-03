@@ -36,21 +36,32 @@ namespace Beamable.Experimental.Api.Lobbies
     /// <param name="restriction">The privacy value for the created lobby.</param>
     /// <param name="gameTypeRef">If this lobby should be subject to matchmaking, a gametype ref should be provided</param>
     /// <param name="description">Short optional description of what the lobby is for.</param>
-    /// <param name="playerTags"></param>
-    /// <param name="statsToInclude"></param>
+    /// <param name="playerTags">Arbitrary list of tags to include on the creating player.</param>
+    /// <param name="passcodeLength">Configurable value for how long the generated passcode should be.</param>
+    /// <param name="maxPlayers">Configurable value for the maximum number of players this lobby can have.</param>
+    /// <param name="statsToInclude">Stats to include with Lobby requests.</param>
     public Promise<Lobby> CreateLobby(
       string name,
       LobbyRestriction restriction,
       SimGameTypeRef gameTypeRef = null,
       string description = null,
       List<Tag> playerTags = null,
+      int? maxPlayers = null,
+      int? passcodeLength = null,
       List<string> statsToInclude = null)
     {
       return _requester.Request<Lobby>(
         Method.POST,
         $"/lobbies",
-        new CreateLobbyRequest(name, description, restriction.ToString(), gameTypeRef?.Id, playerTags)
-      );
+        new CreateLobbyRequest(
+          name,
+          description,
+          restriction.ToString(),
+          gameTypeRef?.Id,
+          playerTags,
+          maxPlayers,
+          passcodeLength)
+        );
     }
 
     /// <summary>

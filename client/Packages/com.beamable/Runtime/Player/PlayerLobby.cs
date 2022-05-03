@@ -85,9 +85,19 @@ namespace Beamable.Player
       SimGameTypeRef gameTypeRef = null,
       string description = null,
       List<Tag> playerTags = null,
+      int? maxPlayers = null,
+      int? passcodeLength = null,
       List<string> statsToInclude = null)
     {
-      State = await _lobbyApi.CreateLobby(name, restriction, gameTypeRef, description, playerTags, statsToInclude);
+      State = await _lobbyApi.CreateLobby(
+        name,
+        restriction,
+        gameTypeRef,
+        description,
+        playerTags,
+        maxPlayers,
+        passcodeLength,
+        statsToInclude);
     }
 
     public async Promise Join(string lobbyId, List<Tag> playerTags = null)

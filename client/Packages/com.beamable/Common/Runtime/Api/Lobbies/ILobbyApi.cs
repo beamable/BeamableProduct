@@ -13,6 +13,8 @@ namespace Beamable.Experimental.Api.Lobbies
       SimGameTypeRef gameTypeRef = null,
       string description = null,
       List<Tag> playerTags = null,
+      int? maxPlayers = null,
+      int? passcodeLength = null,
       List<string> statsToInclude = null);
     Promise<Lobby> JoinLobby(string lobbyId, List<Tag> playerTags = null);
     Promise<Lobby> JoinLobbyByPasscode(string passcode, List<Tag> playerTags = null);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Beamable.Common.Content;
 
 namespace Beamable.Experimental.Api.Lobbies
 {
@@ -11,19 +12,25 @@ namespace Beamable.Experimental.Api.Lobbies
     public string restriction;
     public string matchType;
     public List<Tag> playerTags;
+    public int? maxPlayers;
+    public int? passcodeLength;
 
     public CreateLobbyRequest(
       string name,
       string description,
       string restriction,
       string matchType,
-      List<Tag> playerTags)
+      List<Tag> playerTags,
+      int? maxPlayers,
+      int? passcodeLength)
     {
       this.name = name;
       this.description = description;
       this.restriction = restriction;
       this.matchType = matchType;
       this.playerTags = playerTags;
+      this.maxPlayers = maxPlayers;
+      this.passcodeLength = passcodeLength;
     }
   }
 }
