@@ -61,9 +61,8 @@ namespace Beamable
 		public static string SocketUrl => $"{Data.ApiUrl.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
 
 		/// <summary>
-		/// Will be removed in a future version of Beamable. Please do not use.
+		/// The docker tag for the beam service base image that will be used to build microservices. 
 		/// </summary>
-		[Obsolete]
 		public static string BeamServiceTag => $"{Environment}_{SdkVersion}";
 
 		/// <summary>
