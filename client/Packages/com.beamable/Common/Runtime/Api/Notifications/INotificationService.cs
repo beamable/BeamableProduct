@@ -30,7 +30,7 @@ namespace Beamable.Common.Api.Notifications
 		/// <param name="callback">The callback to invoke when the event is received</param>
 		/// <typeparam name="T">
 		/// The type of argument that was sent with the original event.
-		/// If a type of "string" is given, the inner event will assumed to have an inner "payload" field containing the raw string.
+		/// If a type of "string" is given, the inner event will assumed to have an inner "stringValue" field containing the raw string.
 		/// </typeparam>
 		void Subscribe<T>(string name, Action<T> callback);
 

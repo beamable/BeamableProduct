@@ -48,7 +48,7 @@ namespace Beamable.Server.Api.Notifications
         {
             return new PrimitiveStringPayload
             {
-                payload = message
+                stringValue = message
             };
         }
 
@@ -74,7 +74,7 @@ namespace Beamable.Server.Api.Notifications
         [Serializable]
         class PrimitiveStringPayload
         {
-            public string payload;
+            public string stringValue;
         }
     }
 

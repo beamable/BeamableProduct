@@ -20,7 +20,7 @@ namespace Beamable.Server.Api.Notifications
 		/// <param name="name">The context that player's client must be subscribed too to see the notification.</param>
 		/// <param name="messagePayload">
 		/// The non-JSON string data to send along with the notification.
-		/// Due to Beamable constraints, note that the string message will be sent with an outer "payload" field wrapping it.
+		/// Due to Beamable constraints, note that the string message will be sent with an outer "stringValue" field wrapping it.
 		/// </param>
 		Promise<EmptyResponse> NotifyPlayer(long gamertag, string name, string messagePayload);
 
@@ -31,7 +31,7 @@ namespace Beamable.Server.Api.Notifications
 		/// <param name="gamertags">The list of gamertags for the players you wish to notify.</param>
 		/// <param name="name">The context that player's client must be subscribed too to see the notification.</param>
 		/// <param name="messagePayload">The non-JSON string data to send along with the notification.
-		/// Due to Beamable constraints, note that the string message will be sent with an outer "payload" field wrapping it.
+		/// Due to Beamable constraints, note that the string message will be sent with an outer "stringValue" field wrapping it.
 		/// </param>
 		Promise<EmptyResponse> NotifyPlayer(List<long> gamertags, string name, string messagePayload);
 

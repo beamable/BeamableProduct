@@ -111,9 +111,9 @@ namespace Beamable.Api.Notification
 						// special handling for the string case, because in 1.1, we didn't force the string case to be in a wrapped object.
 						if (isString)
 						{
-							var objResult = dict["payload"]; // the "payload" is a custom name from the C#MS base image.
+							var objResult = dict["stringValue"]; // the "stringValue" is a custom name from the C#MS base image.
 							string strResult = (string)objResult;
-							strResult = strResult.Substring(1, strResult.Length - 2); // strip off the required escape quotes.
+							//strResult = strResult.Substring(1, strResult.Length - 2); // strip off the required escape quotes.
 							objResult = strResult; // rebox the type for casting.
 							callback?.Invoke((T)objResult);
 							return;
