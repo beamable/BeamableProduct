@@ -20,8 +20,19 @@ namespace Beamable.Player
 	public class PlayerStat
 	{
 
+		/// <summary>
+		/// The unique stat key
+		/// </summary>
 		public string Key { get; }
+
+		/// <summary>
+		/// The <see cref="PlayerStats"/> that this stat was created from.
+		/// </summary>
 		public PlayerStats Group { get; }
+
+		/// <summary>
+		/// The value of the stat
+		/// </summary>
 		public string Value { get; }
 
 		public PlayerStat(string key, string value, PlayerStats group)
@@ -33,6 +44,16 @@ namespace Beamable.Player
 
 		public static implicit operator string(PlayerStat self) => self.Value;
 
+		/// <summary>
+		/// Set the value of the stat for the current player.
+		/// If multiple calls to this method are issued per frame, all set operations will be baked into one network operation.
+		/// </summary>
+		/// <param name="nextValue">
+		/// The desired stat value. This will override the existing value.
+		/// </param>
+		/// <returns>
+		/// A <see cref="Promise"/> representing the work. The promise won't complete until the stat value has been successfully set.
+		/// </returns>
 		public Promise Set(string nextValue) => Group.Set(Key, nextValue);
 
 		public override string ToString() => Value;
@@ -161,11 +182,14 @@ namespace Beamable.Player
 		}
 
 		/// <summary>
-		/// Set the value of a <see cref="PlayerStat"/>
+		/// Set the value of a <see cref="PlayerStat"/>.
+		/// If multiple calls to this method are issued per frame, all set operations will be baked into one network operation.
 		/// </summary>
-		/// <param name="key"></param>
-		/// <param name="value"></param>
-		/// <returns></returns>
+		/// <param name="key">The stat key</param>
+		/// <param name="value">The desired stat value. This will override the existing value.</param>
+		/// <returns>
+		/// A <see cref="Promise"/> representing the work. The promise won't complete until the set is complete.
+		/// </returns>
 		public Promise Set(string key, string value)
 		{
 			return _eventService.Add(new SdkEvent(nameof(PlayerStats), "set", key, value));

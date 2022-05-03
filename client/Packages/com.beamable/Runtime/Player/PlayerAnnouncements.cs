@@ -46,7 +46,6 @@ namespace Beamable.Player
 		/// </summary>
 		public bool IsClaimed;
 
-		[Obsolete]
 		public bool IsIgnored;
 
 
