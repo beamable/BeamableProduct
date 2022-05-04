@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Facebook: 0
   Apple: 0
-  Google: 0
-  GoogleClientID: 
+  Google: 1
+  GooglePlayGames: 1
+  GoogleClientID: 656526691648-6sj6f2qdnveo1g3bp0lt16j8bbdv4n9s.apps.googleusercontent.com
   GoogleIosClientID: 
   EnableGoogleSignInOnApple: 0
   DisplayNameStat: {fileID: 11400000, guid: 6b23cc10f2e954e67bd6c1760605d646, type: 2}
