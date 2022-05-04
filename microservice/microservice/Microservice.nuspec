@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package >
+    <metadata>
+        <id>Beamable.Microservice.Runtime</id>
+        <version>$version$</version>
+        <title>$title$</title>
+        <authors>Beamable</authors>
+        <owners>Beamable</owners>
+        <description>Really awesome package</description>
+        <dependencies>
+            <group targetFramework="net6.0" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="bin\Release\net6.0\Beamable.*.dll" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\BeamableMicroserviceBase.dll" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\UnityEngine.dll" target="lib\net6.0" />
+    </files>
+</package>

@@ -1,0 +1,36 @@
+name: Build Nuget Packages
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - 'client/**'
+      - 'microservice/**'
+
+jobs:
+  baseNuget:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: base-microservice-nuget-${{ github.head_ref }}
+      cancel-in-progress: true
+    strategy:
+      matrix:
+        dotnet-version: ['6.0.x' ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - name: Build a Nuget package
+      - name: Build
+        run: dotnet pack -c Release -p:NuspecFile=Microservice.nuspec -p:PackageVersion=0.0.0
