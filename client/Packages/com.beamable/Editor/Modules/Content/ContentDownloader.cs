@@ -36,10 +36,10 @@ namespace Beamable.Editor.Content
 
 			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
 			{
-				var contentType = operation.ContentId.Split('.')[0];
-				if (!ContentRegistry.HasContentTypeValidClass(contentType))
+				var type = operation.ContentId.Split('.')[0];
+				if (!ContentRegistry.HasContentTypeValidClass(type))
 				{
-					Debug.LogWarning($"No C# class found for type=[{contentType}]. Skipping download process for this type.");
+					Debug.LogWarning($"No C# class found for type=[{type}]. Skipping download process for this type.");
 					return null;
 				}
 
