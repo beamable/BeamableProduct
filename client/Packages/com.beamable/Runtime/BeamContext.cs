@@ -658,6 +658,7 @@ namespace Beamable
 		private static async void HandleDomainReset()
 		{
 			// tear down all instances, and let them reboot normally.
+			Default?.Stop();
 			await Beam.StopAllContexts();
 		}
 #endif
