@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - StoreView prefab now works in landscape mode
 - Reading content in offline mode will no longer throw an exception if there is offline cache available
 - Android sign in will always allow user to select an account.
+- Handling content downloads when backing class isn't available
 
 ## [1.1.2]
 ### Fixed
