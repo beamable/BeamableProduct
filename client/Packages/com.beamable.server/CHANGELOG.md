@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unrelased]
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`
+- Possibility to overload microservice methods marked as `ClientCallable`
 
 ## [1.1.2]
 ### Fixed
