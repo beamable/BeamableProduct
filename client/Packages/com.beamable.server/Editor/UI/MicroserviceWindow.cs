@@ -75,7 +75,7 @@ namespace Beamable.Editor.Microservice.UI
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;
 
-			void OnUserChange(EditorUser _) => _microserviceContentVisualElement?.Refresh();
+			void OnUserChange(EditorUser _) => BuildWithContext();
 			void OnRealmChange(RealmView _) => _microserviceContentVisualElement?.StopAllServices(true, RealmSwitchDialog.TITLE, RealmSwitchDialog.MESSAGE, RealmSwitchDialog.OK);
 
 			ActiveContext.OnUserChange -= OnUserChange;
@@ -94,22 +94,23 @@ namespace Beamable.Editor.Microservice.UI
 				Model = MicroservicesDataModel.Instance;
 			else
 				MicroservicesDataModel.Instance = Model;
+			
+			SetForContent();
+		}
 
-			// Set up the visuals for this window
+		private void SetForContent()
+		{
 			var root = this.GetRootVisualContainer();
 			root.Clear();
+			
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
+			_windowRoot.name = nameof(_windowRoot);
 
-			if (_windowRoot == null)
-			{
-				var uiAsset =
-					AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
-				_windowRoot = uiAsset.CloneTree();
-				_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
-				_windowRoot.name = nameof(_windowRoot);
-
-				root.Add(_windowRoot);
-			}
-
+			root.Add(_windowRoot);
+			
 			bool localServicesAvailable = Model?.AllLocalServices != null;
 			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
 			int selectedServicesAmount = localServicesAvailable
