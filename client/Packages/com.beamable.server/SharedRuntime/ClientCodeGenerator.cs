@@ -103,8 +103,7 @@ namespace Beamable.Server.Generator
 			{
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(BeamContextSystemAttribute)))
 			};
-
-
+			
 			var registrationMethod = new CodeMemberMethod
 			{
 				Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
@@ -152,6 +151,7 @@ namespace Beamable.Server.Generator
 			// need to scan and get methods.
 			var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
 			var allParameterTypes = new HashSet<Type>();
+
 			foreach (var method in allMethods)
 			{
 				var clientCallable = method.GetCustomAttribute<ClientCallableAttribute>();
@@ -166,7 +166,12 @@ namespace Beamable.Server.Generator
 					ClientCallable = clientCallable
 				};
 				_callableMethods.Add(callable);
+			}
+			
+			OverridePaths();
 
+			foreach (CallableMethodInfo callable in _callableMethods)
+			{
 				AddCallableMethod(callable, allParameterTypes);
 			}
 
@@ -175,6 +180,49 @@ namespace Beamable.Server.Generator
 				AddParameterClass(parameterType);
 			}
 
+		}
+
+		void OverridePaths()
+		{
+			Dictionary<string, int> duplicatedPaths = new Dictionary<string, int>();
+
+			foreach (CallableMethodInfo callable in _callableMethods)
+			{
+				if (string.IsNullOrEmpty(callable.ClientCallable.PathName))
+				{
+					callable.ClientCallable.PathName = callable.MethodInfo.Name;
+				}
+
+				if (duplicatedPaths.ContainsKey(callable.ClientCallable.PathName))
+				{
+					duplicatedPaths[callable.ClientCallable.PathName]++;
+				}
+				else
+				{
+					duplicatedPaths.Add(callable.ClientCallable.PathName, 1);
+				}
+			}
+
+			foreach (KeyValuePair<string, int> pair in duplicatedPaths)
+			{
+				if (pair.Value <= 1)
+				{
+					continue;
+				}
+
+				int counter = 1;
+
+				foreach (CallableMethodInfo callable in _callableMethods)
+				{
+					if (callable.ClientCallable.PathName != pair.Key)
+					{
+						continue;
+					}
+
+					callable.ClientCallable.PathName = $"{callable.ClientCallable.PathName}_{counter:000}";
+					counter++;
+				}
+			}
 		}
 
 		void AddParameterClass(Type parameterType)
@@ -228,7 +276,6 @@ namespace Beamable.Server.Generator
 				genMethod.Statements.Add(assignment);
 			}
 
-
 			// add some docstrings to the method.
 			genMethod.Comments.Add(new CodeCommentStatement("<summary>", true));
 			genMethod.Comments.Add(new CodeCommentStatement($"Call the {info.MethodInfo.Name} method on the {Descriptor.Name} microservice", true));
@@ -266,13 +313,6 @@ namespace Beamable.Server.Generator
 
 			var servicePath = info.ClientCallable.PathName;
 			var serviceName = Descriptor.Name;
-			if (string.IsNullOrEmpty(servicePath))
-			{
-				servicePath = info.MethodInfo.Name;
-			}
-
-			// servicePath = $"micro_{Descriptor.Name}/{servicePath}"; // micro is the feature name, so we don't accidently stop out an existing service.
-
 
 			var serializedFieldVariableName = "serializedFields";
 			var fieldDeclare = new CodeParameterDeclarationExpression(typeof(string[]), serializedFieldVariableName);
@@ -302,7 +342,6 @@ namespace Beamable.Server.Generator
 				});
 
 			returnStatement.Expression = requestInvokeExpr;
-
 
 			//returnStatement.ex
 			genMethod.Statements.Add(returnStatement);

@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server.Common;
-using LoxSmoke.DocXml;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
@@ -163,8 +162,48 @@ namespace Beamable.Server
             };
             output.Add(serviceMethod);
          }
+         
+         OverridePaths(output);
 
          return output;
+      }
+
+      private static void OverridePaths(List<ServiceMethod> output)
+      {
+         Dictionary<string, int> duplicatedPaths = new Dictionary<string, int>();
+
+         foreach (ServiceMethod serviceMethod in output)
+         {
+            if (duplicatedPaths.ContainsKey(serviceMethod.Path))
+            {
+               duplicatedPaths[serviceMethod.Path]++;
+            }
+            else
+            {
+               duplicatedPaths.Add(serviceMethod.Path, 1);
+            }
+         }
+
+         foreach ((string path, int amount) in duplicatedPaths)
+         {
+            if (amount <= 1)
+            {
+               continue;
+            }
+
+            int counter = 1;
+
+            foreach (ServiceMethod serviceMethod in output)
+            {
+               if (serviceMethod.Path != path)
+               {
+                  continue;
+               }
+
+               serviceMethod.Path = $"{serviceMethod.Path}_{counter:000}";
+               counter++;
+            }
+         }
       }
    }
 }

@@ -1,12 +1,9 @@
-using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
-using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -143,9 +140,9 @@ namespace Beamable.Editor.UI.Model
 		}
 		public async Task TryToBuildAndStart(bool includeDebuggingTools)
 		{
-			bool isBuilded = await TryToBuild(includeDebuggingTools);
+			bool isBuilt = await TryToBuild(includeDebuggingTools);
 
-			if (isBuilded)
+			if (isBuilt)
 				await TryToStart();
 		}
 	}
