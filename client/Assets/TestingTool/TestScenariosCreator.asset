@@ -21,7 +21,7 @@ MonoBehaviour:
     testSteps: []
   - name: 002 - BeamContext_Lifecycle
     progress: 0
-    sceneAsset: {fileID: 102900000, guid: 45244e641a49a478db5ec8d9c4111fd9, type: 3}
+    sceneAsset: {fileID: 102900000, guid: e7cb63c49b0df9842a1bca8c934edff8, type: 3}
     shortDescription: Test BeamContext
     fullDescription: Check initialization process and multiplayer capability
     testSteps:
