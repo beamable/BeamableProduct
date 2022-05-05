@@ -24,8 +24,8 @@ MonoBehaviour:
     fullDescription: Check initialization process and multiplayer capability
     testSteps:
     - progress: 0
-      description: "Does default BeamContext initialize correctly? \nIt should eventually
-        show a player ID"
+      description: "Does default BeamContext initialize correctly? \r\nIt should
+        eventually show a player ID"
     - progress: 0
       description: 'Enable Group 2
 
