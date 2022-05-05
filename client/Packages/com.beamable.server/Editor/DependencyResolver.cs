@@ -101,6 +101,19 @@ namespace Beamable.Server
 
 		public AssemblyDefinitionInfo Find(string assemblyName)
 		{
+			const string guidPrefix = "GUID:";
+
+			if (assemblyName.StartsWith(guidPrefix))
+			{
+				var guid = assemblyName.Replace(guidPrefix, string.Empty);
+				var path = AssetDatabase.GUIDToAssetPath(guid);
+
+				if (_assemblies.Any(pair => pair.Value.Location == path))
+				{
+					return _assemblies.First(pair => pair.Value.Location == path).Value;
+				}
+			}
+
 			if (!_assemblies.TryGetValue(assemblyName, out var unityAssembly))
 			{
 				throw new AssemblyDefinitionNotFoundException(assemblyName);
@@ -237,8 +250,6 @@ namespace Beamable.Server
 
 	public class DependencyResolver : MonoBehaviour
 	{
-
-
 		public static HashSet<Type> GetReferencedTypes(Type type)
 		{
 			var results = new HashSet<Type>();
