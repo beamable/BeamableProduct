@@ -105,12 +105,12 @@ namespace Beamable.Server
 
 			if (assemblyName.StartsWith(guidPrefix))
 			{
-				var guid = assemblyName.Replace(guidPrefix, string.Empty);
-				var path = AssetDatabase.GUIDToAssetPath(guid);
-
-				if (_assemblies.Any(pair => pair.Value.Location == path))
+				var path = AssetDatabase.GUIDToAssetPath(assemblyName.Replace(guidPrefix, string.Empty));
+				var assemblyDefinitionInfo = _assemblies.Where(pair => pair.Value.Location == path)
+													.Select(pair => pair.Value).FirstOrDefault();
+				if (assemblyDefinitionInfo != null)
 				{
-					return _assemblies.First(pair => pair.Value.Location == path).Value;
+					return assemblyDefinitionInfo;
 				}
 			}
 
