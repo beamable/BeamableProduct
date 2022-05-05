@@ -13,20 +13,32 @@ namespace Beamable.Experimental.Api.Chat
 	[Serializable]
 	public class ChatView
 	{
+		/// <summary>
+		/// A list of <see cref="RoomHandle"/>s that represent the rooms the current player is in.
+		/// </summary>
 		public readonly List<RoomHandle> roomHandles;
 
+		/// <summary>
+		/// The first <see cref="RoomHandle"/> from the <see cref="roomHandles"/> list that has a name of "general"
+		/// </summary>
 		public RoomHandle GeneralRoom
 		{
 			get;
 			private set;
 		}
 
+		/// <summary>
+		/// A set of <see cref="RoomHandle"/> from the <see cref="roomHandles"/> list that have names that start with "group"
+		/// </summary>
 		public List<RoomHandle> GuildRooms
 		{
 			get;
 			private set;
 		}
 
+		/// <summary>
+		/// A set of <see cref="RoomHandle"/> from the <see cref="roomHandles"/> list that have names that start with "direct"
+		/// </summary>
 		public List<RoomHandle> DirectMessageRooms
 		{
 			get;
@@ -73,13 +85,41 @@ namespace Beamable.Experimental.Api.Chat
 		private readonly IDependencyProvider _dependencyProvider;
 		private const string ChatEvent = "CHAT.RECEIVED";
 
+		/// <summary>
+		/// The room id
+		/// </summary>
 		public readonly string Id;
+
+		/// <summary>
+		/// The name of the room
+		/// </summary>
 		public readonly string Name;
+
+		/// <summary>
+		/// When true, the player will get message updates in real time for this room
+		/// </summary>
 		public readonly bool KeepSubscribed;
+
+		/// <summary>
+		/// A list of gamertags that are in the room.
+		/// The list may be null if there are no tracked players.
+		/// </summary>
 		public readonly List<long> Players;
+
+		/// <summary>
+		/// A list of <see cref="Message"/>s that are in the room.
+		/// Use the <see cref="OnMessageReceived"/> to see messages as they appear.
+		/// </summary>
 		public readonly List<Message> Messages;
 
+		/// <summary>
+		/// True when there are tracked players in the room
+		/// </summary>
 		public bool ShowPlayerList => Players == null;
+
+		/// <summary>
+		/// True when the <see cref="Subscribe"/> call has completed.
+		/// </summary>
 		public bool IsSubscribed
 		{
 			get
@@ -91,7 +131,16 @@ namespace Beamable.Experimental.Api.Chat
 			}
 		}
 
+		/// <summary>
+		/// An event that will trigger after the <see cref="Terminate"/> method has been called.
+		/// This will not remove the player from the room.
+		/// </summary>
 		public Action OnRemoved;
+
+		/// <summary>
+		/// An event that triggers anytime a new <see cref="Message"/> is received for the room.
+		/// This event will only trigger when <see cref="IsSubscribed"/> is true.
+		/// </summary>
 		public Action<Message> OnMessageReceived;
 
 		private Promise<Unit> _subscribe;
@@ -115,6 +164,11 @@ namespace Beamable.Experimental.Api.Chat
 			}
 		}
 
+		/// <summary>
+		/// Subscribe to the room to get a live feed of <see cref="Message"/> with the <see cref="Messages"/> list.
+		/// The room will automatically subscribe if the <see cref="KeepSubscribed"/> property is true.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> representing when the subscription has been initialized.</returns>
 		public Promise<Unit> Subscribe()
 		{
 			if (_subscribe != null)
@@ -138,6 +192,11 @@ namespace Beamable.Experimental.Api.Chat
 			return _subscribe;
 		}
 
+		/// <summary>
+		/// Stop listening for new messages in this room.
+		/// This will not leave the room.
+		/// </summary>
+		/// <returns></returns>
 		public Promise<Unit> Unsubscribe()
 		{
 			var promise = new Promise<Unit>();
@@ -152,16 +211,29 @@ namespace Beamable.Experimental.Api.Chat
 			return promise;
 		}
 
+		/// <summary>
+		/// Remove the current player from this room.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
 		public Promise<Unit> LeaveRoom()
 		{
 			return ChatService.LeaveRoom(Id).Map(_ => PromiseBase.Unit);
 		}
 
+		/// <summary>
+		/// Send a message to this room.
+		/// </summary>
+		/// <param name="message">The message body</param>
+		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
 		public Promise<Unit> SendMessage(string message)
 		{
 			return ChatService.SendMessage(Id, message).Map(_ => PromiseBase.Unit);
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="Unsubscribe"/>
+		/// Triggers the <see cref="OnRemoved"/> event.
+		/// </summary>
 		public void Terminate()
 		{
 			Unsubscribe().Then(_ =>
