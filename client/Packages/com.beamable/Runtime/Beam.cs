@@ -230,6 +230,8 @@ namespace Beamable
 		/// </summary>
 		public static async Promise StopAllContexts()
 		{
+			BeamContext.Default?.Stop();
+
 			foreach (var ctx in BeamContext.All)
 			{
 				await ctx.Stop();
