@@ -43,7 +43,7 @@ namespace Beamable.Editor.Content
 					return null;
 				}
 
-				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response => 
+				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
 				{
 					var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
 
@@ -58,7 +58,7 @@ namespace Beamable.Editor.Content
 			}).ToList();
 
 			downloadPromiseGenerators.RemoveAll(item => item == null);
-			
+
 			var downloadPromises = new Promise<Unit>();
 			Promise.ExecuteInBatchSequence(10, downloadPromiseGenerators).Map(assetsToBeWritten =>
 			{
