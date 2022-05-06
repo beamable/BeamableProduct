@@ -192,7 +192,7 @@ namespace Beamable.Server
                 foreach (ParameterInfo parameterName in method.ParameterInfos)
                 {
                     string parameterType = parameterName.ParameterType.ToString();
-                    builder.Append(ClientCodeGenerator.GetCodeForType(parameterType).ToString());
+                    builder.Append(ClientCodeGenerator.GetHashString(parameterType));
                 }
             
                 method.Path = $"{method.Path}_{builder}";

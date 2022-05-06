@@ -9,14 +9,20 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Beamable.Server.Generator
 {
 	public class ClientCodeGenerator
 	{
+		public class CallableMethodInfo
+		{
+			public MethodInfo MethodInfo;
+			public ClientCallableAttribute ClientCallable;
+		}
+
 		private const string MicroserviceClients_TypeName = "MicroserviceClients";
 		private const string MicroserviceClient_TypeName = "MicroserviceClient";
 
@@ -191,7 +197,7 @@ namespace Beamable.Server.Generator
 				{
 					callable.ClientCallable.PathName = callable.MethodInfo.Name;
 				}
-				
+
 				ParameterInfo[] parameterInfos = callable.MethodInfo.GetParameters();
 				if (parameterInfos.Length == 0)
 				{
@@ -203,7 +209,7 @@ namespace Beamable.Server.Generator
 				foreach (ParameterInfo parameterName in parameterInfos)
 				{
 					string parameterType = parameterName.ParameterType.ToString();
-					builder.Append(GetCodeForType(parameterType).ToString());
+					builder.Append(GetHashString(parameterType));
 				}
 
 				callable.ClientCallable.PathName = $"{callable.ClientCallable.PathName}_{builder}";
@@ -349,51 +355,21 @@ namespace Beamable.Server.Generator
 			File.WriteAllText(fileName, GetCSharpCodeString());
 		}
 
-		public class CallableMethodInfo
+		public static string GetHashString(string inputString)
 		{
-			public MethodInfo MethodInfo;
-			public ClientCallableAttribute ClientCallable;
+			StringBuilder sb = new StringBuilder();
+			foreach (byte b in GetHash(inputString))
+			{
+				sb.Append(b.ToString("X2"));
+			}
+
+			return sb.ToString().Substring(0, 3);
 		}
 
-		public static int GetCodeForType(string type)
+		private static byte[] GetHash(string inputString)
 		{
-			// AFTER ADDING NEW SERIALIZED TYPE FOR MICROSERVICE ALSO ADD AN ENTRY TO THE END OF THIS LIST. DO NOT CHANGE ITEMS ORDER!!!
-			List<string> supportedTypes = new List<string>
-			{
-				"System.Object",
-				"System.String",
-				"System.Boolean",
-				"System.Byte",
-				"System.SByte",
-				"System.Char",
-				"System.Decimal",
-				"System.Double",
-				"System.Single",
-				"System.Int32",
-				"System.UInt32",
-				"System.IntPtr",
-				"System.UIntPtr",
-				"System.Int64",
-				"System.UInt64",
-				"System.Int16",
-				"System.UInt16",
-				"UnityEngine.Application",
-				"UnityEngine.Color",
-				"UnityEngine.Gradient",
-				"UnityEngine.Quaternion",
-				"UnityEngine.Rect",
-				"UnityEngine.RectInt",
-				"UnityEngine.ScriptableObject",
-				"UnityEngine.GameObject",
-				"UnityEngine.Vector2",
-				"UnityEngine.Vector2Int",
-				"UnityEngine.Vector3",
-				"UnityEngine.Vector3Int",
-				"UnityEngine.Vector4",
-				"UnityEngine.AddressableAssets.AssetReference",
-			};
-			
-			return supportedTypes.FindIndex(s => s == type);
+			using (HashAlgorithm algorithm = SHA256.Create())
+				return algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
 		}
 	}
 }
