@@ -1,4 +1,5 @@
 using Beamable.Api.Notification.Internal;
+using Beamable.Common;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Spew;
 using Beamable.Pooling;
@@ -111,7 +112,7 @@ namespace Beamable.Api.Notification
 						// special handling for the string case, because in 1.1, we didn't force the string case to be in a wrapped object.
 						if (isString)
 						{
-							var objResult = dict["stringValue"]; // the "stringValue" is a custom name from the C#MS base image.
+							var objResult = dict[Constants.Features.Notifications.PRIMITIVE_STRING_PAYLOAD_FIELD]; // the "stringValue" is a custom name from the C#MS base image.
 							string strResult = (string)objResult;
 							//strResult = strResult.Substring(1, strResult.Length - 2); // strip off the required escape quotes.
 							objResult = strResult; // rebox the type for casting.

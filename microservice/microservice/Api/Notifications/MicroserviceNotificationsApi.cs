@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Notifications;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 
@@ -71,11 +72,7 @@ namespace Beamable.Server.Api.Notifications
                 });
         }
 
-        [Serializable]
-        class PrimitiveStringPayload
-        {
-            public string stringValue;
-        }
+
     }
 
 
