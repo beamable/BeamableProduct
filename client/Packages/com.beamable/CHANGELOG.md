@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `GetDeviceId` method in `AuthService`
 - Added `deviceIds` field in `User`
 - Added content sorting option in `Content Manager`
+- Documentation to `IBeamableAPI` and all related accessors.
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
