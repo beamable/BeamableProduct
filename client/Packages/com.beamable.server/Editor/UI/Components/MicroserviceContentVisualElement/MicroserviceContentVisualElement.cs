@@ -138,7 +138,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var api = BeamEditorContext.Default;
 
 			foreach (var kvp in _modelToVisual)
-				kvp.Value.ChangeStartButtonState(api.IsAuthenticated, Constants.Tooltips.Microservice.PLAY, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+				kvp.Value.ChangeStartButtonState(api.IsAuthenticated, Constants.Tooltips.Microservice.PLAY_MICROSERVICE, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
 		}
 
 		private void HandleSelectionChanged(bool _)

@@ -54,11 +54,7 @@ namespace Beamable.Common.Api.Mail
 			});
 		}
 
-		/// <summary>
-		/// Must be sent from an admin user or a microservice.
-		/// </summary>
-		/// <param name="request">Structure holding 1 or more messages to send and to whom.</param>
-		/// <returns></returns>
+
 		public Promise<EmptyResponse> SendMail(MailSendRequest request)
 		{
 			return Requester.Request<EmptyResponse>(
@@ -131,15 +127,53 @@ namespace Beamable.Common.Api.Mail
 		}
 	}
 
+	/// <summary>
+	/// A way to specify certain criteria for searching mail.
+	/// Each instance of <see cref="SearchMailRequestClause"/> can specify different types of mail to identify.
+	/// Each <see cref="SearchMailRequestClause"/> will result in a corresponding <see cref="SearchMailResponseClause"/>
+	/// </summary>
 	[Serializable]
 	public class SearchMailRequestClause
 	{
+		/// <summary>
+		/// The name of the clause must be unique, and should describe the filter this particular clause performs.
+		/// When the mail request clause is processed, it will produce a <see cref="SearchMailResponseClause"/>. The resulting
+		/// <see cref="SearchMailResponseClause.name"/> field will match the value of this <see cref="name"/> field.
+		/// </summary>
 		public string name;
+
+		/// <summary>
+		/// When true, the <see cref="SearchMailResponseClause"/> will only count the number of mail objects that met the <see cref="SearchMailRequestClause"/>,
+		/// and the actual <see cref="SearchMailResponseClause.content"/> field will be empty.
+		/// </summary>
 		public bool onlyCount;
+
+		/// <summary>
+		/// The categories of mail to include in this filter clause. A category can be any string.
+		/// </summary>
 		public string[] categories;
+
+		/// <summary>
+		/// The various states of mail to include in this filter clause.
+		/// Valid states include, "Unread", "Read", and "Deleted"
+		/// </summary>
 		public string[] states;
+
+		/// <summary>
+		/// An optional player id that selects mail coming from the specific player.
+		/// </summary>
 		public long? forSender;
+
+		/// <summary>
+		/// An optional maximum number of <see cref="MailMessage"/> to accept in the resulting <see cref="SearchMailResponseClause.content"/> list.
+		/// This will also max out the <see cref="SearchMailResponseClause.count"/> field.
+		/// This can be used with the <see cref="start"/> field to page the player's mail.
+		/// </summary>
 		public long? limit;
+
+		/// <summary>
+		/// An optional offset into the players mail. This can be used with the <see cref="limit"/> field to page the player's mail.
+		/// </summary>
 		public long? start;
 
 		public ArrayDict Serialize()
@@ -185,27 +219,91 @@ namespace Beamable.Common.Api.Mail
 		public List<SearchMailResponseClause> results;
 	}
 
+	/// <summary>
+	/// Each instance of <see cref="SearchMailResponseClause"/> aligns with an original <see cref="SearchMailRequestClause"/> instance.
+	/// The <see cref="SearchMailResponseClause"/> contain the matching <see cref="MailMessage"/>s that met the criteria defined in the
+	/// request.
+	/// </summary>
 	[Serializable]
 	public class SearchMailResponseClause
 	{
+		/// <summary>
+		/// The number of matching <see cref="MailMessage"/>.
+		/// This will always be equal to the size of the <see cref="MailMessage"/> list,
+		/// unless the original <see cref="SearchMailRequestClause.onlyCount"/> field was set to true.
+		/// </summary>
 		public int count;
+
+		/// <summary>
+		/// The name of the original <see cref="SearchMailRequestClause.name"/>
+		/// </summary>
 		public string name;
+
+		/// <summary>
+		/// The set of <see cref="MailMessage"/> that met the criteria.
+		/// If the original <see cref="SearchMailRequestClause.onlyCount"/> field was set to true, this list will be empty.
+		/// </summary>
 		public List<MailMessage> content;
 	}
 
 	[Serializable]
 	public class MailMessage
 	{
+		/// <summary>
+		/// The instance id of the mail
+		/// </summary>
 		public long id;
+
+		/// <summary>
+		/// The timestamp that the message was originally sent
+		/// </summary>
 		public long sent;
+
+		/// <summary>
+		/// The timestamp that the message was claimed for rewards.
+		/// The number of milliseconds from 1970-01-01T00:00:00Z.
+		/// </summary>
 		public long claimedTimeMs;
+
+		/// <summary>
+		/// The gamertag of the player who received the mail
+		/// </summary>
 		public long receiverGamerTag;
+
+		/// <summary>
+		/// The gamertag of the player who sent the mail
+		/// </summary>
 		public long senderGamerTag;
+
+		/// <summary>
+		/// The category of the mail
+		/// </summary>
 		public string category;
+
+		/// <summary>
+		/// The subject line of the mail
+		/// </summary>
 		public string subject;
+
+		/// <summary>
+		/// The body of the mail
+		/// </summary>
 		public string body;
+
+		/// <summary>
+		/// The state of the mail.
+		/// Valid states include, "Unread", "Read", and "Deleted"
+		/// </summary>
 		public string state;
+
+		/// <summary>
+		/// An optional date-string that represents when the mail will be automatically removed.
+		/// </summary>
 		public string expires;
+
+		/// <summary>
+		/// The <see cref="MailRewards"/> associated with this mail
+		/// </summary>
 		public MailRewards rewards;
 
 		public MailState MailState => (MailState)Enum.Parse(typeof(MailState), state);
@@ -260,8 +358,19 @@ namespace Beamable.Common.Api.Mail
 	[Serializable]
 	public class MailRewards
 	{
+		/// <summary>
+		/// Updates to player currencies
+		/// </summary>
 		public List<CurrencyChange> currencies;
+
+		/// <summary>
+		/// New items for the player
+		/// </summary>
 		public List<ItemCreateRequest> items;
+
+		/// <summary>
+		/// When true, any <see cref="currencies"/> will apply their VIP bonus.
+		/// </summary>
 		public bool applyVipBonus = true;
 	}
 

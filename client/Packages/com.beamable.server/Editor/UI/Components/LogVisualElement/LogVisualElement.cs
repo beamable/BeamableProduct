@@ -109,6 +109,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_searchLogBar = Root.Q<SearchBarVisualElement>();
 				_searchLogBar.SetValueWithoutNotify(Model.Logs.Filter);
 				_searchLogBar.OnSearchChanged += Model.Logs.SetSearchLogFilter;
+				_searchLogBar.tooltip = Tooltips.Logs.SEARCH_BAR;
 
 				_debugViewBtn = Root.Q<Button>("debug");
 				_debugViewBtn.clickable.clicked += Model.Logs.ToggleViewDebugEnabled;
@@ -324,17 +325,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		void BindListViewElement(VisualElement elem, int index)
 		{
-			ConsoleLogVisualElement consoleLogVisualElement = (ConsoleLogVisualElement)elem;
+			if (index < 0)
+				return;
+
+			var consoleLogVisualElement = (ConsoleLogVisualElement)elem;
 			consoleLogVisualElement.Refresh();
 			consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
-			if (index % 2 == 0)
-			{
-				consoleLogVisualElement.RemoveFromClassList("oddRow");
-			}
-			else
-			{
-				consoleLogVisualElement.AddToClassList("oddRow");
-			}
+			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
 			consoleLogVisualElement.MarkDirtyRepaint();
 		}
 
