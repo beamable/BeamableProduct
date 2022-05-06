@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server.Common;
+using Beamable.Server.Generator;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
@@ -13,197 +15,188 @@ using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {
-   public struct ServiceMethodProvider
-   {
-      public Type instanceType;
-      public Func<RequestContext, object> factory;
-      public string pathPrefix;
-   }
+    public struct ServiceMethodProvider
+    {
+        public Type instanceType;
+        public Func<RequestContext, object> factory;
+        public string pathPrefix;
+    }
 
-   public static class ServiceMethodHelper
-   {
-      public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, params ServiceMethodProvider[] serviceMethodProviders)
-      {
-         var output = new List<ServiceMethod>();
-         foreach (var provider in serviceMethodProviders)
-         {
-            output.AddRange(ScanType(serviceAttribute, provider));
-         }
-         return new ServiceMethodCollection(output);
-      }
-
-      private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
-      {
-         var type = provider.instanceType;
-         var output = new List<ServiceMethod>();
-
-         Log.Debug(Logs.SCANNING_CLIENT_PREFIX + type.Name);
-
-         var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
-         foreach (var method in allMethods)
-         {
-            var closureMethod = method;
-            var attribute = method.GetCustomAttribute<ClientCallableAttribute>();
-            if (attribute == null) continue;
-
-            var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
-            var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
-            if (swaggerCategoryAttribute != null)
+    public static class ServiceMethodHelper
+    {
+        public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute,
+            params ServiceMethodProvider[] serviceMethodProviders)
+        {
+            var output = new List<ServiceMethod>();
+            foreach (var provider in serviceMethodProviders)
             {
-               tag = swaggerCategoryAttribute.CategoryName.FirstCharToUpperRestToLower();
+                output.AddRange(ScanType(serviceAttribute, provider));
             }
 
-            var serializerAttribute = method.GetCustomAttribute<CustomResponseSerializationAttribute>();
+            return new ServiceMethodCollection(output);
+        }
+
+        private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute,
+            ServiceMethodProvider provider)
+        {
+            var type = provider.instanceType;
+            var output = new List<ServiceMethod>();
+
+            Log.Debug(Logs.SCANNING_CLIENT_PREFIX + type.Name);
+
+            var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+            foreach (var method in allMethods)
+            {
+                var closureMethod = method;
+                var attribute = method.GetCustomAttribute<ClientCallableAttribute>();
+                if (attribute == null) continue;
+
+                var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
+                var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
+                if (swaggerCategoryAttribute != null)
+                {
+                    tag = swaggerCategoryAttribute.CategoryName.FirstCharToUpperRestToLower();
+                }
+
+                var serializerAttribute = method.GetCustomAttribute<CustomResponseSerializationAttribute>();
 #pragma warning disable 618
-            IResponseSerializer responseSerializer = new DefaultResponseSerializer(serviceAttribute.UseLegacySerialization);
+                IResponseSerializer responseSerializer =
+                    new DefaultResponseSerializer(serviceAttribute.UseLegacySerialization);
 #pragma warning restore 618
-            if (serializerAttribute != null)
-            {
-               responseSerializer = new CustomResponseSerializer(serializerAttribute);
+                if (serializerAttribute != null)
+                {
+                    responseSerializer = new CustomResponseSerializer(serializerAttribute);
+                }
+
+                var servicePath = attribute.PathName;
+                if (string.IsNullOrEmpty(servicePath))
+                {
+                    servicePath = method.Name;
+                }
+
+                servicePath = provider.pathPrefix + servicePath;
+
+                var requiredScopes = attribute.RequiredScopes;
+
+                Log.Debug("Found {method} for {path}", method.Name, servicePath);
+
+                var parameters = method.GetParameters();
+
+                var deserializers = new List<ParameterDeserializer>();
+                var namedDeserializers =
+                    new Dictionary<string, ParameterDeserializer>(); // parameter name -> deserializer
+                var parameterNames = new List<string>();
+                foreach (var parameter in parameters)
+                {
+                    var pType = parameter.ParameterType;
+                    var parameterAttribute = parameter.GetCustomAttribute<ParameterAttribute>();
+                    var parameterName = parameterAttribute?.ParameterNameOverride ?? parameter.Name;
+
+                    ParameterDeserializer deserializer = (json) =>
+                    {
+                        if (typeof(string) == pType)
+                        {
+                            return json.Substring(1, json.Length - 2); // peel off the quotes
+                        }
+
+                        var deserializeObject =
+                            JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
+                        return deserializeObject;
+                    };
+                    if (namedDeserializers.ContainsKey(parameterName))
+                    {
+                        throw new Exception(
+                            $"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]");
+                    }
+
+                    parameterNames.Add(parameterName);
+                    namedDeserializers.Add(parameterName, deserializer);
+                    deserializers.Add(deserializer);
+                }
+
+                MethodInvocation executor;
+
+                var resultType = method.ReturnType;
+
+                if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
+                    resultType = typeof(Promise<Unit>);
+
+                if ((resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>)))
+                {
+                    executor = (target, args) =>
+                    {
+                        var promiseObject = closureMethod.Invoke(target, args);
+                        var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
+                            nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
+
+                        return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
+                            .Invoke(null, new[] { promiseObject });
+                    };
+                }
+                else
+                {
+                    var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
+
+                    if (isAsync)
+                    {
+                        executor = (target, args) =>
+                        {
+                            var task = (Task)closureMethod.Invoke(target, args);
+                            return task;
+                        };
+                    }
+                    else
+                    {
+                        executor = (target, args) =>
+                        {
+                            var invocationResult = closureMethod.Invoke(target, args);
+                            return Task.FromResult(invocationResult);
+                        };
+                    }
+                }
+
+                var serviceMethod = new ServiceMethod
+                {
+                    ParameterInfos = parameters.ToList(),
+                    InstanceFactory = provider.factory,
+                    ParameterNames = parameterNames,
+                    ParameterDeserializers = namedDeserializers,
+                    RequiredScopes = requiredScopes,
+                    Path = servicePath,
+                    Deserializers = deserializers,
+                    Method = method,
+                    Executor = executor,
+                    ResponseSerializer = responseSerializer,
+                    Tag = tag
+                };
+                output.Add(serviceMethod);
             }
 
-            var servicePath = attribute.PathName;
-            if (string.IsNullOrEmpty(servicePath))
+            OverridePaths(output);
+
+            return output;
+        }
+
+        // WARNING! Any changes applied to this method should be also applied to OverridePaths method in ClientCodeGenerator class!
+        private static void OverridePaths(List<ServiceMethod> output)
+        {
+            foreach (ServiceMethod method in output)
             {
-               servicePath = method.Name;
-            }
-
-            servicePath = provider.pathPrefix + servicePath;
-
-            var requiredScopes = attribute.RequiredScopes;
-
-            Log.Debug("Found {method} for {path}", method.Name, servicePath);
-
-            var parameters = method.GetParameters();
-
-            var deserializers = new List<ParameterDeserializer>();
-            var namedDeserializers = new Dictionary<string, ParameterDeserializer>(); // parameter name -> deserializer
-            var parameterNames = new List<string>();
-            foreach (var parameter in parameters)
-            {
-               var pType = parameter.ParameterType;
-               var parameterAttribute = parameter.GetCustomAttribute<ParameterAttribute>();
-               var parameterName = parameterAttribute?.ParameterNameOverride ?? parameter.Name;
-
-               ParameterDeserializer deserializer = (json) =>
-               {
-                  if (typeof(string) == pType)
-                  {
-                     return json.Substring(1, json.Length - 2); // peel off the quotes
-                  }
-
-                  var deserializeObject = JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
-                  return deserializeObject;
-               };
-               if (namedDeserializers.ContainsKey(parameterName))
-               {
-                  throw new Exception($"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]");
-               }
-
-               parameterNames.Add(parameterName);
-               namedDeserializers.Add(parameterName, deserializer);
-               deserializers.Add(deserializer);
-            }
+                if (method.ParameterNames.Count == 0)
+                {
+                    continue;
+                }
             
-            MethodInvocation executor;
-
-            var resultType = method.ReturnType;
+                StringBuilder builder = new StringBuilder();
+                
+                foreach (ParameterInfo parameterName in method.ParameterInfos)
+                {
+                    string parameterType = parameterName.ParameterType.ToString();
+                    builder.Append(ClientCodeGenerator.GetCodeForType(parameterType).ToString());
+                }
             
-            if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
-               resultType = typeof(Promise<Unit>);
-
-            if ((resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>)))
-            {
-               executor = (target, args) =>
-               {
-                  var promiseObject = closureMethod.Invoke(target, args);
-                  var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
-                     nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
-                  
-                  return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
-                     .Invoke(null, new[] {promiseObject});
-               };
+                method.Path = $"{method.Path}_{builder}";
             }
-            else
-            {
-               var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
-               
-               if (isAsync)
-               {
-                  executor = (target, args) =>
-                  {
-                     var task = (Task) closureMethod.Invoke(target, args);
-                     return task;
-                  };
-               }
-               else
-               {
-                  executor = (target, args) =>
-                  {
-                     var invocationResult = closureMethod.Invoke(target, args);
-                     return Task.FromResult(invocationResult);
-                  };
-               }
-            }
-
-            var serviceMethod = new ServiceMethod
-            {
-               ParameterInfos = parameters.ToList(),
-               InstanceFactory = provider.factory,
-               ParameterNames = parameterNames,
-               ParameterDeserializers = namedDeserializers,
-               RequiredScopes = requiredScopes,
-               Path = servicePath,
-               Deserializers = deserializers,
-               Method = method,
-               Executor = executor,
-               ResponseSerializer = responseSerializer,
-               Tag = tag
-            };
-            output.Add(serviceMethod);
-         }
-         
-         OverridePaths(output);
-
-         return output;
-      }
-
-      private static void OverridePaths(List<ServiceMethod> output)
-      {
-         Dictionary<string, int> duplicatedPaths = new Dictionary<string, int>();
-
-         foreach (ServiceMethod serviceMethod in output)
-         {
-            if (duplicatedPaths.ContainsKey(serviceMethod.Path))
-            {
-               duplicatedPaths[serviceMethod.Path]++;
-            }
-            else
-            {
-               duplicatedPaths.Add(serviceMethod.Path, 1);
-            }
-         }
-
-         foreach ((string path, int amount) in duplicatedPaths)
-         {
-            if (amount <= 1)
-            {
-               continue;
-            }
-
-            int counter = 1;
-
-            foreach (ServiceMethod serviceMethod in output)
-            {
-               if (serviceMethod.Path != path)
-               {
-                  continue;
-               }
-
-               serviceMethod.Path = $"{serviceMethod.Path}_{counter:000}";
-               counter++;
-            }
-         }
-      }
-   }
+        }
+    }
 }

@@ -1,6 +1,5 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
-using Beamable.Server;
 using Beamable.Server.Editor;
 using System;
 using System.CodeDom;
@@ -12,6 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Beamable.Server.Generator
 {
@@ -52,7 +52,8 @@ namespace Beamable.Server.Generator
 		public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
 			$"MicroserviceParameters{descriptor.Name}Client";
 
-		public static string GetParameterClassName(Type parameterType) => $"{PARAMETER_STRING}{parameterType.GetTypeString().Replace(".", "_")}";
+		public static string GetParameterClassName(Type parameterType) =>
+			$"{PARAMETER_STRING}{parameterType.GetTypeString().Replace(".", "_")}";
 
 		public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
 		{
@@ -85,16 +86,22 @@ namespace Beamable.Server.Generator
 			targetClass.Members.Add(new CodeConstructor()
 			{
 				Attributes = MemberAttributes.Public,
-				Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference("BeamContext"), "context = null") },
+				Parameters =
+				{
+					new CodeParameterDeclarationExpression(new CodeTypeReference("BeamContext"),
+						"context = null")
+				},
 				BaseConstructorArgs = { new CodeArgumentReferenceExpression("context") }
 			});
 
 			parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
 			parameterClass.IsClass = true;
-			parameterClass.TypeAttributes = TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.Serializable;
+			parameterClass.TypeAttributes =
+				TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.Serializable;
 			// parameterClass.BaseTypes.Add();
 
-			targetClass.Comments.Add(new CodeCommentStatement($"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary", true));
+			targetClass.Comments.Add(new CodeCommentStatement(
+				$"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary", true));
 
 			extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);
 			extensionClass.IsClass = true;
@@ -103,7 +110,7 @@ namespace Beamable.Server.Generator
 			{
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(BeamContextSystemAttribute)))
 			};
-			
+
 			var registrationMethod = new CodeMemberMethod
 			{
 				Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
@@ -118,8 +125,7 @@ namespace Beamable.Server.Generator
 				Method = new CodeMethodReferenceExpression(
 					new CodeArgumentReferenceExpression("builder"),
 					nameof(IDependencyBuilder.AddScoped),
-					new CodeTypeReference[] {
-					  new CodeTypeReference(TargetClassName) })
+					new CodeTypeReference[] { new CodeTypeReference(TargetClassName) })
 			});
 
 			var extensionMethod = new CodeMemberMethod()
@@ -128,15 +134,14 @@ namespace Beamable.Server.Generator
 			};
 			extensionMethod.Name = Descriptor.Name;
 			extensionMethod.Parameters.Add(
-				new CodeParameterDeclarationExpression($"this Beamable.Server.{MicroserviceClients_TypeName}", "clients"));
+				new CodeParameterDeclarationExpression($"this Beamable.Server.{MicroserviceClients_TypeName}",
+					"clients"));
 			extensionMethod.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression
 			{
 				Method = new CodeMethodReferenceExpression(
 					new CodeArgumentReferenceExpression("clients"),
 					"GetClient",
-					new CodeTypeReference[] {
-					  new CodeTypeReference(TargetClassName)
-					})
+					new CodeTypeReference[] { new CodeTypeReference(TargetClassName) })
 			}));
 			extensionMethod.ReturnType = new CodeTypeReference(TargetClassName);
 
@@ -160,14 +165,10 @@ namespace Beamable.Server.Generator
 					continue;
 				}
 
-				var callable = new CallableMethodInfo
-				{
-					MethodInfo = method,
-					ClientCallable = clientCallable
-				};
+				var callable = new CallableMethodInfo { MethodInfo = method, ClientCallable = clientCallable };
 				_callableMethods.Add(callable);
 			}
-			
+
 			OverridePaths();
 
 			foreach (CallableMethodInfo callable in _callableMethods)
@@ -179,49 +180,33 @@ namespace Beamable.Server.Generator
 			{
 				AddParameterClass(parameterType);
 			}
-
 		}
 
+		// WARNING! Any changes applied to this method should be also applied to OverridePaths method in ServiceMethodHelper class!
 		void OverridePaths()
 		{
-			Dictionary<string, int> duplicatedPaths = new Dictionary<string, int>();
-
 			foreach (CallableMethodInfo callable in _callableMethods)
 			{
 				if (string.IsNullOrEmpty(callable.ClientCallable.PathName))
 				{
 					callable.ClientCallable.PathName = callable.MethodInfo.Name;
 				}
-
-				if (duplicatedPaths.ContainsKey(callable.ClientCallable.PathName))
-				{
-					duplicatedPaths[callable.ClientCallable.PathName]++;
-				}
-				else
-				{
-					duplicatedPaths.Add(callable.ClientCallable.PathName, 1);
-				}
-			}
-
-			foreach (KeyValuePair<string, int> pair in duplicatedPaths)
-			{
-				if (pair.Value <= 1)
+				
+				ParameterInfo[] parameterInfos = callable.MethodInfo.GetParameters();
+				if (parameterInfos.Length == 0)
 				{
 					continue;
 				}
 
-				int counter = 1;
+				StringBuilder builder = new StringBuilder();
 
-				foreach (CallableMethodInfo callable in _callableMethods)
+				foreach (ParameterInfo parameterName in parameterInfos)
 				{
-					if (callable.ClientCallable.PathName != pair.Key)
-					{
-						continue;
-					}
-
-					callable.ClientCallable.PathName = $"{callable.ClientCallable.PathName}_{counter:000}";
-					counter++;
+					string parameterType = parameterName.ParameterType.ToString();
+					builder.Append(GetCodeForType(parameterType).ToString());
 				}
+
+				callable.ClientCallable.PathName = $"{callable.ClientCallable.PathName}_{builder}";
 			}
 		}
 
@@ -264,13 +249,8 @@ namespace Beamable.Server.Generator
 					new CodeMethodReferenceExpression(
 						new CodeThisReferenceExpression(),
 						"SerializeArgument",
-						new CodeTypeReference[]
-						{
-						  new CodeTypeReference(paramType),
-						}), new CodeExpression[]
-					{
-					new CodeArgumentReferenceExpression(paramName),
-					});
+						new CodeTypeReference[] { new CodeTypeReference(paramType), }),
+					new CodeExpression[] { new CodeArgumentReferenceExpression(paramName), });
 
 				var assignment = new CodeAssignStatement(declare, serializeInvoke);
 				genMethod.Statements.Add(assignment);
@@ -278,9 +258,11 @@ namespace Beamable.Server.Generator
 
 			// add some docstrings to the method.
 			genMethod.Comments.Add(new CodeCommentStatement("<summary>", true));
-			genMethod.Comments.Add(new CodeCommentStatement($"Call the {info.MethodInfo.Name} method on the {Descriptor.Name} microservice", true));
+			genMethod.Comments.Add(new CodeCommentStatement(
+				$"Call the {info.MethodInfo.Name} method on the {Descriptor.Name} microservice", true));
 
-			genMethod.Comments.Add(new CodeCommentStatement($"<see cref=\"{Descriptor.Type.FullName}.{info.MethodInfo.Name}\"/>", true));
+			genMethod.Comments.Add(
+				new CodeCommentStatement($"<see cref=\"{Descriptor.Type.FullName}.{info.MethodInfo.Name}\"/>", true));
 			genMethod.Comments.Add(new CodeCommentStatement("</summary>", true));
 
 			// the return type needs to be wrapped up inside a Promise.
@@ -325,20 +307,17 @@ namespace Beamable.Server.Generator
 				new CodeMethodReferenceExpression(
 					new CodeThisReferenceExpression(),
 					"Request",
-					new CodeTypeReference[]
-					{
-					  new CodeTypeReference(resultType),
-					}),
+					new CodeTypeReference[] { new CodeTypeReference(resultType), }),
 				new CodeExpression[]
 				{
-                  // first argument is the service name
-                  new CodePrimitiveExpression(serviceName),
+					// first argument is the service name
+					new CodePrimitiveExpression(serviceName),
 
-                  // second argument is the path.
-                  new CodePrimitiveExpression(servicePath),
+					// second argument is the path.
+					new CodePrimitiveExpression(servicePath),
 
-                  // third argument is an array of pre-serialized json structures
-                  new CodeVariableReferenceExpression(serializedFieldVariableName),
+					// third argument is an array of pre-serialized json structures
+					new CodeVariableReferenceExpression(serializedFieldVariableName),
 				});
 
 			returnStatement.Expression = requestInvokeExpr;
@@ -374,6 +353,47 @@ namespace Beamable.Server.Generator
 		{
 			public MethodInfo MethodInfo;
 			public ClientCallableAttribute ClientCallable;
+		}
+
+		public static int GetCodeForType(string type)
+		{
+			// AFTER ADDING NEW SERIALIZED TYPE FOR MICROSERVICE ALSO ADD AN ENTRY TO THE END OF THIS LIST. DO NOT CHANGE ITEMS ORDER!!!
+			List<string> supportedTypes = new List<string>
+			{
+				"System.Object",
+				"System.String",
+				"System.Boolean",
+				"System.Byte",
+				"System.SByte",
+				"System.Char",
+				"System.Decimal",
+				"System.Double",
+				"System.Single",
+				"System.Int32",
+				"System.UInt32",
+				"System.IntPtr",
+				"System.UIntPtr",
+				"System.Int64",
+				"System.UInt64",
+				"System.Int16",
+				"System.UInt16",
+				"UnityEngine.Application",
+				"UnityEngine.Color",
+				"UnityEngine.Gradient",
+				"UnityEngine.Quaternion",
+				"UnityEngine.Rect",
+				"UnityEngine.RectInt",
+				"UnityEngine.ScriptableObject",
+				"UnityEngine.GameObject",
+				"UnityEngine.Vector2",
+				"UnityEngine.Vector2Int",
+				"UnityEngine.Vector3",
+				"UnityEngine.Vector3Int",
+				"UnityEngine.Vector4",
+				"UnityEngine.AddressableAssets.AssetReference",
+			};
+			
+			return supportedTypes.FindIndex(s => s == type);
 		}
 	}
 }
