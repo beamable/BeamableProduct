@@ -161,9 +161,15 @@ namespace Beamable
 		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
 
+		/// <summary>
+		/// Access the <see cref="IContentApi"/> for this player.
+		/// </summary>
 		public IContentApi Content =>
 			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
 
+		/// <summary>
+		/// Access the <see cref="IBeamableAPI"/> for this player.
+		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
 
 		public string TimeOverride
