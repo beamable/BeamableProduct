@@ -70,12 +70,12 @@ namespace Beamable.Player
 		public long ItemId;
 
 		/// <summary>
-		/// The epoch timestamp when the item was created.
+		/// The epoch timestamp in milliseconds when the item was created.
 		/// </summary>
 		public long CreatedAt;
 
 		/// <summary>
-		/// The epoch timestamp when the item was last modified.
+		/// The epoch timestamp in milliseconds when the item was last modified.
 		/// </summary>
 		public long UpdatedAt;
 

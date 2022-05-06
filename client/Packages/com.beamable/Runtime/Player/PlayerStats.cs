@@ -21,7 +21,10 @@ namespace Beamable.Player
 	{
 
 		/// <summary>
-		/// The unique stat key
+		/// The unique stat key. The stat key is only unique per stat domain.
+		/// While it is possible for multiple stat domains to have the same key, it is not recommended.
+		/// For example, there can be a stat domain for "client.public" stats, and a stat domain for "client.private", and each domain can
+		/// have a stat key called "Alias". 
 		/// </summary>
 		public string Key { get; }
 

@@ -64,7 +64,7 @@ namespace Beamable.Api
 		string Pid { get; }
 
 		/// <summary>
-		/// A time override
+		/// A time override that can be used to fake the current Beamable known time. This can be useful to checking Listing or Announcement times.
 		/// </summary>
 		string TimeOverride { get; set; }
 
