@@ -136,7 +136,7 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
             var updatedAcceptance = await matchAcceptanceStorage
                 .FindOneAndUpdateAsync<MatchAcceptance>(acc => acc.MatchId == matchId && acc.ExpectedPlayers.Contains(requesterId),
                     updateCmd,
-                    new FindOneAndUpdateOptions<MatchAcceptance>() { IsUpsert = true });
+                    new FindOneAndUpdateOptions<MatchAcceptance>() { IsUpsert = true, ReturnDocument = ReturnDocument.After });
 
             // In the future, we will notify every player in the match directly that the match was declined so that they don't need to poll against these collections.
             await Services.Notifications.NotifyPlayer(updatedAcceptance.ExpectedPlayers.ToList(),MatchAcceptance.NOTIFICATION_MATCH_DECLINED, updatedAcceptance);
