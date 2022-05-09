@@ -1,9 +1,13 @@
 using Beamable.Api.Notification.Internal;
+using Beamable.Common;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Spew;
+using Beamable.Pooling;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using StringBuilderPool = Beamable.Common.Pooling.StringBuilderPool;
 
 #if UNITY_IOS
 using NotificationServices = UnityEngine.iOS.NotificationServices;
@@ -38,6 +42,7 @@ namespace Beamable.Api.Notification
 		public delegate void InGameNotificationCB(string notificationKey, string message);
 
 		private Dictionary<string, List<Action<object>>> handlers = new Dictionary<string, List<Action<object>>>();
+		private HashSet<object> typedHandlerObjects = new HashSet<object>();
 
 		/* Maximum number of local notifications allowed to be scheduled at the same time. */
 		public const int MaxLocalNotifications = 25;
@@ -87,6 +92,48 @@ namespace Beamable.Api.Notification
 			}
 		}
 
+		/// <inheritdoc cref="INotificationService.Subscribe{T}(string, Action{T})"/>
+		public void Subscribe<T>(string name, Action<T> callback)
+		{
+			object boxedCallback = callback;
+			typedHandlerObjects.Add(boxedCallback);
+			void Handler(object raw)
+			{
+				if (raw == null)
+				{
+					callback?.Invoke(default);
+					return;
+				}
+
+				bool isString = typeof(T) == typeof(string);
+				switch (raw)
+				{
+					case ArrayDict dict:
+						// special handling for the string case, because in 1.1, we didn't force the string case to be in a wrapped object.
+						if (isString)
+						{
+							var objResult = dict[Constants.Features.Notifications.PRIMITIVE_STRING_PAYLOAD_FIELD]; // the "stringValue" is a custom name from the C#MS base image.
+							string strResult = (string)objResult;
+							//strResult = strResult.Substring(1, strResult.Length - 2); // strip off the required escape quotes.
+							objResult = strResult; // rebox the type for casting.
+							callback?.Invoke((T)objResult);
+							return;
+						}
+
+						var json = Json.Serialize(raw, StringBuilderPool.StaticPool.Spawn().Builder);
+						var typedResult = JsonUtility.FromJson<T>(json);
+						callback?.Invoke(typedResult);
+						break;
+					default:
+						Debug.LogWarning($"Unknown type sent to Notification Service. type=[{raw?.GetType().FullName}] data=[{raw}]");
+						break;
+				}
+			}
+
+			Subscribe(name, Handler);
+		}
+
+
 		/// <summary>
 		/// Register a callback handler for push notifications.
 		/// </summary>
@@ -107,6 +154,16 @@ namespace Beamable.Api.Notification
 			if (handlers.TryGetValue(name, out var found))
 			{
 				found.Remove(handler);
+			}
+		}
+
+		/// <inheritdoc cref="INotificationService.Unsubscribe{T}(string, Action{T})"/>
+		public void Unsubscribe<T>(string name, Action<T> handler)
+		{
+			object boxedCallback = handler;
+			if (!typedHandlerObjects.Remove(boxedCallback))
+			{
+				Debug.LogWarning("No existing handler was found for the given handler.");
 			}
 		}
 

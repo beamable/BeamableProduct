@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.Content
 {
@@ -32,22 +33,31 @@ namespace Beamable.Editor.Content
 			var totalOperations = summary.TotalDownloadEntries + 1; // one operation for the mega finalization...
 
 			var completed = 0f;
+
 			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
 			{
+				var type = operation.ContentId.Split('.')[0];
+				if (!ContentRegistry.HasContentTypeValidClass(type))
+				{
+					Debug.LogWarning($"No C# class found for type=[{type}]. Skipping download process for this type.");
+					return null;
+				}
+
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
-			 {
-				 var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
+				{
+					var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
 
-				 var newAsset = serializer.DeserializeByType(response, contentType);
-				 newAsset.Tags = operation.Tags;
+					var newAsset = serializer.DeserializeByType(response, contentType);
+					newAsset.Tags = operation.Tags;
 
-				 completed += 1;
-				 progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
+					completed += 1;
+					progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
 
-				 return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
-
-			 }));
+					return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
+				}));
 			}).ToList();
+
+			downloadPromiseGenerators.RemoveAll(item => item == null);
 
 			var downloadPromises = new Promise<Unit>();
 			Promise.ExecuteInBatchSequence(10, downloadPromiseGenerators).Map(assetsToBeWritten =>
