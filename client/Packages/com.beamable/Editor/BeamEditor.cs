@@ -552,6 +552,9 @@ namespace Beamable
 				}
 			}
 
+			if (CurrentRealm != null)
+				realm = CurrentRealm;
+
 			if (realm == null)
 			{
 				var games = await realmService.GetGames();
@@ -564,6 +567,7 @@ namespace Beamable
 				else
 					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
 			}
+
 
 			await (realm == null ? Promise.Success : SwitchRealm(realm));
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
@@ -946,11 +950,12 @@ namespace Beamable
 					  .Save();
 
 			var realm = realms.FirstOrDefault(r => string.Equals(r.Pid, pid));
-
-			CurrentRealm = realm;
+			if (CurrentRealm == null || !CurrentRealm.Equals(realm))
+			{
+				CurrentRealm = realm;
+				OnRealmChange?.Invoke(realm);
+			}
 			ProductionRealm = game;
-			OnRealmChange?.Invoke(realm);
-
 
 			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
