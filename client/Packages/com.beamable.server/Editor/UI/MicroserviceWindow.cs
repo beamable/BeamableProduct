@@ -94,7 +94,7 @@ namespace Beamable.Editor.Microservice.UI
 				Model = MicroservicesDataModel.Instance;
 			else
 				MicroservicesDataModel.Instance = Model;
-			
+
 			SetForContent();
 		}
 
@@ -102,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			var root = this.GetRootVisualContainer();
 			root.Clear();
-			
+
 			var uiAsset =
 				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
@@ -110,7 +110,7 @@ namespace Beamable.Editor.Microservice.UI
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);
-			
+
 			bool localServicesAvailable = Model?.AllLocalServices != null;
 			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
 			int selectedServicesAmount = localServicesAvailable
