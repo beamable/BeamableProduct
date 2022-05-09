@@ -4,6 +4,7 @@
     align-self: stretch;
     align-items: center;
     margin-left: 20px;
+    min-height: 34px;
 }
 
 #propertyLabel {
