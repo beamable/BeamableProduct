@@ -567,7 +567,7 @@ namespace Beamable
 				else
 					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
 			}
-			
+
 
 			await (realm == null ? Promise.Success : SwitchRealm(realm));
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
@@ -956,7 +956,7 @@ namespace Beamable
 				OnRealmChange?.Invoke(realm);
 			}
 			ProductionRealm = game;
-			
+
 			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
