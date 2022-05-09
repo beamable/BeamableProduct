@@ -165,6 +165,14 @@ namespace Beamable
             Directory.CreateDirectory(CONFIG_RESOURCES_DIR);
             var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
             var sourceData = File.ReadAllText(sourcePath);
+            
+#if UNITY_2021_2_OR_NEWER
+            string baseFileName = Path.GetFileNameWithoutExtension(sourcePath);
+            
+            if (sourceData.Contains(baseFileName)) // because asset parameter name in file is different than asset file name
+	            sourceData = sourceData.Replace(baseFileName, name);
+#endif
+            
             File.WriteAllText(assetPath, sourceData);
             UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.DontDownloadFromCacheServer);
             data =  Resources.Load<TConfig>(name) ?? UnityEditor.AssetDatabase.LoadAssetAtPath<TConfig>(assetPath);
