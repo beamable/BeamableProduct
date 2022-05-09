@@ -1,3 +1,7 @@
+PrimaryButtonVisualElement {
+    min-height: 25px;
+}
+
 Button.unity-button,
 Button {
     background-image: none;

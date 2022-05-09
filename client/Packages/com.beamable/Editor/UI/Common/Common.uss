@@ -206,3 +206,13 @@
     position: absolute;
     left: 50000px;
 }
+
+.inspectorHelp {
+    border-width: 2px;
+    border-radius: 3px;
+    margin: 0px 0px 15px;
+}
+.inspectorHelp .description{
+    white-space: normal;
+    margin-bottom: 10px;
+}
