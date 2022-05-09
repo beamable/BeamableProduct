@@ -128,7 +128,7 @@ namespace Beamable.AccountManagement
 	public class AccountManagementSignals : DeSignalTower
 	{
 		[SerializeField] private AccountForgotPassword _accountForgotPassword;
-		
+
 		[Header("Flow Events")]
 		public ToggleEvent OnToggleAccountManagement;
 		public LoadingEvent Loading;
@@ -471,7 +471,7 @@ namespace Beamable.AccountManagement
 		private void HandleError(Exception err)
 		{
 			_accountForgotPassword.ChangePasswordRequestSent(false);
-			
+
 			switch (err)
 			{
 				case PlatformRequesterException ex when ex.Status == 401 || ex.Status == 403:

@@ -125,7 +125,7 @@ namespace Beamable.Api.Notification
 						callback?.Invoke(typedResult);
 						break;
 					default:
-						Debug.LogWarning($"Unknown type sent to Notification Service. type=[{raw?.GetType().FullName}] data=[{raw}]" );
+						Debug.LogWarning($"Unknown type sent to Notification Service. type=[{raw?.GetType().FullName}] data=[{raw}]");
 						break;
 				}
 			}
