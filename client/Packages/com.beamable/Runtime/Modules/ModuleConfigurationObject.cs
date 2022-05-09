@@ -168,9 +168,11 @@ namespace Beamable
             
 #if UNITY_2021_2_OR_NEWER
             string baseFileName = Path.GetFileNameWithoutExtension(sourcePath);
-            
+
             if (sourceData.Contains(baseFileName)) // because asset parameter name in file is different than asset file name
+            {
 	            sourceData = sourceData.Replace(baseFileName, name);
+            }
 #endif
             
             File.WriteAllText(assetPath, sourceData);
