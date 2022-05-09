@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added content sorting option in `Content Manager`
 - Documentation to `IBeamableAPI` and all related accessors.
 - `Subscribe<T>` method to `INotificationService` to avoid awkward serialization handling.
+- Added inline style editor in BUSS theme manager.
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
