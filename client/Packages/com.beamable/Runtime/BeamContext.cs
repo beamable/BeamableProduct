@@ -664,7 +664,6 @@ namespace Beamable
 		private static async void HandleDomainReset()
 		{
 			// tear down all instances, and let them reboot normally.
-			Default?.Stop();
 			await Beam.StopAllContexts();
 		}
 #endif
@@ -705,6 +704,7 @@ namespace Beamable
 
 			await _serviceScope.Dispose();
 
+			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
 
