@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
 - Fixed Microstorage Docker nulls on Unity startup.
+- `IMicroserviceNotificationsApi` can now send strings with spaces in them for messages.
 
 ## [1.1.2]
 ### Fixed

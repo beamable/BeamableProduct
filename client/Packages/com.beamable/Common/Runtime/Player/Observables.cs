@@ -17,6 +17,17 @@ namespace Beamable.Common.Player
 
 	public interface IRefreshable
 	{
+		/// <summary>
+		/// Forces a check of the data to make sure its up to date.
+		/// <para>
+		/// If a refresh is already running, then this resulting <see cref="Promise"/> will represent the existing refresh call.
+		/// This means you can't have multiple refreshes happening at once.
+		/// </para>
+		/// <para>
+		/// If there is not already a refresh happening, then this will always trigger a <see cref="OnLoadingStarted"/> and a <see cref="OnLoadingFinished"/>.
+		/// If the data actually changes, then a <see cref="IObservable.OnUpdated"/> will trigger.
+		/// </para>
+		/// </summary>
 		Promise Refresh();
 	}
 
@@ -99,17 +110,7 @@ namespace Beamable.Common.Player
 			private set;
 		}
 
-		/// <summary>
-		/// Forces a check of the data to make sure its up to date.
-		/// <para>
-		/// If a refresh is already running, then this resulting <see cref="Promise"/> will represent the existing refresh call.
-		/// This means you can't have multiple refreshes happening at once.
-		/// </para>
-		/// <para>
-		/// If there is not already a refresh happening, then this will always trigger a <see cref="OnLoadingStarted"/> and a <see cref="OnLoadingFinished"/>.
-		/// If the data actually changes, then a <see cref="IObservable.OnUpdated"/> will trigger.
-		/// </para>
-		/// </summary>
+		/// <inheritdoc cref="IRefreshable.Refresh"/>
 		public async Promise Refresh()
 		{
 			if (IsLoading)

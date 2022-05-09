@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `GetDeviceId` method in `AuthService`
 - Added `deviceIds` field in `User`
 - Added content sorting option in `Content Manager`
+- Documentation to `IBeamableAPI` and all related accessors.
+- `Subscribe<T>` method to `INotificationService` to avoid awkward serialization handling.
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
@@ -24,9 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InventoryFlow can now be configured at the GameObject level.
 - Edit mode for Buss Style Card has been removed in favor of context menus for selector label, variables and properties
 - Claiming an event that a player never submitted a score for will report an accurate error message
+- Added tooltips to MMV2 window elements which didn't have them.
+- MMV2 buttons now highlight on hover
 
 ### Fixed
 - StoreView prefab now works in landscape mode
+- Reading content in offline mode will no longer throw an exception if there is offline cache available
+- Android sign in will always allow user to select an account.
+- Handling content downloads when backing class isn't available
 
 ## [1.1.2]
 ### Fixed

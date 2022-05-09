@@ -87,7 +87,11 @@ namespace Beamable.Editor.UI.Components
 
 		public void DoFocus()
 		{
+#if UNITY_2021_2_OR_NEWER
+			EditorApplication.delayCall += _textField.BeamableFocus;
+#else
 			_textField.BeamableFocus();
+#endif
 		}
 	}
 }

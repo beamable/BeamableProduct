@@ -35,7 +35,6 @@ namespace Beamable.Tests.Runtime.Api
 	{
 		public User User { get; set; }
 		public AccessToken Token { get; set; }
-		public PlayerData Player { get; }
 		public IExperimentalAPI Experimental { get; }
 		public AnnouncementsService AnnouncementService { get; set; }
 		public MockAuthService MockAuthService { get; set; } = new MockAuthService();

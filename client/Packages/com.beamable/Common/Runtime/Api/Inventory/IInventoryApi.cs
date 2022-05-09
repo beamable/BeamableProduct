@@ -581,8 +581,19 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class Currency
 	{
+		/// <summary>
+		/// The currency content id.
+		/// </summary>
 		public string id;
+
+		/// <summary>
+		/// The amount of currency
+		/// </summary>
 		public long amount;
+
+		/// <summary>
+		/// Properties about the currency
+		/// </summary>
 		public List<CurrencyProperty> properties;
 	}
 
