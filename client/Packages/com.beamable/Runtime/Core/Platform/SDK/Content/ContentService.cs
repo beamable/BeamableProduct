@@ -31,6 +31,9 @@ namespace Beamable.Content
 	/// </summary>
 	public class ManifestSubscription : PlatformSubscribable<ClientManifest, ClientManifest>
 	{
+		/// <summary>
+		/// Every content manifest has an ID. Usually, a game will only have a single content manifest called "global", but it is possible to add more.
+		/// </summary>
 		public string ManifestID { get; } = "global";
 
 		private ClientManifest _latestManifiest;
@@ -40,6 +43,10 @@ namespace Beamable.Content
 		private readonly Dictionary<string, ClientContentInfo> _contentIdTable =
 			new Dictionary<string, ClientContentInfo>();
 
+		/// <summary>
+		/// This will be removed in a future release. Please do not use.
+		/// </summary>
+		[Obsolete]
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
@@ -63,22 +70,47 @@ namespace Beamable.Content
 		}
 #pragma warning restore 0809
 
-
+		/// <summary>
+		/// Try to retrieve a <see cref="ClientContentInfo"/> from the current manifest, by content id.
+		/// </summary>
+		/// <param name="contentId">A content ID</param>
+		/// <param name="clientInfo">
+		/// An out parameter for a <see cref="ClientContentInfo"/> that will be assigned
+		/// the content associated with the <see cref="contentId"/>, or left null if the content ID
+		/// isn't in the current manifest.
+		/// </param>
+		/// <returns>true if the content ID was found, false otherwise.</returns>
 		public bool TryGetContentId(string contentId, out ClientContentInfo clientInfo)
 		{
 			return _contentIdTable.TryGetValue(contentId, out clientInfo);
 		}
 
+		/// <summary>
+		/// Get the latest <see cref="ClientManifest"/> that was received by the game client.
+		/// This method will not <i>start</i> a network request. Instead, it will reference the most
+		/// recent network request that is fetching the manifest.
+		/// </summary>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifest()
 		{
 			return _manifestPromise.Map(x => _latestManifiest);
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="GetManifest()"/>
+		/// </summary>
+		/// <param name="query">A <see cref="ContentQuery"/> that will filter the resulting <see cref="ClientManifest.entries"/> field.</param>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifest(ContentQuery query)
 		{
 			return _manifestPromise.Map(x => _latestManifiest.Filter(query));
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="GetManifest()"/>
+		/// </summary>
+		/// <param name="filter">A <see cref="ContentQuery"/> in string form that will filter the resulting <see cref="ClientManifest.entries"/> field</param>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifest(string filter)
 		{
 			return _manifestPromise.Map(x => _latestManifiest.Filter(filter));
@@ -133,12 +165,44 @@ namespace Beamable.Content
 		IHasPlatformSubscribers<ManifestSubscription, ClientManifest, ClientManifest>
 	{
 		private readonly IDependencyProvider _provider;
-		public string CurrentDefaultManifestID { get; private set; } = "global";
-		public IBeamableFilesystemAccessor FilesystemAccessor { get; }
-		public ManifestSubscription Subscribable { get; private set; }
-		public Dictionary<string, ManifestSubscription> Subscribables { get; }
-		public IBeamableRequester Requester => _provider.GetService<IBeamableRequester>();
 
+		/// <summary>
+		/// The default content manifest ID controls which manifest the <see cref="ContentService"/> will use.
+		/// By default, the value will be "global". You can customize the value by using the <see cref="ContentParameterProvider"/>,
+		/// or by calling the <see cref="SwitchDefaultManifestID"/> method.
+		/// </summary>
+		public string CurrentDefaultManifestID { get; private set; } = "global";
+
+		/// <summary>
+		/// The <see cref="IBeamableFilesystemAccessor"/> is used by the <see cref="ContentSerializer{TContentBase}"/> to handle
+		/// file read and writes for content disk caches.
+		/// </summary>
+		public IBeamableFilesystemAccessor FilesystemAccessor { get; }
+
+		/// <summary>
+		/// The <see cref="ManifestSubscription"/> will be notified when there are content updates from the Beamable Cloud.
+		/// <b>This field should not be used, and will be deprecated in a future release.</b>
+		/// </summary>
+		public ManifestSubscription Subscribable { get; private set; }
+
+		/// <summary>
+		/// A dictionary from manifest ID to <see cref="ManifestSubscription"/> that the game client is currently observing.
+		/// <b>This field should not be used, and will be deprecated in a future release.</b>
+		/// </summary>
+		public Dictionary<string, ManifestSubscription> Subscribables { get; }
+
+		/// <summary>
+		/// This field is obsolete, please do not use.
+		/// </summary>
+		[Obsolete]
+		public IBeamableRequester Requester => InternalRequester;
+
+		private IBeamableRequester InternalRequester => _provider.GetService<IBeamableRequester>(); // TODO: when Requester is removed, rename this.
+
+		/// <summary>
+		/// An event that triggers when the default manifest has been changed using the <see cref="SwitchDefaultManifestID"/> method.
+		/// The event has a string parameter that represents the new manifest ID.
+		/// </summary>
 		public Action<string> OnManifestChanged;
 
 		private IPlatformService Platform => _provider.GetService<IPlatformService>();
@@ -146,10 +210,17 @@ namespace Beamable.Content
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 		private static bool _testScopeEnabled;
 
+		/// <summary>
+		/// A utility used during Content Baking.
+		/// This field should not be used in regular use.
+		/// To resolve content, please use the <see cref="GetContent(string,string)"/> method.
+		/// </summary>
 		public ContentDataInfoWrapper ContentDataInfo;
 
 		private Dictionary<string, ClientContentInfo> bakedManifestInfo =
 			new Dictionary<string, ClientContentInfo>();
+
+		private Dictionary<string, ClientContentInfo> cachedManifestInfo;
 
 		private ClientManifest bakedManifest;
 		private ClientManifest BakedManifest
@@ -345,7 +416,7 @@ namespace Beamable.Content
 				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 				var constructor = cacheType.GetConstructor(new[]
 					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService), typeof(CoroutineService)});
-				rawCache = (ContentCache)constructor.Invoke(new[] { Requester, (object)FilesystemAccessor, this, Platform.CoroutineService });
+				rawCache = (ContentCache)constructor.Invoke(new[] { InternalRequester, (object)FilesystemAccessor, this, Platform.CoroutineService });
 
 				_contentCaches.Add(contentType, rawCache);
 			}
@@ -353,9 +424,13 @@ namespace Beamable.Content
 			var determinedManifestID = DetermineManifestID(manifestID);
 			return GetManifestWithID(determinedManifestID).FlatMap(manifest =>
 			{
-				if (!_connectivityService.HasConnectivity && bakedManifestInfo.TryGetValue(contentId, out var contentInfo))
+				if (!_connectivityService.HasConnectivity)
 				{
-					return rawCache.GetContentObject(contentInfo);
+					// check cached content
+					if (cachedManifestInfo.TryGetValue(contentId, out var cachedInfo))
+					{
+						return rawCache.GetContentObject(cachedInfo);
+					}
 				}
 
 				var subscribable = GetSubscription(determinedManifestID);
@@ -392,8 +467,26 @@ namespace Beamable.Content
 			return GetContent<TContent>(reference as IContentRef, DetermineManifestID(manifestID));
 		}
 
-		public Promise<ClientManifest> GetManifest(ContentQuery query) => GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
+		/// <summary>
+		/// <inheritdoc cref="ManifestSubscription.GetManifest(ContentQuery)"/>
+		/// </summary>
+		/// <param name="query">A <see cref="ContentQuery"/> that will filter the resulting <see cref="ClientManifest.entries"/> field.</param>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
+		public Promise<ClientManifest> GetManifest(ContentQuery query)
+		{
+			if (TryGetCachedManifest(CurrentDefaultManifestID, out var promise))
+			{
+				return promise;
+			}
 
+			return GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
+		}
+
+		/// <summary>
+		/// <inheritdoc cref="ManifestSubscription.GetManifest(ContentQuery)"/>
+		/// </summary>
+		/// <param name="manifestID">A specific manifest ID. By default, this will resolve to the default "global" manifest.</param>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
@@ -406,6 +499,12 @@ namespace Beamable.Content
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest();
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="ManifestSubscription.GetManifest(ContentQuery)"/>
+		/// </summary>
+		/// <param name="filter">A <see cref="ContentQuery"/> in string form that will filter the resulting <see cref="ClientManifest.entries"/> field</param>
+		/// <param name="manifestID">A specific manifest ID. By default, this will resolve to the default "global" manifest.</param>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
@@ -418,6 +517,12 @@ namespace Beamable.Content
 			return GetSubscription(determinedManifestID)?.GetManifest(filter);
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="ManifestSubscription.GetManifest(ContentQuery)"/>
+		/// </summary>
+		/// <param name="query">A <see cref="ContentQuery"/> that will filter the resulting <see cref="ClientManifest.entries"/> field.</param>
+		/// <param name="manifestID">A specific manifest ID. By default, this will resolve to the default "global" manifest.</param>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
@@ -435,15 +540,27 @@ namespace Beamable.Content
 			if (!_connectivityService.HasConnectivity)
 			{
 				string key = $"/basic/content/manifest/public?id={manifestID}";
-				if (OfflineCache.Exists(key, Requester.AccessToken, true))
+				if (OfflineCache.Exists(key, InternalRequester.AccessToken, true))
 				{
-					promise = OfflineCache.Get<ClientManifest>(key, Requester.AccessToken, true);
+					promise = OfflineCache.Get<ClientManifest>(key, InternalRequester.AccessToken, true);
+					promise.Then(manifest =>
+					{
+						if (cachedManifestInfo == null)
+						{
+							cachedManifestInfo = new Dictionary<string, ClientContentInfo>();
+							foreach (var entry in manifest.entries)
+							{
+								cachedManifestInfo[entry.contentId] = entry;
+							}
+						}
+					});
 					return true;
 				}
 
 				if (manifestID.Equals("global") && BakedManifest != null)
 				{
 					promise = Promise<ClientManifest>.Successful(BakedManifest);
+					cachedManifestInfo = bakedManifestInfo;
 					return true;
 				}
 			}
@@ -452,11 +569,26 @@ namespace Beamable.Content
 			return false;
 		}
 
+		/// <summary>
+		/// Get the latest default <see cref="ClientManifest"/> by asking the Beamable Cloud.
+		/// </summary>
+		/// <param name="scope">The scope field should be ignored. Don't pass anything.</param>
+		/// <returns>A <see cref="Promise{ClientManifest}"/> representing the network call.</returns>
 		public Promise<ClientManifest> GetCurrent(string scope = "")
 		{
 			return Subscribables[CurrentDefaultManifestID].GetCurrent(scope);
 		}
 
+		/// <summary>
+		/// It is possible to have more than one <see cref="ClientManifest"/> providing content data for a game.
+		/// By default, there is only one manifest with an ID of "global". Every piece of content found using
+		/// <see cref="GetContent(string, string)"/> has the opportunity to pass a custom manifestID.
+		/// However, if no custom manifest ID is given, then the content will be resolved using the default manifest ID,
+		/// which is configured with this method.
+		/// After this method runs, all future calls to <see cref="GetContent(string,string)"/> will default to the new
+		/// manifest.
+		/// </summary>
+		/// <param name="manifestID">Some manifest ID</param>
 		public void SwitchDefaultManifestID(string manifestID)
 		{
 			if (string.IsNullOrEmpty(manifestID))

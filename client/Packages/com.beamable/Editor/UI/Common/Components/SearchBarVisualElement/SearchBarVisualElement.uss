@@ -9,6 +9,7 @@ SearchBarVisualElement {
     padding-right: 0px;
     border-radius: 2px;
     -unity-text-align: middle-left;
+    margin: 2px;
 }
 
 

@@ -30,13 +30,13 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 		static FieldInfo m_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler",
 			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-		
+
 #if UNITY_2021_2_OR_NEWER
 		static MethodInfo m_SendEventToIMGUI = typeof(IMGUIContainer).GetMethod("SendEventToIMGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 #endif
 
 		static ScriptableObject m_currentToolbar;
-		
+
 		/// <summary>
 		/// Callback for toolbar OnGUI method.
 		/// </summary>
