@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Subscribe<T>` method to `INotificationService` to avoid awkward serialization handling.
 - Added implicit conversion operators from `Optional<T>` objects wrapping a value type to matching `Nullable<T>` types.
 - Added inline style editor in BUSS theme manager.
+- Added `LobbyService` and `PlayerLobby` to support new Lobby functionality.
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MMV2 buttons now highlight on hover
 - Beamable third party context systems register with a default order of -1000.
 - Global style sheet is turned now into a list of global style sheets.
+- `HeartBeat` will now send heartbeat requests faster for our newer live backend services such as Lobbies
 
 ### Fixed
 - StoreView prefab now works in landscape mode
