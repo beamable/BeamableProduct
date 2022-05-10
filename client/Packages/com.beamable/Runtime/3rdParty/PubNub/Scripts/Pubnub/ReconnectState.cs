@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 
@@ -74,31 +75,32 @@ namespace PubNubMessaging.Core
 		}
 	}
 
+	[BeamContextSystem]
 	public class StoredRequestState
 	{
 
-		private static volatile StoredRequestState instance;
+		// private static volatile StoredRequestState instance;
 		private static readonly object syncRoot = new Object();
 
 		private StoredRequestState()
 		{
 		}
 
-		public static StoredRequestState Instance
+		[RegisterBeamableDependencies()]
+		public static void RegisterDependencies(IDependencyBuilder builder)
 		{
-			get
+			builder.AddSingleton(() =>
 			{
-				if (instance == null)
+				lock (syncRoot)
 				{
-					lock (syncRoot)
-					{
-						if (instance == null)
-							instance = new StoredRequestState();
-					}
+					return new StoredRequestState();
 				}
+			});
+		}
 
-				return instance;
-			}
+		public static StoredRequestState GetStoredRequestState(IDependencyProvider provider)
+		{
+			return provider.GetService<StoredRequestState>();
 		}
 
 		SafeDictionary<int, object> requestStates = new SafeDictionary<int, object>();
