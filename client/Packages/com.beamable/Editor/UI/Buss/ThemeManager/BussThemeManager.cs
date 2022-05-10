@@ -85,7 +85,7 @@ namespace Beamable.Editor.UI.Buss
 			_selectedBussElement = new SelectedBussElementVisualElement();
 			_selectedBussElement.Setup(_navigationWindow);
 			mainVisualElement.Add(_selectedBussElement);
-			
+
 			_stylesGroup = new BussStyleListVisualElement();
 
 			var inlineStyle = new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);

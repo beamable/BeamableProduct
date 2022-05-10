@@ -150,7 +150,7 @@ namespace Beamable.Common.Api.Content
 	{
 		// TODO: This is very hacky, but it lets use inject a different service in. Replace with ServiceManager (lot of unity deps to think about)
 		public static Promise<IContentApi> Instance = new Promise<IContentApi>();
-		
+
 #if UNITY_2019_3_OR_NEWER
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 		private static void HandleDomainReset()

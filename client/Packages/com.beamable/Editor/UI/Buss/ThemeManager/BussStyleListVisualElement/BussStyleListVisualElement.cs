@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Buss
 
 		public VariableDatabase VariableDatabase { get; } = new VariableDatabase();
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
-		
+
 		private bool _inStyleSheetChangedLoop;
 
 		private IEnumerable<BussStyleSheet> _styleSheets;

@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Components
 		/// It can search for end value recursively.
 		/// </summary>
 		private static PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-		                                                       BussStyleDescription styleRule,
+															   BussStyleDescription styleRule,
 															   VariableDatabase variableDatabase,
 															   out IBussProperty result,
 															   out VariableDatabase.PropertyReference propertyReference)
