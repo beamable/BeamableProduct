@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - StoreView prefab now works in landscape mode
+- fixed playmode ContentObject refresh with disabled domain reload on Unity 2019 and 2020
 - Reading content in offline mode will no longer throw an exception if there is offline cache available
 - Android sign in will always allow user to select an account.
 - Handling content downloads when backing class isn't available
