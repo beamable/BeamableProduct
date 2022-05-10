@@ -462,15 +462,23 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 			{
 				_scroll_rect = GetComponent<ScrollRect>();
 			}
-			if (!_scroll_rect.horizontal && !_scroll_rect.vertical)
+
+			if (_scroll_rect != null)
 			{
-				Debug.LogError("ScrollRect has to have a direction, please select either Horizontal OR Vertical with the appropriate control.");
+				if (!_scroll_rect.horizontal && !_scroll_rect.vertical)
+				{
+					Debug.LogError(
+						"ScrollRect has to have a direction, please select either Horizontal OR Vertical with the appropriate control.");
+				}
+
+				if (_scroll_rect.horizontal && _scroll_rect.vertical)
+				{
+					Debug.LogError(
+						"ScrollRect has to be unidirectional, only use either Horizontal or Vertical on the ScrollRect, NOT both.");
+				}
 			}
-			if (_scroll_rect.horizontal && _scroll_rect.vertical)
-			{
-				Debug.LogError("ScrollRect has to be unidirectional, only use either Horizontal or Vertical on the ScrollRect, NOT both.");
-			}
-			var ScrollRectContent = gameObject.GetComponent<ScrollRect>().content;
+
+			var ScrollRectContent = gameObject.GetComponent<ScrollRect>()?.content;
 			if (ScrollRectContent != null)
 			{
 				var children = ScrollRectContent.childCount;
