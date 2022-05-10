@@ -7,6 +7,8 @@
 		public const string BEAMABLE_DOCS_WEBSITE = "docs.beamable.com";
 		public const string BEAMABLE_ASSET_GROUP = "Beamable Assets";
 
+		public const int SYSTEM_DEPENDENCY_ORDER = -1000;
+
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";

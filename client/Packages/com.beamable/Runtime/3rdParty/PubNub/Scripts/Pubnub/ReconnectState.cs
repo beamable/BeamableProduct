@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
@@ -86,7 +87,7 @@ namespace PubNubMessaging.Core
 		{
 		}
 
-		[RegisterBeamableDependencies()]
+		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void RegisterDependencies(IDependencyBuilder builder)
 		{
 			builder.AddSingleton(() =>
@@ -96,11 +97,6 @@ namespace PubNubMessaging.Core
 					return new StoredRequestState();
 				}
 			});
-		}
-
-		public static StoredRequestState GetStoredRequestState(IDependencyProvider provider)
-		{
-			return provider.GetService<StoredRequestState>();
 		}
 
 		SafeDictionary<int, object> requestStates = new SafeDictionary<int, object>();

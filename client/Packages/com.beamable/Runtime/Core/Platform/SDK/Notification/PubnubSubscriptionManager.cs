@@ -200,7 +200,6 @@ namespace Beamable.Api.Notification
 			pubnub.AuthenticationKey = subscriberDetails.authenticationKey;
 
 			pubnub.SessionUUID = _platform.User.id + "." + deviceId;
-			Debug.Log("Setting up pubnub for " + pubnub.SessionUUID);
 
 			// Reduce amount of console logging
 			pubnub.PubnubLogLevel = LoggingMethod.Level.Error;

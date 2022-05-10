@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Dependencies;
+﻿using Beamable.Common;
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,7 +55,7 @@ namespace PubNubMessaging.Core
 	{
 		private static object syncRoot = new Object();
 
-		[RegisterBeamableDependencies()]
+		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void RegisterDependencies(IDependencyBuilder builder)
 		{
 			builder.AddSingleton(provider =>
