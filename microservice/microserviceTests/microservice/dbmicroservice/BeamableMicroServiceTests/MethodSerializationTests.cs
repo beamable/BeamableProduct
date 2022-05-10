@@ -445,7 +445,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                .AddMessageHandler(
                   MessageMatcher
                      .WithReqId(1)
-                     .WithStatus(401),
+                     .WithStatus(401).WithPayload<MicroserviceException>(ex => string.Equals(ex.Message,"test")),
                   MessageResponder.NoResponse(),
                   MessageFrequency.OnlyOnce()
                );
