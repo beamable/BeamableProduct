@@ -6,7 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+#endif
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
