@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Microstorage Docker nulls on Unity startup.
 - Running services no longer stop when entering playmode
 - `IMicroserviceNotificationsApi` can now send strings with spaces in them for messages.
+- `IMicroserviceLeaderboardsApi` will now respect `HasValue` flag of `Optional<T>` derived types in all cases.
 
 ## [1.1.2]
 ### Fixed
