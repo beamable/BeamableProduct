@@ -130,7 +130,7 @@ namespace Beamable.AccountManagement
 #pragma warning disable CS0649
 		[SerializeField] private AccountForgotPassword _accountForgotPassword;
 #pragma warning restore CS0649
-		
+
 		[Header("Flow Events")]
 		public ToggleEvent OnToggleAccountManagement;
 		public LoadingEvent Loading;
