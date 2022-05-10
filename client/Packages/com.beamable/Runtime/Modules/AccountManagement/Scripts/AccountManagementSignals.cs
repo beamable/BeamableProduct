@@ -127,8 +127,10 @@ namespace Beamable.AccountManagement
 	[HelpURL(Constants.URLs.Documentations.URL_DOC_ACCOUNT_HUD)]
 	public class AccountManagementSignals : DeSignalTower
 	{
+#pragma warning disable CS0649
 		[SerializeField] private AccountForgotPassword _accountForgotPassword;
-
+#pragma warning restore CS0649
+		
 		[Header("Flow Events")]
 		public ToggleEvent OnToggleAccountManagement;
 		public LoadingEvent Loading;
