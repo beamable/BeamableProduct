@@ -183,10 +183,21 @@ namespace Beamable.Console
 
 			txtInput.interactable = true;
 			if (canvas.isActiveAndEnabled) txtInput.Select();
-
-			_isInitialized = true;
-
-			Log("Console ready");
+			
+			// Hacky method to prevent NullReferenceException in UnityEngine.UI.InputField.GenerateCaret
+			// Delay prevents the user from interacting with the console before all UI components are configured
+			// Sadly, Unity won't fix this problem
+			StartCoroutine(Delay(0.1f, () =>
+			{
+				_isInitialized = true;
+				Log("Console ready");
+			}));
+			
+			IEnumerator Delay(float delayTime, Action onDelayFinish)
+			{
+				yield return new WaitForSeconds(delayTime);
+				onDelayFinish?.Invoke();
+			}
 		}
 
 		/// <summary>
