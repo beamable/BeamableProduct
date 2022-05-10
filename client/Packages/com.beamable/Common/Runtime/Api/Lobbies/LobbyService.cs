@@ -17,9 +17,7 @@ namespace Beamable.Experimental.Api.Lobbies
       _userContext = userContext;
     }
 
-    /// <summary>
-    ///   Find lobbies for the player to join.
-    /// </summary>
+    /// <inheritdoc cref="ILobbyApi.FindLobbies"/>
     // TODO: This should also allow for all sorts of fun querying
     public Promise<LobbyQueryResponse> FindLobbies()
     {
@@ -29,17 +27,7 @@ namespace Beamable.Experimental.Api.Lobbies
       );
     }
 
-    /// <summary>
-    /// Create a new lobby with the current player as the host.
-    /// </summary>
-    /// <param name="name">Name of the lobby</param>
-    /// <param name="restriction">The privacy value for the created lobby.</param>
-    /// <param name="gameTypeRef">If this lobby should be subject to matchmaking, a gametype ref should be provided</param>
-    /// <param name="description">Short optional description of what the lobby is for.</param>
-    /// <param name="playerTags">Arbitrary list of tags to include on the creating player.</param>
-    /// <param name="passcodeLength">Configurable value for how long the generated passcode should be.</param>
-    /// <param name="maxPlayers">Configurable value for the maximum number of players this lobby can have.</param>
-    /// <param name="statsToInclude">Stats to include with Lobby requests.</param>
+    /// <inheritdoc cref="ILobbyApi.CreateLobby"/>
     public Promise<Lobby> CreateLobby(
       string name,
       LobbyRestriction restriction,
@@ -64,11 +52,7 @@ namespace Beamable.Experimental.Api.Lobbies
         );
     }
 
-    /// <summary>
-    /// Join a lobby given its lobby id.
-    /// </summary>
-    /// <param name="lobbyId"></param>
-    /// <param name="playerTags"></param>
+    /// <inheritdoc cref="ILobbyApi.JoinLobby"/>
     public Promise<Lobby> JoinLobby(string lobbyId, List<Tag> playerTags = null)
     {
       return _requester.Request<Lobby>(
@@ -78,6 +62,7 @@ namespace Beamable.Experimental.Api.Lobbies
       );
     }
 
+    /// <inheritdoc cref="ILobbyApi.JoinLobbyByPasscode"/>
     public Promise<Lobby> JoinLobbyByPasscode(string passcode, List<Tag> playerTags = null)
     {
       return _requester.Request<Lobby>(
@@ -87,10 +72,7 @@ namespace Beamable.Experimental.Api.Lobbies
       );
     }
 
-    /// <summary>
-    /// Fetch the current status of the given lobbyId
-    /// </summary>
-    /// <param name="lobbyId"></param>
+    /// <inheritdoc cref="ILobbyApi.GetLobby"/>
     public Promise<Lobby> GetLobby(string lobbyId)
     {
       return _requester.Request<Lobby>(
@@ -99,25 +81,17 @@ namespace Beamable.Experimental.Api.Lobbies
       );
     }
 
-    /// <summary>
-    /// Notify the given lobby that the player intends to leave.
-    /// </summary>
-    /// <param name="lobbyId"></param>
-    public Promise<Unit> LeaveLobby(string lobbyId)
+    /// <inheritdoc cref="ILobbyApi.LeaveLobby"/>
+    public Promise LeaveLobby(string lobbyId)
     {
       return _requester.Request<Unit>(
         Method.DELETE,
         $"/lobbies/{lobbyId}",
         new RemoveFromLobbyRequest(_userContext.UserId.ToString())
-      );
+      ).ToPromise();
     }
 
-    /// <summary>
-    /// Add a list of tags to the given player in the given lobby.
-    /// </summary>
-    /// <param name="lobbyId"></param>
-    /// <param name="tags"></param>
-    /// <param name="playerId"></param>
+    /// <inheritdoc cref="ILobbyApi.AddPlayerTags"/>
     public Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null, bool replace = false)
     {
       playerId ??= _userContext.UserId.ToString();
@@ -128,12 +102,7 @@ namespace Beamable.Experimental.Api.Lobbies
       );
     }
 
-    /// <summary>
-    /// Remove a list of tags from the given player in the given lobby.
-    /// </summary>
-    /// <param name="lobbyId"></param>
-    /// <param name="tags"></param>
-    /// <param name="playerId"></param>
+    /// <inheritdoc cref="ILobbyApi.RemovePlayerTags"/>
     public Promise<Lobby> RemovePlayerTags(string lobbyId, List<string> tags, string playerId = null)
     {
       playerId ??= _userContext.UserId.ToString();
@@ -144,19 +113,14 @@ namespace Beamable.Experimental.Api.Lobbies
       );
     }
 
-    /// <summary>
-    /// Send a request to the given lobby to remove the player with the given playerId. If the
-    /// requesting player doesn't have the capability to boot players, this will throw an exception.
-    /// </summary>
-    /// <param name="lobbyId">The lobby to remove the player from</param>
-    /// <param name="playerId">The player to remove</param>
-    public Promise<Unit> BootPlayer(string lobbyId, string playerId)
+    /// <inheritdoc cref="ILobbyApi.KickPlayer"/>
+    public Promise KickPlayer(string lobbyId, string playerId)
     {
       return _requester.Request<Unit>(
         Method.DELETE,
         $"/lobbies/{lobbyId}",
         new RemoveFromLobbyRequest(playerId)
-      );
+      ).ToPromise();
     }
   }
 }
