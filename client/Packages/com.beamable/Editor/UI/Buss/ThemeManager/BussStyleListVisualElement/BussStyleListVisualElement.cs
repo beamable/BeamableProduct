@@ -18,8 +18,9 @@ namespace Beamable.Editor.UI.Buss
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
-		public readonly VariableDatabase variableDatabase = new VariableDatabase();
-		public readonly PropertySourceDatabase propertyDatabase = new PropertySourceDatabase();
+		public VariableDatabase VariableDatabase { get; } = new VariableDatabase();
+		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
+		
 		private bool _inStyleSheetChangedLoop;
 
 		private IEnumerable<BussStyleSheet> _styleSheets;
@@ -57,11 +58,11 @@ namespace Beamable.Editor.UI.Buss
 
 		private void RefreshStyleSheets()
 		{
-			variableDatabase.RemoveAllStyleSheets();
+			VariableDatabase.RemoveAllStyleSheets();
 
 			foreach (BussStyleSheet styleSheet in StyleSheets)
 			{
-				variableDatabase.AddStyleSheet(styleSheet);
+				VariableDatabase.AddStyleSheet(styleSheet);
 				styleSheet.Change += OnStyleSheetChanged;
 			}
 
@@ -159,7 +160,7 @@ namespace Beamable.Editor.UI.Buss
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, variableDatabase, propertyDatabase, callback, WritableStyleSheets);
+			styleCard.Setup(styleSheet, styleRule, VariableDatabase, PropertyDatabase, callback, WritableStyleSheets);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
 		}
@@ -179,16 +180,16 @@ namespace Beamable.Editor.UI.Buss
 
 			try
 			{
-				variableDatabase.ReconsiderAllStyleSheets();
+				VariableDatabase.ReconsiderAllStyleSheets();
 
-				if (variableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
-					variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
+				if (VariableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
+					VariableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
 				{
 					RefreshStyleCards();
 				}
 				else
 				{
-					foreach (VariableDatabase.PropertyReference reference in variableDatabase.DirtyProperties)
+					foreach (VariableDatabase.PropertyReference reference in VariableDatabase.DirtyProperties)
 					{
 						var card = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == reference.styleRule);
 						if (card != null)
@@ -197,7 +198,7 @@ namespace Beamable.Editor.UI.Buss
 						}
 					}
 				}
-				variableDatabase.FlushDirtyMarkers();
+				VariableDatabase.FlushDirtyMarkers();
 			}
 			catch (Exception e)
 			{
@@ -226,7 +227,7 @@ namespace Beamable.Editor.UI.Buss
 		protected override void OnDestroy()
 		{
 			Selection.selectionChanged -= OnSelectionChange;
-			propertyDatabase.Discard();
+			PropertyDatabase.Discard();
 		}
 	}
 }
