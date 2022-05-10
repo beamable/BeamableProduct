@@ -40,27 +40,19 @@ namespace Beamable.Server.Api.Leaderboards
             var cohorts = templateLeaderboardContent.cohortSettings;
             var permissions = templateLeaderboardContent.permissions;
 
-            var ttlValue = (long?)null;
-            if (ttl != null && ttl.HasValue)
-                ttlValue = ttl.Value;
-
             var derivativesValue = default(List<string>);
             if (derivatives != null && derivatives.HasValue)
                 derivativesValue = derivatives.Value;
 
-            var freezeValue = (long?)null;
-            if (freezeTime != null && freezeTime.HasValue)
-                freezeValue = freezeTime.Value;
-
             var request = new CreateLeaderboardRequest()
             {
-                maxEntries = maxEntries.Value,
-                ttl = ttlValue,
-                partitioned = partitioned.Value,
+                maxEntries = maxEntries,
+                ttl = ttl,
+                partitioned = partitioned,
                 cohortSettings = cohorts.Value,
                 derivatives = derivativesValue,
                 permissions = permissions,
-                freezeTime = freezeValue,
+                freezeTime = freezeTime
             };
 
             return CreateLeaderboard(leaderboardId, request);
@@ -77,13 +69,13 @@ namespace Beamable.Server.Api.Leaderboards
         {
             var req = new CreateLeaderboardRequest()
             {
-                maxEntries = (maxEntries ?? new OptionalInt()).Value,
-                ttl = (ttl ?? new OptionalLong()).Value,
-                partitioned = (partitioned ?? new OptionalBoolean()).Value,
+                maxEntries = maxEntries ?? new OptionalInt(),
+                ttl = ttl ?? new OptionalLong(),
+                partitioned = partitioned ?? new OptionalBoolean(),
                 cohortSettings = (cohortSettings ?? new OptionalCohortSettings()).Value,
                 derivatives = (derivatives ?? new OptionalListString()).Value,
                 permissions = (permissions ?? new OptionalClientPermissions()).Value,
-                freezeTime = (freezeTime ?? new OptionalLong()).Value
+                freezeTime = freezeTime ?? new OptionalLong()
             };
 
             return CreateLeaderboard(leaderboardId, req);
