@@ -1,0 +1,5 @@
+<Project>
+    <PropertyGroup>
+        <BeamableBuildTasksAssemblyFile>$(MSBuildThisFileDirectory)..\tasks\net6\Beamable.Build.Tasks.dll</BeamableBuildTasksAssemblyFile>
+    </PropertyGroup>
+</Project>

@@ -30,8 +30,6 @@
 
   </PropertyGroup>
 
-
-
   <PropertyGroup>
 
     <NoWarn>1591</NoWarn>
@@ -118,6 +116,12 @@
 
     </Reference>
 
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\buildTasks\buildTasks.csproj" />
   </ItemGroup>
 
 
