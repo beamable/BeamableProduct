@@ -358,7 +358,7 @@ namespace Beamable.Purchasing
 			return _unityBeamablePurchaser ?? (_unityBeamablePurchaser = new UnityBeamablePurchaser());
 		}
 
-		[RegisterBeamableDependencies]
+		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void Register(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();

@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,6 +7,7 @@ namespace PubNubMessaging.Core
 {
 	public class Pubnub
 	{
+		private readonly IDependencyProvider _provider;
 
 		#region "PubNub API Channel Methods"
 
@@ -1134,19 +1136,22 @@ namespace PubNubMessaging.Core
 
 		PubnubUnity pubnub;
 
-		public Pubnub(string publishKey, string subscribeKey, string secretKey, string cipherKey, bool sslOn, GameObject gob)
+		public Pubnub(IDependencyProvider provider, string publishKey, string subscribeKey, string secretKey, string cipherKey, bool sslOn, GameObject gob)
 		{
-			pubnub = new PubnubUnity(publishKey, subscribeKey, secretKey, cipherKey, sslOn, gob);
+			_provider = provider;
+			pubnub = new PubnubUnity(provider, publishKey, subscribeKey, secretKey, cipherKey, sslOn, gob);
 		}
 
-		public Pubnub(string publishKey, string subscribeKey, string secretKey, GameObject gob)
+		public Pubnub(IDependencyProvider provider, string publishKey, string subscribeKey, string secretKey, GameObject gob)
 		{
-			pubnub = new PubnubUnity(publishKey, subscribeKey, secretKey, gob);
+			_provider = provider;
+			pubnub = new PubnubUnity(provider, publishKey, subscribeKey, secretKey, gob);
 		}
 
-		public Pubnub(string publishKey, string subscribeKey, GameObject gob)
+		public Pubnub(IDependencyProvider provider, string publishKey, string subscribeKey, GameObject gob)
 		{
-			pubnub = new PubnubUnity(publishKey, subscribeKey, gob);
+			_provider = provider;
+			pubnub = new PubnubUnity(provider, publishKey, subscribeKey, gob);
 		}
 
 		#endregion

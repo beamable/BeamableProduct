@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Claiming an event that a player never submitted a score for will report an accurate error message
 - Added tooltips to MMV2 window elements which didn't have them.
 - MMV2 buttons now highlight on hover
+- Beamable third party context systems register with a default order of -1000.
 
 ### Fixed
 - StoreView prefab now works in landscape mode
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android sign in will always allow user to select an account.
 - Handling content downloads when backing class isn't available
 - Account management will no longer log an error after pressing change password button more than once
+- Notification handling for multiple `BeamContext` instances.
 
 ## [1.1.2]
 ### Fixed

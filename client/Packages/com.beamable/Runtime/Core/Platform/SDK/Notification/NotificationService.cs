@@ -1,6 +1,8 @@
 using Beamable.Api.Notification.Internal;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Pooling;
 using Beamable.Serialization.SmallerJSON;
