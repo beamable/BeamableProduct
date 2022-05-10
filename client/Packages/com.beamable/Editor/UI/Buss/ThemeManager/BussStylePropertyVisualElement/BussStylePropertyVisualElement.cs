@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleDescription _styleDescription;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
-		
+
 		public BussElement InlineStyleOwner { get; set; }
 
 		public event Action PropertyChanged;
@@ -285,7 +285,7 @@ namespace Beamable.Editor.UI.Components
 					_styleSheet.TriggerChange();
 				}
 			}
-			
+
 			PropertyChanged?.Invoke();
 		}
 
