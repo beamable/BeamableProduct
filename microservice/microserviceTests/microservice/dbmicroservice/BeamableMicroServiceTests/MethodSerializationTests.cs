@@ -454,7 +454,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithException", 1, 0, string.Empty));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithExceptionThrow", 1, 0, string.Empty));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);

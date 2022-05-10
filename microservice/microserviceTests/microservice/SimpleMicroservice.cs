@@ -102,7 +102,7 @@ namespace microserviceTests.microservice
       }
       
       [ClientCallable]
-      public string MethodWithException(string msg)
+      public string MethodWithExceptionThrow(string msg)
       {
          throw new MicroserviceException(401, "UnauthorizedUser", "test");
       }
