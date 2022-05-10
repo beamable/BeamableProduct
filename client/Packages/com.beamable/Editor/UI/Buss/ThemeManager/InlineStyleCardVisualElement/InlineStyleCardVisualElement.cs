@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Components
 		private BussElement _bussElement;
 
 		public InlineStyleCardVisualElement(VariableDatabase variableDatabase,
-		                                    PropertySourceDatabase propertySourceDatabase) : base(
+											PropertySourceDatabase propertySourceDatabase) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/InlineStyleCardVisualElement/InlineStyleCardVisualElement.uss", false)
 		{
 			_variableDatabase = variableDatabase;
@@ -35,7 +35,7 @@ namespace Beamable.Editor.UI.Components
 		public override void Init()
 		{
 			base.Init();
-			
+
 			VisualElement header = new VisualElement();
 			header.AddToClassList("header");
 			TextElement label = new TextElement();
@@ -48,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 			mainContainer.AddToClassList("mainContainer");
 			mainContainer.AddToClassList("hidden");
 			Root.Add(mainContainer);
-			
+
 			header.RegisterCallback<MouseDownEvent>(evt =>
 			{
 				mainContainer.ToggleInClassList("hidden");
@@ -63,11 +63,11 @@ namespace Beamable.Editor.UI.Components
 
 			var propertiesHeader = CreateSubheader("Properties", OnAddProperty);
 			mainContainer.Add(propertiesHeader);
-			
+
 			_propertyContainer = new VisualElement();
 			_propertyContainer.AddToClassList("propertyContainer");
 			mainContainer.Add(_propertyContainer);
-			
+
 			Selection.selectionChanged += SelectionChanged;
 			SelectionChanged();
 		}
@@ -89,7 +89,7 @@ namespace Beamable.Editor.UI.Components
 			addButton.AddToClassList("addButton");
 			header.Add(addButton);
 			addButton.RegisterCallback<MouseDownEvent>(_ => onAddClicked());
-			
+
 			return header;
 		}
 
@@ -101,7 +101,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				element = target.GetComponent<BussElement>();
 			}
-			
+
 			SetBussElement(element);
 		}
 
@@ -121,7 +121,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnAddProperty()
 		{
 			if (_bussElement == null) return;
-			
+
 			var keys = new HashSet<string>();
 			foreach (var propertyProvider in _bussElement.InlineStyle.Properties)
 			{
@@ -137,7 +137,7 @@ namespace Beamable.Editor.UI.Components
 				var baseType = BussStyle.GetBaseType(key);
 				var data = SerializableValueImplementationHelper.Get(baseType);
 				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                     t != typeof(FractionFloatBussProperty));
+													 t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -185,7 +185,7 @@ namespace Beamable.Editor.UI.Components
 			var inlineStyle = _bussElement.InlineStyle;
 
 			var toSpawn = inlineStyle.Properties.ToList();
-			
+
 			foreach (BussStylePropertyVisualElement visualElement in _variables.Concat(_properties).ToArray())
 			{
 				var propertyProvider = inlineStyle.GetPropertyProvider(visualElement.PropertyProvider.Key);
@@ -204,12 +204,12 @@ namespace Beamable.Editor.UI.Components
 					toSpawn.Remove(propertyProvider);
 				}
 			}
-			
+
 			var propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
 
 			foreach (BussPropertyProvider propertyProvider in toSpawn)
 			{
-				
+
 				var visualElement = new BussStylePropertyVisualElement();
 				visualElement.InlineStyleOwner = _bussElement;
 				visualElement.Setup(null, _bussElement.InlineStyle, propertyProvider, _variableDatabase, propertySourceTracker);
@@ -246,7 +246,7 @@ namespace Beamable.Editor.UI.Components
 		private void SpawnProperties()
 		{
 			var propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
-			
+
 			foreach (BussPropertyProvider property in _bussElement.InlineStyle.Properties)
 			{
 				var visualElement = new BussStylePropertyVisualElement();
