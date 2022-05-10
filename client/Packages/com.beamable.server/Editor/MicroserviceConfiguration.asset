@@ -13,33 +13,3 @@ MonoBehaviour:
   m_Name: MicroserviceConfiguration
   m_EditorClassIdentifier: 
   Microservices: []
-  StorageObjects: []
-  ServiceCodeHandlesOnLastDomainReload: []
-  LastBuiltDockerImagesCodeHandles: []
-  ServiceDependencyChecksums: []
-  CustomContainerPrefix: 
-  AutoReferenceContent: 0
-  AutoBuildCommonAssembly: 1
-  ColorLogs: 1
-  EnableDockerBuildkit: 0
-  DockerDesktopCheckInMicroservicesWindow: 1
-  EnableHotModuleReload: 1
-  EnableAutoPrune: 1
-  RiderDebugTools:
-    HasValue: 0
-    Value:
-      RiderVersion: 2021.3.3
-      RiderToolsDownloadUrl: https://download.jetbrains.com/resharper/dotUltimate.2021.3.2/JetBrains.Rider.RemoteDebuggerUploads.linux-x64.2021.3.2.zip
-  WindowsDockerCommand: docker
-  UnixDockerCommand: /usr/local/bin/docker
-  WindowsDockerDesktopPath: C:\Program Files\Docker\Docker\Docker Desktop.exe
-  UnixDockerDesktopPath: /Applications/Docker.app/
-  ForwardContainerLogsToUnityConsole: 0
-  LogProcessLabelColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  LogStandardOutColor: {r: 0, g: 0, b: 1, a: 1}
-  LogStandardErrColor: {r: 1, g: 0, b: 0, a: 1}
-  LogDebugLabelColor: {r: 0.25, g: 0.5, b: 1, a: 1}
-  LogInfoLabelColor: {r: 0, g: 0, b: 1, a: 1}
-  LogErrorLabelColor: {r: 1, g: 0, b: 0, a: 1}
-  LogWarningLabelColor: {r: 1, g: 0.6, b: 0.16, a: 1}
-  LogFatalLabelColor: {r: 1, g: 0, b: 0, a: 1}
