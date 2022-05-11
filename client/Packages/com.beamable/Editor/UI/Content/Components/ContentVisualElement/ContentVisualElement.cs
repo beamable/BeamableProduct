@@ -214,7 +214,7 @@ namespace Beamable.Editor.Content.Components
 			if (_isContentNameInEditMode)
 				return;
 			_isContentNameInEditMode = true;
-			
+
 			_nameTextField.SelectRange(0, 0);
 			_nameTextField.SetEnabled(false);
 			//Invokes internal event
