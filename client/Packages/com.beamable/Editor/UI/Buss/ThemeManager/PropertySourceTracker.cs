@@ -24,9 +24,12 @@ namespace Beamable.UI.Buss
 			if (BussConfiguration.OptionalInstance.HasValue)
 			{
 				var config = BussConfiguration.OptionalInstance.Value;
-				if (config != null && config.GlobalStyleSheet != null)
+				if (config != null)
 				{
-					AddStyleSheet(config.GlobalStyleSheet);
+					foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
+					{
+						AddStyleSheet(styleSheet);
+					}
 				}
 			}
 
@@ -91,6 +94,7 @@ namespace Beamable.UI.Buss
 
 		private void AddStyleSheet(BussStyleSheet styleSheet)
 		{
+			if (styleSheet == null) return;
 			foreach (BussStyleRule styleRule in styleSheet.Styles)
 			{
 				if (styleRule.Selector?.CheckMatch(Element) ?? false)
