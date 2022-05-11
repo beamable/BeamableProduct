@@ -5,13 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unrelased]
+
+## [1.2.0]
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
-- Fixed Microstorage Docker nulls on Unity startup.
-- Running services no longer stop when entering playmode
+- Removed Microstorage related null reference errors on Unity startup.
 - `IMicroserviceNotificationsApi` can now send strings with spaces in them for messages.
 - `IMicroserviceLeaderboardsApi` will now respect `HasValue` flag of `Optional<T>` derived types in all cases.
-- Fixed MicroserviceExceptions in Microservices.
+- Thrown `MicroserviceException`s from `[ClientCallable]` methods will result in an appropriate error response.
 
 ## [1.1.2]
 ### Fixed
