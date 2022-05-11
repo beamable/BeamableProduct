@@ -62,9 +62,10 @@ namespace Beamable.Editor.UI.Model
 
 		protected override async Task<RunImageCommand> PrepareRunCommand()
 		{
-			var beamable = await EditorAPI.Instance;
+			var beamable = BeamEditorContext.Default;
+			await beamable.InitializePromise;
 			var secret = await beamable.GetRealmSecret();
-			var cid = beamable.CustomerView.Cid;
+			var cid = beamable.CurrentCustomer.Cid;
 			// check to see if the storage descriptor is running.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
@@ -83,7 +84,7 @@ namespace Beamable.Editor.UI.Model
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			try
 			{
-				await command.Start(null);
+				await command.StartAsync();
 				await TryToGetLastImageId();
 
 				// Update the config with the code handle identifying the version of the code this is building with (see BeamServicesCodeWatcher).
@@ -123,7 +124,7 @@ namespace Beamable.Editor.UI.Model
 			var getChecksum = new GetImageIdCommand(Descriptor);
 			try
 			{
-				LastBuildImageId = await getChecksum.Start(null);
+				LastBuildImageId = await getChecksum.StartAsync();
 			}
 			catch (Exception e)
 			{

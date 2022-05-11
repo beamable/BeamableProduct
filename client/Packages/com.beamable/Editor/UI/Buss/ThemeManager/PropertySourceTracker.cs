@@ -1,5 +1,7 @@
 ﻿using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using PropertyReference = Beamable.UI.Buss.VariableDatabase.PropertyReference;
 
 namespace Beamable.UI.Buss
@@ -22,9 +24,12 @@ namespace Beamable.UI.Buss
 			if (BussConfiguration.OptionalInstance.HasValue)
 			{
 				var config = BussConfiguration.OptionalInstance.Value;
-				if (config != null && config.GlobalStyleSheet != null)
+				if (config != null)
 				{
-					AddStyleSheet(config.GlobalStyleSheet);
+					foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
+					{
+						AddStyleSheet(styleSheet);
+					}
 				}
 			}
 
@@ -42,11 +47,54 @@ namespace Beamable.UI.Buss
 		public bool IsUsed(string key, BussStyleRule styleRule)
 		{
 			var data = _sources[key];
-			return data.UsedProperty.styleRule == styleRule;
+			return data.Properties.First().styleRule == styleRule;
+		}
+
+		public BussPropertyProvider GetUsedPropertyProvider(string key)
+		{
+			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key));
+		}
+
+		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType, bool allowVariableProperty = true)
+		{
+			if (_sources.ContainsKey(key))
+			{
+				foreach (var reference in _sources[key].Properties)
+				{
+					if (reference.propertyProvider.IsPropertyOfType(baseType) || reference.propertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					{
+						return reference.propertyProvider;
+					}
+				}
+			}
+
+			return null;
+		}
+
+		public PropertyReference GetUsedPropertyReference(string key)
+		{
+			return GetUsedPropertyReference(key, BussStyle.GetBaseType(key));
+		}
+
+		public PropertyReference GetUsedPropertyReference(string key, Type baseType, bool allowVariableProperty = true)
+		{
+			if (_sources.ContainsKey(key))
+			{
+				foreach (var reference in _sources[key].Properties)
+				{
+					if (reference.propertyProvider.IsPropertyOfType(baseType) || reference.propertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					{
+						return reference;
+					}
+				}
+			}
+
+			return new PropertyReference();
 		}
 
 		private void AddStyleSheet(BussStyleSheet styleSheet)
 		{
+			if (styleSheet == null) return;
 			foreach (BussStyleRule styleRule in styleSheet.Styles)
 			{
 				if (styleRule.Selector?.CheckMatch(Element) ?? false)
@@ -79,10 +127,7 @@ namespace Beamable.UI.Buss
 		public class SourceData
 		{
 			public readonly string key;
-
-			public SelectorWeight CurrentPropertyWeight = SelectorWeight.Min;
-			public PropertyReference UsedProperty { get; private set; }
-			public List<PropertyReference> OverridenProperties = new List<PropertyReference>();
+			public List<PropertyReference> Properties = new List<PropertyReference>();
 
 			public SourceData(string key)
 			{
@@ -92,17 +137,47 @@ namespace Beamable.UI.Buss
 			public void AddSource(PropertyReference propertyReference)
 			{
 				var weight = propertyReference.GetWeight();
-				if (weight.CompareTo(CurrentPropertyWeight) >= 0)
+				var index = Properties.FindIndex(r => weight.CompareTo(r.GetWeight()) >= 0);
+				if (index < 0)
 				{
-					CurrentPropertyWeight = weight;
-					OverridenProperties.Add(UsedProperty);
-					UsedProperty = propertyReference;
+					Properties.Add(propertyReference);
 				}
 				else
 				{
-					OverridenProperties.Add(propertyReference);
+					Properties.Insert(index, propertyReference);
 				}
 			}
+		}
+	}
+
+	public class PropertySourceDatabase
+	{
+		private readonly Dictionary<BussElement, PropertySourceTracker> _trackers = new Dictionary<BussElement, PropertySourceTracker>();
+
+		public PropertySourceTracker GetTracker(BussElement bussElement)
+		{
+			if (bussElement == null) return null;
+
+			if (!_trackers.TryGetValue(bussElement, out var tracker))
+			{
+				tracker = new PropertySourceTracker(bussElement);
+				_trackers[bussElement] = tracker;
+				bussElement.StyleRecalculated += tracker.Recalculate;
+			}
+
+			return tracker;
+		}
+
+		public void Discard()
+		{
+			foreach (KeyValuePair<BussElement, PropertySourceTracker> pair in _trackers)
+			{
+				if (pair.Key != null)
+				{
+					pair.Key.StyleRecalculated -= pair.Value.Recalculate;
+				}
+			}
+			_trackers.Clear();
 		}
 	}
 }

@@ -33,7 +33,7 @@ namespace Beamable.Inventory
 			if (Image == null || Item == null) return;
 			Item.Resolve().Then(async content =>
 			{
-				if (content.icon == null) return;
+				if (content.icon == null || !content.icon.RuntimeKeyIsValid()) return;
 				Image.sprite = await content.icon.LoadSprite();
 			}).Error(Debug.LogError);
 		}

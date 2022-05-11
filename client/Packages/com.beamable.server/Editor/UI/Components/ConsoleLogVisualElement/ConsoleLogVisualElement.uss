@@ -2,6 +2,7 @@
     flex-direction: row;
     align-content: stretch;
     -unity-overflow-clip-box: padding-box;
+    overflow: hidden;
 }
 
 Label {

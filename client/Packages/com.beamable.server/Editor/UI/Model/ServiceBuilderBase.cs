@@ -46,7 +46,7 @@ namespace Beamable.Editor.UI.Model
 				WriteCommandToUnity = false
 			};
 
-			_isRunning = await checkProcess.Start(null);
+			_isRunning = await checkProcess.StartAsync();
 		}
 
 		protected abstract Task<RunImageCommand> PrepareRunCommand();
@@ -93,7 +93,7 @@ namespace Beamable.Editor.UI.Model
 			try
 			{
 				var stopProcess = new StopImageReturnableCommand(Descriptor);
-				await stopProcess.Start(null);
+				await stopProcess.StartAsync();
 				IsRunning = false;
 			}
 			finally

@@ -361,16 +361,16 @@ namespace Beamable.Server.Editor
 
 					var kill = new StopImageCommand(service);
 					var killGenerator = new StopImageCommand(generatorDesc);
-					kill.Start(null);
-					killGenerator.Start(null);
+					kill.StartAsync();
+					killGenerator.StartAsync();
 				}
 
 				foreach (var storage in registry.StorageDescriptors)
 				{
 					var kill = new StopImageCommand(storage);
 					var killTool = new StopImageCommand(storage.LocalToolContainerName);
-					kill.Start(null);
-					killTool.Start(null);
+					kill.StartAsync();
+					killTool.StartAsync();
 				}
 			}
 			catch
@@ -397,13 +397,13 @@ namespace Beamable.Server.Editor
 
 			var check = new CheckImageReturnableCommand(generatorDesc);
 
-			check.Start(null).Then(isRunning =>
+			check.StartAsync().Then(isRunning =>
 			{
 				if (isRunning && !force)
 				{
 					var codeGenCheck = new CheckImageCodeGenErrorCommand(generatorDesc);
 
-					codeGenCheck.Start(null).Then(hasCodeError =>
+					codeGenCheck.StartAsync().Then(hasCodeError =>
 					{
 						if (hasCodeError)
 						{
@@ -420,10 +420,10 @@ namespace Beamable.Server.Editor
 		private static void RebuildAndRegenerate(MicroserviceDescriptor generatorDesc)
 		{
 			// definately stop the image, even if there was doubt it was running. Because if we do a "build", any existing image will ABSOLUTELY be ruined by the overcopy.
-			new StopImageReturnableCommand(generatorDesc).Start(null).Then(__ =>
+			new StopImageReturnableCommand(generatorDesc).StartAsync().Then(__ =>
 			{
 				var buildCommand = new BuildImageCommand(generatorDesc, false, true);
-				buildCommand.Start(null).Then(_ =>
+				buildCommand.StartAsync().Then(_ =>
 				{
 					var clientCommand = new RunClientGenerationCommand(generatorDesc);
 					clientCommand.Start();

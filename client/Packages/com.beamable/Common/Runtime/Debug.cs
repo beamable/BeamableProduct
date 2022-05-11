@@ -74,7 +74,6 @@ namespace Beamable.Common
 		public override void Error(string error, params object[] args)
 		{
 			UnityEngine.Debug.LogError(string.Format(error, args));
-
 		}
 	}
 #endif

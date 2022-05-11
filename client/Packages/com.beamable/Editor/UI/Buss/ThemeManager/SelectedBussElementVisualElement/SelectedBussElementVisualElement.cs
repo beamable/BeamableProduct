@@ -64,7 +64,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(classesLabel);
 
 			_classesList = CreateClassesList();
-			_classesList.Refresh();
+			_classesList.RefreshPolyfill();
 			Root.Add(_classesList);
 
 			CreateButtons();
@@ -180,11 +180,11 @@ namespace Beamable.Editor.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-				itemHeight = 24,
 				itemsSource = _currentBussElement != null
 					? _currentBussElement.Classes.ToList()
 					: new List<string>()
 			};
+			view.SetItemHeight(24);
 			view.name = "classesList";
 
 #if UNITY_2020_1_OR_NEWER
@@ -216,7 +216,7 @@ namespace Beamable.Editor.UI.Components
 			_classesList.itemsSource = _currentBussElement
 				? BussNameUtility.AsClassesList(_currentBussElement.Classes.ToList())
 				: new List<string>();
-			_classesList.Refresh();
+			_classesList.RefreshPolyfill();
 		}
 
 		private VisualElement CreateListViewElement()

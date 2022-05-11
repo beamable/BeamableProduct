@@ -54,6 +54,7 @@ public class GoogleSignInActivity extends Activity {
                     .requestIdToken(intent.getStringExtra("clientId"))
                     .build();
             GoogleSignInClient client = GoogleSignIn.getClient(this, options);
+            client.signOut();
             startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGNIN);
         } catch (Exception e) {
             Log.e(TAG, "Exception before sign-in", e);
