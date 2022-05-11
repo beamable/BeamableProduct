@@ -58,6 +58,7 @@ jobs:
         unityVersion:
           - 2019.4.30f1
           - 2020.3.19f1
+          - 2021.3.2f1
     steps:
       - uses: actions/checkout@v2
       - name: Login to Docker Hub

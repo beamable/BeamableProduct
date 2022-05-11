@@ -47,7 +47,6 @@ namespace Beamable.Editor
 		public static void GenerateLinkFile()
 		{
 			var linkPath = "Assets/Beamable/Resources/link.xml";
-
 			var assemblies = new HashSet<string>();
 
 			foreach (var asm in THIRD_PARTY_ASSEMBLIES)
