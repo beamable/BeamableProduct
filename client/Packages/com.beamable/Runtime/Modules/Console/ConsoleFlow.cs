@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using static Beamable.Common.Constants.URLs;
@@ -187,17 +188,10 @@ namespace Beamable.Console
 			// Hacky method to prevent NullReferenceException in UnityEngine.UI.InputField.GenerateCaret
 			// Delay prevents the user from interacting with the console before all UI components are configured
 			// Sadly, Unity won't fix this problem
-			StartCoroutine(Delay(0.1f, () =>
-			{
-				_isInitialized = true;
-				Log("Console ready");
-			}));
+			await Task.Delay(100);
 			
-			IEnumerator Delay(float delayTime, Action onDelayFinish)
-			{
-				yield return new WaitForSeconds(delayTime);
-				onDelayFinish?.Invoke();
-			}
+			_isInitialized = true;
+			Log("Console ready");
 		}
 
 		/// <summary>
