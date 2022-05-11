@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account management will no longer log an error after pressing change password button more than once
 - Renaming content in `Content Manager` no longer logs warning if correct
 - Notification handling for multiple `BeamContext` instances.
+- Documentation links no longer direct to missing web pages.
 
 ## [1.1.2]
 ### Fixed
