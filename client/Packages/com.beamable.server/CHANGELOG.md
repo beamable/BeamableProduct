@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unrelased]
 
 ## [1.2.0]
+### Added
+- Support for GUID based assembly references.
+
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
 - Removed Microstorage related null reference errors on Unity startup.
