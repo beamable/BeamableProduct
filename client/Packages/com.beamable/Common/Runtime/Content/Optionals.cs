@@ -102,7 +102,7 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class OptionalValue<T> : Optional<T> where T : struct
 	{
-		public static implicit operator T?(OptionalValue<T> option) => option?.HasValue == true ? option.Value : null;
+		public static implicit operator T?(OptionalValue<T> option) => option?.HasValue == true ? (T?) option.Value : null;
 	}
 
 	[System.Serializable]
