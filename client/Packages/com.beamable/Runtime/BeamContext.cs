@@ -704,6 +704,7 @@ namespace Beamable
 
 			await _serviceScope.Dispose();
 
+			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
 
