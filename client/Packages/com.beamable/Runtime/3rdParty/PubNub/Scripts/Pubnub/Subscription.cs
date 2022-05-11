@@ -63,14 +63,14 @@ namespace PubNubMessaging.Core
 				lock (syncRoot)
 				{
 					var instance = new Subscription
-						{
-							ChannelsAndChannelGroupsAwaitingConnectCallback = new List<ChannelEntity>(),
-							AllPresenceChannelsOrChannelGroups = new List<ChannelEntity>(),
-							AllNonPresenceChannelsOrChannelGroups = new List<ChannelEntity>(),
-							AllChannels = new List<ChannelEntity>(),
-							AllChannelGroups = new List<ChannelEntity>(),
-							AllSubscribedChannelsAndChannelGroups = new List<ChannelEntity>()
-						};
+					{
+						ChannelsAndChannelGroupsAwaitingConnectCallback = new List<ChannelEntity>(),
+						AllPresenceChannelsOrChannelGroups = new List<ChannelEntity>(),
+						AllNonPresenceChannelsOrChannelGroups = new List<ChannelEntity>(),
+						AllChannels = new List<ChannelEntity>(),
+						AllChannelGroups = new List<ChannelEntity>(),
+						AllSubscribedChannelsAndChannelGroups = new List<ChannelEntity>()
+					};
 					return instance;
 				}
 			});
