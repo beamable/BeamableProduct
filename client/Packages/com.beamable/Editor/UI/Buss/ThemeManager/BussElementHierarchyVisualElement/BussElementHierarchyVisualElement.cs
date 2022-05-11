@@ -86,7 +86,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
 				{
-					if(styleSheet != null)
+					if (styleSheet != null)
 						StyleSheets.Add(styleSheet);
 				}
 			});
