@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
 using Beamable.Experimental.Api.Lobbies;
-using Beamable.Serialization.SmallerJSON;
 using UnityEngine;
 
 namespace Beamable.Player
