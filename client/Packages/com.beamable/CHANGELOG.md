@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android sign in will always allow user to select an account.
 - Handling content downloads when backing class isn't available
 - Account management will no longer log an error after pressing change password button more than once
+- Renaming content in `Content Manager` no longer logs warning if correct
 - Notification handling for multiple `BeamContext` instances.
 
 ## [1.1.2]
