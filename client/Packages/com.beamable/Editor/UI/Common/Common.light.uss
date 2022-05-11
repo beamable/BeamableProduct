@@ -3,3 +3,15 @@
     opacity: 0.8;
 }
 /* === END - ANNOUNCEMENTS === */
+
+.boundedButton:hover, .unboundedButton:hover {
+    -unity-background-image-tint-color: #8D8D8D;
+}
+
+#startBtn:hover, #servicesFilter:hover, #realmButton:hover {
+    background-color: #8D8D8D;
+}
+
+.squareBtn:hover, #clear:hover, #advanceBtn:hover {
+    background-color: #B4B4B4;
+}

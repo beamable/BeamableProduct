@@ -27,6 +27,7 @@
                 <engine:VisualElement class="rightArea" name="rightArea">
                     <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
                     <engine:VisualElement name="remoteStatusIcon"/>
+                    <engine:VisualElement class="separator"/>
                     <engine:VisualElement name="statusIcon"/>
                     <engine:Button name="moreBtn"/>
                 </engine:VisualElement>

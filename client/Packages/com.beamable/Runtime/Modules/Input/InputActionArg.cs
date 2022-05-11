@@ -24,23 +24,27 @@ namespace Beamable.InputManagerIntegration
 		}
 
 #elif ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-      public InputActionAsset actionAsset;
-      public InputAction action;
+		public InputActionAsset actionAsset;
+		public InputAction action;
 
-      protected InputAction GetAction()
-      {
+		protected InputAction GetAction()
+		{
 #if UNITY_2018
-         return actionAsset?.FindAction(action.name);
+			return actionAsset?.FindAction(action.name);
 #else
-         return actionAsset?.FindAction(action.id);
+			if (!actionAsset.enabled)
+			{
+				actionAsset.Enable();
+			}
+			return actionAsset?.FindAction(action.id);
 #endif
-      }
+		}
 
-      public bool IsTriggered()
-      {
-         var action = GetAction();
-         return action?.triggered ?? false;
-      }
+		public bool IsTriggered()
+		{
+			var action = GetAction();
+			return action?.triggered ?? false;
+		}
 #endif
 	}
 

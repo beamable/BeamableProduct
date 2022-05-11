@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using static Beamable.Common.Constants.URLs;
@@ -43,16 +44,44 @@ namespace Beamable.Console
 #pragma warning restore CS0649
 #endif
 
+#pragma warning disable CS0414
 		[Space]
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+		[HideInInspector]
+#endif
 		[Header("Text auto complete settings")]
 		[SerializeField]
 		private KeyCode acceptSuggestionKey = KeyCode.Tab;
 
+#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
+		[HideInInspector]
+#endif
+		[Header("Text auto complete settings")]
+		[SerializeField] private InputActionArg acceptSuggestionAction;
+
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 		[Header("History settings")]
+		[HideInInspector]
+#endif
 		[SerializeField]
 		private KeyCode historyPreviousKey = KeyCode.UpArrow;
 
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+		[HideInInspector]
+#endif
+		// ReSharper disable once NotAccessedField.Local
 		[SerializeField] private KeyCode historyNextKey = KeyCode.DownArrow;
+#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
+		[HideInInspector]
+#else
+		[Header("History settings")]
+#endif
+		[SerializeField] private InputActionArg historyNextAction;
+#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
+		[HideInInspector]
+#endif
+		[SerializeField] private InputActionArg historyPreviousAction;
+#pragma warning restore CS0414
 
 		private void Start()
 		{
@@ -91,17 +120,27 @@ namespace Beamable.Console
 
 			if (ConsoleShouldToggle() && ConsoleIsEnabled()) ToggleConsole();
 
-			if (Input.GetKeyDown(historyPreviousKey))
+#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
+			bool historyPrevious = Input.GetKeyDown(historyPreviousKey);
+			bool historyNext = Input.GetKeyDown(historyNextKey);
+			bool acceptSuggestion = Input.GetKeyDown(acceptSuggestionKey);
+#else
+			bool historyPrevious = historyPreviousAction.IsTriggered();
+			bool historyNext = historyNextAction.IsTriggered();
+			bool acceptSuggestion = acceptSuggestionAction.IsTriggered();
+#endif
+
+			if (historyPrevious)
 			{
 				txtInput.text = _consoleHistory.Previous();
 				txtInput.caretPosition = txtInput.text.Length;
 			}
-			else if (Input.GetKeyDown(historyNextKey))
+			else if (historyNext)
 			{
 				txtInput.text = _consoleHistory.Next();
 				txtInput.caretPosition = txtInput.text.Length;
 			}
-			else if (Input.GetKeyDown(acceptSuggestionKey))
+			else if (acceptSuggestion)
 			{
 				_textAutoCompleter.AcceptSuggestedCommand();
 			}
@@ -146,8 +185,12 @@ namespace Beamable.Console
 			txtInput.interactable = true;
 			if (canvas.isActiveAndEnabled) txtInput.Select();
 
-			_isInitialized = true;
+			// Hacky method to prevent NullReferenceException in UnityEngine.UI.InputField.GenerateCaret
+			// Delay prevents the user from interacting with the console before all UI components are configured
+			// Sadly, Unity won't fix this problem
+			await Task.Delay(100);
 
+			_isInitialized = true;
 			Log("Console ready");
 		}
 

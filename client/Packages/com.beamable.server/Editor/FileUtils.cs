@@ -16,7 +16,7 @@ namespace Beamable.Server.Editor
 			var longestPathLength = dirExists ? Directory
 			                                    .GetFiles(descriptor.BuildPath, "*", SearchOption.AllDirectories)
 			                                    .OrderByDescending(p => p.Length)
-			                                    .FirstOrDefault().Length : descriptor.BuildPath.Length;
+			                                    .FirstOrDefault()?.Length : descriptor.BuildPath.Length;
 			UnityEngine.Assertions.Assert.IsFalse(longestPathLength + Directory.GetCurrentDirectory().Length >= 260,
 			                                     "Project path is too long and can cause issues during building on Windows machine. " +
 			                                     "Consider moving project to other folder so the project path would be shorter.");

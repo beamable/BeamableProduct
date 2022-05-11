@@ -161,9 +161,15 @@ namespace Beamable
 		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
 
+		/// <summary>
+		/// Access the <see cref="IContentApi"/> for this player.
+		/// </summary>
 		public IContentApi Content =>
 			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
 
+		/// <summary>
+		/// Access the <see cref="IBeamableAPI"/> for this player.
+		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
 
 		public string TimeOverride
@@ -474,7 +480,8 @@ namespace Beamable
 					{
 						id = Random.Range(int.MinValue, 0),
 						scopes = new List<string>(),
-						thirdPartyAppAssociations = new List<string>()
+						thirdPartyAppAssociations = new List<string>(),
+						deviceIds = new List<string>()
 					}, Requester.AccessToken, true);
 					_connectivityService.OnReconnectOnce(async () =>
 					{
@@ -512,7 +519,8 @@ namespace Beamable
 			{
 				id = 0,
 				scopes = new List<string>(),
-				thirdPartyAppAssociations = new List<string>()
+				thirdPartyAppAssociations = new List<string>(),
+				deviceIds = new List<string>()
 			};
 			try
 			{
@@ -696,6 +704,7 @@ namespace Beamable
 
 			await _serviceScope.Dispose();
 
+			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
 

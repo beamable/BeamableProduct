@@ -524,6 +524,26 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		}
 
 		[Test]
+		public void RefFromLink()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""link"": {
+         ""$link"": ""primitive.foo""
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<LinkRefContent>(json);
+
+			Assert.AreEqual("primitive.foo", o.link.GetId());
+			Assert.AreEqual(false, string.IsNullOrEmpty(o.link.Id));
+		}
+
+		[Test]
 		public void LinkNested_Legacy()
 		{
 			var json = @"{
@@ -1100,6 +1120,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		class LinkContent : TestContentObject
 		{
 			public PrimitiveLink link;
+		}
+
+		class LinkRefContent : TestContentObject
+		{
+			public PrimitiveRef link;
 		}
 
 		class LinkArrayContent : TestContentObject

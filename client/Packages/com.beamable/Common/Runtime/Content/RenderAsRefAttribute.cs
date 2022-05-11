@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace Beamable.Common.Content
 {
+	[Obsolete]
 	[AttributeUsage(AttributeTargets.Field)]
 	public class RenderAsRefAttribute : PropertyAttribute
 	{
@@ -15,6 +16,7 @@ namespace Beamable.Common.Content
 		}
 	}
 
+	[Obsolete]
 	[AttributeUsage(AttributeTargets.Field)]
 	public class RenderAsRef2Attribute : PropertyAttribute
 	{

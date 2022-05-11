@@ -48,12 +48,9 @@ namespace Beamable.Editor.Content.Components
 
 		protected override void SetMessageLabel()
 		{
-			EditorAPI.Instance.Then(api =>
-			{
-				_messageLabel = Root.Q<Label>("message");
-				_messageLabel.text = RESET_CONTENT_MESSAGE_PREVIEW;
-				_messageLabel.AddTextWrapStyle();
-			});
+			_messageLabel = Root.Q<Label>("message");
+			_messageLabel.text = RESET_CONTENT_MESSAGE_PREVIEW;
+			_messageLabel.AddTextWrapStyle();
 		}
 
 		protected override void SetDownloadSuccessMessageLabel()

@@ -310,7 +310,7 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
+			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -328,7 +328,8 @@ namespace Beamable.Server.Editor
 				OnDeployFailed += HandleDeployFailed;
 
 				// TODO perform sort of diff, and only do what is required. Because this is a lot of work.
-				var de = await EditorAPI.Instance;
+				var de = BeamEditorContext.Default;
+				await de.InitializePromise;
 
 				var client = de.GetMicroserviceManager();
 				var existingManifest = await client.GetCurrentManifest();
@@ -351,7 +352,7 @@ namespace Beamable.Server.Editor
 					var buildCommand = new BuildImageCommand(descriptor, false, false);
 					try
 					{
-						await buildCommand.Start(context);
+						await buildCommand.StartAsync();
 					}
 					catch (Exception e)
 					{
@@ -369,7 +370,7 @@ namespace Beamable.Server.Editor
 						return;
 					}
 
-					var uploader = new ContainerUploadHarness(context);
+					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
 					uploader.onProgress += (_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
@@ -513,82 +514,81 @@ namespace Beamable.Server.Editor
 			public Promise<ManifestModel> GenerateUploadModel()
 			{
 				// first, get the server manifest
-				return EditorAPI.Instance.FlatMap(de =>
+				var de = BeamEditorContext.Default;
+				var client = de.GetMicroserviceManager();
+				return client.GetCurrentManifest().Map(manifest =>
 				{
-					var client = de.GetMicroserviceManager();
-					return client.GetCurrentManifest().Map(manifest =>
+					var allServices = new HashSet<string>();
+
+					// make sure all server-side things are represented
+					foreach (var serverSideService in manifest.manifest.Select(s => s.serviceName))
 					{
-						var allServices = new HashSet<string>();
+						allServices.Add(serverSideService);
+					}
 
-						// make sure all server-side things are represented
-						foreach (var serverSideService in manifest.manifest.Select(s => s.serviceName))
-						{
-							allServices.Add(serverSideService);
-						}
+					// add in anything locally...
+					foreach (var descriptor in Descriptors)
+					{
+						allServices.Add(descriptor.Name);
+					}
 
-						// add in anything locally...
-						foreach (var descriptor in Descriptors)
+					// get enablement for each service...
+					var entries = allServices.Select(name =>
+					{
+						var configEntry = MicroserviceConfiguration.Instance.GetEntry(name); //config.FirstOrDefault(s => s.ServiceName == name);
+						var descriptor = Descriptors.FirstOrDefault(d => d.Name == configEntry.ServiceName);
+						var serviceDependencies = new List<ServiceDependency>();
+						if (descriptor != null)
 						{
-							allServices.Add(descriptor.Name);
-						}
-
-						// get enablement for each service...
-						var entries = allServices.Select(name =>
-						{
-							var configEntry = MicroserviceConfiguration.Instance.GetEntry(name); //config.FirstOrDefault(s => s.ServiceName == name);
-							var descriptor = Descriptors.FirstOrDefault(d => d.Name == configEntry.ServiceName);
-							var serviceDependencies = new List<ServiceDependency>();
-							if (descriptor != null)
+							foreach (var storage in descriptor.GetStorageReferences())
 							{
-								foreach (var storage in descriptor.GetStorageReferences())
-								{
-									serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
-								}
+								serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
 							}
-
-							return new ManifestEntryModel
-							{
-								Comment = "",
-								Name = name,
-								Enabled = configEntry?.Enabled ?? true,
-								TemplateId = configEntry?.TemplateId ?? "small",
-								Dependencies = serviceDependencies
-							};
-						}).ToList();
-
-						var allStorages = new HashSet<string>();
-
-						foreach (var serverSideStorage in manifest.storageReference.Select(s => s.id))
-						{
-							allStorages.Add(serverSideStorage);
 						}
 
-						foreach (var storageDescriptor in StorageDescriptors)
+						return new ManifestEntryModel
 						{
-							allStorages.Add(storageDescriptor.Name);
-						}
-
-						var storageEntries = allStorages.Select(name =>
-						{
-							var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
-							return new StorageEntryModel
-							{
-								Name = name,
-								Type = configEntry?.StorageType ?? "mongov1",
-								Enabled = configEntry?.Enabled ?? true,
-								TemplateId = configEntry?.TemplateId ?? "small",
-							};
-						}).ToList();
-
-						return new ManifestModel
-						{
-							ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
 							Comment = "",
-							Services = entries.ToDictionary(e => e.Name),
-							Storages = storageEntries.ToDictionary(s => s.Name)
+							Name = name,
+							Enabled = configEntry?.Enabled ?? true,
+							TemplateId = configEntry?.TemplateId ?? "small",
+							Dependencies = serviceDependencies
 						};
-					});
+					}).ToList();
+
+					var allStorages = new HashSet<string>();
+
+					foreach (var serverSideStorage in manifest.storageReference.Select(s => s.id))
+					{
+						allStorages.Add(serverSideStorage);
+					}
+
+					foreach (var storageDescriptor in StorageDescriptors)
+					{
+						allStorages.Add(storageDescriptor.Name);
+					}
+
+					var storageEntries = allStorages.Select(name =>
+					{
+						var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
+						return new StorageEntryModel
+						{
+							Name = name,
+							Type = configEntry?.StorageType ?? "mongov1",
+							Enabled = configEntry?.Enabled ?? true,
+							TemplateId = configEntry?.TemplateId ?? "small",
+						};
+					}).ToList();
+
+					return new ManifestModel
+					{
+						ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
+						Comment = "",
+						Services = entries.ToDictionary(e => e.Name),
+						Storages = storageEntries.ToDictionary(s => s.Name)
+					};
 				});
+
 			}
 
 			private void UpdateServiceDeployStatus(MicroserviceDescriptor descriptor, ServicePublishState status)
@@ -618,7 +618,7 @@ namespace Beamable.Server.Editor
 			public async Promise<string> GetConnectionString(StorageObjectDescriptor storage)
 			{
 				var storageCheck = new CheckImageReturnableCommand(storage);
-				var isStorageRunning = await storageCheck.Start(null);
+				var isStorageRunning = await storageCheck.StartAsync();
 				if (isStorageRunning)
 				{
 					var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);

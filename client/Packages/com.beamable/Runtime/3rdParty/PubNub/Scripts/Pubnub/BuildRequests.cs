@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Common.Dependencies;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -475,12 +476,12 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static string BuildMultiChannelLeaveRequest(string channels, string channelGroups, string uuid,
-			bool ssl, string origin, string authenticationKey, string subscribeKey)
+			bool ssl, string origin, string authenticationKey, string subscribeKey, IDependencyProvider provider)
 		{
 			StringBuilder unsubscribeParamBuilder = ParameterStringBuilder;
-			if (!string.IsNullOrEmpty(Subscription.Instance.CompiledUserState))
+			if (!string.IsNullOrEmpty(Subscription.GetSubscription(provider).CompiledUserState))
 			{
-				unsubscribeParamBuilder.AppendFormat("&state={0}", Utility.EncodeUricomponent(Subscription.Instance.CompiledUserState,
+				unsubscribeParamBuilder.AppendFormat("&state={0}", Utility.EncodeUricomponent(Subscription.GetSubscription(provider).CompiledUserState,
 					ResponseType.Leave, false, false));
 			}
 			if (channelGroups != null && channelGroups.Length > 0)
@@ -830,7 +831,7 @@ namespace PubNubMessaging.Core
 		//origin
 		//pubnubPresenceHeartbeatInSeconds
 		//authenticationKey
-		//pnsdkVersion    
+		//pnsdkVersion
 		//parameters
 
 		private static StringBuilder UrlStringBuilder

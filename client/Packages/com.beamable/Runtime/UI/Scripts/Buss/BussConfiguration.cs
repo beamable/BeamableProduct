@@ -14,7 +14,7 @@ using UnityEngine.UIElements;
 
 namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
 {
-	public class BussConfiguration : ModuleConfigurationObject
+	public class BussConfiguration : ModuleConfigurationObject, ISerializationCallbackReceiver
 	{
 
 		private static BussConfiguration Instance => Get<BussConfiguration>();
@@ -40,8 +40,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			OptionalInstance.DoIfExists(callback);
 		}
 
-		[SerializeField] private BussStyleSheet _globalStyleSheet = null;
-		public BussStyleSheet GlobalStyleSheet => _globalStyleSheet;
+		[SerializeField, Obsolete] private BussStyleSheet _globalStyleSheet = null;
+		[SerializeField] private List<BussStyleSheet> _globalStyleSheets = new List<BussStyleSheet>();
+		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
 
 		private List<BussElement> _rootBussElements = new List<BussElement>();
 
@@ -87,7 +88,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			// this should happen only in editor
 			if (styleSheet == null) return;
-			if (styleSheet == _globalStyleSheet)
+			if (_globalStyleSheets.Contains(styleSheet))
 			{
 				foreach (var bussElement in _rootBussElements)
 				{
@@ -119,30 +120,6 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 		}
 
-		private void OnDestroy()
-		{
-			if (_globalStyleSheet != null)
-			{
-				_globalStyleSheet.Change -= OnGlobalStyleChanged;
-			}
-		}
-
-		private void OnDisable()
-		{
-			if (_globalStyleSheet != null)
-			{
-				_globalStyleSheet.Change -= OnGlobalStyleChanged;
-			}
-		}
-
-		private void OnGlobalStyleChanged()
-		{
-			foreach (var bussElement in _rootBussElements)
-			{
-				bussElement.OnStyleChanged();
-			}
-		}
-
 		// TODO: in future move to some styles repository class which responsibility will be caching styles and recalculate them
 
 		#region Styles parsing
@@ -153,9 +130,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			element.Style.Clear();
 			element.PseudoStyles.Clear();
 
-			if (_globalStyleSheet != null)
+			foreach (BussStyleSheet styleSheet in _globalStyleSheets)
 			{
-				ApplyStyleSheet(element, _globalStyleSheet);
+				ApplyStyleSheet(element, styleSheet);
 			}
 
 			foreach (var styleSheet in element.AllStyleSheets)
@@ -222,5 +199,23 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		}
 
 		#endregion
+
+		public void OnBeforeSerialize()
+		{
+#pragma warning disable 612
+			_globalStyleSheet = null;
+#pragma warning restore 612
+		}
+
+		public void OnAfterDeserialize()
+		{
+#pragma warning disable 612
+			if (_globalStyleSheet != null && !_globalStyleSheets.Contains(_globalStyleSheet))
+			{
+				_globalStyleSheets.Add(_globalStyleSheet);
+				_globalStyleSheet = null;
+			}
+#pragma warning restore 612
+		}
 	}
 }

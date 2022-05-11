@@ -70,8 +70,8 @@ namespace Beamable.Api
 			catch (ArgumentOutOfRangeException)
 			{
 				Debug.LogWarning($"Wasn't able to set the expiration time of the token in playerprefs. ExpiresAt=[{token.ExpiresAt}]. " +
-				                 "This is a non-fatal error, because if the token is expired, it will be re-issued after the first auth failure, "+
-				                 "and the original request will be reattempted.");
+								 "This is a non-fatal error, because if the token is expired, it will be re-issued after the first auth failure, " +
+								 "and the original request will be reattempted.");
 			}
 
 			StoreDeviceRefreshToken(cid, null, token);

@@ -16,6 +16,16 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 
 		}
 
+		public void Subscribe<T>(string name, Action<T> handler)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Unsubscribe<T>(string name, Action<T> handler)
+		{
+			throw new NotImplementedException();
+		}
+
 		public void Publish(string name, object payload)
 		{
 

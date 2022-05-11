@@ -1,11 +1,3 @@
-#logHeader{
-    background-color: #8d8d8d;
-}
-
-#logHeader.running {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/ms_header_green_light.png");
-}
-
 .squareBtn{
     background-color: #A7A7A7;
 }
@@ -20,14 +12,7 @@
     background-color: #A7A7A7;
 }
 
-#detailWindow{
-    border-color: #6C6C6C;
-}
-#white{
-    border-color: #6C6C6C;
-}
-
-#clearContainer{
+#detailWindow, #white, #clearContainer, #logListRoot {
     border-color: #6C6C6C;
 }
 
@@ -36,8 +21,8 @@
     border-color: #6C6C6C;
 }
 
-#logListRoot{
-    border-color: #6C6C6C;
+.separator {
+    background-color: #6C6C6C;
 }
 
 #dropDown{
@@ -54,10 +39,6 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");
 }
 
-.running,
-.building {
-    background-color: rgba(0,0,0,.5);
-}
 .building #buildImage,
 .running #buildImage {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/PlayButton_Active_L.png");

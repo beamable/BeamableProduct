@@ -112,25 +112,17 @@ namespace Beamable.Editor.UI.Components
 
 					if (deleteManifestDecision)
 					{
-						EditorAPI.Instance.Then(api =>
-						{
-							api.ContentIO.ArchiveManifests(manifest.DisplayName);
-						});
+						var api = BeamEditorContext.Default;
+						api.ContentIO.ArchiveManifests(manifest.DisplayName);
 					}
 				}
 			};
 
 			content.OnElementSelected += (manifest) =>
 			{
-				EditorAPI.Instance.Then(api =>
-				{
-					if (manifest != null)
-					{
-						api.ContentIO.SwitchManifest(manifest.DisplayName);
-					}
-
-					wnd.Close();
-				});
+				var api = BeamEditorContext.Default;
+				if (manifest != null) api.ContentIO.SwitchManifest(manifest.DisplayName);
+				wnd.Close();
 			};
 			content.Refresh();
 		}

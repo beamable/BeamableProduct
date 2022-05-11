@@ -139,7 +139,7 @@ namespace TestingTool.Scripts.Editor
             _config = TestScenariosSettingsBuilder.GetConfig();
             if (_config == null || !_config.IsTestingToolEnabled)
                 return;
-            _testScenariosRuntime = Resources.Load<TestScenariosRuntime>(Directories.TEST_SCENARIOS_RUNTIME_ASSET_PATH);
+            _testScenariosRuntime = Resources.Load<TestScenariosRuntime>(FileNames.TEST_SCENARIOS_RUNTIME);
             Validate();
             _testScenariosRuntime.ResetForBuild();
         }
@@ -164,10 +164,12 @@ namespace TestingTool.Scripts.Editor
         }
         private bool IsAnySceneCorrupted(out string corruptedSceneName)
         {
+	        var buildScenes = EditorBuildSettings.scenes.ToList();
             corruptedSceneName = string.Empty;
             foreach (var testScenario in _testScenariosRuntime.Scenarios)
             {
-                if (!Application.CanStreamedLevelBeLoaded(testScenario.SceneName))
+	            var index = buildScenes.FindIndex(scene => scene.path.Contains(testScenario.SceneName));
+	            if (index < 0 || !Application.CanStreamedLevelBeLoaded(index))
                 {
                     corruptedSceneName = testScenario.SceneName;
                     return true;

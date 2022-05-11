@@ -47,6 +47,7 @@ ScrollView #unity-content-container {
 #main > * {
     top:30px;
     flex-grow: 1;
+    overflow: hidden;
 }
 
 #debugButtons {

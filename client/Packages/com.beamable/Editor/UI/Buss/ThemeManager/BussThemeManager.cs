@@ -60,13 +60,11 @@ namespace Beamable.Editor.UI.Buss
 			root.Clear();
 			_styleCardsVisualElements.Clear();
 			_addStyleButton = null;
-
 			VisualElement mainVisualElement = new VisualElement();
 			mainVisualElement.name = "themeManagerContainer";
 
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
-
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
@@ -88,11 +86,15 @@ namespace Beamable.Editor.UI.Buss
 			_selectedBussElement.Setup(_navigationWindow);
 			mainVisualElement.Add(_selectedBussElement);
 
+			_stylesGroup = new BussStyleListVisualElement();
+
+			var inlineStyle = new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);
+			mainVisualElement.Add(inlineStyle);
+			inlineStyle.Init();
+
 			_scrollView = new ScrollView();
 			_scrollView.name = "themeManagerContainerScrollView";
 			mainVisualElement.Add(_scrollView);
-
-			_stylesGroup = new BussStyleListVisualElement();
 			_stylesGroup.name = "stylesGroup";
 			_stylesGroup.Filter = CardFilter;
 			_scrollView.Add(_stylesGroup);
@@ -137,7 +139,7 @@ namespace Beamable.Editor.UI.Buss
 
 			if (selectedElement == null || !_filterMode) return true;
 
-			return (styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false);
+			return styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
 		}
 
 		private void RefreshStyleSheets()
@@ -169,7 +171,6 @@ namespace Beamable.Editor.UI.Buss
 				_scrollView.MarkDirtyRepaint();
 			};
 		}
-
 
 		private void OnFocus()
 		{

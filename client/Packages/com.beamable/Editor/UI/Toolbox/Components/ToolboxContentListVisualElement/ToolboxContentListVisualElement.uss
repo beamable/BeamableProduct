@@ -42,9 +42,13 @@ ScrollView {
     font-size: 12px;
     margin-left: 10px;
 }
-#description{
+
+#description {
+    padding-left: 2px;
+    padding-rigth: 2px;
+    margin-bottom: 0px;
+    margin-top: 0px;
     font-size: 10px;
-    top:-5px;
     margin-left: 10px;
 }
 

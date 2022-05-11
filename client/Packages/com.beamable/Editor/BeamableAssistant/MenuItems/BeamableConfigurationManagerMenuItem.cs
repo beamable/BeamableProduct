@@ -13,7 +13,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableConfigurationManagerMenuItem : BeamableAssistantMenuItem
 	{
-		public override void OnItemClicked(EditorAPI beamableApi)
+		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
 			ConfigManager.Initialize(forceCreation: true);
 			SettingsService.OpenProjectSettings("Project/Beamable");

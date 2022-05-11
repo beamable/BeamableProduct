@@ -57,6 +57,16 @@ namespace Beamable.Common
 					public const string EVENT_PROVIDER_INITIALIZED = "Event provider initialized";
 					public const string STORAGE_READY = "Waiting for connections";
 				}
+
+				public static class Dialogs
+				{
+					public static class RealmSwitchDialog
+					{
+						public const string TITLE = "Microservice Manager";
+						public const string MESSAGE = "Due to the realm change, all running services are stopped";
+						public const string OK = "Ok";
+					}
+				}
 			}
 		}
 	}

@@ -8,7 +8,6 @@ using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Experimental.Calendars
 {
-	[HelpURL(Documentations.URL_DOC_CALENDAR_FLOW)]
 	public class CalendarBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;
@@ -23,7 +22,9 @@ namespace Beamable.Experimental.Calendars
 		public async void Start()
 		{
 			var beam = await API.Instance;
+#pragma warning disable CS0618
 			beam.Experimental.CalendarService.Subscribe(Calendar.Id, resp =>
+#pragma warning restore CS0618
 			{
 				view = resp;
 				updateUI();
@@ -76,7 +77,9 @@ namespace Beamable.Experimental.Calendars
 		public async void onClaim()
 		{
 			var beam = await API.Instance;
+#pragma warning disable CS0618
 			await beam.Experimental.CalendarService.Claim(Calendar.Id);
+#pragma warning restore CS0618
 		}
 	}
 }

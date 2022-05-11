@@ -11,7 +11,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableMicroserviceManagerMenuItem : BeamableAssistantMenuItem
 	{
-		public override void OnItemClicked(EditorAPI beamableApi)
+		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
 			Microservice.UI.MicroserviceWindow.Init();
 		}

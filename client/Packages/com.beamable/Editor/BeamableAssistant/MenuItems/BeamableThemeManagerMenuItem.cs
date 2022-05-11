@@ -12,7 +12,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableThemeManagerMenuItem : BeamableAssistantMenuItem
 	{
-		public override void OnItemClicked(EditorAPI beamableApi)
+		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
 			BussThemeManager.Init();
 		}

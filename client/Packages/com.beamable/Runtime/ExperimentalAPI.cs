@@ -3,6 +3,7 @@ using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
+using System;
 
 namespace Beamable.Experimental
 {
@@ -40,8 +41,9 @@ namespace Beamable.Experimental
 		SocialService SocialService { get; }
 
 		/// <summary>
-		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/calendars-feature">Calendars</a> feature.
+		/// This feature is no longer supported.
 		/// </summary>
+		[Obsolete("This feature is no longer supported.")]
 		CalendarsService CalendarService { get; }
 	}
 }

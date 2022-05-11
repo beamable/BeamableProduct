@@ -25,6 +25,7 @@ namespace Beamable.UI.Buss
 		public BussStyle Style { get; } = new BussStyle();
 
 		public event Action StyleSheetsChanged;
+		public event Action StyleRecalculated;
 		public event Action Validate;
 
 		public string Id
@@ -247,6 +248,8 @@ namespace Beamable.UI.Buss
 		{
 			BussConfiguration.UseConfig(c => c.RecalculateStyle(this));
 			ApplyStyle();
+
+			StyleRecalculated?.Invoke();
 
 			foreach (BussElement child in Children)
 			{
