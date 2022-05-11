@@ -45,6 +45,7 @@ namespace Beamable.Editor.Content.Components
 		private TagListVisualElement _tagListVisualElement;
 		private object _tagsLabel;
 		private string _nameBackup;
+		private bool _isContentNameInEditMode;
 
 		public ContentVisualElement() : base(nameof(ContentVisualElement)) { }
 
@@ -210,8 +211,10 @@ namespace Beamable.Editor.Content.Components
 
 		private void CommitName()
 		{
-			//if (string.Equals(_nameBackup, _nameTextField.value)) return;
-
+			if (_isContentNameInEditMode)
+				return;
+			_isContentNameInEditMode = true;
+			
 			_nameTextField.SelectRange(0, 0);
 			_nameTextField.SetEnabled(false);
 			//Invokes internal event
@@ -227,6 +230,7 @@ namespace Beamable.Editor.Content.Components
 			finally
 			{
 				_nameTextField.Blur();
+				_isContentNameInEditMode = false;
 			}
 		}
 
