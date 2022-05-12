@@ -34,6 +34,14 @@ namespace Beamable.Experimental.Api.Sim
 			_requester = requester;
 		}
 
+		/// <summary>
+		/// Report a set of events to the relay.
+		/// </summary>
+		/// <param name="roomId">The relay room id </param>
+		/// <param name="request">A <see cref="GameRelaySyncMsg"/></param>
+		/// <returns>
+		/// A <see cref="Promise"/> containing a <see cref="GameRelaySyncMsg"/> will the messages that other players generatoed
+		/// </returns>
 		public Promise<GameRelaySyncMsg> Sync(string roomId, GameRelaySyncMsg request)
 		{
 			return _requester.Request<GameRelaySyncMsg>(
@@ -152,7 +160,14 @@ namespace Beamable.Experimental.Api.Sim
 	[Serializable]
 	public class GameRelaySyncMsg
 	{
+		/// <summary>
+		/// The simulation frame number
+		/// </summary>
 		public long t;
+
+		/// <summary>
+		/// A set of <see cref="GameRelayEvent"/>
+		/// </summary>
 		public List<GameRelayEvent> events = new List<GameRelayEvent>();
 	}
 
@@ -170,9 +185,24 @@ namespace Beamable.Experimental.Api.Sim
 	[Serializable]
 	public class GameRelayEvent
 	{
+		/// <summary>
+		/// The simulation frame number for the event
+		/// </summary>
 		public long t;
+
+		/// <summary>
+		/// The type of event
+		/// </summary>
 		public string type;
+
+		/// <summary>
+		/// The gamertag that spawned this event
+		/// </summary>
 		public long origin;
+
+		/// <summary>
+		/// The body of the event
+		/// </summary>
 		public string body;
 
 		public void FromSimEvent(SimEvent evt)

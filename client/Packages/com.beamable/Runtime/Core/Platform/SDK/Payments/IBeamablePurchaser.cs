@@ -17,6 +17,12 @@ namespace Beamable.Api.Payments
 	/// </summary>
 	public interface IBeamablePurchaser
 	{
+
+		/// <summary>
+		/// Begin initialization of Beamable purchasing.
+		/// </summary>
+		/// <param name="provider">A <see cref="IDependencyProvider"/> that will be used to grant Beamable dependencies to the purchaser.</param>
+		/// <returns>A <see cref="Promise"/> representing the completion of IAP initialization.</returns>
 		Promise<Unit> Initialize(IDependencyProvider provider = null);
 
 		/// <summary>

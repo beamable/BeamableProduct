@@ -81,10 +81,8 @@ namespace Beamable.Editor.UI.Model
 
 		protected void OpenRemoteMongo()
 		{
-			EditorAPI.Instance.Then(b =>
-			{
-				UnityEngine.Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.Cid}&pid={b.Pid}&token={b.Token.Token}");
-			});
+			var b = BeamEditorContext.Default;
+			Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.CurrentCustomer.Cid}&pid={b.CurrentRealm.Pid}&token={b.Requester.Token.Token}");
 		}
 
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)

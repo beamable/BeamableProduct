@@ -62,7 +62,7 @@ namespace Beamable.Editor.UI.Components
 		public LoadingIndicatorVisualElement SetPromise<T>(Promise<T> promise, params VisualElement[] coverElements)
 		{
 			_promise = promise;
-			RemoveFromClassList("hide");
+			RemoveFromClassList("invisible");
 
 			foreach (var coverElement in coverElements)
 			{
@@ -70,7 +70,7 @@ namespace Beamable.Editor.UI.Components
 			}
 			promise.Then(_ =>
 			{
-				AddToClassList("hide");
+				AddToClassList("invisible");
 				foreach (var coverElement in coverElements)
 				{
 					coverElement?.RemoveFromClassList("cover");

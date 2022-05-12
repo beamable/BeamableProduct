@@ -12,7 +12,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableContentManagerMenuItem : BeamableAssistantMenuItem
 	{
-		public override async void OnItemClicked(EditorAPI beamableApi)
+		public override async void OnItemClicked(BeamEditorContext beamableApi)
 		{
 			await ContentManagerWindow.Init();
 		}

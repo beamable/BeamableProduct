@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
+using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -425,6 +426,76 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          Assert.IsTrue(ms.HasInitialized);
 
          testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithVector2Int_AsParameter", 1, 0, new Vector2Int(10, 20)));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
+      [Test]
+      [NonParallelizable]
+      public async Task Call_LeaderboardCreate_FromTemplate()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         var version = "623";
+         var contentId = "leaderboards.test";
+
+         var leaderboardTemplate =
+            $"{{\"id\":\"{contentId}\",\"version\":\"{version}\",\"properties\":{{\"permissions\":{{\"data\":{{\"write_self\":true}}}}}}}}";
+         var expectedLeaderboardBody = "{\"permissions\": { \"write_self\": true}}";
+         var expectedJObject = JObject.Parse(expectedLeaderboardBody);
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddInitialContentMessageHandler(-5, new ContentReference
+               {
+                  id = contentId,
+                  version = version,
+                  visibility = Constants.Features.Content.PUBLIC
+               })
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithBody<JObject>(n => JToken.DeepEquals(expectedJObject, n)),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce());
+         }), new TestContentResolver(x => Task.FromResult(leaderboardTemplate)));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+         
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "LeaderboardCreateFromTemplateCallableTest", 1, 0, "leaderboard", contentId));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
+      [Test]
+      [NonParallelizable]
+      public async Task Call_LeaderboardCreate_FromCode()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+
+         var expectedLeaderboardBody = "{\"permissions\": { \"write_self\": true}}";
+         var expectedJObject = JObject.Parse(expectedLeaderboardBody);
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithBody<JObject>(n => JToken.DeepEquals(expectedJObject, n)),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce());
+         }));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+         
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "LeaderboardCreateFromCodeCallableTest", 1, 0, "leaderboard"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);

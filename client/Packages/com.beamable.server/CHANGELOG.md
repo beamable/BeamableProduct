@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [Unrelased]
+
+## [1.2.0]
+### Added
+- Support for GUID based assembly references.
+
+### Fixed
+- Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
+- Removed Microstorage related null reference errors on Unity startup.
+- `IMicroserviceNotificationsApi` can now send strings with spaces in them for messages.
+- `IMicroserviceLeaderboardsApi` will now respect `HasValue` flag of `Optional<T>` derived types in all cases.
+
 ## [1.1.4]
 ### Fixed
 - Thrown `MicroserviceExceptions` from `[ClientCallable]` methods will result in an appropriate error response.
@@ -16,7 +29,8 @@ no changes
 - boolean types are now supported in swagger documentation
 
 ## [1.1.1]
-no changes
+### Changed
+- Realm switch now triggers `Microservice Manager` to stop all active services. Guarantees the correct service version association with realm.
 
 ## [1.1.0]
 ### Added

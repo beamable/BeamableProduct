@@ -120,14 +120,31 @@ namespace Beamable.Common.Api.Social
 	[Serializable]
 	public class SocialList
 	{
+		/// <summary>
+		/// A list of the player's <see cref="Friend"/>s.
+		/// </summary>
 		public List<Friend> friends;
+
+		/// <summary>
+		/// A list of the player's blocked <see cref="Player"/>s.
+		/// </summary>
 		public List<Player> blocked;
 
+		/// <summary>
+		/// Check if a given gamertag is in the <see cref="blocked"/> list.
+		/// </summary>
+		/// <param name="dbid">a gamertag</param>
+		/// <returns>true if the given gamertag is in the <see cref="blocked"/> list</returns>
 		public bool IsBlocked(long dbid)
 		{
 			return blocked.Find(p => p.playerId == dbid.ToString()) != null;
 		}
 
+		/// <summary>
+		/// Check if a given gamertag is in the <see cref="friends"/> list.
+		/// </summary>
+		/// <param name="dbid">a gamertag</param>
+		/// <returns>true if the given gamertag is in the <see cref="friends"/> list</returns>
 		public bool IsFriend(long dbid)
 		{
 			return friends.Find(f => f.playerId == dbid.ToString()) != null;
@@ -137,15 +154,29 @@ namespace Beamable.Common.Api.Social
 	[Serializable]
 	public class Friend
 	{
+		/// <summary>
+		/// The gamertag of this friend
+		/// </summary>
 		public string playerId;
+
+		/// <summary>
+		/// Where the friend was discovered. Use the <see cref="Source"/> property for a type safe source.
+		/// </summary>
 		public string source;
 
+		/// <summary>
+		/// Where the friend was discovered. This value is derived from the <see cref="source"/> field, but should
+		/// be Facebook, or Native.
+		/// </summary>
 		public FriendSource Source => (FriendSource)Enum.Parse(typeof(FriendSource), source, ignoreCase: true);
 	}
 
 	[Serializable]
 	public class Player
 	{
+		/// <summary>
+		/// The gamertag of this player
+		/// </summary>
 		public string playerId;
 	}
 
@@ -158,6 +189,9 @@ namespace Beamable.Common.Api.Social
 	[Serializable]
 	public class FriendStatus
 	{
+		/// <summary>
+		/// true if the current player has blocked this player.
+		/// </summary>
 		public bool isBlocked;
 	}
 

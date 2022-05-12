@@ -1,10 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Common.Api.Events
 {
 	public interface IEventsApi : ISupportsGet<EventsGetResponse>
 	{
+		/// <summary>
+		/// Claim the earned rewards for an event.
+		/// This method will throw an exception if the player has never submitted a score to the event.
+		/// </summary>
+		/// <param name="eventId">The runtime id of the event you'd like to claim</param>
+		/// <returns>A promise representing the rewards the player earned</returns>
 		Promise<EventClaimResponse> Claim(string eventId);
 
 		/// <summary>
@@ -35,6 +42,23 @@ namespace Beamable.Common.Api.Events
 			{
 				view.Init();
 			}
+		}
+	}
+
+	public static class EventViewListExtensions
+	{
+		/// <summary>
+		/// Try to find the first event with the requested id in a set of <see cref="EventView"/>.
+		/// If no event exists, the method will return false, and the out parameter will be null.
+		/// </summary>
+		/// <param name="events">some set of events</param>
+		/// <param name="id">the runtime id of the event you are looking for</param>
+		/// <param name="eventView">an out parameter that will be set to the found event, or set to null if no match is found.</param>
+		/// <returns>True if the event is found, false otherwise.</returns>
+		public static bool TryFindEventById(this IEnumerable<EventView> events, string id, out EventView eventView)
+		{
+			eventView = events.FirstOrDefault(e => string.Equals(e?.id, id));
+			return eventView != null;
 		}
 	}
 

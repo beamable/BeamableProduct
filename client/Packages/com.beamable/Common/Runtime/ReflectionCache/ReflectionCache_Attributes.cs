@@ -61,7 +61,7 @@ namespace Beamable.Common.Reflection
 		/// <summary>
 		/// Mask for all possible <see cref="MemberTypes"/> that can be "Members" of declared classes/structs.
 		/// </summary>
-		private const MemberTypes INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES = MemberTypes.Constructor |
+		public const MemberTypes INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES = MemberTypes.Constructor |
 																			  MemberTypes.Event |
 																			  MemberTypes.Field |
 																			  MemberTypes.Method |
@@ -106,7 +106,7 @@ namespace Beamable.Common.Reflection
 #if UNITY_EDITOR
 			if (!INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES.ContainsAnyFlag(info.MemberType) && info.GetCustomAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute)) == null)
 				throw new ArgumentException(
-					$"Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause. member=[{info.MemberType}] type=[{info.ReflectedType}] attr=[{attribute}]");
+					$"Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause. member=[{info.MemberType}] name=[{info.Name}] type=[{info.ReflectedType}] attr=[{attribute}]");
 #endif
 
 			return attribute != null;
@@ -220,10 +220,10 @@ namespace Beamable.Common.Reflection
 
 					// For each declared member, check if they have the current attribute of interest -- if they do, add them to the found attribute list.
 					// In this step we catch every member with the attribute --- individual systems are welcome to parse and yield errors at a later step.
-					foreach (var memberInfo in type.GetMembers(BindingFlags.Public |
+					foreach (var memberInfo in type.FindMembers(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES, BindingFlags.Public |
 															   BindingFlags.NonPublic |
 															   BindingFlags.Instance |
-															   BindingFlags.Static))
+															   BindingFlags.Static, null, null))
 					{
 						if (attributeOfInterest.TryGetFromMemberInfo(memberInfo, out var attribute))
 							foundAttributes[attributeOfInterest].Add(new MemberAttribute(memberInfo, attribute));

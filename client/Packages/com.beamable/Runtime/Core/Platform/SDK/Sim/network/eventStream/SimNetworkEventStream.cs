@@ -20,8 +20,12 @@ namespace Beamable.Experimental.Api.Sim
 	{
 		private static long REQ_FREQ_MS = 1000;
 
+		/// <summary>
+		/// The gamertag of the current player
+		/// </summary>
 		public string ClientId { get; private set; }
 		public bool Ready { get; private set; }
+
 		private List<SimEvent> _eventQueue = new List<SimEvent>();
 		private List<SimFrame> _syncFrames = new List<SimFrame>();
 		private List<SimFrame> _emptyFrames = new List<SimFrame>();

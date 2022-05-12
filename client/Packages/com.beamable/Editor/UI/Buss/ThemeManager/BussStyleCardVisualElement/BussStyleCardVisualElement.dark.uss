@@ -2,10 +2,6 @@
     color: rgb(255, 255, 255);
 }
 
-#selectorLabelParent > BussSelectorLabelVisualElement > #root > TextElement {
-    color: rgba(255, 255, 255, 1);
-}
-
 #colorBlock {
     background-color: rgb(144,144,144);
 }

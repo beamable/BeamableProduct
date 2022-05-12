@@ -6,6 +6,10 @@ namespace Beamable.Api
 {
 	public interface IPubnubNotificationService
 	{
+		/// <summary>
+		/// Get the pubnub subscription details.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> containing a <see cref="SubscriberDetailsResponse"/></returns>
 		Promise<SubscriberDetailsResponse> GetSubscriberDetails();
 	}
 

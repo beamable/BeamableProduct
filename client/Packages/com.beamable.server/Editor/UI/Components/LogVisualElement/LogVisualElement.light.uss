@@ -27,16 +27,7 @@
     background-color: #c3c3c3;
 }
 
-#detailWindow {
-    border-color: #9b9b9b;
-
-}
-
-#white {
-    border-color: #9b9b9b;
-}
-
-#clearContainer {
+#detailWindow, #logWindowHeader, #white, #clearContainer, #logListRoot {
     border-color: #9b9b9b;
 }
 
@@ -46,10 +37,6 @@
 
 .confirmBtn {
     background-color: #c3c3c3;
-    border-color: #9b9b9b;
-}
-
-#logListRoot {
     border-color: #9b9b9b;
 }
 

@@ -56,6 +56,8 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+
+			tooltip = Tooltips.Common.CHANGE_REALM;
 			Model = new RealmModel();
 			Model.Initialize();
 			_realmButton = Root.Q<Button>("realmButton");
@@ -120,7 +122,8 @@ namespace Beamable.Editor.UI.Components
 
 			content.OnElementSelected += (realm) =>
 			{
-				EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); }); });
+				var beamable = BeamEditorContext.Default;
+				beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); });
 			};
 			content.Refresh();
 		}

@@ -1,0 +1,9 @@
+.unity-list-view__empty-label {
+    display: none;
+}
+
+.invisible {
+    position: absolute;
+    left: 0px;
+    display: none;
+}

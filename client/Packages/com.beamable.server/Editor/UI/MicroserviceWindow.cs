@@ -1,15 +1,3 @@
-using Beamable.Common;
-using Beamable.Editor.Login.UI;
-using Beamable.Editor.Microservice.UI.Components;
-using Beamable.Editor.UI.Components;
-using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Server.Editor.UI.Components;
-using System;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,33 +5,49 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using Beamable.Common;
+using Beamable.Editor.Microservice.UI.Components;
+using Beamable.Editor.Modules.Account;
+using Beamable.Editor.Realms;
+using Beamable.Editor.UI;
+using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
+using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI.Components;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
 using static Beamable.Common.Constants;
-
+using static Beamable.Common.Constants.Features.Services.Dialogs;
 
 namespace Beamable.Editor.Microservice.UI
 {
-	public class MicroserviceWindow : CommandRunnerWindow, ISerializationCallbackReceiver
+	public class MicroserviceWindow : BeamEditorWindow<MicroserviceWindow>
 	{
+		static MicroserviceWindow()
+		{
+			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+			WindowDefaultConfig = new BeamEditorWindowInitConfig()
+			{
+				Title = MenuItems.Windows.Names.MICROSERVICES_MANAGER,
+				FocusOnShow = false,
+				DockPreferenceTypeName = inspector.AssemblyQualifiedName,
+				RequireLoggedUser = true,
+			};
+
+			CustomDelayClause = () => !MicroserviceEditor.IsInitialized;
+		}
+
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.MICROSERVICES_MANAGER,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
-		public static async void Init()
-		{
-			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-			await LoginWindow.CheckLogin(inspector);
+		public static async void Init() => _ = await GetFullyInitializedWindow();
 
-			await new CheckDockerCommand().Start(null).Then(installed =>
-			{
-				var instanceWnd = Instance;
-				instanceWnd.Focus();
-			});
-
-		}
-
-		private readonly Vector2 MIN_SIZE = new Vector2(450, 200);
+		private static readonly Vector2 MIN_SIZE = new Vector2(450, 200);
 
 		private VisualElement _windowRoot;
 		private ActionBarVisualElement _actionBarVisualElement;
@@ -54,75 +58,58 @@ namespace Beamable.Editor.Microservice.UI
 		[SerializeField]
 		public MicroservicesDataModel Model;
 
-		private static MicroserviceWindow _instance;
 		private Promise<bool> checkDockerPromise;
 
-		public static MicroserviceWindow Instance
+		public void RefreshWindowContent()
 		{
-			get
+			checkDockerPromise = new CheckDockerCommand().StartAsync().Then(_ =>
 			{
-				if (_instance == null)
-				{
-					var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-					_instance = GetWindow<MicroserviceWindow>(MenuItems.Windows.Names.MICROSERVICES_MANAGER, false, inspector);
-					_instance.Show(true);
-				}
-				return _instance;
-			}
-			private set
-			{
-				if (value == null)
-				{
-					_instance = null;
-				}
-				else
-				{
-					var oldModel = _instance?.Model;
-					_instance = value;
-					_instance.Model = oldModel;
-				}
-			}
+				_microserviceBreadcrumbsVisualElement?.Refresh();
+				_actionBarVisualElement?.Refresh();
+				_microserviceContentVisualElement?.Refresh();
+			});
 		}
 
-
-#if UNITY_2019_3_OR_NEWER
-		public static bool IsInstantiated => _instance != null || HasOpenInstances<MicroserviceWindow>();
-#else
-		public static bool IsInstantiated => _instance != null;
-#endif
-
-		void CreateModel()
+		protected override async void Build()
 		{
-			if (Model == null)
-			{
-				Model = MicroservicesDataModel.Instance;
-			}
-			else
-			{
-				MicroservicesDataModel.Instance = Model;
-			}
-		}
+			checkDockerPromise = new CheckDockerCommand().StartAsync();
+			await checkDockerPromise;
 
-		void SetMinSize()
-		{
+			void OnUserChange(EditorUser _) => BuildWithContext();
+			void OnRealmChange(RealmView _) => _microserviceContentVisualElement?.StopAllServices(true, RealmSwitchDialog.TITLE, RealmSwitchDialog.MESSAGE, RealmSwitchDialog.OK);
+
+			ActiveContext.OnUserChange -= OnUserChange;
+			ActiveContext.OnUserChange += OnUserChange;
+
+			ActiveContext.OnRealmChange -= OnRealmChange;
+			ActiveContext.OnRealmChange += OnRealmChange;
+
+
+			// Set the min size for the window
 			minSize = MIN_SIZE;
+
+			// Create/Get the Model instance
+			// TODO: move this into the ActiveContext as a standalone system and remove all visual stuff from the model
+			if (Model == null)
+				Model = MicroservicesDataModel.Instance;
+			else
+				MicroservicesDataModel.Instance = Model;
+
+			SetForContent();
 		}
 
-		void SetForContent()
+		private void SetForContent()
 		{
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 
-			if (_windowRoot == null)
-			{
-				var uiAsset =
-					AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
-				_windowRoot = uiAsset.CloneTree();
-				_windowRoot.AddStyleSheet($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
-				_windowRoot.name = nameof(_windowRoot);
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
+			_windowRoot.name = nameof(_windowRoot);
 
-				root.Add(_windowRoot);
-			}
+			root.Add(_windowRoot);
 
 			bool localServicesAvailable = Model?.AllLocalServices != null;
 			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
@@ -176,10 +163,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this);
 
-			_actionBarVisualElement.OnRefreshButtonClicked += () =>
-			{
-				RefreshWindow(true);
-			};
+			_actionBarVisualElement.OnRefreshButtonClicked += RefreshWindowContent;
 
 			_actionBarVisualElement.OnStartAllClicked += () =>
 				_microserviceContentVisualElement.BuildAndStartAllMicroservices(_loadingBar);
@@ -197,7 +181,7 @@ namespace Beamable.Editor.Microservice.UI
 		private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
 		{
 			Model.Filter = filter;
-			Refresh();
+			RefreshWindowContent();
 		}
 
 		private void HideAllLoadingBars()
@@ -208,89 +192,12 @@ namespace Beamable.Editor.Microservice.UI
 			}
 		}
 
-		public void RefreshWindow(bool isHardRefresh)
-		{
-			if (isHardRefresh)
-			{
-				Instance.Refresh();
-			}
-			else
-			{
-				RefreshServer();
-			}
-		}
+		private void HandleDeploySuccess(ManifestModel model, int totalSteps) => RefreshWindowContent();
 
-		private void RefreshServer()
-		{
-			throw new NotImplementedException();
-		}
-
-
-		private void Refresh()
-		{
-			if (checkDockerPromise == null || checkDockerPromise.IsCompleted)
-			{
-				checkDockerPromise = new CheckDockerCommand().Start(null).Then(_ =>
-				{
-					_microserviceBreadcrumbsVisualElement?.Refresh();
-					_actionBarVisualElement?.Refresh();
-					_microserviceContentVisualElement?.Refresh();
-				});
-			}
-		}
-
-		private void OnEnable()
-		{
-			// if BeamEditor is not initialized, schedule a delay call to try again.
-			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
-			{
-				EditorApplication.delayCall += () =>
-				{
-					EditorAPI.Instance.Then(api =>
-					{
-						SetMinSize();
-						CreateModel();
-						SetForContent();
-					});
-				};
-				return;
-			}
-
-			EditorAPI.Instance.Then(api =>
-			{
-				SetMinSize();
-				CreateModel();
-				SetForContent();
-			});
-		}
-
-		private void HandleDeploySuccess(ManifestModel _model, int _totalSteps)
-		{
-			RefreshWindow(true);
-		}
-
-		private void HandleDeployFailed(ManifestModel _model, string reason)
+		private void HandleDeployFailed(ManifestModel model, string reason)
 		{
 			Debug.LogError(reason);
 			_microserviceContentVisualElement?.Refresh();
-		}
-
-		private void OnDestroy()
-		{
-			if (_instance)
-			{
-				_instance = null;
-			}
-		}
-
-		public void OnBeforeSerialize()
-		{
-
-		}
-
-		public void OnAfterDeserialize()
-		{
-			_instance = this;
 		}
 	}
 }

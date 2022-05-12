@@ -1,9 +1,11 @@
+using Beamable.Editor.Content.Helpers;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -57,6 +59,8 @@ namespace Beamable.Editor.Content.Components
 		private ContentItemDescriptor _selectedContentItemDescriptor;
 		private RealmButtonVisualElement _realmButton;
 		private ManifestButtonVisualElement _manifestButton;
+		private Button _contentSorterButton;
+		private Label _contentSorterTitle;
 
 		public BreadcrumbsVisualElement() : base(nameof(BreadcrumbsVisualElement))
 		{
@@ -73,15 +77,21 @@ namespace Beamable.Editor.Content.Components
 			_tokenListVisualElement = Root.Q<VisualElement>("tokenListVisualElement");
 			_counterLabel = Root.Q<Label>("counterLabel");
 
+			_contentSorterButton = Root.Q<Button>("contentSorter");
+			_contentSorterButton.clickable.clicked -= HandleContentSorterButton;
+			_contentSorterButton.clickable.clicked += HandleContentSorterButton;
+
+			_contentSorterTitle = Root.Q<Label>("contentSorterTitle");
+			_contentSorterTitle.text = ContentSorterHelper.GetContentSorterTitle(Model.CurrentSorter);
+
 			Model_OnSelectedContentTypeBranchChanged(new List<TreeViewItem>());
 			Model.OnSelectedContentTypeBranchChanged += Model_OnSelectedContentTypeBranchChanged;
 			//
-			Model_OnSelectedContentChanged(new List<ContentItemDescriptor>());
-			Model.OnSelectedContentChanged += Model_OnSelectedContentChanged; ;
+			HandleSelectedContentChanged(new List<ContentItemDescriptor>());
+			Model.OnSelectedContentChanged += HandleSelectedContentChanged; ;
 
 			//
 			Model.OnFilterChanged += Model_OnFilterChanged;
-
 		}
 
 		/// <summary>
@@ -169,7 +179,7 @@ namespace Beamable.Editor.Content.Components
 			RenderTokens();
 		}
 
-		private void Model_OnSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
+		private void HandleSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
 		{
 			// Set the Selected Content
 			_selectedContentItemDescriptor = contentItemDescriptors.FirstOrDefault();
@@ -179,6 +189,22 @@ namespace Beamable.Editor.Content.Components
 		public void RefreshManifestButton()
 		{
 			_manifestButton.RefreshButtonVisibility();
+		}
+
+		private void HandleContentSorterButton() => HandleContentSorterButton(_contentSorterButton.worldBound);
+
+		private void HandleContentSorterButton(Rect visualElementBounds)
+		{
+			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
+			var contentSorter = new ContentSorterDropdownVisualElement(Model);
+			contentSorter.Refresh();
+			var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, ContentSorterHelper.GetAllSorterOptions.Count * 25), contentSorter);
+			contentSorter.OnSortingChanged += (sorter, title) =>
+			{
+				_contentSorterTitle.text = title;
+				Model.SetSorter(sorter);
+				wnd.Close();
+			};
 		}
 	}
 }

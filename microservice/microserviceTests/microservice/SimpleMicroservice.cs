@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
 using Beamable.Server;
@@ -123,6 +124,27 @@ namespace microserviceTests.microservice
       {
          var template = await Services.Content.GetContent(templateBoardRef);
          await Services.Leaderboards.CreateLeaderboard(boardId, template);
+      }
+      
+      [ClientCallable]
+      public async Task LeaderboardCreateFromTemplateCallableTest(string boardId, string leaderboardContentId)
+      {
+         var link = new LeaderboardLink {Id = leaderboardContentId};
+         var template = await link.Resolve();
+         await Services.Leaderboards.CreateLeaderboard(boardId, template);
+      }
+      
+      [ClientCallable]
+      public async Task LeaderboardCreateFromCodeCallableTest(string boardId)
+      {
+         await Services.Leaderboards.CreateLeaderboard(boardId,
+            new OptionalInt(),
+            new OptionalLong(),
+            new OptionalBoolean(),
+            new OptionalCohortSettings(), 
+            new OptionalListString(),
+            new OptionalClientPermissions{HasValue = true, Value = new ClientPermissions{writeSelf = true}},
+            new OptionalLong());
       }
 
       [ClientCallable]

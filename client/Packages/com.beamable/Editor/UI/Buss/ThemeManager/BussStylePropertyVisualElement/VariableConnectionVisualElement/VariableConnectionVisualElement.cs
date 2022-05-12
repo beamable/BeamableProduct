@@ -111,7 +111,10 @@ namespace Beamable.Editor.UI.Components
 			var temp = _cachedProperty;
 			_cachedProperty = _propertyProvider.GetProperty();
 			_propertyProvider.SetProperty(temp);
-			_styleSheet.TriggerChange();
+			if (_styleSheet != null)
+			{
+				_styleSheet.TriggerChange();
+			}
 			AssetDatabase.SaveAssets();
 			OnConnectionChange?.Invoke();
 		}
@@ -136,7 +139,10 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				_variableDatabase.SetPropertyDirty(_styleSheet, _styleRule, _propertyProvider);
-				_styleSheet.TriggerChange();
+				if (_styleSheet != null)
+				{
+					_styleSheet.TriggerChange();
+				}
 
 				OnConnectionChange?.Invoke();
 			}
