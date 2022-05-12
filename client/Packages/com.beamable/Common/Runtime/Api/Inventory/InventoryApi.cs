@@ -274,6 +274,7 @@ namespace Beamable.Common.Api.Inventory
 			return GetCurrent(scope).FlatMap(view => ViewToItems<TContent>(view, idFilter));
 		}
 
+		[Obsolete]
 		public void GetLatestItems(ItemRef itemRef)
 		{
 

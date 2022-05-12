@@ -72,8 +72,9 @@ namespace Beamable.Editor.UI.Components
 
 		private void HandleAvailableManifestsChanged(List<ISearchableElement> ids)
 		{
-			_manyManifests = ids?.Count > 1;
-			_nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != DEFAULT_MANIFEST_ID;
+			var idsAmount = ids?.Count ?? 0;
+			_manyManifests = idsAmount > 1;
+			_nonDefaultManifest = idsAmount == 1 && ids[0].DisplayName != DEFAULT_MANIFEST_ID;
 
 			RefreshButtonVisibility();
 		}
@@ -86,7 +87,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void HandleManifestChanged(ISearchableElement manifest)
 		{
-			_manifestLabel.text = Model.Current != null ? Model.Current.DisplayName : null;
+			_manifestLabel.text = Model.Current?.DisplayName;
 		}
 
 		private void OnButtonClicked(Rect visualElementBounds)
@@ -112,25 +113,17 @@ namespace Beamable.Editor.UI.Components
 
 					if (deleteManifestDecision)
 					{
-						EditorAPI.Instance.Then(api =>
-						{
-							api.ContentIO.ArchiveManifests(manifest.DisplayName);
-						});
+						var api = BeamEditorContext.Default;
+						api.ContentIO.ArchiveManifests(manifest.DisplayName);
 					}
 				}
 			};
 
 			content.OnElementSelected += (manifest) =>
 			{
-				EditorAPI.Instance.Then(api =>
-				{
-					if (manifest != null)
-					{
-						api.ContentIO.SwitchManifest(manifest.DisplayName);
-					}
-
-					wnd.Close();
-				});
+				var api = BeamEditorContext.Default;
+				if (manifest != null) api.ContentIO.SwitchManifest(manifest.DisplayName);
+				wnd.Close();
 			};
 			content.Refresh();
 		}

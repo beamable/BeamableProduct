@@ -7,12 +7,21 @@
 		public const string BEAMABLE_DOCS_WEBSITE = "docs.beamable.com";
 		public const string BEAMABLE_ASSET_GROUP = "Beamable Assets";
 
+		public const int SYSTEM_DEPENDENCY_ORDER = -1000;
+
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
 			public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
 			public const string OPEN = "Open";
 		}
+
+		public static class Environment
+		{
+			public const string BUILD__SDK__VERSION__STRING = "BUILD__SDK__VERSION__STRING";
+			public const string UNITY__VSP__UID = "UNITY__VSP__UID";
+		}
+
 		public static class Directories
 		{
 			public const string BEAMABLE_ASSETS = "Assets/Beamable";

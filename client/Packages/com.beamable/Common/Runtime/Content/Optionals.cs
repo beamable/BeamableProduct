@@ -100,7 +100,14 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalBoolean : Optional<bool> { }
+	public class OptionalValue<T> : Optional<T> where T : struct
+	{
+		public static implicit operator T?(OptionalValue<T> option) => option?.HasValue == true ? (T?)option.Value : null;
+	}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalBoolean : OptionalValue<bool> { }
 
 	public static class OptionalBooleanExtensions
 	{
@@ -112,15 +119,15 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalInt : Optional<int> { }
+	public class OptionalInt : OptionalValue<int> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLong : Optional<long> { }
+	public class OptionalLong : OptionalValue<long> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalDouble : Optional<double> { }
+	public class OptionalDouble : OptionalValue<double> { }
 
 	[System.Serializable]
 	[Agnostic]

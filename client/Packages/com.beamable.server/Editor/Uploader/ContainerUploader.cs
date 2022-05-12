@@ -39,13 +39,13 @@ namespace Beamable.Server.Editor.Uploader
 		private long _partsCompleted;
 		private long _partsAmount;
 
-		public ContainerUploader(EditorAPI api, ContainerUploadHarness harness, MicroserviceDescriptor descriptor, string imageId)
+		public ContainerUploader(BeamEditorContext api, ContainerUploadHarness harness, MicroserviceDescriptor descriptor, string imageId)
 		{
 			_client = new HttpClient();
-			_client.DefaultRequestHeaders.Add("x-ks-clientid", api.CustomerView.Cid);
-			_client.DefaultRequestHeaders.Add("x-ks-projectid", api.Pid);
-			_client.DefaultRequestHeaders.Add("x-ks-token", api.Token.Token);
-			var serviceUniqueName = GetHash($"{api.CustomerView.Cid}_{api.ProductionRealm.Pid}_{descriptor.Name}").Substring(0, 30);
+			_client.DefaultRequestHeaders.Add("x-ks-clientid", api.CurrentCustomer.Cid);
+			_client.DefaultRequestHeaders.Add("x-ks-projectid", api.CurrentRealm.Pid);
+			_client.DefaultRequestHeaders.Add("x-ks-token", api.Requester.Token.Token);
+			var serviceUniqueName = GetHash($"{api.CurrentCustomer.Cid}_{api.ProductionRealm.Pid}_{descriptor.Name}").Substring(0, 30);
 			_uploadBaseUri = $"{BeamableEnvironment.DockerRegistryUrl}{serviceUniqueName}";
 			_sha256 = SHA256.Create();
 			_harness = harness;

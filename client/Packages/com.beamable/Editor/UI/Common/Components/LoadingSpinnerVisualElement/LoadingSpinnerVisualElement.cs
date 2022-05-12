@@ -63,15 +63,15 @@ namespace Beamable.Editor.UI.Components
 
 		void Update()
 		{
-
 			var time = EditorApplication.timeSinceStartup;
 			var diff = (float)(time - _lastTime);
 			_lastTime = time;
-
 			Quaternion rot = Quaternion.Euler(0, 0, Speed);
-			var targetPos = new Vector3(HalfSize, HalfSize, 0);
 
+#if !UNITY_2021_2_OR_NEWER
+			var targetPos = new Vector3(HalfSize, HalfSize, 0);
 			transform.position = rot * (transform.position - targetPos) + targetPos;
+#endif
 			transform.rotation = (rot * transform.rotation).normalized;
 
 #if UNITY_2018
