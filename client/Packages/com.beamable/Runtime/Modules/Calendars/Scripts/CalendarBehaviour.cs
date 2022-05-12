@@ -8,7 +8,6 @@ using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Experimental.Calendars
 {
-	[HelpURL(Documentations.URL_DOC_CALENDAR_FLOW)]
 	public class CalendarBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;
