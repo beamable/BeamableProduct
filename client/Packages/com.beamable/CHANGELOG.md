@@ -45,10 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account management will no longer log an error after pressing change password button more than once.
 - Content Manager no longer logs inaccurate warning after renaming content.
 - Notification handling for multiple `BeamContext` instances.
-- Documentation links no longer direct to missing web pages.
 
 ### Removed
 - Unity 2018 LTS support.
+
+## [1.1.4]
+### Fixed
+- Documentation links no longer direct to missing web pages.
+
+## [1.1.3]
+no changes
 
 ## [1.1.2]
 ### Fixed
