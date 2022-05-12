@@ -72,8 +72,9 @@ namespace Beamable.Editor.UI.Components
 
 		private void HandleAvailableManifestsChanged(List<ISearchableElement> ids)
 		{
-			_manyManifests = ids?.Count > 1;
-			_nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != DEFAULT_MANIFEST_ID;
+			var idsAmount = ids?.Count ?? 0;
+			_manyManifests = idsAmount > 1;
+			_nonDefaultManifest = idsAmount == 1 && ids[0].DisplayName != DEFAULT_MANIFEST_ID;
 
 			RefreshButtonVisibility();
 		}
@@ -86,7 +87,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void HandleManifestChanged(ISearchableElement manifest)
 		{
-			_manifestLabel.text = Model.Current != null ? Model.Current.DisplayName : null;
+			_manifestLabel.text = Model.Current?.DisplayName;
 		}
 
 		private void OnButtonClicked(Rect visualElementBounds)

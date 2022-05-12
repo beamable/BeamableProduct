@@ -61,7 +61,6 @@ namespace Beamable.Editor.Content
 			if (ActiveContext == null) return;
 
 			_actionBarVisualElement?.RefreshPublishDropdownVisibility();
-			_explorerElement?.RefreshManifestButton();
 		}
 
 
@@ -86,10 +85,9 @@ namespace Beamable.Editor.Content
 			ContentIO.OnManifestChanged -= OnManifestChanged;
 		}
 
-		private void HandleRealmChange(RealmView realm) => Refresh();
+		private void HandleRealmChange(RealmView realm) => EditorApplication.delayCall += Refresh;
 		private void HandleUserChange(User user) => Refresh();
 		private void OnManifestChanged(string manifestId) => SoftReset();
-
 
 		public void Refresh()
 		{
