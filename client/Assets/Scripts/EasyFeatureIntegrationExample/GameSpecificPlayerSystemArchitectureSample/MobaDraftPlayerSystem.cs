@@ -115,7 +115,7 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
                 Rules = (DraftSimType)draftSimType;
                 
                 MatchId = matchId;
-                AcceptanceState = new MatchAcceptance() { MatchId = matchId };
+                AcceptanceState = new MatchAcceptance() { MatchId = matchId, AcceptedPlayers = new bool[Rules.TotalNumberOfDraftPicks], CurrentState = MatchAcceptanceState.Accepting, AcceptedPlayerCount = -1, };
                 DraftState = new MatchDraft() { MatchId = matchId, CurrentPickIdx = -1 };
 
                 CurrentDraftState = DraftStates.AcceptDecline;
@@ -123,37 +123,47 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
                 SelectableCharIds = selectableCharacters;
             });
             
-            _notificationService.Subscribe(MatchAcceptance.NOTIFICATION_MATCH_READY, OnMatchReadyToStartHandler);
-            _notificationService.Subscribe(MatchAcceptance.NOTIFICATION_MATCH_DECLINED, OnMatchDeclinedHandler);
+            _notificationService.Subscribe<MatchAcceptance>(MatchAcceptance.NOTIFICATION_MATCH_READY, OnMatchReadyToStart);
+            _notificationService.Subscribe<MatchAcceptance>(MatchAcceptance.NOTIFICATION_MATCH_DECLINED, OnMatchDeclined);
         }
 
-        private void OnMatchReadyToStartHandler(object o) => OnMatchReadyToStart((MatchAcceptance)o);
         private void OnMatchReadyToStart(MatchAcceptance readyAcceptance)
         {
-	        AcceptanceState = readyAcceptance;
-	        
+	        if (AcceptanceState.ExpectedPlayers == null)
+		        AcceptanceState = readyAcceptance;
+	        else
+		        MergeAcceptanceStates(AcceptanceState, readyAcceptance);
+
 	        // Parses the acceptance state and modify the CurrentDraftState for this authenticated user.
-	        switch (readyAcceptance.CurrentState)
+	        switch (AcceptanceState.CurrentState)
 	        {
 		        case MatchAcceptanceState.PlayerDeclined:
 			        CurrentDraftState = DraftStates.Declined;
 			        break;
 		        case MatchAcceptanceState.Ready:
+		        {
 			        CurrentDraftState = DraftStates.Banning;
+			        
+			        _notificationService.Subscribe<MatchDraft>(MatchDraft.NOTIFICATION_CHARACTER_BANNED, OnCharacterBanned);
+			        _notificationService.Subscribe<MatchDraft>(MatchDraft.NOTIFICATION_CHARACTER_SELECTED, OnCharacterSelected);
+			        
 			        break;
+		        }
 		        default:
 			        CurrentDraftState = CurrentDraftState;
 			        break;
 	        }
         }
 
-        private void OnMatchDeclinedHandler(object o) => OnMatchDeclined((MatchAcceptance)o);
         private void OnMatchDeclined(MatchAcceptance declinedAcceptance)
         {
-	        AcceptanceState = declinedAcceptance;
+	        if (AcceptanceState.ExpectedPlayers == null)
+		        AcceptanceState = declinedAcceptance;
+	        else
+				MergeAcceptanceStates(AcceptanceState, declinedAcceptance);
 	        
 	        // Parses the acceptance state and modify the CurrentDraftState for this authenticated user.
-	        switch (declinedAcceptance.CurrentState)
+	        switch (AcceptanceState.CurrentState)
 	        {
 		        case MatchAcceptanceState.PlayerDeclined:
 			        CurrentDraftState = DraftStates.Declined;
@@ -168,6 +178,75 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
         }
         
         
+        private void OnCharacterSelected(MatchDraft updatedDraft)
+        {
+	        MergeDraftStates(DraftState, updatedDraft);
+	        UpdateDraftStateDuringLockIn();
+        }
+        
+        private void OnCharacterBanned(MatchDraft updatedDraft)
+        {
+	        if (DraftState.TeamAPlayerIds == null || DraftState.TeamBPlayerIds == null)
+		        DraftState = updatedDraft;
+	        else
+				MergeDraftStates(DraftState, updatedDraft);
+
+	        if (GetMissingBansPlayerIds().Count == 0)
+	        {
+		        UpdateDraftStateDuringLockIn();
+	        }
+        }
+
+        private void UpdateDraftStateDuringLockIn()
+        {
+	        DraftState.GetPlayerAndTeamIndices(_authenticatedUserContext.UserId, out var playerIdx, out var teamIdx);
+
+	        var currentTeamIdx = Rules.PerPickIdxTeams[DraftState.CurrentPickIdx];
+	        var currentTeamPlayerIdx = Rules.PerPickIdxPlayerIdx[DraftState.CurrentPickIdx];
+
+	        // If the rules say it's my turn, I'm picking my character.
+	        if (currentTeamIdx == teamIdx && currentTeamPlayerIdx == playerIdx)
+	        {
+		        CurrentDraftState = DraftStates.Picking;
+	        }
+	        else
+	        {
+		        // If the player picking now is before me, I'm waiting for my turn to pick.
+		        if (currentTeamPlayerIdx < playerIdx)
+			        CurrentDraftState = DraftStates.WaitingTurnToPick;
+		        // Otherwise, I'm waiting for the draft to end, if all the picks haven't finished yet.
+		        else
+			        CurrentDraftState = DraftState.CurrentPickIdx >= Rules.TotalNumberOfDraftPicks ? DraftStates.Ready : DraftStates.WaitingDraftEnd;
+	        }
+        }
+
+        private static void MergeAcceptanceStates(MatchAcceptance local, MatchAcceptance remote)
+        {
+	        local.CurrentState = local.CurrentState == MatchAcceptanceState.Ready || local.CurrentState == MatchAcceptanceState.PlayerDeclined ? local.CurrentState : remote.CurrentState;
+
+	        for (var i = 0; i < local.AcceptedPlayers.Length; i++) local.AcceptedPlayers[i] |= remote.AcceptedPlayers[i];
+
+	        local.AcceptedPlayerCount = local.AcceptedPlayerCount > remote.AcceptedPlayerCount ? local.AcceptedPlayerCount : remote.AcceptedPlayerCount;
+        }
+        
+        private static void MergeDraftStates(MatchDraft localDraftState, MatchDraft remoteDraftState)
+        {
+	        localDraftState.CurrentPickIdx = remoteDraftState.CurrentPickIdx;
+
+	        for (int i = 0; i < localDraftState.TeamABannedCharacters.Length; i++)
+		        localDraftState.TeamABannedCharacters[i] = localDraftState.TeamABannedCharacters[i] == -1 ? remoteDraftState.TeamABannedCharacters[i] : localDraftState.TeamABannedCharacters[i];
+
+	        for (int i = 0; i < localDraftState.TeamBBannedCharacters.Length; i++)
+		        localDraftState.TeamBBannedCharacters[i] = localDraftState.TeamBBannedCharacters[i] == -1 ? remoteDraftState.TeamBBannedCharacters[i] : localDraftState.TeamBBannedCharacters[i];
+
+	        for (int i = 0; i < localDraftState.TeamALockedInCharacters.Length; i++)
+		        localDraftState.TeamALockedInCharacters[i] = localDraftState.TeamALockedInCharacters[i] == -1 ? remoteDraftState.TeamALockedInCharacters[i] : localDraftState.TeamALockedInCharacters[i];
+
+	        for (int i = 0; i < localDraftState.TeamBLockedInCharacters.Length; i++)
+		        localDraftState.TeamBLockedInCharacters[i] = localDraftState.TeamBLockedInCharacters[i] == -1 ? remoteDraftState.TeamBLockedInCharacters[i] : localDraftState.TeamBLockedInCharacters[i];
+        }
+
+
         /// <summary>
         /// Invalidates a Match start. Basically, will stop polling for updates on <see cref="MatchAcceptance"/> and <see cref="MatchDraft"/>.
         /// </summary>
@@ -178,8 +257,11 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
             DraftState = null;
             CurrentDraftState = DraftStates.NotReady;
             
-            _notificationService.Unsubscribe(MatchAcceptance.NOTIFICATION_MATCH_READY, OnMatchReadyToStartHandler);
-            _notificationService.Unsubscribe(MatchAcceptance.NOTIFICATION_MATCH_DECLINED, OnMatchDeclinedHandler);
+            _notificationService.Unsubscribe<MatchAcceptance>(MatchAcceptance.NOTIFICATION_MATCH_READY, OnMatchReadyToStart);
+            _notificationService.Unsubscribe<MatchAcceptance>(MatchAcceptance.NOTIFICATION_MATCH_DECLINED, OnMatchDeclined);
+            
+            _notificationService.Unsubscribe<MatchDraft>(MatchDraft.NOTIFICATION_CHARACTER_BANNED, OnCharacterBanned);
+            _notificationService.Unsubscribe<MatchDraft>(MatchDraft.NOTIFICATION_CHARACTER_SELECTED, OnCharacterSelected);
         }
 
         /// <summary>
@@ -197,9 +279,13 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
             CheckMatchStartKickedOff();
             
             var acceptance = await _matchPreparationBackend.AcceptMatch(MatchId);
-            AcceptanceState = acceptance;
+           
+            if (AcceptanceState.ExpectedPlayers == null)
+	            AcceptanceState = acceptance;
+            else
+	            MergeAcceptanceStates(AcceptanceState, acceptance);
             
-            CurrentDraftState = DraftStates.WaitingForAcceptance;
+            CurrentDraftState = CurrentDraftState == DraftStates.Ready || CurrentDraftState == DraftStates.Declined ? CurrentDraftState : DraftStates.WaitingForAcceptance;
         }
 
         /// <summary>
@@ -211,7 +297,11 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
             CheckMatchStartKickedOff();
             
             var acceptance = await _matchPreparationBackend.DeclineMatch(MatchId);
-            AcceptanceState = acceptance;
+            
+            if (AcceptanceState.ExpectedPlayers == null)
+	            AcceptanceState = acceptance;
+            else
+				MergeAcceptanceStates(AcceptanceState, acceptance);
             
             CurrentDraftState = DraftStates.Declined;
         }
@@ -224,9 +314,19 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
             CheckMatchStartKickedOff();
             
             var updatedDraft = await _matchPreparationBackend.BanCharacter(MatchId, characterId);
-            DraftState = updatedDraft;
+            if (DraftState.TeamAPlayerIds == null || DraftState.TeamBPlayerIds == null)
+	            DraftState = updatedDraft;
+            else
+	            MergeDraftStates(DraftState, updatedDraft);
             
-            CurrentDraftState = DraftStates.WaitingBanEnd;
+            if (GetMissingBansPlayerIds().Count == 0)
+            {
+	            UpdateDraftStateDuringLockIn();
+            }
+            else
+            {
+	            CurrentDraftState = DraftStates.WaitingBanEnd;
+            }
         }
 
         /// <summary>
@@ -237,7 +337,10 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
             CheckMatchStartKickedOff();
             
             var updatedDraft = await _matchPreparationBackend.SelectCharacter(MatchId, charId);
-            DraftState = updatedDraft;
+            if (DraftState.TeamAPlayerIds == null || DraftState.TeamBPlayerIds == null)
+	            DraftState = updatedDraft;
+            else
+	            MergeDraftStates(DraftState, updatedDraft);
             
             CurrentDraftState = DraftState.CurrentPickIdx >= Rules.TotalNumberOfDraftPicks ? DraftStates.Ready : DraftStates.WaitingDraftEnd;
         }
