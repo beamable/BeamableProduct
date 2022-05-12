@@ -100,6 +100,12 @@ namespace microserviceTests.microservice
       {
          return vec;
       }
+      
+      [ClientCallable]
+      public string MethodWithExceptionThrow(string msg)
+      {
+         throw new MicroserviceException(401, "UnauthorizedUser", "test");
+      }
 
       // TODO: Add a test for an empty arg array, or a null
 
