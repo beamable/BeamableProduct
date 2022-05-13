@@ -458,23 +458,48 @@ namespace Beamable.Server.Editor
 					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 					Message = $"Deploying Manifest..."
 				});
-				var manifest = model.Services.Select(kvp =>
-				{
-					kvp.Value.Enabled &= nameToImageId.TryGetValue(kvp.Value.Name, out var imageId);
-					return new ServiceReference
-					{
-						serviceName = kvp.Value.Name,
-						templateId = kvp.Value.TemplateId,
-						enabled = kvp.Value.Enabled,
-						comments = kvp.Value.Comment,
-						imageId = imageId,
-						dependencies = kvp.Value.Dependencies
-					};
-				}).ToList();
 
-				var storages = model.Storages.Select(kvp =>
+				// Manifest Building:
+				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them). 
+				var localServiceReferences = nameToImageId.Select(kvp =>
 				{
-					kvp.Value.Enabled &= enabledServices.Contains(kvp.Value.Name);
+					var sa = model.Services[kvp.Key];
+					return new ServiceReference()
+					{
+						serviceName = sa.Name,
+						templateId = sa.TemplateId,
+						enabled = sa.Enabled,
+						comments = sa.Comment,
+						imageId = kvp.Value,
+						dependencies = sa.Dependencies
+					};
+				});
+
+				// 2- Finds all Known Remote Service (and their last uploaded configuration/image id).
+				var remoteServiceReferences = model.ServerManifest.Select(kvp => kvp.Value);
+
+				// 3- Join those two lists and configure the enabled status of all services based on the user input (stored in model.Services[serviceName].Enabled)
+				var manifest = localServiceReferences.Union(remoteServiceReferences).ToList();
+				foreach (var uploadServiceReference in manifest)
+				{
+					var sa = model.Services[uploadServiceReference.serviceName];
+					uploadServiceReference.enabled = sa.Enabled;
+				}
+
+				// 4- Make sure we only have each service once on the list.
+				manifest = manifest.Distinct(new ServiceReferenceNameComp()).ToList();
+				
+
+				// Identify storages to enable
+				// 1- Make a list of all dependencies that are depended on by any of the services that will be enabled
+				var allDependenciesThatMustBeEnabled = manifest.Where(serviceRef => serviceRef.enabled).SelectMany(sr => sr.dependencies)
+				                                               .Select(deps => deps.id)
+				                                               .ToList();
+
+				// 2- Only enable storages that are actually depended on by services.
+				var storageManifest = model.Storages.Select(kvp =>
+				{
+					kvp.Value.Enabled &= allDependenciesThatMustBeEnabled.Contains(kvp.Value.Name);
 					return new ServiceStorageReference
 					{
 						id = kvp.Value.Name,
@@ -484,7 +509,7 @@ namespace Beamable.Server.Editor
 					};
 				}).ToList();
 
-				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storages });
+				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storageManifest });
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
 
 				logger(new LogMessage
@@ -502,6 +527,39 @@ namespace Beamable.Server.Editor
 				void HandleDeployFailed(ManifestModel _, string __)
 				{
 					WindowStateUtility.EnableAllWindows();
+				}
+			}
+
+			private struct ServiceReferenceNameComp : IEqualityComparer<ServiceReference>
+			{
+				public bool Equals(ServiceReference x, ServiceReference y)
+				{
+					if (ReferenceEquals(x, y))
+					{
+						return true;
+					}
+
+					if (ReferenceEquals(x, null))
+					{
+						return false;
+					}
+
+					if (ReferenceEquals(y, null))
+					{
+						return false;
+					}
+
+					if (x.GetType() != y.GetType())
+					{
+						return false;
+					}
+
+					return x.serviceName == y.serviceName;
+				}
+
+				public int GetHashCode(ServiceReference obj)
+				{
+					return (obj.serviceName != null ? obj.serviceName.GetHashCode() : 0);
 				}
 			}
 
