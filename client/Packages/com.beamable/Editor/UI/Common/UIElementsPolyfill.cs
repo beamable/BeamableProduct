@@ -124,9 +124,12 @@ namespace UnityEngine.Experimental.UIElements
 			self.width = value;
 		}
 
-		public static void SetHeight(this IStyle self, float value)
+		public static void SetHeight(this IStyle self, float value, bool overrideMaxHeight = false)
 		{
 			self.height = value;
+
+			if (overrideMaxHeight)
+				self.maxHeight = value;
 		}
 
 		public static float GetMaxHeight(this IStyle self)
@@ -348,9 +351,12 @@ namespace UnityEngine.UIElements
       self.width = new StyleLength(value);
     }
 
-    public static void SetHeight(this IStyle self, float value)
+    public static void SetHeight(this IStyle self, float value, bool overrideMaxHeight = false)
     {
       self.height = new StyleLength(value);
+      
+      if (overrideMaxHeight)
+	      self.maxHeight = new StyleLength(value);
     }
 
 
