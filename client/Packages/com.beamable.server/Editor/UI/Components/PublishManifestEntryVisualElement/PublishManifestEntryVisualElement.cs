@@ -85,7 +85,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
 			_checkbox.Refresh();
-			_checkbox.SetWithoutNotify(!IsRemoteOnly && Model.Enabled);
+			_checkbox.SetWithoutNotify(Model.Enabled);
 			_checkbox.OnValueChanged += b => Model.Enabled = b;
 			_checkbox.tooltip = CHECKBOX_TOOLTIP;
 
@@ -124,12 +124,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				icon.AddToClassList(STORAGE_IMAGE_CLASS);
 			}
 
-			SetEnabled(!IsRemoteOnly);
-
-			if (!IsRemoteOnly)
-			{
-				UpdateStatus(ServicePublishState.Unpublished);
-			}
+			UpdateStatus(ServicePublishState.Unpublished);
 		}
 
 		private void OnLabelSizeChanged(GeometryChangedEvent evt)
