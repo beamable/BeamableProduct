@@ -429,14 +429,6 @@ public static class UIElementsPolyfill2021
 		listView.Refresh();
 #endif
 	}
-	
-	public static void SetHeight(this IStyle self, float value, bool overrideMaxHeight = false)
-	{
-		self.height = new StyleLength(value);
-		
-		if (overrideMaxHeight)
-			self.maxHeight = new StyleLength(value);
-	}
 }
 
 
