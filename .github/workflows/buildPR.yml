@@ -77,7 +77,6 @@ jobs:
             Docker-gzipped-${{ matrix.unityVersion }}
       - name: Load Docker Image If Exits
         continue-on-error: true
-        if: ${{ steps.cache_docker.outputs.cache-hit }}
         run: |
           chmod +x ./build/prepare_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
