@@ -81,6 +81,11 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
+.building #buildImage,
+.running #buildImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/PlayButton_Active_L.png");
+}
+
 
 .foldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light_dark.png");
