@@ -12,13 +12,13 @@ using UnityEngine;
 namespace Beamable.Editor.UI
 {
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <typeparam name="TWindow"></typeparam>
 	public abstract class BeamEditorWindow<TWindow> : EditorWindow, ISerializationCallbackReceiver where TWindow : BeamEditorWindow<TWindow>, new()
 	{
 		/// <summary>
-		/// The default <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that is used when initializing this window via <see cref="GetFullyInitializedWindow"/>.  
+		/// The default <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that is used when initializing this window via <see cref="GetFullyInitializedWindow"/>.
 		/// </summary>
 		protected static BeamEditorWindowInitConfig WindowDefaultConfig;
 
@@ -42,7 +42,7 @@ namespace Beamable.Editor.UI
 		/// TODO: We shouldn't really need this. We have it now as a lot of the Model initialization happens during Window initialization. This model is then accessed, through the window instance, in certain parts
 		/// TODO: of the code-base. This is a problem in certain Unity-event flows causing the model to not be initialized due to the window that manages it not being initialized when its accessed.
 		/// TODO: In order to keep this current flow working and not have to refactor everything at once, we have this promise and <see cref="GetFullyInitializedWindow()"/>.
-		/// TODO: This allows us to keep the current flow, but enables us to incrementally move away from this pattern of initializing System/Model instances inside the window initialization. 
+		/// TODO: This allows us to keep the current flow, but enables us to incrementally move away from this pattern of initializing System/Model instances inside the window initialization.
 		/// </summary>
 		public Promise FullyInitializedWindowPromise;
 
@@ -53,7 +53,7 @@ namespace Beamable.Editor.UI
 
 		/// <summary>
 		/// Creates, initializes then waits for the window instance to be completely ready for use before returning that instance.
-		/// See <see cref="FullyInitializedWindowPromise"/> to understand why this is necessary. 
+		/// See <see cref="FullyInitializedWindowPromise"/> to understand why this is necessary.
 		/// </summary>
 		public static async Task<TWindow> GetFullyInitializedWindow()
 		{
@@ -66,7 +66,7 @@ namespace Beamable.Editor.UI
 
 		/// <summary>
 		/// Creates, initializes then waits for the window instance to be completely ready for use before returning that instance.
-		/// See <see cref="FullyInitializedWindowPromise"/> to understand why this is necessary. 
+		/// See <see cref="FullyInitializedWindowPromise"/> to understand why this is necessary.
 		/// </summary>
 		public static async Task<TWindow> GetFullyInitializedWindow(BeamEditorWindowInitConfig config)
 		{
@@ -133,7 +133,7 @@ namespace Beamable.Editor.UI
 		/// Implement this instead of <see cref="OnEnable"/>. The <see cref="OnEnable"/> implementation for <see cref="BeamEditorWindow{T}"/> contains the guard described in
 		/// <see cref="BeamEditor.DelayedInitializationCall"/>.
 		///
-		/// The default implementation here guarantees this window has an <see cref="ActiveContext"/> to fill out it's data. 
+		/// The default implementation here guarantees this window has an <see cref="ActiveContext"/> to fill out it's data.
 		/// </summary>
 		public void BuildWithDefaultContext() => BuildWithContext(BeamEditorContext.Default);
 
@@ -142,6 +142,7 @@ namespace Beamable.Editor.UI
 		/// <see cref="BeamEditorContext"/> instance to rebuild with.
 		/// </summary>
 		public void BuildWithContext(string code) => BuildWithContext(BeamEditorContext.ForEditorUser(code));
+
 
 		/// <summary>
 		/// Overload of <see cref="BuildWithContext(BeamEditorContext)"/> that uses the given <paramref name="index"/> and <see cref="BeamEditorContext.ForEditorUser(int)"/> to find the
@@ -152,7 +153,7 @@ namespace Beamable.Editor.UI
 		/// <summary>
 		/// Rebuilds the window's entire content.
 		/// If it cares about whether or not the given <paramref name="context"/> is/isn't authenticated, it'll invoke either <see cref="Build"/> or <see cref="BuildWhenNotAuthenticated"/>.
-		/// If the given <paramref name="context"/> is null, it will rebuild with the current <see cref="ActiveContext"/>. 
+		/// If the given <paramref name="context"/> is null, it will rebuild with the current <see cref="ActiveContext"/>.
 		/// </summary>
 		/// <param name="context">The <see cref="BeamEditorContext"/> to rebuild this window with. When null, re-uses the existing context.</param>
 		public void BuildWithContext(BeamEditorContext context = null)
@@ -179,6 +180,10 @@ namespace Beamable.Editor.UI
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 			var noUserVisualElement = new NoUserVisualElement();
+			noUserVisualElement.OnLoginCheckComplete += () =>
+			{
+				BuildWithContext();
+			};
 			root.Add(noUserVisualElement);
 		}
 	}
