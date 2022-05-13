@@ -26,8 +26,7 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 			Filter.SetTextWithoutNotify(searchableLeaderboard.CurrentAliasFilter);
 			
 			// Setup listener
-			Filter.onEndEdit.RemoveListener(HandleFilterChanged);
-			Filter.onEndEdit.AddListener(HandleFilterChanged);
+			Filter.onEndEdit.ReplaceOrAddListener(HandleFilterChanged);
 		}
 
 		public async void HandleFilterChanged(string newFilter)

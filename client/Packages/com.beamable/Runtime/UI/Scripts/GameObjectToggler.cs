@@ -8,8 +8,8 @@ namespace Beamable.UI.Scripts
 	/// </summary>
 	public class GameObjectToggler : MonoBehaviour
 	{
-		public GameObject MainRepresentation;
-		public GameObject BackUpRepresentation;
+		public GameObject PrimaryRepresentation;
+		public GameObject SecondaryRepresentation;
 
 		private void Awake()
 		{
@@ -18,8 +18,8 @@ namespace Beamable.UI.Scripts
 
 		public void Toggle(bool toBackUpRepresentation)
 		{
-			BackUpRepresentation.SetActive(toBackUpRepresentation);
-			MainRepresentation.SetActive(!toBackUpRepresentation);
+			SecondaryRepresentation.SetActive(toBackUpRepresentation);
+			PrimaryRepresentation.SetActive(!toBackUpRepresentation);
 		}
 	}
 }
