@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unrelased]
 
 ## [1.2.0]
@@ -15,9 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed Microstorage related null reference errors on Unity startup.
 - `IMicroserviceNotificationsApi` can now send strings with spaces in them for messages.
 - `IMicroserviceLeaderboardsApi` will now respect `HasValue` flag of `Optional<T>` derived types in all cases.
-- Thrown `MicroserviceException`s from `[ClientCallable]` methods will result in an appropriate error response.
 - Fixed issue with Publish flow that caused an invalid Manifest data to exist when publishing any services along a service whose source code was no longer in the project
 - Fixed issue that made it possible to start a remote service without its dependencies up and running (only happened in cases where the service was only remote --- ie: the source code for it was not present in the project)   
+
+
+## [1.1.4]
+### Fixed
+- Thrown `MicroserviceExceptions` from `[ClientCallable]` methods will result in an appropriate error response.
+
+## [1.1.3]
+no changes
 
 ## [1.1.2]
 ### Fixed
