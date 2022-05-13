@@ -488,13 +488,13 @@ namespace Beamable.Server.Editor
 
 				// 4- Make sure we only have each service once on the list.
 				manifest = manifest.Distinct(new ServiceReferenceNameComp()).ToList();
-				
+
 
 				// Identify storages to enable
 				// 1- Make a list of all dependencies that are depended on by any of the services that will be enabled
 				var allDependenciesThatMustBeEnabled = manifest.Where(serviceRef => serviceRef.enabled).SelectMany(sr => sr.dependencies)
-				                                               .Select(deps => deps.id)
-				                                               .ToList();
+															   .Select(deps => deps.id)
+															   .ToList();
 
 				// 2- Only enable storages that are actually depended on by services.
 				var storageManifest = model.Storages.Select(kvp =>
