@@ -104,8 +104,8 @@ namespace Beamable.Experimental.Api.Matchmaking
 		{
 			return _requester.Request<TicketReservationResponse>(
 			  Method.POST,
-			  $"/matchmaking/tickets",
-			  new TicketReservationRequest(new[] { _platform.User.id.ToString() }, gameTypes)
+			  "/matchmaking/tickets",
+			  new TicketReservationRequest(gameTypes)
 			);
 		}
 
