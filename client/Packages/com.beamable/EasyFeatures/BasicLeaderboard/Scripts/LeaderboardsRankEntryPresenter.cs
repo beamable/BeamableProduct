@@ -1,11 +1,11 @@
-using System.Collections.Generic;
-using System.Globalization;
 using Beamable.AccountManagement;
 using Beamable.Avatars;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Stats;
 using Beamable.UI.Buss;
 using Beamable.UI.Scripts;
+using System.Collections.Generic;
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
