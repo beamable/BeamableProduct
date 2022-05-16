@@ -20,9 +20,4 @@
     top: 0px;
 }
 
-#main-scrollView,
-#main-scrollView > VisualElement > #unity-content-viewport > #unity-content-container {
-    flex-grow: 1;
-}
-
 

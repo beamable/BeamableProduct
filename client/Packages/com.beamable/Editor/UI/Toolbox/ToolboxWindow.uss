@@ -29,7 +29,3 @@ ToolboxActionBarVisualElement {
     height: 35px;
     min-height: 35px;
 }
-
-#main-scrollView {
-    flex-grow: 1;
-}
