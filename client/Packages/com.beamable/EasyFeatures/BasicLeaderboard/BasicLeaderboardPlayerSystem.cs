@@ -1,18 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Beamable;
 using Beamable.Api.Leaderboard;
 using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
-using Beamable.Common.Dependencies;
 using Beamable.Common.Leaderboards;
-using Beamable.Modules.Leaderboards;
 using UnityEngine;
-using Random = System.Random;
 
 namespace Beamable.EasyFeatures.BasicLeaderboard
 {

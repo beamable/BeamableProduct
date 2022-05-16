@@ -90,7 +90,7 @@ namespace Beamable.EasyFeatures
 		/// <param name="newPlayerCodes"></param>
 		public async Promise EnrichWithPlayerCodes(List<string> newPlayerCodes = null)
 		{
-			// Rebuild the Player Contexts --- will do nothing if  newPlayerCodes is null or empty.
+			// Rebuild the Player Contexts --- will do nothing if newPlayerCodes is null or empty.
 			await RebuildPlayerContexts(newPlayerCodes);
 			await Enrich();
 		}
