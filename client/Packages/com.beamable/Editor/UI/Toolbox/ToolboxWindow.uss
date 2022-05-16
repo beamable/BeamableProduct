@@ -1,6 +1,5 @@
 #_windowRoot {
     flex-grow: 1;
-    min-width:500px;
 }
 #window-main {
     flex-direction: column;
@@ -9,6 +8,7 @@
     bottom: 0px;
     right: 0px;
     left: 0px;
+    min-width: 550px;
 }
 
 #contentListVisualElement{
@@ -29,3 +29,6 @@ ToolboxActionBarVisualElement {
     height: 35px;
     min-height: 35px;
 }
+
+#main-scrollView{
+    flex-grow: 1;
