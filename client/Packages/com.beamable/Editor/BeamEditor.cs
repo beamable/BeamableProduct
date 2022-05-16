@@ -281,8 +281,8 @@ namespace Beamable
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
 				BeamEditorContextDependencies.AddSingleton(globallyAccessibleHintSystem.GetType(), () => globallyAccessibleHintSystem);
 
-			// Set flag of FacebookImporter
-			BeamableFacebookImporter.SetFlag();
+			// Set flag of SocialsImporter
+			BeamableSocialsImporter.SetFlag();
 
 			async void InitDefaultContext()
 			{

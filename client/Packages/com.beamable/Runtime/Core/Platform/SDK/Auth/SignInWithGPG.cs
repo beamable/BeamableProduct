@@ -1,4 +1,5 @@
 ﻿#if BEAMABLE_GPGS && UNITY_ANDROID
+using Beamable.Common;
 using GooglePlayGames;
 using GooglePlayGames.BasicApi;
 using System;
@@ -20,11 +21,24 @@ namespace Beamable.Platform.SDK.Auth
 			PlayGamesPlatform.Instance.Authenticate(HandleAuthenticate);
 		}
 
+		public static Promise<string> RequestServerSideToken()
+		{
+			var promise = new Promise<string>();
+			PlayGamesPlatform.Instance.RequestServerSideAccess(false, result =>
+			{
+				if(string.IsNullOrEmpty(result))
+					promise.CompleteError(new Exception("Cannot get server side token"));
+				else
+					promise.CompleteSuccess(result);
+			});
+			return promise;
+		}
+
 		private void HandleAuthenticate(SignInStatus status)
 		{
 			if(status == SignInStatus.Success)
 			{
-				PlayGamesPlatform.Instance.RequestServerSideAccess(false, HandleRequestServerSideAccess);
+				RequestServerSideToken().Then(HandleRequestServerSideAccess);
 			}
 			OnLoginResult?.Invoke(status == SignInStatus.Success);
 		}

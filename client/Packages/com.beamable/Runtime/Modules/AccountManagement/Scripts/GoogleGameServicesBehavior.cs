@@ -20,6 +20,7 @@ namespace Beamable.AccountManagement
 			{
 				return;
 			}
+			_promise = promise;
 
 			if (Application.isEditor)
 			{
@@ -28,7 +29,6 @@ namespace Beamable.AccountManagement
 			}
 #if BEAMABLE_GPGS && UNITY_ANDROID
 			_gpg = new SignInWithGPG();
-			_promise = promise;
 			_gpg.OnLoginResult += HandleLoginResult;
 			_gpg.OnRequestServerSideAccessResult += HandleRequestServerSideAccessResult;
 			
@@ -55,7 +55,7 @@ namespace Beamable.AccountManagement
 			}
 			else
 			{
-				_promise.CompleteSuccess(new ThirdPartyLoginResponse(token));
+				_promise.CompleteSuccess(new ThirdPartyLoginResponse(token, false, true));
 			}
 		}
 #endif

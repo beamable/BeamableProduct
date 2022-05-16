@@ -478,7 +478,7 @@ namespace Beamable.Common.Api.Auth
 				case AuthThirdParty.Steam:
 					return "steam";
 				case AuthThirdParty.GoogleGamesServices:
-					return "googlegamesservices";
+					return "googlePlayServices";
 				default:
 					return null;
 			}
