@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservice Manager buttons now highlight on hover.
 - Beamable third party context systems register with a default order of -1000.
 - Global style sheet is turned now into a list of global style sheets.
+- Content tags are split on `','` characters in addition to `' '`s.
 
 ### Fixed
 - StoreView prefab now works in landscape mode.
