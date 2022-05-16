@@ -1,11 +1,13 @@
 {
-    "name": "Unity.Beamable.Customer.Common",
+    "name": "EasyFeatureIntegrationExample.FeatureExtensionIntegration",
     "references": [
+        "Unity.Beamable",
         "Unity.Beamable.Runtime.Common",
-        "Unity.Beamable.Server.Runtime",
-        "Unity.Beamable.Server.Runtime.Common",
-        "Unity.Beamable.Server.Runtime.Mocks",
-        "Beamable.SmallerJSON"
+        "Unity.Beamable.Customer.Common",
+        "Unity.Beamable.EasyFeatures.LeaderboardView",
+        "Beamable.Platform",
+        "Beamable.Extensions",
+        "Unity.TextMeshPro"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],
