@@ -38,7 +38,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 		public bool TestMode;
 
 		public bool RunOnEnable { get => _runOnEnable; set => _runOnEnable = value; }
-		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get => new[] {LeaderboardViewGroup}; set => LeaderboardViewGroup = value.FirstOrDefault(); }
+		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get => new[] { LeaderboardViewGroup }; set => LeaderboardViewGroup = value.FirstOrDefault(); }
 
 		public virtual void OnEnable()
 		{
