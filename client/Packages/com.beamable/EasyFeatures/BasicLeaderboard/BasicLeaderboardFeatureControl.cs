@@ -1,23 +1,17 @@
-using Beamable;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Leaderboards;
-using Beamable.EasyFeatures;
 using Beamable.Modules.Leaderboards;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Beamable.EasyFeatures.BasicLeaderboard
 {
 	[BeamContextSystem]
 	public class BasicLeaderboardFeatureControl : MonoBehaviour, IBeamableFeatureControl
 	{
-		[RegisterBeamableDependencies()]
+		[RegisterBeamableDependencies]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicLeaderboardPlayerSystem,
