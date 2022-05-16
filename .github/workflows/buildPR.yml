@@ -3,13 +3,12 @@ name: PR Build
 on:
   pull_request:
     branches:
-      - 'feature/beam-2617'
-      #- 'main'
-      #- 'staging'
-      #- 'production'
-    #paths:
-      #- 'client/**'
-      #- 'microservice/**'
+      - 'main'
+      - 'staging'
+      - 'production'
+    paths:
+      - 'client/**'
+      - 'microservice/**'
 
 jobs:
   testMicroserviceBaseImage:
