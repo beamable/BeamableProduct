@@ -124,7 +124,7 @@ namespace Beamable
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
 			DependencyBuilder.AddComponentSingleton<PubnubSubscriptionManager>(
-				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>()));
+				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);

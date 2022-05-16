@@ -58,6 +58,7 @@ jobs:
         unityVersion:
           - 2019.4.30f1
           - 2020.3.19f1
+          - 2021.3.2f1
     steps:
       - uses: actions/checkout@v2
       - name: Login to Docker Hub
@@ -219,11 +220,11 @@ jobs:
           chmod +x ./build/save_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}
-          path: dist/${{ matrix.targetPlatform }}
+          path: dist/**
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}

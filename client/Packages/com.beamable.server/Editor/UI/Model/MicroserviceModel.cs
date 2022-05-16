@@ -118,12 +118,9 @@ namespace Beamable.Editor.UI.Model
 		}
 		public void OpenLocalDocs()
 		{
-			EditorAPI.Instance.Then(de =>
-			{
-				var url =
-					$"{BeamableEnvironment.PortalUrl}/{de.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
-				Application.OpenURL(url);
-			});
+			var de = BeamEditorContext.Default;
+			var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Requester.Token.RefreshToken}";
+			Application.OpenURL(url);
 		}
 		public void EnrichWithRemoteReference(ServiceReference remoteReference)
 		{
@@ -213,7 +210,7 @@ namespace Beamable.Editor.UI.Model
 				Debug.Log($"Starting Docker Snyk tests for {ServiceDescriptor.Name}. The test results will appear momentarily.");
 			}
 
-			snykCommand.Start(null).Then(res =>
+			snykCommand.StartAsync().Then(res =>
 			{
 				if (res.RequiresLogin)
 				{
@@ -268,14 +265,13 @@ $@"{{
 		protected void OpenRemoteMetrics() => OpenOnRemote("metrics");
 		protected void OpenOnRemote(string relativePath)
 		{
-			EditorAPI.Instance.Then(api =>
-			{
-				var path =
-					$"{BeamableEnvironment.PortalUrl}/{api.Alias}/" +
-					$"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
-					$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
-				Application.OpenURL(path);
-			});
+			var api = BeamEditorContext.Default;
+			var path =
+				$"{BeamableEnvironment.PortalUrl}/{api.CurrentCustomer.Alias}/" +
+				$"games/{api.ProductionRealm.Pid}/realms/{api.CurrentRealm.Pid}/" +
+				$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Requester.Token.RefreshToken}";
+			Application.OpenURL(path);
+
 		}
 		private void OpenInCli()
 		{

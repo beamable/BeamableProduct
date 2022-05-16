@@ -86,11 +86,15 @@ namespace Beamable.Editor.UI.Buss
 			_selectedBussElement.Setup(_navigationWindow);
 			mainVisualElement.Add(_selectedBussElement);
 
+			_stylesGroup = new BussStyleListVisualElement();
+
+			var inlineStyle = new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);
+			mainVisualElement.Add(inlineStyle);
+			inlineStyle.Init();
+
 			_scrollView = new ScrollView();
 			_scrollView.name = "themeManagerContainerScrollView";
 			mainVisualElement.Add(_scrollView);
-
-			_stylesGroup = new BussStyleListVisualElement();
 			_stylesGroup.name = "stylesGroup";
 			_stylesGroup.Filter = CardFilter;
 			_scrollView.Add(_stylesGroup);

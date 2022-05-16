@@ -16,6 +16,8 @@ namespace Beamable.AccountManagement
 		public Button ContinueButton;
 		public List<InputValidationBehaviour> ValidationBehaviours;
 
+		private bool requestSent;
+
 		// Start is called before the first frame update
 		void Start()
 		{
@@ -25,11 +27,12 @@ namespace Beamable.AccountManagement
 		// Update is called once per frame
 		void Update()
 		{
-			ContinueButton.interactable = ValidationBehaviours.TrueForAll(v => v.IsValid || !v.isActiveAndEnabled);
+			ContinueButton.interactable = !requestSent && ValidationBehaviours.TrueForAll(v => v.IsValid || !v.isActiveAndEnabled);
 		}
 
 		public override void OnOpened()
 		{
+			requestSent = false;
 			Arguments.Password.Value = "";
 			Arguments.Code.Value = "";
 			SetForSendEmail();
@@ -50,6 +53,11 @@ namespace Beamable.AccountManagement
 		{
 			SendEmailContainer.SetActive(true);
 			ConfirmContainer.SetActive(false);
+		}
+
+		public void ChangePasswordRequestSent(bool wasSent)
+		{
+			requestSent = wasSent;
 		}
 	}
 }
