@@ -8,6 +8,7 @@
     bottom: 0px;
     right: 0px;
     left: 0px;
+    min-width: 500px;
 }
 #microserviceContentVisualElement{
     flex-grow: 1;
@@ -17,6 +18,11 @@
     margin-left: 0px;
     margin-right: 0px;
     top: 0px;
+}
+
+#main-scrollView,
+#main-scrollView > VisualElement > #unity-content-viewport > #unity-content-container {
+    flex-grow: 1;
 }
 
 
