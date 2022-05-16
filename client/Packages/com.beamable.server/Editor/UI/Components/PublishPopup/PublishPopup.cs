@@ -257,8 +257,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
 			{
-				if (kvp.Value.IsRemoteOnly)
-					continue;
 				var serviceModel = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(kvp.Key);
 
 				if (serviceModel == null)

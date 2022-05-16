@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservice Manager buttons now highlight on hover.
 - Beamable third party context systems register with a default order of -1000.
 - Global style sheet is turned now into a list of global style sheets.
+- Content tags are split on `','` characters in addition to `' '`s.
 
 ### Fixed
 - StoreView prefab now works in landscape mode.
@@ -45,10 +46,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account management will no longer log an error after pressing change password button more than once.
 - Content Manager no longer logs inaccurate warning after renaming content.
 - Notification handling for multiple `BeamContext` instances.
-- Documentation links no longer direct to missing web pages.
 
 ### Removed
 - Unity 2018 LTS support.
+
+## [1.1.4]
+### Fixed
+- Documentation links no longer direct to missing web pages.
+
+## [1.1.3]
+no changes
 
 ## [1.1.2]
 ### Fixed
