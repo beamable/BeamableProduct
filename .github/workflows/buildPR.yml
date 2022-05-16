@@ -138,7 +138,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2020.3.19f1
+          - 2021.3.2f1
         projectPath:
           - client
     steps:

@@ -149,7 +149,7 @@ namespace Beamable.Editor.Content.Components
 			if (entries.Count > 0)
 			{
 				source.AddRange(entries);
-				foldout.Q<ListView>().style.height = _modifiedList.GetItemHeight() * entries.Count();
+				foldout.Q<ListView>().style.SetHeight(_modifiedList.GetItemHeight() * entries.Count(), true);
 				listView.RefreshPolyfill();
 			}
 			else

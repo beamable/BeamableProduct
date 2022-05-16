@@ -148,7 +148,7 @@ namespace Beamable.Editor.Content.UI
 
 		public string[] GetTagsFromString(string tagString)
 		{
-			return tagString?.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
+			return tagString?.Split(new[] { " ", "," }, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
 		}
 	}
 #endif
