@@ -135,7 +135,7 @@ namespace Beamable.UI.Scripts
 				return;
 
 			ValidateRect();
-			
+
 			foreach (var rt in _itemRects.Where(r => r.Key != null))
 			{
 				_provider.Despawn(rt.Key, rt.Value.Item1);

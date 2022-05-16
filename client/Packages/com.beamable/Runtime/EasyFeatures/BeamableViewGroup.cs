@@ -1,10 +1,10 @@
+using Beamable;
+using Beamable.Common;
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Beamable;
-using Beamable.Common;
-using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Playables;
@@ -53,8 +53,8 @@ namespace Beamable.EasyFeatures
 		public void RebuildManagedViews(IEnumerable<IBeamableView> otherViews = null)
 		{
 			ManagedViews = GetComponentsInChildren(typeof(IBeamableView), true)
-			               .Cast<IBeamableView>()
-			               .ToList();
+						   .Cast<IBeamableView>()
+						   .ToList();
 
 			if (otherViews != null)
 				ManagedViews.AddRange(otherViews);
@@ -120,9 +120,9 @@ namespace Beamable.EasyFeatures
 		{
 			Owner = owner;
 		}
-		
+
 		public BeamContext GetSinglePlayerContext() => this[0];
-		
+
 		public BeamableViewGroup Owner { get; }
 	}
 }

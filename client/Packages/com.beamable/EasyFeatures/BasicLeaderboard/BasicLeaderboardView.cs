@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -9,6 +7,8 @@ using Beamable.Common.Leaderboards;
 using Beamable.EasyFeatures;
 using Beamable.Modules.Generics;
 using Beamable.Modules.Leaderboards;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -46,7 +46,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 
 		[Header("Exposed Events"), Space] public UnityEvent BackButtonAction;
 		public UnityEvent TopButtonAction;
-		
+
 		public virtual int GetEnrichOrder() => EnrichOrder;
 
 		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
