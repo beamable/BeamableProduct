@@ -41,7 +41,6 @@ StatusBarVisualElement #UpdateDate {
 .hide {
 	visibility: hidden;
 	position: absolute;
-	top: 190090px;
 }
 
 

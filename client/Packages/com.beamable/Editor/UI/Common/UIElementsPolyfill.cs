@@ -400,9 +400,12 @@ namespace UnityEngine.UIElements
     public static void TryAddScrollViewAsMainElement(this VisualElement self, ScrollViewMode mode = ScrollViewMode.VerticalAndHorizontal)
     {
 #if UNITY_2021_1_OR_NEWER
+	    var tree = self.Children().FirstOrDefault();
+	    if (tree == null)
+		    return;
 	    var scrollView = new ScrollView(mode) {name = "main-scrollView"};
 	    scrollView.AddStyleSheet(Constants.Files.COMMON_USS_FILE);
-	    scrollView.contentContainer.Add(self.Children().First());
+	    scrollView.contentContainer.Add(tree);
 	    self.Add(scrollView);
 #endif
     }
