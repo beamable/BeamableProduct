@@ -58,7 +58,12 @@ namespace Beamable.Editor.Toolbox.UI
 
 		protected override void Build()
 		{
-			minSize = new Vector2(560, 300);
+#if UNITY_2021_1_OR_NEWER
+			// To hide horizontal scroll bar
+			minSize = new Vector2(575, 300);
+#else
+			minSize = new Vector2(550, 300);
+#endif
 
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += _ => BuildWithContext();
@@ -106,6 +111,7 @@ namespace Beamable.Editor.Toolbox.UI
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ToolboxWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
 
 			root.Add(_windowRoot);
 
