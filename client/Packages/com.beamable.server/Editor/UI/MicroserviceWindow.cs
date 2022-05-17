@@ -47,8 +47,6 @@ namespace Beamable.Editor.Microservice.UI
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
 
-		private static readonly Vector2 MIN_SIZE = new Vector2(450, 200);
-
 		private VisualElement _windowRoot;
 		private ActionBarVisualElement _actionBarVisualElement;
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
@@ -72,6 +70,8 @@ namespace Beamable.Editor.Microservice.UI
 
 		protected override async void Build()
 		{
+			minSize = new Vector2(500, 200);
+
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;
 
@@ -83,10 +83,6 @@ namespace Beamable.Editor.Microservice.UI
 
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
-
-
-			// Set the min size for the window
-			minSize = MIN_SIZE;
 
 			// Create/Get the Model instance
 			// TODO: move this into the ActiveContext as a standalone system and remove all visual stuff from the model
@@ -108,6 +104,7 @@ namespace Beamable.Editor.Microservice.UI
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
 
 			root.Add(_windowRoot);
 

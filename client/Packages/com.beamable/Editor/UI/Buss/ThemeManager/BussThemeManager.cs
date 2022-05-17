@@ -19,13 +19,14 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
-	public class BussThemeManager : EditorWindow
+	public class BussThemeManager : BeamEditorWindow<BussThemeManager>
 	{
 		private BussStyleListVisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
 		private ScrollView _scrollView;
 		private SelectedBussElementVisualElement _selectedBussElement;
+		private VisualElement _windowRoot;
 
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
@@ -36,35 +37,48 @@ namespace Beamable.Editor.UI.Buss
 		private bool _inStyleSheetChangedLoop;
 		private bool _filterMode;
 
+		static BussThemeManager()
+		{
+			WindowDefaultConfig = new BeamEditorWindowInitConfig()
+			{
+				Title = MenuItems.Windows.Names.THEME_MANAGER,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
+				FocusOnShow = false,
+				RequireLoggedUser = false,
+			};
+		}
+
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.THEME_MANAGER,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
-		public static void Init()
-		{
-			Type inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(MenuItems.Windows.Names.THEME_MANAGER, true, inspector);
-			themeManagerWindow.Show(true);
-		}
 
-		private void OnEnable()
+		public static async void Init() => await GetFullyInitializedWindow();
+		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
+
+		protected override void Build()
 		{
 			minSize = THEME_MANAGER_WINDOW_SIZE;
-			Refresh();
-		}
 
-		private void Refresh()
-		{
-			VisualElement root = this.GetRootVisualContainer();
+			var root = this.GetRootVisualContainer();
 			root.Clear();
+
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
+			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
+
 			_styleCardsVisualElements.Clear();
 			_addStyleButton = null;
-			VisualElement mainVisualElement = new VisualElement();
-			mainVisualElement.name = "themeManagerContainer";
+
+			var mainVisualElement = _windowRoot.Q("window-main");
 
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
+			mainVisualElement.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
@@ -99,8 +113,6 @@ namespace Beamable.Editor.UI.Buss
 			_stylesGroup.Filter = CardFilter;
 			_scrollView.Add(_stylesGroup);
 
-			root.Add(mainVisualElement);
-
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
 			_navigationWindow.HierarchyChanged += RefreshStyleSheets;
 
@@ -112,6 +124,8 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow.SelectionChanged -= CacheSelectedGameObject;
 			_navigationWindow.SelectionChanged += CacheSelectedGameObject;
+
+			root.Add(_windowRoot);
 
 			RefreshStyleSheets();
 			AddSelectorButton(mainVisualElement);
@@ -175,11 +189,13 @@ namespace Beamable.Editor.UI.Buss
 		private void OnFocus()
 		{
 			_navigationWindow?.ForceRebuild(_selectedGameObject);
-			_addStyleButton.CheckEnableState();
+			_addStyleButton?.CheckEnableState();
 		}
 
-		private void OnDestroy()
+		public override void OnDestroy()
 		{
+			base.OnDestroy();
+
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
 
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;

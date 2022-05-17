@@ -7,3 +7,8 @@
     left: 0px;
     display: none;
 }
+
+#main-scrollView,
+#main-scrollView > VisualElement > #unity-content-viewport > #unity-content-container {
+    flex-grow: 1;
+}

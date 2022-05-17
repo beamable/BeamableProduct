@@ -53,6 +53,12 @@ namespace Beamable.Editor.Toolbox.Components
 
 			_gridContainer = Root.Q("gridContainer");
 
+#if UNITY_2021_1_OR_NEWER
+			var mainVisualElement = Root.Q("mainVisualElement");
+			mainVisualElement.Add(_gridContainer);
+			mainVisualElement.Remove(Root.Q<ScrollView>("scrollView"));
+#endif
+
 			Model.OnWidgetSourceChanged += Model_OnWidgetSourceAvailable;
 			Model.OnQueryChanged += Model_OnQueryChanged;
 			RefreshWidgetElements(_gridContainer);
