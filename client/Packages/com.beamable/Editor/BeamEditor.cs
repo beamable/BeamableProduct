@@ -288,9 +288,11 @@ namespace Beamable
 			{
 				await BeamEditorContext.Default.InitializePromise;
 
+#if BEAMABLE_DEVELOPER
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
 						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
 						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+#endif
 				IsInitialized = true;
 
 				// Initialize toolbar
@@ -825,7 +827,7 @@ namespace Beamable
 				SaveConfig(alias, pid, null, cid);
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
-				                            tokenResponse.refresh_token, tokenResponse.expires_in);
+											tokenResponse.refresh_token, tokenResponse.expires_in);
 				CurrentRealm = null; // erase the current realm; if there is one..
 				await Login(token, pid);
 				await DoSilentContentPublish(true);

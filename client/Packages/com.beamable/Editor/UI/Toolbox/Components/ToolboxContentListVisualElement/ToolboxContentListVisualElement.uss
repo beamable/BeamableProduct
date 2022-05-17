@@ -45,7 +45,7 @@ ScrollView {
 
 #description {
     padding-left: 2px;
-    padding-rigth: 2px;
+    padding-right: 2px;
     margin-bottom: 0px;
     margin-top: 0px;
     font-size: 10px;
