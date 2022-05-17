@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -395,6 +396,19 @@ namespace UnityEngine.UIElements
     {
       self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition), enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
     }
+    
+    public static void TryAddScrollViewAsMainElement(this VisualElement self, ScrollViewMode mode = ScrollViewMode.VerticalAndHorizontal)
+    {
+#if UNITY_2021_1_OR_NEWER
+	    var tree = self.Children().FirstOrDefault();
+	    if (tree == null)
+		    return;
+	    var scrollView = new ScrollView(mode) {name = "main-scrollView"};
+	    scrollView.AddStyleSheet(Constants.Files.COMMON_USS_FILE);
+	    scrollView.contentContainer.Add(tree);
+	    self.Add(scrollView);
+#endif
+    }
   }
 }
 #endif
@@ -512,7 +526,7 @@ public static class UssLoader
 
 		if (u2021Available)
 		{
-#if UNITY_2021_2_OR_NEWER // 2021 is the max supported version, so we forward lean and assume all uss works in 2022.
+#if UNITY_2021_1_OR_NEWER // 2021 is the max supported version, so we forward lean and assume all uss works in 2022.
 			ussPaths.Add(u2021Path);
 #endif
 		}

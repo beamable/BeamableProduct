@@ -10,9 +10,8 @@
         <beamable:ToolboxActionBarVisualElement name = "actionBarVisualElement"/>
         <beamable:ToolboxBreadcrumbsVisualElement name="breadcrumbsVisualElement"/>
         <beamable:ToolboxAnnouncementListVisualElement name ="announcementList"/>
-        <beamable:ToolboxContentListVisualElement name ="contentListVisualElement">
-        </beamable:ToolboxContentListVisualElement>
-
+        <beamable:ToolboxContentListVisualElement name ="contentListVisualElement"/>
     </engine:VisualElement>
+    
 
 </engine:UXML>
