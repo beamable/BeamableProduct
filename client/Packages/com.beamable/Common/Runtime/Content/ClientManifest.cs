@@ -2,6 +2,7 @@ using Beamable.Common.Api.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Beamable.Common.Content
 {
@@ -33,10 +34,7 @@ namespace Beamable.Common.Content
 		/// <returns>A new <see cref="ClientManifest"/></returns>
 		public ClientManifest Filter(ContentQuery query)
 		{
-			return new ClientManifest
-			{
-				entries = entries.Where(e => query.Accept(e)).ToList()
-			};
+			return new ClientManifest {entries = entries.Where(e => query.Accept(e)).ToList()};
 		}
 
 		/// <summary>
@@ -75,35 +73,68 @@ namespace Beamable.Common.Content
 		/// <returns>A <see cref="ClientManifest"/></returns>
 		public static ClientManifest ParseCSV(string data)
 		{
-			// TODO: Consider replacing this with a more advanced csv parser... This method breaks many "rules"
-			//       https://donatstudios.com/Falsehoods-Programmers-Believe-About-CSVs
+			var dataLength = string.IsNullOrWhiteSpace(data) ? 0 : data.Length;
+			var emptyStringArray = new string[] { };
 
-			var lines = (data ?? "").Split('\n');
-
-			var contentEntries = lines.Select(line =>
+			var contentEntries = new List<ClientContentInfo>();
+			bool isInDoubleQuote = false;
+			var parts = new[]
 			{
-				var parts = line.Split(new char[] { ',' }, StringSplitOptions.None);
-				if (parts.Length <= 1)
-				{
-					return null; // skip line.
-				}
-				return new ClientContentInfo()
-				{
-					type = parts[0].Trim(),
-					contentId = parts[1].Trim(),
-					version = parts[2].Trim(),
-					visibility = ContentVisibility.Public, // the csv content is always public.
-					uri = parts[3].Trim(),
-					tags = parts.Length >= 5
-				   ? parts[4].Trim().Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-				   : new string[] { }
-				};
-			}).Where(entry => entry != null);
-
-			return new ClientManifest()
-			{
-				entries = contentEntries.ToList()
+				new StringBuilder(), new StringBuilder(), new StringBuilder(), new StringBuilder(),
+				new StringBuilder()
 			};
+			var currentPart = 0;
+
+			void AddNewEntry()
+			{
+				contentEntries.Add(new ClientContentInfo()
+				{
+					type = parts[0].ToString().Trim(),
+					contentId = parts[1].ToString().Trim(),
+					version = parts[2].ToString().Trim(),
+					visibility = ContentVisibility.Public, // the csv content is always public.
+					uri = parts[3].ToString().Trim(),
+					tags = parts[4].Length > 0
+						? parts[4].ToString().Trim().Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries)
+						: emptyStringArray
+				});
+				for (int i = 0; i < parts.Length; i++)
+				{
+					parts[i].Clear();
+				}
+
+				currentPart = 0;
+			}
+
+			for (var i = 0; i < dataLength; i++)
+			{
+				var c = data[i];
+				bool isDoubleQuote = c == '"';
+				bool isComma = c == ',';
+				bool isNewLine = c == '\n';
+				isInDoubleQuote ^= isDoubleQuote;
+
+				if (isDoubleQuote)
+					continue;
+
+				switch (isInDoubleQuote)
+				{
+					case false when (isComma || isNewLine):
+					{
+						currentPart++;
+						if (currentPart > 4 || isNewLine)
+							AddNewEntry();
+						continue;
+					}
+				}
+
+				parts[currentPart].Append(c);
+			}
+
+			if (currentPart > 0)
+				AddNewEntry();
+
+			return new ClientManifest {entries = contentEntries};
 		}
 	}
 
@@ -201,10 +232,10 @@ namespace Beamable.Common.Content
 			return set.Select(info => info.ToContentRef());
 		}
 
-		public static SequencePromise<IContentObject> ResolveAll(this IEnumerable<ClientContentInfo> set, int batchSize = 50)
+		public static SequencePromise<IContentObject> ResolveAll(this IEnumerable<ClientContentInfo> set,
+		                                                         int batchSize = 50)
 		{
 			return set.ToContentRefs().ResolveAll(batchSize);
 		}
 	}
-
 }
