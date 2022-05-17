@@ -198,7 +198,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-				addFoldoutElem.Q<ListView>().style.height = addList.GetItemHeight() * addSource.Count;
+				addFoldoutElem.Q<ListView>().style.SetHeight(addList.GetItemHeight() * addSource.Count, true);
 				addList.RefreshPolyfill();
 
 				foreach (var toModify in publishSet.ToModify)
@@ -217,7 +217,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-				modifyFoldoutElem.Q<ListView>().style.height = modifyList.GetItemHeight() * modifySource.Count;
+				modifyFoldoutElem.Q<ListView>().style.SetHeight(modifyList.GetItemHeight() * modifySource.Count, true);
 				modifyList.RefreshPolyfill();
 
 				foreach (var toDelete in publishSet.ToDelete)
@@ -236,7 +236,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-				deleteFoldoutElem.Q<ListView>().style.height = deleteList.GetItemHeight() * deleteSource.Count;
+				deleteFoldoutElem.Q<ListView>().style.SetHeight(deleteList.GetItemHeight() * deleteSource.Count, true);
 				deleteList.RefreshPolyfill();
 
 
