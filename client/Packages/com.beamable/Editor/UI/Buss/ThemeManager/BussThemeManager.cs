@@ -47,35 +47,35 @@ namespace Beamable.Editor.UI.Buss
 				RequireLoggedUser = false,
 			};
 		}
-		
+
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.THEME_MANAGER,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
-		
+
 		public static async void Init() => await GetFullyInitializedWindow();
 		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
 
 		protected override void Build()
 		{
 			minSize = THEME_MANAGER_WINDOW_SIZE;
-			
+
 			var root = this.GetRootVisualContainer();
 			root.Clear();
-			
+
 			var uiAsset =
 				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uxml");
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			_windowRoot.name = nameof(_windowRoot);
 			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
-			
+
 			_styleCardsVisualElements.Clear();
 			_addStyleButton = null;
-			
+
 			var mainVisualElement = _windowRoot.Q("window-main");
-			
+
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);

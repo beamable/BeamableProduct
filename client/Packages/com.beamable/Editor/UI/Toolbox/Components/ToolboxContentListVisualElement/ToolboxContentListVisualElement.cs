@@ -52,7 +52,7 @@ namespace Beamable.Editor.Toolbox.Components
 			base.Refresh();
 
 			_gridContainer = Root.Q("gridContainer");
-			
+
 #if UNITY_2021_1_OR_NEWER
 			var mainVisualElement = Root.Q("mainVisualElement");
 			mainVisualElement.Add(_gridContainer);
