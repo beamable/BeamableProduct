@@ -48,7 +48,8 @@ namespace Beamable.Editor.Toolbox.Components
 
 		public ToolboxActionBarVisualElement() : base(nameof(ToolboxActionBarVisualElement)) { }
 
-		public ToolboxModel Model { get; set; }
+		//public ToolboxModel Model { get; set; }
+		private IToolboxViewService Model { get; set; }
 
 		private Button _categoryButton;
 		private Button _typeButton;
@@ -61,6 +62,8 @@ namespace Beamable.Editor.Toolbox.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+
+			Model = provider.GetService<IToolboxViewService>();
 
 			var contentButton = Root.Q<Button>("contentManager");
 			contentButton.clickable.clicked += async () => { await ContentManagerWindow.Init(); };

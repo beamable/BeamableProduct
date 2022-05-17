@@ -1,15 +1,11 @@
 fileFormatVersion: 2
 guid: 90807b7b1730eca45949be7a963e6804
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: 21300000
-    second: pill_2_0
-  - first:
-      213: 21300002
-    second: pill_2_1
+  fileIDToRecycleName:
+    21300000: pill_2_0
+    21300002: pill_2_1
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 9
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -63,9 +59,8 @@ TextureImporter:
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
-  applyGammaDecoding: 1
   platformSettings:
-  - serializedVersion: 3
+  - serializedVersion: 2
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
@@ -76,7 +71,6 @@ TextureImporter:
     allowsAlphaSplitting: 0
     overridden: 0
     androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 1
   spriteSheet:
     serializedVersion: 2
     sprites:
@@ -96,7 +90,6 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 22d1f94a1c4a70447a910e17177c807a
-      internalID: 21300000
       vertices: []
       indices: 
       edges: []
@@ -117,7 +110,6 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: f9a97a9ac4b64e248a0787a46d0385ef
-      internalID: 21300002
       vertices: []
       indices: 
       edges: []
@@ -126,12 +118,10 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 0
     vertices: []
     indices: 
     edges: []
     weights: []
-    secondaryTextures: []
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

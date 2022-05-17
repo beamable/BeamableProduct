@@ -38,7 +38,7 @@ namespace Beamable.Editor.Toolbox.Components
 			}
 		}
 
-		public ToolboxModel Model { get; set; }
+		public IToolboxViewService Model { get; set; }
 
 		public ToolboxAnnouncementListVisualElement() : base(nameof(ToolboxAnnouncementListVisualElement))
 		{

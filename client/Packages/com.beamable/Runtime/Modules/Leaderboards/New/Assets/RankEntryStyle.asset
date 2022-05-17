@@ -208,7 +208,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"AssetSerializationKey":1}'
+        json: '{"AssetSerializationKey":-1}'
     - key: backgroundColor
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -250,7 +250,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"AssetSerializationKey":2}'
+        json: '{"AssetSerializationKey":1}'
     - key: backgroundColor
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -272,7 +272,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"AssetSerializationKey":1}'
+        json: '{"AssetSerializationKey":-1}'
     - key: backgroundColor
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -291,6 +291,5 @@ MonoBehaviour:
     _selector: '#scoreValueLabel'
   _assetReferences:
   - {fileID: 21300000, guid: f3caa2bbb88564e85b2811d16acd4c9e, type: 3}
-  - {fileID: 11400000, guid: 8731414c3f69f42c78336ca4aaa22544, type: 2}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   _isReadOnly: 1
