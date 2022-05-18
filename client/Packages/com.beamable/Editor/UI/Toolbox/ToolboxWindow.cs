@@ -145,13 +145,9 @@ namespace Beamable.Editor.Toolbox.UI
 			_breadcrumbsVisualElement.Refresh();
 
 			_contentListVisualElement = root.Q<ToolboxContentListVisualElement>("contentListVisualElement");
-			//Uncommented since Toolbox wont appear without it
-			_contentListVisualElement.Model = _model;
 			_contentListVisualElement.Refresh();
 
 			_announcementListVisualElement = root.Q<ToolboxAnnouncementListVisualElement>();
-			//Uncommented since Toolbox wont appear without it
-			_announcementListVisualElement.Model = _model;
 			_announcementListVisualElement.Refresh();
 			_announcementListVisualElement.OnHeightChanged += AnnouncementList_OnHeightChanged;
 

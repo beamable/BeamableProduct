@@ -11,11 +11,6 @@ namespace Beamable.Editor.Toolbox.Models
 {
 	public interface IToolboxViewService
 	{
-		/*event Action OnQueryChanged;
-		event Action<IWidgetSource> OnWidgetSourceChanged;
-		ToolboxQuery Query { get; }
-		string FilterText { get; }*/
-
 		event Action<List<RealmView>> OnAvailableRealmsChanged;
 		event Action<RealmView> OnRealmChanged;
 		event Action<IWidgetSource> OnWidgetSourceChanged;
@@ -30,8 +25,6 @@ namespace Beamable.Editor.Toolbox.Models
 		ToolboxQuery Query { get; }
 		string FilterText { get; }
 		IEnumerable<AnnouncementModelBase> Announcements { get; }
-		//ToolboxModel Model { get; }
-		//List<RealmView> Realms { get; }
 		void Initialize();
 		void UseDefaultWidgetSource();
 		void AddAnnouncement(AnnouncementModelBase announcementModel);

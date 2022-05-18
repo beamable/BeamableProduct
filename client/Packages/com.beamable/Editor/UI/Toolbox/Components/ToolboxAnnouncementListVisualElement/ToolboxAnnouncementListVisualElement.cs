@@ -51,6 +51,8 @@ namespace Beamable.Editor.Toolbox.Components
 
 			_mainContainer = Root.Q<VisualElement>("main");
 
+			Model = provider.GetService<IToolboxViewService>();
+
 			SetAnnouncements(Model.Announcements);
 			Model.OnAnnouncementsChanged += SetAnnouncements;
 		}
