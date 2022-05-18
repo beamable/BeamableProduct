@@ -6,42 +6,6 @@ using System.Reflection;
 
 namespace Beamable.Common.Content.Validation
 {
-	// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
-	// this is needed only for lookup of content names
-	public static class ContentTypesCache
-	{
-		private static IReadOnlyDictionary<Type, string> _contentTypes;
-		public static IReadOnlyDictionary<Type, string> ContentTypes
-		{
-			get
-			{
-				if (_contentTypes == null)
-				{
-					_contentTypes = BuildTypesCache();
-				}
-
-				return _contentTypes;
-			}
-		}
-
-		public static Dictionary<Type, string> BuildTypesCache()
-		{
-			Type baseType = typeof(ContentObject);
-			var types = baseType.Assembly.GetTypes().Where(t => baseType.IsAssignableFrom(t));
-			Dictionary<Type, string> dict = new Dictionary<Type, string>();
-			foreach (var type in types)
-			{
-				var attribute = type.GetCustomAttribute<ContentTypeAttribute>();
-				if (attribute != null)
-				{
-					dict.Add(type, attribute.TypeName);
-				}
-			}
-
-			return dict;
-		}
-	}
-	
 	/// <summary>
 	/// This type defines part of the %Beamable %ContentObject validation process.
 	///
@@ -173,7 +137,7 @@ namespace Beamable.Common.Content.Validation
 			{
 				foreach (var type in AllowedTypes)
 				{
-					if (ContentTypesCache.ContentTypes.TryGetValue(type, out var prefix))
+					if (ContentRegistry.TryGetName(type, out string prefix))
 					{
 						var newId = $"{prefix}.{id}";
 						if (ctx.ContentExists(newId))
