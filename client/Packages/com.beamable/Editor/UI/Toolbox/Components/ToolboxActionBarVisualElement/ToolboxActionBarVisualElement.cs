@@ -48,7 +48,6 @@ namespace Beamable.Editor.Toolbox.Components
 
 		public ToolboxActionBarVisualElement() : base(nameof(ToolboxActionBarVisualElement)) { }
 
-		//public ToolboxModel Model { get; set; }
 		private IToolboxViewService Model { get; set; }
 
 		private Button _categoryButton;

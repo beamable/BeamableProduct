@@ -49,8 +49,6 @@ namespace Beamable.Editor.Toolbox.UI
 				FocusOnShow = false,
 				RequireLoggedUser = true,
 			};
-
-			//_model = new ToolboxModel();
 		}
 
 		[MenuItem(
@@ -70,7 +68,6 @@ namespace Beamable.Editor.Toolbox.UI
 
 		private ToolboxContentListVisualElement _contentListVisualElement;
 
-		//private ToolboxModel _model;
 		private IToolboxViewService _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
 
@@ -91,12 +88,8 @@ namespace Beamable.Editor.Toolbox.UI
 			// Force refresh to build the initial window
 			_model?.Destroy();
 
-			_model = new ToolboxViewService();
-			//_model.UseDefaultWidgetSource();
-			//_model.Initialize();
-
-			_model.Initialize();
 			_model.UseDefaultWidgetSource();
+			_model.Initialize();
 
 			SetForContent();
 
