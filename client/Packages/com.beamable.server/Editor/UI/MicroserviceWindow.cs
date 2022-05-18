@@ -70,7 +70,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		protected override async void Build()
 		{
-			minSize = new Vector2(500, 200);
+			minSize = new Vector2(550, 200);
 
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;
@@ -104,8 +104,9 @@ namespace Beamable.Editor.Microservice.UI
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
+#if UNITY_2019_1_OR_NEWER
 			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
-
+#endif
 			root.Add(_windowRoot);
 
 			bool localServicesAvailable = Model?.AllLocalServices != null;
