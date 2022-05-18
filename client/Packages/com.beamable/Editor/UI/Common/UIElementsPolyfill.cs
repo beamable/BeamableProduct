@@ -396,19 +396,6 @@ namespace UnityEngine.UIElements
     {
       self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition), enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
     }
-    
-    public static void TryAddScrollViewAsMainElement(this VisualElement self, ScrollViewMode mode = ScrollViewMode.VerticalAndHorizontal)
-    {
-#if UNITY_2021_1_OR_NEWER
-	    var tree = self.Children().FirstOrDefault();
-	    if (tree == null)
-		    return;
-	    var scrollView = new ScrollView(mode) {name = "main-scrollView"};
-	    scrollView.AddStyleSheet(Constants.Files.COMMON_USS_FILE);
-	    scrollView.contentContainer.Add(tree);
-	    self.Add(scrollView);
-#endif
-    }
   }
 }
 #endif

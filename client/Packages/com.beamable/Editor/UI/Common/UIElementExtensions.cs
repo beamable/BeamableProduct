@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Beamable.Common;
 using Beamable.Editor.UI.Components;
+using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -325,6 +326,19 @@ namespace Beamable.Editor
 
 				type = type.BaseType;
 			}
+		}
+
+		public static void TryAddScrollViewAsMainElement(this VisualElement self)
+		{
+#if UNITY_2021_1_OR_NEWER
+			var tree = self.Children().FirstOrDefault();
+			if (tree == null)
+				return;
+			var scrollView = new ScrollView(ScrollViewMode.Vertical) {name = "main-scrollView"};
+			scrollView.AddStyleSheet(Constants.Files.COMMON_USS_FILE);
+			scrollView.contentContainer.Add(tree);
+			self.Add(scrollView);	
+#endif
 		}
 	}
 }

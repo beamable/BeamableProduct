@@ -102,7 +102,7 @@ namespace Beamable.Editor.Content
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ContentManagerWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
-			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
+			_windowRoot.TryAddScrollViewAsMainElement();
 
 			root.Add(_windowRoot);
 
