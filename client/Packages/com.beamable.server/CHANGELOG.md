@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue with Publish flow that caused an invalid Manifest data to exist when publishing any services along a service whose source code was no longer in the project
 - Fixed issue that made it possible to start a remote service without its dependencies up and running (only happened in cases where the service was only remote --- ie: the source code for it was not present in the project)   
 
+### Changed
+- Publishing microservices will always pull the latest version of dependent alpine linux Docker base images.
 
 ## [1.1.4]
 ### Fixed
