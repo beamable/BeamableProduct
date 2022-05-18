@@ -2,7 +2,8 @@ using Beamable.Common.Api.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace Beamable.Common.Content
 {
@@ -71,71 +72,7 @@ namespace Beamable.Common.Content
 		/// </summary>
 		/// <param name="data">Raw CSV data</param>
 		/// <returns>A <see cref="ClientManifest"/></returns>
-		public static ClientManifest ParseCSV(string data)
-		{
-			var dataLength = string.IsNullOrWhiteSpace(data) ? 0 : data.Length;
-			var emptyStringArray = new string[] { };
-
-			var contentEntries = new List<ClientContentInfo>();
-			bool isInDoubleQuote = false;
-			var parts = new[]
-			{
-				new StringBuilder(), new StringBuilder(), new StringBuilder(), new StringBuilder(),
-				new StringBuilder()
-			};
-			var currentPart = 0;
-
-			void AddNewEntry()
-			{
-				contentEntries.Add(new ClientContentInfo()
-				{
-					type = parts[0].ToString().Trim(),
-					contentId = parts[1].ToString().Trim(),
-					version = parts[2].ToString().Trim(),
-					visibility = ContentVisibility.Public, // the csv content is always public.
-					uri = parts[3].ToString().Trim(),
-					tags = parts[4].Length > 0
-						? parts[4].ToString().Trim().Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries)
-						: emptyStringArray
-				});
-				for (int i = 0; i < parts.Length; i++)
-				{
-					parts[i].Clear();
-				}
-
-				currentPart = 0;
-			}
-
-			for (var i = 0; i < dataLength; i++)
-			{
-				var c = data[i];
-				bool isDoubleQuote = c == '"';
-				bool isComma = c == ',';
-				bool isNewLine = c == '\n';
-				isInDoubleQuote ^= isDoubleQuote;
-
-				if (isDoubleQuote)
-					continue;
-
-				switch (isInDoubleQuote)
-				{
-					case false when (isComma || isNewLine):
-					{
-						currentPart++;
-						if (currentPart > 4 || isNewLine)
-							AddNewEntry();
-						continue;
-					}
-				}
-
-				parts[currentPart].Append(c);
-			}
-
-			if (currentPart > 0)
-				AddNewEntry();
-
-			return new ClientManifest {entries = contentEntries};
-		}
+		public static ClientManifest ParseCSV(string data) => new CsvManifestScanner(data).Parse();
 	}
 
 	/// <summary>
@@ -237,5 +174,120 @@ namespace Beamable.Common.Content
 		{
 			return set.ToContentRefs().ResolveAll(batchSize);
 		}
+	}
+
+	public class CsvManifestScanner
+	{
+		private readonly string _source;
+		private readonly int _sourceLength;
+		List<ClientContentInfo> _contentEntries;
+		private int _start = 0, _current = 0;
+		private int _currentStep = 0, _currentEntry = 0;
+
+		public CsvManifestScanner(string source)
+		{
+			_sourceLength = string.IsNullOrWhiteSpace(source) ? 0 : source.Length;
+			_source = _sourceLength == 0 ? string.Empty : source;
+		}
+
+		public ClientManifest Parse()
+		{
+			_contentEntries = new List<ClientContentInfo>();
+			_start = _current = _currentEntry = _currentStep = 0;
+			while (!IsAtEnd())
+			{
+				_start = _current;
+				ScanToken();
+			}
+
+			return new ClientManifest {entries = _contentEntries};
+		}
+
+		private void ScanToken()
+		{
+			var c = Advance();
+			switch (c)
+			{
+				case ',':
+					_currentStep++;
+					break;
+				case '\n':
+					_currentEntry++;
+					_currentStep = 0;
+					break;
+				case '"':
+					while (Peek() != '"' && !IsAtEnd())
+					{
+						Advance();
+					}
+
+					if (IsAtEnd())
+					{
+						Debug.LogError("Unterminated value in double quote");
+						return;
+					}
+
+					Advance();
+					AddInfo(_start + 1, _current - _start - 2);
+					break;
+				default:
+					while (Peek() != ',' && Peek() != '\n')
+					{
+						Advance();
+					}
+
+					AddInfo(_start, _current - _start);
+					break;
+			}
+		}
+
+		private void AddInfo(int startIndex, int length)
+		{
+			if (_currentEntry >= _contentEntries.Count)
+			{
+				_contentEntries.Add(new ClientContentInfo
+				{
+					visibility = ContentVisibility.Public, tags = new string[] { }
+				});
+			}
+
+			var entryValue = _source.Substring(startIndex, length).Trim();
+
+			switch (_currentStep)
+			{
+				case 0:
+					_contentEntries[_currentEntry].type = entryValue;
+					break;
+				case 1:
+					_contentEntries[_currentEntry].contentId = entryValue;
+					break;
+				case 2:
+					_contentEntries[_currentEntry].version = entryValue;
+					break;
+				case 3:
+					_contentEntries[_currentEntry].uri = entryValue;
+					break;
+				case 4:
+					if (!string.IsNullOrWhiteSpace(entryValue))
+					{
+						_contentEntries[_currentEntry].tags =
+							entryValue.Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries);
+					}
+
+					break;
+				default:
+					Debug.LogError("Value out of range");
+					break;
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		char Advance() => _source[_current++];
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		char Peek() => IsAtEnd() ? '\n' : _source[_current];
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private bool IsAtEnd() => _current >= _sourceLength;
 	}
 }
