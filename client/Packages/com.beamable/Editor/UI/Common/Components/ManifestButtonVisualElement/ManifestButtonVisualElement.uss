@@ -31,6 +31,9 @@
     border-bottom-left-radius: 3px;
     border-top-left-radius: 3px;
 }
+#manifestButton.hidden {
+    width: 0px;
+}
 #manifestButton {
     justify-content: center;
 }
