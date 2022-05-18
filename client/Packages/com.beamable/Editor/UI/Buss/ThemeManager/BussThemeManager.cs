@@ -69,9 +69,7 @@ namespace Beamable.Editor.UI.Buss
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			_windowRoot.name = nameof(_windowRoot);
-#if UNITY_2019_1_OR_NEWER
-			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
-#endif
+			_windowRoot.TryAddScrollViewAsMainElement();
 			_styleCardsVisualElements.Clear();
 			_addStyleButton = null;
 
@@ -79,9 +77,8 @@ namespace Beamable.Editor.UI.Buss
 
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
-#if UNITY_2019_1_OR_NEWER
-			mainVisualElement.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
-#endif
+			mainVisualElement.TryAddScrollViewAsMainElement();
+			
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
 			mainVisualElement.Add(navigationGroup);

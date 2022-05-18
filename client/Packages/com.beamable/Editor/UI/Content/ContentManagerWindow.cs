@@ -102,9 +102,8 @@ namespace Beamable.Editor.Content
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ContentManagerWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
-#if UNITY_2019_1_OR_NEWER
-			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
-#endif			
+			_windowRoot.TryAddScrollViewAsMainElement();
+			
 			root.Add(_windowRoot);
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
