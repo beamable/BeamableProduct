@@ -327,7 +327,7 @@ namespace Beamable.Editor
 				type = type.BaseType;
 			}
 		}
-		
+
 		public static void TryAddScrollViewAsMainElement(this VisualElement self)
 		{
 #if UNITY_2021_1_OR_NEWER
