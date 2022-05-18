@@ -103,7 +103,7 @@ namespace Beamable.Editor.Content
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ContentManagerWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 			_windowRoot.TryAddScrollViewAsMainElement();
-			
+
 			root.Add(_windowRoot);
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
