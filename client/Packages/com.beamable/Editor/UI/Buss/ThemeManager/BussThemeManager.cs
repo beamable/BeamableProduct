@@ -78,7 +78,7 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
-			
+
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
 			mainVisualElement.Add(navigationGroup);
