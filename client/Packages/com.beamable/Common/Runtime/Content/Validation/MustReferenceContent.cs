@@ -130,7 +130,7 @@ namespace Beamable.Common.Content.Validation
 				if (AllowNull) return;
 				throw new ContentValidationException(obj, field, "reference cannot be null. ");
 			}
-			
+
 			// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 			// add id prefix if it was not provided by the user
 			if (!ctx.ContentExists(id))
