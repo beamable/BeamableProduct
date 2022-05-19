@@ -253,21 +253,27 @@ namespace Beamable.Common.Content
 
 			var entryValue = _source.Substring(startIndex, length).Trim();
 
+			const int STEP_TYPE = 0;
+			const int STEP_CONTENT_ID = 1;
+			const int STEP_VERSION = 2;
+			const int STEP_URI = 3;
+			const int STEP_TAGS = 4;
+
 			switch (_currentStep)
 			{
-				case 0:
+				case STEP_TYPE:
 					_contentEntries[_currentEntry].type = entryValue;
 					break;
-				case 1:
+				case STEP_CONTENT_ID:
 					_contentEntries[_currentEntry].contentId = entryValue;
 					break;
-				case 2:
+				case STEP_VERSION:
 					_contentEntries[_currentEntry].version = entryValue;
 					break;
-				case 3:
+				case STEP_URI:
 					_contentEntries[_currentEntry].uri = entryValue;
 					break;
-				case 4:
+				case STEP_TAGS:
 					if (!string.IsNullOrWhiteSpace(entryValue))
 					{
 						_contentEntries[_currentEntry].tags =
