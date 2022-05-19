@@ -8,6 +8,71 @@ using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
+
+	[AttributeUsage(AttributeTargets.Method)]
+	public class CallableAttribute : Attribute, INamingAttribute
+	{
+		public static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>() {
+			new ParameterOfInterest(typeof(Delegate), false, false, false),
+			new ParameterOfInterest(typeof(Task), false, false, false),
+			new ParameterOfInterest(typeof(Promise), false, false, false),
+		};
+
+		protected string pathName = "";
+		public HashSet<string> RequiredScopes { get; }
+
+		public bool RequireAuthenticatedUser { get; }
+		
+		public CallableAttribute() : this("", null, false)
+		{
+
+		}
+
+		public CallableAttribute(string pathnameOverride = "", string[] requiredScopes = null, bool requireAuthenticatedUser = false)
+		{
+			pathName = pathnameOverride;
+			RequiredScopes = requiredScopes == null
+				? new HashSet<string>()
+				: new HashSet<string>(requiredScopes);
+
+			RequireAuthenticatedUser = requireAuthenticatedUser;
+		}
+
+		public string PathName
+		{
+			set => pathName = value;
+			get => pathName;
+		}
+
+		public string[] Names => new[] { pathName };
+
+		public virtual AttributeValidationResult IsAllowedOnMember(MemberInfo member)
+		{
+			var methodInfo = (MethodInfo)member;
+
+			// Check for any unsupported parameter types.
+			if (UNSUPPORTED_PARAMETER_TYPES.MatchAnyParametersOfMethod(methodInfo, out var detectedUnsupportedTypes))
+			{
+				var message = $"The unsupported parameters are: {string.Join(", ", detectedUnsupportedTypes.Select(p => $"{p.ParameterType.Name} {p.Name}"))}";
+				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Error, message);
+			}
+
+			// Check for void signatures to send out warning.
+			if (methodInfo.IsAsyncMethodOfType(typeof(void)))
+			{
+				var message = $"";
+				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Warning, message);
+			}
+
+			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
+		}
+
+		public virtual AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames)
+		{
+			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
+		}
+	}
+
 	/// <summary>
 	/// This type defines the %Microservice method attribute for any
 	/// %Microservice method which can be called EITHER from the %Client or
@@ -37,63 +102,10 @@ namespace Beamable.Server
 	/// 
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
-	public class ClientCallableAttribute : Attribute, INamingAttribute
+	public class ClientCallableAttribute : CallableAttribute
 	{
-		public static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>() {
-		   new ParameterOfInterest(typeof(Delegate), false, false, false),
-		   new ParameterOfInterest(typeof(Task), false, false, false),
-		   new ParameterOfInterest(typeof(Promise), false, false, false),
-	   };
-
-		private string pathName = "";
-		public HashSet<string> RequiredScopes { get; }
-
-		public ClientCallableAttribute() : this("", null)
-		{
-
-		}
-
-		public ClientCallableAttribute(string pathnameOverride = "", string[] requiredScopes = null)
-		{
-			pathName = pathnameOverride;
-			RequiredScopes = requiredScopes == null
-			   ? new HashSet<string>()
-			   : new HashSet<string>(requiredScopes);
-		}
-
-		public string PathName
-		{
-			set { pathName = value; }
-			get { return pathName; }
-		}
-
-		public string[] Names => new[] { pathName };
-
-		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
-		{
-			var methodInfo = (MethodInfo)member;
-
-			// Check for any unsupported parameter types.
-			if (UNSUPPORTED_PARAMETER_TYPES.MatchAnyParametersOfMethod(methodInfo, out var detectedUnsupportedTypes))
-			{
-				var message = $"The unsupported parameters are: {string.Join(", ", detectedUnsupportedTypes.Select(p => $"{p.ParameterType.Name} {p.Name}"))}";
-				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Error, message);
-			}
-
-			// Check for void signatures to send out warning.
-			if (methodInfo.IsAsyncMethodOfType(typeof(void)))
-			{
-				var message = $"";
-				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Warning, message);
-			}
-
-			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
-		}
-
-		public AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames)
-		{
-			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
-		}
+		public ClientCallableAttribute() : this("", null) { }
+		public ClientCallableAttribute(string pathnameOverride = "", string[] requiredScopes = null) : base(pathnameOverride, requiredScopes, true){ }
 	}
 
 	/// <summary>
