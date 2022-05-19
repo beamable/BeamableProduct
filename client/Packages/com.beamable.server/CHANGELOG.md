@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0]
 ### Added
 - Support for GUID based assembly references.
+- `CallableAttribute` for exposing C#MS methods that are meant to be publicly accessible (without authentication required).
 
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Building microservices will always pull the latest version of dependent alpine linux Docker base images.
+- `ClientCallableAttribute` is now only accessible to authenticated users. For a fully public endpoint, use `CallableAttribute` instead.   
 
 ## [1.1.4]
 ### Fixed
