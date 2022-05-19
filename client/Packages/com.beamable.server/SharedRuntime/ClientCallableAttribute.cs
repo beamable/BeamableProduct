@@ -8,11 +8,16 @@ using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
-
+	/// <summary>
+	/// Base callable attribute used to identify methods to be exposed by microservices as endpoints. This attribute makes the endpoint publicly accessible (no need for authentication).
+	/// <see cref="ClientCallableAttribute"/> forces the authentication to be required.
+	/// <see cref="AdminOnlyCallableAttribute"/> makes it so that only an admin/developer can reach the endpoint. 
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
 	public class CallableAttribute : Attribute, INamingAttribute
 	{
-		public static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>() {
+		public static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>()
+		{
 			new ParameterOfInterest(typeof(Delegate), false, false, false),
 			new ParameterOfInterest(typeof(Task), false, false, false),
 			new ParameterOfInterest(typeof(Promise), false, false, false),
@@ -22,11 +27,8 @@ namespace Beamable.Server
 		public HashSet<string> RequiredScopes { get; }
 
 		public bool RequireAuthenticatedUser { get; }
-		
-		public CallableAttribute() : this("", null, false)
-		{
 
-		}
+		public CallableAttribute() : this("", null, false) { }
 
 		public CallableAttribute(string pathnameOverride = "", string[] requiredScopes = null, bool requireAuthenticatedUser = false)
 		{
@@ -44,7 +46,7 @@ namespace Beamable.Server
 			get => pathName;
 		}
 
-		public string[] Names => new[] { pathName };
+		public string[] Names => new[] {pathName};
 
 		public virtual AttributeValidationResult IsAllowedOnMember(MemberInfo member)
 		{
@@ -105,7 +107,7 @@ namespace Beamable.Server
 	public class ClientCallableAttribute : CallableAttribute
 	{
 		public ClientCallableAttribute() : this("", null) { }
-		public ClientCallableAttribute(string pathnameOverride = "", string[] requiredScopes = null) : base(pathnameOverride, requiredScopes, true){ }
+		public ClientCallableAttribute(string pathnameOverride = "", string[] requiredScopes = null) : base(pathnameOverride, requiredScopes, true) { }
 	}
 
 	/// <summary>
@@ -140,10 +142,7 @@ namespace Beamable.Server
 	public class AdminOnlyCallableAttribute : ClientCallableAttribute
 	{
 		public AdminOnlyCallableAttribute(string pathnameOverride = "") : base(pathnameOverride,
-		   requiredScopes: new[] { "*" })
-		{
-
-		}
+		                                                                       requiredScopes: new[] {"*"}) { }
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]
