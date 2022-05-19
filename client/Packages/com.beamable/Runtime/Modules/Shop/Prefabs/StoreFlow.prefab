@@ -1477,7 +1477,7 @@ PrefabInstance:
     - target: {fileID: 1213372594929076754, guid: 792cdb86d2fbb48f28872f41282a2ee2,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.0000076293945
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1213372594929076754, guid: 792cdb86d2fbb48f28872f41282a2ee2,
         type: 3}
@@ -1725,7 +1725,7 @@ PrefabInstance:
     - target: {fileID: 8918985812858989549, guid: 792cdb86d2fbb48f28872f41282a2ee2,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.00000004548494
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8918985812858989549, guid: 792cdb86d2fbb48f28872f41282a2ee2,
         type: 3}
@@ -2414,22 +2414,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Background
       objectReference: {fileID: 0}
-    - target: {fileID: 111213872017286892, guid: 271c5c262137f48708e20c91b57e679a,
-        type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: c0280f4bc860e432b813ee02a125ac48,
-        type: 3}
-    - target: {fileID: 111213872017286892, guid: 271c5c262137f48708e20c91b57e679a,
-        type: 3}
-      propertyPath: m_Type
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 111213872017286892, guid: 271c5c262137f48708e20c91b57e679a,
-        type: 3}
-      propertyPath: m_Material
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 111213872017286893, guid: 271c5c262137f48708e20c91b57e679a,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -2537,13 +2521,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
         type: 3}
-      propertyPath: _gradientDir
+      propertyPath: _gradientMode
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
         type: 3}
-      propertyPath: _overwriteAllColor
-      value: 0
+      propertyPath: _gradientDir
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
         type: 3}
@@ -2562,6 +2546,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
         type: 3}
+      propertyPath: _vertex1.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
+        type: 3}
       propertyPath: _vertex2.r
       value: 0.64544535
       objectReference: {fileID: 0}
@@ -2574,16 +2563,6 @@ PrefabInstance:
         type: 3}
       propertyPath: _vertex2.b
       value: 1.5566038
-      objectReference: {fileID: 0}
-    - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
-        type: 3}
-      propertyPath: _gradientMode
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
-        type: 3}
-      propertyPath: _vertex1.a
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1062800555250619893, guid: 271c5c262137f48708e20c91b57e679a,
         type: 3}
