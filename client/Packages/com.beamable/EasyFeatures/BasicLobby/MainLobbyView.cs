@@ -4,7 +4,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class MainLobbyView : MonoBehaviour, ISyncBeamableView
 	{
-		public interface IMainLobbyViewDeps : IBeamableViewDeps
+		public interface IDependencies : IBeamableViewDeps
 		{
 			bool IsVisible { get; set; }
 		}
@@ -16,12 +16,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			Debug.Log("Enrich from MainLobbyView");
-			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
+			var ctx = managedPlayers.GetSinglePlayerContext();
+			var dependencies = ctx.ServiceProvider.GetService<IDependencies>();
 			
-			var system = ctx.ServiceProvider.GetService<IMainLobbyViewDeps>();
-			
-			gameObject.SetActive(system.IsVisible);
+			gameObject.SetActive(dependencies.IsVisible);
+
+			if (!dependencies.IsVisible)
+			{
+				return;
+			}
 		}
 	}
 }

@@ -2,7 +2,7 @@
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
-	public class CreateLobbyView : MonoBehaviour, ISyncBeamableView
+	public class InsideLobbyView : MonoBehaviour, ISyncBeamableView
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{

@@ -1,6 +1,6 @@
 ﻿namespace Beamable.EasyFeatures.BasicLobby
 {
-	public class CreateLobbyPlayerSystem : CreateLobbyView.IDependencies
+	public class InsideLobbyPlayerSystem : InsideLobbyView.IDependencies
 	{
 		public bool IsVisible { get; set; }
 	}
