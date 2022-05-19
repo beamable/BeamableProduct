@@ -349,7 +349,10 @@ namespace Beamable.Server.Editor
 						Message = $"Building service=[{descriptor.Name}]"
 					});
 
-					var buildCommand = new BuildImageCommand(descriptor, false, false);
+					var buildCommand = new BuildImageCommand(descriptor,
+					                                         includeDebugTools:false,
+					                                         watch:false,
+					                                         pull:true);
 					try
 					{
 						await buildCommand.StartAsync();
@@ -460,7 +463,7 @@ namespace Beamable.Server.Editor
 				});
 
 				// Manifest Building:
-				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them). 
+				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them).
 				var localServiceReferences = nameToImageId.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];
