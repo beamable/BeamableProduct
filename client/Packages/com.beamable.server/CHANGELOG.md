@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0]
 ### Added
 - Support for GUID based assembly references.
+- `CallableAttribute` for exposing C#MS methods that are meant to be publicly accessible (without authentication required).
 
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
@@ -19,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue with Publish flow that caused an invalid Manifest data to exist when publishing any services along a service whose source code was no longer in the project
 - Fixed issue that made it possible to start a remote service without its dependencies up and running (only happened in cases where the service was only remote --- ie: the source code for it was not present in the project)   
 
+### Changed
+- `ClientCallableAttribute` is now only accessible to authenticated users. For a fully public endpoint, use `CallableAttribute` instead.   
 
 ## [1.1.4]
 ### Fixed
