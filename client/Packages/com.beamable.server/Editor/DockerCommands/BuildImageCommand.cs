@@ -59,7 +59,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public override string GetCommandString()
 		{
 			var pullStr = _pull ? "--pull" : "";
-			return $"{DockerCmd} build {pullStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\"";
+			#if BEAMABLE_DEVELOPER
+			pullStr = ""; // we cannot force the pull against the local image.
+			#endif
+
+			return $"{DockerCmd} build --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
 		}
 
 		protected override void HandleStandardOut(string data)
