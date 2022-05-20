@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Server.Editor
@@ -195,19 +196,27 @@ namespace Beamable.Server.Editor
 
 				CommonAreaService.EnsureCommon();
 
-				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null && additionalReferences.Count != 0)
+				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null &&
+				    additionalReferences.Count != 0)
 				{
+					// TODO TD000001 Code for adding dependencies to microservice require additional Assets refresh 
+					AssetDatabase.StopAssetEditing();
+					AssetDatabase.Refresh();
+					AssetDatabase.StartAssetEditing();
 					foreach (var additionalReference in additionalReferences)
 					{
 						// For creating StorageObject
 						if (additionalReference is MicroserviceModel microserviceModel)
 						{
 							var asm = microserviceModel.ServiceDescriptor.ConvertToAsset();
-							var dict = asm.AddAndRemoveReferences(new List<string> { asmName }, null);
+							Assert.IsNotNull(asm, $"Cannot find {microserviceModel.ServiceDescriptor.Name} assembly definition asset");
+							var dict = asm.AddAndRemoveReferences(new List<string> {asmName}, null);
 
 							if (serviceType == ServiceType.StorageObject)
 							{
-								AssemblyDefinitionHelper.AddMongoLibraries(dict, AssetDatabase.GetAssetPath(asm));
+								var path = AssetDatabase.GetAssetPath(asm);
+								Assert.IsFalse(string.IsNullOrWhiteSpace(path), $"Cannot find path for {asm}");
+								AssemblyDefinitionHelper.AddMongoLibraries(dict, path);
 							}
 						}
 					}
