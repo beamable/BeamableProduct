@@ -199,6 +199,7 @@ namespace Beamable.Server.Editor
 				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null &&
 				    additionalReferences.Count != 0)
 				{
+					// TODO TD000001 Code for adding dependencies to microservice require additional Assets refresh 
 					AssetDatabase.StopAssetEditing();
 					AssetDatabase.Refresh();
 					AssetDatabase.StartAssetEditing();
