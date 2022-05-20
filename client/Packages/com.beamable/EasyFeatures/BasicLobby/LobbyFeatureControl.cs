@@ -4,6 +4,7 @@ using Beamable.Common.Dependencies;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -88,6 +89,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			if (_testMode)
 			{
+				// Setting up default action to fetch test data generated locally
 				_joinLobbyPlayerSystem.GetDataAction =  _joinLobbyPlayerSystem.GetTestData;
 			}
 
@@ -115,6 +117,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private async Promise<List<SimGameType>> FetchGameTypes()
 		{
+			Assert.IsTrue(_gameTypes.Count > 0, "Game types count configured in inspector must be greater than 0");
+			
 			List<SimGameType> gameTypes = new List<SimGameType>();
 			
 			foreach (SimGameTypeRef simGameTypeRef in _gameTypes)

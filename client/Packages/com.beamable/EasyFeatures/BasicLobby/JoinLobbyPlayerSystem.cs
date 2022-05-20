@@ -17,7 +17,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public List<SimGameType> GameTypes { get; private set; } = new List<SimGameType>();
 		public bool IsVisible { get; set; }
-		public int CurrentlySelectedGameType { get; set; }
+		public int SelectedGameType { get; set; }
 		public string CurrentFilter { get; private set; }
 		public List<LobbiesListEntryPresenter.Data> LobbiesData => FilterData();
 
@@ -25,7 +25,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		protected readonly Dictionary<string, List<int>> PerGameTypeLobbiesCurrentPlayers = new Dictionary<string, List<int>>();
 		protected readonly Dictionary<string, List<int>> PerGameTypeLobbiesMaxPlayers = new Dictionary<string, List<int>>();
 		
-		protected virtual string SelectedGameTypeId => GameTypes[CurrentlySelectedGameType].Id;
+		protected virtual string SelectedGameTypeId => GameTypes[SelectedGameType].Id;
 		protected virtual IReadOnlyList<string> Names => PerGameTypeLobbiesNames[SelectedGameTypeId];
 		protected virtual IReadOnlyList<int> CurrentPlayers => PerGameTypeLobbiesCurrentPlayers[SelectedGameTypeId];
 		protected virtual IReadOnlyList<int> MaxPlayers => PerGameTypeLobbiesMaxPlayers[SelectedGameTypeId];
@@ -35,7 +35,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_matchmakingService = matchmakingService;
 			_ctx = ctx;
 			
-			CurrentlySelectedGameType = 0;
+			SelectedGameType = 0;
 			CurrentFilter = string.Empty;
 		}
 		
@@ -128,18 +128,20 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public async Promise<List<LobbiesListEntryPresenter.Data>> GetTestData()
 		{
 			await Promise.Success.WaitForSeconds(2);
-			return LobbiesTestDataHelper.GetTestLobbiesData(GameTypes[CurrentlySelectedGameType].maxPlayers);
+			return LobbiesTestDataHelper.GetTestLobbiesData(GameTypes[SelectedGameType].maxPlayers);
 		}
 
 		public async Promise<List<LobbiesListEntryPresenter.Data>> FetchData()
 		{
 			await Promise.Success.WaitForSeconds(10);
-			return LobbiesTestDataHelper.GetTestLobbiesData(GameTypes[CurrentlySelectedGameType].maxPlayers);
+			return LobbiesTestDataHelper.GetTestLobbiesData(GameTypes[SelectedGameType].maxPlayers);
 		}
 
 		public void Setup(List<SimGameType> gameTypes)
 		{
 			GameTypes = gameTypes;
+			
+			// Setting up default action to fetch data from backend
 			GetDataAction = FetchData;
 		}
 

@@ -16,7 +16,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public interface IDependencies : IBeamableViewDeps
 		{
 			bool IsVisible { get; }
-			int CurrentlySelectedGameType { get; set; }
+			int SelectedGameType { get; set; }
 			string CurrentFilter { get; }
 			List<SimGameType> GameTypes { get; }
 			List<LobbiesListEntryPresenter.Data> LobbiesData { get; }
@@ -54,9 +54,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 				return;
 			}
 			
-			// Setting up all relevant components
-			_typesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnOptionSelected, _system.CurrentlySelectedGameType);
+			// Setting up all components
+			_typesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameType);
 			
+			// TODO: wrap this in some helper
 			_filterField.onEndEdit.RemoveListener(OnFilterApplied);
 			_filterField.onEndEdit.AddListener(OnFilterApplied);
 			
@@ -84,14 +85,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 			await _viewGroup.Enrich();
 		}
 
-		private async void OnOptionSelected(int optionId)
+		private async void OnGameTypeSelected(int optionId)
 		{
-			if (optionId == _system.CurrentlySelectedGameType)
+			if (optionId == _system.SelectedGameType)
 			{
 				return;
 			}
 			
-			_system.CurrentlySelectedGameType = optionId;
+			_system.SelectedGameType = optionId;
 			
 			_noLobbiesIndicator.SetActive(false);
 			
