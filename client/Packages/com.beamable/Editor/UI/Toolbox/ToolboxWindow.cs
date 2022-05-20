@@ -25,19 +25,6 @@ using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Toolbox.UI
 {
-	//TODO: transfer this to ToolboxViewService
-	[BeamContextSystem]
-	public class CustomDependencyRegistration
-	{
-		[RegisterBeamableDependencies()]
-		public static void Build(IDependencyBuilder builder)
-		{
-			builder.RemoveIfExists<IToolboxViewService>();
-			builder.AddSingleton<IToolboxViewService, ToolboxViewService>();
-
-		}
-	}
-
 	public class ToolboxWindow : BeamEditorWindow<ToolboxWindow>
 	{
 		static ToolboxWindow()

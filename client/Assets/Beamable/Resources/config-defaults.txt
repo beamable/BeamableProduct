@@ -1,8 +1,0 @@
-{
-    "cid": "1488350186333192",
-    "alias": "roald-work",
-    "pid": "DE_1488350186333193",
-    "platform": "https://dev.api.beamable.com",
-    "socket": "https://dev.api.beamable.com",
-    "containerPrefix": ""
-}
