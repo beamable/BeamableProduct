@@ -63,7 +63,12 @@ namespace Beamable.Server.Editor.DockerCommands
 			pullStr = ""; // we cannot force the pull against the local image.
 			#endif
 
-			return $"{DockerCmd} build --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
+			var platformStr = "--platform linux/amd64";
+			#if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+			platformStr = "";
+			#endif
+
+			return $"{DockerCmd} build {pullStr} {platformStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
 		}
 
 		protected override void HandleStandardOut(string data)
