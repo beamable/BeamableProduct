@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Content;
+﻿using Beamable.Common;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +21,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 		[Header("Feature Control")]
 		[SerializeField] private bool _runOnEnable = true;
 
+		[Header("Components")]
+		[SerializeField] private GameObject _loadingIndicator;
+		
 		[Header("Fast-Path Configuration")]
 		[SerializeField] private List<SimGameTypeRef> _gameTypes;
 
@@ -54,7 +58,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Run();
 		}
 
-		[RegisterBeamableDependencies]
+		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<MainLobbyPlayerSystem, MainLobbyView.IDependencies>();
@@ -65,6 +69,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public async void Run()
 		{
+			_loadingIndicator.SetActive(true);
+			
 			// Ensures the player contexts this view is configured to use are ready (frictionless login flow completed). 
 			await _lobbyViewGroup.RebuildPlayerContexts(_lobbyViewGroup.AllPlayerCodes);
 
@@ -75,8 +81,19 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_createLobbyPlayerSystem = ctx.ServiceProvider.GetService<CreateLobbyPlayerSystem>();
 			_insideLobbyPlayerSystem = ctx.ServiceProvider.GetService<InsideLobbyPlayerSystem>();
 
-			await _joinLobbyPlayerSystem.Setup(_testMode, _gameTypes);
+			List<SimGameType> gameTypes = await FetchGameTypes();
 
+			_joinLobbyPlayerSystem.Setup(gameTypes);
+			_createLobbyPlayerSystem.Setup(gameTypes);
+
+			if (_testMode)
+			{
+				_joinLobbyPlayerSystem.GetDataAction =  _joinLobbyPlayerSystem.GetTestData;
+			}
+
+			// We need some initial data before first Enrich will be called
+			await _joinLobbyPlayerSystem.ConfigureData();
+			
 			OpenView(_currentView);
 		}
 
@@ -85,6 +102,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_currentView = newView;
 			UpdateVisibility();
 			await _lobbyViewGroup.Enrich();
+			_loadingIndicator.SetActive(false);	
 		}
 
 		private void UpdateVisibility()
@@ -93,6 +111,19 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_createLobbyPlayerSystem.IsVisible = _currentView == View.CreateLobby;
 			_joinLobbyPlayerSystem.IsVisible = _currentView == View.JoinLobby;
 			_insideLobbyPlayerSystem.IsVisible = _currentView == View.InsideLobby;
+		}
+
+		private async Promise<List<SimGameType>> FetchGameTypes()
+		{
+			List<SimGameType> gameTypes = new List<SimGameType>();
+			
+			foreach (SimGameTypeRef simGameTypeRef in _gameTypes)
+			{
+				SimGameType simGameType = await simGameTypeRef.Resolve();
+				gameTypes.Add(simGameType);
+			}
+
+			return gameTypes;
 		}
 
 		#region OnClick() delegate wrappers

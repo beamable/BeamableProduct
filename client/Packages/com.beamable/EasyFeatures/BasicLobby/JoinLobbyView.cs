@@ -16,10 +16,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public interface IDependencies : IBeamableViewDeps
 		{
 			bool IsVisible { get; }
-			List<SimGameType> GameTypes { get; }
-			int CurrentlySelectedGameType { get; }
+			int CurrentlySelectedGameType { get; set; }
 			string CurrentFilter { get; }
-			Promise FetchData();
+			List<SimGameType> GameTypes { get; }
+			List<LobbiesListEntryPresenter.Data> LobbiesData { get; }
+			Promise<List<LobbiesListEntryPresenter.Data>> FetchData();
+			void ApplyFilter(string filter);
+			Promise ConfigureData();
 		}
 		
 		[Header("View Configuration")]
@@ -34,14 +37,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 		[SerializeField] private TMP_InputField _filterField;
 		[SerializeField] private Button _clearFilterButton;
 
-		private JoinLobbyPlayerSystem _system;
+		private IDependencies _system;
 		
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
-			_system = (JoinLobbyPlayerSystem)ctx.ServiceProvider.GetService<IDependencies>();
+			_system = ctx.ServiceProvider.GetService<IDependencies>();
 
 			gameObject.SetActive(_system.IsVisible);
 
@@ -93,7 +96,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_noLobbiesIndicator.SetActive(false);
 			
 			_loadingIndicator.Toggle(true);
-			await _system.FetchData();
+			await _system.ConfigureData();
 			_loadingIndicator.Toggle(false);
 			
 			await _viewGroup.Enrich();

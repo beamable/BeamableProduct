@@ -9,8 +9,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public struct Data
 		{
 			public string Name;
-			public int CurrentUsers;
-			public int MaxUsers;
+			public int CurrentPlayers;
+			public int MaxPlayers;
 		}
 		
 		public class PoolData : PoolableScrollView.IItem
@@ -25,7 +25,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public void Setup(Data data)
 		{
 			_name.text = data.Name;
-			_users.text = $"{data.CurrentUsers}/{data.MaxUsers}";
+			_users.text = $"{data.CurrentPlayers}/{data.MaxPlayers}";
 		}
 	}
 }

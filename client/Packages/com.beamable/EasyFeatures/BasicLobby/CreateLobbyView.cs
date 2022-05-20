@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using Beamable.Common.Content;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -7,6 +9,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public interface IDependencies : IBeamableViewDeps
 		{
 			bool IsVisible { get; set; }
+			List<SimGameType> GameTypes { get; }
 		}
 		
 		[Header("View Configuration")]

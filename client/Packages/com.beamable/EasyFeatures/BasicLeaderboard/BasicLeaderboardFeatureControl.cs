@@ -11,7 +11,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 	[BeamContextSystem]
 	public class BasicLeaderboardFeatureControl : MonoBehaviour, IBeamableFeatureControl
 	{
-		[RegisterBeamableDependencies]
+		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicLeaderboardPlayerSystem,
