@@ -34,7 +34,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull=true)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull = true)
 		{
 			_descriptor = descriptor;
 			_pull = pull;
@@ -59,9 +59,9 @@ namespace Beamable.Server.Editor.DockerCommands
 		public override string GetCommandString()
 		{
 			var pullStr = _pull ? "--pull" : "";
-			#if BEAMABLE_DEVELOPER
+#if BEAMABLE_DEVELOPER
 			pullStr = ""; // we cannot force the pull against the local image.
-			#endif
+#endif
 
 			return $"{DockerCmd} build --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
 		}
