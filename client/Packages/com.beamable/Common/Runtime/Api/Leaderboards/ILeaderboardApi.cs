@@ -272,6 +272,11 @@ namespace Beamable.Common.Api.Leaderboards
 	public class LeaderBoardView
 	{
 		/// <summary>
+		/// The leaderboard id
+		/// </summary>
+		public string lbId;
+
+		/// <summary>
 		/// How many players the leaderboard may contain
 		/// </summary>
 		public long boardsize;
