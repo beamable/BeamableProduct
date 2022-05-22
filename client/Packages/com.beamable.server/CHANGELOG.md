@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for GUID based assembly references.
 - `CallableAttribute` for exposing C#MS methods that are meant to be publicly accessible (without authentication required).
+- `ListLeaderboards` method to `IMicroserviceLeaderboardsApi` will return lists of leaderboard ids.
+- `GetPlayerLeaderboards` method to `IMicroserviceLeaderboardsApi` will return leaderboards for a given player.
 
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.

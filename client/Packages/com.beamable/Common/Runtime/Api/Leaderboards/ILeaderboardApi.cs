@@ -326,6 +326,28 @@ namespace Beamable.Common.Api.Leaderboards
 		public string boardId;
 	}
 
+
+	[System.Serializable]
+	public class ListLeaderboardResult
+	{
+		/// <summary>
+		/// The total number of leaderboard ids available.
+		/// This is not the count of the <see cref="ids"/> list.
+		/// This is the actual total number of leaderboards.
+		/// </summary>
+		public int total;
+
+		/// <summary>
+		/// The number of leaderboard ids that were skipped to produce the <see cref="ids"/> list.
+		/// </summary>
+		public int offset;
+
+		/// <summary>
+		/// A list of leaderboard ids returned in this page.
+		/// </summary>
+		public List<string> ids;
+	}
+
 	[Serializable]
 	public class LeaderboardAssignmentInfo
 	{
