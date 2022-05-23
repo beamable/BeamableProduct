@@ -28,7 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inline style editor in BUSS theme manager.
 - Added `LobbyService` and `PlayerLobby` to support new Lobby functionality.
 
-
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
 - AccountHud logs a warning when pressed if there isn't an AccountManagementFlow in the scene.
