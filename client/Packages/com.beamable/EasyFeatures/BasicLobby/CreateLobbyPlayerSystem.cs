@@ -7,10 +7,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class CreateLobbyPlayerSystem : CreateLobbyView.IDependencies
 	{
-		private readonly MatchmakingService _matchmakingService;
-		private readonly IUserContext _ctx;
+		protected readonly MatchmakingService MatchmakingService;
+		protected readonly IUserContext Ctx;
+		
 		public bool IsVisible { get; set; }
-		public List<SimGameType> GameTypes { get; private set; }
+		public List<SimGameType> GameTypes { get; set; }
 		public int SelectedGameType { get; set; }
 		public Dictionary<string, bool> AccessOptions { get; } = new Dictionary<string, bool>();
 		public int SelectedAccessOption { get; set; }
@@ -19,32 +20,34 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public CreateLobbyPlayerSystem(MatchmakingService matchmakingService, IUserContext ctx)
 		{
-			_matchmakingService = matchmakingService;
-			_ctx = ctx;
+			MatchmakingService = matchmakingService;
+			Ctx = ctx;
 			
-			ResetData();
+			SelectedGameType = 0;
+			SelectedAccessOption = 0;
+			Name = string.Empty;
+			Description = string.Empty;
 			
 			AccessOptions.Add("Private", false);
 			AccessOptions.Add("Public", true);
 		}
 
-		public void Setup(List<SimGameType> gameTypes)
+		public virtual void Setup(List<SimGameType> gameTypes)
 		{
 			GameTypes = gameTypes;
 		}
 
-		public bool ValidateConfirmButton()
+		public virtual bool ValidateConfirmButton()
 		{
-			// Add more conditions if necessary
 			return Name.Length > 5;
 		}
 
-		public void ConfirmButtonClicked()
+		public virtual void ConfirmButtonClicked()
 		{
-			// Create lobby with name, description, game type and access
+			// TODO: Create lobby with name, description, game type and access
 		}
 
-		public void ResetData()
+		public virtual void ResetData()
 		{
 			SelectedGameType = 0;
 			SelectedAccessOption = 0;

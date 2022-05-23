@@ -16,12 +16,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public interface IDependencies : IBeamableViewDeps
 		{
 			bool IsVisible { get; }
-			int SelectedGameType { get; set; }
-			string CurrentFilter { get; }
+			int SelectedGameTypeIndex { get; set; }
+			string NameFilter { get; }
+			int CurrentPlayersFilter { get; }
+			int MaxPlayersFilter { get; }
 			List<SimGameType> GameTypes { get; }
 			List<LobbiesListEntryPresenter.Data> LobbiesData { get; }
-			Promise<List<LobbiesListEntryPresenter.Data>> FetchData();
-			void ApplyFilter(string filter);
+			void ApplyFilter(string name);
+			void ApplyFilter(string name, int currentPlayers, int maxPlayers);
 			Promise ConfigureData();
 		}
 		
@@ -55,7 +57,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			
 			// Setting up all components
-			_typesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameType);
+			_typesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameTypeIndex);
 			
 			// TODO: wrap this in some helper
 			_filterField.onEndEdit.RemoveListener(OnFilterApplied);
@@ -64,7 +66,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_clearFilterButton.onClick.RemoveListener(ClearButtonClicked);
 			_clearFilterButton.onClick.AddListener(ClearButtonClicked);
 			
-			_filterField.SetTextWithoutNotify(_system.CurrentFilter);
+			_filterField.SetTextWithoutNotify(_system.NameFilter);
 			
 			_lobbiesList.ClearPooledRankedEntries();
 			_lobbiesList.Setup(_system.LobbiesData);
@@ -87,12 +89,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private async void OnGameTypeSelected(int optionId)
 		{
-			if (optionId == _system.SelectedGameType)
+			if (optionId == _system.SelectedGameTypeIndex)
 			{
 				return;
 			}
 			
-			_system.SelectedGameType = optionId;
+			_system.SelectedGameTypeIndex = optionId;
 			
 			_noLobbiesIndicator.SetActive(false);
 			
