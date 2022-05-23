@@ -71,8 +71,8 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
 		public bool ColorLogs = true;
 
-		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
-		public bool EnableDockerBuildkit = false;
+		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. It is also required to deploy Microservices from an ARM based computer, like a mac computer with an M1 silicon chipset. ")]
+		public bool DisableDockerBuildkit = false;
 
 		[Tooltip("It will enable checking if docker desktop is running before you can start microservices.")]
 		public bool DockerDesktopCheckInMicroservicesWindow = true;

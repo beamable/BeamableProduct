@@ -65,6 +65,7 @@ MonoBehaviour:
   EnableDockerBuildkit: 0
   DockerAppCheckInMicroservicesWindow: 1
   DockerCommand:
+  DisableDockerBuildkit: 1
   ForwardContainerLogsToUnityConsole: 1
   LogProcessLabelColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   LogStandardOutColor: {r: 0.4, g: 0.4, b: 1, a: 1}
