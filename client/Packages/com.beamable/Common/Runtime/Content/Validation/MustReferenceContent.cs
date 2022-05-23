@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Beamable.Common.Content.Validation
 {
@@ -129,6 +130,24 @@ namespace Beamable.Common.Content.Validation
 				if (AllowNull) return;
 				throw new ContentValidationException(obj, field, "reference cannot be null. ");
 			}
+			
+			// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+			// add id prefix if it was not provided by the user
+			if (!ctx.ContentExists(id))
+			{
+				foreach (var type in AllowedTypes)
+				{
+					if (ContentRegistry.TryGetName(type, out string prefix))
+					{
+						var newId = $"{prefix}.{id}";
+						if (ctx.ContentExists(newId))
+						{
+							id = newId;
+							break;
+						}
+					}
+				}
+			}
 
 			// check for valid types on the id string
 			if (AllowedTypes.Length > 0)
@@ -150,7 +169,6 @@ namespace Beamable.Common.Content.Validation
 			}
 
 		}
-
 
 	}
 }

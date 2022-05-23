@@ -147,6 +147,10 @@ namespace Core.Platform.SDK
 
 					try
 					{
+						if (typeof(T) == typeof(Unit))
+						{
+							promise.CompleteSuccess(default);
+						}
 						var result = JsonUtility.FromJson<T>(request.downloadHandler.text);
 						promise.CompleteSuccess(result);
 					}

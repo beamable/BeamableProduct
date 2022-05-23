@@ -13,4 +13,5 @@
 LabeledCheckboxVisualElement {
     align-self: flex-start;
     height: 30px;
+    margin-left: 10px;
 }

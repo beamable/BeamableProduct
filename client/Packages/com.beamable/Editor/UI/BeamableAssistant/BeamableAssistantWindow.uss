@@ -110,8 +110,9 @@ ScrollView > #unity-content-viewport > #unity-content-container {
 }
 
 #hintTypeBlank{
-    width: 80px;
+    max-width: 80px;
     height: 20px;
+    flex: 1;
 }
 
 #hintTypeBlank VisualElement{
@@ -137,7 +138,3 @@ ScrollView > #unity-content-viewport > #unity-content-container {
     bottom: 2px;
     left: 4px;
 }
-
-
-
-
