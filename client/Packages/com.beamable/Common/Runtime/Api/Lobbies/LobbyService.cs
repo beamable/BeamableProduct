@@ -94,7 +94,7 @@ namespace Beamable.Experimental.Api.Lobbies
     /// <inheritdoc cref="ILobbyApi.AddPlayerTags"/>
     public Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null, bool replace = false)
     {
-      playerId ??= _userContext.UserId.ToString();
+      playerId = playerId ?? _userContext.UserId.ToString();
       return _requester.Request<Lobby>(
         Method.PUT,
         $"/lobbies/{lobbyId}/tags",
@@ -105,7 +105,7 @@ namespace Beamable.Experimental.Api.Lobbies
     /// <inheritdoc cref="ILobbyApi.RemovePlayerTags"/>
     public Promise<Lobby> RemovePlayerTags(string lobbyId, List<string> tags, string playerId = null)
     {
-      playerId ??= _userContext.UserId.ToString();
+      playerId = playerId ?? _userContext.UserId.ToString();
       return _requester.Request<Lobby>(
         Method.PUT,
         $"/lobbies/{lobbyId}/tags",
