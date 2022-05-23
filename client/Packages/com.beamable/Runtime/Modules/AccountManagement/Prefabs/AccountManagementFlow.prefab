@@ -146,6 +146,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -275,6 +276,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 2799820082115889319}
   Destination: {fileID: 4745204585444514366}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &4402115032970256701
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -296,6 +299,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 996912340972842550}
   Destination: {fileID: 6465702012483215171}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!225 &8190240332377473173
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -2322,6 +2327,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 4073945733028487181}
   Destination: {fileID: 4378676910141369600}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &4953741271641048690
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2358,6 +2365,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -2653,6 +2661,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -2716,6 +2725,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 7921527012276216322}
   Destination: {fileID: 5857988802421999702}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &6407169156754056266
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2737,6 +2748,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 6395882394813232849}
   Destination: {fileID: 3061331435856464880}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &5280802744206468914
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2989,6 +3002,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -3074,6 +3088,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 57179547834341748}
   Destination: {fileID: 3297496530703596320}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &3794853246150709437
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4600,6 +4616,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -4674,6 +4691,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 6676084791602323029}
   Destination: {fileID: 6918404928275674113}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &7611658419745888285
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4695,6 +4714,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 7604996754546543238}
   Destination: {fileID: 1960426892730087335}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!1 &3234476567374683030
 GameObject:
   m_ObjectHideFlags: 0
@@ -6198,6 +6219,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -6294,6 +6316,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 3971539310970364169}
   Destination: {fileID: 553556203506522391}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &1482960514400069436
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6315,6 +6339,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 1664527011986913184}
   Destination: {fileID: 3133861888457221258}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &8546931085298838672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6372,7 +6398,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0000051179522}
+  m_AnchoredPosition: {x: 0, y: 0.00000049348864}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &7805865764983868099
@@ -8088,6 +8114,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls:
@@ -9918,6 +9945,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -10020,6 +10048,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 6451087807226117789}
   Destination: {fileID: 467762701831422431}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &7252105774341926038
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10041,6 +10071,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 4927503306234382123}
   Destination: {fileID: 7844038626912435671}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!1 &6178252552943861879
 GameObject:
   m_ObjectHideFlags: 0
@@ -13676,6 +13708,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -13805,6 +13838,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 7267903802327125459}
   Destination: {fileID: 4868084229847253950}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &7011418359930127139
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13826,6 +13861,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 8465769520227208276}
   Destination: {fileID: 3756658709169149161}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!222 &3001194621948195318
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -16225,6 +16262,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 1725747549850647949}
   Destination: {fileID: 3901913089778276174}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &5280884068702109013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16261,6 +16300,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -18315,6 +18355,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Diagnostic: 0
+  _accountForgotPassword: {fileID: 3521839262667006527}
   OnToggleAccountManagement:
     m_PersistentCalls:
       m_Calls: []
@@ -18389,6 +18430,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 8065464601756468807}
   Destination: {fileID: 682023272187999451}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!114 &6548744385797564972
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18410,6 +18453,8 @@ MonoBehaviour:
       m_Calls: []
   Origin: {fileID: 4500935969389095283}
   Destination: {fileID: 606428198841947409}
+  EnabledOnlyAtOrigin: []
+  EnabledOnlyAtDest: []
 --- !u!225 &5159380018625143329
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -20888,6 +20933,11 @@ PrefabInstance:
       propertyPath: m_Color.b
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3921553537277312066, guid: 4cc9fe1cd82834188b2d02b43a92a356,
+        type: 3}
+      propertyPath: _accountForgotPassword
+      value: 
+      objectReference: {fileID: 3521839262667006527}
     - target: {fileID: 4433373740776708305, guid: 4cc9fe1cd82834188b2d02b43a92a356,
         type: 3}
       propertyPath: m_textInfo.characterCount
@@ -27378,6 +27428,11 @@ PrefabInstance:
       propertyPath: m_fontStyle
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5663248911979835550, guid: c3352fcaddc764c6cab269a25ee37f4a,
+        type: 3}
+      propertyPath: _accountForgotPassword
+      value: 
+      objectReference: {fileID: 3521839262667006527}
     - target: {fileID: 6518133207815990103, guid: c3352fcaddc764c6cab269a25ee37f4a,
         type: 3}
       propertyPath: m_sharedMaterial
@@ -30260,7 +30315,7 @@ PrefabInstance:
     - target: {fileID: 2385720494741519120, guid: d668781d0ed504ef98b6d3e66b0b2d96,
         type: 3}
       propertyPath: m_Size
-      value: 0.99999994
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2474611835730296003, guid: d668781d0ed504ef98b6d3e66b0b2d96,
         type: 3}
@@ -31005,7 +31060,7 @@ PrefabInstance:
     - target: {fileID: 5380668387825496416, guid: d668781d0ed504ef98b6d3e66b0b2d96,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 596.1189
+      value: 595.6681
       objectReference: {fileID: 0}
     - target: {fileID: 5380668387825496416, guid: d668781d0ed504ef98b6d3e66b0b2d96,
         type: 3}
@@ -31015,7 +31070,7 @@ PrefabInstance:
     - target: {fileID: 5380668387825496416, guid: d668781d0ed504ef98b6d3e66b0b2d96,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 1168.2378
+      value: 1167.3362
       objectReference: {fileID: 0}
     - target: {fileID: 5380668387825496416, guid: d668781d0ed504ef98b6d3e66b0b2d96,
         type: 3}
@@ -31620,6 +31675,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 14.799805
       objectReference: {fileID: 0}
+    - target: {fileID: 8518185033462932321, guid: d668781d0ed504ef98b6d3e66b0b2d96,
+        type: 3}
+      propertyPath: _accountForgotPassword
+      value: 
+      objectReference: {fileID: 3521839262667006527}
     - target: {fileID: 8557894665087938737, guid: d668781d0ed504ef98b6d3e66b0b2d96,
         type: 3}
       propertyPath: m_AnchoredPosition.y
