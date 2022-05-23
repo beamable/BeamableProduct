@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Content validation for ID fields will now accept IDs without the prefix
+
 ## [1.2.0]
 ### Added
 - Unity 2021 LTS support.
@@ -23,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Subscribe<T>` method to `INotificationService` to avoid awkward serialization handling.
 - Implicit conversion operators from `Optional<T>` objects wrapping a value type to matching `Nullable<T>` types.
 - Inline style editor in BUSS theme manager.
+- Added `LobbyService` and `PlayerLobby` to support new Lobby functionality.
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
@@ -36,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable third party context systems register with a default order of -1000.
 - Global style sheet is turned now into a list of global style sheets.
 - Content tags are split on `','` characters in addition to `' '`s.
+- A `IBeamableDisposable`'s `OnDispose` method can now resolve services from the `IDependencyProvider` that is being disposed.
+- `HeartBeat` will now send heartbeat requests faster for our newer live backend services such as Lobbies
 
 ### Fixed
 - StoreView prefab now works in landscape mode.

@@ -111,7 +111,7 @@ namespace Beamable.Editor.Toolbox.UI
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ToolboxWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
-			_windowRoot.TryAddScrollViewAsMainElement(ScrollViewMode.Vertical);
+			_windowRoot.TryAddScrollViewAsMainElement();
 
 			root.Add(_windowRoot);
 
