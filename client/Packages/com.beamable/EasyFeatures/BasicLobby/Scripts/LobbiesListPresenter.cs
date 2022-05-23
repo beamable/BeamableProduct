@@ -1,4 +1,5 @@
 ﻿using Beamable.UI.Scripts;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -13,11 +14,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 		
 		private readonly List<LobbiesListEntryPresenter> _spawnedEntries = new List<LobbiesListEntryPresenter>();
 		private List<LobbiesListEntryPresenter.Data> _entriesList = new List<LobbiesListEntryPresenter.Data>();
+		private Action<int> _onLobbySelected;
 
-		public void Setup(List<LobbiesListEntryPresenter.Data> entries)
+		private LobbiesListEntryPresenter _currentlySelectedLobby;
+
+		public void Setup(List<LobbiesListEntryPresenter.Data> entries, Action<int> onLobbySelected)
 		{
 			_poolableScrollView.SetContentProvider(this);
 			_entriesList = entries;
+			_onLobbySelected = onLobbySelected;
 		}
 
 		public void ClearPooledRankedEntries()
@@ -35,12 +40,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public void RebuildPooledLobbiesEntries()
 		{
 			var items = new List<PoolableScrollView.IItem>();
-			foreach (var data in _entriesList)
+			for (var i = 0; i < _entriesList.Count; i++)
 			{
+				var data = _entriesList[i];
 				var rankEntryPoolData = new LobbiesListEntryPresenter.PoolData
 				{
-					Data = data,
-					Height = 100.0f	// TODO: expose this somewhere in inspector
+					Data = data, Index = i, Height = 100.0f // TODO: expose this somewhere in inspector
 				};
 				items.Add(rankEntryPoolData);
 			}
@@ -59,7 +64,17 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbiesListEntryPresenter.PoolData poolData = item as LobbiesListEntryPresenter.PoolData;
 			Assert.IsTrue(poolData != null, "All items in this scroll view MUST be LobbiesListEntryPresenter");
 			
-			spawned.Setup(poolData.Data);
+			spawned.Setup(poolData.Data, (presenter) =>
+			{
+				if (_currentlySelectedLobby != null)
+				{
+					_currentlySelectedLobby.SetSelected(false);
+				}
+
+				_currentlySelectedLobby = presenter;
+				_currentlySelectedLobby.SetSelected(true);
+				_onLobbySelected.Invoke(poolData.Index);
+			});
 			
 			return spawned.GetComponent<RectTransform>();
 		}
@@ -69,7 +84,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			if (rt == null) return;
 			
 			// TODO: implement object pooling
-			var rankEntryPresenter = rt.GetComponent<LobbiesListEntryPresenter>();
+			LobbiesListEntryPresenter rankEntryPresenter = rt.GetComponent<LobbiesListEntryPresenter>();
+			rankEntryPresenter.Despawn();
 			_spawnedEntries.Remove(rankEntryPresenter);
 			Destroy(rankEntryPresenter.gameObject);
 		}

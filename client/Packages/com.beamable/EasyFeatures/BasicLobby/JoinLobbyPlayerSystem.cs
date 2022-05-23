@@ -4,6 +4,7 @@ using Beamable.Common.Content;
 using Beamable.Experimental.Api.Matchmaking;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -18,6 +19,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public List<SimGameType> GameTypes { get; set; } = new List<SimGameType>();
 		public bool IsVisible { get; set; }
 		public int SelectedGameTypeIndex { get; set; }
+		public int SelectedLobbyIndex { get; set; }
 		public string NameFilter { get; set; }
 		public int CurrentPlayersFilter { get; set; }
 		public int MaxPlayersFilter { get; set; }
@@ -39,6 +41,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Ctx = ctx;
 			
 			SelectedGameTypeIndex = 0;
+			SelectedLobbyIndex = -1;
 			NameFilter = string.Empty;
 		}
 		
@@ -126,6 +129,22 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			List<LobbiesListEntryPresenter.Data> data = await GetDataAction.Invoke();
 			RegisterLobbyData(SelectedGameTypeId, data);
+		}
+
+		public void OnLobbySelected(int lobbyIndex)
+		{
+			SelectedLobbyIndex = lobbyIndex;
+		}
+
+		public virtual bool CanJoinLobby()
+		{
+			if (SelectedLobbyIndex == -1)
+			{
+				return false;
+			}
+			
+			return LobbiesData[SelectedLobbyIndex].CurrentPlayers <
+				LobbiesData[SelectedLobbyIndex].MaxPlayers;
 		}
 
 		public async Promise<List<LobbiesListEntryPresenter.Data>> GetTestData()

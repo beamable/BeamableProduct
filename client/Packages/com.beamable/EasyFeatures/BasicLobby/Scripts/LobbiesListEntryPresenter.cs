@@ -1,6 +1,8 @@
 ﻿using Beamable.UI.Scripts;
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -12,20 +14,44 @@ namespace Beamable.EasyFeatures.BasicLobby
 			public int CurrentPlayers;
 			public int MaxPlayers;
 		}
-		
+
 		public class PoolData : PoolableScrollView.IItem
 		{
 			public Data Data { get; set; }
 			public float Height { get; set; }
+			public int Index { get; set; }
 		}
 
-		[SerializeField] private TextMeshProUGUI _name;
-		[SerializeField] private TextMeshProUGUI _users;
+		public TextMeshProUGUI Name;
+		public TextMeshProUGUI Users;
+		public GameObject SelectionMark;
+		public Button Button;
 
-		public void Setup(Data data)
+		private Action<LobbiesListEntryPresenter> _onLobbySelected;
+
+		public void Setup(Data data, Action<LobbiesListEntryPresenter> onLobbySelected)
 		{
-			_name.text = data.Name;
-			_users.text = $"{data.CurrentPlayers}/{data.MaxPlayers}";
+			Name.text = data.Name;
+			Users.text = $"{data.CurrentPlayers}/{data.MaxPlayers}";
+			_onLobbySelected = onLobbySelected;
+
+			Button.onClick.AddListener(OnClick);
+			SetSelected(false);
+		}
+
+		private void OnClick()
+		{
+			_onLobbySelected.Invoke(this);
+		}
+
+		public void SetSelected(bool value)
+		{
+			SelectionMark.SetActive(value);
+		}
+
+		public void Despawn()
+		{
+			Button.onClick.RemoveListener(OnClick);
 		}
 	}
 }

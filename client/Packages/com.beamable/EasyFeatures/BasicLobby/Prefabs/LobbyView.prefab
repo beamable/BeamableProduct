@@ -4403,18 +4403,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1188065238785993148}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1188065237752030573}
-        m_MethodName: OpenMainView
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!1 &1188065238857452562
 GameObject:
   m_ObjectHideFlags: 0
@@ -6915,12 +6904,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EnrichOrder: 0
   ViewGroup: {fileID: 1188065237752030579}
+  FeatureControl: {fileID: 1188065237752030573}
   TypesToggle: {fileID: 1188065239137914470}
   LoadingIndicator: {fileID: 1188065238506651005}
   NoLobbiesIndicator: {fileID: 1188065238016363340}
   LobbiesList: {fileID: 1188065239690242753}
   FilterField: {fileID: 1188065238974676513}
   ClearFilterButton: {fileID: 1188065237736671175}
+  JoinLobbyButton: {fileID: 1188065238067790521}
+  BackButton: {fileID: 1188065238785993147}
 --- !u!114 &1188065239435832511
 MonoBehaviour:
   m_ObjectHideFlags: 0
