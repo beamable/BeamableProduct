@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Content;
 using Beamable.Editor.Content;
+using Beamable.Editor.Realms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,18 +27,19 @@ namespace Beamable.Editor.UI.Common.Models
 
 		public void Initialize()
 		{
-			Default = new AvailableManifestModel() { id = DEFAULT_MANIFEST_ID };
+			Default = new AvailableManifestModel { id = DEFAULT_MANIFEST_ID };
 			RefreshAvailable();
 
 			var api = BeamEditorContext.Default;
+			ContentIO.OnManifestChanged -= HandleManifestChanged;
+			ContentIO.OnManifestsListFetched -= HandleManifestListFetched;
+			ContentIO.OnArchivedManifestsFetched -= HandleArchivedManifestListFetched;
 			ContentIO.OnManifestChanged += HandleManifestChanged;
 			ContentIO.OnManifestsListFetched += HandleManifestListFetched;
 			ContentIO.OnArchivedManifestsFetched += HandleArchivedManifestListFetched;
 
-			Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
+			Current = new AvailableManifestModel { id = ContentConfiguration.Instance.EditorManifestID };
 			OnElementChanged?.Invoke(Current);
-
-			api.OnRealmChange += _ => RefreshAvailable();
 			ContentPublisher.OnContentPublished += () => RefreshAvailable();
 		}
 

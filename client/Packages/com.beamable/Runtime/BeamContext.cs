@@ -154,7 +154,10 @@ namespace Beamable
 				? _playerStats
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
-		public PlayerLobby Lobby => _playerLobby ??= _serviceScope.GetService<PlayerLobby>();
+		/// <summary>
+		/// Access the <see cref="PlayerLobby"/> for this context.
+		/// </summary>
+		public PlayerLobby Lobby => _playerLobby = _playerLobby ?? _serviceScope.GetService<PlayerLobby>();
 
 		/// <summary>
 		/// <para>
@@ -169,7 +172,7 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="IContentApi"/> for this player.
 		/// </summary>
-		public IContentApi Content => _contentService ??= _serviceScope.GetService<IContentApi>();
+		public IContentApi Content => _contentService = _contentService ?? _serviceScope.GetService<IContentApi>();
 
 		/// <summary>
 		/// Access the <see cref="IBeamableAPI"/> for this player.
