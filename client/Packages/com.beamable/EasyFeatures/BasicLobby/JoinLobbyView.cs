@@ -28,20 +28,20 @@ namespace Beamable.EasyFeatures.BasicLobby
 		}
 		
 		[Header("View Configuration")]
-		[SerializeField] private int _enrichOrder;
-		[SerializeField] private BeamableViewGroup _viewGroup;
+		public int EnrichOrder;
+		public BeamableViewGroup ViewGroup;
 		
 		[Header("Components")]
-		[SerializeField] private MultiToggleComponent _typesToggle;
-		[SerializeField] private GameObjectToggler _loadingIndicator;
-		[SerializeField] private GameObject _noLobbiesIndicator;
-		[SerializeField] private LobbiesListPresenter _lobbiesList;
-		[SerializeField] private TMP_InputField _filterField;
-		[SerializeField] private Button _clearFilterButton;
+		public MultiToggleComponent TypesToggle;
+		public GameObjectToggler LoadingIndicator;
+		public GameObject NoLobbiesIndicator;
+		public LobbiesListPresenter LobbiesList;
+		public TMP_InputField FilterField;
+		public Button ClearFilterButton;
 
 		private IDependencies _system;
 		
-		public int GetEnrichOrder() => _enrichOrder;
+		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
@@ -57,34 +57,34 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			
 			// Setting up all components
-			_typesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameTypeIndex);
+			TypesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameTypeIndex);
 			
 			// TODO: wrap this in some helper
-			_filterField.onEndEdit.RemoveListener(OnFilterApplied);
-			_filterField.onEndEdit.AddListener(OnFilterApplied);
+			FilterField.onEndEdit.RemoveListener(OnFilterApplied);
+			FilterField.onEndEdit.AddListener(OnFilterApplied);
 			
-			_clearFilterButton.onClick.RemoveListener(ClearButtonClicked);
-			_clearFilterButton.onClick.AddListener(ClearButtonClicked);
+			ClearFilterButton.onClick.RemoveListener(ClearButtonClicked);
+			ClearFilterButton.onClick.AddListener(ClearButtonClicked);
 			
-			_filterField.SetTextWithoutNotify(_system.NameFilter);
+			FilterField.SetTextWithoutNotify(_system.NameFilter);
 			
-			_lobbiesList.ClearPooledRankedEntries();
-			_lobbiesList.Setup(_system.LobbiesData);
-			_lobbiesList.RebuildPooledLobbiesEntries();
+			LobbiesList.ClearPooledRankedEntries();
+			LobbiesList.Setup(_system.LobbiesData);
+			LobbiesList.RebuildPooledLobbiesEntries();
 			
-			_noLobbiesIndicator.SetActive(_system.LobbiesData.Count == 0);
+			NoLobbiesIndicator.SetActive(_system.LobbiesData.Count == 0);
 		}
 
 		private async void ClearButtonClicked()
 		{
 			_system.ApplyFilter(String.Empty);
-			await _viewGroup.Enrich();
+			await ViewGroup.Enrich();
 		}
 
 		private async void OnFilterApplied(string filter)
 		{
 			_system.ApplyFilter(filter);
-			await _viewGroup.Enrich();
+			await ViewGroup.Enrich();
 		}
 
 		private async void OnGameTypeSelected(int optionId)
@@ -96,13 +96,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			
 			_system.SelectedGameTypeIndex = optionId;
 			
-			_noLobbiesIndicator.SetActive(false);
+			NoLobbiesIndicator.SetActive(false);
 			
-			_loadingIndicator.Toggle(true);
+			LoadingIndicator.Toggle(true);
 			await _system.ConfigureData();
-			_loadingIndicator.Toggle(false);
+			LoadingIndicator.Toggle(false);
 			
-			await _viewGroup.Enrich();
+			await ViewGroup.Enrich();
 		}
 	}
 }

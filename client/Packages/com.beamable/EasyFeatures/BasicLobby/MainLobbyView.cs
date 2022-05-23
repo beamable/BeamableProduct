@@ -10,9 +10,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 		}
 		
 		[Header("View Configuration")]
-		[SerializeField] private int _enrichOrder;
+		public int EnrichOrder;
 
-		public int GetEnrichOrder() => _enrichOrder;
+		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{

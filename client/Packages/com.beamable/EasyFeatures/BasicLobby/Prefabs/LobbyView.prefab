@@ -713,7 +713,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43e377721e314b82a1fe4b5e8c52fcc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enrichOrder: 0
+  EnrichOrder: 0
 --- !u!114 &1188065237772038338
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1449,7 +1449,7 @@ GameObject:
   - component: {fileID: 1188065238016363342}
   - component: {fileID: 1188065238016363343}
   m_Layer: 5
-  m_Name: NoLobbiesFoundIndicator
+  m_Name: NoLobbiesIndicator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5626,7 +5626,7 @@ GameObject:
   - component: {fileID: 1188065239137914467}
   - component: {fileID: 1188065239137914468}
   m_Layer: 5
-  m_Name: MultiToggle
+  m_Name: GameTypesToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6032,16 +6032,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb4bae053a6047efb0e54b4df835c16f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enrichOrder: 0
-  _viewGroup: {fileID: 1188065239251271950}
-  _featureControl: {fileID: 1188065237752030573}
-  _typesToggle: {fileID: 8332043493407486627}
-  _accessToggle: {fileID: 7602166289689200614}
-  _name: {fileID: 2689877016498116497}
-  _description: {fileID: 4623785355773102502}
-  _confirmButton: {fileID: 1188065238893719793}
-  _cancelButton: {fileID: 1188065239183895657}
-  _backButton: {fileID: 1188065238070853794}
+  EnrichOrder: 0
+  FeatureControl: {fileID: 1188065237752030573}
+  TypesToggle: {fileID: 8332043493407486627}
+  AccessToggle: {fileID: 7602166289689200614}
+  Name: {fileID: 2689877016498116497}
+  Description: {fileID: 4623785355773102502}
+  ConfirmButton: {fileID: 1188065238893719793}
+  CancelButton: {fileID: 1188065239183895657}
+  BackButton: {fileID: 1188065238070853794}
 --- !u!114 &1188065239251271950
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6914,14 +6913,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bc282a8e3dc41bd96ac33c44ceeadde, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enrichOrder: 0
-  _viewGroup: {fileID: 1188065237752030579}
-  _typesToggle: {fileID: 1188065239137914470}
-  _loadingIndicator: {fileID: 1188065238506651005}
-  _noLobbiesIndicator: {fileID: 1188065238016363340}
-  _lobbiesList: {fileID: 1188065239690242753}
-  _filterField: {fileID: 1188065238974676513}
-  _clearFilterButton: {fileID: 1188065237736671175}
+  EnrichOrder: 0
+  ViewGroup: {fileID: 1188065237752030579}
+  TypesToggle: {fileID: 1188065239137914470}
+  LoadingIndicator: {fileID: 1188065238506651005}
+  NoLobbiesIndicator: {fileID: 1188065238016363340}
+  LobbiesList: {fileID: 1188065239690242753}
+  FilterField: {fileID: 1188065238974676513}
+  ClearFilterButton: {fileID: 1188065237736671175}
 --- !u!114 &1188065239435832511
 MonoBehaviour:
   m_ObjectHideFlags: 0

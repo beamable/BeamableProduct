@@ -25,22 +25,21 @@ namespace Beamable.EasyFeatures.BasicLobby
 		}
 
 		[Header("View Configuration")]
-		[SerializeField] private int _enrichOrder;
-		[SerializeField] private BeamableViewGroup _viewGroup;
-		[SerializeField] private LobbyFeatureControl _featureControl;
+		public int EnrichOrder;
+		public LobbyFeatureControl FeatureControl;
 		
 		[Header("Components")]
-		[SerializeField] private MultiToggleComponent _typesToggle;
-		[SerializeField] private MultiToggleComponent _accessToggle;
-		[SerializeField] private TMP_InputField _name;
-		[SerializeField] private TMP_InputField _description;
-		[SerializeField] private Button _confirmButton;
-		[SerializeField] private Button _cancelButton;
-		[SerializeField] private Button _backButton;
+		public MultiToggleComponent TypesToggle;
+		public MultiToggleComponent AccessToggle;
+		public TMP_InputField Name;
+		public TMP_InputField Description;
+		public Button ConfirmButton;
+		public Button CancelButton;
+		public Button BackButton;
 
 		private IDependencies _system;
 		
-		public int GetEnrichOrder() => _enrichOrder;
+		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
@@ -56,33 +55,33 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			
 			// Setting up all components
-			_typesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameType);
-			_accessToggle.Setup(_system.AccessOptions.Select(pair => pair.Key).ToList(), OnAccessOptionSelected, _system.SelectedAccessOption);
+			TypesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameType);
+			AccessToggle.Setup(_system.AccessOptions.Select(pair => pair.Key).ToList(), OnAccessOptionSelected, _system.SelectedAccessOption);
 			
-			_name.SetTextWithoutNotify(_system.Name);
-			_description.SetTextWithoutNotify(_system.Description);
+			Name.SetTextWithoutNotify(_system.Name);
+			Description.SetTextWithoutNotify(_system.Description);
 			
-			_name.onValueChanged.RemoveListener(OnNameChanged);
-			_name.onValueChanged.AddListener(OnNameChanged);
+			Name.onValueChanged.RemoveListener(OnNameChanged);
+			Name.onValueChanged.AddListener(OnNameChanged);
 			
-			_description.onValueChanged.RemoveListener(OnDescriptionChanged);
-			_description.onValueChanged.AddListener(OnDescriptionChanged);
+			Description.onValueChanged.RemoveListener(OnDescriptionChanged);
+			Description.onValueChanged.AddListener(OnDescriptionChanged);
 			
-			_confirmButton.onClick.RemoveListener(ConfirmButtonClicked);
-			_confirmButton.onClick.AddListener(ConfirmButtonClicked);
-			_confirmButton.interactable = _system.ValidateConfirmButton();
+			ConfirmButton.onClick.RemoveListener(ConfirmButtonClicked);
+			ConfirmButton.onClick.AddListener(ConfirmButtonClicked);
+			ConfirmButton.interactable = _system.ValidateConfirmButton();
 			
-			_cancelButton.onClick.RemoveListener(CancelButtonClicked);
-			_cancelButton.onClick.AddListener(CancelButtonClicked);
+			CancelButton.onClick.RemoveListener(CancelButtonClicked);
+			CancelButton.onClick.AddListener(CancelButtonClicked);
 			
-			_backButton.onClick.RemoveListener(CancelButtonClicked);
-			_backButton.onClick.AddListener(CancelButtonClicked);
+			BackButton.onClick.RemoveListener(CancelButtonClicked);
+			BackButton.onClick.AddListener(CancelButtonClicked);
 		}
 
 		private void CancelButtonClicked()
 		{
 			_system.ResetData();
-			_featureControl.OpenMainView();
+			FeatureControl.OpenMainView();
 		}
 
 		private void ConfirmButtonClicked()
@@ -93,7 +92,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private void OnNameChanged(string value)
 		{
 			_system.Name = value;
-			_confirmButton.interactable = _system.ValidateConfirmButton();
+			ConfirmButton.interactable = _system.ValidateConfirmButton();
 		}
 
 		private void OnDescriptionChanged(string value)
