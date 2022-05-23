@@ -142,5 +142,41 @@ namespace Beamable.Server.Api.Leaderboards
             var json = Json.Serialize(dict, pooledBuilder.Builder);
             return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE_PATH}/{leaderboardId}", json);
         }
+
+        public async Promise<ListLeaderboardResult> ListLeaderboards(int? skip = null, int? limit=50)
+        {
+            using var pooledBuilder = StringBuilderPool.StaticPool.Spawn();
+
+            var req = new ArrayDict();
+            if (skip.HasValue)
+            {
+                req["skip"] = skip;
+            }
+            if (limit.HasValue)
+            {
+                req["limit"] = limit;
+            }
+            var json = Json.Serialize(req, pooledBuilder.Builder);
+
+            var res = await Requester.Request<ListLeaderboardResponse>(
+                Method.GET,
+                $"/basic/leaderboards/list",
+                json
+            );
+            return new ListLeaderboardResult
+            {
+                ids = res.nameList,
+                offset = res.offset,
+                total = res.total
+            };
+        }
+
+        public Promise<GetPlayerLeaderboardsResponse> GetPlayerLeaderboards(long gamerTag)
+        {
+            return Requester.Request<GetPlayerLeaderboardsResponse>(
+                Method.GET,
+                $"/basic/leaderboards/player?dbid={gamerTag}"
+            );
+        }
     }
 }
