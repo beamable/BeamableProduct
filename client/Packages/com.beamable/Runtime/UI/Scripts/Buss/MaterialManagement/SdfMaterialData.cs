@@ -8,6 +8,7 @@ namespace Beamable.UI.Sdf
 		public SdfImage.SdfMode imageMode;
 		public SdfShadowMode shadowMode;
 		public SdfBackgroundMode backgroundMode;
+		public bool isBackgroundTexMain;
 
 		public override bool Equals(object other)
 		{
@@ -17,7 +18,8 @@ namespace Beamable.UI.Sdf
 				   && d.secondaryTextureID == secondaryTextureID
 				   && d.imageMode == imageMode
 				   && d.shadowMode == shadowMode
-				   && d.backgroundMode == backgroundMode;
+				   && d.backgroundMode == backgroundMode
+			       && d.isBackgroundTexMain == isBackgroundTexMain;
 		}
 
 		public override int GetHashCode()
@@ -31,6 +33,7 @@ namespace Beamable.UI.Sdf
 				hashcode = hashcode * 7302013 ^ imageMode.GetHashCode();
 				hashcode = hashcode * 7302013 ^ shadowMode.GetHashCode();
 				hashcode = hashcode * 7302013 ^ backgroundMode.GetHashCode();
+				hashcode = hashcode * 7302013 ^ isBackgroundTexMain.GetHashCode();
 				return hashcode;
 			}
 		}
