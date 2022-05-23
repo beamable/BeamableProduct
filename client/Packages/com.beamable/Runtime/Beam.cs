@@ -47,6 +47,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Beamable.Common.Api.Presence;
+using Beamable.Experimental.Api.Lobbies;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -148,6 +150,14 @@ namespace Beamable
 															  provider,
 															  UnityUserDataCache<Dictionary<string, string>>
 																  .CreateInstance));
+			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
+				// the lobby service needs a special instance of the beamable api requester
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
+			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
+				// the presence service needs a special instance of the beamable api requester
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
 																 new AnalyticsTracker(
 																	 provider.GetService<IPlatformService>(),
@@ -196,6 +206,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
+			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
 
 			// register module configurations. XXX: move these registrations into their own modules?
