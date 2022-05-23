@@ -7,15 +7,14 @@ namespace Beamable.Server.Api.RealmConfig
 {
 	/// <summary>
 	/// This type defines the %Microservice main entry point for the %Realm %Configuration feature.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/realm-configuration-feature">Realm Configuration</a> feature documentation
 	/// - See Beamable.Server.IBeamableServices script reference
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public interface IMicroserviceRealmConfigService
 	{
@@ -34,15 +33,14 @@ namespace Beamable.Server.Api.RealmConfig
 
 	/// <summary>
 	/// This type defines the %Microservice main entry point for the %Realm %Configuration feature.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/realm-configuration-feature">Realm Configuration</a> feature documentation
 	/// - See Beamable.Server.IBeamableServices script reference
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public class RealmConfig : ReadOnlyDictionary<string, RealmConfigNamespaceData>
 	{

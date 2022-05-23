@@ -288,9 +288,11 @@ namespace Beamable
 			{
 				await BeamEditorContext.Default.InitializePromise;
 
+#if BEAMABLE_DEVELOPER
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
 						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
 						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+#endif
 				IsInitialized = true;
 
 				// Initialize toolbar
@@ -820,22 +822,15 @@ namespace Beamable
 
 		public async Promise CreateCustomer(string alias, string gameName, string email, string password)
 		{
-			async Task HandleNewCustomerAndUser(TokenResponse token, string cid, string pid)
+			async Promise HandleNewCustomerAndUser(TokenResponse tokenResponse, string cid, string pid)
 			{
 				SaveConfig(alias, pid, null, cid);
-
-				await Login(token);
-				await DoSilentContentPublish(true);
-			}
-
-			async Promise Login(TokenResponse tokenResponse)
-			{
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
-				var cid = CurrentCustomer.Cid;
-				var pid = CurrentRealm.Pid;
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
 											tokenResponse.refresh_token, tokenResponse.expires_in);
-				await this.Login(token);
+				CurrentRealm = null; // erase the current realm; if there is one..
+				await Login(token, pid);
+				await DoSilentContentPublish(true);
 			}
 
 			var customerName = alias; // TODO: For now...
@@ -843,14 +838,7 @@ namespace Beamable
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 
 			var res = await authService.RegisterCustomer(email, password, gameName, customerName, alias);
-			var task = HandleNewCustomerAndUser(res.token, res.cid.ToString(), res.pid);
-			var promise = new Promise<Unit>();
-			await task.ContinueWith(_ =>
-			{
-				// Put the execution back on the Editor thread; lest ye suffer Unity's wrath.
-				EditorApplication.delayCall += () => { promise.CompleteSuccess(PromiseBase.Unit); };
-			});
-			await promise;
+			await HandleNewCustomerAndUser(res.token, res.cid.ToString(), res.pid);
 		}
 
 		public async Promise SendPasswordReset(string cidOrAlias, string email)

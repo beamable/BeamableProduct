@@ -49,7 +49,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                .AddMessageHandler(
                   MessageMatcher
                      .WithReqId(-5),
-                  MessageResponder.Success("{\"results\": [ {\"id\": 0, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
+                  MessageResponder.Success("{\"results\": [ {\"id\": 1, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
                   MessageFrequency.OnlyOnce())
                .AddMessageHandler(
                   MessageMatcher
@@ -64,7 +64,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<StatMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetStats), 1, 0, "game", "private", "player"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetStats), 1, 1, "game", "private", "player"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -84,7 +84,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                .AddMessageHandler(
                   MessageMatcher
                      .WithReqId(-5),
-                  MessageResponder.Success("{\"results\": [ {\"id\": 0, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [\"123\",3] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
+                  MessageResponder.Success("{\"results\": [ {\"id\": 1, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [\"123\",3] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
                   MessageFrequency.OnlyOnce())
                .AddMessageHandler(
                   MessageMatcher
@@ -99,7 +99,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<StatMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetStats), 1, 0, "game", "private", "player"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetStats), 1, 1, "game", "private", "player"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -134,7 +134,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<StatMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 0, "TRIALS"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 1, "TRIALS"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -169,7 +169,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<StatMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 0, "TRIALS"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 1, "TRIALS"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -204,7 +204,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<StatMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 0, "Session"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 1, "Session"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -239,7 +239,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<StatMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 0, "tuna"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_statservice", nameof(StatMicroservice.GetPrivateStats), 1, 1, "tuna"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
