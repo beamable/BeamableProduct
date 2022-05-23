@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ListLeaderboards` method to `IMicroserviceLeaderboardsApi` will return lists of leaderboard ids.
 - `GetPlayerLeaderboards` method to `IMicroserviceLeaderboardsApi` will return leaderboards for a given player.
 - `lbId` field to the `LeaderboardView` response class.
+- `DisableDockerBuildkit` property to the MicroserviceConfiguration. By default, Docker buildkit will now be enabled.
 
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
@@ -27,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Building microservices will always pull the latest version of dependent alpine linux Docker base images.
 - `ClientCallableAttribute` is now only accessible to authenticated users. For a fully public endpoint, use `CallableAttribute` instead.   
 - Microservices will be built specifically for linux/amd64 architecture. For developers with ARM based CPU architectures, enable to the `DockerBuildkit` setting in the Microservice Configuration to publish microservices. 
+
+### Removed
+- `EnableDockerBuildkit` property from the MicroserviceConfiguration. By default, Docker buildkit will now be enabled. Disable it again with the new `DisableDockerBuildkit` field.
 
 ## [1.1.4]
 ### Fixed
