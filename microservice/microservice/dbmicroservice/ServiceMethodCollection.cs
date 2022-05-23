@@ -28,6 +28,13 @@ namespace Beamable.Server
             {
                throw new MissingScopesException(ctx.Scopes);
             }
+
+            // Required Auth User Check
+            if (ctx.UserId == 0 && method.RequireAuthenticatedUser)
+            {
+               throw new UnauthorizedUserException(method.Path);
+            }
+
             var output = method.Execute(ctx, parameterProvider);
             var result = await output;
             BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);

@@ -4,14 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unrelased]
+
+## [1.2.0]
+### Added
+- Support for GUID based assembly references.
+- `CallableAttribute` for exposing C#MS methods that are meant to be publicly accessible (without authentication required).
+- `ListLeaderboards` method to `IMicroserviceLeaderboardsApi` will return lists of leaderboard ids.
+- `GetPlayerLeaderboards` method to `IMicroserviceLeaderboardsApi` will return leaderboards for a given player.
+- `lbId` field to the `LeaderboardView` response class.
+
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
-- Fixed Microstorage Docker nulls on Unity startup.
-- Running services no longer stop when entering playmode
+- Removed Microstorage related null reference errors on Unity startup.
 - `IMicroserviceNotificationsApi` can now send strings with spaces in them for messages.
 - `IMicroserviceLeaderboardsApi` will now respect `HasValue` flag of `Optional<T>` derived types in all cases.
-- Fixed MicroserviceExceptions in Microservices.
+- Fixed issue with Publish flow that caused an invalid Manifest data to exist when publishing any services along a service whose source code was no longer in the project
+- Fixed issue that made it possible to start a remote service without its dependencies up and running (only happened in cases where the service was only remote --- ie: the source code for it was not present in the project)   
+
+### Changed
+- Building microservices will always pull the latest version of dependent alpine linux Docker base images.
+- `ClientCallableAttribute` is now only accessible to authenticated users. For a fully public endpoint, use `CallableAttribute` instead.   
+- Microservices will be built specifically for linux/amd64 architecture. For developers with ARM based CPU architectures, enable to the `DockerBuildkit` setting in the Microservice Configuration to publish microservices. 
+
+## [1.1.4]
+### Fixed
+- Thrown `MicroserviceExceptions` from `[ClientCallable]` methods will result in an appropriate error response.
+
+## [1.1.3]
+no changes
 
 ## [1.1.2]
 ### Fixed

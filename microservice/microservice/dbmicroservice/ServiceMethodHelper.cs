@@ -44,7 +44,7 @@ namespace Beamable.Server
          foreach (var method in allMethods)
          {
             var closureMethod = method;
-            var attribute = method.GetCustomAttribute<ClientCallableAttribute>();
+            var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null) continue;
 
             var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
@@ -72,6 +72,7 @@ namespace Beamable.Server
             servicePath = provider.pathPrefix + servicePath;
 
             var requiredScopes = attribute.RequiredScopes;
+            var requiredUser = attribute.RequireAuthenticatedUser;
 
             Log.Debug("Found {method} for {path}", method.Name, servicePath);
 
@@ -154,6 +155,7 @@ namespace Beamable.Server
                ParameterNames = parameterNames,
                ParameterDeserializers = namedDeserializers,
                RequiredScopes = requiredScopes,
+               RequireAuthenticatedUser = requiredUser,
                Path = servicePath,
                Deserializers = deserializers,
                Method = method,
