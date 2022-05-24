@@ -164,7 +164,7 @@ namespace Beamable.Common.Player
 
 		public event Action<T> OnDataUpdated;
 
-		public T Value
+		public virtual T Value
 		{
 			get => _data;
 			set
