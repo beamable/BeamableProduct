@@ -26,7 +26,6 @@ namespace Beamable.Common.Content.Validation
 		{
 			AllowNull = allowNull;
 			AllowedTypes = allowedTypes;
-			
 		}
 
 		public override void Validate(ContentValidationArgs args)
