@@ -1,5 +1,6 @@
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Announcements
@@ -53,7 +54,7 @@ namespace Beamable.Common.Announcements
 
 	[System.Serializable]
 	[Agnostic]
-	public class AnnouncementAttachment
+	public class AnnouncementAttachment : ISerializationCallbackReceiver
 	{
 		[Tooltip("This should be the contentId of the attachment. Either an item id, or a currency id.")]
 		[MustBeCurrencyOrItem]
@@ -67,5 +68,24 @@ namespace Beamable.Common.Announcements
 		[MustBeOneOf("currency", "items")]
 		// TODO: [MustMatchReference(nameof(symbol))]
 		public string type;
+		
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			var allowedValues = new [] {"currency", "items"};
+			var idParts = symbol.Split('.');
+			if (!string.IsNullOrWhiteSpace(type))
+			{
+				if (idParts.Length > 0 && allowedValues.Contains(type))
+				{
+					symbol = $"{type}.{idParts.Last()}";
+				}
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 }

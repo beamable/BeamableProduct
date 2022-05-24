@@ -166,7 +166,7 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class LeaderboardUpdate
+	public class LeaderboardUpdate : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipLeaderboard1)]
 		// TODO: This should be a LeaderboardRef but the serialization isn't supported on the backend.
@@ -175,6 +175,20 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipScoringAlgorithm1)]
 		public ScoringAlgorithm scoringAlgorithm;
+		
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			if (!leaderboard.Contains('.') && !string.IsNullOrWhiteSpace(leaderboard))
+			{
+				leaderboard = $"leaderboards.{leaderboard}";
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 
 	[System.Serializable]

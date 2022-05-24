@@ -245,7 +245,7 @@ namespace Beamable.Common.Content
 	}
 
 	[Serializable]
-	public class EventItemObtain
+	public class EventItemObtain : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipId1)]
 		[MustBeItem]
@@ -253,5 +253,19 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipProperty1)]
 		public OptionalSerializableDictionaryStringToString properties;
+		
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			if (!id.Contains('.') && !string.IsNullOrWhiteSpace(id))
+			{
+				id = $"items.{id}";
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 }

@@ -5,6 +5,7 @@ using Beamable.Content;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -187,7 +188,7 @@ namespace Beamable.Common.Shop
 	}
 
 	[System.Serializable]
-	public class ListingPrice
+	public class ListingPrice : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipType1)]
 		[MustBeOneOf("sku", "currency")]
@@ -200,6 +201,26 @@ namespace Beamable.Common.Shop
 		[Tooltip(ContentObject.TooltipAmount1)]
 		[MustBeNonNegative]
 		public int amount;
+
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			var allowedValues = new [] {"sku", "currency"};
+			var idParts = symbol.Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
+			if (!string.IsNullOrWhiteSpace(type))
+			{
+				if (idParts.Length > 0 && allowedValues.Contains(type))
+				{
+					string contentType = type == "sku" ? "skus" : type; // one special case when 'type' is not a content id prefix
+					symbol = $"{contentType}.{idParts.Last()}";
+				}
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 
 	[System.Serializable]
@@ -215,7 +236,7 @@ namespace Beamable.Common.Shop
 	}
 
 	[System.Serializable]
-	public class OfferRequirement
+	public class OfferRequirement : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipSymbol1)]
 		[MustReferenceContent(AllowedTypes = new[] { typeof(ListingContent) })]
@@ -223,6 +244,20 @@ namespace Beamable.Common.Shop
 
 		[Tooltip(ContentObject.TooltipPurchase1)]
 		public OfferConstraint purchases;
+		
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			if (!offerSymbol.Contains('.') && !string.IsNullOrWhiteSpace(offerSymbol))
+			{
+				offerSymbol = $"listings.{offerSymbol}";
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 
 	[System.Serializable]
