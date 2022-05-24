@@ -265,9 +265,11 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public static void HandleBuildCommandOutput(IBeamableBuilder builder, string message)
 		{
+			const int expectedBuildSteps = 11;
+
 			if (message == null)
 				return;
-
+			
 			var stepsRegex = MicroserviceConfiguration.Instance.DisableDockerBuildkit
 				? StepRegex
 				: StepBuildKitRegex;
@@ -276,7 +278,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				var values = NumberRegex.Matches(match.Value);
 				var current = int.Parse(values[0].Value);
-				var total = values.Count > 1 ? int.Parse(values[1].Value) : 11;
+				var total = values.Count > 1 ? int.Parse(values[1].Value) : expectedBuildSteps;
 				builder.OnBuildingProgress?.Invoke(current, total);
 			}
 			else if (ContextForLogs.Keys.Any(message.Contains))
