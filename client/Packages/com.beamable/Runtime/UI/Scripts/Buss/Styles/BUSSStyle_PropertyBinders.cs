@@ -13,6 +13,9 @@ namespace Beamable.UI.Buss
 		private static Dictionary<string, IPropertyBinding> _bindings = new Dictionary<string, IPropertyBinding>();
 
 		protected readonly Dictionary<string, IBussProperty> _properties = new Dictionary<string, IBussProperty>();
+		
+		public static readonly PropertyBinding<MainTextureBussProperty> MainTextureSource =
+			new PropertyBinding<MainTextureBussProperty>("mainTexture", new MainTextureBussProperty(MainTextureBussProperty.Options.SdfSprite));
 
 		// Shape
 		public static readonly PropertyBinding<IFloatBussProperty> Threshold =
@@ -26,6 +29,12 @@ namespace Beamable.UI.Buss
 
 		public static readonly PropertyBinding<ImageTypeBussProperty> ImageType =
 			new PropertyBinding<ImageTypeBussProperty>("imageType", new ImageTypeBussProperty());
+		
+		public static readonly PropertyBinding<FloatBussProperty> PixelsPerUnitMultiplier =
+			new PropertyBinding<FloatBussProperty>("pixelsPerUnitMultiplier", new FloatBussProperty(1f));
+		
+		public static readonly PropertyBinding<NineSliceSourceBussProperty> NineSliceSource =
+			new PropertyBinding<NineSliceSourceBussProperty>("nineSliceSource", new NineSliceSourceBussProperty(Sdf.SdfImage.NineSliceSource.SdfFirst));
 
 		// Background
 		public static readonly PropertyBinding<IVertexColorBussProperty> BackgroundColor =
