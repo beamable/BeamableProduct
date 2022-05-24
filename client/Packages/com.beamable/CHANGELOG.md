@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Content validation for ID fields will now accept IDs without the prefix
+- It is now possible to set background sprite as a main texture in SDF Image.
+- It is now possible to choose 9-slice source and Pixels Per Unit multiplier in SDF image.
 
 ## [1.2.0]
 ### Added
