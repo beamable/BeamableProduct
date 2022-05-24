@@ -161,8 +161,14 @@ namespace Beamable.UI.Sdf
 			var size = rt.rect.size;
 
 			var slicedSprite = NineSliceSourceSprite;
+
+#if UNITY_2019_1_OR_NEWER
+			var ppu = slicedSprite.pixelsPerUnit * pixelsPerUnitMultiplier;
+#else
+			var ppu = slicedSprite.pixelsPerUnit;
+#endif
 			
-			ImageMeshUtility.Calculate9SliceValue(slicedSprite, size, rectTransform.pivot, slicedSprite.pixelsPerUnit * pixelsPerUnitMultiplier,
+			ImageMeshUtility.Calculate9SliceValue(slicedSprite, size, rectTransform.pivot, ppu,
 				out var positions, out var uvs, out var coords);
 
 			var bgRect = GetNormalizedSpriteRect(secondaryTexture);
@@ -218,7 +224,9 @@ namespace Beamable.UI.Sdf
 			isBackgroundTexMain = BussStyle.MainTextureSource.Get(Style).Enum ==
 			                      MainTextureBussProperty.Options.BackgroundSprite;
 			imageType = BussStyle.ImageType.Get(Style).Enum;
+#if UNITY_2019_1_OR_NEWER
 			pixelsPerUnitMultiplier = BussStyle.PixelsPerUnitMultiplier.Get(Style).FloatValue;
+#endif
 			nineSliceSource = BussStyle.NineSliceSource.Get(Style).Enum;
 			
 			// color
