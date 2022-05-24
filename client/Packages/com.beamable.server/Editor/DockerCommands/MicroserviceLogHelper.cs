@@ -14,7 +14,10 @@ namespace Beamable.Server.Editor.DockerCommands
 	public static class MicroserviceLogHelper
 	{
 		public static int RunLogsSteps => ExpectedRunLogs.Length;
+
 		private static readonly Regex StepRegex = new Regex("Step [0-9]+/[0-9]+");
+		private static readonly Regex StepBuildKitRegex = new Regex("#[0-9]+");
+
 		private static readonly Regex NumberRegex = new Regex("[0-9]+");
 		private static readonly string[] ErrorElements = {
 			"error",
@@ -264,12 +267,16 @@ namespace Beamable.Server.Editor.DockerCommands
 		{
 			if (message == null)
 				return;
-			var match = StepRegex.Match(message);
+
+			var stepsRegex = MicroserviceConfiguration.Instance.DisableDockerBuildkit
+				? StepRegex
+				: StepBuildKitRegex;
+			var match = stepsRegex.Match(message);
 			if (match.Success)
 			{
 				var values = NumberRegex.Matches(match.Value);
 				var current = int.Parse(values[0].Value);
-				var total = int.Parse(values[1].Value);
+				var total = values.Count > 1 ? int.Parse(values[1].Value) : 11;
 				builder.OnBuildingProgress?.Invoke(current, total);
 			}
 			else if (ContextForLogs.Keys.Any(message.Contains))
