@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.UI;
 
 namespace Beamable.Common.Content.Validation
 {
@@ -26,6 +27,7 @@ namespace Beamable.Common.Content.Validation
 		{
 			AllowNull = allowNull;
 			AllowedTypes = allowedTypes;
+			
 		}
 
 		public override void Validate(ContentValidationArgs args)
@@ -133,19 +135,49 @@ namespace Beamable.Common.Content.Validation
 			
 			// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 			// add id prefix if it was not provided by the user
-			if (!ctx.ContentExists(id))
+			void SetPrefixFromTypeField(string id)
 			{
-				foreach (var type in AllowedTypes)
+				// get prefix from the `type` field
+				Type fieldType = field.Field.DeclaringType;
+				if (fieldType != null)
 				{
-					if (ContentRegistry.TryGetName(type, out string prefix))
+					var typeField = fieldType.GetField("type");
+					if (typeField != null)
 					{
-						var newId = $"{prefix}.{id}";
-						if (ctx.ContentExists(newId))
+						string typeValue = typeField.GetValue(field.Target).ToString();
+						if (!string.IsNullOrWhiteSpace(typeValue))
 						{
-							id = newId;
-							break;
+							string fullId = $"{typeValue}.{id}";
+							field.Field.SetValue(field.Target, fullId);
 						}
 					}
+				}
+			}
+			if (!ctx.ContentExists(id))
+			{
+				var idParts = id.Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
+				if (idParts.Length != 2)
+				{
+					// add obvious prefix
+					if (AllowedTypes.Length == 1)
+					{
+						if (ContentRegistry.TryGetName(AllowedTypes[0], out string prefix))
+						{
+							var newId = $"{prefix}.{id}";
+							if (ctx.ContentExists(newId))
+							{
+								field.Field.SetValue(field.Target, newId);
+							}
+						}
+					}
+					else if (idParts.Length > 0)
+					{
+						SetPrefixFromTypeField(idParts.Last());
+					}
+				}
+				else if (idParts.Length == 2)
+				{
+					SetPrefixFromTypeField(idParts.Last());
 				}
 			}
 
