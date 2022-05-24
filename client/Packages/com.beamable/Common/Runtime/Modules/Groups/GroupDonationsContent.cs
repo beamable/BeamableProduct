@@ -38,7 +38,6 @@ namespace Beamable.Common.Groups
 		{
 			if (allowedCurrencies != null)
 			{
-				// foreach (var currency in allowedCurrencies)
 				for (int i = 0; i < allowedCurrencies.Count; i++)
 				{
 					if (allowedCurrencies[i] != null && !allowedCurrencies[i].Contains('.') && !string.IsNullOrWhiteSpace(allowedCurrencies[i]))
