@@ -19,8 +19,8 @@ namespace Beamable.Server.Api.Stats
 
         public RequestContext Context { get; }
 
-        public MicroserviceStatsApi(IBeamableRequester requester, RequestContext context, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
-           : base(requester, context, provider, factoryFunction)
+        public MicroserviceStatsApi(IBeamableRequester requester, RequestContext context, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction, bool useOfflineMode = true)
+           : base(requester, context, provider, factoryFunction, useOfflineMode)
         {
             Requester = requester;
             Context = context;
