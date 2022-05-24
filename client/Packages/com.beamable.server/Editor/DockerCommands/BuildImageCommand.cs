@@ -91,7 +91,12 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void Resolve()
 		{
-			bool success = string.IsNullOrEmpty(StandardErrorBuffer);
+			bool success = StandardErrorBuffer.Contains($"naming to docker.io/library/{_descriptor.ImageName} done");
+			if (MicroserviceConfiguration.Instance.DisableDockerBuildkit)
+			{
+				success = string.IsNullOrEmpty(StandardErrorBuffer);
+			}
+
 			SetAsBuild(_descriptor, success);
 			if (success)
 			{
