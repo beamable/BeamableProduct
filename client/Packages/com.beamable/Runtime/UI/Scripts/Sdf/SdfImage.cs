@@ -162,7 +162,8 @@ namespace Beamable.UI.Sdf
 
 			var slicedSprite = NineSliceSourceSprite;
 			
-			ImageMeshUtility.Calculate9SliceValue(slicedSprite, size, rectTransform.pivot, slicedSprite.pixelsPerUnit * pixelsPerUnitMultiplier);
+			ImageMeshUtility.Calculate9SliceValue(slicedSprite, size, rectTransform.pivot, slicedSprite.pixelsPerUnit * pixelsPerUnitMultiplier,
+				out var positions, out var uvs, out var coords);
 
 			var bgRect = GetNormalizedSpriteRect(secondaryTexture);
 			bool isBackgroundSliced = IsNineSliceFromBackgroundTexture;
@@ -171,14 +172,14 @@ namespace Beamable.UI.Sdf
 			{
 				for (int yi = 0; yi < 3; yi++)
 				{
-					var posMin = new Vector2(ImageMeshUtility.PositionValues[xi].x, ImageMeshUtility.PositionValues[yi].y);
-					var posSize = new Vector2(ImageMeshUtility.PositionValues[xi + 1].x, ImageMeshUtility.PositionValues[yi + 1].y) - posMin;
+					var posMin = new Vector2(positions[xi].x, positions[yi].y);
+					var posSize = new Vector2(positions[xi + 1].x, positions[yi + 1].y) - posMin;
 					var positionRect = new Rect(posMin, posSize);
-					var uvMin = new Vector2(ImageMeshUtility.UVValues[xi].x, ImageMeshUtility.UVValues[yi].y);
-					var uvSize = new Vector2(ImageMeshUtility.UVValues[xi + 1].x, ImageMeshUtility.UVValues[yi + 1].y) - uvMin;
+					var uvMin = new Vector2(uvs[xi].x, uvs[yi].y);
+					var uvSize = new Vector2(uvs[xi + 1].x, uvs[yi + 1].y) - uvMin;
 					var uvRect = new Rect(uvMin, uvSize);
-					var coordsRect = Rect.MinMaxRect(ImageMeshUtility.CoordValues[xi].x, ImageMeshUtility.CoordValues[yi].y,
-					                                 ImageMeshUtility.CoordValues[xi + 1].x, ImageMeshUtility.CoordValues[yi + 1].y);
+					var coordsRect = Rect.MinMaxRect(coords[xi].x, coords[yi].y,
+					                                 coords[xi + 1].x, coords[yi + 1].y);
 					var localBgRect = coordsRect.Map(bgRect);
 					
 					if (isBackgroundSliced)
@@ -191,8 +192,8 @@ namespace Beamable.UI.Sdf
 			}
 
 			ImageMeshUtility.AddFrame(this, vh,
-			                          new Rect(ImageMeshUtility.PositionValues[0], ImageMeshUtility.PositionValues[3] - ImageMeshUtility.PositionValues[0]),
-			                          new Rect(ImageMeshUtility.UVValues[0], ImageMeshUtility.UVValues[3]),
+			                          new Rect(positions[0], positions[3] - positions[0]),
+			                          new Rect(uvs[0], uvs[3]),
 			                          size, meshFrame);
 		}
 

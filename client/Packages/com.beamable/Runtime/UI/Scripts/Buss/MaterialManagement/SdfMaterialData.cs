@@ -1,3 +1,5 @@
+using System;
+
 namespace Beamable.UI.Sdf
 {
 	public struct SdfMaterialData
@@ -26,14 +28,12 @@ namespace Beamable.UI.Sdf
 		{
 			unchecked // Allow arithmetic overflow, numbers will just "wrap around"
 			{
-				int hashcode = 1430287;
-				hashcode = hashcode * 7302013 ^ baseMaterialID.GetHashCode();
-				//hashcode = hashcode * 7302013 ^ mainTextureID.GetHashCode();
-				hashcode = hashcode * 7302013 ^ secondaryTextureID.GetHashCode();
-				hashcode = hashcode * 7302013 ^ imageMode.GetHashCode();
-				hashcode = hashcode * 7302013 ^ shadowMode.GetHashCode();
-				hashcode = hashcode * 7302013 ^ backgroundMode.GetHashCode();
-				hashcode = hashcode * 7302013 ^ isBackgroundTexMain.GetHashCode();
+				int hashcode = baseMaterialID.GetHashCode();
+				hashcode = (((hashcode << 5) + hashcode) ^ secondaryTextureID.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ imageMode.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ shadowMode.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ backgroundMode.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ isBackgroundTexMain.GetHashCode());
 				return hashcode;
 			}
 		}

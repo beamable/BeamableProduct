@@ -37,12 +37,10 @@ namespace Beamable.Editor.UI.Components
 			{
 				TriggerStyleSheetChange();
 			}
-			catch (Exception e)
+			finally
 			{
 				_isCallingOnChange = false;
-				throw e;
 			}
-			_isCallingOnChange = false;
 		}
 
 		public override void OnPropertyChangedExternally()

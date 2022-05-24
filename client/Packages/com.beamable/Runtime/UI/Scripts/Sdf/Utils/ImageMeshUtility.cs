@@ -7,14 +7,17 @@ namespace Beamable.UI.Sdf
 {
 	public static class ImageMeshUtility
 	{
-		public static readonly Vector2[] PositionValues = new Vector2[4];
-		public static readonly Vector2[] UVValues = new Vector2[4];
-		public static readonly Vector2[] CoordValues = new Vector2[4];
+		private static readonly Vector2[] PositionValues = new Vector2[4];
+		private static readonly Vector2[] UVValues = new Vector2[4];
+		private static readonly Vector2[] CoordValues = new Vector2[4];
 
 		public static void Calculate9SliceValue(Sprite sprite,
 		                                                       Vector2 size,
 		                                                       Vector2 pivot,
-		                                                       float pixelsPerUnit)
+		                                                       float pixelsPerUnit,
+		                                                       out Vector2[] positions,
+		                                                       out Vector2[] uvs,
+		                                                       out Vector2[] coords)
 		{
 			var startPosition = -size * pivot;
 			var endPosition = startPosition + size;
