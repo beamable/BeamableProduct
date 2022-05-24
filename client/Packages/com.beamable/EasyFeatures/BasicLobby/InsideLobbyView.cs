@@ -22,6 +22,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		
 		[Header("View Configuration")]
 		public int EnrichOrder;
+		public LobbyFeatureControl FeatureControl;
 
 		[Header("Components")]
 		public TextMeshProUGUI Name;
@@ -68,6 +69,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			
 			LeaveButton.onClick.RemoveListener(LeaveButtonClicked);
 			LeaveButton.onClick.AddListener(LeaveButtonClicked);
+			
+			BackButton.onClick.RemoveListener(LeaveButtonClicked);
+			BackButton.onClick.AddListener(LeaveButtonClicked);
 			
 			// Buttons' visibility
 			SettingsButton.gameObject.SetActive(_system.IsPlayerAdmin);
@@ -123,7 +127,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private void LeaveButtonClicked()
 		{
-			
+			FeatureControl.OpenJoinLobbyView();
 		}
 	}
 }
