@@ -43,6 +43,9 @@ namespace Beamable.UI.Sdf
 			              new Vector2(borders.x / size.x, borders.y / size.y),
 			              Vector2.one - new Vector2(borders.z / size.x, borders.w / size.y),
 			              Vector2.one);
+			positions = PositionValues;
+			uvs = UVValues;
+			coords = CoordValues;
 		}
 
 		private static void SetFourValues<T>(T[] array, T v0, T v1, T v2, T v3)
