@@ -162,10 +162,34 @@ namespace Beamable.Common.Content.Validation
 					{
 						if (ContentRegistry.TryGetName(AllowedTypes[0], out string prefix))
 						{
-							var newId = $"{prefix}.{id}";
-							if (ctx.ContentExists(newId))
+							object value = field.GetValue();
+							if (value is List<string> list)
 							{
-								field.Field.SetValue(field.Target, newId);
+								for (int i = 0; i < list.Count; i++)
+								{
+									var split = list[i].Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
+									if (split.Length == 0)
+									{
+										continue;
+									}
+									
+									if (split.Length != 2 || split[0] != prefix)
+									{
+										var newId = $"{prefix}.{split.Last()}";
+										if (ctx.ContentExists(newId))
+										{
+											list[i] = newId;
+										}	
+									}
+								}
+							}
+							else if (value is string)
+							{
+								var newId = $"{prefix}.{id}";
+								if (ctx.ContentExists(newId))
+								{
+									field.Field.SetValue(field.Target, newId);
+								}
 							}
 						}
 					}
