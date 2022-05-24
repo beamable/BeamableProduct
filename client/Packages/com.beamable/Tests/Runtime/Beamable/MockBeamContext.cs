@@ -126,7 +126,7 @@ namespace Beamable.Tests.Runtime
 					 .WithToken(ACCESS_TOKEN)
 					 ;
 			Requester.MockPresenceCalls(DEFAULT_DBID)
-			         .WithToken(ACCESS_TOKEN);
+					 .WithToken(ACCESS_TOKEN);
 
 			return this;
 		}

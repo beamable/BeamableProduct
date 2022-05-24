@@ -46,7 +46,7 @@ namespace Beamable.Server
 			get => pathName;
 		}
 
-		public string[] Names => new[] {pathName};
+		public string[] Names => new[] { pathName };
 
 		public virtual AttributeValidationResult IsAllowedOnMember(MemberInfo member)
 		{
@@ -142,7 +142,8 @@ namespace Beamable.Server
 	public class AdminOnlyCallableAttribute : ClientCallableAttribute
 	{
 		public AdminOnlyCallableAttribute(string pathnameOverride = "") : base(pathnameOverride,
-		                                                                       requiredScopes: new[] {"*"}) { }
+																			   requiredScopes: new[] { "*" })
+		{ }
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]

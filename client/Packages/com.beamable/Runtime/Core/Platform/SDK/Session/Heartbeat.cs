@@ -1,7 +1,7 @@
 using Beamable.Api.Connectivity;
+using Beamable.Common.Api.Presence;
 using Beamable.Coroutines;
 using System.Collections;
-using Beamable.Common.Api.Presence;
 using UnityEngine;
 
 namespace Beamable.Api.Sessions

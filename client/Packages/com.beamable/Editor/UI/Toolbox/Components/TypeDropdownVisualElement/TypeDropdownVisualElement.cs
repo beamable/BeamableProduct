@@ -15,7 +15,7 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class TypeDropdownVisualElement : ToolboxComponent
 	{
-		public ToolboxModel Model { get; set; }
+		public IToolboxViewService Model { get; set; }
 
 		public TypeDropdownVisualElement() : base(nameof(TypeDropdownVisualElement))
 		{

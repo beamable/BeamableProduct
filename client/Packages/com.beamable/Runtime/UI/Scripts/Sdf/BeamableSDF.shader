@@ -3,7 +3,7 @@
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _BackgroundTexture ("Background", 2D) = "white" {}
+        _SecondaryTexture ("Background", 2D) = "white" {}
         
         [Toggle(MULTISAMPLING)] _SDF_MULTISAMPLING("Multisampling", Float) = 1
         _SDF_SamplingDistance("Sampling Distance", Range(0, .1)) = .01
@@ -49,6 +49,7 @@
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_fragment MULTISAMPLING
+            #pragma multi_compile _BACKGROUND_TEX_AS_MAIN _BACKGROUND_TEX_AS_MAIN_NEG
             #pragma multi_compile_fragment _MODE_DEFAULT _MODE_RECT
             #pragma multi_compile_fragment _SHADOWMODE_DEFAULT _SHADOWMODE_INNER
             #pragma multi_compile_fragment _BGMODE_DEFAULT _BGMODE_OUTLINE _BGMODE_FULL
@@ -83,8 +84,8 @@
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
-            sampler2D _BackgroundTexture;
-            float4 _BackgroundTexture_ST;
+            sampler2D _SecondaryTexture;
+            float4 _SecondaryTexture_ST;
             
             float _SDF_SamplingDistance;
             
@@ -92,8 +93,13 @@
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(float3(v.vertex.x, v.vertex.y, 0));
+                #if _BACKGROUND_TEX_AS_MAIN
+                o.uv.xy = TRANSFORM_TEX(v.uv, _SecondaryTexture);
+                o.uv.zw = TRANSFORM_TEX(v.backgroundUV, _MainTex);
+                #else
                 o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
-                o.uv.zw = TRANSFORM_TEX(v.backgroundUV, _BackgroundTexture);
+                o.uv.zw = TRANSFORM_TEX(v.backgroundUV, _SecondaryTexture);
+                #endif
                 o.color = v.color;
                 o.color.a *= step(.0045, o.color.a); // hack to avoid object disappear when alpha is equal to zero (see SDFUtile.ClipColorAlpha)
                 o.sizeNCoords.xy = v.normal.yz;
@@ -111,6 +117,24 @@
                 o.shadowOffset.z = (tangentZ.z - .5) * 100;
                 return o;
             }
+
+            float4 sampleSDFTexture(float2 uv)
+            {
+                #if _BACKGROUND_TEX_AS_MAIN
+                return tex2D(_SecondaryTexture, uv);
+                #else
+                return tex2D(_MainTex, uv);
+                #endif
+            }
+
+            float4 sampleBackgroundTexture(float2 uv)
+            {
+                #if _BACKGROUND_TEX_AS_MAIN
+                return tex2D(_MainTex, uv);
+                #else
+                return tex2D(_SecondaryTexture, uv);
+                #endif
+            }
             
             // return full rect distance
             float getRectDistance(float2 coords, float2 size, float rounding){
@@ -122,16 +146,16 @@
 
             // returns SDF image distance
             float getDistance(float2 uv, float2 coords, float2 size, float rounding){
-                float dist = tex2D(_MainTex, uv).a;
+                float dist = sampleSDFTexture(uv).a;
                 #if MULTISAMPLING
-                dist += tex2D(_MainTex, float2(uv.x - _SDF_SamplingDistance, uv.y - _SDF_SamplingDistance)).a;
-                dist += tex2D(_MainTex, float2(uv.x + _SDF_SamplingDistance, uv.y - _SDF_SamplingDistance)).a;
-                dist += tex2D(_MainTex, float2(uv.x - _SDF_SamplingDistance, uv.y + _SDF_SamplingDistance)).a;
-                dist += tex2D(_MainTex, float2(uv.x + _SDF_SamplingDistance, uv.y + _SDF_SamplingDistance)).a;
-                dist += tex2D(_MainTex, float2(uv.x - _SDF_SamplingDistance, uv.y)).a;
-                dist += tex2D(_MainTex, float2(uv.x + _SDF_SamplingDistance, uv.y)).a;
-                dist += tex2D(_MainTex, float2(uv.x, uv.y + _SDF_SamplingDistance)).a;
-                dist += tex2D(_MainTex, float2(uv.x, uv.y + _SDF_SamplingDistance)).a;
+                dist += sampleSDFTexture(float2(uv.x - _SDF_SamplingDistance, uv.y - _SDF_SamplingDistance)).a;
+                dist += sampleSDFTexture(float2(uv.x + _SDF_SamplingDistance, uv.y - _SDF_SamplingDistance)).a;
+                dist += sampleSDFTexture(float2(uv.x - _SDF_SamplingDistance, uv.y + _SDF_SamplingDistance)).a;
+                dist += sampleSDFTexture(float2(uv.x + _SDF_SamplingDistance, uv.y + _SDF_SamplingDistance)).a;
+                dist += sampleSDFTexture(float2(uv.x - _SDF_SamplingDistance, uv.y)).a;
+                dist += sampleSDFTexture(float2(uv.x + _SDF_SamplingDistance, uv.y)).a;
+                dist += sampleSDFTexture(float2(uv.x, uv.y + _SDF_SamplingDistance)).a;
+                dist += sampleSDFTexture(float2(uv.x, uv.y + _SDF_SamplingDistance)).a;
                 dist /= 9;
                 #endif
                 dist = .5 - dist;
@@ -156,7 +180,7 @@
             float4 mainColor(v2f i){
                 float4 color = i.color;
                 #if _BGMODE_DEFAULT || _BGMODE_FULL
-                color *= tex2D(_BackgroundTexture, i.uv.zw);
+                color *= sampleBackgroundTexture(i.uv.zw);
                 #endif
                 return color;
             }
@@ -164,7 +188,7 @@
             float4 outlineColor(v2f i){
                 float4 color = i.outlineColor;
                 #if _BGMODE_OUTLINE || _BGMODE_FULL
-                color *= tex2D(_BackgroundTexture, i.uv.zw);
+                color *= sampleBackgroundTexture(i.uv.zw);
                 #endif
                 return color;
             }
@@ -181,6 +205,7 @@
                 float dist = getMergedDistance(i.uv.xy, coords, size, rounding);
                 float mainColorValue = calculateValue(dist, threshold);
                 float4 main = mainColor(i);
+                
                 // Outline
                 float outlineValue = calculateValue(dist, threshold + outlineWidth) - calculateValue(dist, threshold);
                 float4 outline = outlineColor(i);
@@ -197,7 +222,7 @@
                 float shadowValue = 1 - smoothstep(shadowEdge - i.shadowSoftness, shadowEdge, shadowDist);
                 i.shadowColor.a *= shadowValue;
                 final = blend_overlay(i.shadowColor, final);
-               
+                
                 #elif _SHADOWMODE_INNER
                 
                 float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - (i.shadowOffset.xy / size), size, rounding);
