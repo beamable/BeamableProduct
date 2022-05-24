@@ -21,6 +21,7 @@ using Beamable.Editor.Realms;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.UI;
+using Beamable.Editor.Toolbox.Models;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
 using Beamable.Serialization;
@@ -276,6 +277,8 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
+
+			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
