@@ -55,23 +55,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Counter.text = $"{_system.LobbyData.CurrentPlayers}/{_system.LobbyData.MaxPlayers}";
 			
 			// Buttons' callbacks
-			SettingsButton.onClick.RemoveListener(SettingsButtonClicked);
-			SettingsButton.onClick.AddListener(SettingsButtonClicked);
-			
-			ReadyButton.onClick.RemoveListener(ReadyButtonClicked);
-			ReadyButton.onClick.AddListener(ReadyButtonClicked);
-			
-			WaitingButton.onClick.RemoveListener(WaitingButtonClicked);
-			WaitingButton.onClick.AddListener(WaitingButtonClicked);
-			
-			StartButton.onClick.RemoveListener(StartButtonClicked);
-			StartButton.onClick.AddListener(StartButtonClicked);
-			
-			LeaveButton.onClick.RemoveListener(LeaveButtonClicked);
-			LeaveButton.onClick.AddListener(LeaveButtonClicked);
-			
-			BackButton.onClick.RemoveListener(LeaveButtonClicked);
-			BackButton.onClick.AddListener(LeaveButtonClicked);
+			SettingsButton.onClick.ReplaceOrAddListener(SettingsButtonClicked);
+			ReadyButton.onClick.ReplaceOrAddListener(ReadyButtonClicked);
+			WaitingButton.onClick.ReplaceOrAddListener(WaitingButtonClicked);
+			StartButton.onClick.ReplaceOrAddListener(StartButtonClicked);
+			LeaveButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
+			BackButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
 			
 			// Buttons' visibility
 			SettingsButton.gameObject.SetActive(_system.IsPlayerAdmin);

@@ -36,8 +36,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Users.text = $"{data.CurrentPlayers}/{data.MaxPlayers}";
 			_onLobbySelected = onLobbySelected;
 
-			Button.onClick.RemoveListener(OnClick);
-			Button.onClick.AddListener(OnClick);
+			Button.onClick.ReplaceOrAddListener(OnClick);
 			SetSelected(false);
 		}
 

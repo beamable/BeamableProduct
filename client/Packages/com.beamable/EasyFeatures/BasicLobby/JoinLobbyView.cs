@@ -66,18 +66,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 			TypesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected, _system.SelectedGameTypeIndex);
 			
 			// TODO: wrap this in some helper
-			FilterField.onEndEdit.RemoveListener(OnFilterApplied);
-			FilterField.onEndEdit.AddListener(OnFilterApplied);
-			
-			ClearFilterButton.onClick.RemoveListener(ClearButtonClicked);
-			ClearFilterButton.onClick.AddListener(ClearButtonClicked);
-			
-			JoinLobbyButton.onClick.RemoveListener(JoinLobbyButtonClicked);
-			JoinLobbyButton.onClick.AddListener(JoinLobbyButtonClicked);
+			FilterField.onEndEdit.ReplaceOrAddListener(OnFilterApplied);
+			ClearFilterButton.onClick.ReplaceOrAddListener(ClearButtonClicked);
+			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
 			JoinLobbyButton.interactable = _system.CanJoinLobby();
 			
-			BackButton.onClick.RemoveListener(BackButtonClicked);
-			BackButton.onClick.AddListener(BackButtonClicked);
+			BackButton.onClick.ReplaceOrAddListener(BackButtonClicked);
 			
 			FilterField.SetTextWithoutNotify(_system.NameFilter);
 			

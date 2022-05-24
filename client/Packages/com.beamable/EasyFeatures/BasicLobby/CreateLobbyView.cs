@@ -61,21 +61,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Name.SetTextWithoutNotify(_system.Name);
 			Description.SetTextWithoutNotify(_system.Description);
 			
-			Name.onValueChanged.RemoveListener(OnNameChanged);
-			Name.onValueChanged.AddListener(OnNameChanged);
-			
-			Description.onValueChanged.RemoveListener(OnDescriptionChanged);
-			Description.onValueChanged.AddListener(OnDescriptionChanged);
-			
-			ConfirmButton.onClick.RemoveListener(ConfirmButtonClicked);
-			ConfirmButton.onClick.AddListener(ConfirmButtonClicked);
+			Name.onValueChanged.ReplaceOrAddListener(OnNameChanged);
+			Description.onValueChanged.ReplaceOrAddListener(OnDescriptionChanged);
+			ConfirmButton.onClick.ReplaceOrAddListener(ConfirmButtonClicked);
 			ConfirmButton.interactable = _system.ValidateConfirmButton();
-			
-			CancelButton.onClick.RemoveListener(CancelButtonClicked);
-			CancelButton.onClick.AddListener(CancelButtonClicked);
-			
-			BackButton.onClick.RemoveListener(CancelButtonClicked);
-			BackButton.onClick.AddListener(CancelButtonClicked);
+			CancelButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
+			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 		}
 
 		private void CancelButtonClicked()

@@ -40,16 +40,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			Name.text = playerName;
 			
-			ReadyButton.onClick.RemoveListener(onReadyButtonClicked.Invoke);
-			ReadyButton.onClick.AddListener(onReadyButtonClicked.Invoke);
+			ReadyButton.onClick.ReplaceOrAddListener(onReadyButtonClicked.Invoke);
 			ReadyButton.gameObject.SetActive(isReady);
 			
-			NotReadyButton.onClick.RemoveListener(onNotReadyButtonClicked.Invoke);
-			NotReadyButton.onClick.AddListener(onNotReadyButtonClicked.Invoke);
+			NotReadyButton.onClick.ReplaceOrAddListener(onNotReadyButtonClicked.Invoke);
 			NotReadyButton.gameObject.SetActive(!isReady);
 
-			AdminButton.onClick.RemoveListener(onAdminButtonClicked.Invoke);
-			AdminButton.onClick.AddListener(onAdminButtonClicked.Invoke);
+			AdminButton.onClick.ReplaceOrAddListener(onAdminButtonClicked.Invoke);
 			AdminButton.gameObject.SetActive(isAdmin);
 			
 			Empty.SetActive(false);
