@@ -147,8 +147,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OpenView(View.CreateLobby);
 		}
 
-		public void OpenInsideLobbyView()
+		public async void OpenInsideLobbyView(LobbiesListEntryPresenter.Data data, bool isAdmin)
 		{
+			// TODO: await GetSomeDetailedLobbyPlayersData() and setup system with them???
+			_insideLobbyPlayerSystem.Setup(data, isAdmin, _testMode);
+			await _insideLobbyPlayerSystem.ConfigureData();
 			OpenView(View.InsideLobby);
 		}
 

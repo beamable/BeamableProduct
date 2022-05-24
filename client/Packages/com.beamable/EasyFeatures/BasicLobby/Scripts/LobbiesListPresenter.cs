@@ -8,9 +8,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class LobbiesListPresenter : MonoBehaviour, PoolableScrollView.IContentProvider
 	{
-		[SerializeField] private LobbiesListEntryPresenter _lobbyEntryPrefab;
-		[SerializeField] private GameObjectToggler _loadingIndicator;
-		[SerializeField] private PoolableScrollView _poolableScrollView;
+		[Header("Prefabs")]
+		public LobbiesListEntryPresenter LobbyEntryPrefab;
+		
+		[Header("Components")]
+		public GameObjectToggler LoadingIndicator;
+		public PoolableScrollView PoolableScrollView;
 		
 		private readonly List<LobbiesListEntryPresenter> _spawnedEntries = new List<LobbiesListEntryPresenter>();
 		private List<LobbiesListEntryPresenter.Data> _entriesList = new List<LobbiesListEntryPresenter.Data>();
@@ -20,14 +23,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void Setup(List<LobbiesListEntryPresenter.Data> entries, Action<int> onLobbySelected)
 		{
-			_poolableScrollView.SetContentProvider(this);
+			PoolableScrollView.SetContentProvider(this);
 			_entriesList = entries;
 			_onLobbySelected = onLobbySelected;
 		}
 
 		public void ClearPooledRankedEntries()
 		{
-			_loadingIndicator.Toggle(true);
+			LoadingIndicator.Toggle(true);
 
 			foreach (LobbiesListEntryPresenter entryPresenter in _spawnedEntries)
 			{
@@ -50,14 +53,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 				items.Add(rankEntryPoolData);
 			}
 
-			_poolableScrollView.SetContent(items);
-			_loadingIndicator.Toggle(false);
+			PoolableScrollView.SetContent(items);
+			LoadingIndicator.Toggle(false);
 		}
 		
 		public RectTransform Spawn(PoolableScrollView.IItem item, out int order)
 		{
 			// TODO: implement object pooling
-			LobbiesListEntryPresenter spawned = Instantiate(_lobbyEntryPrefab);
+			LobbiesListEntryPresenter spawned = Instantiate(LobbyEntryPrefab);
 			_spawnedEntries.Add(spawned);
 			order = -1;
 			
@@ -85,7 +88,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			
 			// TODO: implement object pooling
 			LobbiesListEntryPresenter rankEntryPresenter = rt.GetComponent<LobbiesListEntryPresenter>();
-			rankEntryPresenter.Despawn();
 			_spawnedEntries.Remove(rankEntryPresenter);
 			Destroy(rankEntryPresenter.gameObject);
 		}

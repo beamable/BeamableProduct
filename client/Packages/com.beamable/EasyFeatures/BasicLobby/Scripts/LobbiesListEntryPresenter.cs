@@ -22,6 +22,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			public int Index { get; set; }
 		}
 
+		[Header("Components")]
 		public TextMeshProUGUI Name;
 		public TextMeshProUGUI Users;
 		public GameObject SelectionMark;
@@ -35,6 +36,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Users.text = $"{data.CurrentPlayers}/{data.MaxPlayers}";
 			_onLobbySelected = onLobbySelected;
 
+			Button.onClick.RemoveListener(OnClick);
 			Button.onClick.AddListener(OnClick);
 			SetSelected(false);
 		}
@@ -47,11 +49,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public void SetSelected(bool value)
 		{
 			SelectionMark.SetActive(value);
-		}
-
-		public void Despawn()
-		{
-			Button.onClick.RemoveListener(OnClick);
 		}
 	}
 }

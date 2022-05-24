@@ -96,7 +96,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private void JoinLobbyButtonClicked()
 		{
+			if (_system.SelectedLobbyIndex == -1)
+			{
+				return;
+			}
 			
+			FeatureControl.OpenInsideLobbyView(_system.LobbiesData[_system.SelectedLobbyIndex], false);
 		}
 
 		private void OnLobbySelected(int lobbyId)

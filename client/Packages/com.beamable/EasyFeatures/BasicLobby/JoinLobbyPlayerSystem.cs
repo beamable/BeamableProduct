@@ -4,7 +4,6 @@ using Beamable.Common.Content;
 using Beamable.Experimental.Api.Matchmaking;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -23,7 +22,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public string NameFilter { get; set; }
 		public int CurrentPlayersFilter { get; set; }
 		public int MaxPlayersFilter { get; set; }
-		public List<LobbiesListEntryPresenter.Data> LobbiesData => FilterData();
+		public List<LobbiesListEntryPresenter.Data> LobbiesData => BuildViewData();
 
 		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesNames = new Dictionary<string, List<string>>();
 		public readonly Dictionary<string, List<int>> PerGameTypeLobbiesCurrentPlayers = new Dictionary<string, List<int>>();
@@ -56,9 +55,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public virtual void RegisterLobbyData(string gameTypeId,
 		                                      List<LobbiesListEntryPresenter.Data> data)
 		{
-			_ = PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var names);
-			_ = PerGameTypeLobbiesCurrentPlayers.TryGetValue(gameTypeId, out var currentPlayers);
-			_ = PerGameTypeLobbiesMaxPlayers.TryGetValue(gameTypeId, out var maxPlayers);
+			PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var names);
+			PerGameTypeLobbiesCurrentPlayers.TryGetValue(gameTypeId, out var currentPlayers);
+			PerGameTypeLobbiesMaxPlayers.TryGetValue(gameTypeId, out var maxPlayers);
 			
 			BuildLobbiesClientData(data, ref names, ref currentPlayers, ref maxPlayers);
 			
@@ -147,6 +146,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 				LobbiesData[SelectedLobbyIndex].MaxPlayers;
 		}
 
+		public void Setup(List<SimGameType> gameTypes)
+		{
+			GameTypes = gameTypes;
+			
+			// Setting up default action to fetch data from backend
+			GetDataAction = FetchData;
+		}
+		
 		public async Promise<List<LobbiesListEntryPresenter.Data>> GetTestData()
 		{
 			await Promise.Success.WaitForSeconds(2);
@@ -159,13 +166,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			return LobbiesTestDataHelper.GetTestLobbiesData(GameTypes[SelectedGameTypeIndex].maxPlayers);
 		}
 
-		public void Setup(List<SimGameType> gameTypes)
-		{
-			GameTypes = gameTypes;
-			
-			// Setting up default action to fetch data from backend
-			GetDataAction = FetchData;
-		}
 
 		public void ApplyFilter(string name) => ApplyFilter(name, CurrentPlayers.Count, MaxPlayers.Count);
 
@@ -176,7 +176,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			MaxPlayersFilter = maxPlayers;
 		}
 
-		public virtual List<LobbiesListEntryPresenter.Data> FilterData()
+		public virtual List<LobbiesListEntryPresenter.Data> BuildViewData()
 		{
 			int entriesCount = Names.Count;
 			
