@@ -461,7 +461,7 @@ namespace Beamable
 
 		private async Promise InitStep_SaveToken()
 		{
-			if (AccessToken == null || AccessToken.Token == "offline")
+			if ((AccessToken == null || AccessToken.Token == "offline"))
 			{
 				try
 				{
@@ -483,13 +483,19 @@ namespace Beamable
 						refresh_token = "offline",
 						expires_in = long.MaxValue - 1
 					});
-					OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me", new User
+
+					if (CoreConfiguration.Instance.UseOfflineCache)
 					{
-						id = Random.Range(int.MinValue, 0),
-						scopes = new List<string>(),
-						thirdPartyAppAssociations = new List<string>(),
-						deviceIds = new List<string>()
-					}, Requester.AccessToken, true);
+						OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me",
+							new User
+							{
+								id = Random.Range(int.MinValue, 0),
+								scopes = new List<string>(),
+								thirdPartyAppAssociations = new List<string>(),
+								deviceIds = new List<string>()
+							}, Requester.AccessToken, true);
+					}
+
 					_connectivityService.OnReconnectOnce(async () =>
 					{
 						// disable the old token, because its bad

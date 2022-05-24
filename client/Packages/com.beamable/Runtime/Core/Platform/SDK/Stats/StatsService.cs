@@ -23,8 +23,8 @@ namespace Beamable.Api.Stats
 	public class StatsService : AbsStatsApi
 	{
 
-		public StatsService(IUserContext platform, IBeamableRequester requester, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
-		: base(requester, platform, provider, factoryFunction)
+		public StatsService(IUserContext platform, IBeamableRequester requester, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction, bool useOfflineCache = true)
+		: base(requester, platform, provider, factoryFunction, useOfflineCache)
 		{
 		}
 
@@ -44,7 +44,10 @@ namespace Beamable.Api.Stats
 			   $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
 			   useCache: true
 			).RecoverWith(ex =>
-			   {
+				{
+					if (!_useOfflineCache)
+						return Promise<BatchReadStatsResponse>.Successful(new BatchReadStatsResponse());
+					
 				   return OfflineCache.RecoverDictionary<string, string>(ex, "stats", Requester.AccessToken, gamerTags).Map(
 				   stats =>
 				   {
@@ -80,8 +83,9 @@ namespace Beamable.Api.Stats
 				   /*
 					* Successfully looked up stats. Commit them to the offline cache.
 					*
-					*/
-				   OfflineCache.Merge("stats", Requester.AccessToken, playerStats);
+					*/ 
+				   if (_useOfflineCache) 
+					   OfflineCache.Merge("stats", Requester.AccessToken, playerStats);
 			   });
 		}
 

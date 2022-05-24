@@ -15,13 +15,15 @@ namespace Beamable.Common.Api.Stats
 		protected IDependencyProvider Provider { get; }
 		private static long TTL_MS = 15 * 60 * 1000;
 		private Dictionary<string, UserDataCache<Dictionary<string, string>>> caches = new Dictionary<string, UserDataCache<Dictionary<string, string>>>();
+		protected bool _useOfflineCache;
 
-		public AbsStatsApi(IBeamableRequester requester, IUserContext userContext, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction cacheFactory)
+		public AbsStatsApi(IBeamableRequester requester, IUserContext userContext, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction cacheFactory, bool useOfflineCache)
 		{
 			_cacheFactory = cacheFactory;
 			Requester = requester;
 			UserContext = userContext;
 			Provider = provider;
+			_useOfflineCache = useOfflineCache;
 		}
 
 		public UserDataCache<Dictionary<string, string>> GetCache(string prefix)

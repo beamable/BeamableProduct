@@ -55,11 +55,15 @@ namespace Beamable.Api
 		public string TimeOverride { get; set; }
 		public IAuthApi AuthService { private get; set; }
 		public string RequestTimeoutMs { get; set; }
-		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService)
+
+		private bool _useOfflineCache;
+		
+		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, bool useOfflineCache = true)
 		{
 			Host = host;
 			_accessTokenStorage = accessTokenStorage;
 			_connectivityService = connectivityService;
+			_useOfflineCache = useOfflineCache;
 		}
 
 		public IBeamableRequester WithAccessToken(TokenResponse token)
@@ -237,7 +241,7 @@ namespace Beamable.Api
 						   _connectivityService?.ReportInternetLoss();
 					   }
 
-					   if (useCache && httpNoInternet && Application.isPlaying)
+					   if (useCache && httpNoInternet && Application.isPlaying && _useOfflineCache)
 					   {
 						   return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
 					   }
@@ -271,13 +275,13 @@ namespace Beamable.Api
 					   //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
 				   }).Then(_response =>
 				   {
-					   if (useCache && Token != null && Application.isPlaying)
+					   if (useCache && Token != null && Application.isPlaying && _useOfflineCache)
 					   {
 						   OfflineCache.Set<T>(uri, _response, Token, includeAuthHeader);
 					   }
 				   });
 			}
-			else if (!internetConnectivity && useCache && Application.isPlaying)
+			else if (!internetConnectivity && useCache && Application.isPlaying && _useOfflineCache)
 			{
 				return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
 			}

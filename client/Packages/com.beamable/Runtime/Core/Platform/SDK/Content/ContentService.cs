@@ -242,7 +242,7 @@ namespace Beamable.Content
 			}
 		}
 
-
+		private bool _useOfflineCache;
 
 #if UNITY_EDITOR
 
@@ -262,12 +262,13 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IDependencyProvider provider,
-							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
+							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config, bool useOfflineCache = true)
 		{
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
 			FilesystemAccessor = filesystemAccessor;
 			_connectivityService = _provider.GetService<IConnectivityService>();
+			_useOfflineCache = useOfflineCache;
 
 			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
@@ -537,7 +538,7 @@ namespace Beamable.Content
 
 		private bool TryGetCachedManifest(string manifestID, out Promise<ClientManifest> promise)
 		{
-			if (!_connectivityService.HasConnectivity)
+			if (!_connectivityService.HasConnectivity && _useOfflineCache)
 			{
 				string key = $"/basic/content/manifest/public?id={manifestID}";
 				if (OfflineCache.Exists(key, InternalRequester.AccessToken, true))

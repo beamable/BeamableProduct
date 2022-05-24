@@ -141,15 +141,21 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<CloudSavingService>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
 			DependencyBuilder.AddSingleton<ContentService>();
-			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
+			DependencyBuilder.AddSingleton<IContentApi>(provider => 
+				new ContentService(
+					provider, 
+					provider.GetService<IBeamableFilesystemAccessor>(),
+					ContentConfiguration.Instance.ParameterProvider,
+					CoreConfiguration.Instance.UseOfflineCache
+					));
 			DependencyBuilder.AddScoped<InventoryService>();
 			DependencyBuilder.AddScoped<StatsService>(provider =>
 														  new StatsService(
 															  provider.GetService<IPlatformService>(),
 															  provider.GetService<PlatformRequester>(),
 															  provider,
-															  UnityUserDataCache<Dictionary<string, string>>
-																  .CreateInstance));
+															  UnityUserDataCache<Dictionary<string, string>>.CreateInstance, 
+															  CoreConfiguration.Instance.UseOfflineCache));
 			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
 				// the lobby service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),

@@ -50,6 +50,9 @@ namespace Beamable
 
 		public enum EventHandlerConfig { Guarantee, Replace, Add, }
 
+		[Tooltip("It allows to globally enable/disable offline cache.")]
+		public bool UseOfflineCache = true;
+
 		[Tooltip("By default, Beamable gives you a default uncaught promise exception handler.\n\n" +
 				 "You can set your own via PromiseBase.SetPotentialUncaughtErrorHandler.\n\n" +
 				 "In Beamable's Initialization, we guarantee, replace or add our default handler based on this configuration.\n\n" +
