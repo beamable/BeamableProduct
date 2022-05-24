@@ -21,7 +21,7 @@ namespace Beamable.UI.Sdf
 				   && d.imageMode == imageMode
 				   && d.shadowMode == shadowMode
 				   && d.backgroundMode == backgroundMode
-			       && d.isBackgroundTexMain == isBackgroundTexMain;
+				   && d.isBackgroundTexMain == isBackgroundTexMain;
 		}
 
 		public override int GetHashCode()

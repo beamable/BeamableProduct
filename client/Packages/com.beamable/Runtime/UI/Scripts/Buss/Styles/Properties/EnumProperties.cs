@@ -141,7 +141,7 @@ namespace Beamable.UI.Buss
 		{
 			return new MainTextureBussProperty(Enum);
 		}
-		
+
 		public enum Options
 		{
 			SdfSprite,
