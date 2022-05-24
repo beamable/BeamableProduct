@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
+using Beamable.Common.Player;
 using Beamable.Experimental.Api.Lobbies;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace Beamable.Player
 	/// Experimental API around managing a player's lobby state.
 	/// </summary>
 	[Serializable]
-	public class PlayerLobby : IDisposable
+	public class PlayerLobby : Observable<Lobby>, IDisposable
 	{
 		private readonly ILobbyApi _lobbyApi;
 		private readonly INotificationService _notificationService;
@@ -26,14 +27,10 @@ namespace Beamable.Player
 
 		private static string UpdateName(string lobbyId) => $"lobbies.update.{lobbyId}";
 
-		/// <summary>
-		/// The current <see cref="Lobby"/> the player is in. If the player is not a lobby, then this field is null.
-		/// A player can only be in one lobby at a time.
-		/// </summary>
-		public Lobby State
+		public override Lobby Value
 		{
-			get => _state;
-			private set
+			get => base.Value;
+			set
 			{
 				if (value != null)
 				{
@@ -50,8 +47,27 @@ namespace Beamable.Player
 					}
 				}
 
-				_state = value;
+				if (_state == null)
+				{
+					_state = value; // no one has a reference to this yet, so its fine to just do a SET.
+				}
+				else
+				{
+					_state.Set(value); // someone may have a reference to the state, so we want to keep their pointer alive, but point to modern data.
+				}
+
+				base.Value = value;
 			}
+		}
+
+		/// <summary>
+		/// The current <see cref="Lobby"/> the player is in. If the player is not a lobby, then this field is null.
+		/// A player can only be in one lobby at a time.
+		/// </summary>
+		public Lobby State
+		{
+			get => _state;
+			private set => Value = value;
 		}
 
 		/// <summary>
@@ -173,12 +189,9 @@ namespace Beamable.Player
 			}
 		}
 
-		public async Promise Refresh()
+		protected override async Promise PerformRefresh()
 		{
-			if (State == null)
-			{
-				return;
-			}
+			if (State == null) return; // nothing to do.
 
 			State = await _lobbyApi.GetLobby(State.lobbyId);
 		}
@@ -188,10 +201,9 @@ namespace Beamable.Player
 			_state = null;
 		}
 
-		private async void OnRawUpdate(object message)
+		private void OnRawUpdate(object message)
 		{
-			Debug.Log($"Received update: {message}");
-			await Refresh();
+			var _ = Refresh(); // fire and forget- go update.
 		}
 	}
 }
