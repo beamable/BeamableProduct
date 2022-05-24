@@ -1,17 +1,23 @@
+using Beamable;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Leaderboards;
+using Beamable.EasyFeatures;
 using Beamable.Modules.Leaderboards;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.EasyFeatures.BasicLeaderboard
 {
 	[BeamContextSystem]
 	public class BasicLeaderboardFeatureControl : MonoBehaviour, IBeamableFeatureControl
 	{
-		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
+		[RegisterBeamableDependencies()]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicLeaderboardPlayerSystem,
@@ -32,7 +38,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 		public bool TestMode;
 
 		public bool RunOnEnable { get => _runOnEnable; set => _runOnEnable = value; }
-		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get => new[] {LeaderboardViewGroup}; set => LeaderboardViewGroup = value.FirstOrDefault(); }
+		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get => new[] { LeaderboardViewGroup }; set => LeaderboardViewGroup = value.FirstOrDefault(); }
 
 		public virtual void OnEnable()
 		{

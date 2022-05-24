@@ -1,13 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Beamable;
 using Beamable.Api.Leaderboard;
 using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Leaderboards;
+using Beamable.Modules.Leaderboards;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
+using Random = System.Random;
 
 namespace Beamable.EasyFeatures.BasicLeaderboard
 {
@@ -25,7 +30,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 			{
 				var entryCount = Ranks.Count;
 				for (int i = 0; i < entryCount; i++)
-					yield return new BasicLeaderboardView.BasicLeaderboardViewEntry() {Alias = Aliases[i], Rank = Ranks[i], Score = Scores[i], Avatar = Avatars[i]};
+					yield return new BasicLeaderboardView.BasicLeaderboardViewEntry() { Alias = Aliases[i], Rank = Ranks[i], Score = Scores[i], Avatar = Avatars[i] };
 			}
 		}
 
@@ -89,10 +94,10 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 		}
 
 		public virtual async Promise FetchLeaderboardData(LeaderboardRef leaderboardRef,
-		                                                  int firstEntryId,
-		                                                  int entriesAmount,
-		                                                  bool focus = true,
-		                                                  Action<BasicLeaderboardView.ILeaderboardDeps> onComplete = null) =>
+														  int firstEntryId,
+														  int entriesAmount,
+														  bool focus = true,
+														  Action<BasicLeaderboardView.ILeaderboardDeps> onComplete = null) =>
 			await FetchLeaderboardData(leaderboardRef.Id, firstEntryId, entriesAmount, focus, onComplete);
 
 		public virtual void RegisterLeaderboardEntries(LeaderboardRef leaderboardRef, List<RankEntry> rankEntries, RankEntry userRankEntry) =>
@@ -149,12 +154,12 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 		/// The actual data transformation function that converts rank entries into data that is relevant for our <see cref="BasicLeaderboardView.ILeaderboardDeps"/>. 
 		/// </summary>
 		public virtual void BuildLeaderboardClientData(List<RankEntry> rankEntries,
-		                                               RankEntry userRankEntry,
-		                                               ref List<string> aliases,
-		                                               ref List<long> ranks,
-		                                               ref List<double> scores,
-		                                               ref List<Sprite> avatars,
-		                                               ref int? userRank)
+													   RankEntry userRankEntry,
+													   ref List<string> aliases,
+													   ref List<long> ranks,
+													   ref List<double> scores,
+													   ref List<Sprite> avatars,
+													   ref int? userRank)
 		{
 			void GuaranteeInitList<T>(ref List<T> toInit)
 			{

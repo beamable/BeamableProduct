@@ -21,6 +21,7 @@ using Beamable.Editor.Realms;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.UI;
+using Beamable.Editor.Toolbox.Models;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
 using Beamable.Serialization;
@@ -277,6 +278,8 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
 
+			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
+
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
 				BeamEditorContextDependencies.AddSingleton(globallyAccessibleHintSystem.GetType(), () => globallyAccessibleHintSystem);
@@ -288,9 +291,11 @@ namespace Beamable
 			{
 				await BeamEditorContext.Default.InitializePromise;
 
+#if BEAMABLE_DEVELOPER
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
 						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
 						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+#endif
 				IsInitialized = true;
 
 				// Initialize toolbar
@@ -825,7 +830,7 @@ namespace Beamable
 				SaveConfig(alias, pid, null, cid);
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
-				                            tokenResponse.refresh_token, tokenResponse.expires_in);
+											tokenResponse.refresh_token, tokenResponse.expires_in);
 				CurrentRealm = null; // erase the current realm; if there is one..
 				await Login(token, pid);
 				await DoSilentContentPublish(true);

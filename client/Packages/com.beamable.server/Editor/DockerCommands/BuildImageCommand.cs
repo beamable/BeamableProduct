@@ -16,6 +16,7 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		private const string BUILD_PREF = "{0}BuildAtLeastOnce";
 		private MicroserviceDescriptor _descriptor;
+		private readonly bool _pull;
 		public bool IncludeDebugTools { get; }
 		public string ImageName { get; set; }
 		public string BuildPath { get; set; }
@@ -33,9 +34,10 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull=true)
 		{
 			_descriptor = descriptor;
+			_pull = pull;
 			IncludeDebugTools = includeDebugTools;
 			ImageName = descriptor.ImageName;
 			BuildPath = descriptor.BuildPath;
@@ -50,13 +52,23 @@ namespace Beamable.Server.Editor.DockerCommands
 		protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
 		{
 			base.ModifyStartInfo(processStartInfo);
-			processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] = MicroserviceConfiguration.Instance.EnableDockerBuildkit ? "1" : "0";
+			processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] = MicroserviceConfiguration.Instance.DisableDockerBuildkit ? "0" : "1";
 			processStartInfo.EnvironmentVariables["DOCKER_SCAN_SUGGEST"] = "false";
 		}
 
 		public override string GetCommandString()
 		{
-			return $"{DockerCmd} build --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\"";
+			var pullStr = _pull ? "--pull" : "";
+			#if BEAMABLE_DEVELOPER
+			pullStr = ""; // we cannot force the pull against the local image.
+			#endif
+
+			var platformStr = "--platform linux/amd64";
+			#if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+			platformStr = "";
+			#endif
+
+			return $"{DockerCmd} build {pullStr} {platformStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
 		}
 
 		protected override void HandleStandardOut(string data)
@@ -79,7 +91,12 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void Resolve()
 		{
-			bool success = string.IsNullOrEmpty(StandardErrorBuffer);
+			bool success = StandardErrorBuffer.Contains($"naming to docker.io/library/{_descriptor.ImageName} done");
+			if (MicroserviceConfiguration.Instance.DisableDockerBuildkit)
+			{
+				success = string.IsNullOrEmpty(StandardErrorBuffer);
+			}
+
 			SetAsBuild(_descriptor, success);
 			if (success)
 			{

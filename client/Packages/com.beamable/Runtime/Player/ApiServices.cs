@@ -29,6 +29,7 @@ using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using System;
 using System.Collections.Generic;
+using Beamable.Common.Api.Presence;
 
 namespace Beamable.Player
 {
@@ -87,6 +88,8 @@ namespace Beamable.Player
 		public ICloudDataApi TrialDataService => _ctx.ServiceProvider.GetService<ICloudDataApi>();
 		public ITournamentApi Tournaments => _ctx.ServiceProvider.GetService<ITournamentApi>();
 		public ISdkEventService SdkEventService => _ctx.ServiceProvider.GetService<ISdkEventService>();
+		public IPresenceApi PresenceService => _ctx.ServiceProvider.GetService<IPresenceApi>();
+		public IPresenceApi Presence => _ctx.ServiceProvider.GetService<IPresenceApi>();
 
 		private string Cid => _ctx.Cid;
 		private string Pid => _ctx.Pid;
