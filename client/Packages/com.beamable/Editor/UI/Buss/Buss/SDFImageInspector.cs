@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Buss
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Sprite"), new GUIContent("Sprite"));
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("colorRect"), new GUIContent("Color"));
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("threshold"), new GUIContent("Threshold"));
-				EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundSprite"),
+				EditorGUILayout.PropertyField(serializedObject.FindProperty("secondaryTexture"),
 					new GUIContent("Background"));
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundMode"), new GUIContent("Background Mode"));
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("meshFrame"), new GUIContent("Frame"));
