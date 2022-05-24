@@ -12,37 +12,37 @@ namespace Beamable.UI.Sdf
 		private static readonly Vector2[] CoordValues = new Vector2[4];
 
 		public static void Calculate9SliceValue(Sprite sprite,
-		                                                       Vector2 size,
-		                                                       Vector2 pivot,
-		                                                       float pixelsPerUnit,
-		                                                       out Vector2[] positions,
-		                                                       out Vector2[] uvs,
-		                                                       out Vector2[] coords)
+															   Vector2 size,
+															   Vector2 pivot,
+															   float pixelsPerUnit,
+															   out Vector2[] positions,
+															   out Vector2[] uvs,
+															   out Vector2[] coords)
 		{
 			var startPosition = -size * pivot;
 			var endPosition = startPosition + size;
 			var borders = sprite.border / pixelsPerUnit;
 
 			SetFourValues(PositionValues,
-			              startPosition,
-			              startPosition + new Vector2(borders.x, borders.y),
-			              endPosition - new Vector2(borders.z, borders.w),
-			              endPosition);
+						  startPosition,
+						  startPosition + new Vector2(borders.x, borders.y),
+						  endPosition - new Vector2(borders.z, borders.w),
+						  endPosition);
 
 			var outer = DataUtility.GetOuterUV(sprite);
 			var inner = DataUtility.GetInnerUV(sprite);
 
 			SetFourValues(UVValues,
-			              new Vector2(outer.x, outer.y),
-			              new Vector2(inner.x, inner.y),
-			              new Vector2(inner.z, inner.w),
-			              new Vector2(outer.z, outer.w));
-			
+						  new Vector2(outer.x, outer.y),
+						  new Vector2(inner.x, inner.y),
+						  new Vector2(inner.z, inner.w),
+						  new Vector2(outer.z, outer.w));
+
 			SetFourValues(CoordValues,
-			              Vector2.zero,
-			              new Vector2(borders.x / size.x, borders.y / size.y),
-			              Vector2.one - new Vector2(borders.z / size.x, borders.w / size.y),
-			              Vector2.one);
+						  Vector2.zero,
+						  new Vector2(borders.x / size.x, borders.y / size.y),
+						  Vector2.one - new Vector2(borders.z / size.x, borders.w / size.y),
+						  Vector2.one);
 			positions = PositionValues;
 			uvs = UVValues;
 			coords = CoordValues;
@@ -55,7 +55,7 @@ namespace Beamable.UI.Sdf
 			array[2] = v2;
 			array[3] = v3;
 		}
-		
+
 		public static void AddFrame(SdfImage image, VertexHelper vh, Rect position, Rect uv, Vector2 size, float meshFrame)
 		{
 			if (meshFrame < .01f) return;
@@ -108,7 +108,7 @@ namespace Beamable.UI.Sdf
 		}
 
 		public static void AddRect(SdfImage image, VertexHelper vh, Quad2D position, Quad2D spriteRect, Quad2D bgRect, Quad2D coordsRect,
-		                           Vector2 size, ColorRect colorRect, ColorRect outlineColor, ColorRect shadowColor)
+								   Vector2 size, ColorRect colorRect, ColorRect outlineColor, ColorRect shadowColor)
 		{
 			vh.AddRect(
 				position,

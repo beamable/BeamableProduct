@@ -69,7 +69,7 @@ namespace Beamable.Server.Api.Leaderboards
 		/// <param name="skip">An optional number of leaderboard ids to skip. By default, no leaderboards will be skipped. Use this with the <see cref="limit"/> argument to page the results.</param>
 		/// <param name="limit">An optional maximum number of leaderboard ids to return. By default, the limit will be 50. Use this with the <see cref="skip"/> argument to page the results.</param>
 		/// <returns>A <see cref="Promise"/> containing a <see cref="ListLeaderboardResult"/> that has the leaderboard ids.</returns>
-		Promise<ListLeaderboardResult> ListLeaderboards(int? skip=null, int? limit=50);
+		Promise<ListLeaderboardResult> ListLeaderboards(int? skip = null, int? limit = 50);
 
 		/// <summary>
 		/// Get a list of all the leaderboards that a specific player is participating in.

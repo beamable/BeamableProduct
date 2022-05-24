@@ -45,8 +45,8 @@ namespace Beamable.Editor.UI.Components
 
 		public override void OnPropertyChangedExternally()
 		{
-			if(_isCallingOnChange) return;
-			
+			if (_isCallingOnChange) return;
+
 			_field.value = Property.FloatValue;
 		}
 	}

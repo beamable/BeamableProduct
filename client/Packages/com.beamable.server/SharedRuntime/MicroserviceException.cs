@@ -25,7 +25,7 @@ namespace Beamable.Server
 
 		}
 	}
-	
+
 	public class UnauthorizedUserException : MicroserviceException
 	{
 		public UnauthorizedUserException(string methodPath)

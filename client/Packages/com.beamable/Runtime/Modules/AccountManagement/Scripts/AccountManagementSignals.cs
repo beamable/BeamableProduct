@@ -439,7 +439,7 @@ namespace Beamable.AccountManagement
 				   WithLoading("Sending Email...", de.AuthService.IssuePasswordUpdate(email))
 				   .Then(_ => DeferBroadcast(email, s => s.ForgotPasswordEmailSent));
 			   })
-			   .Error(ex=>
+			   .Error(ex =>
 			   {
 				   _accountForgotPassword.ChangePasswordRequestSent(false);
 				   HandleError(ex);
@@ -458,7 +458,7 @@ namespace Beamable.AccountManagement
 				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
 			 {
 				 Login(email, password);
-			 }).Error(ex=>
+			 }).Error(ex =>
 				{
 					_accountForgotPassword.ChangePasswordRequestSent(false);
 					HandleError(ex);

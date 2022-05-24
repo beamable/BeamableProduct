@@ -269,7 +269,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			if (message == null)
 				return;
-			
+
 			var stepsRegex = MicroserviceConfiguration.Instance.DisableDockerBuildkit
 				? StepRegex
 				: StepBuildKitRegex;

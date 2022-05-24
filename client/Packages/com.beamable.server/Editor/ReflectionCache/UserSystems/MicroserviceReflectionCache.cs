@@ -350,9 +350,9 @@ namespace Beamable.Server.Editor
 					});
 
 					var buildCommand = new BuildImageCommand(descriptor,
-					                                         includeDebugTools:false,
-					                                         watch:false,
-					                                         pull:true);
+															 includeDebugTools: false,
+															 watch: false,
+															 pull: true);
 					try
 					{
 						await buildCommand.StartAsync();

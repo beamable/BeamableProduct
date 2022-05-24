@@ -36,7 +36,7 @@ namespace Beamable.UI.Sdf
 				ApplyMainTextureSource(isBackgroundTexMain, material);
 			}
 
-			return material; 
+			return material;
 			// TODO: cleaning unused materials
 		}
 
@@ -103,7 +103,7 @@ namespace Beamable.UI.Sdf
 		{
 			const string keyword = "_BACKGROUND_TEX_AS_MAIN";
 			const string keywordNeg = "_BACKGROUND_TEX_AS_MAIN_NEG";
-			
+
 			if (isBackgroundTexMain)
 			{
 				material.EnableKeyword(keyword);
