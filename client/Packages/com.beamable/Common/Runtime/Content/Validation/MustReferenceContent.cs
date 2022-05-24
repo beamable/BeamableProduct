@@ -13,7 +13,7 @@ namespace Beamable.Common.Content.Validation
 	///
 	/// #### Related Links
 	/// - See Beamable.Common.Content.Validation.ValidationAttribute script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -130,10 +130,10 @@ namespace Beamable.Common.Content.Validation
 				if (AllowNull) return;
 				throw new ContentValidationException(obj, field, "reference cannot be null. ");
 			}
-			
+
 			// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 			// add id prefix if it was not provided by the user
-			void SetPrefixFromTypeField(string id)
+			void SetPrefixFromTypeField(string contentName)
 			{
 				// get prefix from the `type` field
 				Type fieldType = field.Field.DeclaringType;
@@ -145,7 +145,7 @@ namespace Beamable.Common.Content.Validation
 						string typeValue = typeField.GetValue(field.Target).ToString();
 						if (!string.IsNullOrWhiteSpace(typeValue))
 						{
-							string fullId = $"{typeValue}.{id}";
+							string fullId = $"{typeValue}.{contentName}";
 							field.Field.SetValue(field.Target, fullId);
 						}
 					}
@@ -171,14 +171,14 @@ namespace Beamable.Common.Content.Validation
 									{
 										continue;
 									}
-									
+
 									if (split.Length != 2 || split[0] != prefix)
 									{
 										var newId = $"{prefix}.{split.Last()}";
 										if (ctx.ContentExists(newId))
 										{
 											list[i] = newId;
-										}	
+										}
 									}
 								}
 							}
