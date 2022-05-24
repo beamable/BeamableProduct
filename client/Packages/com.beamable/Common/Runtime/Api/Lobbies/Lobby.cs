@@ -1,3 +1,4 @@
+using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 
@@ -8,7 +9,7 @@ namespace Beamable.Experimental.Api.Lobbies
 	/// amongst the players in it.
 	/// </summary>
 	[Serializable]
-	public class Lobby
+	public class Lobby : DefaultObservable
 	{
 		/// <summary>
 		/// The id of the lobby. Use this id when making requests for a particular lobby via <see cref="ILobbyApi"/>
@@ -56,5 +57,23 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// Either "Open" or "Closed" representing who can query and join the <see cref="Lobby"/>.
 		/// </summary>
 		public LobbyRestriction Restriction => (LobbyRestriction)Enum.Parse(typeof(LobbyRestriction), restriction);
+
+		/// <summary>
+		/// Update the state of the current lobby with the data from another lobby instance.
+		/// This will trigger the observable callbacks.
+		/// </summary>
+		/// <param name="updatedState">The latest copy of the lobby</param>
+		public void Set(Lobby updatedState)
+		{
+			lobbyId = updatedState?.lobbyId;
+			description = updatedState?.description;
+			name = updatedState?.name;
+			restriction = updatedState?.restriction;
+			host = updatedState?.host;
+			players = updatedState?.players;
+			passcode = updatedState?.passcode;
+			maxPlayers = updatedState?.maxPlayers ?? 0;
+			TriggerUpdate();
+		}
 	}
 }
