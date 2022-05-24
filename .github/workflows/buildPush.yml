@@ -3,12 +3,13 @@ name: Push Build
 on:
   push:
     branches:
-      - 'main'
-      - 'staging'
-      - 'production'
-    paths:
-      - 'client/**'
-      - 'microservice/**'
+      - bug/beam-2641
+     # - 'main'
+     # - 'staging'
+     # - 'production'
+    #paths:
+      #- 'client/**'
+      #- 'microservice/**'
 
 jobs:
   build:
@@ -78,7 +79,7 @@ jobs:
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
       - uses: game-ci/unity-builder@v2
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/bug/beam-2641' }}
         timeout-minutes: 30
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
