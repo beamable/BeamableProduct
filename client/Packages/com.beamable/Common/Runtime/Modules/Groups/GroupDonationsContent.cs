@@ -1,6 +1,7 @@
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Groups
@@ -21,7 +22,7 @@ namespace Beamable.Common.Groups
 	[ContentType("donations")]
 	[System.Serializable]
 	[Agnostic]
-	public class GroupDonationsContent : ContentObject
+	public class GroupDonationsContent : ContentObject, ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipRequestCooldown1)]
 		[MustBeNonNegative]
@@ -31,6 +32,27 @@ namespace Beamable.Common.Groups
 		[Tooltip(ContentObject.TooltipAllowedCurrency1)]
 		[MustBeCurrency]
 		public List<string> allowedCurrencies;
+		
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			if (allowedCurrencies != null)
+			{
+				// foreach (var currency in allowedCurrencies)
+				for (int i = 0; i < allowedCurrencies.Count; i++)
+				{
+					if (allowedCurrencies[i] != null && !allowedCurrencies[i].Contains('.') && !string.IsNullOrWhiteSpace(allowedCurrencies[i]))
+					{
+						allowedCurrencies[i] = $"currency.{allowedCurrencies[i]}";
+					}
+				}
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 
 }

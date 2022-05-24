@@ -1,6 +1,7 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Inventory
@@ -83,7 +84,7 @@ namespace Beamable.Common.Inventory
 	}
 
 	[System.Serializable]
-	public class VipBonus
+	public class VipBonus : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipCurrency1)]
 		[MustBeCurrency]
@@ -96,5 +97,19 @@ namespace Beamable.Common.Inventory
 		[Tooltip(ContentObject.TooltipRoundToNearest1)]
 		[MustBePositive]
 		public int roundToNearest;
+		
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			if (currency != null && !currency.Contains('.') && !string.IsNullOrWhiteSpace(currency))
+			{
+				currency = $"currency.{currency}";
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 }
