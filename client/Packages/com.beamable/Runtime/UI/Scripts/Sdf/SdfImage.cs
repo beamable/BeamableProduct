@@ -161,9 +161,11 @@ namespace Beamable.UI.Sdf
 			var size = rt.rect.size;
 
 			var slicedSprite = NineSliceSourceSprite;
-			
-			ImageMeshUtility.Calculate9SliceValue(slicedSprite, size, rectTransform.pivot, slicedSprite.pixelsPerUnit * pixelsPerUnitMultiplier,
-				out var positions, out var uvs, out var coords);
+
+			float ppu = GetPixelsPerUnit(slicedSprite);
+
+ImageMeshUtility.Calculate9SliceValue(slicedSprite, size, rectTransform.pivot, ppu,
+                                      out var positions, out var uvs, out var coords);
 
 			var bgRect = GetNormalizedSpriteRect(secondaryTexture);
 			bool isBackgroundSliced = IsNineSliceFromBackgroundTexture;
@@ -218,7 +220,9 @@ namespace Beamable.UI.Sdf
 			isBackgroundTexMain = BussStyle.MainTextureSource.Get(Style).Enum ==
 			                      MainTextureBussProperty.Options.BackgroundSprite;
 			imageType = BussStyle.ImageType.Get(Style).Enum;
+#if UNITY_2019_1_OR_NEWER
 			pixelsPerUnitMultiplier = BussStyle.PixelsPerUnitMultiplier.Get(Style).FloatValue;
+#endif
 			nineSliceSource = BussStyle.NineSliceSource.Get(Style).Enum;
 			
 			// color
@@ -259,6 +263,15 @@ namespace Beamable.UI.Sdf
 				+ Mathf.Max(
 					Mathf.Abs(shadowOffset.x),
 					Mathf.Abs(shadowOffset.y)));
+		}
+
+		private float GetPixelsPerUnit(Sprite slicedSprite) {
+#if UNITY_2019_1_OR_NEWER
+			var ppu = slicedSprite.pixelsPerUnit * pixelsPerUnitMultiplier;
+#else
+			var ppu = slicedSprite.pixelsPerUnit;
+#endif
+			return ppu;
 		}
 
 		public enum ImageType
