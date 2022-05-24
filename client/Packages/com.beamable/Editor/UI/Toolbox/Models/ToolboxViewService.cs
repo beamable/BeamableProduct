@@ -1,4 +1,4 @@
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
 using System;
@@ -9,7 +9,37 @@ using static Beamable.Common.Constants.Features.Toolbox;
 
 namespace Beamable.Editor.Toolbox.Models
 {
-	public class ToolboxModel
+	public interface IToolboxViewService
+	{
+		event Action<List<RealmView>> OnAvailableRealmsChanged;
+		event Action<RealmView> OnRealmChanged;
+		event Action<IWidgetSource> OnWidgetSourceChanged;
+		event Action OnQueryChanged;
+		event Action<EditorUser> OnUserChanged;
+		event Action<IEnumerable<AnnouncementModelBase>> OnAnnouncementsChanged;
+
+		List<RealmView> Realms { get; }
+		RealmView CurrentRealm { get; }
+		EditorUser CurrentUser { get; }
+		IWidgetSource WidgetSource { get; }
+		ToolboxQuery Query { get; }
+		string FilterText { get; }
+		IEnumerable<AnnouncementModelBase> Announcements { get; }
+		void Initialize();
+		void UseDefaultWidgetSource();
+		void AddAnnouncement(AnnouncementModelBase announcementModel);
+		void RemoveAnnouncement(AnnouncementModelBase announcementModel);
+		bool IsSpecificAnnouncementCurrentlyDisplaying(Type type);
+		void SetQuery(string filter);
+		void SetQuery(ToolboxQuery query);
+		IEnumerable<Widget> GetFilteredWidgets();
+		Promise<List<RealmView>> RefreshAvailableRealms();
+		void Destroy();
+		void SetQueryTag(WidgetTags tags, bool shouldHaveTag);
+		void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation);
+	}
+
+	public class ToolboxViewService : IToolboxViewService
 	{
 		public event Action<List<RealmView>> OnAvailableRealmsChanged;
 		public event Action<RealmView> OnRealmChanged;
@@ -29,7 +59,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public IEnumerable<AnnouncementModelBase> Announcements => _announcements;
 
 
-		public ToolboxModel()
+		public ToolboxViewService()
 		{
 			WidgetSource = new EmptyWidgetSource();
 		}
@@ -171,3 +201,4 @@ namespace Beamable.Editor.Toolbox.Models
 		}
 	}
 }
+
