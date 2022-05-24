@@ -156,12 +156,12 @@ namespace Beamable.UI.Sdf
 		private void GenerateSlicedMesh(VertexHelper vh)
 		{
 			vh.Clear();
-			
+
 			var rt = rectTransform;
 			var size = rt.rect.size;
 
 			var slicedSprite = NineSliceSourceSprite;
-			
+
 			ImageMeshUtility.Calculate9SliceValue(slicedSprite, size, rectTransform.pivot, slicedSprite.pixelsPerUnit * pixelsPerUnitMultiplier,
 				out var positions, out var uvs, out var coords);
 
@@ -179,22 +179,22 @@ namespace Beamable.UI.Sdf
 					var uvSize = new Vector2(uvs[xi + 1].x, uvs[yi + 1].y) - uvMin;
 					var uvRect = new Rect(uvMin, uvSize);
 					var coordsRect = Rect.MinMaxRect(coords[xi].x, coords[yi].y,
-					                                 coords[xi + 1].x, coords[yi + 1].y);
+													 coords[xi + 1].x, coords[yi + 1].y);
 					var localBgRect = coordsRect.Map(bgRect);
-					
+
 					if (isBackgroundSliced)
 					{
 						(uvRect, localBgRect) = (localBgRect, uvRect);
 					}
-					
+
 					ImageMeshUtility.AddRect(this, vh, positionRect, uvRect, localBgRect, coordsRect, size);
 				}
 			}
 
 			ImageMeshUtility.AddFrame(this, vh,
-			                          new Rect(positions[0], positions[3] - positions[0]),
-			                          new Rect(uvs[0], uvs[3]),
-			                          size, meshFrame);
+									  new Rect(positions[0], positions[3] - positions[0]),
+									  new Rect(uvs[0], uvs[3]),
+									  size, meshFrame);
 		}
 
 		private Rect GetNormalizedSpriteRect(Sprite sprite)
@@ -216,11 +216,11 @@ namespace Beamable.UI.Sdf
 			var minSize = Mathf.Min(size.x, size.y);
 
 			isBackgroundTexMain = BussStyle.MainTextureSource.Get(Style).Enum ==
-			                      MainTextureBussProperty.Options.BackgroundSprite;
+								  MainTextureBussProperty.Options.BackgroundSprite;
 			imageType = BussStyle.ImageType.Get(Style).Enum;
 			pixelsPerUnitMultiplier = BussStyle.PixelsPerUnitMultiplier.Get(Style).FloatValue;
 			nineSliceSource = BussStyle.NineSliceSource.Get(Style).Enum;
-			
+
 			// color
 			colorRect = BussStyle.BackgroundColor.Get(Style).ColorRect;
 			BackgroundSprite = BussStyle.BackgroundImage.Get(Style).SpriteValue;

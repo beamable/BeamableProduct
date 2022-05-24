@@ -19,6 +19,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Content;
 using Beamable.Experimental;
@@ -29,7 +30,6 @@ using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Api.Presence;
 
 namespace Beamable.Player
 {
