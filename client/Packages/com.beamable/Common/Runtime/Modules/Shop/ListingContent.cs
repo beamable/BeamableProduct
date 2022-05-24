@@ -191,7 +191,7 @@ namespace Beamable.Common.Shop
 	public class ListingPrice : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipType1)]
-		[MustBeOneOf("sku", "currency")]
+		[MustBeOneOf("skus", "currency")]
 		public string type;
 
 		[Tooltip(ContentObject.TooltipSymbol1)]
@@ -205,14 +205,18 @@ namespace Beamable.Common.Shop
 		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 		public void OnBeforeSerialize()
 		{
-			var allowedValues = new [] {"sku", "currency"};
+			if (symbol == null)
+			{
+				return;
+			}
+			
+			var allowedValues = new [] {"skus", "currency"};
 			var idParts = symbol.Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
 			if (!string.IsNullOrWhiteSpace(type))
 			{
 				if (idParts.Length > 0 && allowedValues.Contains(type))
 				{
-					string contentType = type == "sku" ? "skus" : type; // one special case when 'type' is not a content id prefix
-					symbol = $"{contentType}.{idParts.Last()}";
+					symbol = $"{type}.{idParts.Last()}";
 				}
 			}
 		}
@@ -248,7 +252,7 @@ namespace Beamable.Common.Shop
 		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 		public void OnBeforeSerialize()
 		{
-			if (!offerSymbol.Contains('.') && !string.IsNullOrWhiteSpace(offerSymbol))
+			if (offerSymbol != null && !offerSymbol.Contains('.') && !string.IsNullOrWhiteSpace(offerSymbol))
 			{
 				offerSymbol = $"listings.{offerSymbol}";
 			}

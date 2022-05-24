@@ -233,7 +233,7 @@ namespace Beamable.Common.Content
 	public class OptionalEventItemList : Optional<List<EventItemObtain>> { }
 
 	[Serializable]
-	public class EventCurrencyObtain
+	public class EventCurrencyObtain : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipId1)]
 		[MustBeCurrency]
@@ -242,6 +242,20 @@ namespace Beamable.Common.Content
 		[Tooltip(ContentObject.TooltipAmount1)]
 		[MustBePositive]
 		public long amount;
+		
+		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+		public void OnBeforeSerialize()
+		{
+			if (id != null && !id.Contains('.') && !string.IsNullOrWhiteSpace(id))
+			{
+				id = $"currency.{id}";
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// do nothing
+		}
 	}
 
 	[Serializable]
@@ -257,7 +271,7 @@ namespace Beamable.Common.Content
 		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 		public void OnBeforeSerialize()
 		{
-			if (!id.Contains('.') && !string.IsNullOrWhiteSpace(id))
+			if (id != null && !id.Contains('.') && !string.IsNullOrWhiteSpace(id))
 			{
 				id = $"items.{id}";
 			}

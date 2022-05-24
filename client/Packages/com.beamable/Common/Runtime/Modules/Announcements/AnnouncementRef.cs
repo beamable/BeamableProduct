@@ -72,8 +72,13 @@ namespace Beamable.Common.Announcements
 		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 		public void OnBeforeSerialize()
 		{
+			if (symbol == null)
+			{
+				return;
+			}
+			
 			var allowedValues = new [] {"currency", "items"};
-			var idParts = symbol.Split('.');
+			var idParts = symbol.Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
 			if (!string.IsNullOrWhiteSpace(type))
 			{
 				if (idParts.Length > 0 && allowedValues.Contains(type))

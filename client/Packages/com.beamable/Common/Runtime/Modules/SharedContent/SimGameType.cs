@@ -1,6 +1,7 @@
 using Beamable.Common.Content.Validation;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -179,7 +180,7 @@ namespace Beamable.Common.Content
 		// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
 		public void OnBeforeSerialize()
 		{
-			if (!leaderboard.Contains('.') && !string.IsNullOrWhiteSpace(leaderboard))
+			if (leaderboard != null && !leaderboard.Contains('.') && !string.IsNullOrWhiteSpace(leaderboard))
 			{
 				leaderboard = $"leaderboards.{leaderboard}";
 			}

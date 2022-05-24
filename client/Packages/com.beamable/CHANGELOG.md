@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account management will no longer log an error after pressing change password button more than once.
 - Content Manager no longer logs inaccurate warning after renaming content.
 - Notification handling for multiple `BeamContext` instances.
+- Listing 'sku' price type was incorrect. Fixed to 'skus'.
 
 ### Removed
 - Unity 2018 LTS support.
