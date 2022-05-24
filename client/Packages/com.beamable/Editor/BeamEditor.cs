@@ -932,7 +932,7 @@ namespace Beamable
 			{
 				throw new Exception("Cannot switch to a realm with a null pid");
 			}
-			
+
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
 					  .GetMap(REALM_PREFERENCE)
@@ -953,7 +953,7 @@ namespace Beamable
 			{
 				await ServiceScope.GetService<ContentIO>().FetchManifest();
 			}
-			
+
 			ProductionRealm = game;
 			await SaveRealmInConfig();
 		}
