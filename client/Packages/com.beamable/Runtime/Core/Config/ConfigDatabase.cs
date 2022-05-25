@@ -47,7 +47,7 @@ namespace Beamable.Config
 		public static bool HasConfigFile(string filename)
 		{
 			// this is hardly efficient, but if it is done infrequently enough, it should be fine
-			var nativePath= File.Exists(GetFullPath(filename));
+			var nativePath = File.Exists(GetFullPath(filename));
 			return nativePath || Resources.Load<TextAsset>(filename) != null;
 		}
 
@@ -197,6 +197,7 @@ namespace Beamable.Config
 
 		private static string GetFileContent(string fileName)
 		{
+#if UNITY_EDITOR
 			var fullPath = GetFullPath(fileName);
 
 			if(File.Exists(fullPath))
@@ -204,7 +205,7 @@ namespace Beamable.Config
 				var result = File.ReadAllText(fullPath);
 				return result;
 			}
-
+#endif
 			var asset = Resources.Load(fileName) as TextAsset;
 			if (asset == null)
 			{
