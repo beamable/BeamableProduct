@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - bug/beam-2641
-     # - 'main'
+      # - 'main'
      # - 'staging'
      # - 'production'
     #paths:
