@@ -83,6 +83,20 @@ namespace Beamable.Server.Common
                 if (typeof(ISerializationCallbackReceiver).IsAssignableFrom(singleProperty.PropertyType))
                 {
                     singleProperty.ValueProvider = new SerializationCallbackReceiverValueProvider(singleProperty.ValueProvider);
+                    
+                    var members = singleProperty.PropertyType.GetInterfaces().SelectMany(i => i.GetMembers()).ToArray();
+
+                    var xtype = singleProperty.PropertyType.GetGenericTypeDefinition();
+                    var xp = singleProperty.PropertyType.GetGenericParameterConstraints();
+                    MemberInfo[] objMember = singleProperty.PropertyType.GetMembers().Where(t => (t.MemberType == MemberTypes.Field || t.MemberType == MemberTypes.Property)).ToArray();
+                    
+                    for (int i = 0; i < objMember.Length; i++)
+                    {
+                        if (objMember[i].GetCustomAttribute(typeof(SerializeField)) != null)
+                        {
+                            Debug.LogError("sd");
+                        }
+                    }
                 }
             }
             
