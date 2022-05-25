@@ -15,7 +15,7 @@ namespace Beamable.Config
 		{
 			var alreadyInitialized = database != null && database.Count > 0;
 
-			if(!alreadyInitialized)
+			if (!alreadyInitialized)
 			{
 				SetConfigValuesFromFile(GetConfigFileName());
 			}
@@ -71,7 +71,7 @@ namespace Beamable.Config
 					database[iter.Current.Key] = iter.Current.Value.ToString();
 				}
 			}
-			
+
 		}
 
 		public static ICollection<string> GetAllValueNames()
