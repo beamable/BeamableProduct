@@ -140,7 +140,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
       - name: Where are my builds?
-        run: ls -lrt  /home/runner/work/BeamableProduct/BeamableProduct/dist/iOS/iOS
+        run: ls -lrt  /home/runner/work/BeamableProduct/BeamableProduct/dist/Android/Android
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
