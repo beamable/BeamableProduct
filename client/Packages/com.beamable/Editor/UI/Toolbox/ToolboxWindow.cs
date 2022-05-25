@@ -5,9 +5,6 @@ using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
-
-using Beamable.Common.Dependencies;
-
 using System;
 using UnityEditor;
 using UnityEditor.VspAttribution.Beamable;
@@ -27,6 +24,7 @@ namespace Beamable.Editor.Toolbox.UI
 {
 	public class ToolboxWindow : BeamEditorWindow<ToolboxWindow>
 	{
+
 		static ToolboxWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
@@ -55,7 +53,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 		private ToolboxContentListVisualElement _contentListVisualElement;
 
-		private IToolboxViewService _model;
+		private ToolboxModel _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
 
 		protected override void Build()
@@ -70,11 +68,10 @@ namespace Beamable.Editor.Toolbox.UI
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += _ => BuildWithContext();
 
-			_model = ActiveContext.ServiceScope.GetService<IToolboxViewService>();
-
 			// Force refresh to build the initial window
 			_model?.Destroy();
 
+			_model = new ToolboxModel();
 			_model.UseDefaultWidgetSource();
 			_model.Initialize();
 
@@ -119,15 +116,18 @@ namespace Beamable.Editor.Toolbox.UI
 			root.Add(_windowRoot);
 
 			_actionBarVisualElement = root.Q<ToolboxActionBarVisualElement>("actionBarVisualElement");
+			_actionBarVisualElement.Model = _model;
 			_actionBarVisualElement.Refresh();
 
 			_breadcrumbsVisualElement = root.Q<ToolboxBreadcrumbsVisualElement>("breadcrumbsVisualElement");
 			_breadcrumbsVisualElement.Refresh();
 
 			_contentListVisualElement = root.Q<ToolboxContentListVisualElement>("contentListVisualElement");
+			_contentListVisualElement.Model = _model;
 			_contentListVisualElement.Refresh();
 
 			_announcementListVisualElement = root.Q<ToolboxAnnouncementListVisualElement>();
+			_announcementListVisualElement.Model = _model;
 			_announcementListVisualElement.Refresh();
 			_announcementListVisualElement.OnHeightChanged += AnnouncementList_OnHeightChanged;
 

@@ -20,7 +20,6 @@ using Beamable.Editor.Modules.EditorConfig;
 using Beamable.Editor.Realms;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
-using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
@@ -277,8 +276,6 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
-
-			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
@@ -933,6 +930,7 @@ namespace Beamable
 				throw new Exception("Cannot switch to a realm with a null pid");
 			}
 
+			await ServiceScope.GetService<ContentIO>().FetchManifest();
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
 					  .GetMap(REALM_PREFERENCE)
@@ -943,23 +941,10 @@ namespace Beamable
 			if (CurrentRealm == null || !CurrentRealm.Equals(realm))
 			{
 				CurrentRealm = realm;
-				await SaveRealmInConfig();
-				await ServiceScope.GetService<ContentIO>().FetchManifest();
 				OnRealmChange?.Invoke(realm);
-				ProductionRealm = game;
-				return;
 			}
-			else
-			{
-				await ServiceScope.GetService<ContentIO>().FetchManifest();
-			}
-
 			ProductionRealm = game;
-			await SaveRealmInConfig();
-		}
 
-		private async Promise SaveRealmInConfig()
-		{
 			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
