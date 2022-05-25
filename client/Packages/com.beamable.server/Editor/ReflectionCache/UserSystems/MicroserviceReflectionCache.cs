@@ -349,17 +349,16 @@ namespace Beamable.Server.Editor
 						Message = $"Building service=[{descriptor.Name}]"
 					});
 
-
 					var forceStop = new StopImageReturnableCommand(descriptor);
 					await forceStop.StartAsync(); // force the image to stop.
 					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
 
-					var buildCommand = new BuildImageCommand(descriptor,
+					try
+					{
+						var buildCommand = new BuildImageCommand(descriptor,
 															 includeDebugTools: false,
 															 watch: false,
 															 pull: true);
-					try
-					{
 						await buildCommand.StartAsync();
 					}
 					catch (Exception e)
@@ -377,7 +376,6 @@ namespace Beamable.Server.Editor
 
 						return;
 					}
-
 					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
