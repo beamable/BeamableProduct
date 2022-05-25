@@ -582,7 +582,7 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = "en"; // TODO: Put somewhere, like in configuration
+			_requester.Language = System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName.ToLower(); // TODO: Put somewhere, like in configuration
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();
