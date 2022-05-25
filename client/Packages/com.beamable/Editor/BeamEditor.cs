@@ -148,7 +148,7 @@ namespace Beamable
 					{
 						if (allowRetry)
 						{
-							BeamEditorContext.WriteConfig("", "");
+							BeamEditorContext.WriteConfig(string.Empty, string.Empty);
 							return TryInitConfigDatabase(false);
 						}
 						else
