@@ -74,31 +74,22 @@ namespace Beamable.Server.Common
 
         private UnityJsonContractResolver() { }
 
+        
+        protected override JsonProperty CreateProperty( MemberInfo member, MemberSerialization memberSerialization )
+        {
+            var jsonProperty = base.CreateProperty( member, memberSerialization );
+            
+            if (typeof(ISerializationCallbackReceiver).IsAssignableFrom(jsonProperty.PropertyType))
+            {
+                jsonProperty.ValueProvider = new SerializationCallbackReceiverValueProvider(jsonProperty.ValueProvider);
+            }
+            
+            return jsonProperty;
+        }
+        
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             var baseProps = base.CreateProperties(type, memberSerialization);
-
-            foreach (var singleProperty in baseProps)
-            {
-                if (typeof(ISerializationCallbackReceiver).IsAssignableFrom(singleProperty.PropertyType))
-                {
-                    singleProperty.ValueProvider = new SerializationCallbackReceiverValueProvider(singleProperty.ValueProvider);
-                    
-                    var members = singleProperty.PropertyType.GetInterfaces().SelectMany(i => i.GetMembers()).ToArray();
-
-                    var xtype = singleProperty.PropertyType.GetGenericTypeDefinition();
-                    var xp = singleProperty.PropertyType.GetGenericParameterConstraints();
-                    MemberInfo[] objMember = singleProperty.PropertyType.GetMembers().Where(t => (t.MemberType == MemberTypes.Field || t.MemberType == MemberTypes.Property)).ToArray();
-                    
-                    for (int i = 0; i < objMember.Length; i++)
-                    {
-                        if (objMember[i].GetCustomAttribute(typeof(SerializeField)) != null)
-                        {
-                            Debug.LogError("sd");
-                        }
-                    }
-                }
-            }
             
             bool HasSerializeField(JsonProperty p)
             {
