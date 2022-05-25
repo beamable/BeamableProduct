@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - It is now possible to set background sprite as a main texture in SDF Image.
 - It is now possible to choose 9-slice source and Pixels Per Unit multiplier in SDF image.
 
+### Fixed
+
 ## [1.2.0]
 ### Added
 - Unity 2021 LTS support.
@@ -55,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content Manager no longer logs inaccurate warning after renaming content.
 - Notification handling for multiple `BeamContext` instances.
 - Listing 'sku' price type was incorrect. Fixed to 'skus'.
+- The player's location is detected automatically
 
 ### Removed
 - Unity 2018 LTS support.
