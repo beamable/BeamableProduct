@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Inventory;
+using Beamable.Common.Api.Mail;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
@@ -106,6 +108,40 @@ namespace microserviceTests.microservice
       public string MethodWithExceptionThrow(string msg)
       {
          throw new MicroserviceException(401, "UnauthorizedUser", "test");
+      }
+      
+      [ClientCallable]
+      public async Task<EmptyResponse>  MethodWithSendMail()
+      {
+         var mailSendRequest = new MailSendRequest();
+         var mailSendEntry = new MailSendEntry
+         {
+            category = "Test Category", 
+            senderGamerTag = 123, 
+            receiverGamerTag = 12345, 
+            body = $"Test Body",
+            subject = "Test Subject"
+         };
+
+         Dictionary<string, string> ghx = new Dictionary<string, string>();
+         ghx.Add("TST1", "BLANK");
+         ghx.Add("TST2", "BLANK2");
+			
+         var mailRewards = new MailRewards();
+         var items = new List<ItemCreateRequest>()
+         {
+            new ItemCreateRequest()
+            {
+               contentId = "WELCOME_MAIL_GIFT_LOOTBOX_SYMBOL",
+               properties = new SerializableDictionaryStringToString(ghx)
+            }
+         };
+			
+         mailRewards.items = items;
+         mailSendEntry.rewards = mailRewards;
+
+         mailSendRequest.Add(mailSendEntry);
+         return await Services.Mail.SendMail(mailSendRequest);
       }
 
       // TODO: Add a test for an empty arg array, or a null

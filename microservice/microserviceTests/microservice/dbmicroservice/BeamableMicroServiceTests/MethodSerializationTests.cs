@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
@@ -526,6 +527,36 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          Assert.IsTrue(ms.HasInitialized);
 
          testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithExceptionThrow", 1, 0, string.Empty));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
+      [Test]
+      [NonParallelizable]
+      public async Task Call_MethodWithSendMail()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithReqId(1)
+                     .WithStatus(401).WithPayload<EmptyResponse>(x => x!=null),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce()
+               );
+         }));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithSendMail", 1, 0));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
