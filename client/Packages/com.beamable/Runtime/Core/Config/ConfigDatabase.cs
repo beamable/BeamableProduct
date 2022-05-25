@@ -47,8 +47,11 @@ namespace Beamable.Config
 		public static bool HasConfigFile(string filename)
 		{
 			// this is hardly efficient, but if it is done infrequently enough, it should be fine
-			var nativePath = File.Exists(GetFullPath(filename));
-			return nativePath || Resources.Load<TextAsset>(filename) != null;
+#if UNITY_EDITOR
+			return File.Exists(GetFullPath(filename)) || Resources.Load<TextAsset>(filename) != null;
+#else
+			return Resources.Load<TextAsset>(filename) != null;
+#endif
 		}
 
 		public static void SetConfigValuesFromFile(string fileName)
