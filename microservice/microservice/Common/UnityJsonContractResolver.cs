@@ -78,6 +78,14 @@ namespace Beamable.Server.Common
         {
             var baseProps = base.CreateProperties(type, memberSerialization);
 
+            foreach (var singleProperty in baseProps)
+            {
+                if (typeof(ISerializationCallbackReceiver).IsAssignableFrom(singleProperty.PropertyType))
+                {
+                    singleProperty.ValueProvider = new SerializationCallbackReceiverValueProvider(singleProperty.ValueProvider);
+                }
+            }
+            
             bool HasSerializeField(JsonProperty p)
             {
                 var serializeFieldAttrs = p.AttributeProvider.GetAttributes(typeof(SerializeField), false);
@@ -130,6 +138,30 @@ namespace Beamable.Server.Common
                 return new UnitySerializationCallbackConverter(baseConverter);
             }
             return baseConverter;
+        }
+
+        public class SerializationCallbackReceiverValueProvider : IValueProvider
+        {
+            private IValueProvider _baseProvider;
+
+            public SerializationCallbackReceiverValueProvider(IValueProvider baseProvider)
+            {
+                _baseProvider = baseProvider;
+            }
+
+            // SetValue gets called by Json.Net during deserialization.
+            public void SetValue(object target, object value)
+            {
+                _baseProvider.SetValue(target, value);
+            }
+
+            // GetValue is called by Json.Net during serialization.
+            public object GetValue(object target)
+            {
+                var value = _baseProvider.GetValue(target);
+                ((ISerializationCallbackReceiver) value)?.OnBeforeSerialize();
+                return value;
+            }
         }
     }
 }
