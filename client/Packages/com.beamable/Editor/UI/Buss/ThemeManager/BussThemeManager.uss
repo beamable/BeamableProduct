@@ -1,4 +1,16 @@
-#themeManagerContainer {
+#_windowRoot {
+    flex-grow: 1;
+}
+
+#window-main {
+    flex-direction: column;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+    min-width: 550px;
+    min-height: 700px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     padding-top: 10px;
     padding-left: 10px;

@@ -213,7 +213,9 @@ namespace Beamable.Common.Api.Leaderboards
 					{
 						entry = new RankEntry();
 						entry.gt = gamerTags[i];
+#pragma warning disable CS0612
 						entry.columns = new RankEntryColumns();
+#pragma warning restore CS0612
 					}
 
 					result.Add(gamerTags[i], entry);

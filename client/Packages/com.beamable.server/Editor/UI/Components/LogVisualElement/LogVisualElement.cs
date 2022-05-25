@@ -109,6 +109,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_searchLogBar = Root.Q<SearchBarVisualElement>();
 				_searchLogBar.SetValueWithoutNotify(Model.Logs.Filter);
 				_searchLogBar.OnSearchChanged += Model.Logs.SetSearchLogFilter;
+				_searchLogBar.tooltip = Tooltips.Logs.SEARCH_BAR;
 
 				_debugViewBtn = Root.Q<Button>("debug");
 				_debugViewBtn.clickable.clicked += Model.Logs.ToggleViewDebugEnabled;
@@ -182,7 +183,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_advanceDropDown.RemoveFromHierarchy();
 			}
 
-			_listView.Refresh();
+			_listView.RefreshPolyfill();
 			UpdateCounts();
 		}
 
@@ -251,7 +252,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			EditorApplication.delayCall += () =>
 			{
-				_listView.Refresh();
+				_listView.RefreshPolyfill();
 				_listView.MarkDirtyRepaint();
 			};
 		}
@@ -307,11 +308,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-				itemHeight = 24,
 				itemsSource = NoModel ? new List<LogMessage>() : Model.Logs.FilteredMessages
 			};
+			view.SetItemHeight(24);
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
-			view.Refresh();
+			view.RefreshPolyfill();
 			return view;
 		}
 
@@ -324,17 +325,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		void BindListViewElement(VisualElement elem, int index)
 		{
-			ConsoleLogVisualElement consoleLogVisualElement = (ConsoleLogVisualElement)elem;
+			if (index < 0)
+				return;
+
+			var consoleLogVisualElement = (ConsoleLogVisualElement)elem;
 			consoleLogVisualElement.Refresh();
 			consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
-			if (index % 2 == 0)
-			{
-				consoleLogVisualElement.RemoveFromClassList("oddRow");
-			}
-			else
-			{
-				consoleLogVisualElement.AddToClassList("oddRow");
-			}
+			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
 			consoleLogVisualElement.MarkDirtyRepaint();
 		}
 

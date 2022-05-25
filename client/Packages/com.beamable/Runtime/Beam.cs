@@ -27,6 +27,7 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
@@ -36,6 +37,7 @@ using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Chat;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
@@ -124,7 +126,7 @@ namespace Beamable
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
 			DependencyBuilder.AddComponentSingleton<PubnubSubscriptionManager>(
-				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>()));
+				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
@@ -148,6 +150,14 @@ namespace Beamable
 															  provider,
 															  UnityUserDataCache<Dictionary<string, string>>
 																  .CreateInstance));
+			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
+				// the lobby service needs a special instance of the beamable api requester
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
+			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
+				// the presence service needs a special instance of the beamable api requester
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
 																 new AnalyticsTracker(
 																	 provider.GetService<IPlatformService>(),
@@ -196,6 +206,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
+			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
 
 			// register module configurations. XXX: move these registrations into their own modules?

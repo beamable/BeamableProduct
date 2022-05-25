@@ -11,7 +11,6 @@
   ],
   "dependencies": {
     "com.unity.addressables": "1.16.16",
-    "com.unity.ads": "2.0.8",
     "com.unity.analytics": "3.2.3",
     "com.unity.collab-proxy": "1.2.16",
     "com.unity.package-manager-ui": "2.0.13",

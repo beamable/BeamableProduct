@@ -12,7 +12,11 @@
         </engine:VisualElement>
       <engine:VisualElement name="tokenListVisualElement">
       </engine:VisualElement>
-     
+
+        <engine:Button name="contentSorter" class="boundedButton">
+            <engine:Image name="dropDownIcon"/>
+            <engine:Label name="contentSorterTitle" text="Name (A-Z)" class="buttonText"/>
+        </engine:Button>
         <beamable:ManifestButtonVisualElement name="manifestButton"/>
         <beamable:RealmButtonVisualElement name="realmButton"/>
     </engine:VisualElement>

@@ -37,7 +37,7 @@ namespace Beamable.Api.Analytics
 
 		/// <summary>
 		/// Sends the analytics event batch.
-		/// This method also groups batches by gamer tag, and issues a request for each
+		/// This method also groups batches by gamertag, and issues a request for each
 		/// </summary>
 		/// <param name="eventBatch">Event batch.</param>
 		internal void SendAnalyticsEventBatch(List<AnalyticsEventRequest> eventBatch)
@@ -120,7 +120,7 @@ namespace Beamable.Api.Analytics
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AnalyticsEventRequest"/> class.
 		/// </summary>
-		/// <param name="gamerTag">Gamer tag.</param>
+		/// <param name="gamerTag">Gamertag.</param>
 		/// <param name="payload">Payload (json string)</param>
 		public AnalyticsEventRequest(string payload)
 		{

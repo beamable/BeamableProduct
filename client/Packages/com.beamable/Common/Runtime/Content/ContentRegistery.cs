@@ -265,5 +265,7 @@ namespace Beamable.Common.Content
 				throw new Exception($"No content name found for type=[{type.Name}]");
 			}
 		}
+
+		public static bool HasContentTypeValidClass(string contentId) => contentTypeToClass.ContainsKey(contentId);
 	}
 }

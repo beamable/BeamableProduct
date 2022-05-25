@@ -17,6 +17,11 @@ namespace Beamable.Common.Api
 	/// </summary>
 	public interface ISupportsGet<TData>
 	{
+		/// <summary>
+		/// Manually fetch the available data. If the server hasn't delivered a new update, this method will not return the absolute latest data unless you pass forceRefresh as true.
+		/// </summary>
+		/// <param name="scope">A scope to narrow down the data to receive.</param>
+		/// <returns>A <see cref="Promise"/> that contains the latest data</returns>
 		Promise<TData> GetCurrent(string scope = "");
 	}
 
@@ -33,6 +38,11 @@ namespace Beamable.Common.Api
 	/// </summary>
 	public interface ISupportGetLatest<out TData>
 	{
+		/// <summary>
+		/// Manually read the currently cached data. This will not trigger any network request.
+		/// </summary>
+		/// <param name="scope">The scope to look up the data for.</param>
+		/// <returns>The currently cached data, or null if no data exists</returns>
 		TData GetLatest(string scope = "");
 	}
 

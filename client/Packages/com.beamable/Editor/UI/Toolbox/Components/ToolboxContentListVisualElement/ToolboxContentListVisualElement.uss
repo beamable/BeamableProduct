@@ -1,4 +1,3 @@
-
 TemplateContainer{
     flex-grow: 1;
 }
@@ -10,6 +9,7 @@ TemplateContainer{
     bottom: 0px;
     left: 0px;
     right: 0px;
+    min-height: 100px;
 }
 
 #ContentView.content-view{
@@ -17,7 +17,7 @@ TemplateContainer{
     right:0px;
 }
 
-ScrollView {
+#mainVisualElement > ScrollView {
     flex-grow: 1;
 }
 
@@ -42,9 +42,13 @@ ScrollView {
     font-size: 12px;
     margin-left: 10px;
 }
-#description{
+
+#description {
+    padding-left: 2px;
+    padding-right: 2px;
+    margin-bottom: 0px;
+    margin-top: 0px;
     font-size: 10px;
-    top:-5px;
     margin-left: 10px;
 }
 

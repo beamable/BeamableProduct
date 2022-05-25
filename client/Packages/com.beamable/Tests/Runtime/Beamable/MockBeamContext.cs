@@ -14,6 +14,7 @@ namespace Beamable.Tests.Runtime
 		private static Action<MockBeamContext> _onInit;
 
 		public const string ACCESS_TOKEN = "access_test";
+		public const long DEFAULT_DBID = 1234;
 		public new MockPlatformAPI Requester
 		{
 			get;
@@ -121,9 +122,11 @@ namespace Beamable.Tests.Runtime
 					 });
 
 			Requester.MockRequest<User>(Method.GET, "/basic/accounts/me")
-					 .WithResponse(new User { id = 1234 })
+					 .WithResponse(new User { id = DEFAULT_DBID })
 					 .WithToken(ACCESS_TOKEN)
 					 ;
+			Requester.MockPresenceCalls(DEFAULT_DBID)
+					 .WithToken(ACCESS_TOKEN);
 
 			return this;
 		}

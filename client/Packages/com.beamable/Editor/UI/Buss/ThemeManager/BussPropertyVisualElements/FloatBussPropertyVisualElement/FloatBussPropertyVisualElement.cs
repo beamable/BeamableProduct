@@ -1,4 +1,5 @@
 ﻿using Beamable.UI.Buss;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,6 +13,7 @@ namespace Beamable.Editor.UI.Components
 	public class FloatBussPropertyVisualElement : BussPropertyVisualElement<FloatBussProperty>
 	{
 		private FloatField _field;
+		private bool _isCallingOnChange;
 
 		public FloatBussPropertyVisualElement(FloatBussProperty property) : base(property) { }
 
@@ -30,11 +32,21 @@ namespace Beamable.Editor.UI.Components
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
 			Property.FloatValue = evt.newValue;
-			TriggerStyleSheetChange();
+			_isCallingOnChange = true;
+			try
+			{
+				TriggerStyleSheetChange();
+			}
+			finally
+			{
+				_isCallingOnChange = false;
+			}
 		}
 
 		public override void OnPropertyChangedExternally()
 		{
+			if (_isCallingOnChange) return;
+
 			_field.value = Property.FloatValue;
 		}
 	}

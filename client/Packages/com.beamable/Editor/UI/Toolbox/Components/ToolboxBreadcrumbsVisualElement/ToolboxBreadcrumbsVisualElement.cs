@@ -67,11 +67,14 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 
 
-		private Promise<string> GetPortalUrl => EditorAPI.Instance.Map(de =>
+		private Promise<string> GetPortalUrl
 		{
-			var url = $"{BeamableEnvironment.PortalUrl}/{de.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/dashboard?refresh_token={de.Token.RefreshToken}";
-			return url;
-		});
-
+			get
+			{
+				var de = BeamEditorContext.Default;
+				var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/dashboard?refresh_token={de.Requester.Token.RefreshToken}";
+				return Promise<string>.Successful(url);
+			}
+		}
 	}
 }

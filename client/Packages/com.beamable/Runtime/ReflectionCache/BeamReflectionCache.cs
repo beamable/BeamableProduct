@@ -94,7 +94,7 @@ namespace Beamable.Reflection
 				_registerBeamableDependencyFunctions.Sort((a, b) =>
 				{
 					var attrA = a.AttrAs<RegisterBeamableDependenciesAttribute>();
-					var attrB = a.AttrAs<RegisterBeamableDependenciesAttribute>();
+					var attrB = b.AttrAs<RegisterBeamableDependenciesAttribute>();
 
 					return attrA.Order.CompareTo(attrB.Order);
 				});

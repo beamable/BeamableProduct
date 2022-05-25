@@ -153,15 +153,16 @@ namespace Beamable.Editor.Environment
 
 		private static Promise<Unit> ApplyInstanceData(BeamableDiagnosticData data)
 		{
-			return EditorAPI.Instance.Map(api =>
+			var api = BeamEditorContext.Default;
+
+			return api.InitializePromise.Map(_ =>
 			{
-				data.Cid = api.Cid;
-				data.Pid = api.Pid;
-				data.CidOrAlias = api.Alias;
-				data.EditorUser = api.User;
+				data.Cid = api.CurrentCustomer.Cid;
+				data.Pid = api.CurrentRealm.Pid;
+				data.CidOrAlias = api.CurrentCustomer.Alias;
+				data.EditorUser = api.CurrentUser;
 
 				return PromiseBase.Unit;
-
 			}).Recover(ex =>
 			{
 				data.InitException = ExceptionData.From(ex);

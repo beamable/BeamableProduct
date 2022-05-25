@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using System;
@@ -34,7 +35,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected LoadingBarElement _loadingBar;
 		protected VisualElement _statusIcon;
 		protected VisualElement _remoteStatusIcon;
-		protected LabeledCheckboxVisualElement _checkbox;
+		protected LabeledCheckboxVisualElement _checkbox; // checkbox with icon and label
 		protected Button _moreBtn;
 		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
@@ -46,6 +47,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _serviceCard;
 		private Button _foldButton;
 		private VisualElement _foldIcon;
+		private Image _serviceIcon;
+		private BeamableCheckboxVisualElement _checkboxElement; // actual checkbox
 
 		private bool _isDockerRunning;
 
@@ -127,7 +130,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkbox.SetText(Model.Name);
 			_checkbox.SetWithoutNotify(Model.IsSelected);
 			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
-			_checkbox.OnValueChanged += b => Model.IsSelected = b;
+			_checkboxElement = _checkbox.Q<BeamableCheckboxVisualElement>();
+			_checkbox.OnValueChanged += SelectedStatusChanged;
+			_serviceIcon = _checkbox.Q<Image>();
+
+			if (_serviceIcon != null)
+			{
+				_serviceIcon.tooltip = Model.Descriptor.ServiceType == ServiceType.MicroService ?
+					Tooltips.Microservice.MICROSERVICE : Tooltips.Microservice.STORAGE_OBJECT;
+			}
+			UpdateCheckboxTooltip();
 
 			Model.OnLogsAttachmentChanged -= CreateLogSection;
 			Model.OnLogsAttachmentChanged += CreateLogSection;
@@ -147,6 +159,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateRemoteStatusIcon();
 			ChangeCollapseState();
 			UpdateModel();
+		}
+
+		private void UpdateCheckboxTooltip()
+		{
+			if (_checkboxElement != null)
+			{
+				_checkboxElement.tooltip = _checkboxElement.Value ? Tooltips.Microservice.DESELECT : Tooltips.Microservice.SELECT;
+			}
+		}
+
+		private void SelectedStatusChanged(bool isSelected)
+		{
+			Model.IsSelected = isSelected;
+			UpdateCheckboxTooltip();
 		}
 
 		protected abstract void UpdateRemoteStatusIcon();
@@ -303,6 +329,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_foldIcon.EnableInClassList("unfoldIcon", !Model.IsCollapsed);
 			_rootVisualElement.EnableInClassList("folded", Model.IsCollapsed);
 			_mainParent.EnableInClassList("folded", Model.IsCollapsed);
+		}
+
+		public void ChangeStartButtonState(bool isOn, string enabledTooltip = "", string disabledTooltip = "")
+		{
+			_startButton.SetEnabled(isOn);
+			_startButton.tooltip = isOn ? enabledTooltip : disabledTooltip;
 		}
 	}
 }

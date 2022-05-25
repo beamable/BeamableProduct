@@ -1,3 +1,5 @@
+using System;
+
 namespace Beamable.UI.Sdf
 {
 	public struct SdfMaterialData
@@ -8,6 +10,7 @@ namespace Beamable.UI.Sdf
 		public SdfImage.SdfMode imageMode;
 		public SdfShadowMode shadowMode;
 		public SdfBackgroundMode backgroundMode;
+		public bool isBackgroundTexMain;
 
 		public override bool Equals(object other)
 		{
@@ -17,20 +20,20 @@ namespace Beamable.UI.Sdf
 				   && d.secondaryTextureID == secondaryTextureID
 				   && d.imageMode == imageMode
 				   && d.shadowMode == shadowMode
-				   && d.backgroundMode == backgroundMode;
+				   && d.backgroundMode == backgroundMode
+				   && d.isBackgroundTexMain == isBackgroundTexMain;
 		}
 
 		public override int GetHashCode()
 		{
 			unchecked // Allow arithmetic overflow, numbers will just "wrap around"
 			{
-				int hashcode = 1430287;
-				hashcode = hashcode * 7302013 ^ baseMaterialID.GetHashCode();
-				//hashcode = hashcode * 7302013 ^ mainTextureID.GetHashCode();
-				hashcode = hashcode * 7302013 ^ secondaryTextureID.GetHashCode();
-				hashcode = hashcode * 7302013 ^ imageMode.GetHashCode();
-				hashcode = hashcode * 7302013 ^ shadowMode.GetHashCode();
-				hashcode = hashcode * 7302013 ^ backgroundMode.GetHashCode();
+				int hashcode = baseMaterialID.GetHashCode();
+				hashcode = (((hashcode << 5) + hashcode) ^ secondaryTextureID.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ imageMode.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ shadowMode.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ backgroundMode.GetHashCode());
+				hashcode = (((hashcode << 5) + hashcode) ^ isBackgroundTexMain.GetHashCode());
 				return hashcode;
 			}
 		}

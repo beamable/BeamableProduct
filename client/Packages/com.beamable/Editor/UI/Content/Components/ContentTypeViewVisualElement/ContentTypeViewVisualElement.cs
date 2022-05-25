@@ -69,6 +69,8 @@ namespace Beamable.Editor.Content.Components
 
 			// Populate Tree later
 			Model.OnTypesReceived += OnTypesReceived;
+
+			Root.Q<VisualElement>("showAllContent").RegisterCallback<MouseDownEvent>(evt => Model.ClearSelectedContentTypes());
 		}
 
 		private TreeViewIMGUI CreateTreeViewIMGUI()

@@ -196,6 +196,7 @@ ScrollView #ContentView.content-view {
 
 #logWindowHeader {
     flex-direction: row;
+    border-top-width: 1px;
     /*padding-top: 5px;*/
 }
 

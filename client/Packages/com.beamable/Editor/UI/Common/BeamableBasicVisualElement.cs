@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Components;
 using System.IO;
 using UnityEngine.Assertions;
+using Beamable.Common.Dependencies;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -18,6 +19,8 @@ namespace Beamable.Editor.UI.Common
 		protected string UssPath { get; }
 		private readonly bool _createRoot;
 
+		public IDependencyProvider provider;
+
 		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
@@ -25,10 +28,19 @@ namespace Beamable.Editor.UI.Common
 			UssPath = ussPath;
 			_createRoot = createRoot;
 
+			provider = BeamEditorContext.Default.ServiceScope;
+
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
 				OnDetach();
 			});
+		}
+
+		public void Refresh(IDependencyProvider provider)
+		{
+			this.provider = provider;
+
+			Refresh();
 		}
 
 		public virtual void Refresh() { }

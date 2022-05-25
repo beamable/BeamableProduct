@@ -2,6 +2,8 @@
 using Beamable.Common;
 using Beamable.Common.Api.Inventory;
 using Beamable.UI.Scripts;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using static Beamable.Common.Constants.URLs;
 
@@ -11,7 +13,7 @@ namespace Beamable.Inventory.Scripts
 	public class InventoryMenuBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;
-
+		public InventoryMenuConfiguration InventoryConfig;
 		private Promise<PlatformSubscription<InventoryView>> _inventorySubscription;
 
 		private Promise<Unit> _inventoryViewPromise = new Promise<Unit>();
@@ -25,7 +27,7 @@ namespace Beamable.Inventory.Scripts
 			}
 			else if (shouldShow && !MenuManager.IsOpen)
 			{
-				MenuManager.Show<InventoryMainMenu>();
+				var menu = MenuManager.Show<InventoryMainMenu>();
 			}
 		}
 
@@ -43,5 +45,12 @@ namespace Beamable.Inventory.Scripts
 			_inventoryView = inventory;
 			_inventoryViewPromise.CompleteSuccess(PromiseBase.Unit);
 		}
+	}
+
+	[Serializable]
+	public class InventoryMenuConfiguration
+	{
+		public List<InventoryGroup> Groups;
+		public InventoryObjectUI ItemPreviewPrefab;
 	}
 }

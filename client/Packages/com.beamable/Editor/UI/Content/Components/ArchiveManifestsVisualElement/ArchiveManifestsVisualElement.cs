@@ -92,10 +92,8 @@ namespace Beamable.Editor.Content.Components
 		private void ArchiveButton_OnClicked()
 		{
 			var manifests = _entries.Where(e => e.IsSelected).Select(e => e.manifestId).ToArray();
-			var promise = EditorAPI.Instance.FlatMap(api =>
-			{
-				return api.ContentIO.ArchiveManifests(manifests);
-			});
+			var api = BeamEditorContext.Default;
+			var promise = api.ContentIO.ArchiveManifests(manifests);
 			_archiveBtn.Load(promise);
 			promise.Then(_ =>
 			{

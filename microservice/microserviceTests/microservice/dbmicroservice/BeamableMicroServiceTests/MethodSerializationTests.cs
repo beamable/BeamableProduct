@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
+using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -44,7 +45,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Sum", 1, 0, null));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Sum", 1, 1, null));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -75,7 +76,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Sum", 1, 0, new int[]{}));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Sum", 1, 1, new int[]{}));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -105,7 +106,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Sum", 1, 0, new int[]{1,2,3}));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Sum", 1, 1, new int[]{1,2,3}));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -135,7 +136,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 0, null, null));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 1, null, null));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -165,7 +166,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 0, null, new int[]{1,2}));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 1, null, new int[]{1,2}));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -195,7 +196,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 0, new int[]{1,2}, null));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 1, new int[]{1,2}, null));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -225,7 +226,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 0, new int[]{1,2}, new int[]{3,4}));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "TwoArrays", 1, 1, new int[]{1,2}, new int[]{3,4}));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -255,7 +256,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "PromiseTestMethod", 1, 0));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "PromiseTestMethod", 1, 1));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -284,7 +285,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "PromiseTypelessTestMethod", 1, 0));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "PromiseTypelessTestMethod", 1, 1));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -329,7 +330,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          Assert.IsTrue(ms.HasInitialized);
 
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithJSON_AsParameter", 1, 0, serialized));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithJSON_AsParameter", 1, 1, serialized));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -360,7 +361,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithRegularString_AsParameter", 1, 0, "test_String"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithRegularString_AsParameter", 1, 1, "test_String"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -393,7 +394,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
          // testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithRegularString_AsParameter", 1, 0, "test_String"));
 
-         testSocket.SendToClient(ClientRequest.ClientCallablePayloadArgs("micro_sample", "MethodWithRegularString_AsParameter", 1, 0, "[\"test_String\"]"));
+         testSocket.SendToClient(ClientRequest.ClientCallablePayloadArgs("micro_sample", "MethodWithRegularString_AsParameter", 1, 1, "[\"test_String\"]"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -424,7 +425,37 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithVector2Int_AsParameter", 1, 0, new Vector2Int(10, 20)));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithVector2Int_AsParameter", 1, 1, new Vector2Int(10, 20)));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      [Test]
+      [NonParallelizable]
+      public async Task Call_MethodWithException()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithReqId(1)
+                     .WithStatus(401).WithPayload<MicroserviceException>(ex => string.Equals(ex.Message,"test")),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce()
+               );
+         }));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithExceptionThrow", 1, 1, string.Empty));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);

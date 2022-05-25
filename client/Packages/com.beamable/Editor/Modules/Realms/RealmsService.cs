@@ -18,13 +18,11 @@ namespace Beamable.Editor.Realms
 
 	public class RealmsService
 	{
-		private readonly IBeamableRequester _requester;
-		private readonly EditorAPI _api;
+		private readonly PlatformRequester _requester;
 
-		public RealmsService(IBeamableRequester requester, EditorAPI api)
+		public RealmsService(PlatformRequester requester)
 		{
 			_requester = requester;
-			_api = api;
 		}
 
 		public Promise<CustomerView> GetCustomerData()
@@ -40,7 +38,7 @@ namespace Beamable.Editor.Realms
 
 		public Promise<List<RealmView>> GetGames()
 		{
-			if (string.IsNullOrEmpty(_api.Alias))
+			if (string.IsNullOrEmpty(_requester.Cid))
 			{
 				return Promise<List<RealmView>>.Failed(new Exception("No Cid Available"));
 			}
@@ -64,23 +62,23 @@ namespace Beamable.Editor.Realms
 
 		public Promise<RealmView> GetRealm()
 		{
-			if (string.IsNullOrEmpty(_api.Alias))
+			if (string.IsNullOrEmpty(_requester.Cid))
 			{
 				return Promise<RealmView>.Failed(new RealmServiceException("No Cid Available"));
 			}
-			if (string.IsNullOrEmpty(_api.Pid))
+			if (string.IsNullOrEmpty(_requester.Pid))
 			{
 				return Promise<RealmView>.Successful(null);
 			}
 
-			return GetRealms().Map(all => { return all.Find(v => v.Pid == _api.Pid); });
+			return GetRealms().Map(all => { return all.Find(v => v.Pid == _requester.Pid); });
 		}
 
 		private List<RealmView> ProcessProjects(List<ProjectViewDTO> projects)
 		{
 			var map = projects.Select(p => new RealmView
 			{
-				Cid = _api.Cid,
+				Cid = _requester.Cid,
 				Pid = p.pid,
 				ProjectName = p.projectName,
 				Archived = p.archived,
@@ -132,7 +130,11 @@ namespace Beamable.Editor.Realms
 
 		public Promise<List<RealmView>> GetRealms(RealmView game = null)
 		{
-			var pid = game?.Pid ?? _api.Pid;
+			var pid = game?.Pid ?? _requester.Pid ?? _requester.AccessToken?.Pid;
+			return GetRealms(pid);
+		}
+		public Promise<List<RealmView>> GetRealms(string pid)
+		{
 			if (string.IsNullOrEmpty(pid))
 			{
 				return Promise<List<RealmView>>.Successful(new List<RealmView>());
@@ -154,6 +156,7 @@ namespace Beamable.Editor.Realms
 		}
 	}
 
+	[Serializable]
 	public class CustomerView
 	{
 		public string Cid;
@@ -162,6 +165,7 @@ namespace Beamable.Editor.Realms
 		public List<RealmView> Projects;
 	}
 
+	[Serializable]
 	public class RealmView : ISearchableElement
 	{
 		private const string PRODUCTION_DROPDOWN_CLASS_NAME = "production";

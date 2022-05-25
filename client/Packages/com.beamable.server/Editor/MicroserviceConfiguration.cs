@@ -1,8 +1,10 @@
+using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Config;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
+using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -69,8 +71,8 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
 		public bool ColorLogs = true;
 
-		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
-		public bool EnableDockerBuildkit = false;
+		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. It is also required to deploy Microservices from an ARM based computer, like a mac computer with an M1 silicon chipset. ")]
+		public bool DisableDockerBuildkit = false;
 
 		[Tooltip("It will enable checking if docker desktop is running before you can start microservices.")]
 		public bool DockerDesktopCheckInMicroservicesWindow = true;
@@ -226,9 +228,16 @@ namespace Beamable.Server.Editor
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
-				EditorApplication.delayCall += () => // using delayCall to avoid Unity warning about sending messages from OnValidate()
-				   EditorAPI.Instance.Then(api => api.SaveConfig(
-					  api.Alias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
+
+				BeamEditor.DelayedInitializationCall(SaveConfig, true);
+				async void SaveConfig()
+				{
+					// using delayCall to avoid Unity warning about sending messages from OnValidate()
+					var api = BeamEditorContext.Default;
+					await api.InitializePromise;
+					if (api.IsAuthenticated)
+						api.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
+				}
 			}
 
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
@@ -237,7 +246,8 @@ namespace Beamable.Server.Editor
 				_dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
 				if (MicroserviceWindow.IsInstantiated)
 				{
-					MicroserviceWindow.Instance.RefreshWindow(true);
+					var tempQualifier = EditorWindow.GetWindow<MicroserviceWindow>();
+					tempQualifier.RefreshWindowContent();
 				}
 			}
 

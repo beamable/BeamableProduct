@@ -62,6 +62,12 @@ namespace Beamable.Experimental.Api.Chat
 			_requester = requester;
 		}
 
+		/// <summary>
+		/// Send a message to chat room.
+		/// </summary>
+		/// <param name="roomId">The room id</param>
+		/// <param name="message">The message to send to the room</param>
+		/// <returns>A <see cref="Promise"/> containing the sent <see cref="Message"/></returns>
 		public Promise<Message> SendMessage(string roomId, string message)
 		{
 			return _requester.Request<SendChatResponse>(
@@ -71,6 +77,11 @@ namespace Beamable.Experimental.Api.Chat
 			).Map(response => response.message);
 		}
 
+		/// <summary>
+		/// Get the current player's set of <see cref="RoomInfo"/>.
+		/// The player can create a new room using the <see cref="CreateRoom"/> method.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> containing the player's <see cref="RoomInfo"/></returns>
 		public Promise<List<RoomInfo>> GetMyRooms()
 		{
 			return _requester.Request<GetMyRoomsResponse>(
@@ -79,6 +90,13 @@ namespace Beamable.Experimental.Api.Chat
 			).Map(response => response.rooms);
 		}
 
+		/// <summary>
+		/// Creates a new private chat room for the current player, and a set of other players.
+		/// </summary>
+		/// <param name="roomName">A name for the room</param>
+		/// <param name="keepSubscribed">When true, the current player will receive messages for the room.</param>
+		/// <param name="players">A list of gamertags of other players who will be included in the chat room.</param>
+		/// <returns>A <see cref="Promise"/> containing the newly created <see cref="RoomInfo"/></returns>
 		public Promise<RoomInfo> CreateRoom(string roomName, bool keepSubscribed, List<long> players)
 		{
 			return _requester.Request<CreateRoomResponse>(
@@ -88,6 +106,11 @@ namespace Beamable.Experimental.Api.Chat
 			).Map(response => response.room);
 		}
 
+		/// <summary>
+		/// Remove the current player from a room
+		/// </summary>
+		/// <param name="roomId">The room id to leave</param>
+		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
 		public Promise<EmptyResponse> LeaveRoom(string roomId)
 		{
 			return _requester.Request<EmptyResponse>(
@@ -96,6 +119,13 @@ namespace Beamable.Experimental.Api.Chat
 			);
 		}
 
+		/// <summary>
+		/// Check to see if a piece of text would trigger the Beamable profanity filter.
+		/// </summary>
+		/// <param name="text">some text</param>
+		/// <returns>A <see cref="Promise"/> representing the network call.
+		/// If the text contains profanity, the promise will fail with a PlatformRequesterException with an error of "ProfanityFilter" and a status of 400.
+		/// </returns>
 		public Promise<EmptyResponse> ProfanityAssert(string text)
 		{
 			return _requester.Request<EmptyResponse>(
@@ -153,9 +183,24 @@ namespace Beamable.Experimental.Api.Chat
 	[Serializable]
 	public class RoomInfo
 	{
+		/// <summary>
+		/// The id of the room
+		/// </summary>
 		public string id;
+
+		/// <summary>
+		/// The name of the room
+		/// </summary>
 		public string name;
+
+		/// <summary>
+		/// When true, the current player will receive messages from the room
+		/// </summary>
 		public bool keepSubscribed;
+
+		/// <summary>
+		/// A list of gamertags who are in the room
+		/// </summary>
 		public List<long> players;
 	}
 }

@@ -676,19 +676,40 @@ namespace Beamable.Server
          catch (TargetInvocationException ex)
          {
             var inner = ex.InnerException;
-            BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", inner.GetType().Name,
-               inner.Message,
-               inner.Source, inner.StackTrace);
-            var failResponse = new GatewayResponse
+            var failResponse = new GatewayResponse()
             {
                id = ctx.Id,
-               status = 500,
-               body = new ClientResponse
-               {
-                  payload = ""
-               }
             };
-            var failResponseJson = JsonConvert.SerializeObject(failResponse);
+
+            string failResponseJson;
+            
+            if (inner is MicroserviceException msException)
+            {
+               failResponse.status = msException.ResponseStatus;
+               failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
+               
+               failResponseJson = JsonConvert.SerializeObject(failResponse);
+               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", msException.GetType().Name, msException.Message,
+                  msException.Source, failResponseJson, msException.StackTrace);
+            }
+            else
+            {
+               failResponse = new GatewayResponse
+               {
+                  id = ctx.Id,
+                  status = 500,
+                  body = new ClientResponse
+                  {
+                     payload = ""
+                  }
+               };
+               
+               failResponseJson = JsonConvert.SerializeObject(failResponse);
+               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", inner.GetType().Name,
+                  inner.Message,
+                  inner.Source, inner.StackTrace);
+            }
+            
             var webSocket = await _webSocketPromise;
             webSocket.SendMessage(failResponseJson);
          }

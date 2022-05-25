@@ -7,9 +7,9 @@ namespace Beamable.Editor.UI.Buss
 	public class NewVariableWindow : WindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
 		private Action<string, IBussProperty> _onPropertyCreated;
-		private BussStyleRule _styleRule;
+		private BussStyleDescription _styleRule;
 
-		public void Init(BussStyleRule styleRule, Action<string, IBussProperty> onPropertyCreated)
+		public void Init(BussStyleDescription styleRule, Action<string, IBussProperty> onPropertyCreated)
 		{
 			_styleRule = styleRule;
 			_onPropertyCreated = onPropertyCreated;

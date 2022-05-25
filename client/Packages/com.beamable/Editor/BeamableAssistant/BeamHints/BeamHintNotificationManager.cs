@@ -143,7 +143,7 @@ namespace Beamable.Editor.Assistant
 
 		/// <summary>
 		/// Detects whether or not we should take another pass to identify new notifications or not.
-		/// This is added to <see cref="EditorApplication.update"/> during <see cref="EditorAPI.Initialize"/>.
+		/// This is added to <see cref="EditorApplication.update"/> during <see cref="BeamEditor.Initialize"/>.
 		/// </summary>
 		public void Update()
 		{

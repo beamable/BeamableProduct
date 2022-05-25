@@ -82,8 +82,8 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					_status.usedPorts.Add(usedPort);
 					var modelWithSamePort =
-						_storages.FirstOrDefault(model => model.Config.LocalDataPort == usedPort ||
-														  model.Config.LocalUIPort == usedPort);
+						_storages.FirstOrDefault(model => model.Config?.LocalDataPort == usedPort ||
+														  model.Config?.LocalUIPort == usedPort);
 					_overlapingPorts |= modelWithSamePort != null;
 				}
 			}

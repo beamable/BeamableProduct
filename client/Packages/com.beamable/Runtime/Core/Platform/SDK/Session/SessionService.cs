@@ -12,10 +12,46 @@ namespace Beamable.Api.Sessions
 {
 	public interface ISessionService
 	{
+		/// <summary>
+		/// Begin a new session for the current player.
+		/// This happens automatically during the initialization of a player's BeamContext.
+		/// </summary>
+		/// <param name="user">
+		/// The <see cref="User"/> that is starting a session.
+		/// </param>
+		/// <param name="advertisingId">
+		/// An advertising ID that will be included in the session stats.
+		/// When the session is started, by default, the AdvertisingIdentifier.GetIdentifier is given.
+		/// </param>
+		/// <param name="locale">
+		/// The language code string that the session should use.
+		/// </param>
+		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
 		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale);
+
+		/// <summary>
+		/// Get the current <see cref="Session"/> of a player by their gamertag.
+		/// </summary>
+		/// <param name="gamerTag">The gamertag of the player to find the <see cref="Session"/> for.</param>
+		/// <returns>A <see cref="Promise{T}"/> containing the player's <see cref="Session"/></returns>
 		Promise<Session> GetHeartbeat(long gamerTag);
+
+		/// <summary>
+		/// Send a heartbeat for the current user's session. Sending a heartbeat prolongs the session that was started with
+		/// <see cref="StartSession"/>. This method is called automatically after the <see cref="IHeartbeatService.Start"/>
+		/// method has been called, which happens automatically when the BeamContext starts.
+		/// </summary>
+		/// <returns></returns>
 		Promise<EmptyResponse> SendHeartbeat();
+
+		/// <summary>
+		/// The number of seconds after the game startup that the session was begun.
+		/// </summary>
 		float SessionStartedAt { get; }
+
+		/// <summary>
+		/// The number of seconds ago that the most recent session was started.
+		/// </summary>
 		float TimeSinceLastSessionStart { get; }
 
 	}

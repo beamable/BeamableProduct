@@ -2,6 +2,7 @@ using Beamable.Common.Assistant;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.Reflection;
+using Beamable.Editor.UI;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using System.Collections.Generic;
@@ -75,12 +76,14 @@ namespace Beamable.Server.Editor
 				var btn = new Button() { text = $"Re-Run {desc.Name}" };
 				btn.clickable.clicked += ClickEvent;
 
-				void ClickEvent()
+				async void ClickEvent()
 				{
-					MicroserviceWindow.Instance.Show();
-					MicroserviceWindow.Instance.RefreshWindow(true);
+					var msWindow = await MicroserviceWindow.GetFullyInitializedWindow();
+					msWindow.Show();
+					msWindow.RefreshWindowContent();
+
 					var model = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(desc);
-					model.BuildAndRestart();
+					await model.BuildAndRestart();
 					btn.clickable.clicked -= ClickEvent;
 				}
 				return btn;

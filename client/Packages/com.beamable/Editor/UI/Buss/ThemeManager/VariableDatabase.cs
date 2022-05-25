@@ -8,6 +8,7 @@ namespace Beamable.UI.Buss
 	{
 		private List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
+		private HashSet<string> _variablesChecked = new HashSet<string>();
 
 		public bool ForceRefreshAll { get; private set; }
 		public HashSet<PropertyReference> DirtyProperties { get; } = new HashSet<PropertyReference>();
@@ -118,6 +119,66 @@ namespace Beamable.UI.Buss
 		{
 			ForceRefreshAll = false;
 			DirtyProperties.Clear();
+		}
+
+		public void ResetVariableLoopDetector() => _variablesChecked.Clear();
+
+		public PropertyValueState TryGetVariableValue(VariableProperty variableProperty,
+													  BussStyleRule styleRule,
+													  out IBussProperty result,
+													  BussElement context,
+													  Type expectedType)
+		{
+			if (expectedType == null)
+			{
+				expectedType = typeof(IBussProperty);
+			}
+			result = null;
+			var variableName = variableProperty.VariableName;
+
+			if (_variablesChecked.Contains(variableName))
+			{
+				return PropertyValueState.VariableLoopDetected;
+			}
+
+			_variablesChecked.Add(variableProperty.VariableName);
+
+			//TODO: add different behaviour when context exists
+			return TryGetVariableValueWithoutContext(variableProperty, styleRule, out result, expectedType);
+		}
+
+		private PropertyValueState TryGetVariableValueWithoutContext(VariableProperty variableProperty,
+																	 BussStyleRule styleRule,
+																	 out IBussProperty result,
+																	 Type expectedType)
+		{
+			result = null;
+			if (styleRule.HasProperty(variableProperty.VariableName))
+			{
+				result = styleRule.GetProperty(variableProperty.VariableName);
+				return PropertyValueState.SingleResult;
+			}
+			else
+			{
+				var variableData = GetVariableData(variableProperty.VariableName);
+				var declarations =
+					variableData.Declarations.Where(
+						r => expectedType.IsInstanceOfType(r.propertyProvider.GetProperty()));
+				var declarationsCount = declarations.Count();
+				if (declarationsCount == 1)
+				{
+					result = declarations.First().propertyProvider.GetProperty();
+					return PropertyValueState.SingleResult;
+				}
+				else if (declarationsCount == 0)
+				{
+					return PropertyValueState.NoResult;
+				}
+				else
+				{
+					return PropertyValueState.MultipleResults;
+				}
+			}
 		}
 
 		public class VariableData
