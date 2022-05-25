@@ -929,8 +929,7 @@ namespace Beamable
 			{
 				throw new Exception("Cannot switch to a realm with a null pid");
 			}
-
-			await ServiceScope.GetService<ContentIO>().FetchManifest();
+			
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
 					  .GetMap(REALM_PREFERENCE)
@@ -941,10 +940,23 @@ namespace Beamable
 			if (CurrentRealm == null || !CurrentRealm.Equals(realm))
 			{
 				CurrentRealm = realm;
+				await SaveRealmInConfig();
+				await ServiceScope.GetService<ContentIO>().FetchManifest();
 				OnRealmChange?.Invoke(realm);
+				ProductionRealm = game;
+				return;
 			}
+			else
+			{
+				await ServiceScope.GetService<ContentIO>().FetchManifest();
+			}
+			
 			ProductionRealm = game;
+			await SaveRealmInConfig();
+		}
 
+		private async Promise SaveRealmInConfig()
+		{
 			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
