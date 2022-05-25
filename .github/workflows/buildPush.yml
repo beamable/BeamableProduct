@@ -228,7 +228,7 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Staging
-      - uses: game-ci/unity-builder@v2.04
+      - uses: game-ci/unity-builder@v2.0.4
         if: ${{ github.ref == 'refs/heads/production' }}
         timeout-minutes: 30
         env:
