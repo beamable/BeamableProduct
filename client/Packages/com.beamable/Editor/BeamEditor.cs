@@ -750,7 +750,7 @@ namespace Beamable
 			if (writeConfig)
 			{
 				string directoryName = Path.GetDirectoryName(path);
-				if(!string.IsNullOrWhiteSpace(directoryName))
+				if (!string.IsNullOrWhiteSpace(directoryName))
 				{
 					Directory.CreateDirectory(directoryName);
 				}
