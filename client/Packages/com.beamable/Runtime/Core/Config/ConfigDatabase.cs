@@ -13,7 +13,12 @@ namespace Beamable.Config
 
 		public static void Init()
 		{
-			SetConfigValuesFromFile(GetConfigFileName());
+			var alreadyInitialized = database != null && database.Count > 0;
+
+			if(!alreadyInitialized)
+			{
+				SetConfigValuesFromFile(GetConfigFileName());
+			}
 		}
 
 		public static string GetConfigFileName()
@@ -42,32 +47,28 @@ namespace Beamable.Config
 		public static bool HasConfigFile(string filename)
 		{
 			// this is hardly efficient, but if it is done infrequently enough, it should be fine
-			return Resources.Load<TextAsset>(filename) != null;
+			var nativePath= File.Exists(GetFullPath(filename));
+			return nativePath || Resources.Load<TextAsset>(filename) != null;
 		}
 
 		public static void SetConfigValuesFromFile(string fileName)
 		{
-			TextAsset asset = Resources.Load(fileName) as TextAsset;
-			if (asset == null)
+			var text = GetFileContent(fileName);
+
+			if (!(Serialization.SmallerJSON.Json.Deserialize(text) is IDictionary<string, object> dictionaryJson))
 			{
-				throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
+				Debug.LogError("Config is invalid json");
+				return;
 			}
-			else
+
+			using (var iter = dictionaryJson.GetEnumerator())
 			{
-				var d = Serialization.SmallerJSON.Json.Deserialize(asset.text) as IDictionary<string, object>;
-				if (d == null)
+				while (iter.MoveNext())
 				{
-					Debug.LogError("Config is invalid json");
-				}
-				else
-				{
-					var iter = d.GetEnumerator();
-					while (iter.MoveNext())
-					{
-						database[iter.Current.Key] = iter.Current.Value.ToString();
-					}
+					database[iter.Current.Key] = iter.Current.Value.ToString();
 				}
 			}
+			
 		}
 
 		public static ICollection<string> GetAllValueNames()
@@ -189,6 +190,28 @@ namespace Beamable.Config
 				Debug.LogError("Could not find '" + name + "' in Config");
 				throw new KeyNotFoundException();
 			}
+		}
+
+		public static string GetFullPath(string fileName) =>
+			Path.Combine("Assets", "Beamable", "Resources", $"{fileName}.txt");
+
+		private static string GetFileContent(string fileName)
+		{
+			var fullPath = GetFullPath(fileName);
+
+			if(File.Exists(fullPath))
+			{
+				var result = File.ReadAllText(fullPath);
+				return result;
+			}
+
+			var asset = Resources.Load(fileName) as TextAsset;
+			if (asset == null)
+			{
+				throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
+			}
+
+			return asset.text;
 		}
 	}
 }

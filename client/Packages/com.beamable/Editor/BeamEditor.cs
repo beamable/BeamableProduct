@@ -446,7 +446,7 @@ namespace Beamable
 
 			if (!ConfigFileExists)
 			{
-				SaveConfig("", "", BeamableEnvironment.ApiUrl);
+				SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
 				Logout();
 				InitializePromise = Promise.Success;
 				return;
@@ -462,7 +462,7 @@ namespace Beamable
 
 			if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
 			{
-				SaveConfig("", "", BeamableEnvironment.ApiUrl);
+				SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
 				Logout();
 				InitializePromise = Promise.Success;
 				return;
@@ -734,7 +734,7 @@ namespace Beamable
 				containerPrefix = containerPrefix
 			};
 
-			string path = "Assets/Beamable/Resources/config-defaults.txt";
+			string path = ConfigDatabase.GetFullPath("config-defaults");
 			var asJson = JsonUtility.ToJson(config, true);
 
 			var writeConfig = true;
@@ -749,7 +749,11 @@ namespace Beamable
 
 			if (writeConfig)
 			{
-				Directory.CreateDirectory("Assets/Beamable/Resources/");
+				string directoryName = Path.GetDirectoryName(path);
+				if(!string.IsNullOrWhiteSpace(directoryName))
+				{
+					Directory.CreateDirectory(directoryName);
+				}
 
 				if (File.Exists(path))
 				{
