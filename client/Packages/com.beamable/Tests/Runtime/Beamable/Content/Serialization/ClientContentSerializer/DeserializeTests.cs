@@ -428,7 +428,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
-      ""<Color>k__BackingField"": {
+      ""Color"": {
          ""data"": {
             ""r"":1,
             ""g"":0,
