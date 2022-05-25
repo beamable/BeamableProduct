@@ -88,7 +88,7 @@ namespace Core.Platform.SDK
 						return Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody, false).Map(rsp =>
 					{
 						Token = new AccessToken(_accessTokenStorage, Token.Cid, Token.Pid, rsp.accessToken,
-						                        rsp.refreshToken, long.MaxValue-1);
+												rsp.refreshToken, long.MaxValue - 1);
 						return PromiseBase.Unit;
 					})
 					.FlatMap(_ => MakeRequest<T>(method, uri, body, includeAuthHeader));
