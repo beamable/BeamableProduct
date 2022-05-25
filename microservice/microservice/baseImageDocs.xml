@@ -4,6 +4,21 @@
         <name>BeamableMicroserviceBase</name>
     </assembly>
     <members>
+        <member name="T:Beamable.Server.Api.Notifications.PlayerNotificationRequest">
+            <summary>
+            Notification request format.
+            </summary>
+        </member>
+        <member name="T:Beamable.Server.Api.Notifications.PlayerBatchNotificationRequest">
+            <summary>
+            Format of the Notification request when notifying multiple players.
+            </summary>
+        </member>
+        <member name="T:Beamable.Server.Api.Notifications.PlayerNotificationPayload">
+            <summary>
+            Structure representing the expected format for the notification we are sending.
+            </summary>
+        </member>
         <member name="M:Beamable.Server.BeamableMicroService.ResolveCustomInitializationHook">
             <summary>
             Handles custom initialization hooks. Makes the following assumptions:
