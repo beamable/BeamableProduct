@@ -9,6 +9,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0]
+### Added
+- Unity 2021 LTS support.
+- `PreventAddressableCodeStripping` Core Configuration setting that automatically generates a link.xml file that will preserve addressable types.
+- `TryClaim` method in `EventService` to attempt a claim, even if one is not invalid.
+- `GetDeviceId` method in `AuthService` to retrieve the current device id.
+- `deviceIds` field on `User` object that provides all associated device ids.
+- Content sorting option in `Content Manager`.
+- Documentation to `IBeamableAPI` and all related accessors.
+- `Subscribe<T>` method to `INotificationService` to avoid awkward serialization handling.
+- Implicit conversion operators from `Optional<T>` objects wrapping a value type to matching `Nullable<T>` types.
+- Inline style editor in BUSS theme manager.
+- Added `LobbyService` and `PlayerLobby` to support new Lobby functionality.
+
+### Changed
+- `ManifestSubscription` subscription no longer accepts the scope field
+- AccountHud logs a warning when pressed if there isn't an AccountManagementFlow in the scene.
+- Increased the AdminFlow scroll speed
+- InventoryFlow can now be configured at the GameObject level.
+- Edit mode for Buss Style Card has been removed in favor of context menus for selector label, variables and properties.
+- Claiming an event that a player never submitted a score for will report an accurate error message.
+- Added tooltips to Microservice Manager elements which didn't have them.
+- Microservice Manager buttons now highlight on hover.
+- Beamable third party context systems register with a default order of -1000.
+- Global style sheet is turned now into a list of global style sheets.
+- Content tags are split on `','` characters in addition to `' '`s.
+- A `IBeamableDisposable`'s `OnDispose` method can now resolve services from the `IDependencyProvider` that is being disposed.
+- `HeartBeat` will now send heartbeat requests faster for our newer live backend services such as Lobbies
+- Content validation for ID fields will now accept IDs without the prefix
+- It is now possible to set background sprite as a main texture in SDF Image.
+- It is now possible to choose 9-slice source and Pixels Per Unit multiplier in SDF image.
+
+### Fixed
+- StoreView prefab now works in landscape mode.
+- Playmode ContentObject refresh with disabled domain reload on Unity 2019 and 2020.
+- Reading content in offline mode will no longer throw an exception if there is offline cache available
+- Android sign-in will always allow user to select an account.
+- Editor time Content downloads ignore content where no C# class exists.
+- Account management will no longer log an error after pressing change password button more than once.
+- Content Manager no longer logs inaccurate warning after renaming content.
+- Notification handling for multiple `BeamContext` instances.
+- Listing 'sku' price type was incorrect. Fixed to 'skus'.
+- The player's location is detected automatically
+- Matchmaking no longer breaks after user switch from Account Management flow.
+
+### Removed
+- Unity 2018 LTS support.
+
+## [1.1.4]
+### Fixed
+- Documentation links no longer direct to missing web pages.
+
+## [1.1.3]
+no changes
+
 ## [1.1.2]
 ### Fixed
 - `AccessTokenStorage` no longer throws `ArgumentOutOfRangeException` when starting in offline mode
@@ -29,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Buss Element selection improvement in Buss Theme Manager   
 - Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
 - All implementations of `[BeamContextSystem]` or `[RegisterBeamableDependencies]` will be preserved durring Unity code stripping
+- Updated C#MS Publish window UI/UX
 - Properties in Buss Style Card sorted alphabetically by default
 
 ### Fixed 

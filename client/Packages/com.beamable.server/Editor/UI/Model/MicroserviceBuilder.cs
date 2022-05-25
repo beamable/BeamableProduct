@@ -62,9 +62,10 @@ namespace Beamable.Editor.UI.Model
 
 		protected override async Task<RunImageCommand> PrepareRunCommand()
 		{
-			var beamable = await EditorAPI.Instance;
+			var beamable = BeamEditorContext.Default;
+			await beamable.InitializePromise;
 			var secret = await beamable.GetRealmSecret();
-			var cid = beamable.CustomerView.Cid;
+			var cid = beamable.CurrentCustomer.Cid;
 			// check to see if the storage descriptor is running.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
@@ -78,12 +79,19 @@ namespace Beamable.Editor.UI.Model
 
 			IsBuilding = true;
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
+			if (isWatch)
+			{
+				// before we can build this container, we need to remove any contains that may have bind mounts open to the service's filesystems.
+				//  because if we don't, its possible Docker might prevent the directory cleanup operations and flunk the build.
+				await TryToStop(); // for it to stop.
+				await BeamServicesCodeWatcher.StopClientSourceCodeGenerator((MicroserviceDescriptor)Descriptor);
+			}
 			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools, isWatch);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			try
 			{
-				await command.Start(null);
+				await command.StartAsync();
 				await TryToGetLastImageId();
 
 				// Update the config with the code handle identifying the version of the code this is building with (see BeamServicesCodeWatcher).
@@ -114,6 +122,7 @@ namespace Beamable.Editor.UI.Model
 			finally
 			{
 				IsBuilding = false;
+				BeamServicesCodeWatcher.GenerateClientSourceCode((MicroserviceDescriptor)Descriptor);
 			}
 
 			return false;
@@ -123,7 +132,7 @@ namespace Beamable.Editor.UI.Model
 			var getChecksum = new GetImageIdCommand(Descriptor);
 			try
 			{
-				LastBuildImageId = await getChecksum.Start(null);
+				LastBuildImageId = await getChecksum.StartAsync();
 			}
 			catch (Exception e)
 			{

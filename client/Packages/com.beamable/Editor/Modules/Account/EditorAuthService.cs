@@ -1,7 +1,9 @@
+using Beamable.Api;
 using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using UnityEngine.Rendering;
 
 namespace Beamable.Editor.Modules.Account
 {
@@ -17,7 +19,8 @@ namespace Beamable.Editor.Modules.Account
 			PasswordResetCodeType = CodeType.PIN
 		})
 		{
-
+			if (requester is PlatformRequester platformRequester)
+				platformRequester.AuthService = this;
 		}
 
 		// This API call will only work if made by editor code.
@@ -55,6 +58,7 @@ namespace Beamable.Editor.Modules.Account
 			language = user.language;
 			scopes = user.scopes;
 			thirdPartyAppAssociations = user.thirdPartyAppAssociations;
+			deviceIds = user.deviceIds;
 		}
 
 	}

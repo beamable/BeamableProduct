@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
 using Beamable.Editor.UI.Components;
@@ -20,13 +21,12 @@ namespace Beamable.Editor.Login.UI
 	public class LoginWindow : EditorWindow
 	{
 
-		public static async Task CheckLogin(params Type[] dockLocations)
+		public static async Promise CheckLogin(params Type[] dockLocations)
 		{
-			var b = await EditorAPI.Instance;
-			if (b.HasToken)
-			{
+			var b = BeamEditorContext.Default;
+			await b.InitializePromise;
+			if (b.IsAuthenticated)
 				return; // short circuit.
-			}
 
 			var wnd = Show(dockLocations);
 			await wnd.LoginManager.OnComplete;

@@ -14,7 +14,10 @@ namespace Beamable.Server.Editor.DockerCommands
 	public static class MicroserviceLogHelper
 	{
 		public static int RunLogsSteps => ExpectedRunLogs.Length;
+
 		private static readonly Regex StepRegex = new Regex("Step [0-9]+/[0-9]+");
+		private static readonly Regex StepBuildKitRegex = new Regex("#[0-9]+");
+
 		private static readonly Regex NumberRegex = new Regex("[0-9]+");
 		private static readonly string[] ErrorElements = {
 			"error",
@@ -22,6 +25,14 @@ namespace Beamable.Server.Editor.DockerCommands
 			"Exception",
 			"exception"
 		};
+
+		private static readonly Dictionary<string, string> ContextForLogs =
+			new Dictionary<string, string>
+			{
+				{"pull access denied for beamservice",
+					"No version of beamservice exists on your computer. Please rebuild the image and try again. " +
+					"Please ignore Docker’s access denied messaging, that is a red herring"}
+			};
 
 		private static readonly HashSet<string> ErrorExclusions = new HashSet<string>
 		{
@@ -254,15 +265,29 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public static void HandleBuildCommandOutput(IBeamableBuilder builder, string message)
 		{
+			const int expectedBuildSteps = 11;
+
 			if (message == null)
 				return;
-			var match = StepRegex.Match(message);
+
+			var stepsRegex = MicroserviceConfiguration.Instance.DisableDockerBuildkit
+				? StepRegex
+				: StepBuildKitRegex;
+			var match = stepsRegex.Match(message);
 			if (match.Success)
 			{
 				var values = NumberRegex.Matches(match.Value);
 				var current = int.Parse(values[0].Value);
-				var total = int.Parse(values[1].Value);
+				var total = values.Count > 1 ? int.Parse(values[1].Value) : expectedBuildSteps;
 				builder.OnBuildingProgress?.Invoke(current, total);
+			}
+			else if (ContextForLogs.Keys.Any(message.Contains))
+			{
+				var key = ContextForLogs.Keys.First(message.Contains);
+				EditorApplication.delayCall += () =>
+				{
+					Debug.LogError(ContextForLogs[key]);
+				};
 			}
 			else if (message.Contains("Success"))
 			{

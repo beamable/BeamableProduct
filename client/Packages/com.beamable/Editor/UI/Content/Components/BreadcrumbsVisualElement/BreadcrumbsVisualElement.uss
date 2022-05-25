@@ -44,3 +44,38 @@ BreadcrumbsVisualElement #counterVisualElement > Label {
 BreadcrumbsVisualElement #realmButton{
 	margin-right: 10px;
 }
+
+#contentSorter {
+	height: 22px;
+	justify-content: center;
+	border-radius: 5px;
+	border-left-width: 1px;
+	border-right-width: 1px;
+	border-top-width: 1px;
+	border-bottom-width: 1px;
+	border-color:#8f8f8f;
+	background-image: none;
+}
+Button#contentSorter {
+	background-image: none;
+}
+
+#contentSorter > Label {
+	flex: 1;
+	margin-right: 18px;
+	margin-top: 2px;
+	font-size: 10px;
+	-unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+	align-self: flex-start;
+	-unity-text-align: middle-left;
+}
+
+#contentSorter > Image{
+	align-self: flex-end;
+	position: absolute;
+	top: 8px;
+	right: 5px;
+	width: 10px;
+	height: 5px;
+	background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png")
+}

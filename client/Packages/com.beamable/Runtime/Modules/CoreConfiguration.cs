@@ -41,6 +41,11 @@ namespace Beamable
 				 "will not be deleted.")]
 		public bool PreventCodeStripping = true;
 
+		[Tooltip("by default, Beamable won't let Unity Addressables code files be stripped form the project on build. " +
+				 "When this setting is enabled, anything the project is built, a link.xml file will be generated in the Assets/beamable/Resources/AddressableLinker " +
+				 "folder. If you disable this setting, the link file won't be generated. However, any existing link file won't be deleted. ")]
+		public bool PreventAddressableCodeStripping = true;
+
 		public static CoreConfiguration Instance => Get<CoreConfiguration>();
 
 		public enum EventHandlerConfig { Guarantee, Replace, Add, }

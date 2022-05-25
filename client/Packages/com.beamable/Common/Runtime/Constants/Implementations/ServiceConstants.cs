@@ -34,7 +34,7 @@ namespace Beamable.Common
 				public const string STORAGE_IMAGE_CLASS = "storageImage";
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
 
-				public const float DEFAULT_ROW_HEIGHT = 55.0f;
+				public const float DEFAULT_ROW_HEIGHT = 56.0f;
 				public const int MAX_ROW = 6;
 				public static readonly Vector2 MIN_SIZE = new Vector2(900, 440);
 				public const float ROW_HEIGHT = 65;
@@ -56,6 +56,16 @@ namespace Beamable.Common
 					public const string SERVICE_PROVIDER_INITIALIZED = "Service provider initialized";
 					public const string EVENT_PROVIDER_INITIALIZED = "Event provider initialized";
 					public const string STORAGE_READY = "Waiting for connections";
+				}
+
+				public static class Dialogs
+				{
+					public static class RealmSwitchDialog
+					{
+						public const string TITLE = "Microservice Manager";
+						public const string MESSAGE = "Due to the realm change, all running services are stopped";
+						public const string OK = "Ok";
+					}
 				}
 			}
 		}

@@ -127,6 +127,10 @@ namespace Beamable.AccountManagement
 	[HelpURL(Constants.URLs.Documentations.URL_DOC_ACCOUNT_HUD)]
 	public class AccountManagementSignals : DeSignalTower
 	{
+#pragma warning disable CS0649
+		[SerializeField] private AccountForgotPassword _accountForgotPassword;
+#pragma warning restore CS0649
+
 		[Header("Flow Events")]
 		public ToggleEvent OnToggleAccountManagement;
 		public LoadingEvent Loading;
@@ -186,8 +190,17 @@ namespace Beamable.AccountManagement
 		public void ToggleAccountManagement()
 		{
 			_toggleState = !_toggleState;
+			var count = 0;
+			ForAll<AccountManagementSignals>(signals =>
+			{
+				count += signals?.OnToggleAccountManagement?.GetPersistentEventCount() ?? 0;
+			});
+			if (count == 0)
+			{
+				Debug.LogWarning("There is no account management flow in the scene, so this toggle button does nothing. Please ensure there is an Account Management Flow in the scene.");
+				return;
+			}
 			Broadcast(_toggleState, s => s.OnToggleAccountManagement);
-
 		}
 
 		public void ToggleAccountManagement(bool desiredState)
@@ -420,11 +433,17 @@ namespace Beamable.AccountManagement
 		public void StartForgotPassword(ForgotPasswordArguments reference)
 		{
 			var email = reference.Email.Value;
-			API.Instance.Then(de =>
+			API.Instance
+			   .Then(de =>
 			   {
 				   WithLoading("Sending Email...", de.AuthService.IssuePasswordUpdate(email))
 				   .Then(_ => DeferBroadcast(email, s => s.ForgotPasswordEmailSent));
-			   }).Error(HandleError);
+			   })
+			   .Error(ex =>
+			   {
+				   _accountForgotPassword.ChangePasswordRequestSent(false);
+				   HandleError(ex);
+			   });
 		}
 
 		public void ConfirmForgotPassword(ForgotPasswordArguments reference)
@@ -439,7 +458,11 @@ namespace Beamable.AccountManagement
 				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
 			 {
 				 Login(email, password);
-			 }).Error(HandleError);
+			 }).Error(ex =>
+				{
+					_accountForgotPassword.ChangePasswordRequestSent(false);
+					HandleError(ex);
+				});
 			});
 		}
 
