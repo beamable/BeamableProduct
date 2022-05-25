@@ -40,7 +40,7 @@ namespace Beamable.Editor.Toolbox.Components
 			}
 		}
 
-		public ToolboxModel Model { get; set; }
+		public IToolboxViewService Model { get; set; }
 		private int ExtraElementCount = 0;
 		private int TotalWidgets = 0;
 		private List<VisualElement> _extraElements = new List<VisualElement>();
@@ -53,6 +53,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 			_gridContainer = Root.Q("gridContainer");
 
+			Model = provider.GetService<IToolboxViewService>();
 #if UNITY_2021_1_OR_NEWER
 			var mainVisualElement = Root.Q("mainVisualElement");
 			mainVisualElement.Add(_gridContainer);
