@@ -43,7 +43,7 @@ namespace Beamable.Api.Notification
 		Dictionary<string, InGameNotification> inGameNotifications = new Dictionary<string, InGameNotification>();
 		public delegate void InGameNotificationCB(string notificationKey, string message);
 
-		private List<string> pausedhandlers = new List<string>();
+		private List<string> pausedHandlers = new List<string>();
 		private Dictionary<string, List<Action<object>>> handlers = new Dictionary<string, List<Action<object>>>();
 		private HashSet<object> typedHandlerObjects = new HashSet<object>();
 
@@ -189,7 +189,7 @@ namespace Beamable.Api.Notification
 		/// <param name="payload">The data to to make available to all subscribers</param>
 		public void Publish(string name, object payload)
 		{
-			if (pausedhandlers.Contains(name))
+			if (pausedHandlers.Contains(name))
 				return;
 			
 			if (handlers.TryGetValue(name, out var found))
@@ -207,8 +207,8 @@ namespace Beamable.Api.Notification
 		/// <param name="name">The event name to pause</param>
 		public void Pause(string name)
 		{
-			if (!pausedhandlers.Contains(name))
-				pausedhandlers.Add(name);
+			if (!pausedHandlers.Contains(name))
+				pausedHandlers.Add(name);
 		}
 		
 		/// <summary>
@@ -217,8 +217,8 @@ namespace Beamable.Api.Notification
 		/// <param name="name">The event name to resume</param>
 		public void Resume(string name)
 		{
-			if (pausedhandlers.Contains(name))
-				pausedhandlers.Remove(name);
+			if (pausedHandlers.Contains(name))
+				pausedHandlers.Remove(name);
 		}
 
 		#region Push notifications
