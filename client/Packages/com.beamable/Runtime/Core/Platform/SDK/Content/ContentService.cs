@@ -622,7 +622,15 @@ namespace Beamable.Content
 		{
 			foreach (KeyValuePair<string, ManifestSubscription> elem in Subscribables)
 			{
-				elem.Value.UnsubscribeAllNotifications();
+				elem.Value.PauseAllNotifications();
+			}
+		}
+		
+		public void ResumeListeningForUpdates()
+		{
+			foreach (KeyValuePair<string, ManifestSubscription> elem in Subscribables)
+			{
+				elem.Value.ResumeAllNotifications();
 			}
 		}
 
