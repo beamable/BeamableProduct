@@ -618,6 +618,9 @@ namespace Beamable.Content
 			OnManifestChanged?.Invoke(CurrentDefaultManifestID);
 		}
 
+		/// <summary>
+		/// Stop listening all notifications on <see cref="ClientManifest"/> deploy .
+		/// </summary>
 		public void StopListeningForUpdates()
 		{
 			foreach (KeyValuePair<string, ManifestSubscription> elem in Subscribables)
@@ -626,6 +629,9 @@ namespace Beamable.Content
 			}
 		}
 		
+		/// <summary>
+		/// Resume listening all notifications on <see cref="ClientManifest"/> deploy .
+		/// </summary>
 		public void ResumeListeningForUpdates()
 		{
 			foreach (KeyValuePair<string, ManifestSubscription> elem in Subscribables)

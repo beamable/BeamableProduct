@@ -190,6 +190,9 @@ namespace Beamable.Api.Notification
 		/// <param name="payload">The data to to make available to all subscribers</param>
 		public void Publish(string name, object payload)
 		{
+			if (pausedhandlers.Contains(name))
+				return;
+			
 			if (handlers.TryGetValue(name, out var found))
 			{
 				for (var i = found.Count - 1; i > -1; i--)
@@ -212,7 +215,7 @@ namespace Beamable.Api.Notification
 		/// <summary>
 		/// Resume the callbacks for a given notification.
 		/// </summary>
-		/// <param name="name">The event name to pause</param>
+		/// <param name="name">The event name to resume</param>
 		public void Resume(string name)
 		{
 			if (pausedhandlers.Contains(name))
