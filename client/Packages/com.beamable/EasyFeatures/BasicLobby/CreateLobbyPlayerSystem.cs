@@ -4,7 +4,6 @@ using Beamable.Experimental.Api.Lobbies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -45,8 +44,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			                                      SelectedGameType.Id, Description,
 			                                      maxPlayers: SelectedGameType.maxPlayers);
 		}
-
-		private void OnError(Exception obj) { }
 
 		public virtual void ResetData()
 		{

@@ -19,12 +19,12 @@ namespace Beamable.EasyFeatures.Components
 		public Button CancelButton;
 		public Button ConfirmButton;
 		
-		public void Show(string label, string content, Action confirmAction, Mode mode = Mode.Default)
+		public void Show(string label, string content, Action confirmAction, Action closeAction, Mode mode = Mode.Default)
 		{
 			Label.text = label;
 			Content.text = content;
 
-			CancelButton.onClick.ReplaceOrAddListener(Hide);
+			CancelButton.onClick.ReplaceOrAddListener(closeAction.Invoke);
 			ConfirmButton.onClick.ReplaceOrAddListener(confirmAction.Invoke);
 
 			if (mode == Mode.Default)

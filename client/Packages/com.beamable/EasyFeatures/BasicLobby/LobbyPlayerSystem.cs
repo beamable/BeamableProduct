@@ -1,25 +1,28 @@
-﻿using Beamable.Experimental.Api.Lobbies;
+﻿using Beamable.Common;
+using Beamable.Experimental.Api.Lobbies;
 using System.Collections.Generic;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class LobbyPlayerSystem : LobbyView.IDependencies
 	{
+		protected BeamContext BeamContext;
+		
 		public Lobby LobbyData { get; set; }
 		public List<LobbySlotPresenter.Data> SlotsData => BuildViewData();
-		
 		public bool IsVisible { get; set; }
 		public bool IsPlayerAdmin { get; set; }
 		public bool IsPlayerReady { get; set; }
 		public bool IsServerReady { get; set; }
 		public bool IsMatchStarting { get; set; }
-
+		
 		public List<string> PlayerNames;
 		public List<bool> PlayerReadiness;
 		public List<bool> SlotOccupation;
 
-		public void Setup(Lobby data, bool isAdmin)
+		public void Setup(BeamContext beamContext, Lobby data, bool isAdmin)
 		{
+			BeamContext = beamContext;
 			LobbyData = data;
 			IsPlayerAdmin = isAdmin;
 			IsPlayerReady = false;
@@ -32,6 +35,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 			
 			// TODO: configure players from lobby data
 			//RegisterLobbyPlayers();
+		}
+		
+		public async Promise LeaveLobby()
+		{
+			await BeamContext.Lobby.Leave();
 		}
 
 		public virtual void RegisterLobbyPlayers(List<LobbyPlayer> data)

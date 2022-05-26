@@ -1,4 +1,5 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Lobbies;
@@ -97,12 +98,25 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return; 
 			}
-
-			await _system.JoinLobby(_system.LobbiesData[_system.SelectedLobbyIndex.Value].lobbyId);
-
-			if (_beamContext.Lobby.State != null)
+			
+			FeatureControl.ShowOverlayedLabel("Joining lobby...");
+			
+			try
 			{
-				FeatureControl.OpenLobbyView(_beamContext.Lobby.State);
+				await _system.JoinLobby(_system.LobbiesData[_system.SelectedLobbyIndex.Value].lobbyId);
+				FeatureControl.HideOverlay();
+				if (_beamContext.Lobby.State != null)
+				{
+					FeatureControl.OpenLobbyView(_beamContext.Lobby.State);
+				}
+			}
+			catch (Exception e)
+			{
+				FeatureControl.ShowErrorWindow(e.Message);
+				// if (e is PlatformRequesterException pre)
+				// {
+				// 	FeatureControl.ShowErrorWindow(pre.Error.error);
+				// }
 			}
 		}
 

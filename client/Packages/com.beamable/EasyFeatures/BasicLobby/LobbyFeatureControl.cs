@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Lobbies;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -144,7 +145,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void OpenLobbyView(Lobby lobby)
 		{
-			_lobbyPlayerSystem.Setup(lobby, _beamContext.PlayerId.ToString() == lobby.host);
+			_lobbyPlayerSystem.Setup(_beamContext, lobby, _beamContext.PlayerId.ToString() == lobby.host);
 			OpenView(View.InsideLobby);
 		}
 
@@ -161,6 +162,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public void ShowErrorWindow(string message)
 		{
 			_overlaysController.ShowError(message);
+		}
+
+		public void ShowConfirmWindow(string label, string message, Action confirmAction)
+		{
+			_overlaysController.ShowConfirm(label, message, confirmAction);
 		}
 	}
 }
