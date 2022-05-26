@@ -618,6 +618,14 @@ namespace Beamable.Content
 			OnManifestChanged?.Invoke(CurrentDefaultManifestID);
 		}
 
+		public void StopListeningForUpdates()
+		{
+			foreach (KeyValuePair<string, ManifestSubscription> elem in Subscribables)
+			{
+				elem.Value.UnsubscribeAllNotifications();
+			}
+		}
+
 
 		private ManifestSubscription GetSubscription(string manifestID)
 		{

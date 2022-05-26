@@ -43,6 +43,7 @@ namespace Beamable.Api.Notification
 		Dictionary<string, InGameNotification> inGameNotifications = new Dictionary<string, InGameNotification>();
 		public delegate void InGameNotificationCB(string notificationKey, string message);
 
+		private List<string> pausedhandlers = new List<string>();
 		private Dictionary<string, List<Action<object>>> handlers = new Dictionary<string, List<Action<object>>>();
 		private HashSet<object> typedHandlerObjects = new HashSet<object>();
 
@@ -97,6 +98,7 @@ namespace Beamable.Api.Notification
 		/// <inheritdoc cref="INotificationService.Subscribe{T}(string, Action{T})"/>
 		public void Subscribe<T>(string name, Action<T> callback)
 		{
+			string cachedName = name;
 			object boxedCallback = callback;
 			typedHandlerObjects.Add(boxedCallback);
 			void Handler(object raw)
@@ -158,7 +160,19 @@ namespace Beamable.Api.Notification
 				found.Remove(handler);
 			}
 		}
-
+		
+		/// <summary>
+		/// Unregister all callback handlers for push notifications.
+		/// </summary>
+		/// <param name="name">The event name to unsubscribe all callbacks</param>
+		public void UnsubscribeAll(string name)
+		{
+			if (handlers.TryGetValue(name, out var found))
+			{
+				found.Clear();
+			}
+		}
+		
 		/// <inheritdoc cref="INotificationService.Unsubscribe{T}(string, Action{T})"/>
 		public void Unsubscribe<T>(string name, Action<T> handler)
 		{
@@ -183,6 +197,26 @@ namespace Beamable.Api.Notification
 					found[i](payload);
 				}
 			}
+		}
+		
+		/// <summary>
+		/// Pause the callbacks for a given notification.
+		/// </summary>
+		/// <param name="name">The event name to pause</param>
+		public void Pause(string name)
+		{
+			if (!pausedhandlers.Contains(name))
+				pausedhandlers.Add(name);
+		}
+		
+		/// <summary>
+		/// Resume the callbacks for a given notification.
+		/// </summary>
+		/// <param name="name">The event name to pause</param>
+		public void Resume(string name)
+		{
+			if (pausedhandlers.Contains(name))
+				pausedhandlers.Remove(name);
 		}
 
 		#region Push notifications
