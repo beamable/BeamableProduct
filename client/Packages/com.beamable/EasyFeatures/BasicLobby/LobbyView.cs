@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Experimental.Api.Lobbies;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -6,18 +7,18 @@ using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
-	public class InsideLobbyView : MonoBehaviour, ISyncBeamableView
+	public class LobbyView : MonoBehaviour, ISyncBeamableView
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			LobbiesListEntryPresenter.Data LobbyData { get; }
+			Lobby LobbyData { get; }
 			List<LobbySlotPresenter.Data> SlotsData { get; }
 			bool IsVisible { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
 			bool IsServerReady { get; }
 			bool IsMatchStarting { get; }
-			Promise ConfigureData();
+			// Promise ConfigureData();
 		}
 		
 		[Header("View Configuration")]
@@ -44,6 +45,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			var ctx = managedPlayers.GetSinglePlayerContext();
 			_system = ctx.ServiceProvider.GetService<IDependencies>();
 			
+			
 			gameObject.SetActive(_system.IsVisible);
 
 			if (!_system.IsVisible)
@@ -51,8 +53,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 				return;
 			}
 
-			Name.text = _system.LobbyData.Name;
-			Counter.text = $"{_system.LobbyData.CurrentPlayers}/{_system.LobbyData.MaxPlayers}";
+			Name.text = _system.LobbyData.name;
+			Counter.text = $"{_system.LobbyData.players.Count}/{_system.LobbyData.maxPlayers}";
 			
 			// Buttons' callbacks
 			SettingsButton.onClick.ReplaceOrAddListener(SettingsButtonClicked);

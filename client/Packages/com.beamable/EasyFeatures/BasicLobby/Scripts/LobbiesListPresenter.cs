@@ -1,4 +1,5 @@
-﻿using Beamable.UI.Scripts;
+﻿using Beamable.Experimental.Api.Lobbies;
+using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,12 +17,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public PoolableScrollView PoolableScrollView;
 		
 		private readonly List<LobbiesListEntryPresenter> _spawnedEntries = new List<LobbiesListEntryPresenter>();
-		private List<LobbiesListEntryPresenter.Data> _entriesList = new List<LobbiesListEntryPresenter.Data>();
-		private Action<int> _onLobbySelected;
+		private List<Lobby> _entriesList = new List<Lobby>();
+		private Action<int?> _onLobbySelected;
 
 		private LobbiesListEntryPresenter _currentlySelectedLobby;
 
-		public void Setup(List<LobbiesListEntryPresenter.Data> entries, Action<int> onLobbySelected)
+		public void Setup(List<Lobby> entries, Action<int?> onLobbySelected)
 		{
 			PoolableScrollView.SetContentProvider(this);
 			_entriesList = entries;

@@ -1,40 +1,37 @@
-﻿using Beamable.Common.Api;
+﻿using Beamable.Common;
 using Beamable.Common.Content;
-using Beamable.Experimental.Api.Matchmaking;
+using Beamable.Experimental.Api.Lobbies;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class CreateLobbyPlayerSystem : CreateLobbyView.IDependencies
 	{
-		protected readonly MatchmakingService MatchmakingService;
-		protected readonly IUserContext Ctx;
-		
+		protected BeamContext BeamContext;
+
 		public bool IsVisible { get; set; }
 		public List<SimGameType> GameTypes { get; set; }
-		public int SelectedGameType { get; set; }
-		public Dictionary<string, bool> AccessOptions { get; } = new Dictionary<string, bool>();
+		public int SelectedGameTypeIndex { get; set; }
+		public Dictionary<string, LobbyRestriction> AccessOptions { get; } = new Dictionary<string, LobbyRestriction>();
 		public int SelectedAccessOption { get; set; }
 		public string Name { get; set; }
 		public string Description { get; set; }
 
-		public CreateLobbyPlayerSystem(MatchmakingService matchmakingService, IUserContext ctx)
-		{
-			MatchmakingService = matchmakingService;
-			Ctx = ctx;
-			
-			SelectedGameType = 0;
-			SelectedAccessOption = 0;
-			Name = string.Empty;
-			Description = string.Empty;
-			
-			AccessOptions.Add("Private", false);
-			AccessOptions.Add("Public", true);
-		}
+		public SimGameType SelectedGameType => GameTypes[SelectedGameTypeIndex];
 
-		public virtual void Setup(List<SimGameType> gameTypes)
+		public virtual void Setup(BeamContext beamContext, List<SimGameType> gameTypes)
 		{
+			BeamContext = beamContext;
 			GameTypes = gameTypes;
+
+			ResetData();
+
+			AccessOptions.Clear();
+			AccessOptions.Add("Public", LobbyRestriction.Open);
+			AccessOptions.Add("Private", LobbyRestriction.Closed);
 		}
 
 		public virtual bool ValidateConfirmButton()
@@ -42,14 +39,18 @@ namespace Beamable.EasyFeatures.BasicLobby
 			return Name.Length > 5;
 		}
 
-		public virtual void ConfirmButtonClicked()
+		public virtual async Promise<Lobby> CreateLobby()
 		{
-			// TODO: Create lobby with name, description, game type and access
+			return await BeamContext.Lobby.Create(Name, AccessOptions.ElementAt(SelectedAccessOption).Value,
+			                                      SelectedGameType.Id, Description,
+			                                      maxPlayers: SelectedGameType.maxPlayers);
 		}
+
+		private void OnError(Exception obj) { }
 
 		public virtual void ResetData()
 		{
-			SelectedGameType = 0;
+			SelectedGameTypeIndex = 0;
 			SelectedAccessOption = 0;
 			Name = string.Empty;
 			Description = string.Empty;

@@ -1,6 +1,8 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
+using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Lobbies;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -22,22 +24,23 @@ namespace Beamable.EasyFeatures.BasicLobby
 		[Header("Feature Control")]
 		[SerializeField] private bool _runOnEnable = true;
 
+		[SerializeField] private BeamableViewGroup _lobbyViewGroup;
+		[SerializeField] private OverlaysController _overlaysController;
+
 		[Header("Components")]
 		[SerializeField] private GameObject _loadingIndicator;
-		
+
 		[Header("Fast-Path Configuration")]
 		[SerializeField] private List<SimGameTypeRef> _gameTypes;
-
-		[SerializeField] private BeamableViewGroup _lobbyViewGroup;
-		[SerializeField] private bool _testMode;
 
 		private CreateLobbyPlayerSystem _createLobbyPlayerSystem;
 
 		private View _currentView = View.MainMenu;
-		private InsideLobbyPlayerSystem _insideLobbyPlayerSystem;
+		private LobbyPlayerSystem _lobbyPlayerSystem;
 		private JoinLobbyPlayerSystem _joinLobbyPlayerSystem;
 
 		private MainLobbyPlayerSystem _mainLobbyPlayerSystem;
+		private BeamContext _beamContext;
 
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups
 		{
@@ -65,37 +68,31 @@ namespace Beamable.EasyFeatures.BasicLobby
 			builder.SetupUnderlyingSystemSingleton<MainLobbyPlayerSystem, MainLobbyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<JoinLobbyPlayerSystem, JoinLobbyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<CreateLobbyPlayerSystem, CreateLobbyView.IDependencies>();
-			builder.SetupUnderlyingSystemSingleton<InsideLobbyPlayerSystem, InsideLobbyView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<LobbyPlayerSystem, LobbyView.IDependencies>();
 		}
 
 		public async void Run()
 		{
 			_loadingIndicator.SetActive(true);
-			
+
 			// Ensures the player contexts this view is configured to use are ready (frictionless login flow completed). 
 			await _lobbyViewGroup.RebuildPlayerContexts(_lobbyViewGroup.AllPlayerCodes);
 
-			BeamContext ctx = _lobbyViewGroup.AllPlayerContexts[0];
+			_beamContext = _lobbyViewGroup.AllPlayerContexts[0];
 
-			_mainLobbyPlayerSystem = ctx.ServiceProvider.GetService<MainLobbyPlayerSystem>();
-			_joinLobbyPlayerSystem = ctx.ServiceProvider.GetService<JoinLobbyPlayerSystem>();
-			_createLobbyPlayerSystem = ctx.ServiceProvider.GetService<CreateLobbyPlayerSystem>();
-			_insideLobbyPlayerSystem = ctx.ServiceProvider.GetService<InsideLobbyPlayerSystem>();
+			_mainLobbyPlayerSystem = _beamContext.ServiceProvider.GetService<MainLobbyPlayerSystem>();
+			_joinLobbyPlayerSystem = _beamContext.ServiceProvider.GetService<JoinLobbyPlayerSystem>();
+			_createLobbyPlayerSystem = _beamContext.ServiceProvider.GetService<CreateLobbyPlayerSystem>();
+			_lobbyPlayerSystem = _beamContext.ServiceProvider.GetService<LobbyPlayerSystem>();
 
 			List<SimGameType> gameTypes = await FetchGameTypes();
 
-			_joinLobbyPlayerSystem.Setup(gameTypes);
-			_createLobbyPlayerSystem.Setup(gameTypes);
-
-			if (_testMode)
-			{
-				// Setting up default action to fetch test data generated locally
-				_joinLobbyPlayerSystem.GetDataAction =  _joinLobbyPlayerSystem.GetTestData;
-			}
+			_joinLobbyPlayerSystem.Setup(_beamContext, gameTypes);
+			_createLobbyPlayerSystem.Setup(_beamContext, gameTypes);
 
 			// We need some initial data before first Enrich will be called
-			await _joinLobbyPlayerSystem.ConfigureData();
-			
+			await _joinLobbyPlayerSystem.GetLobbies();
+
 			OpenView(_currentView);
 		}
 
@@ -104,7 +101,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_currentView = newView;
 			UpdateVisibility();
 			await _lobbyViewGroup.Enrich();
-			_loadingIndicator.SetActive(false);	
+			_loadingIndicator.SetActive(false);
 		}
 
 		private void UpdateVisibility()
@@ -112,15 +109,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_mainLobbyPlayerSystem.IsVisible = _currentView == View.MainMenu;
 			_createLobbyPlayerSystem.IsVisible = _currentView == View.CreateLobby;
 			_joinLobbyPlayerSystem.IsVisible = _currentView == View.JoinLobby;
-			_insideLobbyPlayerSystem.IsVisible = _currentView == View.InsideLobby;
+			_lobbyPlayerSystem.IsVisible = _currentView == View.InsideLobby;
 		}
 
 		private async Promise<List<SimGameType>> FetchGameTypes()
 		{
 			Assert.IsTrue(_gameTypes.Count > 0, "Game types count configured in inspector must be greater than 0");
-			
+
 			List<SimGameType> gameTypes = new List<SimGameType>();
-			
+
 			foreach (SimGameTypeRef simGameTypeRef in _gameTypes)
 			{
 				SimGameType simGameType = await simGameTypeRef.Resolve();
@@ -129,8 +126,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			return gameTypes;
 		}
-
-		#region OnClick() delegate wrappers
 
 		public void OpenMainView()
 		{
@@ -147,14 +142,25 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OpenView(View.CreateLobby);
 		}
 
-		public async void OpenInsideLobbyView(LobbiesListEntryPresenter.Data data, bool isAdmin)
+		public void OpenLobbyView(Lobby lobby)
 		{
-			// TODO: await GetSomeDetailedLobbyPlayersData() and setup system with them???
-			_insideLobbyPlayerSystem.Setup(data, isAdmin, _testMode);
-			await _insideLobbyPlayerSystem.ConfigureData();
+			_lobbyPlayerSystem.Setup(lobby, _beamContext.PlayerId.ToString() == lobby.host);
 			OpenView(View.InsideLobby);
 		}
 
-		#endregion
+		public void HideOverlay()
+		{
+			_overlaysController.HideOverlay();
+		}
+
+		public void ShowOverlayedLabel(string label)
+		{
+			_overlaysController.ShowLabel(label);
+		}
+
+		public void ShowErrorWindow(string message)
+		{
+			_overlaysController.ShowError(message);
+		}
 	}
 }

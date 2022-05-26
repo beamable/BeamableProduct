@@ -106,9 +106,33 @@ namespace Beamable.Player
     {
       return _lobbyApi.FindLobbies();
     }
+    
+    /// <inheritdoc cref="ILobbyApi.CreateLobby"/>
+    public async Promise<Lobby> Create(
+	    string name,
+	    LobbyRestriction restriction,
+	    string gameTypeId = null,
+	    string description = null,
+	    List<Tag> playerTags = null,
+	    int? maxPlayers = null,
+	    int? passcodeLength = null,
+	    List<string> statsToInclude = null)
+    {
+	    State = await _lobbyApi.CreateLobby(
+		    name,
+		    restriction,
+		    gameTypeId,
+		    description,
+		    playerTags,
+		    maxPlayers,
+		    passcodeLength,
+		    statsToInclude);
+
+	    return State;
+    }
 
     /// <inheritdoc cref="ILobbyApi.CreateLobby"/>
-    public async Promise Create(
+    public async Promise<Lobby> Create(
       string name,
       LobbyRestriction restriction,
       SimGameTypeRef gameTypeRef = null,
@@ -127,6 +151,8 @@ namespace Beamable.Player
         maxPlayers,
         passcodeLength,
         statsToInclude);
+
+      return State;
     }
 
     /// <inheritdoc cref="ILobbyApi.JoinLobby"/>

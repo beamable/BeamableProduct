@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
@@ -17,17 +18,18 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			bool IsVisible { get; }
 			int SelectedGameTypeIndex { get; set; }
-			int SelectedLobbyIndex { get; }
+			int? SelectedLobbyIndex { get; }
 			string NameFilter { get; }
 			int CurrentPlayersFilter { get; }
 			int MaxPlayersFilter { get; }
 			List<SimGameType> GameTypes { get; }
-			List<LobbiesListEntryPresenter.Data> LobbiesData { get; }
+			List<Lobby> LobbiesData { get; }
 			void ApplyFilter(string name);
 			void ApplyFilter(string name, int currentPlayers, int maxPlayers);
-			Promise ConfigureData();
-			void OnLobbySelected(int obj);
+			Promise GetLobbies();
+			void OnLobbySelected(int? obj);
 			bool CanJoinLobby();
+			Promise JoinLobby(string lobbyId);
 		}
 		
 		[Header("View Configuration")]
@@ -46,13 +48,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button BackButton;
 
 		private IDependencies _system;
-		
+		private BeamContext _beamContext;
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			var ctx = managedPlayers.GetSinglePlayerContext();
-			_system = ctx.ServiceProvider.GetService<IDependencies>();
+			_beamContext = managedPlayers.GetSinglePlayerContext();
+			_system = _beamContext.ServiceProvider.GetService<IDependencies>();
 
 			gameObject.SetActive(_system.IsVisible);
 
@@ -84,21 +87,26 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private void BackButtonClicked()
 		{
-			OnLobbySelected(-1);
+			OnLobbySelected(null);
 			FeatureControl.OpenMainView();
 		}
 
-		private void JoinLobbyButtonClicked()
+		private async void JoinLobbyButtonClicked()
 		{
-			if (_system.SelectedLobbyIndex == -1)
+			if (_system.SelectedLobbyIndex == null)
 			{
-				return;
+				return; 
 			}
-			
-			FeatureControl.OpenInsideLobbyView(_system.LobbiesData[_system.SelectedLobbyIndex], false);
+
+			await _system.JoinLobby(_system.LobbiesData[_system.SelectedLobbyIndex.Value].lobbyId);
+
+			if (_beamContext.Lobby.State != null)
+			{
+				FeatureControl.OpenLobbyView(_beamContext.Lobby.State);
+			}
 		}
 
-		private void OnLobbySelected(int lobbyId)
+		private void OnLobbySelected(int? lobbyId)
 		{
 			_system.OnLobbySelected(lobbyId);
 			JoinLobbyButton.interactable = _system.CanJoinLobby();
@@ -123,14 +131,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 				return;
 			}
 			
-			OnLobbySelected(-1);
+			OnLobbySelected(null);
 			
 			_system.SelectedGameTypeIndex = optionId;
 			
 			NoLobbiesIndicator.SetActive(false);
 			
 			LoadingIndicator.Toggle(true);
-			await _system.ConfigureData();
+			await _system.GetLobbies();
 			LoadingIndicator.Toggle(false);
 			
 			await ViewGroup.Enrich();

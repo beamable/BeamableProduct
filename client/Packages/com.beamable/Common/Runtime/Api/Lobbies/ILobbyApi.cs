@@ -17,6 +17,28 @@ namespace Beamable.Experimental.Api.Lobbies
     /// </summary>
     /// <param name="name">Name of the lobby</param>
     /// <param name="restriction">The privacy value for the created lobby.</param>
+    /// <param name="gameTypeId">If this lobby should be subject to matchmaking, a gametype id should be provided</param>
+    /// <param name="description">Short optional description of what the lobby is for.</param>
+    /// <param name="playerTags">Arbitrary list of tags to include on the creating player.</param>
+    /// <param name="passcodeLength">Configurable value for how long the generated passcode should be.</param>
+    /// <param name="maxPlayers">Configurable value for the maximum number of players this lobby can have.</param>
+    /// <param name="statsToInclude">Stat keys to include with Lobby requests.</param>
+    /// <returns>A <see cref="Promise{Lobby}"/> representing the created lobby.</returns>
+    Promise<Lobby> CreateLobby(
+	    string name,
+	    LobbyRestriction restriction,
+	    string gameTypeId = null,
+	    string description = null,
+	    List<Tag> playerTags = null,
+	    int? maxPlayers = null,
+	    int? passcodeLength = null,
+	    List<string> statsToInclude = null);
+    
+    /// <summary>
+    /// Create a new <see cref="Lobby"/> with the current player as the host.
+    /// </summary>
+    /// <param name="name">Name of the lobby</param>
+    /// <param name="restriction">The privacy value for the created lobby.</param>
     /// <param name="gameTypeRef">If this lobby should be subject to matchmaking, a gametype ref should be provided</param>
     /// <param name="description">Short optional description of what the lobby is for.</param>
     /// <param name="playerTags">Arbitrary list of tags to include on the creating player.</param>

@@ -1,0 +1,50 @@
+﻿using System;
+using UnityEngine;
+
+namespace Beamable.EasyFeatures.Components
+{
+	public class OverlaysController : MonoBehaviour
+	{
+		[Header("Components")]
+		public GameObject Mask;
+
+		public OverlayedLabel Label;
+		public OverlayedModalWindow ModalWindow;
+
+		private IOverlayComponent _currentObject;
+
+		public void ShowLabel(string label)
+		{
+			Show(Label, () => { Label.Show(label); });
+		}
+
+		public void ShowError(string message)
+		{
+			Show(ModalWindow, () => { ModalWindow.Show("Error", message, HideOverlay); });
+		}
+
+		public void ShowConfirm(string label, string message, Action confirmAction)
+		{
+			Show(ModalWindow, () => { ModalWindow.Show(label, message, ()=>
+			{
+				HideOverlay();
+				confirmAction?.Invoke();
+			}); });
+		}
+
+		public void HideOverlay()
+		{
+			Mask.SetActive(false);
+			_currentObject?.Hide();
+			_currentObject = null;
+		}
+
+		private void Show(IOverlayComponent activeComponent, Action action)
+		{
+			_currentObject?.Hide();
+			Mask.SetActive(true);
+			action?.Invoke();
+			_currentObject = activeComponent;
+		}
+	}
+}
