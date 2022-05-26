@@ -98,7 +98,6 @@ namespace Beamable.Api.Notification
 		/// <inheritdoc cref="INotificationService.Subscribe{T}(string, Action{T})"/>
 		public void Subscribe<T>(string name, Action<T> callback)
 		{
-			string cachedName = name;
 			object boxedCallback = callback;
 			typedHandlerObjects.Add(boxedCallback);
 			void Handler(object raw)
