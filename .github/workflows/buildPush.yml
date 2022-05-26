@@ -140,7 +140,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
       - name: Is there a Mac build?
-        run: find / -type f -name "*.app"
+        run: find /home -type f -name "*.app"
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
