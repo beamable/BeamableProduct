@@ -50,6 +50,17 @@
 
 /microservice/microservice/.idea/
 
+/cli/bin/
+/cli/obj
+/cli/.idea/
+/cli/cli/bin/
+/cli/cli/nupkg/
+/cli/cli/obj/
+/cli/cli/.idea/
+/cli/tests/bin/
+/cli/tests/obj/
+/cli/tests/.idea/
+/cli/*.sln.DotSettings.*
 
 # Server generated files.
 /server/tmp/
