@@ -35,6 +35,7 @@ namespace Beamable
 	public interface IObservedPlayer : IUserContext
 	{
 		PlayerStats Stats { get; }
+		PlayerLobby Lobby { get; }
 	}
 
 	/// <summary>
@@ -136,6 +137,8 @@ namespace Beamable
 		[SerializeField]
 		private PlayerStats _playerStats;
 
+		[SerializeField] private PlayerLobby _playerLobby;
+
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -152,6 +155,11 @@ namespace Beamable
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
 		/// <summary>
+		/// Access the <see cref="PlayerLobby"/> for this context.
+		/// </summary>
+		public PlayerLobby Lobby => _playerLobby = _playerLobby ?? _serviceScope.GetService<PlayerLobby>();
+
+		/// <summary>
 		/// <para>
 		/// Access the player's inventory
 		/// </para>
@@ -164,8 +172,7 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="IContentApi"/> for this player.
 		/// </summary>
-		public IContentApi Content =>
-			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
+		public IContentApi Content => _contentService = _contentService ?? _serviceScope.GetService<IContentApi>();
 
 		/// <summary>
 		/// Access the <see cref="IBeamableAPI"/> for this player.
@@ -575,7 +582,7 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = "en"; // TODO: Put somewhere, like in configuration
+			_requester.Language = System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName.ToLower();
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();

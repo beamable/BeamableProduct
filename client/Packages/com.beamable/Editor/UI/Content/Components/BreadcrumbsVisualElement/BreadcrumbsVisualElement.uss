@@ -54,6 +54,10 @@ BreadcrumbsVisualElement #realmButton{
 	border-top-width: 1px;
 	border-bottom-width: 1px;
 	border-color:#8f8f8f;
+	background-image: none;
+}
+Button#contentSorter {
+	background-image: none;
 }
 
 #contentSorter > Label {

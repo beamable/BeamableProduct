@@ -154,7 +154,7 @@ namespace Beamable.Server.Generator
 			var allParameterTypes = new HashSet<Type>();
 			foreach (var method in allMethods)
 			{
-				var clientCallable = method.GetCustomAttribute<ClientCallableAttribute>();
+				var clientCallable = method.GetCustomAttribute<CallableAttribute>();
 				if (clientCallable == null)
 				{
 					continue;
@@ -334,7 +334,7 @@ namespace Beamable.Server.Generator
 		public class CallableMethodInfo
 		{
 			public MethodInfo MethodInfo;
-			public ClientCallableAttribute ClientCallable;
+			public CallableAttribute ClientCallable;
 		}
 	}
 }

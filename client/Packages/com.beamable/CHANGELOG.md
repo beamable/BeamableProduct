@@ -9,8 +9,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## [1.2.0]
 ### Added
 - Unity 2021 LTS support.
@@ -23,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Subscribe<T>` method to `INotificationService` to avoid awkward serialization handling.
 - Implicit conversion operators from `Optional<T>` objects wrapping a value type to matching `Nullable<T>` types.
 - Inline style editor in BUSS theme manager.
+- Added `LobbyService` and `PlayerLobby` to support new Lobby functionality.
 
 ### Changed
 - `ManifestSubscription` subscription no longer accepts the scope field
@@ -35,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservice Manager buttons now highlight on hover.
 - Beamable third party context systems register with a default order of -1000.
 - Global style sheet is turned now into a list of global style sheets.
+- Content tags are split on `','` characters in addition to `' '`s.
+- A `IBeamableDisposable`'s `OnDispose` method can now resolve services from the `IDependencyProvider` that is being disposed.
+- `HeartBeat` will now send heartbeat requests faster for our newer live backend services such as Lobbies
+- Content validation for ID fields will now accept IDs without the prefix
+- It is now possible to set background sprite as a main texture in SDF Image.
+- It is now possible to choose 9-slice source and Pixels Per Unit multiplier in SDF image.
 
 ### Fixed
 - StoreView prefab now works in landscape mode.
@@ -45,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account management will no longer log an error after pressing change password button more than once.
 - Content Manager no longer logs inaccurate warning after renaming content.
 - Notification handling for multiple `BeamContext` instances.
+- Listing 'sku' price type was incorrect. Fixed to 'skus'.
+- The player's location is detected automatically
+- Matchmaking no longer breaks after user switch from Account Management flow.
 
 ### Removed
 - Unity 2018 LTS support.

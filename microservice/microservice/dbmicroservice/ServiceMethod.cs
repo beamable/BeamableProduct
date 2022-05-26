@@ -21,6 +21,7 @@ namespace Beamable.Server
       public string Path;
       public Func<RequestContext, object> InstanceFactory;
       public HashSet<string> RequiredScopes;
+      public bool RequireAuthenticatedUser;
       public List<ParameterInfo> ParameterInfos;
       public MethodInfo Method;
       public List<ParameterDeserializer> Deserializers;

@@ -349,9 +349,16 @@ namespace Beamable.Server.Editor
 						Message = $"Building service=[{descriptor.Name}]"
 					});
 
-					var buildCommand = new BuildImageCommand(descriptor, false, false);
+					var forceStop = new StopImageReturnableCommand(descriptor);
+					await forceStop.StartAsync(); // force the image to stop.
+					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
+
 					try
 					{
+						var buildCommand = new BuildImageCommand(descriptor,
+															 includeDebugTools: false,
+															 watch: false,
+															 pull: true);
 						await buildCommand.StartAsync();
 					}
 					catch (Exception e)
@@ -369,7 +376,6 @@ namespace Beamable.Server.Editor
 
 						return;
 					}
-
 					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
@@ -460,7 +466,7 @@ namespace Beamable.Server.Editor
 				});
 
 				// Manifest Building:
-				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them). 
+				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them).
 				var localServiceReferences = nameToImageId.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];

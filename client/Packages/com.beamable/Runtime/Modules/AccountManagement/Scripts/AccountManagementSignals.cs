@@ -388,11 +388,17 @@ namespace Beamable.AccountManagement
 		public void StartForgotPassword(ForgotPasswordArguments reference)
 		{
 			var email = reference.Email.Value;
-			API.Instance.Then(de =>
-			{
-				WithLoading("Sending Email...", de.AuthService.IssuePasswordUpdate(email))
-					.Then(_ => DeferBroadcast(email, s => s.ForgotPasswordEmailSent));
-			}).Error(HandleError);
+			API.Instance
+			   .Then(de =>
+			   {
+				   WithLoading("Sending Email...", de.AuthService.IssuePasswordUpdate(email))
+				   .Then(_ => DeferBroadcast(email, s => s.ForgotPasswordEmailSent));
+			   })
+			   .Error(ex =>
+			   {
+				   _accountForgotPassword.ChangePasswordRequestSent(false);
+				   HandleError(ex);
+			   });
 		}
 
 		public void ConfirmForgotPassword(ForgotPasswordArguments reference)
@@ -405,9 +411,13 @@ namespace Beamable.AccountManagement
 			API.Instance.Then(de =>
 			{
 				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
+			 {
+				 Login(email, password);
+			 }).Error(ex =>
 				{
-					Login(email, password);
-				}).Error(HandleError);
+					_accountForgotPassword.ChangePasswordRequestSent(false);
+					HandleError(ex);
+				});
 			});
 		}
 

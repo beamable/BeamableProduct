@@ -104,8 +104,8 @@ namespace Beamable.Experimental.Api.Matchmaking
 		{
 			return _requester.Request<TicketReservationResponse>(
 			  Method.POST,
-			  $"/matchmaking/tickets",
-			  new TicketReservationRequest(new[] { _platform.User.id.ToString() }, gameTypes)
+			  "/matchmaking/tickets",
+			  new TicketReservationRequest(gameTypes)
 			);
 		}
 
@@ -197,7 +197,7 @@ namespace Beamable.Experimental.Api.Matchmaking
 
 			_service = service;
 
-			_platform.Heartbeat.UpdateInterval(2);
+			_platform.Heartbeat.UpdateLegacyInterval(2);
 			StartTimeoutTask();
 			SubscribeToUpdates();
 		}
@@ -286,7 +286,7 @@ namespace Beamable.Experimental.Api.Matchmaking
 				_platform.Notification.Unsubscribe(MessageType(ticket.matchType), OnRawUpdate);
 				_platform.Notification.Unsubscribe(TimeoutMessageType(ticket.matchType), OnRawTimeout);
 			}
-			_platform.Heartbeat.ResetInterval();
+			_platform.Heartbeat.ResetLegacyInterval();
 		}
 
 		private void OnRawUpdate(object msg)
