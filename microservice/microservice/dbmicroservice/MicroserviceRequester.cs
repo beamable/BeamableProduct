@@ -175,23 +175,34 @@ namespace Beamable.Server
       public async Promise SendMessageSafely(string message, int retryCount=10)
       {
          var connection = await Socket;
-         try
+         var failures = new List<Exception>();
+         for (var retry = 0; retry < retryCount; retry++)
          {
-            await connection.SendMessage(message);
-         }
-         catch
-         {
-            // hmm, an error happened. We should retry the send.
-            if (retryCount > 0)
+            try
             {
-               await SendMessageSafely(message, retryCount - 1);
-               return;
+               await connection.SendMessage(message);
+               break;
             }
-
-            // if we've retried a lot, and now its time to give up, we should at least return some sort of error response.
-            Log.Error("Failed to send message. " + message);
-            throw;
+            catch (Exception ex)
+            {
+               failures.Add(ex);
+            }
          }
+         // all attempts have failed : (
+         var finalEx = new SocketClosedException(failures);
+         BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", finalEx.GetType().Name,
+            finalEx.Message,
+            finalEx.Source, finalEx.StackTrace);
+
+         for (var i = 0 ; i < failures.Count; i ++)
+         {
+            var failure = failures[i];
+            BeamableSerilogProvider.LogContext.Value.Error("  Failure {i} {type}: {message} - {source} \n {stack}", i, finalEx.GetType().Name,
+               failure.Message,
+               failure.Source, failure.StackTrace);
+         }
+
+         throw finalEx;
       }
 
       public void HandleCloseConnection()
