@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unrelased]
 
+### Fixed
+- Possible duplicate authorization requests.
+- Messages sent during a re-connection event will be re-attempted 10 times before failing.
+
 ## [1.2.0]
 ### Added
 - Support for GUID based assembly references.
