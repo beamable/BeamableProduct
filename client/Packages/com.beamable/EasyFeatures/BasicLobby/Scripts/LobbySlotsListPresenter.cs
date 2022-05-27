@@ -13,17 +13,16 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		[Header("Components")]
 		public GameObjectToggler LoadingIndicator;
-
 		public PoolableScrollView PoolableScrollView;
 
-		private List<LobbySlotPresenter.Data> _slots;
+		private List<LobbySlotPresenter.ViewData> _slots;
 		private bool _isAdmin;
 		private Action<int> _onReadyButtonClicked;
 		private Action<int> _onNotReadyButtonClicked;
 		private Action<int> _onAdminButtonClicked;
 		private readonly List<LobbySlotPresenter> _spawnedSlots = new List<LobbySlotPresenter>();
 
-		public void Setup(List<LobbySlotPresenter.Data> slots,
+		public void Setup(List<LobbySlotPresenter.ViewData> slots,
 		                  bool isAdmin,
 		                  Action<int> onReadyButtonClicked,
 		                  Action<int> onNotReadyButtonClicked,
@@ -58,7 +57,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				var data = _slots[i];
 				var rankEntryPoolData = new LobbySlotPresenter.PoolData
 				{
-					Data = data, Index = i, Height = 150.0f // TODO: expose this somewhere in inspector
+					ViewData = data, Index = i, Height = 150.0f // TODO: expose this somewhere in inspector
 				};
 				items.Add(rankEntryPoolData);
 			}
@@ -77,9 +76,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbySlotPresenter.PoolData poolData = item as LobbySlotPresenter.PoolData;
 			Assert.IsTrue(poolData != null, "All items in this scroll view MUST be LobbySlotPresenter");
 
-			if (poolData.Data.IsOccupied)
+			if (poolData.ViewData.Name != String.Empty) // Temporarily Name is set to playerId
 			{
-				spawned.SetupFilled(poolData.Data.Name, poolData.Data.IsReady, _isAdmin,
+				spawned.SetupFilled(poolData.ViewData.Name, poolData.ViewData.IsReady, _isAdmin,
 				                    () =>
 				                    {
 					                    _onReadyButtonClicked.Invoke(poolData.Index);

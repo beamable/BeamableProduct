@@ -12,7 +12,7 @@ using UnityEngine.Assertions;
 namespace Beamable.EasyFeatures.BasicLobby
 {
 	[BeamContextSystem]
-	public class LobbyFeatureControl : MonoBehaviour, IBeamableFeatureControl
+	public class LobbyFeatureControl : MonoBehaviour, IBeamableFeatureControl, IOverlayController
 	{
 		private enum View
 		{
@@ -88,7 +88,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			List<SimGameType> gameTypes = await FetchGameTypes();
 
-			_joinLobbyPlayerSystem.Setup(_beamContext, gameTypes);
+			_joinLobbyPlayerSystem.Setup(gameTypes);
 			_createLobbyPlayerSystem.Setup(_beamContext, gameTypes);
 
 			// We need some initial data before first Enrich will be called
@@ -145,7 +145,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void OpenLobbyView(Lobby lobby)
 		{
-			_lobbyPlayerSystem.Setup(_beamContext, lobby, _beamContext.PlayerId.ToString() == lobby.host);
+			_lobbyPlayerSystem.Setup(lobby, _beamContext.PlayerId.ToString() == lobby.host);
 			OpenView(View.InsideLobby);
 		}
 

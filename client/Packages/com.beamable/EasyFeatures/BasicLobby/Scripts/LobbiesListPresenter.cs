@@ -1,5 +1,4 @@
-﻿using Beamable.Experimental.Api.Lobbies;
-using Beamable.UI.Scripts;
+﻿using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,12 +16,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public PoolableScrollView PoolableScrollView;
 		
 		private readonly List<LobbiesListEntryPresenter> _spawnedEntries = new List<LobbiesListEntryPresenter>();
-		private List<Lobby> _entriesList = new List<Lobby>();
+		private List<LobbiesListEntryPresenter.ViewData> _entriesList = new List<LobbiesListEntryPresenter.ViewData>();
 		private Action<int?> _onLobbySelected;
 
 		private LobbiesListEntryPresenter _currentlySelectedLobby;
 
-		public void Setup(List<Lobby> entries, Action<int?> onLobbySelected)
+		public void Setup(List<LobbiesListEntryPresenter.ViewData> entries, Action<int?> onLobbySelected)
 		{
 			PoolableScrollView.SetContentProvider(this);
 			_entriesList = entries;
@@ -49,7 +48,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				var data = _entriesList[i];
 				var rankEntryPoolData = new LobbiesListEntryPresenter.PoolData
 				{
-					Data = data, Index = i, Height = 100.0f // TODO: expose this somewhere in inspector
+					ViewData = data, Index = i, Height = 100.0f // TODO: expose this somewhere in inspector
 				};
 				items.Add(rankEntryPoolData);
 			}
@@ -68,7 +67,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbiesListEntryPresenter.PoolData poolData = item as LobbiesListEntryPresenter.PoolData;
 			Assert.IsTrue(poolData != null, "All items in this scroll view MUST be LobbiesListEntryPresenter");
 			
-			spawned.Setup(poolData.Data, (presenter) =>
+			spawned.Setup(poolData.ViewData, (presenter) =>
 			{
 				if (_currentlySelectedLobby != null)
 				{

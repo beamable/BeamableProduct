@@ -7,36 +7,35 @@ namespace Beamable.EasyFeatures.BasicLobby
 	public class LobbyPlayerSystem : LobbyView.IDependencies
 	{
 		protected BeamContext BeamContext;
-		
+
+		public List<LobbySlotPresenter.ViewData> SlotsData { get; set; } = new List<LobbySlotPresenter.ViewData>();
 		public Lobby LobbyData { get; set; }
-		public List<LobbySlotPresenter.Data> SlotsData => BuildViewData();
 		public bool IsVisible { get; set; }
 		public bool IsPlayerAdmin { get; set; }
 		public bool IsPlayerReady { get; set; }
 		public bool IsServerReady { get; set; }
 		public bool IsMatchStarting { get; set; }
-		
-		public List<string> PlayerNames;
-		public List<bool> PlayerReadiness;
-		public List<bool> SlotOccupation;
 
-		public void Setup(BeamContext beamContext, Lobby data, bool isAdmin)
+		public List<string> PlayerIds = new List<string>();
+		public List<bool> PlayerReadiness = new List<bool>();
+
+		public LobbyPlayerSystem(BeamContext beamContext)
 		{
 			BeamContext = beamContext;
+		}
+
+		public void Setup(Lobby data, bool isAdmin)
+		{
 			LobbyData = data;
 			IsPlayerAdmin = isAdmin;
 			IsPlayerReady = false;
 			IsServerReady = false;
 			IsMatchStarting = false;
 
-			PlayerNames = new List<string>(data.maxPlayers);
-			PlayerReadiness = new List<bool>(data.maxPlayers);
-			SlotOccupation = new List<bool>(data.maxPlayers);
-			
 			// TODO: configure players from lobby data
 			//RegisterLobbyPlayers();
 		}
-		
+
 		public async Promise LeaveLobby()
 		{
 			await BeamContext.Lobby.Leave();
@@ -44,7 +43,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public virtual void RegisterLobbyPlayers(List<LobbyPlayer> data)
 		{
-			BuildClientData(data, ref PlayerNames, ref PlayerReadiness, ref SlotOccupation);
+			BuildClientData(data, ref PlayerIds, ref PlayerReadiness);
 		}
 
 		/// <summary>
@@ -52,45 +51,50 @@ namespace Beamable.EasyFeatures.BasicLobby
 		/// </summary>
 		public virtual void BuildClientData(List<LobbyPlayer> entries,
 		                                    ref List<string> names,
-		                                    ref List<bool> readiness,
-		                                    ref List<bool> slotOccupation)
+		                                    ref List<bool> readiness)
 		{
-			// void GuaranteeInitList<T>(ref List<T> toInit)
-			// {
-			// 	if (toInit != null) toInit.Clear();
-			// 	else toInit = new List<T>();
-			// }
-			//
-			// GuaranteeInitList(ref names);
-			// for (int i = 0; i < LobbyData.maxPlayers; i++)
-			// {
-			// 	names.Add(entries[i].Name);
-			// }
-			//
-			// GuaranteeInitList(ref readiness);
-			// for (int i = 0; i < LobbyData.maxPlayers; i++)
-			// {
-			// 	readiness.Add(entries[i].IsReady);
-			// }
-			//
-			// GuaranteeInitList(ref slotOccupation);
-			// for (int i = 0; i < LobbyData.maxPlayers; i++)
-			// {
-			// 	slotOccupation.Add(entries[i].IsOccupied);
-			// }
+			void GuaranteeInitList<T>(ref List<T> toInit)
+			{
+				if (toInit != null) toInit.Clear();
+				else toInit = new List<T>();
+			}
+			
+			GuaranteeInitList(ref names);
+			for (int i = 0; i < LobbyData.maxPlayers; i++)
+			{
+				names.Add(entries[i].playerId);
+			}
+			
+			GuaranteeInitList(ref readiness);
+			for (int i = 0; i < LobbyData.maxPlayers; i++)
+			{
+				//readiness.Add(entries[i].tags);
+				// TEMPORARY
+				readiness.Add(true);
+			}
+			
+			SlotsData = BuildViewData();
 		}
 
-		private List<LobbySlotPresenter.Data> BuildViewData()
+		public List<LobbySlotPresenter.ViewData> BuildViewData()
 		{
-			List<LobbySlotPresenter.Data> data = new List<LobbySlotPresenter.Data>(LobbyData.maxPlayers);
+			List<LobbySlotPresenter.ViewData> data = new List<LobbySlotPresenter.ViewData>(LobbyData.maxPlayers);
 
 			for (int i = 0; i < LobbyData.maxPlayers; i++)
 			{
-				LobbySlotPresenter.Data entry = new LobbySlotPresenter.Data
+				LobbySlotPresenter.ViewData entry = new LobbySlotPresenter.ViewData();
+
+				if (i < LobbyData.players.Count)
 				{
-					Name = PlayerNames[i], IsReady = PlayerReadiness[i], IsOccupied = SlotOccupation[i]
-				};
-				
+					entry.Name = PlayerIds[i];
+					entry.IsReady = PlayerReadiness[i];
+				}
+				else
+				{
+					entry.Name = string.Empty;
+					entry.IsReady = false;
+				}
+
 				data.Add(entry);
 			}
 

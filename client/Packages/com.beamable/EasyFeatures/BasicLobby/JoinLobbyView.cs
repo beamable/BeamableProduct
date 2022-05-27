@@ -24,7 +24,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			int CurrentPlayersFilter { get; }
 			int MaxPlayersFilter { get; }
 			List<SimGameType> GameTypes { get; }
-			List<Lobby> LobbiesData { get; }
+			List<LobbiesListEntryPresenter.ViewData> LobbiesData { get; }
 			void ApplyFilter(string name);
 			void ApplyFilter(string name, int currentPlayers, int maxPlayers);
 			Promise GetLobbies();
@@ -103,7 +103,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			
 			try
 			{
-				await _system.JoinLobby(_system.LobbiesData[_system.SelectedLobbyIndex.Value].lobbyId);
+				await _system.JoinLobby(_system.LobbiesData[_system.SelectedLobbyIndex.Value].Id);
 				FeatureControl.HideOverlay();
 				if (_beamContext.Lobby.State != null)
 				{

@@ -1,5 +1,4 @@
-﻿using Beamable.Experimental.Api.Lobbies;
-using Beamable.UI.Scripts;
+﻿using Beamable.UI.Scripts;
 using System;
 using TMPro;
 using UnityEngine;
@@ -9,9 +8,18 @@ namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class LobbiesListEntryPresenter : MonoBehaviour
 	{
+		public struct ViewData
+		{
+			public string Id;
+			public string Name;
+			public string Description;
+			public int CurrentPlayers;
+			public int MaxPlayers;
+		}
+	
 		public class PoolData : PoolableScrollView.IItem
 		{
-			public Lobby Data { get; set; }
+			public ViewData ViewData { get; set; }
 			public float Height { get; set; }
 			public int Index { get; set; }
 		}
@@ -24,10 +32,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private Action<LobbiesListEntryPresenter> _onLobbySelected;
 
-		public void Setup(Lobby data, Action<LobbiesListEntryPresenter> onLobbySelected)
+		public void Setup(ViewData viewData, Action<LobbiesListEntryPresenter> onLobbySelected)
 		{
-			Name.text = data.name;
-			Users.text = $"{data.players.Count}/{data.maxPlayers}";
+			Name.text = viewData.Name;
+			Users.text = $"{viewData.CurrentPlayers}/{viewData.MaxPlayers}";
 			_onLobbySelected = onLobbySelected;
 
 			Button.onClick.ReplaceOrAddListener(OnClick);

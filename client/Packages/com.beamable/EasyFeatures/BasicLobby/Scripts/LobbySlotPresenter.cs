@@ -8,16 +8,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class LobbySlotPresenter : MonoBehaviour
 	{
-		public struct Data
+		public struct ViewData
 		{
-			public bool IsOccupied;
 			public string Name;
 			public bool IsReady;
 		}
 
 		public class PoolData : PoolableScrollView.IItem
 		{
-			public Data Data { get; set; }
+			public ViewData ViewData { get; set; }
 			public float Height { get; set; }
 			public int Index { get; set; }
 		}

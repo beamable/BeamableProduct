@@ -30,9 +30,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		[Header("View Configuration")]
 		public int EnrichOrder;
-
 		public LobbyFeatureControl FeatureControl;
-
+		
 		[Header("Components")]
 		public MultiToggleComponent TypesToggle;
 
@@ -94,6 +93,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				FeatureControl.HideOverlay();
 				if (lobby != null)
 				{
+					_system.ResetData();
 					FeatureControl.OpenLobbyView(lobby);
 				}
 			}

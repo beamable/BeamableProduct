@@ -17,21 +17,29 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public string NameFilter { get; set; }
 		public int CurrentPlayersFilter { get; set; }
 		public int MaxPlayersFilter { get; set; }
-		public List<Lobby> LobbiesData => BuildViewData();
+		public List<LobbiesListEntryPresenter.ViewData> LobbiesData { get; set; } = new List<LobbiesListEntryPresenter.ViewData>();
 
+		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesIds = new Dictionary<string, List<string>>();
 		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesNames = new Dictionary<string, List<string>>();
+		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesDescriptions = new Dictionary<string, List<string>>();
 		public readonly Dictionary<string, List<List<LobbyPlayer>>> PerGameTypeLobbiesCurrentPlayers = new Dictionary<string, List<List<LobbyPlayer>>>();
 		public readonly Dictionary<string, List<int>> PerGameTypeLobbiesMaxPlayers = new Dictionary<string, List<int>>();
 
 		public virtual SimGameType SelectedGameType => GameTypes[SelectedGameTypeIndex];
 		public virtual string SelectedGameTypeId => SelectedGameType.Id;
+		public virtual IReadOnlyList<string> Ids => PerGameTypeLobbiesIds[SelectedGameTypeId];
 		public virtual IReadOnlyList<string> Names => PerGameTypeLobbiesNames[SelectedGameTypeId];
+		public virtual IReadOnlyList<string> Descriptions => PerGameTypeLobbiesDescriptions[SelectedGameTypeId];
 		public virtual IReadOnlyList<List<LobbyPlayer>> CurrentPlayers => PerGameTypeLobbiesCurrentPlayers[SelectedGameTypeId];
 		public virtual IReadOnlyList<int> MaxPlayers => PerGameTypeLobbiesMaxPlayers[SelectedGameTypeId];
 
-		public void Setup(BeamContext beamContext, List<SimGameType> gameTypes)
+		public JoinLobbyPlayerSystem(BeamContext beamContext)
 		{
 			BeamContext = beamContext;
+		}
+		
+		public void Setup(List<SimGameType> gameTypes)
+		{
 			GameTypes = gameTypes;
 			
 			SelectedGameTypeIndex = 0;
@@ -58,11 +66,22 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public virtual void RegisterLobbyData(string gameTypeId,
 		                                      List<Lobby> data)
 		{
+			PerGameTypeLobbiesIds.TryGetValue(gameTypeId, out var ids);
 			PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var names);
+			PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var descriptions);
 			PerGameTypeLobbiesCurrentPlayers.TryGetValue(gameTypeId, out var currentPlayers);
 			PerGameTypeLobbiesMaxPlayers.TryGetValue(gameTypeId, out var maxPlayers);
 			
-			BuildLobbiesClientData(data, ref names, ref currentPlayers, ref maxPlayers);
+			BuildLobbiesClientData(data, ref ids, ref names, ref descriptions, ref currentPlayers, ref maxPlayers);
+			
+			if (PerGameTypeLobbiesIds.ContainsKey(gameTypeId))
+			{
+				PerGameTypeLobbiesIds[gameTypeId] = ids;
+			}
+			else
+			{
+				PerGameTypeLobbiesIds.Add(gameTypeId, ids);
+			}
 			
 			if (PerGameTypeLobbiesNames.ContainsKey(gameTypeId))
 			{
@@ -71,6 +90,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 			else
 			{
 				PerGameTypeLobbiesNames.Add(gameTypeId, names);
+			}
+			
+			if (PerGameTypeLobbiesDescriptions.ContainsKey(gameTypeId))
+			{
+				PerGameTypeLobbiesDescriptions[gameTypeId] = descriptions;
+			}
+			else
+			{
+				PerGameTypeLobbiesDescriptions.Add(gameTypeId, descriptions);
 			}
 			
 			if (PerGameTypeLobbiesCurrentPlayers.ContainsKey(gameTypeId))
@@ -90,13 +118,17 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				PerGameTypeLobbiesMaxPlayers.Add(gameTypeId, maxPlayers);
 			}
+
+			LobbiesData = BuildViewData();
 		}
 
 		/// <summary>
 		/// The actual data transformation function that converts lobbies entries into data that is relevant for our <see cref="JoinLobbyView.IDependencies"/>. 
 		/// </summary>
 		public virtual void BuildLobbiesClientData(List<Lobby> entries,
+		                                           ref List<string> ids,
 		                                           ref List<string> names,
+		                                           ref List<string> descriptions,
 		                                           ref List<List<LobbyPlayer>> currentPlayers,
 		                                           ref List<int> maxPlayers)
 		{
@@ -105,9 +137,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 				if (toInit != null) toInit.Clear();
 				else toInit = new List<T>();
 			}
+			
+			GuaranteeInitList(ref ids);
+			ids.AddRange(entries.Select(lobby => lobby.lobbyId));
 
 			GuaranteeInitList(ref names);
 			names.AddRange(entries.Select(lobby => lobby.name));
+			
+			GuaranteeInitList(ref descriptions);
+			descriptions.AddRange(entries.Select(lobby => lobby.description));
 
 			GuaranteeInitList(ref currentPlayers);
 			currentPlayers.AddRange(entries.Select(lobby => lobby.players));
@@ -138,9 +176,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return false;
 			}
+
+			// TEMPORARY
+			return true;
 			
-			return LobbiesData[SelectedLobbyIndex.Value].players.Count <
-				LobbiesData[SelectedLobbyIndex.Value].maxPlayers;
+			// return LobbiesData[SelectedLobbyIndex.Value].players.Count <
+			// 	LobbiesData[SelectedLobbyIndex.Value].maxPlayers;
 		}
 
 		public void ApplyFilter(string name) => ApplyFilter(name, CurrentPlayers.Count, MaxPlayers.Count);
@@ -152,25 +193,27 @@ namespace Beamable.EasyFeatures.BasicLobby
 			MaxPlayersFilter = maxPlayers;
 		}
 
-		public virtual List<Lobby> BuildViewData()
+		public virtual List<LobbiesListEntryPresenter.ViewData> BuildViewData()
 		{
 			int entriesCount = Names.Count;
 			
-			List<Lobby> data = new List<Lobby>();
+			List<LobbiesListEntryPresenter.ViewData> data = new List<LobbiesListEntryPresenter.ViewData>();
 				
 			for (int i = 0; i < entriesCount; i++)
 			{
-				data.Add(new Lobby
+				data.Add(new LobbiesListEntryPresenter.ViewData
 				{
-					name = Names[i],
-					players = CurrentPlayers[i],
-					maxPlayers = MaxPlayers[i]
+					Id = Ids[i],
+					Name = Names[i],
+					Description = Descriptions[i],
+					CurrentPlayers = CurrentPlayers[i].Count,
+					MaxPlayers = MaxPlayers[i]
 				});	
 			}
 
 			return NameFilter == string.Empty
 				? data
-				: data.Where(entry => entry.name.Contains(NameFilter)).ToList();
+				: data.Where(entry => entry.Name.Contains(NameFilter)).ToList();
 		}
 		
 		public async Promise JoinLobby(string lobbyId)

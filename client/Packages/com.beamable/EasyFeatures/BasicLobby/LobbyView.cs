@@ -12,7 +12,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public interface IDependencies : IBeamableViewDeps
 		{
 			Lobby LobbyData { get; }
-			List<LobbySlotPresenter.Data> SlotsData { get; }
+			List<LobbySlotPresenter.ViewData> SlotsData { get; }
 			bool IsVisible { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
