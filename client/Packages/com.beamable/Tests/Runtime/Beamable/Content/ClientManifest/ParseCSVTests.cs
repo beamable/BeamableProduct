@@ -78,7 +78,7 @@ namespace Beamable.Tests.Content.ClientManifest
 			Assert.AreEqual("d1", manifest.entries[1].uri);
 			Assert.AreEqual(1, manifest.entries[1].tags.Length);
 		}
-		
+
 		[Test]
 		public void Handle_WithDoubleQuotes()
 		{
