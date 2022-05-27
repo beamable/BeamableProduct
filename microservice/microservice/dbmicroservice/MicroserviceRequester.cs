@@ -172,6 +172,28 @@ namespace Beamable.Server
          };
       }
 
+      public async Promise SendMessageSafely(string message, int retryCount=10)
+      {
+         var connection = await Socket;
+         try
+         {
+            await connection.SendMessage(message);
+         }
+         catch
+         {
+            // hmm, an error happened. We should retry the send.
+            if (retryCount > 0)
+            {
+               await SendMessageSafely(message, retryCount - 1);
+               return;
+            }
+
+            // if we've retried a lot, and now its time to give up, we should at least return some sort of error response.
+            Log.Error("Failed to send message. " + message);
+            throw;
+         }
+      }
+
       public void HandleCloseConnection()
       {
          HasSocketClosed = false;
@@ -317,20 +339,24 @@ namespace Beamable.Server
 
       public IAccessToken AccessToken { get; }
 
+
       private Promise<Unit> Reauthenticate()
       {
-         if (_authenticationPromise.IsCompleted)
+         lock (_authenticationPromise)
          {
-            // re-auth...
-            return Authenticate().ToPromise();
-         }
-         else
-         {
-            return _authenticationPromise;
+            if (_authenticationPromise.IsCompleted)
+            {
+               // re-auth...
+               return Authenticate();
+            }
+            else
+            {
+               return _authenticationPromise;
+            }
          }
       }
 
-      public async Task Authenticate()
+      public async Promise Authenticate()
       {
          var oldPromise = _authenticationPromise;
 
@@ -399,7 +425,7 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.Socket.Then(socket => socket.SendMessage(msg)).ToUnit();
+         return _socketContext.SendMessageSafely(msg);
       }
 
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
@@ -440,8 +466,8 @@ namespace Beamable.Server
             body = body,
             path = uri,
          };
-         
-         
+
+
          if (_requestContext != null &&
              !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
                                                // the initialization process without an Microservice.AssumeUser call being made before.
@@ -466,10 +492,11 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.Socket.FlatMap(socket =>
+         Log.Debug("sending request {msg}", msg);
+         return _socketContext.SendMessageSafely(msg).FlatMap(_ =>
          {
-            Log.Debug("sending request {msg}", msg);
-            socket.SendMessage(msg);
+            // socket.SendMessage(msg);
+
             return firstAttempt.RecoverWith(ex =>
             {
                if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
