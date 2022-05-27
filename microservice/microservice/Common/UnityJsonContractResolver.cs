@@ -166,7 +166,7 @@ namespace Beamable.Server.Common
                 
                 ((ISerializationCallbackReceiver) value)?.OnBeforeSerialize();
 
-                // temporary solution because i can't access to generic properties to serialize from SerializableDictionary<TKey, TValue> for request from inside of Microservice (like SendMail)
+                // temporary solution because i can't access to generic properties (even with Reflection) to serialize from SerializableDictionary<TKey, TValue> for request from inside of Microservice (like SendMail)
                 var serializeDictMethod = value?.GetType().GetMethod("Serialize");
                 
                 if (serializeDictMethod != null)
