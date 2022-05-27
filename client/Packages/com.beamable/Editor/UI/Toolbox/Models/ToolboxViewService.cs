@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using static Beamable.Common.Constants.Features.Toolbox;
 
 namespace Beamable.Editor.Toolbox.Models
@@ -126,15 +127,21 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public Promise<List<RealmView>> RefreshAvailableRealms()
 		{
-			var api = BeamEditorContext.Default;
-			return api.ServiceScope.GetService<RealmsService>().GetRealms().Then(realms =>
+			return BeamEditorContext.Default.ServiceScope.GetService<RealmsService>().GetRealms().Then(realms =>
 			{
 				Realms = realms;
 				OnAvailableRealmsChanged?.Invoke(realms);
-			}).Error(err => api.Logout());
+			}).Error(RetryRefreshAvailableRealmsAfterError);
 		}
 
-
+		private void RetryRefreshAvailableRealmsAfterError(Exception exception)
+		{
+			BeamEditorContext.Default.ServiceScope.GetService<RealmsService>().GetRealms().Then(realms =>
+			{
+				Realms = realms;
+				OnAvailableRealmsChanged?.Invoke(realms);
+			}).Error(Debug.LogException);
+		}
 
 		public void Initialize()
 		{
