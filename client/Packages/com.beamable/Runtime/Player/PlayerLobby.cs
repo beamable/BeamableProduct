@@ -1,9 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
+using Beamable.Common.Player;
 using Beamable.Experimental.Api.Lobbies;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Player

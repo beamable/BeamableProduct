@@ -71,7 +71,7 @@ namespace Beamable.Editor.Toolbox.UI
 			ActiveContext.OnUserChange += _ => BuildWithContext();
 
 			_model = ActiveContext.ServiceScope.GetService<IToolboxViewService>();
-			
+
 			// Force refresh to build the initial window
 			_model?.Destroy();
 

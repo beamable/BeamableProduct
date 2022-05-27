@@ -34,7 +34,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull=true)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull = true)
 		{
 			_descriptor = descriptor;
 			_pull = pull;
@@ -59,14 +59,14 @@ namespace Beamable.Server.Editor.DockerCommands
 		public override string GetCommandString()
 		{
 			var pullStr = _pull ? "--pull" : "";
-			#if BEAMABLE_DEVELOPER
+#if BEAMABLE_DEVELOPER
 			pullStr = ""; // we cannot force the pull against the local image.
-			#endif
+#endif
 
 			var platformStr = "--platform linux/amd64";
-			#if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+#if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
 			platformStr = "";
-			#endif
+#endif
 
 			return $"{DockerCmd} build {pullStr} {platformStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
 		}
@@ -91,7 +91,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void Resolve()
 		{
-			bool success = StandardErrorBuffer.Contains($"naming to docker.io/library/{_descriptor.ImageName} done");
+			bool success = StandardErrorBuffer?.Contains($"naming to docker.io/library/{_descriptor.ImageName} done") ?? true;
 			if (MicroserviceConfiguration.Instance.DisableDockerBuildkit)
 			{
 				success = string.IsNullOrEmpty(StandardErrorBuffer);
