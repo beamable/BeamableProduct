@@ -18,7 +18,7 @@ public class Tests
 	[Test]
 	public async Task Add()
 	{
-		var status = await Cli.RunAsyncWithParams( "--dryrun", "add", "1", "2");
+		var status = await Cli.RunAsyncWithParams( "--dryrun", "--cid", "asdf", "add", "1", "2");
 		Assert.AreEqual(0, status);
 	}
 
@@ -40,7 +40,7 @@ public class Tests
 	[Test]
 	public void PrintHelp()
 	{
-		var status = Cli.RunWithParams("--help");
+		var status = Cli.RunWithParams("add", "--help");
 		Assert.AreEqual(0, status);
 	}
 

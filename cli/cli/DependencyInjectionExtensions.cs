@@ -21,6 +21,7 @@ public static class DependencyInjectionExtensions
 		collection.AddTransient<TArgs>();
 		collection.AddSingleton<ICommandFactory>(provider =>
 		{
+			// TODO: Benchmark this init. Even if its 2ms, thats too slow for when the CLI grows to cover the entire Beamable backend. (2ms * 100 commands = too long)
 			var factory = new CommandFactory<TCommand>();
 			var root = provider.GetRequiredService<TBaseCommand>();
 			var command = provider.GetRequiredService<TCommand>();

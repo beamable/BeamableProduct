@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using Beamable.Common.Api;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace cli;
@@ -37,6 +38,7 @@ public class App
 		// register services
 		Services.AddSingleton<IAppContext, DefaultAppContext>();
 		Services.AddSingleton<IFakeService, FakeService>();
+		Services.AddSingleton<IBeamableRequester, CliRequester>();
 
 		// add commands
 		Services.AddRootCommand<AddCommand, AddCommandArgs>();

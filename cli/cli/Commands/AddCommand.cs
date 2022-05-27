@@ -1,4 +1,5 @@
 using System.CommandLine;
+using Beamable.Common.Api;
 
 namespace cli;
 
@@ -23,6 +24,9 @@ public class AddCommand : AppCommand<AddCommandArgs>
 	{
 		var a = new Argument<int>(nameof(AddCommandArgs.a));
 		var b = new Argument<int>(nameof(AddCommandArgs.b));
+		a.Description = "the first number to add";
+		b.Description = "the second number to add";
+
 		AddArgument(a, (args, i) => args.a = i);
 		AddArgument(b, (args, i) => args.b = i);
 	}
