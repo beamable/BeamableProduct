@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Experimental.Api.Lobbies;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -8,13 +9,17 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		protected BeamContext BeamContext;
 
-		public List<LobbySlotPresenter.ViewData> SlotsData { get; set; } = new List<LobbySlotPresenter.ViewData>();
-		public Lobby LobbyData { get; set; }
+		public List<LobbySlotPresenter.ViewData> SlotsData => BuildViewData();
+		public string Id { get; set; }
+		public string Name { get; set; }
+		public string Description { get; set; }
+		public int MaxPlayers { get; set; }
 		public bool IsVisible { get; set; }
 		public bool IsPlayerAdmin { get; set; }
 		public bool IsPlayerReady { get; set; }
 		public bool IsServerReady { get; set; }
 		public bool IsMatchStarting { get; set; }
+		public int CurrentPlayers => SlotsData.Count(slot => slot.PlayerId != string.Empty);
 
 		public List<string> PlayerIds = new List<string>();
 		public List<bool> PlayerReadiness = new List<bool>();
@@ -24,16 +29,19 @@ namespace Beamable.EasyFeatures.BasicLobby
 			BeamContext = beamContext;
 		}
 
-		public void Setup(Lobby data, bool isAdmin)
+		public void Setup(string lobbyId, string lobbyName, string lobbyDescription, int maxPlayers, bool isAdmin, List<LobbyPlayer> players) // Players list is temporary
 		{
-			LobbyData = data;
+			Id = lobbyId;
+			Name = lobbyName;
+			Description = lobbyDescription;
+			MaxPlayers = maxPlayers;
 			IsPlayerAdmin = isAdmin;
 			IsPlayerReady = false;
 			IsServerReady = false;
 			IsMatchStarting = false;
 
 			// TODO: configure players from lobby data
-			//RegisterLobbyPlayers();
+			RegisterLobbyPlayers(players);
 		}
 
 		public async Promise LeaveLobby()
@@ -60,38 +68,36 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			
 			GuaranteeInitList(ref names);
-			for (int i = 0; i < LobbyData.maxPlayers; i++)
+			for (int i = 0; i < entries.Count; i++)
 			{
 				names.Add(entries[i].playerId);
 			}
 			
 			GuaranteeInitList(ref readiness);
-			for (int i = 0; i < LobbyData.maxPlayers; i++)
+			for (int i = 0; i < entries.Count; i++)
 			{
 				//readiness.Add(entries[i].tags);
 				// TEMPORARY
 				readiness.Add(true);
 			}
-			
-			SlotsData = BuildViewData();
 		}
 
 		public List<LobbySlotPresenter.ViewData> BuildViewData()
 		{
-			List<LobbySlotPresenter.ViewData> data = new List<LobbySlotPresenter.ViewData>(LobbyData.maxPlayers);
+			List<LobbySlotPresenter.ViewData> data = new List<LobbySlotPresenter.ViewData>(MaxPlayers);
 
-			for (int i = 0; i < LobbyData.maxPlayers; i++)
+			for (int i = 0; i < MaxPlayers; i++)
 			{
 				LobbySlotPresenter.ViewData entry = new LobbySlotPresenter.ViewData();
 
-				if (i < LobbyData.players.Count)
+				if (i < PlayerIds.Count)
 				{
-					entry.Name = PlayerIds[i];
+					entry.PlayerId = PlayerIds[i];
 					entry.IsReady = PlayerReadiness[i];
 				}
 				else
 				{
-					entry.Name = string.Empty;
+					entry.PlayerId = string.Empty;
 					entry.IsReady = false;
 				}
 

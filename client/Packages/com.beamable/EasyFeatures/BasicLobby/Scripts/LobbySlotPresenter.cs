@@ -10,7 +10,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		public struct ViewData
 		{
-			public string Name;
+			public string PlayerId;
 			public bool IsReady;
 		}
 

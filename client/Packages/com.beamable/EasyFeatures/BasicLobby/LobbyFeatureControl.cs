@@ -145,7 +145,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void OpenLobbyView(Lobby lobby)
 		{
-			_lobbyPlayerSystem.Setup(lobby, _beamContext.PlayerId.ToString() == lobby.host);
+			_lobbyPlayerSystem.Setup(lobby.lobbyId, lobby.name, lobby.description, lobby.maxPlayers,
+			                         _beamContext.PlayerId.ToString() == lobby.host, lobby.players);
 			OpenView(View.InsideLobby);
 		}
 

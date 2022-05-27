@@ -17,7 +17,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public string NameFilter { get; set; }
 		public int CurrentPlayersFilter { get; set; }
 		public int MaxPlayersFilter { get; set; }
-		public List<LobbiesListEntryPresenter.ViewData> LobbiesData { get; set; } = new List<LobbiesListEntryPresenter.ViewData>();
+		public List<LobbiesListEntryPresenter.ViewData> LobbiesData => BuildViewData();
 
 		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesIds = new Dictionary<string, List<string>>();
 		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesNames = new Dictionary<string, List<string>>();
@@ -118,8 +118,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				PerGameTypeLobbiesMaxPlayers.Add(gameTypeId, maxPlayers);
 			}
-
-			LobbiesData = BuildViewData();
 		}
 
 		/// <summary>

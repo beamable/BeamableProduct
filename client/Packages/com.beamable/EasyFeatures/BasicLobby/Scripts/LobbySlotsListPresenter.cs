@@ -76,9 +76,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbySlotPresenter.PoolData poolData = item as LobbySlotPresenter.PoolData;
 			Assert.IsTrue(poolData != null, "All items in this scroll view MUST be LobbySlotPresenter");
 
-			if (poolData.ViewData.Name != String.Empty) // Temporarily Name is set to playerId
+			if (poolData.ViewData.PlayerId != String.Empty) // Temporarily Name is set to playerId
 			{
-				spawned.SetupFilled(poolData.ViewData.Name, poolData.ViewData.IsReady, _isAdmin,
+				spawned.SetupFilled(poolData.ViewData.PlayerId, poolData.ViewData.IsReady, _isAdmin,
 				                    () =>
 				                    {
 					                    _onReadyButtonClicked.Invoke(poolData.Index);
