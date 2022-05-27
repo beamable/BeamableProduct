@@ -495,8 +495,6 @@ namespace Beamable.Server
          Log.Debug("sending request {msg}", msg);
          return _socketContext.SendMessageSafely(msg).FlatMap(_ =>
          {
-            // socket.SendMessage(msg);
-
             return firstAttempt.RecoverWith(ex =>
             {
                if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
