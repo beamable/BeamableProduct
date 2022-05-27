@@ -174,12 +174,12 @@ namespace Beamable.Server
 
       public async Promise SendMessageSafely(string message, int retryCount=10)
       {
-         var connection = await Socket;
          var failures = new List<Exception>();
          for (var retry = 0; retry < retryCount; retry++)
          {
             try
             {
+               var connection = await Socket;
                await connection.SendMessage(message);
                break;
             }
