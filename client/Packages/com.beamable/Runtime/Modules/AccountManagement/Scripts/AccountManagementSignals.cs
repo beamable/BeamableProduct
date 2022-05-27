@@ -433,11 +433,17 @@ namespace Beamable.AccountManagement
 		public void StartForgotPassword(ForgotPasswordArguments reference)
 		{
 			var email = reference.Email.Value;
-			API.Instance.Then(de =>
+			API.Instance
+			   .Then(de =>
 			   {
 				   WithLoading("Sending Email...", de.AuthService.IssuePasswordUpdate(email))
 				   .Then(_ => DeferBroadcast(email, s => s.ForgotPasswordEmailSent));
-			   }).Error(HandleError);
+			   })
+			   .Error(ex =>
+			   {
+				   _accountForgotPassword.ChangePasswordRequestSent(false);
+				   HandleError(ex);
+			   });
 		}
 
 		public void ConfirmForgotPassword(ForgotPasswordArguments reference)
@@ -452,7 +458,11 @@ namespace Beamable.AccountManagement
 				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
 			 {
 				 Login(email, password);
-			 }).Error(HandleError);
+			 }).Error(ex =>
+				{
+					_accountForgotPassword.ChangePasswordRequestSent(false);
+					HandleError(ex);
+				});
 			});
 		}
 
@@ -472,8 +482,6 @@ namespace Beamable.AccountManagement
 
 		private void HandleError(Exception err)
 		{
-			_accountForgotPassword.ChangePasswordRequestSent(false);
-
 			switch (err)
 			{
 				case PlatformRequesterException ex when ex.Status == 401 || ex.Status == 403:

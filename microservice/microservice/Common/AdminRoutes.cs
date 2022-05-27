@@ -10,7 +10,7 @@ namespace microservice.Common
       /// A simple method to check if the microservice can send and receive network traffic.
       /// </summary>
       /// <returns>The word "responsive" if all is well.</returns>
-      [ClientCallable]
+      [Callable]
       public string HealthCheck()
       {
          return "responsive";
@@ -25,7 +25,7 @@ namespace microservice.Common
       /// The summary, remarks, returns, and parameter tags are supported.
       /// </remarks>
       /// <returns>A json OpenAPI document</returns>
-      [ClientCallable]
+      [Callable]
       [CustomResponseSerializationAttribute]
       public string Docs()
       {

@@ -5,13 +5,13 @@ namespace Beamable.UI.Sdf
 {
 	public static class SdfMaterialManager
 	{
-		private static readonly int BackgroundTexturePropID = Shader.PropertyToID("_BackgroundTexture");
+		private static readonly int BackgroundTexturePropID = Shader.PropertyToID("_SecondaryTexture");
 
 		private static readonly Dictionary<SdfMaterialData, Material> _materials =
 			new Dictionary<SdfMaterialData, Material>();
 
 		public static Material GetMaterial(Material baseMaterial, Texture secondaryTexture,
-			SdfImage.SdfMode imageMode, SdfShadowMode shadowMode, SdfBackgroundMode backgroundMode)
+			SdfImage.SdfMode imageMode, SdfShadowMode shadowMode, SdfBackgroundMode backgroundMode, bool isBackgroundTexMain)
 		{
 
 			var baseMaterialID = baseMaterial.GetInstanceID();
@@ -21,7 +21,8 @@ namespace Beamable.UI.Sdf
 				secondaryTextureID = secondaryTexture != null ? secondaryTexture.GetInstanceID() : baseMaterialID,
 				imageMode = imageMode,
 				shadowMode = shadowMode,
-				backgroundMode = backgroundMode
+				backgroundMode = backgroundMode,
+				isBackgroundTexMain = isBackgroundTexMain
 			};
 
 			if (!_materials.TryGetValue(data, out var material) || material == null)
@@ -32,6 +33,7 @@ namespace Beamable.UI.Sdf
 				ApplySdfMode(imageMode, material);
 				ApplyShadowMode(shadowMode, material);
 				ApplyBackgroundMode(backgroundMode, material);
+				ApplyMainTextureSource(isBackgroundTexMain, material);
 			}
 
 			return material;
@@ -94,6 +96,23 @@ namespace Beamable.UI.Sdf
 					material.DisableKeyword(bgmodeOutline);
 					material.EnableKeyword(bgmodeFull);
 					break;
+			}
+		}
+
+		public static void ApplyMainTextureSource(bool isBackgroundTexMain, Material material)
+		{
+			const string keyword = "_BACKGROUND_TEX_AS_MAIN";
+			const string keywordNeg = "_BACKGROUND_TEX_AS_MAIN_NEG";
+
+			if (isBackgroundTexMain)
+			{
+				material.EnableKeyword(keyword);
+				material.DisableKeyword(keywordNeg);
+			}
+			else
+			{
+				material.DisableKeyword(keyword);
+				material.EnableKeyword(keywordNeg);
 			}
 		}
 	}

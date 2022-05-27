@@ -71,7 +71,7 @@ namespace Beamable.Editor.Content
 			ActiveContext.OnRealmChange += HandleRealmChange;
 			ContentIO.OnManifestChanged += OnManifestChanged;
 
-			minSize = new Vector2(560, 300);
+			minSize = new Vector2(600, 300);
 
 			Refresh();
 		}
@@ -102,6 +102,7 @@ namespace Beamable.Editor.Content
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ContentManagerWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement();
 
 			root.Add(_windowRoot);
 

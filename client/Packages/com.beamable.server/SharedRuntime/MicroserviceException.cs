@@ -26,6 +26,15 @@ namespace Beamable.Server
 		}
 	}
 
+	public class UnauthorizedUserException : MicroserviceException
+	{
+		public UnauthorizedUserException(string methodPath)
+			: base(401, "unauthorizedUser", $"The request to [{methodPath}] requires an authenticated user.")
+		{
+
+		}
+	}
+
 	public class UnhandledPathException : MicroserviceException
 	{
 		public UnhandledPathException(string path)

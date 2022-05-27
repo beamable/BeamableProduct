@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0]
 ### Added
 - Support for GUID based assembly references.
+- `CallableAttribute` for exposing C#MS methods that are meant to be publicly accessible (without authentication required).
+- `ListLeaderboards` method to `IMicroserviceLeaderboardsApi` will return lists of leaderboard ids.
+- `GetPlayerLeaderboards` method to `IMicroserviceLeaderboardsApi` will return leaderboards for a given player.
+- `lbId` field to the `LeaderboardView` response class.
+- `DisableDockerBuildkit` property to the MicroserviceConfiguration. By default, Docker buildkit will now be enabled.
 
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
@@ -19,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue with Publish flow that caused an invalid Manifest data to exist when publishing any services along a service whose source code was no longer in the project
 - Fixed issue that made it possible to start a remote service without its dependencies up and running (only happened in cases where the service was only remote --- ie: the source code for it was not present in the project)   
 
+### Changed
+- Building microservices will always pull the latest version of dependent alpine linux Docker base images.
+- `ClientCallableAttribute` is now only accessible to authenticated users. For a fully public endpoint, use `CallableAttribute` instead.   
+- Microservices will be built specifically for linux/amd64 architecture. For developers with ARM based CPU architectures, enable to the `DockerBuildkit` setting in the Microservice Configuration to publish microservices. 
+- Building a microservice will always stop the microservice and its source generator if they are running. After the build, the source generator will be reset.
+
+### Removed
+- `EnableDockerBuildkit` property from the MicroserviceConfiguration. By default, Docker buildkit will now be enabled. Disable it again with the new `DisableDockerBuildkit` field.
 
 ## [1.1.4]
 ### Fixed

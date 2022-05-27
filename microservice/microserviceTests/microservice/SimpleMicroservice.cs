@@ -103,7 +103,7 @@ namespace microserviceTests.microservice
       {
          return vec;
       }
-      
+
       [ClientCallable]
       public string MethodWithExceptionThrow(string msg)
       {
@@ -161,7 +161,7 @@ namespace microserviceTests.microservice
          var template = await Services.Content.GetContent(templateBoardRef);
          await Services.Leaderboards.CreateLeaderboard(boardId, template);
       }
-      
+
       [ClientCallable]
       public async Task LeaderboardCreateFromTemplateCallableTest(string boardId, string leaderboardContentId)
       {
@@ -169,7 +169,7 @@ namespace microserviceTests.microservice
          var template = await link.Resolve();
          await Services.Leaderboards.CreateLeaderboard(boardId, template);
       }
-      
+
       [ClientCallable]
       public async Task LeaderboardCreateFromCodeCallableTest(string boardId)
       {
@@ -177,10 +177,45 @@ namespace microserviceTests.microservice
             new OptionalInt(),
             new OptionalLong(),
             new OptionalBoolean(),
-            new OptionalCohortSettings(), 
+            new OptionalCohortSettings(),
             new OptionalListString(),
             new OptionalClientPermissions{HasValue = true, Value = new ClientPermissions{writeSelf = true}},
             new OptionalLong());
+      }
+
+      [ClientCallable]
+      public async Promise<int> ListLeaderboardIds()
+      {
+         var res = await Services.Leaderboards.ListLeaderboards();
+         return res.ids.Count;
+      }
+
+      [ClientCallable]
+      public async Promise<int> ListLeaderboardIdsWithSkip(int skip)
+      {
+         var res = await Services.Leaderboards.ListLeaderboards(skip);
+         return res.ids.Count;
+      }
+
+      [ClientCallable]
+      public async Promise<int> ListLeaderboardIdsWithLimit(int limit)
+      {
+         var res = await Services.Leaderboards.ListLeaderboards(limit:limit);
+         return res.ids.Count;
+      }
+
+      [ClientCallable]
+      public async Promise<int> ListLeaderboardIdsWithSkipAndLimit(int skip, int limit)
+      {
+         var res = await Services.Leaderboards.ListLeaderboards(skip, limit:limit);
+         return res.ids.Count;
+      }
+
+      [ClientCallable]
+      public async Promise<int> GetPlayerLeaderboardViews(int dbid)
+      {
+         var res = await Services.Leaderboards.GetPlayerLeaderboards(dbid);
+         return res.lbs.Count;
       }
 
       [ClientCallable]
