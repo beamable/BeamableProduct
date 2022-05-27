@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Beamable.Serialization.SmallerJSON;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using UnityEngine;
 
@@ -73,17 +75,16 @@ namespace Beamable.Server.Common
         public static UnityJsonContractResolver Instance => _instance ??= new UnityJsonContractResolver();
 
         private UnityJsonContractResolver() { }
-
         
         protected override JsonProperty CreateProperty( MemberInfo member, MemberSerialization memberSerialization )
         {
             var jsonProperty = base.CreateProperty( member, memberSerialization );
-            
+
             if (typeof(ISerializationCallbackReceiver).IsAssignableFrom(jsonProperty.PropertyType))
             {
                 jsonProperty.ValueProvider = new SerializationCallbackReceiverValueProvider(jsonProperty.ValueProvider);
             }
-            
+
             return jsonProperty;
         }
         
@@ -122,7 +123,7 @@ namespace Beamable.Server.Common
             }
 
             var fields = GetAllFields(objectType);
-
+            
             bool IsPublicField(FieldInfo field) => field.IsPublic;
             bool IsMarkedSerializeAttribute(FieldInfo field) => field.GetCustomAttribute<SerializeField>() != null;
 
@@ -164,7 +165,15 @@ namespace Beamable.Server.Common
             public object GetValue(object target)
             {
                 var value = _baseProvider.GetValue(target);
+                
                 ((ISerializationCallbackReceiver) value)?.OnBeforeSerialize();
+
+                var serializeDictMethod = value?.GetType().GetMethod("Serialize");
+                if (serializeDictMethod != null)
+                {
+                    return serializeDictMethod.Invoke(value, null);
+                }
+
                 return value;
             }
         }

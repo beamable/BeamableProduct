@@ -111,7 +111,7 @@ namespace microserviceTests.microservice
       }
       
       [ClientCallable]
-      public async Task<EmptyResponse>  MethodWithSendMail()
+      public async Task<EmptyResponse> MethodWithSendMail()
       {
          var mailSendRequest = new MailSendRequest();
          var mailSendEntry = new MailSendEntry

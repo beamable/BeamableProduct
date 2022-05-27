@@ -1,4 +1,5 @@
 using Beamable.Content;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -89,6 +90,11 @@ namespace Beamable.Common.Content
 
 			for (int i = 0; i < keys.Count; i++)
 				this.Add(keys[i], values[i]);
+		}
+
+		public object Serialize()
+		{
+			return new ArrayDict {{nameof(keys), keys}, {nameof(values), values}};
 		}
 	}
 }
