@@ -118,10 +118,12 @@ namespace Beamable
 			}
 
 			// Flush cache that wasn't created with this version of the game.
-			OfflineCache.FlushInvalidCache();
+			// OfflineCache.FlushInvalidCache();
+			// OfflineCache.UseOfflineCache = CoreConfiguration.Instance.UseOfflineCache;
 
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
+			
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
@@ -149,7 +151,8 @@ namespace Beamable
 															  provider.GetService<PlatformRequester>(),
 															  provider,
 															  UnityUserDataCache<Dictionary<string, string>>
-																  .CreateInstance));
+																  .CreateInstance,
+															  provider.GetService<OfflineCache>()));
 			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
 				// the lobby service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),
@@ -215,6 +218,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
+			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+
 
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder);
 			//LoadCustomDependencies();
