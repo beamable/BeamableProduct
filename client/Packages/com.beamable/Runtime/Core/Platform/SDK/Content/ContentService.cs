@@ -627,10 +627,10 @@ namespace Beamable.Content
 			{
 				elem.Value.PauseAllNotifications();
 			}
-			
+
 			Subscribable?.PauseAllNotifications();
 		}
-		
+
 		/// <summary>
 		/// Resume listening all notifications on <see cref="ClientManifest"/> deploy .
 		/// </summary>
@@ -640,7 +640,7 @@ namespace Beamable.Content
 			{
 				elem.Value.ResumeAllNotifications();
 			}
-			
+
 			Subscribable?.ResumeAllNotifications();
 		}
 

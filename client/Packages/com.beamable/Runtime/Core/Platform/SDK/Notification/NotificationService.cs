@@ -159,7 +159,7 @@ namespace Beamable.Api.Notification
 				found.Remove(handler);
 			}
 		}
-		
+
 		/// <summary>
 		/// Unregister all callback handlers for push notifications.
 		/// </summary>
@@ -171,7 +171,7 @@ namespace Beamable.Api.Notification
 				found.Clear();
 			}
 		}
-		
+
 		/// <inheritdoc cref="INotificationService.Unsubscribe{T}(string, Action{T})"/>
 		public void Unsubscribe<T>(string name, Action<T> handler)
 		{
@@ -191,7 +191,7 @@ namespace Beamable.Api.Notification
 		{
 			if (pausedHandlers.Contains(name))
 				return;
-			
+
 			if (handlers.TryGetValue(name, out var found))
 			{
 				for (var i = found.Count - 1; i > -1; i--)
@@ -200,7 +200,7 @@ namespace Beamable.Api.Notification
 				}
 			}
 		}
-		
+
 		/// <summary>
 		/// Pause the callbacks for a given notification.
 		/// </summary>
@@ -209,7 +209,7 @@ namespace Beamable.Api.Notification
 		{
 			pausedHandlers.Add(name);
 		}
-		
+
 		/// <summary>
 		/// Resume the callbacks for a given notification.
 		/// </summary>

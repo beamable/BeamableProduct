@@ -15,7 +15,7 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 		{
 
 		}
-		
+
 		public void UnsubscribeAll(string name)
 		{
 
@@ -35,12 +35,12 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 		{
 
 		}
-		
+
 		public void Pause(string name)
 		{
 
 		}
-		
+
 		public void Resume(string name)
 		{
 
