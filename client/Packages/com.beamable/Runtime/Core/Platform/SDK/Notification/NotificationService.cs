@@ -43,7 +43,7 @@ namespace Beamable.Api.Notification
 		Dictionary<string, InGameNotification> inGameNotifications = new Dictionary<string, InGameNotification>();
 		public delegate void InGameNotificationCB(string notificationKey, string message);
 
-		private List<string> pausedHandlers = new List<string>();
+		private HashSet<string> pausedHandlers = new HashSet<string>();
 		private Dictionary<string, List<Action<object>>> handlers = new Dictionary<string, List<Action<object>>>();
 		private HashSet<object> typedHandlerObjects = new HashSet<object>();
 
@@ -207,8 +207,7 @@ namespace Beamable.Api.Notification
 		/// <param name="name">The event name to pause</param>
 		public void Pause(string name)
 		{
-			if (!pausedHandlers.Contains(name))
-				pausedHandlers.Add(name);
+			pausedHandlers.Add(name);
 		}
 		
 		/// <summary>
