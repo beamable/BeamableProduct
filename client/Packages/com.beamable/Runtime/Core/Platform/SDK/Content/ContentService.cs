@@ -627,6 +627,8 @@ namespace Beamable.Content
 			{
 				elem.Value.PauseAllNotifications();
 			}
+			
+			Subscribable?.PauseAllNotifications();
 		}
 		
 		/// <summary>
@@ -638,6 +640,8 @@ namespace Beamable.Content
 			{
 				elem.Value.ResumeAllNotifications();
 			}
+			
+			Subscribable?.ResumeAllNotifications();
 		}
 
 
