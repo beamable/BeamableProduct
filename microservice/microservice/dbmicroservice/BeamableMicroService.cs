@@ -130,6 +130,7 @@ namespace Beamable.Server
 
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
+      private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -186,6 +187,7 @@ namespace Beamable.Server
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
          _mongoSerializationService = new MongoSerializationService();
+         _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
          _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver);
          ContentApi.Instance.CompleteSuccess(_contentService);
          InitServices();
@@ -553,7 +555,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
-               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
