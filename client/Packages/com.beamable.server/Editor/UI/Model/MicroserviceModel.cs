@@ -47,6 +47,7 @@ namespace Beamable.Editor.UI.Model
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public ServiceReference RemoteReference { get; protected set; }
 		public ServiceStatus RemoteStatus { get; protected set; }
+		public override bool IsArchived => Config.Archived;
 		public MicroserviceConfigurationEntry Config { get; protected set; }
 		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>();
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
@@ -116,6 +117,7 @@ namespace Beamable.Editor.UI.Model
 			OnBuild?.Invoke(task);
 			return task;
 		}
+
 		public void OpenLocalDocs()
 		{
 			var de = BeamEditorContext.Default;
@@ -199,6 +201,16 @@ namespace Beamable.Editor.UI.Model
 			if (!AreLogsAttached)
 			{
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
+			}
+			
+			evt.menu.AppendSeparator();
+			if (Config.Archived)
+			{
+				evt.menu.AppendAction("Unarchive", _ => Unarchive());
+			}
+			else
+			{
+				evt.menu.AppendAction("Archive", _ => Archive());
 			}
 		}
 
@@ -315,6 +327,19 @@ $@"{{
 			}
 #endif
 		}
+
+		public void Archive()
+		{
+			Config.Archived = true;
+			MicroservicesDataModel.Instance.OnServiceArchived?.Invoke(this);
+		}
+
+		public void Unarchive()
+		{
+			Config.Archived = false;
+			MicroservicesDataModel.Instance.OnServiceUnarchived?.Invoke(this);
+		}
+		
 		public override void Refresh(IDescriptor descriptor)
 		{
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
