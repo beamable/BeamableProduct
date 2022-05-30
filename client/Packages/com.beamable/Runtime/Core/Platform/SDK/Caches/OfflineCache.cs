@@ -18,6 +18,7 @@ namespace Beamable.Api.Caches
 		public OfflineCache(bool useOfflineCache = true)
 		{
 			UseOfflineCache = useOfflineCache;
+			// Flush cache that wasn't created with this version of the game.
 			FlushInvalidCache();
 		}
 

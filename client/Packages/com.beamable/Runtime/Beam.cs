@@ -116,11 +116,7 @@ namespace Beamable
 			{
 				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
 			}
-
-			// Flush cache that wasn't created with this version of the game.
-			// OfflineCache.FlushInvalidCache();
-			// OfflineCache.UseOfflineCache = CoreConfiguration.Instance.UseOfflineCache;
-
+			
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 			
