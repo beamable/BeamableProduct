@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using Beamable.UI.Scripts;
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -14,15 +16,23 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private Button _promoteButton;
 		[SerializeField] private GameObject _expandableButtons;
 
+		public class PoolData : PoolableScrollView.IItem
+		{
+			public string Name;
+			public Sprite Avatar;
+
+			public float Height { get; set; }
+		}
+		
 		public void Setup(Sprite avatarSprite,
 		                  string playerName,
-		                  UnityAction onAcceptButton,
+		                  Action<string> onAcceptButton,
 		                  UnityAction onAskToLeaveButton,
 		                  UnityAction onPromoteButton)
 		{
 			_avatarImage.sprite = avatarSprite;
 			_playerNameText.text = playerName;
-			_acceptButton.onClick.AddListener(onAcceptButton);
+			_acceptButton.onClick.AddListener(() => {onAcceptButton.Invoke(playerName);});
 			_askToLeaveButton.onClick.AddListener(onAskToLeaveButton);
 			_promoteButton.onClick.AddListener(onPromoteButton);
 		}

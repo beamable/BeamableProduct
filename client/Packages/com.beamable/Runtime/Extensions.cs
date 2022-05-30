@@ -22,6 +22,12 @@ namespace Beamable
 			eventBase.RemoveListener(action);
 			eventBase.AddListener(action);
 		}
+		
+		public static void ReplaceOrAddListener(this UnityEvent eventBase, UnityAction action)
+		{
+			eventBase.RemoveListener(action);
+			eventBase.AddListener(action);
+		}
 	}
 }
 
