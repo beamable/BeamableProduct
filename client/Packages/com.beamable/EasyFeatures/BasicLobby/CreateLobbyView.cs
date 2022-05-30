@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicLobby
@@ -19,22 +20,20 @@ namespace Beamable.EasyFeatures.BasicLobby
 			bool IsVisible { get; set; }
 			List<SimGameType> GameTypes { get; }
 			int SelectedGameTypeIndex { get; set; }
-			Dictionary<string, LobbyRestriction> AccessOptions { get; }
+			Dictionary<string, LobbyRestriction> AccessOptions { get; } // TODO: remove this dependency
 			int SelectedAccessOption { get; set; }
 			string Name { get; set; }
 			string Description { get; set; }
 			bool ValidateConfirmButton();
 			void ResetData();
-			Promise<Lobby> CreateLobby();
+			Promise CreateLobby();
 		}
 
 		[Header("View Configuration")]
 		public int EnrichOrder;
-		public LobbyFeatureControl FeatureControl;
-		
+
 		[Header("Components")]
 		public MultiToggleComponent TypesToggle;
-
 		public MultiToggleComponent AccessToggle;
 		public TMP_InputField Name;
 		public TMP_InputField Description;
@@ -42,99 +41,99 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button CancelButton;
 		public Button BackButton;
 
-		private IDependencies _system;
-		public BeamContext _userContext;
+		[Header("Callbacks")]
+		public UnityEvent OnCreateLobbyRequestSent;
+		public UnityEvent OnCreateLobbyResponseReceived;
+		public UnityEvent OnCancelButtonClicked;
+		
+		public Action<string> OnError;
+
+		protected IDependencies System;
 
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			_userContext = managedPlayers.GetSinglePlayerContext();
-			_system = _userContext.ServiceProvider.GetService<IDependencies>();
+			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
+			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(_system.IsVisible);
+			gameObject.SetActive(System.IsVisible);
 
 			// We don't need to perform anything in case if view is not visible. Visibility is controlled by a feature control script.
-			if (!_system.IsVisible)
+			if (!System.IsVisible)
 			{
 				return;
 			}
 
 			// Setting up all components
-			TypesToggle.Setup(_system.GameTypes.Select(type => type.ContentName).ToList(), OnGameTypeSelected,
-			                  _system.SelectedGameTypeIndex);
-			AccessToggle.Setup(_system.AccessOptions.Select(pair => pair.Key).ToList(), OnAccessOptionSelected,
-			                   _system.SelectedAccessOption);
+			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected, System.SelectedGameTypeIndex);
+			AccessToggle.Setup(System.AccessOptions.Select(pair => pair.Key).ToList(), OnAccessOptionSelected,
+			                   System.SelectedAccessOption);
 
-			Name.SetTextWithoutNotify(_system.Name);
-			Description.SetTextWithoutNotify(_system.Description);
+			Name.SetTextWithoutNotify(System.Name);
+			Description.SetTextWithoutNotify(System.Description);
 
 			Name.onValueChanged.ReplaceOrAddListener(OnNameChanged);
 			Description.onValueChanged.ReplaceOrAddListener(OnDescriptionChanged);
 			ConfirmButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
-			ConfirmButton.interactable = _system.ValidateConfirmButton();
+			ConfirmButton.interactable = System.ValidateConfirmButton();
 			CancelButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 		}
 
 		private void CancelButtonClicked()
 		{
-			_system.ResetData();
-			FeatureControl.OpenMainView();
+			System.ResetData();
+			OnCancelButtonClicked?.Invoke();
+		}
+
+		private void OnNameChanged(string value)
+		{
+			System.Name = value;
+			ConfirmButton.interactable = System.ValidateConfirmButton();
+		}
+
+		private void OnDescriptionChanged(string value)
+		{
+			System.Description = value;
+		}
+
+		private void OnAccessOptionSelected(int optionId)
+		{
+			if (optionId == System.SelectedAccessOption)
+			{
+				return;
+			}
+
+			System.SelectedAccessOption = optionId;
+		}
+
+		private void OnGameTypeSelected(int optionId)
+		{
+			if (optionId == System.SelectedGameTypeIndex)
+			{
+				return;
+			}
+
+			System.SelectedGameTypeIndex = optionId;
 		}
 
 		private async void CreateLobbyButtonClicked()
 		{
-			FeatureControl.ShowOverlayedLabel("Creating Lobby...");
-
+			OnCreateLobbyRequestSent?.Invoke();
+			
 			try
 			{
-				Lobby lobby = await _system.CreateLobby();
-				FeatureControl.HideOverlay();
-				if (lobby != null)
-				{
-					_system.ResetData();
-					FeatureControl.OpenLobbyView(lobby);
-				}
+				await System.CreateLobby();
+				OnCreateLobbyResponseReceived?.Invoke();
 			}
 			catch (Exception e)
 			{
 				if (e is PlatformRequesterException pre)
 				{
-					FeatureControl.ShowErrorWindow(pre.Error.error);
+					OnError?.Invoke(pre.Error.error);
 				}
 			}
-		}
-
-		private void OnNameChanged(string value)
-		{
-			_system.Name = value;
-			ConfirmButton.interactable = _system.ValidateConfirmButton();
-		}
-
-		private void OnDescriptionChanged(string value)
-		{
-			_system.Description = value;
-		}
-
-		private void OnAccessOptionSelected(int optionId)
-		{
-			if (optionId == _system.SelectedAccessOption)
-			{
-				return;
-			}
-
-			_system.SelectedAccessOption = optionId;
-		}
-
-		private void OnGameTypeSelected(int optionId)
-		{
-			if (optionId == _system.SelectedGameTypeIndex)
-			{
-				return;
-			}
-
-			_system.SelectedGameTypeIndex = optionId;
 		}
 	}
 }

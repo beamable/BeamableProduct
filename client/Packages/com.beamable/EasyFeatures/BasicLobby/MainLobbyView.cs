@@ -20,11 +20,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			var dependencies = ctx.ServiceProvider.GetService<IDependencies>();
 			
 			gameObject.SetActive(dependencies.IsVisible);
-
-			if (!dependencies.IsVisible)
-			{
-				return;
-			}
 		}
 	}
 }

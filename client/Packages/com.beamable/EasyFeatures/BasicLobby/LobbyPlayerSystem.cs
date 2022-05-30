@@ -40,7 +40,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			IsServerReady = false;
 			IsMatchStarting = false;
 
-			// TODO: configure players from lobby data
 			RegisterLobbyPlayers(players);
 		}
 

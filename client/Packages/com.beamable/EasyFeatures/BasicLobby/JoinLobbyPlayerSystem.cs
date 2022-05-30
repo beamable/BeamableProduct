@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Experimental.Api.Lobbies;
+using Codice.Client.Common.Connection;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,16 +9,16 @@ namespace Beamable.EasyFeatures.BasicLobby
 {
 	public class JoinLobbyPlayerSystem : JoinLobbyView.IDependencies
 	{
-		protected BeamContext BeamContext;
-
+		public BeamContext BeamContext { get; }
 		public List<SimGameType> GameTypes { get; set; } = new List<SimGameType>();
 		public bool IsVisible { get; set; }
+		public bool IsLoading { get; set; }
 		public int SelectedGameTypeIndex { get; set; }
 		public int? SelectedLobbyIndex { get; set; }
 		public string NameFilter { get; set; }
 		public int CurrentPlayersFilter { get; set; }
 		public int MaxPlayersFilter { get; set; }
-		public List<LobbiesListEntryPresenter.ViewData> LobbiesData => BuildViewData();
+		public List<LobbiesListEntryPresenter.ViewData> LobbiesData { get; private set; }
 
 		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesIds = new Dictionary<string, List<string>>();
 		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesNames = new Dictionary<string, List<string>>();
@@ -45,14 +46,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			SelectedGameTypeIndex = 0;
 			SelectedLobbyIndex = null;
 			NameFilter = string.Empty;
-		}
-
-		public async Promise GetLobbies()
-		{
-			LobbyQueryResponse response = await BeamContext.Lobby.FindLobbies();
-			// TODO: add some filtering here??
-
-			RegisterLobbyData(SelectedGameTypeId, response.results);
 		}
 
 		public virtual void RegisterLobbyData(SimGameType gameType,
@@ -118,6 +111,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				PerGameTypeLobbiesMaxPlayers.Add(gameTypeId, maxPlayers);
 			}
+
+			LobbiesData = BuildViewData();
 		}
 
 		/// <summary>
@@ -175,14 +170,28 @@ namespace Beamable.EasyFeatures.BasicLobby
 				return false;
 			}
 
-			// TEMPORARY
-			return true;
-			
-			// return LobbiesData[SelectedLobbyIndex.Value].players.Count <
-			// 	LobbiesData[SelectedLobbyIndex.Value].maxPlayers;
+			return LobbiesData[SelectedLobbyIndex.Value].CurrentPlayers <
+				LobbiesData[SelectedLobbyIndex.Value].MaxPlayers;
 		}
 
-		public void ApplyFilter(string name) => ApplyFilter(name, CurrentPlayers.Count, MaxPlayers.Count);
+		public async Promise JoinLobby()
+		{
+			if (SelectedLobbyIndex != null)
+			{
+				await BeamContext.Lobby.Join(LobbiesData[SelectedLobbyIndex.Value].Id);
+			}
+		}
+
+		public async Promise GetLobbies()
+		{
+			LobbyQueryResponse response = await BeamContext.Lobby.FindLobbies();
+			RegisterLobbyData(GameTypes[SelectedGameTypeIndex], response.results);
+		}
+
+		public void ApplyFilter(string name)
+		{
+			ApplyFilter(name, CurrentPlayers.Count, MaxPlayers.Count);
+		}
 
 		public void ApplyFilter(string name, int currentPlayers, int maxPlayers)
 		{
@@ -208,15 +217,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 					MaxPlayers = MaxPlayers[i]
 				});	
 			}
-
+			
 			return NameFilter == string.Empty
 				? data
 				: data.Where(entry => entry.Name.Contains(NameFilter)).ToList();
-		}
-		
-		public async Promise JoinLobby(string lobbyId)
-		{
-			await BeamContext.Lobby.Join(lobbyId);
 		}
 	}
 }
