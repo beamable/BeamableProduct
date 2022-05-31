@@ -2,8 +2,15 @@
 
 echo "Packing..."
 pwd
+echo "printing version"
+echo $VERSION
 cd ./cli/cli
+echo "in cli"
+pwd
 dotnet pack --configuration Release /p:Version=$VERSION
+
+echo "okay, doing an ls"
+ls -a
 
 echo "Verifying..."
 dotnet tool install --global --add-source ./nupkg/ beamcli
