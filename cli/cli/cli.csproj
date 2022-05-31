@@ -6,8 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
+    <PackageId>BeamCli</PackageId>
+    <AssemblyName>Beamable.Cli</AssemblyName>
+    <Authors>Beamable Team</Authors>
+    <Company>Beamable</Company>
+
     <!--  TODO: Jenkins should update this version string  -->
-    <Version>1.2.0</Version>
+    <Version>$(Version)</Version>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>beam</ToolCommandName>
@@ -21,6 +26,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="nupkg" />
   </ItemGroup>
 
 </Project>
