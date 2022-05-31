@@ -27,14 +27,14 @@ namespace Beamable.EasyFeatures.BasicParty
 		public void Setup(Sprite avatarSprite,
 		                  string playerName,
 		                  Action<string> onAcceptButton,
-		                  UnityAction onAskToLeaveButton,
-		                  UnityAction onPromoteButton)
+		                  Action<string> onAskToLeaveButton,
+		                  Action<string> onPromoteButton)
 		{
 			_avatarImage.sprite = avatarSprite;
 			_playerNameText.text = playerName;
-			_acceptButton.onClick.AddListener(() => {onAcceptButton.Invoke(playerName);});
-			_askToLeaveButton.onClick.AddListener(onAskToLeaveButton);
-			_promoteButton.onClick.AddListener(onPromoteButton);
+			_acceptButton.onClick.AddListener(() => onAcceptButton.Invoke(playerName));
+			_askToLeaveButton.onClick.AddListener(() => onAskToLeaveButton.Invoke(playerName));
+			_promoteButton.onClick.AddListener(() => onPromoteButton.Invoke(playerName));
 		}
 
 		public void ToggleExpand()

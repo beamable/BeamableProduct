@@ -8,6 +8,7 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
+			bool IsVisible { get; set; }
 			PartyData PartyData { get; }
 			bool IsPlayerLeader { get; }
 		}
@@ -38,6 +39,12 @@ namespace Beamable.EasyFeatures.BasicParty
 			var ctx = managedPlayers.GetSinglePlayerContext();
 			var system = ctx.ServiceProvider.GetService<IDependencies>();
 
+			gameObject.SetActive(system.IsVisible);
+			if (!system.IsVisible)
+			{
+				return;
+			}
+			
 			_partyIdText.text = system.PartyData.PartyId;
 
 			_leadButtonsGroup.SetActive(system.IsPlayerLeader);
@@ -54,12 +61,22 @@ namespace Beamable.EasyFeatures.BasicParty
 			_invitePlayerButton.onClick.ReplaceOrAddListener(InvitePlayerButtonClicked);
 			_nextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
 			
-			_partyList.Setup(OnPlayerAccepted);
+			_partyList.Setup(OnPlayerAccepted, OnAskedToLeave, OnPromoted);
+		}
+
+		private void OnPromoted(string id)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		private void OnAskedToLeave(string id)
+		{
+			throw new System.NotImplementedException();
 		}
 
 		private void OnPlayerAccepted(string id)
 		{
-			
+			throw new System.NotImplementedException();
 		}
 
 		private void NextButtonClicked()
