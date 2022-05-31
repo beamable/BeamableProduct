@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using System;
 using System.Collections.Generic;
 
 namespace Beamable.Server
@@ -14,6 +15,16 @@ namespace Beamable.Server
 			ResponseStatus = responseStatus;
 			Error = error;
 			Message = message;
+		}
+	}
+
+	public class SocketClosedException : MicroserviceException
+	{
+		public List<Exception> FailedAttemptExceptions { get; }
+
+		public SocketClosedException(List<Exception> failedAttemptExceptions) : base(500, "socket", "the socket is closed. Too many retries have happened, and the message cannot be sent.")
+		{
+			FailedAttemptExceptions = failedAttemptExceptions;
 		}
 	}
 
