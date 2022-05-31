@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
 
+### Changed
+- List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
+
 ## [1.2.0]
 ### Added
 - Unity 2021 LTS support.
