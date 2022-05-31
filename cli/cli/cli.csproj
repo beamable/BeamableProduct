@@ -10,7 +10,6 @@
     <AssemblyName>Beamable.Tools</AssemblyName>
     <Authors>Beamable Team</Authors>
     <Company>Beamable</Company>
-    <!--  TODO: Jenkins should update this version string  -->
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
     <PackAsTool>true</PackAsTool>
