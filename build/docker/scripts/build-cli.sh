@@ -9,7 +9,12 @@ echo $VERSION_SUFFIX
 export VERSION_SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
 echo $SUFFIX
 unset VERSION
-dotnet pack --configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
+if [ -z "$SUFFIX" ]
+then 
+    dotnet pack --configuration Release /p:VersionPrefix=$VERSION_PREFIX
+else
+    dotnet pack --configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
+fi
 
 echo "Installing built package..."
 export PATH="$PATH:/root/.dotnet/tools"
