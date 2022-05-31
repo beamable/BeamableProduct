@@ -6,7 +6,10 @@ cd ./cli/cli
 echo "printing version"
 echo $VERSION_PREFIX
 echo $VERSION_SUFFIX
-dotnet pack --configuration Release --version-suffix=$(echo $VERSION_SUFFIX | tr . -) /p:VersionPrefix=$VERSION_PREFIX
+export VERSION_SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
+echo $SUFFIX
+unset VERSION
+dotnet pack --configuration Release --version-suffix=$SUFFIX /p:VersionPrefix=$VERSION_PREFIX
 
 echo "Installing built package..."
 export PATH="$PATH:/root/.dotnet/tools"
