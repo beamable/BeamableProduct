@@ -11,7 +11,7 @@
     <Authors>Beamable Team</Authors>
     <Company>Beamable</Company>
     <!--  TODO: Jenkins should update this version string  -->
-    <Version>$(Version)</Version>
+    <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>beam</ToolCommandName>
