@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Microservices now correctly caches connection strings when `GetDatabase` is called on the `IStorageObjectConnectionProvider` service.  
 
+### Changed
+- Added log error when Microservice cannot start.
+
 ## [1.2.0]
 ### Added
 - Support for GUID based assembly references.
