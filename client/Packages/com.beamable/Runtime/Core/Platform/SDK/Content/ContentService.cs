@@ -272,7 +272,7 @@ namespace Beamable.Content
 			FilesystemAccessor = filesystemAccessor;
 			_connectivityService = _provider.GetService<IConnectivityService>();
 			_offlineCache = offlineCache;
-			
+
 			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
 			{

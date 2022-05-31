@@ -78,7 +78,7 @@ namespace Beamable
 
 		[Tooltip("It allows to globally enable/disable offline cache.")]
 		public bool UseOfflineCache = true;
-		
+
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]

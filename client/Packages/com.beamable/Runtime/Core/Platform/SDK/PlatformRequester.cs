@@ -55,7 +55,7 @@ namespace Beamable.Api
 		public string TimeOverride { get; set; }
 		public IAuthApi AuthService { private get; set; }
 		public string RequestTimeoutMs { get; set; }
-		
+
 		private readonly OfflineCache _offlineCache;
 
 		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
