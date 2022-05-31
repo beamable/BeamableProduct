@@ -20,5 +20,5 @@ then
     echo "Not running due to dry run."
     exit $?
 else
-    dotnet nuget push ./nupkg/Beamable.Tools.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key test
+    dotnet nuget push ./nupkg/Beamable.Tools.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 fi

@@ -10,4 +10,5 @@ services:
     environment:
       VERSION: ${VERSION:-0.0.0}
       DRY_RUN: ${DRY_RUN:-false}
+      NUGET_TOOLS_KEY: ${NUGET_TOOLS_KEY}
     
