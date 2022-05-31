@@ -11,6 +11,10 @@ namespace Beamable.EasyFeatures.BasicLogin
 		public virtual UserView CurrentUser { get; set; }
 		public virtual List<UserView> AvailableUsers { get; set; }
 
+		public virtual OptionalUserView AvailableSwitch { get; set; } = new OptionalUserView();
+
+		public virtual LoginFlowState State { get; set; } = LoginFlowState.HOME;
+
 		private readonly BeamContext _context;
 		private readonly StatsService _statsService;
 		private readonly AccountManagementConfiguration _config;
@@ -34,7 +38,6 @@ namespace Beamable.EasyFeatures.BasicLogin
 				promises.Add(promise);
 			}
 			await Promise.Sequence(promises);
-
 		}
 
 		protected virtual async Promise<UserView> GetCurrentUserView()
