@@ -27,7 +27,14 @@ namespace Beamable.Common.Api
 		public static void ValidateAlias(string alias)
 		{
 			if (string.IsNullOrWhiteSpace(alias)) return;
-			if (IsCid(alias)) throw new ArgumentException(nameof(alias) + " is a cid");
+			if (IsCid(alias))
+			{
+				throw new ArgumentException(nameof(alias) + " is a cid");
+			}
+			if (alias.Contains(" "))
+			{
+				throw new ArgumentException(nameof(alias) + " cannot contain whitespaces");
+			}
 		}
 
 		/// <summary>
