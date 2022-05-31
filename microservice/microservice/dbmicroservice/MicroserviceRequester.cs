@@ -181,7 +181,7 @@ namespace Beamable.Server
             {
                var connection = await Socket;
                await connection.SendMessage(message);
-               break;
+               return;
             }
             catch (Exception ex)
             {
