@@ -49,7 +49,7 @@ namespace Beamable.Api.Stats
 			   {
 				   if (!_offlineCache.UseOfflineCache)
 					   return Promise<BatchReadStatsResponse>.Successful(new BatchReadStatsResponse());
-				   
+
 				   return _offlineCache.RecoverDictionary<string, string>(ex, "stats", Requester.AccessToken, gamerTags).Map(
 				   stats =>
 				   {
@@ -85,8 +85,8 @@ namespace Beamable.Api.Stats
 				   /*
 					* Successfully looked up stats. Commit them to the offline cache.
 					*
-					*/ 
-				   if (_offlineCache.UseOfflineCache) 
+					*/
+				   if (_offlineCache.UseOfflineCache)
 					   _offlineCache.Merge("stats", Requester.AccessToken, playerStats);
 			   });
 		}
