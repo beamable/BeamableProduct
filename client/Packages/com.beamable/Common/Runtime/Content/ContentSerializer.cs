@@ -410,6 +410,10 @@ namespace Beamable.Common.Content
 				{
 					wrapper.SerializedName = attr.SerializedName;
 				}
+				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
+				{
+					wrapper.SerializedName = field.Name.Split('>')[0].Substring(1);
+				}
 				else
 				{
 					wrapper.SerializedName = field.Name;
