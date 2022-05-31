@@ -10,7 +10,7 @@ dotnet pack --configuration Release --version-suffix=$(echo $VERSION_SUFFIX | tr
 
 echo "Installing built package..."
 export PATH="$PATH:/root/.dotnet/tools"
-dotnet tool install --global -prerelease --add-source ./nupkg/ beamable.tools
+dotnet tool install --global --prerelease --add-source ./nupkg/ beamable.tools
 
 echo "Checking built version..."
 beam --version #todo: is it possible to assert that the output must match the $VERSION string?
