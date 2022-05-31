@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added log error when Microservice cannot start.
 
+### Fixed
+- Possible duplicate authorization requests.
+- Messages sent during a re-connection event will be re-attempted 10 times before failing.
+
 ## [1.2.0]
 ### Added
 - Support for GUID based assembly references.

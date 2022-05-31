@@ -172,6 +172,39 @@ namespace Beamable.Server
          };
       }
 
+      public async Promise SendMessageSafely(string message, int retryCount=10)
+      {
+         var failures = new List<Exception>();
+         for (var retry = 0; retry < retryCount; retry++)
+         {
+            try
+            {
+               var connection = await Socket;
+               await connection.SendMessage(message);
+               return;
+            }
+            catch (Exception ex)
+            {
+               failures.Add(ex);
+            }
+         }
+         // all attempts have failed : (
+         var finalEx = new SocketClosedException(failures);
+         BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", finalEx.GetType().Name,
+            finalEx.Message,
+            finalEx.Source, finalEx.StackTrace);
+
+         for (var i = 0 ; i < failures.Count; i ++)
+         {
+            var failure = failures[i];
+            BeamableSerilogProvider.LogContext.Value.Error("  Failure {i} {type}: {message} - {source} \n {stack}", i, finalEx.GetType().Name,
+               failure.Message,
+               failure.Source, failure.StackTrace);
+         }
+
+         throw finalEx;
+      }
+
       public void HandleCloseConnection()
       {
          HasSocketClosed = false;
@@ -317,20 +350,24 @@ namespace Beamable.Server
 
       public IAccessToken AccessToken { get; }
 
+
       private Promise<Unit> Reauthenticate()
       {
-         if (_authenticationPromise.IsCompleted)
+         lock (_authenticationPromise)
          {
-            // re-auth...
-            return Authenticate().ToPromise();
-         }
-         else
-         {
-            return _authenticationPromise;
+            if (_authenticationPromise.IsCompleted)
+            {
+               // re-auth...
+               return Authenticate();
+            }
+            else
+            {
+               return _authenticationPromise;
+            }
          }
       }
 
-      public async Task Authenticate()
+      public async Promise Authenticate()
       {
          var oldPromise = _authenticationPromise;
 
@@ -399,7 +436,7 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.Socket.Then(socket => socket.SendMessage(msg)).ToUnit();
+         return _socketContext.SendMessageSafely(msg);
       }
 
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
@@ -440,8 +477,8 @@ namespace Beamable.Server
             body = body,
             path = uri,
          };
-         
-         
+
+
          if (_requestContext != null &&
              !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
                                                // the initialization process without an Microservice.AssumeUser call being made before.
@@ -466,10 +503,9 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.Socket.FlatMap(socket =>
+         Log.Debug("sending request {msg}", msg);
+         return _socketContext.SendMessageSafely(msg).FlatMap(_ =>
          {
-            Log.Debug("sending request {msg}", msg);
-            socket.SendMessage(msg);
             return firstAttempt.RecoverWith(ex =>
             {
                if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
