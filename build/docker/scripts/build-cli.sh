@@ -13,16 +13,7 @@ dotnet tool install --global --add-source ./nupkg/ beamcli
 echo "Checking built version..."
 beam --version #todo: is it possible to assert that the output must match the $VERSION string?
 
-ls -a
-
-echo "printing env"
-env
-
-echo "checking build file"
-ls ./nupkg
-
-if [ "${DRY_RUN}" == "true" ]
-then
+if [ "$DRY_RUN" == true ] ; then
 	echo "Not running due to dry run."
 else 
     echo "Publishing..."
