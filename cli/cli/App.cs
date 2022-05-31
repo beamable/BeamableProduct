@@ -32,6 +32,7 @@ public class App
 			var root = new RootCommand();
 			root.AddOption(provider.GetRequiredService<DryRunOption>());
 			root.AddOption(provider.GetRequiredService<CidOption>());
+			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
 
