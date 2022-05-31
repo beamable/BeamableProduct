@@ -9,4 +9,5 @@ services:
       - ../../../:/Client
     environment:
       VERSION: ${VERSION:-0.0.0}
+      DRY_RUN: ${DRY_RUN:-false}
     
