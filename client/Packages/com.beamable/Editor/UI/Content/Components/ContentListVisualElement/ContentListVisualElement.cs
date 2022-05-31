@@ -322,7 +322,9 @@ namespace Beamable.Editor.Content.Components
 		private void AddCreateItemMenu(ContextualMenuPopulateEvent evt)
 		{
 			var selectedTypes = Model.SelectedContentTypes;
-			var types = Model.GetContentTypes().ToList();
+			var types = Model.GetContentTypes()
+				.OrderBy(x => x.TypeName)
+				.ToList();
 			string currentCategoryName = "";
 
 			if (selectedTypes.FirstOrDefault() is ContentTypeTreeViewItem selectedType)
