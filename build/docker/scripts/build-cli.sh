@@ -15,7 +15,7 @@ beam --version #todo: is it possible to assert that the output must match the $V
 
 echo "Checking for publish"
 echo $DRY_RUN
-if ["$DRY_RUN" == "true"]
+if [ "$DRY_RUN" = "true" ]
 then 
     echo "Not running due to dry run."
     exit $?
