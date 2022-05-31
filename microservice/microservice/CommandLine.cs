@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
+using Serilog;
 
 namespace Beamable.Server
 {
@@ -39,7 +40,15 @@ namespace Beamable.Server
 
 		static void Run()
 		{
-			MicroserviceBootstrapper.Start<TMicroService>();
+			try
+			{
+				MicroserviceBootstrapper.Start<TMicroService>();
+			}
+			catch (Exception ex)
+			{
+				Log.Fatal(ex.GetType().Name + " / " + ex.Message);
+				Log.Fatal(ex.StackTrace);
+			}
 		}
 
 		static void GenerateClient(string outputDirectory)
