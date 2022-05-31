@@ -17,6 +17,7 @@ namespace Beamable.Editor.Assistant
 	/// whenever the <see cref="BeamableAssistantWindow"/> is opened or focused. 
 	/// </summary>
 	// ReSharper disable once ClassNeverInstantiated.Global
+	[BeamHintSystem()]
 	public class BeamHintNotificationManager : IBeamHintSystem
 	{
 		private const string NOTIFICATION_SESSION_KEY = "BEAM_HINT_NOTIFICATION_SESSION_KEY";

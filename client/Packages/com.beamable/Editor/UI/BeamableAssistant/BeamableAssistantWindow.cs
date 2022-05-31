@@ -78,7 +78,7 @@ namespace Beamable.Editor.Assistant
 			BeamEditor.DelayedInitializationCall(RunFocus, true);
 			void RunFocus()
 			{
-				if (_windowRoot != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
+				if (_windowRoot != null && ActiveContext != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
 				else Refresh();
 				// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
 				// For now, just clear notifications whenever the window is focused

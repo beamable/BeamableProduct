@@ -135,7 +135,7 @@ namespace Beamable.Common.Content
 		/// <returns>A <see cref="IContentRef{TContent}"/></returns>
 		public IContentRef ToContentRef()
 		{
-			var contentType = ContentRegistry.GetTypeFromId(contentId);
+			var contentType = ContentTypeReflectionCache.Instance.GetTypeFromId(contentId);
 			return new ContentRef(contentType, contentId);
 		}
 

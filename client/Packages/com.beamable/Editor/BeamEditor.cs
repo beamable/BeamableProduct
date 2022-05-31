@@ -6,6 +6,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Assistant;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
@@ -201,6 +202,11 @@ namespace Beamable
 				EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
 				EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
 			}
+
+			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
+			var contentReflectionCache = new ContentTypeReflectionCache();
+			EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
+			EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
 
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
 			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).

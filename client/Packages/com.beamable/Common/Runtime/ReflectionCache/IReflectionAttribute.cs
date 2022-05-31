@@ -65,18 +65,22 @@ namespace Beamable.Common.Reflection
 
 			foreach (var checkMember in members)
 			{
-				var attribute = checkMember.GetCustomAttribute(attributeOfInterest.AttributeType, false);
-				if (attribute != null)
+				var attributes = checkMember.GetCustomAttributes(attributeOfInterest.AttributeType, false);
+				foreach (var attrObj in attributes)
 				{
-					var cast = (IReflectionAttribute)attribute;
-					var result = cast.IsAllowedOnMember(checkMember);
+					var attribute = (Attribute)attrObj;
+					if (attribute != null)
+					{
+						var cast = (IReflectionAttribute)attribute;
+						var result = cast.IsAllowedOnMember(checkMember);
 
-					validationResults.Add(result);
-				}
-				else
-				{
-					var result = validateOnMissing?.Invoke(checkMember);
-					if (result.HasValue) validationResults.Add(result.Value);
+						validationResults.Add(result);
+					}
+					else
+					{
+						var result = validateOnMissing?.Invoke(checkMember);
+						if (result.HasValue) validationResults.Add(result.Value);
+					}
 				}
 			}
 

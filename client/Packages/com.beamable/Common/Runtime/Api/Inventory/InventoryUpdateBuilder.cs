@@ -248,7 +248,7 @@ namespace Beamable.Common.Api.Inventory
 		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder DeleteItem<TContent>(long itemId) where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return DeleteItem(contentId, itemId);
 		}
 
@@ -297,7 +297,7 @@ namespace Beamable.Common.Api.Inventory
 		public InventoryUpdateBuilder UpdateItem<TContent>(long itemId, Dictionary<string, string> properties)
 			where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return UpdateItem(contentId, itemId, properties);
 		}
 
