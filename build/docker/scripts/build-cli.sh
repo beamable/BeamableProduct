@@ -6,7 +6,7 @@ cd ./cli/cli
 echo "printing version"
 echo $VERSION_PREFIX
 echo $VERSION_SUFFIX
-export VERSION_SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
+export SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
 echo $SUFFIX
 unset VERSION
 if [ -z "$SUFFIX" ]
