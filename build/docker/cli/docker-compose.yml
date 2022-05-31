@@ -1,0 +1,10 @@
+---
+version: '3'
+services:
+  cli:
+    build:
+      context: ../../../
+      dockerfile: build/docker/cli/Dockerfile
+    volumes:
+      - ../../../:/Client
+    

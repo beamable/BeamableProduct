@@ -19,7 +19,8 @@ and re-install the new tool with
 dotnet tool install --global --add-source ./nupkg/ cli
 ```
 
-Alternatively, run the `./install.sh` file to do all 3 steps. 
+Alternatively, run the `./install.sh` file to do all 3 steps.
+After you've run the `./install.sh` once, after you make changes, you can use the `./update.sh` script to update your local build.
 
 ## Usage
 After building, you can use `beam` on your CLI.

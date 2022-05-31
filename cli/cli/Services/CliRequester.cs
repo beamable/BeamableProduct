@@ -10,7 +10,6 @@ public class CliRequester : IBeamableRequester
 
 	public CliRequester(IAppContext context)
 	{
-		Console.WriteLine("Cli requester alive with " + context.Cid);
 	}
 
 	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
