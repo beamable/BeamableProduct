@@ -116,10 +116,10 @@ namespace Beamable
 			{
 				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
 			}
-			
+
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
-			
+
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();

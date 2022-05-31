@@ -498,7 +498,7 @@ namespace Beamable
 								deviceIds = new List<string>()
 							}, Requester.AccessToken, true);
 					}
-					
+
 					_connectivityService.OnReconnectOnce(async () =>
 					{
 						// disable the old token, because its bad
