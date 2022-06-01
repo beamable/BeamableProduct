@@ -6,12 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <!--  TODO: Jenkins should update this version string  -->
-    <Version>1.2.0</Version>
+    <PackageId>Beamable.Tools</PackageId>
+    <AssemblyName>Beamable.Tools</AssemblyName>
+    <Authors>Beamable Team</Authors>
+    <Company>Beamable</Company>
+    <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>beam</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +28,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="nupkg" />
   </ItemGroup>
 
 </Project>

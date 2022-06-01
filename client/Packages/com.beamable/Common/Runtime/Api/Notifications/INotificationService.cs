@@ -23,6 +23,12 @@ namespace Beamable.Common.Api.Notifications
 		void Unsubscribe(string name, Action<object> handler);
 
 		/// <summary>
+		/// Unregister all callback handlers for a notification.
+		/// </summary>
+		/// <param name="name">The event name to remove all callback handlers from.</param>
+		void UnsubscribeAll(string name);
+
+		/// <summary>
 		/// Register a callback handler for notifications.
 		/// These callbacks will be triggered anytime an event with same name is sent to the <see cref="Publish"/> method.
 		/// </summary>
@@ -49,6 +55,18 @@ namespace Beamable.Common.Api.Notifications
 		/// <param name="name">The event name to publish</param>
 		/// <param name="payload">The data to to make available to all subscribers</param>
 		void Publish(string name, object payload);
+
+		/// <summary>
+		/// Pause all callback handlers for a notification.
+		/// </summary>
+		/// <param name="name">The event name to pause all callback handlers from.</param>
+		void Pause(string name);
+
+		/// <summary>
+		/// Resume all callback handlers for a notification.
+		/// </summary>
+		/// <param name="name">The event name to resume all callback handlers from.</param>
+		void Resume(string name);
 
 		/// <summary>
 		/// Create a notification channel.
