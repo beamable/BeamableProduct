@@ -207,6 +207,8 @@ namespace Beamable.Content
 
 		private IPlatformService Platform => _provider.GetService<IPlatformService>();
 		private IConnectivityService _connectivityService;
+		private readonly OfflineCache _offlineCache;
+
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 		private static bool _testScopeEnabled;
 
@@ -223,6 +225,7 @@ namespace Beamable.Content
 		private Dictionary<string, ClientContentInfo> cachedManifestInfo;
 
 		private ClientManifest bakedManifest;
+
 		private ClientManifest BakedManifest
 		{
 			get => bakedManifest;
@@ -262,12 +265,13 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IDependencyProvider provider,
-							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
+							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config, OfflineCache offlineCache)
 		{
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
 			FilesystemAccessor = filesystemAccessor;
 			_connectivityService = _provider.GetService<IConnectivityService>();
+			_offlineCache = offlineCache;
 
 			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
@@ -537,12 +541,12 @@ namespace Beamable.Content
 
 		private bool TryGetCachedManifest(string manifestID, out Promise<ClientManifest> promise)
 		{
-			if (!_connectivityService.HasConnectivity)
+			if (!_connectivityService.HasConnectivity && _offlineCache.UseOfflineCache)
 			{
 				string key = $"/basic/content/manifest/public?id={manifestID}";
-				if (OfflineCache.Exists(key, InternalRequester.AccessToken, true))
+				if (_offlineCache.Exists(key, InternalRequester.AccessToken, true))
 				{
-					promise = OfflineCache.Get<ClientManifest>(key, InternalRequester.AccessToken, true);
+					promise = _offlineCache.Get<ClientManifest>(key, InternalRequester.AccessToken, true);
 					promise.Then(manifest =>
 					{
 						if (cachedManifestInfo == null)

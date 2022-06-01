@@ -1,5 +1,6 @@
 #bin/sh
 
-dotnet pack
-dotnet tool uninstall cli -g
-dotnet tool install --global --add-source ./nupkg/ cli
+dotnet pack /p:Version=0.0.0
+dotnet tool uninstall beamable.tools -g || true
+dotnet tool uninstall cli -g || true
+dotnet tool install --global --add-source ./nupkg/ beamable.tools

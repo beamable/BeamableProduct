@@ -281,6 +281,11 @@ namespace Beamable.Microservice.Tests.Socket
             return req => req?.id == id;
         }
 
+        public static TestSocketMessageMatcher WithPositiveReqId()
+        {
+            return req => req?.id > 0;
+        }
+
         public static TestSocketMessageMatcher WithStatus(int status)
         {
             return req => req?.status == status;
@@ -798,7 +803,8 @@ namespace Beamable.Microservice.Tests.Socket
 
         public void SendToClient(string msg)
         {
-            _onMessageCallbacks(this, msg, id++);
+            var next = Interlocked.Increment(ref id);
+            _onMessageCallbacks(this, msg, next);
         }
 
         public void SendToClient<T>(T obj)
@@ -828,8 +834,13 @@ namespace Beamable.Microservice.Tests.Socket
             _onDisconnectionCallbacks?.Invoke(this, false);
         }
 
-        public async void SendMessage(string message)
+        public bool MockIsConnectionOpen = true;
+        public async Promise SendMessage(string message)
         {
+            if (!MockIsConnectionOpen)
+            {
+                throw new Exception("Connection is not open");
+            }
             await HandleRequestWithResponders(message);
         }
 
