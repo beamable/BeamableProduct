@@ -27,11 +27,15 @@ public class App
 		// add global options
 		Services.AddSingleton<DryRunOption>();
 		Services.AddSingleton<CidOption>();
+		Services.AddSingleton<PasswordOption>();
+		Services.AddSingleton<UsernameOption>();
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
 			root.AddOption(provider.GetRequiredService<DryRunOption>());
 			root.AddOption(provider.GetRequiredService<CidOption>());
+			root.AddOption(provider.GetRequiredService<PasswordOption>());
+			root.AddOption(provider.GetRequiredService<UsernameOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
