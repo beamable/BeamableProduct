@@ -14,6 +14,10 @@ docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml build -
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml up --exit-code-from microservice # Runs containers and checks the exit code
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml down # TODO: Ensure that this down command executes
 
+echo "Building CLI build"
+docker-compose --no-ansi -f docker/cli/docker-compose.yml up --build --exit-code-from cli
+docker-compose --no-ansi -f docker/cli/docker-compose.yml down # TODO: Ensure that this down command executes
+
 export BEAMSERVICE_TAG=${ENVIRONMENT}_${VERSION:-0.0.0}
 export LOCAL_REPO_TAG=beamservice:${BEAMSERVICE_TAG}
 export REMOTE_REPO_TAG=beamableinc/${LOCAL_REPO_TAG}

@@ -1251,16 +1251,11 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
                 .AddMessageHandler(
                    MessageMatcher
-                      // .WithReqId(1)
+                      .WithPositiveReqId()
                       .WithStatus(200).WithPayload<string>(n => n == fakeEmail),
                    MessageResponder.NoResponse(),
                    MessageFrequency.Exactly(failureCount)
                 )
-                // .AddMessageHandler(
-                //    MessageMatcher.WithReqId(2).WithStatus(200).WithPayload<string>(n => n == fakeEmail),
-                //    MessageResponder.NoResponse(),
-                //    MessageFrequency.OnlyOnce()
-                // );
                 ;
 
 
