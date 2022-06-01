@@ -8,6 +8,7 @@ namespace Beamable.EasyFeatures.BasicParty
 {
 	public class PlayersListPresenter : MonoBehaviour, PoolableScrollView.IContentProvider
 	{
+		public PoolableScrollView PoolableScrollView;
 		[SerializeField] private PartySlotPresenter _partySlotPrefab;
 		[SerializeField] private PoolableScrollView _scrollView;
 
@@ -15,13 +16,44 @@ namespace Beamable.EasyFeatures.BasicParty
 		private Action<string> _onAcceptButtonClicked;
 		private Action<string> _onAskToLeaveClicked;
 		private Action<string> _onPromoteClicked;
+		private List<PartySlotPresenter.ViewData> _slots;
 
-		public void Setup(Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted)
+		public void Setup(List<PartySlotPresenter.ViewData> slots, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted)
 		{
+			_slots = slots;
 			_scrollView.SetContentProvider(this);
 			_onAcceptButtonClicked = onPlayerAccepted;
 			_onAskToLeaveClicked = onAskedToLeave;
 			_onPromoteClicked = onPromoted;
+			
+			ClearEntries();
+			SpawnEntries();
+		}
+
+		public void ClearEntries()
+		{
+			foreach (PartySlotPresenter slotPresenter in _spawnedEntries)
+			{
+				Destroy(slotPresenter.gameObject);
+			}
+			
+			_spawnedEntries.Clear();
+		}
+
+		public void SpawnEntries()
+		{
+			var items = new List<PoolableScrollView.IItem>();
+			for (var i = 0; i < _slots.Count; i++)
+			{
+				var data = _slots[i];
+				var rankEntryPoolData = new PartySlotPresenter.PoolData
+				{
+					ViewData = data, Index = i, Height = 150.0f // TODO: expose this somewhere in inspector
+				};
+				items.Add(rankEntryPoolData);
+			}
+
+			PoolableScrollView.SetContent(items);
 		}
 
 		public RectTransform Spawn(PoolableScrollView.IItem item, out int order)
@@ -34,7 +66,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			var data = item as PartySlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be PartySlotPresenters");
 
-			spawned.Setup(data.Avatar, data.Name, _onAcceptButtonClicked, _onAskToLeaveClicked, _onPromoteClicked);
+			spawned.Setup(data.ViewData, _onAcceptButtonClicked, _onAskToLeaveClicked, _onPromoteClicked);
 
 			return spawned.GetComponent<RectTransform>();
 		}

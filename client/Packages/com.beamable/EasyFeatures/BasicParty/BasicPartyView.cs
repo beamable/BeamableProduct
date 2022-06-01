@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,7 +9,8 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			bool IsVisible { get; set; }
+			List<PartySlotPresenter.ViewData> SlotsData { get; }
+			bool IsVisible { get; }
 			PartyData PartyData { get; }
 			bool IsPlayerLeader { get; }
 		}
@@ -61,7 +63,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			_invitePlayerButton.onClick.ReplaceOrAddListener(InvitePlayerButtonClicked);
 			_nextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
 			
-			_partyList.Setup(OnPlayerAccepted, OnAskedToLeave, OnPromoted);
+			_partyList.Setup(new List<PartySlotPresenter.ViewData>(), OnPlayerAccepted, OnAskedToLeave, OnPromoted);
 		}
 
 		private void OnPromoted(string id)

@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace Beamable.EasyFeatures.BasicParty
+﻿namespace Beamable.EasyFeatures.BasicParty
 {
 	public enum PartyAccess
 	{
@@ -8,24 +6,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		Public,
 	}
 	
-	public class PartyData : MonoBehaviour
+	public class PartyData
 	{
-		public string PartyId
-		{
-			get;
-			private set;
-		}
-		
-		public PartyAccess Access
-		{
-			get;
-			private set;
-		}
-		
-		public int MaxPlayers
-		{
-			get;
-			private set;
-		}
+		public string PartyId { get; set; }
+
+		public PartyAccess Access { get; set; }
+
+		public int MaxPlayers { get; set; }
 	}
 }

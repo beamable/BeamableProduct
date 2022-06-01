@@ -1,5 +1,5 @@
-﻿using Beamable.Common;
-using Beamable.Common.Dependencies;
+﻿using Beamable.Common.Dependencies;
+using Beamable.EasyFeatures.Components;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,6 +18,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		[SerializeField] private bool _runOnEnable = true;
 		[SerializeField] private BeamableViewGroup _partyViewGroup;
+		public OverlaysController OverlaysController;
 		
 		private BasicPartyPlayerSystem _partyPlayerSystem;
 		private CreatePartyPlayerSystem _createPartyPlayerSystem;
@@ -70,6 +71,28 @@ namespace Beamable.EasyFeatures.BasicParty
 			_joinPartyPlayerSystem = beamContext.ServiceProvider.GetService<JoinPartyPlayerSystem>();
 			
 			OpenView(_currentView);
+		}
+
+		public void OpenPartyView(PartyData party)
+		{
+			_partyPlayerSystem.PartyData = party;
+			OpenView(View.Party);
+		}
+		
+		public void OpenCreatePartyView(string partyId = "")
+		{
+			_createPartyPlayerSystem.PartyId = partyId;
+			OpenView(View.Create);
+		}
+		
+		public void OpenInviteView()
+		{
+			OpenView(View.Invite);
+		}
+		
+		public void OpenJoinView()
+		{
+			OpenView(View.Join);
 		}
 
 		private async void OpenView(View view)

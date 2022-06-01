@@ -16,25 +16,30 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private Button _promoteButton;
 		[SerializeField] private GameObject _expandableButtons;
 
+		public struct ViewData
+		{
+			public string PlayerId;
+			public bool IsReady;
+			public Sprite Avatar;
+		}
+		
 		public class PoolData : PoolableScrollView.IItem
 		{
-			public string Name;
-			public Sprite Avatar;
-
+			public ViewData ViewData { get; set; }
+			public int Index { get; set; }
 			public float Height { get; set; }
 		}
 		
-		public void Setup(Sprite avatarSprite,
-		                  string playerName,
+		public void Setup(ViewData viewData,
 		                  Action<string> onAcceptButton,
 		                  Action<string> onAskToLeaveButton,
 		                  Action<string> onPromoteButton)
 		{
-			_avatarImage.sprite = avatarSprite;
-			_playerNameText.text = playerName;
-			_acceptButton.onClick.AddListener(() => onAcceptButton.Invoke(playerName));
-			_askToLeaveButton.onClick.AddListener(() => onAskToLeaveButton.Invoke(playerName));
-			_promoteButton.onClick.AddListener(() => onPromoteButton.Invoke(playerName));
+			_avatarImage.sprite = viewData.Avatar;
+			_playerNameText.text = viewData.PlayerId;
+			_acceptButton.onClick.AddListener(() => onAcceptButton.Invoke(viewData.PlayerId));
+			_askToLeaveButton.onClick.AddListener(() => onAskToLeaveButton.Invoke(viewData.PlayerId));
+			_promoteButton.onClick.AddListener(() => onPromoteButton.Invoke(viewData.PlayerId));
 		}
 
 		public void ToggleExpand()
