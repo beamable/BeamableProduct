@@ -213,6 +213,7 @@ namespace Beamable
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
+		private OfflineCache _offlineCache;
 
 		#endregion
 
@@ -378,7 +379,8 @@ namespace Beamable
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
 					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>()
+					provider.GetService<IConnectivityService>(),
+					provider.GetService<OfflineCache>()
 				)
 			);
 			builder.AddSingleton<IBeamableApiRequester>(
@@ -415,6 +417,7 @@ namespace Beamable
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
+			_offlineCache = ServiceProvider.GetService<OfflineCache>();
 
 
 		}
@@ -483,13 +486,19 @@ namespace Beamable
 						refresh_token = "offline",
 						expires_in = long.MaxValue - 1
 					});
-					OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me", new User
+
+					if (_offlineCache.UseOfflineCache)
 					{
-						id = Random.Range(int.MinValue, 0),
-						scopes = new List<string>(),
-						thirdPartyAppAssociations = new List<string>(),
-						deviceIds = new List<string>()
-					}, Requester.AccessToken, true);
+						_offlineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me",
+							new User
+							{
+								id = Random.Range(int.MinValue, 0),
+								scopes = new List<string>(),
+								thirdPartyAppAssociations = new List<string>(),
+								deviceIds = new List<string>()
+							}, Requester.AccessToken, true);
+					}
+
 					_connectivityService.OnReconnectOnce(async () =>
 					{
 						// disable the old token, because its bad
