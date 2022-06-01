@@ -1,4 +1,5 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
 using System;
@@ -20,10 +21,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			int SelectedGameTypeIndex { get; set; }
 			int? SelectedLobbyIndex { get; }
 			string NameFilter { get; }
+			string Passcode { get; }
+			int MinPasscodeLength { get; }
 			int CurrentPlayersFilter { get; }
 			int MaxPlayersFilter { get; }
 			List<SimGameType> GameTypes { get; }
 			List<LobbiesListEntryPresenter.ViewData> LobbiesData { get; }
+			void ApplyPasscode(string passcode);
 			void ApplyFilter(string name);
 			void ApplyFilter(string name, int currentPlayers, int maxPlayers);
 			void OnLobbySelected(int? obj);
@@ -41,6 +45,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public GameObject NoLobbiesIndicator;
 		public LobbiesListPresenter LobbiesList;
 		public TMP_InputField FilterField;
+		public TMP_InputField PasscodeField;
 		public Button ClearFilterButton;
 		public Button JoinLobbyButton;
 		public Button BackButton;
@@ -51,7 +56,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public UnityEvent OnJoinLobbyRequestSent;
 		public UnityEvent OnJoinLobbyRequestReceived;
 		public UnityEvent OnBackButtonClicked;
-		
+
 		public Action<string> OnError;
 
 		protected IDependencies System;
@@ -75,13 +80,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected,
 			                  System.SelectedGameTypeIndex);
 
-			FilterField.onEndEdit.ReplaceOrAddListener(OnFilterApplied);
+			FilterField.onValueChanged.ReplaceOrAddListener(OnFilterApplied);
+			PasscodeField.onValueChanged.ReplaceOrAddListener(OnPasscodeEntered);
 			ClearFilterButton.onClick.ReplaceOrAddListener(ClearButtonClicked);
 			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
 			JoinLobbyButton.interactable = System.CanJoinLobby();
 			BackButton.onClick.ReplaceOrAddListener(BackButtonClicked);
 
 			FilterField.SetTextWithoutNotify(System.NameFilter);
+			PasscodeField.SetTextWithoutNotify(System.Passcode);
 
 			LobbiesList.gameObject.SetActive(!System.IsLoading);
 			NoLobbiesIndicator.SetActive(System.LobbiesData.Count == 0 && !System.IsLoading);
@@ -90,7 +97,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			LobbiesList.ClearPooledRankedEntries();
 			LobbiesList.Setup(System.LobbiesData, OnLobbySelected);
 			LobbiesList.RebuildPooledLobbiesEntries();
@@ -106,11 +113,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			catch (Exception e)
 			{
-				OnError?.Invoke(e.Message);
-				// if (e is PlatformRequesterException pre)
-				// {
-				//		OnError?.Invoke(pre.Error.error);
-				// }
+				System.ApplyPasscode(string.Empty);
+				OnLobbySelected(null);
+				await ViewGroup.Enrich();
+				
+				if (e is PlatformRequesterException pre)
+				{
+					OnError?.Invoke(pre.Error.error);
+				}
 			}
 		}
 
@@ -124,7 +134,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OnLobbySelected(null);
 
 			System.SelectedGameTypeIndex = optionId;
-			
+
 			OnGetLobbiesRequestSent?.Invoke();
 			System.IsLoading = true;
 			await ViewGroup.Enrich();
@@ -161,6 +171,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private async void ClearButtonClicked()
 		{
 			System.ApplyFilter(String.Empty);
+			await ViewGroup.Enrich();
+		}
+
+		private async void OnPasscodeEntered(string passcode)
+		{
+			System.ApplyPasscode(passcode);
 			await ViewGroup.Enrich();
 		}
 

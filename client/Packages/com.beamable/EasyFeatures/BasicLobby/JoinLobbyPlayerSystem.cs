@@ -1,7 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Experimental.Api.Lobbies;
-using Codice.Client.Common.Connection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,36 +16,50 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public int SelectedGameTypeIndex { get; set; }
 		public int? SelectedLobbyIndex { get; set; }
 		public string NameFilter { get; set; }
+		public string Passcode { get; set; }
 		public int CurrentPlayersFilter { get; set; }
 		public int MaxPlayersFilter { get; set; }
 		public List<LobbiesListEntryPresenter.ViewData> LobbiesData { get; private set; }
+		public int MinPasscodeLength => 5;
 
 		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesIds = new Dictionary<string, List<string>>();
-		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesNames = new Dictionary<string, List<string>>();
-		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesDescriptions = new Dictionary<string, List<string>>();
-		public readonly Dictionary<string, List<List<LobbyPlayer>>> PerGameTypeLobbiesCurrentPlayers = new Dictionary<string, List<List<LobbyPlayer>>>();
-		public readonly Dictionary<string, List<int>> PerGameTypeLobbiesMaxPlayers = new Dictionary<string, List<int>>();
+
+		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesNames =
+			new Dictionary<string, List<string>>();
+
+		public readonly Dictionary<string, List<string>> PerGameTypeLobbiesDescriptions =
+			new Dictionary<string, List<string>>();
+
+		public readonly Dictionary<string, List<List<LobbyPlayer>>> PerGameTypeLobbiesCurrentPlayers =
+			new Dictionary<string, List<List<LobbyPlayer>>>();
+
+		public readonly Dictionary<string, List<int>>
+			PerGameTypeLobbiesMaxPlayers = new Dictionary<string, List<int>>();
 
 		public virtual SimGameType SelectedGameType => GameTypes[SelectedGameTypeIndex];
 		public virtual string SelectedGameTypeId => SelectedGameType.Id;
 		public virtual IReadOnlyList<string> Ids => PerGameTypeLobbiesIds[SelectedGameTypeId];
 		public virtual IReadOnlyList<string> Names => PerGameTypeLobbiesNames[SelectedGameTypeId];
 		public virtual IReadOnlyList<string> Descriptions => PerGameTypeLobbiesDescriptions[SelectedGameTypeId];
-		public virtual IReadOnlyList<List<LobbyPlayer>> CurrentPlayers => PerGameTypeLobbiesCurrentPlayers[SelectedGameTypeId];
+
+		public virtual IReadOnlyList<List<LobbyPlayer>> CurrentPlayers =>
+			PerGameTypeLobbiesCurrentPlayers[SelectedGameTypeId];
+
 		public virtual IReadOnlyList<int> MaxPlayers => PerGameTypeLobbiesMaxPlayers[SelectedGameTypeId];
 
 		public JoinLobbyPlayerSystem(BeamContext beamContext)
 		{
 			BeamContext = beamContext;
 		}
-		
+
 		public void Setup(List<SimGameType> gameTypes)
 		{
 			GameTypes = gameTypes;
-			
+
 			SelectedGameTypeIndex = 0;
 			SelectedLobbyIndex = null;
 			NameFilter = string.Empty;
+			Passcode = string.Empty;
 		}
 
 		public virtual void RegisterLobbyData(SimGameType gameType,
@@ -64,9 +78,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var descriptions);
 			PerGameTypeLobbiesCurrentPlayers.TryGetValue(gameTypeId, out var currentPlayers);
 			PerGameTypeLobbiesMaxPlayers.TryGetValue(gameTypeId, out var maxPlayers);
-			
+
 			BuildLobbiesClientData(data, ref ids, ref names, ref descriptions, ref currentPlayers, ref maxPlayers);
-			
+
 			if (PerGameTypeLobbiesIds.ContainsKey(gameTypeId))
 			{
 				PerGameTypeLobbiesIds[gameTypeId] = ids;
@@ -75,7 +89,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				PerGameTypeLobbiesIds.Add(gameTypeId, ids);
 			}
-			
+
 			if (PerGameTypeLobbiesNames.ContainsKey(gameTypeId))
 			{
 				PerGameTypeLobbiesNames[gameTypeId] = names;
@@ -84,7 +98,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				PerGameTypeLobbiesNames.Add(gameTypeId, names);
 			}
-			
+
 			if (PerGameTypeLobbiesDescriptions.ContainsKey(gameTypeId))
 			{
 				PerGameTypeLobbiesDescriptions[gameTypeId] = descriptions;
@@ -93,7 +107,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				PerGameTypeLobbiesDescriptions.Add(gameTypeId, descriptions);
 			}
-			
+
 			if (PerGameTypeLobbiesCurrentPlayers.ContainsKey(gameTypeId))
 			{
 				PerGameTypeLobbiesCurrentPlayers[gameTypeId] = currentPlayers;
@@ -102,7 +116,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				PerGameTypeLobbiesCurrentPlayers.Add(gameTypeId, currentPlayers);
 			}
-			
+
 			if (PerGameTypeLobbiesMaxPlayers.ContainsKey(gameTypeId))
 			{
 				PerGameTypeLobbiesMaxPlayers[gameTypeId] = maxPlayers;
@@ -130,13 +144,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 				if (toInit != null) toInit.Clear();
 				else toInit = new List<T>();
 			}
-			
+
 			GuaranteeInitList(ref ids);
 			ids.AddRange(entries.Select(lobby => lobby.lobbyId));
 
 			GuaranteeInitList(ref names);
 			names.AddRange(entries.Select(lobby => lobby.name));
-			
+
 			GuaranteeInitList(ref descriptions);
 			descriptions.AddRange(entries.Select(lobby => lobby.description));
 
@@ -161,24 +175,40 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public void OnLobbySelected(int? lobbyIndex)
 		{
 			SelectedLobbyIndex = lobbyIndex;
+			Passcode = string.Empty;
 		}
 
 		public virtual bool CanJoinLobby()
 		{
+			if (Passcode != String.Empty)
+			{
+				return Passcode.Length >= MinPasscodeLength;
+			}
+
 			if (SelectedLobbyIndex == null)
 			{
 				return false;
 			}
 
 			return LobbiesData[SelectedLobbyIndex.Value].CurrentPlayers <
-				LobbiesData[SelectedLobbyIndex.Value].MaxPlayers;
+			       LobbiesData[SelectedLobbyIndex.Value].MaxPlayers;
 		}
 
 		public async Promise JoinLobby()
 		{
-			if (SelectedLobbyIndex != null)
+			if (Passcode != string.Empty)
 			{
-				await BeamContext.Lobby.Join(LobbiesData[SelectedLobbyIndex.Value].Id);
+				if (Passcode.Length >= MinPasscodeLength)
+				{
+					await BeamContext.Lobby.JoinByPasscode(Passcode);
+				}
+			}
+			else
+			{
+				if (SelectedLobbyIndex != null)
+				{
+					await BeamContext.Lobby.Join(LobbiesData[SelectedLobbyIndex.Value].Id);
+				}
 			}
 		}
 
@@ -186,6 +216,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			LobbyQueryResponse response = await BeamContext.Lobby.FindLobbies();
 			RegisterLobbyData(GameTypes[SelectedGameTypeIndex], response.results);
+		}
+
+		public void ApplyPasscode(string passcode)
+		{
+			Passcode = passcode;
+			SelectedLobbyIndex = null;
 		}
 
 		public void ApplyFilter(string name)
@@ -203,9 +239,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public virtual List<LobbiesListEntryPresenter.ViewData> BuildViewData()
 		{
 			int entriesCount = Names.Count;
-			
+
 			List<LobbiesListEntryPresenter.ViewData> data = new List<LobbiesListEntryPresenter.ViewData>();
-				
+
 			for (int i = 0; i < entriesCount; i++)
 			{
 				data.Add(new LobbiesListEntryPresenter.ViewData
@@ -215,9 +251,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 					Description = Descriptions[i],
 					CurrentPlayers = CurrentPlayers[i].Count,
 					MaxPlayers = MaxPlayers[i]
-				});	
+				});
 			}
-			
+
 			return NameFilter == string.Empty
 				? data
 				: data.Where(entry => entry.Name.Contains(NameFilter)).ToList();
