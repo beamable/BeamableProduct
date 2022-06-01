@@ -4,14 +4,22 @@ using System.Linq;
 using System;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEditor.VspAttribution.Beamable;
 using UnityEngine.TestTools;
+using UnityEditor;
 //using UnityEngine.UI;
 
+using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Tests;
+using Beamable.Editor.Toolbox.UI;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.Components;
+using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
+
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -22,52 +30,11 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Tests.Toolbox
 {
-
-	/*[BeamContextSystem]
-	public class CustomDependencyRegistration
-	{
-		[RegisterBeamableDependencies()]
-		public static void Build(IDependencyBuilder builder)
-		{
-			builder.RemoveIfExists<IToolboxViewService>();
-			builder.AddSingleton<IToolboxViewService, GenerateMockData>(() => GenerateMockData.Instance);
-		}
-	}*/
-
-	public class MToolboxTests
+	public class ToolboxTests
     {
 		public IDependencyProvider provider;
-        // A Test behaves as an ordinary method
-        /*[Test]
-        public void ToolboxViewServiceChecks()
-        {
-			// Use the Assert class to test conditions
 
-			IToolboxViewService Model = provider.GetService<IToolboxViewService>();
-
-			//_model = ActiveContext.ServiceScope.GetService<IToolboxViewService>();
-
-			//GenerateMockData v = new GenerateMockData();
-			//int n = GenerateMockData.Instance.DoSomething(5);
-
-			//int x = 5;
-			//Assert.AreEqual(x, 5);
-			Assert.IsNotNull(Model);
-        }
-
-		[Test]
-		public void ToolboxViewServiceSearchQueryFilterText()
-		{
-			// Use the Assert class to test conditions
-			GenerateMockData v = new GenerateMockData();
-
-			v.SetQuery("Admin");
-			string filter = v.FilterText;
-
-			//int x = 5;
-			Assert.AreEqual("Admin", filter);
-		}*/
-
+		//Test if ticking filter in tags will change the search bar value to tag:{tag}
 		[Test]
 		public void TestQueryTag()
 		{
@@ -85,16 +52,10 @@ namespace Beamable.Editor.Tests.Toolbox
 			button.SendEvent(new ContextClickEvent());
 
 			SearchBarVisualElement searchBar = tb.Q<SearchBarVisualElement>();
-			//Change tag in CategoryDropdownList
-			/*
-			CategoryDropdownList.doSomething();
-			 */
+
 			CategoryDropdownVisualElement content = new CategoryDropdownVisualElement();
-			//content.Refresh(provider);
-			//Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(button.worldBound);
-			//content.Model = tb.Model;
-			//var wnd = BeamablePopupWindow.ShowDropdown("Tags", popupWindowRect, new Vector2(200, 250), content);
-			//content.Refresh();
+
+			//List of all tags in widget source
 			var listRoot = content.Q<VisualElement>("tagList");
 
 			model.SetQueryTag(WidgetTags.FLOW, true);
@@ -106,6 +67,36 @@ namespace Beamable.Editor.Tests.Toolbox
 			Assert.AreEqual(text.value, "tag:flow");
 		}
 
+		//Test how many widgets in toolbox appears when filtered
+		[Test]
+		public void TestFilterToolbox()
+		{
+			VisualElement root;
+			IDependencyBuilder builder = new DependencyBuilder();
+			builder.AddSingleton<IToolboxViewService, MockToolboxViewService>();
+
+			provider = builder.Build();
+
+			IToolboxViewService model = provider.GetService<IToolboxViewService>();
+
+			ToolboxWindow window = new ToolboxWindow();
+			root = window.GetRootVisualContainer();
+			ToolboxActionBarVisualElement tb = root.Q<ToolboxActionBarVisualElement>("actionBarVisualElement");
+			tb.Refresh(provider);
+
+			model.SetQueryTag(WidgetTags.FLOW, true);
+
+			SearchBarVisualElement search = tb.Q<SearchBarVisualElement>();
+			TextField text = search.Q<TextField>();
+
+			ToolboxContentListVisualElement toolboxContent = new ToolboxContentListVisualElement();
+			var gridRoot = toolboxContent.Q<VisualElement>();
+
+			Debug.Log(gridRoot.childCount);
+
+		}
+
+		//Test if dropdown visual elements pops up
 		[Test]
 		public void TestCategoryDropdownVisualElement()
 		{
@@ -121,25 +112,13 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			Button button = tb.Q<Button>("CategoryButton");
 
-			//button.SendEvent(new ContextClickEvent());
-
 			CategoryDropdownVisualElement content = new CategoryDropdownVisualElement();
 			Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(button.worldBound);
 			content.Model = model;
 			var wnd = BeamablePopupWindow.ShowDropdown("Tags", popupWindowRect, new Vector2(200, 250), content);
-			//content.Refresh();
 
 
 			Assert.NotNull(wnd);
 		}
-		// A UnityTest behaves like a coroutine in Play Mode. In Edit Mode you can use
-		// `yield return null;` to skip a frame.
-		/*[UnityTest]
-        public IEnumerator MToolboxTestsWithEnumeratorPasses()
-        {
-            // Use the Assert class to test conditions.
-            // Use yield to skip a frame.
-            yield return null;
-        }*/
 	}
 }
