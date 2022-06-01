@@ -43,6 +43,7 @@ namespace Beamable.Api.Notification
 		Dictionary<string, InGameNotification> inGameNotifications = new Dictionary<string, InGameNotification>();
 		public delegate void InGameNotificationCB(string notificationKey, string message);
 
+		private HashSet<string> pausedHandlers = new HashSet<string>();
 		private Dictionary<string, List<Action<object>>> handlers = new Dictionary<string, List<Action<object>>>();
 		private HashSet<object> typedHandlerObjects = new HashSet<object>();
 
@@ -159,6 +160,18 @@ namespace Beamable.Api.Notification
 			}
 		}
 
+		/// <summary>
+		/// Unregister all callback handlers for push notifications.
+		/// </summary>
+		/// <param name="name">The event name to unsubscribe all callbacks</param>
+		public void UnsubscribeAll(string name)
+		{
+			if (handlers.TryGetValue(name, out var found))
+			{
+				found.Clear();
+			}
+		}
+
 		/// <inheritdoc cref="INotificationService.Unsubscribe{T}(string, Action{T})"/>
 		public void Unsubscribe<T>(string name, Action<T> handler)
 		{
@@ -176,6 +189,9 @@ namespace Beamable.Api.Notification
 		/// <param name="payload">The data to to make available to all subscribers</param>
 		public void Publish(string name, object payload)
 		{
+			if (pausedHandlers.Contains(name))
+				return;
+
 			if (handlers.TryGetValue(name, out var found))
 			{
 				for (var i = found.Count - 1; i > -1; i--)
@@ -183,6 +199,25 @@ namespace Beamable.Api.Notification
 					found[i](payload);
 				}
 			}
+		}
+
+		/// <summary>
+		/// Pause the callbacks for a given notification.
+		/// </summary>
+		/// <param name="name">The event name to pause</param>
+		public void Pause(string name)
+		{
+			pausedHandlers.Add(name);
+		}
+
+		/// <summary>
+		/// Resume the callbacks for a given notification.
+		/// </summary>
+		/// <param name="name">The event name to resume</param>
+		public void Resume(string name)
+		{
+			if (pausedHandlers.Contains(name))
+				pausedHandlers.Remove(name);
 		}
 
 		#region Push notifications

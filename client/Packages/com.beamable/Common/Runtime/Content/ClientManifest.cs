@@ -35,7 +35,7 @@ namespace Beamable.Common.Content
 		/// <returns>A new <see cref="ClientManifest"/></returns>
 		public ClientManifest Filter(ContentQuery query)
 		{
-			return new ClientManifest {entries = entries.Where(e => query.Accept(e)).ToList()};
+			return new ClientManifest { entries = entries.Where(e => query.Accept(e)).ToList() };
 		}
 
 		/// <summary>
@@ -170,7 +170,7 @@ namespace Beamable.Common.Content
 		}
 
 		public static SequencePromise<IContentObject> ResolveAll(this IEnumerable<ClientContentInfo> set,
-		                                                         int batchSize = 50)
+																 int batchSize = 50)
 		{
 			return set.ToContentRefs().ResolveAll(batchSize);
 		}
@@ -200,7 +200,7 @@ namespace Beamable.Common.Content
 				ScanToken();
 			}
 
-			return new ClientManifest {entries = _contentEntries};
+			return new ClientManifest { entries = _contentEntries };
 		}
 
 		private void ScanToken()
@@ -247,7 +247,8 @@ namespace Beamable.Common.Content
 			{
 				_contentEntries.Add(new ClientContentInfo
 				{
-					visibility = ContentVisibility.Public, tags = new string[] { }
+					visibility = ContentVisibility.Public,
+					tags = new string[] { }
 				});
 			}
 
@@ -277,7 +278,7 @@ namespace Beamable.Common.Content
 					if (!string.IsNullOrWhiteSpace(entryValue))
 					{
 						_contentEntries[_currentEntry].tags =
-							entryValue.Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries);
+							entryValue.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 					}
 
 					break;
