@@ -64,14 +64,13 @@ namespace Beamable.Editor.Tests.Toolbox
 			TextField text = search.Q<TextField>();
 
 			Debug.Log(text.value);
-			Assert.AreEqual(text.value, "tag:flow");
+			Assert.AreEqual("tag:flow", text.value);
 		}
 
 		//Test how many widgets in toolbox appears when filtered
 		[Test]
 		public void TestFilterToolbox()
 		{
-			VisualElement root;
 			IDependencyBuilder builder = new DependencyBuilder();
 			builder.AddSingleton<IToolboxViewService, MockToolboxViewService>();
 
@@ -79,21 +78,40 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			IToolboxViewService model = provider.GetService<IToolboxViewService>();
 
-			ToolboxWindow window = new ToolboxWindow();
-			root = window.GetRootVisualContainer();
-			ToolboxActionBarVisualElement tb = root.Q<ToolboxActionBarVisualElement>("actionBarVisualElement");
-			tb.Refresh(provider);
+			ToolboxContentListVisualElement toolboxContent = new ToolboxContentListVisualElement();
+			toolboxContent.Refresh(provider);
 
-			model.SetQueryTag(WidgetTags.FLOW, true);
+			model.SetQueryTag(WidgetTags.ADMIN, true);
 
-			SearchBarVisualElement search = tb.Q<SearchBarVisualElement>();
-			TextField text = search.Q<TextField>();
+			var x = model.GetFilteredWidgets().Count();
+			var filter = toolboxContent.Q("gridContainer");
+			var cnt = filter.childCount;
+
+			Debug.Log(cnt);
+			Assert.AreEqual(1, cnt);
+			//Assert.AreEqual("Admin Flow", filter.ElementAt(0).name);
+		}
+
+		//Test how many widgets in toolbox appears when NOT filtered
+		[Test]
+		public void TestEmptyFilterToolbox()
+		{
+			IDependencyBuilder builder = new DependencyBuilder();
+			builder.AddSingleton<IToolboxViewService, MockToolboxViewService>();
+
+			provider = builder.Build();
+
+			IToolboxViewService model = provider.GetService<IToolboxViewService>();
 
 			ToolboxContentListVisualElement toolboxContent = new ToolboxContentListVisualElement();
-			var gridRoot = toolboxContent.Q<VisualElement>();
+			toolboxContent.Refresh(provider);
 
-			Debug.Log(gridRoot.childCount);
+			var x = model.GetFilteredWidgets().Count();
+			var filter = toolboxContent.Q("gridContainer");
+			var cnt = filter.childCount;
 
+			Debug.Log(cnt);
+			Assert.AreEqual(10, cnt);
 		}
 
 		//Test if dropdown visual elements pops up

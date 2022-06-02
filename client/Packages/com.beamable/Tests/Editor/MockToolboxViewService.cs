@@ -49,7 +49,13 @@ namespace Beamable.Editor.Tests
 
 		public IEnumerable<Widget> GetFilteredWidgets()
 		{
-			throw new NotImplementedException();
+			for (var i = 0; i < WidgetSource.Count; i++)
+			{
+				var widget = WidgetSource.Get(i);
+				if (Query != null && !Query.Accepts(widget)) continue;
+
+				yield return widget;
+			}
 		}
 
 		public void Initialize()
@@ -150,6 +156,7 @@ namespace Beamable.Editor.Tests
 		{
 			//DO NOT USE THIS
 			//WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"BASE_PATH/Models/toolboxData.asset");
+			
 			WidgetSource = new ToolboxMockData();
 			OnWidgetSourceChanged?.Invoke(WidgetSource);
 
@@ -159,9 +166,6 @@ namespace Beamable.Editor.Tests
 				var widget = WidgetSource.Get(i);
 				Debug.Log(widget.Name);
 			}*/
-
-			//come up with different wu=idget source
-			//make new mock class widget source
 		}
 
 		public int DoSomething(int num)
