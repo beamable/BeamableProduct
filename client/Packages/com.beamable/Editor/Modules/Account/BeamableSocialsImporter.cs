@@ -2,15 +2,18 @@ using Beamable.AccountManagement;
 
 namespace Beamable.Editor.Modules.Account
 {
-	public class BeamableFacebookImporter : UnityEditor.AssetModificationProcessor
+	public class BeamableSocialsImporter : UnityEditor.AssetModificationProcessor
 	{
 		public const string BEAMABLE_FACEBOOK = "BEAMABLE_FACEBOOK";
+		public const string BEAMABLE_GPGS = "BEAMABLE_GPGS";
 		private const string ACCOUNT_CONFIG_PATH = "Assets/Beamable/Resources/AccountManagementConfiguration.asset";
 
 		static void EnableFacebook() => PlayerSettingsHelper.EnableFlag(BEAMABLE_FACEBOOK);
 		static void DisableFacebook() => PlayerSettingsHelper.DisableFlag(BEAMABLE_FACEBOOK);
+		static void EnableGooglePlayGames() => PlayerSettingsHelper.EnableFlag(BEAMABLE_GPGS);
+		static void DisableGooglePlayGames() => PlayerSettingsHelper.DisableFlag(BEAMABLE_GPGS);
 
-		static BeamableFacebookImporter()
+		static BeamableSocialsImporter()
 		{
 			try
 			{
@@ -51,6 +54,15 @@ namespace Beamable.Editor.Modules.Account
 			else
 			{
 				DisableFacebook();
+			}
+
+			if (config.GooglePlayGames)
+			{
+				EnableGooglePlayGames();
+			}
+			else
+			{
+				DisableGooglePlayGames();
 			}
 		}
 
