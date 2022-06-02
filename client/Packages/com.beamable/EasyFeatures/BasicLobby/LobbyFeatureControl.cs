@@ -148,11 +148,24 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OpenView(View.CreateLobby);
 		}
 
-		public void OpenLobbyView(Lobby lobby)
+		public void OpenLobbyView()
 		{
-			LobbyPlayerSystem.Setup(lobby.lobbyId, lobby.name, lobby.description, lobby.maxPlayers,
-			                         BeamContext.PlayerId.ToString() == lobby.host, lobby.players);
+			if (BeamContext.Lobby == null)
+			{
+				return;
+			}
+
+			BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+			BeamContext.Lobby.OnUpdated += OnLobbyUpdated;
+			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+				
 			OpenView(View.InsideLobby);
+		}
+
+		private async void OnLobbyUpdated()
+		{
+			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+			await ViewGroup.Enrich();
 		}
 
 		#region IOverlayController
@@ -193,7 +206,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			if (BeamContext.Lobby.State != null)
 			{
 				CreateLobbyPlayerSystem.ResetData();
-				OpenLobbyView(BeamContext.Lobby.State);
+				OpenLobbyView();
 			}
 		}
 
@@ -212,21 +225,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			
 			if (BeamContext.Lobby.State != null)
 			{
-				OpenLobbyView(BeamContext.Lobby.State);
+				OpenLobbyView();
 			}
 		}
 
 		public virtual void GetLobbiesRequestSent()
 		{
 			ShowOverlayedLabel("Getting lobbies...");
-			
-			// _joinLobbyPlayerSystem.IsLoading = true;
-			// await _viewGroup.Enrich();
-			// LobbyQueryResponse response = await BeamContext.Lobby.FindLobbies();
-			// _joinLobbyPlayerSystem.RegisterLobbyData(GameTypes[_joinLobbyPlayerSystem.SelectedGameTypeIndex],
-			//                                          response.results);
-			// _joinLobbyPlayerSystem.IsLoading = false;
-			// await _viewGroup.Enrich();
 		}
 
 		public virtual void GetLobbiesRequestReceived()
@@ -234,6 +239,55 @@ namespace Beamable.EasyFeatures.BasicLobby
 			HideOverlay();
 		}
 
+		#endregion
+		
+		#region InsideLobbyView callbacks
+
+		public void AdminLeaveLobbyRequestSent()
+		{
+			async void ConfirmAction()
+			{
+				ShowOverlayedLabel("Leaving lobby...");
+				await LobbyPlayerSystem.LeaveLobby();
+				LobbyLeft();
+			}
+			
+			ShowConfirmWindow("Leaving lobby", "After leaving lobby it will be closed because You are an admin. Are You sure?", ConfirmAction);
+		}
+
+		public void PlayerLeaveLobbyRequestSent()
+		{
+			ShowOverlayedLabel("Leaving lobby...");
+		}
+
+		public void LobbyLeft()
+		{
+			if (BeamContext.Lobby != null)
+			{
+				BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+			}
+
+			OpenJoinLobbyView();
+			HideOverlay();
+		}
+
+		public void PlayerCardClicked()
+		{
+			if (LobbyPlayerSystem.CurrentlySelectedPlayerIndex == null)
+			{
+				return;
+			}
+			
+			async void ConfirmAction()
+			{
+				ShowOverlayedLabel("Kicking player...");
+				await LobbyPlayerSystem.KickPlayer();
+				HideOverlay();
+			}
+			
+			ShowConfirmWindow("Kick player", "Are You sure You want to kick this player?", ConfirmAction);
+		}
+		
 		#endregion
 	}
 }

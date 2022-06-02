@@ -139,13 +139,13 @@ namespace Beamable.Experimental.Api.Lobbies
 		}
 
 		/// <inheritdoc cref="ILobbyApi.KickPlayer"/>
-		public Promise KickPlayer(string lobbyId, string playerId)
+		public Promise<Lobby> KickPlayer(string lobbyId, string playerId)
 		{
-			return _requester.Request<Unit>(
+			return _requester.Request<Lobby>(
 			  Method.DELETE,
 			  $"/lobbies/{lobbyId}",
 			  new RemoveFromLobbyRequest(playerId)
-			).ToPromise();
+			);
 		}
 	}
 }

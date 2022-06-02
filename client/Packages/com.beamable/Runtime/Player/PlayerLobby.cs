@@ -32,20 +32,21 @@ namespace Beamable.Player
 			get => base.Value;
 			set
 			{
-				if (value != null)
-				{
-					if (_state == null)
-					{
-						_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
-					}
-				}
-				else
-				{
-					if (_state != null)
-					{
-						_notificationService.Unsubscribe(UpdateName(_state.lobbyId), OnRawUpdate);
-					}
-				}
+				// TODO: check if this should be here, probably made mistake while resolving merge conflicts
+				// if (value != null)
+				// {
+				// 	if (_state == null)
+				// 	{
+				// 		_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
+				// 	}
+				// }
+				// else
+				// {
+				// 	if (_state != null)
+				// 	{
+				// 		_notificationService.Unsubscribe(UpdateName(_state.lobbyId), OnRawUpdate);
+				// 	}
+				// }
 
 				if (_state == null)
 				{
@@ -189,6 +190,11 @@ namespace Beamable.Player
 		public async Promise RemoveTags(List<string> tags)
 		{
 			State = await _lobbyApi.RemovePlayerTags(State.lobbyId, tags);
+		}
+
+		public async Promise KickPlayer(string playerId)
+		{
+			State = await _lobbyApi.KickPlayer(State.lobbyId, playerId);
 		}
 
 		/// <summary>

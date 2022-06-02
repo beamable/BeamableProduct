@@ -669,7 +669,7 @@ GameObject:
   - component: {fileID: 6056227907742041070}
   - component: {fileID: 6056227907742041071}
   m_Layer: 5
-  m_Name: LobbiestListEntryPresenter
+  m_Name: LobbiesListEntryPresenter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

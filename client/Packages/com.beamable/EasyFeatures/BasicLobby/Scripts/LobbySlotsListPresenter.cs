@@ -17,23 +17,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private List<LobbySlotPresenter.ViewData> _slots;
 		private bool _isAdmin;
-		private Action<int> _onReadyButtonClicked;
-		private Action<int> _onNotReadyButtonClicked;
 		private Action<int> _onAdminButtonClicked;
 		private readonly List<LobbySlotPresenter> _spawnedSlots = new List<LobbySlotPresenter>();
 
-		public void Setup(List<LobbySlotPresenter.ViewData> slots,
-		                  bool isAdmin,
-		                  Action<int> onReadyButtonClicked,
-		                  Action<int> onNotReadyButtonClicked,
-		                  Action<int> onAdminButtonClicked)
+		public void Setup(List<LobbySlotPresenter.ViewData> slots, bool isAdmin, Action<int> onAdminButtonClicked)
 		{
 			PoolableScrollView.SetContentProvider(this);
 
 			_slots = slots;
 			_isAdmin = isAdmin;
-			_onReadyButtonClicked = onReadyButtonClicked;
-			_onNotReadyButtonClicked = onNotReadyButtonClicked;
 			_onAdminButtonClicked = onAdminButtonClicked;
 		}
 		
@@ -79,14 +71,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			if (poolData.ViewData.PlayerId != String.Empty) // Temporarily Name is set to playerId
 			{
 				spawned.SetupFilled(poolData.ViewData.PlayerId, poolData.ViewData.IsReady, _isAdmin,
-				                    () =>
-				                    {
-					                    _onReadyButtonClicked.Invoke(poolData.Index);
-				                    },
-				                    () =>
-				                    {
-					                    _onNotReadyButtonClicked.Invoke(poolData.Index);  
-				                    },
 				                    () =>
 				                    {
 					                    _onAdminButtonClicked.Invoke(poolData.Index);

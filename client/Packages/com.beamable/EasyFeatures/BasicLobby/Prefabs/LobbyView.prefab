@@ -1002,6 +1002,16 @@ MonoBehaviour:
       _data:
         keys: []
         values: []
+    _playerLobby:
+      _data:
+        lobbyId: 
+        name: 
+        description: 
+        restriction: 
+        host: 
+        players: []
+        passcode: 
+        maxPlayers: 0
 --- !u!114 &1188065237752030579
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6776,7 +6786,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnrichOrder: 0
-  FeatureControl: {fileID: 1188065237752030573}
   Name: {fileID: 1188065238205655801}
   Counter: {fileID: 1960714245594212628}
   LobbySlotsList: {fileID: 4093501080789288833}
@@ -6786,6 +6795,62 @@ MonoBehaviour:
   WaitingButton: {fileID: 1188065238002404907}
   StartButton: {fileID: 1188065238450723740}
   LeaveButton: {fileID: 1188065237743201433}
+  OnAdminLeaveLobbyRequestSent:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: AdminLeaveLobbyRequestSent
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnPlayerLeaveLobbyRequestSent:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: PlayerLeaveLobbyRequestSent
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnLobbyLeft:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: LobbyLeft
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnPlayerCardClicked:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: PlayerCardClicked
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1188065239306523263
 MonoBehaviour:
   m_ObjectHideFlags: 0

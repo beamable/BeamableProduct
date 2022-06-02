@@ -25,8 +25,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public GameObject Filled;
 		public GameObject Empty;
 		public TextMeshProUGUI Name;
-		public Button ReadyButton;
-		public Button NotReadyButton;
+		public GameObject ReadyButton;
+		public GameObject NotReadyButton;
 		public Button AdminButton;
 
 		public void SetupEmpty()
@@ -35,14 +35,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Filled.SetActive(false);
 		}
 		
-		public void SetupFilled(string playerName, bool isReady, bool isAdmin, Action onReadyButtonClicked, Action onNotReadyButtonClicked, Action onAdminButtonClicked)
+		public void SetupFilled(string playerName, bool isReady, bool isAdmin, Action onAdminButtonClicked)
 		{
 			Name.text = playerName;
 			
-			ReadyButton.onClick.ReplaceOrAddListener(onReadyButtonClicked.Invoke);
 			ReadyButton.gameObject.SetActive(isReady);
-			
-			NotReadyButton.onClick.ReplaceOrAddListener(onNotReadyButtonClicked.Invoke);
 			NotReadyButton.gameObject.SetActive(!isReady);
 
 			AdminButton.onClick.ReplaceOrAddListener(onAdminButtonClicked.Invoke);

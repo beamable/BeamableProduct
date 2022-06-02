@@ -109,6 +109,6 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// </summary>
 		/// <param name="lobbyId">The id of the <see cref="Lobby"/>.</param>
 		/// <param name="playerId">The id of the player to remove.</param>
-		Promise KickPlayer(string lobbyId, string playerId);
+		Promise<Lobby> KickPlayer(string lobbyId, string playerId);
 	}
 }
