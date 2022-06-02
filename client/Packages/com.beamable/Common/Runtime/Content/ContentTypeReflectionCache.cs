@@ -113,11 +113,11 @@ namespace Beamable.Common.Content
 					_hintStorage.AddOrReplaceHint(hint, errors);
 				}
 
-				formerContentTypeAttributePairs.AddRange(valid.Select(a => a.Pair));
+				formerContentTypeAttributePairs.AddRange(valid.Where(a => a.Pair.Attribute != null).Select(a => a.Pair));
 			}
 			// Quick hack to "fake" the ContentFormerlySerializedAttribute is a ContentType Attribute --- easy and simple way to verify name collisions is to pretend they are of the same type.
 			var typeConversionOfAttributes = formerContentTypeAttributePairs
-				.ConvertAll(input => new MemberAttribute(input.Info, new ContentTypeAttribute(input.AttrAs<ContentFormerlySerializedAsAttribute>().OldTypeName)));
+				.Select(input => new MemberAttribute(input.Info, new ContentTypeAttribute(input.AttrAs<ContentFormerlySerializedAsAttribute>().OldTypeName)));
 
 			// Check if no name collisions happened ---- TODO: There's most definitely a better way to do this...
 			var mappings = contentTypeAttributePairs.Union(typeConversionOfAttributes).ToList();
