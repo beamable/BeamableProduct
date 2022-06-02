@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.EasyFeatures.BasicLogin.Scripts;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -13,7 +14,7 @@ namespace Beamable.EasyFeatures.BasicLogin
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicLoginSystem,
-				BasicLoginView.ILoginDeps>();
+				ILoginDeps>();
 		}
 
 
@@ -21,6 +22,11 @@ namespace Beamable.EasyFeatures.BasicLogin
 		private bool _runOnEnable = true;
 
 		public BeamableViewGroup LoginViewGroup;
+
+		public HomePageView HomePageView;
+		public SwitchPageView SwitchPageView;
+
+		public MonoBehaviour[] MainPageViews => new MonoBehaviour[] {HomePageView, SwitchPageView};
 
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups  { get => new[] { LoginViewGroup }; set => LoginViewGroup = value.FirstOrDefault(); }
 		public bool RunOnEnable => _runOnEnable;
@@ -40,15 +46,43 @@ namespace Beamable.EasyFeatures.BasicLogin
 
 			// TODO: Enter loading state.
 
-			await RefreshView();
+			await RebuildView();
 		}
 
-		public virtual async Promise RefreshView()
+
+		public virtual async Promise RebuildView()
 		{
 			var ctx = LoginViewGroup.AllPlayerContexts.GetSinglePlayerContext();
 			var system = ctx.ServiceProvider.GetService<BasicLoginSystem>();
 			await system.RefreshData();
-			await LoginViewGroup.EnrichWithPlayerCodes();
+			ResolveView();
+		}
+
+
+		public virtual void ResolveView()
+		{
+			// based on the state, enable the right view.
+			var ctx = LoginViewGroup.AllPlayerContexts.GetSinglePlayerContext();
+			var viewDeps = ctx.ServiceProvider.GetService<ILoginDeps>();
+
+			if (viewDeps.AvailableSwitch.HasValue)
+			{
+				SelectView(SwitchPageView);
+				return;
+			}
+
+			SelectView(HomePageView);
+		}
+
+		protected virtual void SelectView(MonoBehaviour view)
+		{
+			foreach (var page in MainPageViews)
+			{
+				if (view == page) continue;
+				page.gameObject.SetActive(false);
+			}
+			view.gameObject.SetActive(true);
+			LoginViewGroup.EnrichWithPlayerCodes();
 		}
 	}
 }
