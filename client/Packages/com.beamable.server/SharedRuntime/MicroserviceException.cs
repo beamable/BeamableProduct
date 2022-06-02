@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using System;
 using System.Collections.Generic;
 
 namespace Beamable.Server
@@ -17,10 +18,29 @@ namespace Beamable.Server
 		}
 	}
 
+	public class SocketClosedException : MicroserviceException
+	{
+		public List<Exception> FailedAttemptExceptions { get; }
+
+		public SocketClosedException(List<Exception> failedAttemptExceptions) : base(500, "socket", "the socket is closed. Too many retries have happened, and the message cannot be sent.")
+		{
+			FailedAttemptExceptions = failedAttemptExceptions;
+		}
+	}
+
 	public class MissingScopesException : MicroserviceException
 	{
 		public MissingScopesException(IEnumerable<string> currentScopes)
 		: base(403, "invalidScopes", $"The scopes [{string.Join(",", currentScopes)}] aren't sufficient for the request.")
+		{
+
+		}
+	}
+
+	public class UnauthorizedUserException : MicroserviceException
+	{
+		public UnauthorizedUserException(string methodPath)
+			: base(401, "unauthorizedUser", $"The request to [{methodPath}] requires an authenticated user.")
 		{
 
 		}

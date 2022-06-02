@@ -2,6 +2,7 @@
 using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Beamable
@@ -15,6 +16,11 @@ namespace Beamable
 			if (texture != null)
 				rawImage.texture = texture;
 			return rawImage;
+		}
+		public static void ReplaceOrAddListener<T0>(this UnityEvent<T0> eventBase, UnityAction<T0> action)
+		{
+			eventBase.RemoveListener(action);
+			eventBase.AddListener(action);
 		}
 	}
 }

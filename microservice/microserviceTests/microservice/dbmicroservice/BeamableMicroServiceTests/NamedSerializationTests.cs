@@ -41,7 +41,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<NamedSerializationMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Add", 1, 0, new
+         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Add", 1, 1, new
          {
             a = 1,
             b = 2
@@ -74,7 +74,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<NamedSerializationMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Add", 1, 0, new
+         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Add", 1, 1, new
          {
             a = 1,
             c = 2 // c does not exist
@@ -108,7 +108,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<NamedSerializationMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "IsTrue", 1, 0, new
+         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "IsTrue", 1, 1, new
          {
             notX = true
          }));
@@ -142,7 +142,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<NamedSerializationMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Sum", 1, 0, new
+         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Sum", 1, 1, new
          {
             arr = new int[]{1,2,3}
          }));
@@ -175,7 +175,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<NamedSerializationMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Sum", 1, 0, new IntArrayBody()));
+         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "Sum", 1, 1, new IntArrayBody()));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -210,7 +210,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<NamedSerializationMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "ComplexInput", 1, 0, new
+         testSocket.SendToClient(ClientRequest.ClientCallableNamed("micro_named", "ComplexInput", 1, 1, new
          {
             xy = new {
                X = 1,

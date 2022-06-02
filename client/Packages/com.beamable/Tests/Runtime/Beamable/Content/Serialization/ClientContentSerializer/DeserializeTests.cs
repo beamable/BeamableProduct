@@ -422,6 +422,33 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		}
 
 		[Test]
+		public void PropertyColor()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""Color"": {
+         ""data"": {
+            ""r"":1,
+            ""g"":0,
+            ""b"":0,
+            ""a"":1
+         }
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<PropertyColorContent>(json);
+
+			Assert.AreEqual(1, o.Color.r);
+			Assert.AreEqual(0, o.Color.g);
+			Assert.AreEqual(0, o.Color.b);
+			Assert.AreEqual(1, o.Color.a);
+		}
+
+		[Test]
 		public void Ref_Legacy()
 		{
 			var json = @"{
@@ -521,6 +548,26 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.AreEqual("primitive.foo", o.link.GetId());
 			Assert.AreEqual(true, o.link.WasCreated);
+		}
+
+		[Test]
+		public void RefFromLink()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""link"": {
+         ""$link"": ""primitive.foo""
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<LinkRefContent>(json);
+
+			Assert.AreEqual("primitive.foo", o.link.GetId());
+			Assert.AreEqual(false, string.IsNullOrEmpty(o.link.Id));
 		}
 
 		[Test]
@@ -1058,6 +1105,12 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			public Color color;
 		}
 
+		class PropertyColorContent : TestContentObject
+		{
+			[field: SerializeField]
+			public Color Color { get; set; }
+		}
+
 		class PrimitiveRef : TestContentRef<TestContent> { }
 
 		class PrimitiveLink : TestContentLink<TestContent> { }
@@ -1100,6 +1153,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		class LinkContent : TestContentObject
 		{
 			public PrimitiveLink link;
+		}
+
+		class LinkRefContent : TestContentObject
+		{
+			public PrimitiveRef link;
 		}
 
 		class LinkArrayContent : TestContentObject

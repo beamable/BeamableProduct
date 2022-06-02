@@ -79,39 +79,153 @@ namespace Beamable
 		/// Access the <see cref="IAuthService"/> for this player instance.
 		/// </summary>
 		IAuthService AuthService { get; }
+
+		/// <summary>
+		/// Access the <see cref="CloudSavingService"/> for this player instance.
+		/// </summary>
 		CloudSavingService CloudSavingService { get; }
+
+		/// <summary>
+		/// Access the <see cref="ContentService"/> for this player instance.
+		/// </summary>
 		ContentService ContentService { get; }
+
+		/// <summary>
+		/// Access the <see cref="InventoryService"/> for this player instance.
+		/// </summary>
 		InventoryService InventoryService { get; }
+
+		/// <summary>
+		/// Access the <see cref="LeaderboardService"/> for this player instance.
+		/// </summary>
 		LeaderboardService LeaderboardService { get; }
+
+		/// <summary>
+		/// Access the <see cref="IBeamableRequester"/> for this player instance.
+		/// </summary>
 		IBeamableRequester Requester { get; }
+
+		/// <summary>
+		/// Access the <see cref="StatsService"/> for this player instance.
+		/// </summary>
 		StatsService StatsService { get; }
 
 		[Obsolete("Use " + nameof(StatsService) + " instead.")]
 		StatsService Stats { get; }
 
+		/// <summary>
+		/// Access the <see cref="SessionService"/> for this player instance.
+		/// </summary>
 		SessionService SessionService { get; }
+
+		/// <summary>
+		/// Access the <see cref="IAnalyticsTracker"/> for this player instance.
+		/// </summary>
 		IAnalyticsTracker AnalyticsTracker { get; }
+
+		/// <summary>
+		/// Access the <see cref="MailService"/> for this player instance.
+		/// </summary>
 		MailService MailService { get; }
+
+		/// <summary>
+		/// Access the <see cref="PushService"/> for this player instance.
+		/// </summary>
 		PushService PushService { get; }
+
+		/// <summary>
+		/// Access the <see cref="CommerceService"/> for this player instance.
+		/// </summary>
 		CommerceService CommerceService { get; }
+
+		/// <summary>
+		/// Access the <see cref="PaymentService"/> for this player instance.
+		/// </summary>
 		PaymentService PaymentService { get; }
+
+		/// <summary>
+		/// Access the <see cref="GroupsService"/> for this player instance.
+		/// </summary>
 		GroupsService GroupsService { get; }
+
+		/// <summary>
+		/// Access the <see cref="EventsService"/> for this player instance.
+		/// </summary>
 		EventsService EventsService { get; }
+
+		/// <summary>
+		/// A <see cref="Promise{IBeamablePurchaser}"/> that contains the <see cref="IBeamablePurchaser"/>.
+		/// If UNITY_IAP has been enabled, this promise will complete and grant an instance of the <see cref="IBeamablePurchaser"/>
+		/// to use to make purchase.
+		/// </summary>
 		Promise<IBeamablePurchaser> BeamableIAP { get; }
+
+		/// <summary>
+		/// Access the <see cref="IConnectivityService"/> for this player instance.
+		/// </summary>
 		IConnectivityService ConnectivityService { get; }
+
+		/// <summary>
+		/// Access the <see cref="INotificationService"/> for this player instance.
+		/// </summary>
 		INotificationService NotificationService { get; }
+
+		/// <summary>
+		/// Access the <see cref="ITournamentApi"/> for this player instance.
+		/// </summary>
 		ITournamentApi TournamentsService { get; }
+
+		/// <summary>
+		/// Access the <see cref="ICloudDataApi"/> for this player instance.
+		/// </summary>
 		ICloudDataApi TrialDataService { get; }
 
+		/// <summary>
+		/// Obsolete, please use the <see cref="TournamentsService"/> property instead.
+		/// </summary>
 		[Obsolete("Use " + nameof(TournamentsService) + " instead.")]
 		ITournamentApi Tournaments { get; }
 
+		/// <summary>
+		/// Access the <see cref="ISdkEventService"/> for this player instance.
+		/// </summary>
 		ISdkEventService SdkEventService { get; }
 
+		/// <summary>
+		/// Given a <see cref="User"/>, update the authorized user for this player instance.
+		/// This will trigger the <see cref="OnUserChanged"/> event.
+		/// </summary>
+		/// <param name="user">A <see cref="User"/></param>
 		void UpdateUserData(User user);
+
+		/// <summary>
+		/// Get a user of <see cref="UserBundle"/> objects that represent stored <see cref="User"/>s on the current device,
+		///  but that aren't the <i>active</i> player.
+		/// When a player manages multiple <see cref="User"/>s on one device, the <see cref="IAccessToken"/>s for the other users
+		///  are stored on the device.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> containing a set of <see cref="UserBundle"/>s representing other stored users available on the device.</returns>
 		Promise<ISet<UserBundle>> GetDeviceUsers();
+
+		/// <summary>
+		/// Remove a stored <see cref="UserBundle"/> from the stored device users.
+		/// When a player manages multiple <see cref="User"/>s on one device, the <see cref="IAccessToken"/>s for the other users
+		///  are stored on the device.
+		/// </summary>
+		/// <param name="token">A valid <see cref="TokenResponse"/> for the player to remove. </param>
 		void RemoveDeviceUser(TokenResponse token);
+
+		/// <summary>
+		/// Remove all stored <see cref="UserBundle"/>s from the device.
+		/// </summary>
 		void ClearDeviceUsers();
+
+		/// <summary>
+		/// Given a <see cref="TokenResponse"/>, update the authorized user for this player instance.
+		/// This will trigger the logging out event, the reload user, and the logging in event.
+		/// </summary>
+		/// <param name="response">A valid <see cref="TokenResponse"/>. The tokens will be the identify for the new user.</param>
+		/// <returns>A <see cref="Promise"/> representing when the update has finished.</returns>
 		Promise<Unit> ApplyToken(TokenResponse response);
 	}
 

@@ -1,0 +1,20 @@
+name: Docs Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      s3Dest:
+        description: 'The S3 output directory. Should be "DEV", or a semantic version, like "1.1.2".'     
+        required: true
+        default: 'DEV'
+        type: string
+
+jobs:
+  doxygen:
+    uses: Beamable/BeamableProduct/.github/workflows/docsCommon.yml@main
+    with:
+      s3Dest: ${{ github.event.inputs.s3Dest }}
+    secrets:
+      AWS_KEY_ID: ${{secrets.AWS_KEY_ID}}
+      AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+      S3_DOCS_BUCKET: ${{secrets.S3_DOCS_BUCKET}}

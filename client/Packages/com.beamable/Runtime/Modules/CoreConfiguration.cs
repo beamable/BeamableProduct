@@ -42,8 +42,8 @@ namespace Beamable
 		public bool PreventCodeStripping = true;
 
 		[Tooltip("by default, Beamable won't let Unity Addressables code files be stripped form the project on build. " +
-		         "When this setting is enabled, anything the project is built, a link.xml file will be generated in the Assets/beamable/Resources/AddressableLinker " +
-		         "folder. If you disable this setting, the link file won't be generated. However, any existing link file won't be deleted. ")]
+				 "When this setting is enabled, anything the project is built, a link.xml file will be generated in the Assets/beamable/Resources/AddressableLinker " +
+				 "folder. If you disable this setting, the link file won't be generated. However, any existing link file won't be deleted. ")]
 		public bool PreventAddressableCodeStripping = true;
 
 		public static CoreConfiguration Instance => Get<CoreConfiguration>();
@@ -75,6 +75,9 @@ namespace Beamable
 				 "EnableInfiniteContextRetries, the OnReady promise will either throw an error, or the last " +
 				 "value in the ContextRetryDelays array will be used forever.")]
 		public double[] ContextRetryDelays = new double[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
+
+		[Tooltip("It allows to globally enable/disable offline cache.")]
+		public bool UseOfflineCache = true;
 
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +

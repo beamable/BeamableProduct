@@ -47,8 +47,6 @@ namespace Beamable.Editor.Microservice.UI
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
 
-		private static readonly Vector2 MIN_SIZE = new Vector2(450, 200);
-
 		private VisualElement _windowRoot;
 		private ActionBarVisualElement _actionBarVisualElement;
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
@@ -72,10 +70,12 @@ namespace Beamable.Editor.Microservice.UI
 
 		protected override async void Build()
 		{
+			minSize = new Vector2(550, 200);
+
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;
 
-			void OnUserChange(EditorUser _) => _microserviceContentVisualElement?.Refresh();
+			void OnUserChange(EditorUser _) => BuildWithContext();
 			void OnRealmChange(RealmView _) => _microserviceContentVisualElement?.StopAllServices(true, RealmSwitchDialog.TITLE, RealmSwitchDialog.MESSAGE, RealmSwitchDialog.OK);
 
 			ActiveContext.OnUserChange -= OnUserChange;
@@ -84,11 +84,6 @@ namespace Beamable.Editor.Microservice.UI
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
 
-			Debug.Log("C#MS WINDOW BUILD!!!!!!");
-
-			// Set the min size for the window
-			minSize = MIN_SIZE;
-
 			// Create/Get the Model instance
 			// TODO: move this into the ActiveContext as a standalone system and remove all visual stuff from the model
 			if (Model == null)
@@ -96,20 +91,22 @@ namespace Beamable.Editor.Microservice.UI
 			else
 				MicroservicesDataModel.Instance = Model;
 
-			// Set up the visuals for this window
+			SetForContent();
+		}
+
+		private void SetForContent()
+		{
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 
-			if (_windowRoot == null)
-			{
-				var uiAsset =
-					AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
-				_windowRoot = uiAsset.CloneTree();
-				_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
-				_windowRoot.name = nameof(_windowRoot);
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
+			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement();
 
-				root.Add(_windowRoot);
-			}
+			root.Add(_windowRoot);
 
 			bool localServicesAvailable = Model?.AllLocalServices != null;
 			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;

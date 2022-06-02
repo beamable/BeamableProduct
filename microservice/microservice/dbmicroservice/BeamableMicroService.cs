@@ -130,6 +130,7 @@ namespace Beamable.Server
 
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
+      private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -186,6 +187,7 @@ namespace Beamable.Server
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
          _mongoSerializationService = new MongoSerializationService();
+         _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
          _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver);
          ContentApi.Instance.CompleteSuccess(_contentService);
          InitServices();
@@ -553,7 +555,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
-               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
@@ -655,8 +657,7 @@ namespace Beamable.Server
             var parameterProvider = new AdaptiveParameterProvider(ctx);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
             BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(responseJson);
+            await _socketRequesterContext.SendMessageSafely(responseJson);
             // TODO: Kill Scope
          }
          catch (MicroserviceException ex)
@@ -670,27 +671,46 @@ namespace Beamable.Server
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
             BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", ex.GetType().Name, ex.Message,
                ex.Source, failResponseJson, ex.StackTrace);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(failResponseJson);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
          catch (TargetInvocationException ex)
          {
             var inner = ex.InnerException;
-            BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", inner.GetType().Name,
-               inner.Message,
-               inner.Source, inner.StackTrace);
-            var failResponse = new GatewayResponse
+            var failResponse = new GatewayResponse()
             {
                id = ctx.Id,
-               status = 500,
-               body = new ClientResponse
-               {
-                  payload = ""
-               }
             };
-            var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(failResponseJson);
+
+            string failResponseJson;
+
+            if (inner is MicroserviceException msException)
+            {
+               failResponse.status = msException.ResponseStatus;
+               failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
+
+               failResponseJson = JsonConvert.SerializeObject(failResponse);
+               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", msException.GetType().Name, msException.Message,
+                  msException.Source, failResponseJson, msException.StackTrace);
+            }
+            else
+            {
+               failResponse = new GatewayResponse
+               {
+                  id = ctx.Id,
+                  status = 500,
+                  body = new ClientResponse
+                  {
+                     payload = ""
+                  }
+               };
+
+               failResponseJson = JsonConvert.SerializeObject(failResponse);
+               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", inner.GetType().Name,
+                  inner.Message,
+                  inner.Source, inner.StackTrace);
+            }
+
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
          catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
          {
@@ -712,8 +732,7 @@ namespace Beamable.Server
                }
             };
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(failResponseJson);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
       }
 

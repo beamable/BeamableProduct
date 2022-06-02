@@ -74,7 +74,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 1, 0, 1, 2));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 1, 1, 1, 2));
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -103,7 +103,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "AdminOnly", 1, 0));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "AdminOnly", 1, 1));
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -132,7 +132,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallableWithScopes("micro_sample", "AdminOnly", 1, 0, new[] { "*" }));
+            testSocket.SendToClient(ClientRequest.ClientCallableWithScopes("micro_sample", "AdminOnly", 1, 1, new[] { "*" }));
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -161,7 +161,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallableWithScopes("micro_sample", "AdminOnly", 1, 0, new[] { "someScope", "extra" }));
+            testSocket.SendToClient(ClientRequest.ClientCallableWithScopes("micro_sample", "AdminOnly", 1, 1, new[] { "someScope", "extra" }));
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -254,7 +254,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                     {
                         Assert.Fail("Not the right socket..");
                     }
-                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "InventoryTest", index, 0,
+                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "InventoryTest", index, 1,
                    new ItemRef("items.test")));
                 }));
             }
@@ -367,7 +367,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
                     var leaderboardRef = new LeaderboardRef();
                     leaderboardRef.SetId("leaderboards.New_LeaderboardContent");
-                    testSocket.SendToClient(ClientRequest.ClientCallableWithScopes("micro_sample", "LeaderboardCreateTest", index, 0, new[] { "*" },
+                    testSocket.SendToClient(ClientRequest.ClientCallableWithScopes("micro_sample", "LeaderboardCreateTest", index, 1, new[] { "*" },
                    $"leaderboards.New_LeaderboardContent_{index}",
                    leaderboardRef));
                 }));
@@ -409,7 +409,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                         Assert.Fail("Not the right socket..");
                     }
 
-                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserViaAccessToken", index, 0, new TokenResponse()));
+                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserViaAccessToken", index, 1, new TokenResponse()));
                 }));
             }
 
@@ -514,7 +514,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 0, "content.abc"));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 1, "content.abc"));
 
             // send content changed notification...
             testSocket.SendToClient(ClientRequest.Event("content.manifest", 3, new { }));
@@ -602,7 +602,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 0, "content.abc"));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 1, "content.abc"));
 
             // send content changed notification...
             testSocket.SendToClient(ClientRequest.Event("content.manifest", 3, new { }));
@@ -690,7 +690,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await startUpTask;
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 0, "content.abc"));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 1, "content.abc"));
 
 
             // simulate shutdown event...
@@ -729,7 +729,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 0, "content.abc"));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetContent", 1, 1, "content.abc"));
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -778,7 +778,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 1, 0, 1, 2));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 1, 1, 1, 2));
 
             // simulate connection drop.
             Assert.IsTrue(testSocket.AllMocksCalled());
@@ -827,13 +827,13 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 1, 0, 1, 2));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 1, 1, 1, 2));
 
             // simulate connection drop.
             Assert.IsTrue(testSocket.AllMocksCalled());
             testSocket.Fault();
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 2, 0, 1, 2));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Add", 2, 1, 1, 2));
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -876,7 +876,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Delay", 1, 0, 500));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Delay", 1, 1, 500));
 
             // simulate connection drop.
             Assert.IsTrue(testSocket.AllMocksCalled());
@@ -927,7 +927,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 0, dbid));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 1, dbid));
 
             // wait for a hot second...
             await Task.Delay(50);
@@ -1096,7 +1096,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 0, dbid));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 1, dbid));
 
             // wait for a hot second...
             await Task.Delay(50);
@@ -1144,7 +1144,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 0, dbid));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 1, dbid));
 
             // wait for a hot second...
             await Task.Delay(50);
@@ -1153,7 +1153,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             // this request should be ignored...
             // also, Thorium should never send it, so this is a bit of defensive programming.
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 0, dbid));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 1, dbid));
             await shutdownTask;
 
             Assert.IsTrue(testSocket.AllMocksCalled());
@@ -1200,7 +1200,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 0, dbid));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 1, dbid));
 
             await ms.OnShutdown(this, null);
             Assert.IsTrue(testSocket.AllMocksCalled());
@@ -1251,16 +1251,11 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
                 .AddMessageHandler(
                    MessageMatcher
-                      // .WithReqId(1)
+                      .WithPositiveReqId()
                       .WithStatus(200).WithPayload<string>(n => n == fakeEmail),
                    MessageResponder.NoResponse(),
                    MessageFrequency.Exactly(failureCount)
                 )
-                // .AddMessageHandler(
-                //    MessageMatcher.WithReqId(2).WithStatus(200).WithPayload<string>(n => n == fakeEmail),
-                //    MessageResponder.NoResponse(),
-                //    MessageFrequency.OnlyOnce()
-                // );
                 ;
 
 
@@ -1274,7 +1269,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 tasks.Add(Task.Run(() =>
                 {
-                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", i + 1, 0, dbid));
+                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", i + 1, 1, dbid));
                 }));
             }
 
@@ -1336,9 +1331,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 0, dbid));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, dbid, dbid));
             await Task.Delay(nonceDelay + 10); // simulate a bit of time, while the original auth message is out...
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 0, dbid));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, dbid, dbid));
 
             await ms.OnShutdown(this, null);
             Assert.IsTrue(testSocket.AllMocksCalled());

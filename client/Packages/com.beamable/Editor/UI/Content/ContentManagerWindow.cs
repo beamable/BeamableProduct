@@ -61,27 +61,23 @@ namespace Beamable.Editor.Content
 			if (ActiveContext == null) return;
 
 			_actionBarVisualElement?.RefreshPublishDropdownVisibility();
-			_explorerElement?.RefreshManifestButton();
 		}
 
 
 		protected override void Build()
 		{
-			Debug.Log("CONTENT MANAGER WINDOW BUILD!!!!!!");
-
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += HandleUserChange;
 			ActiveContext.OnRealmChange += HandleRealmChange;
 			ContentIO.OnManifestChanged += OnManifestChanged;
 
-			minSize = new Vector2(560, 300);
+			minSize = new Vector2(600, 300);
 
 			Refresh();
 		}
 
 		private void OnDisable()
 		{
-			Debug.Log("CONTENT MANAGER WINDOW DISABLE!!!!!!!");
 			if (ActiveContext == null) return;
 
 			ActiveContext.OnUserChange -= HandleUserChange;
@@ -89,10 +85,9 @@ namespace Beamable.Editor.Content
 			ContentIO.OnManifestChanged -= OnManifestChanged;
 		}
 
-		private void HandleRealmChange(RealmView realm) => Refresh();
+		private void HandleRealmChange(RealmView realm) => EditorApplication.delayCall += Refresh;
 		private void HandleUserChange(User user) => Refresh();
 		private void OnManifestChanged(string manifestId) => SoftReset();
-
 
 		public void Refresh()
 		{
@@ -107,6 +102,7 @@ namespace Beamable.Editor.Content
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ContentManagerWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement();
 
 			root.Add(_windowRoot);
 

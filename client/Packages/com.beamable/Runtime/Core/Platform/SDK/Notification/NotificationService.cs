@@ -1,9 +1,15 @@
 using Beamable.Api.Notification.Internal;
+using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
+using Beamable.Pooling;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using StringBuilderPool = Beamable.Common.Pooling.StringBuilderPool;
 
 #if UNITY_IOS
 using NotificationServices = UnityEngine.iOS.NotificationServices;
@@ -37,7 +43,9 @@ namespace Beamable.Api.Notification
 		Dictionary<string, InGameNotification> inGameNotifications = new Dictionary<string, InGameNotification>();
 		public delegate void InGameNotificationCB(string notificationKey, string message);
 
+		private HashSet<string> pausedHandlers = new HashSet<string>();
 		private Dictionary<string, List<Action<object>>> handlers = new Dictionary<string, List<Action<object>>>();
+		private HashSet<object> typedHandlerObjects = new HashSet<object>();
 
 		/* Maximum number of local notifications allowed to be scheduled at the same time. */
 		public const int MaxLocalNotifications = 25;
@@ -87,6 +95,48 @@ namespace Beamable.Api.Notification
 			}
 		}
 
+		/// <inheritdoc cref="INotificationService.Subscribe{T}(string, Action{T})"/>
+		public void Subscribe<T>(string name, Action<T> callback)
+		{
+			object boxedCallback = callback;
+			typedHandlerObjects.Add(boxedCallback);
+			void Handler(object raw)
+			{
+				if (raw == null)
+				{
+					callback?.Invoke(default);
+					return;
+				}
+
+				bool isString = typeof(T) == typeof(string);
+				switch (raw)
+				{
+					case ArrayDict dict:
+						// special handling for the string case, because in 1.1, we didn't force the string case to be in a wrapped object.
+						if (isString)
+						{
+							var objResult = dict[Constants.Features.Notifications.PRIMITIVE_STRING_PAYLOAD_FIELD]; // the "stringValue" is a custom name from the C#MS base image.
+							string strResult = (string)objResult;
+							//strResult = strResult.Substring(1, strResult.Length - 2); // strip off the required escape quotes.
+							objResult = strResult; // rebox the type for casting.
+							callback?.Invoke((T)objResult);
+							return;
+						}
+
+						var json = Json.Serialize(raw, StringBuilderPool.StaticPool.Spawn().Builder);
+						var typedResult = JsonUtility.FromJson<T>(json);
+						callback?.Invoke(typedResult);
+						break;
+					default:
+						Debug.LogWarning($"Unknown type sent to Notification Service. type=[{raw?.GetType().FullName}] data=[{raw}]");
+						break;
+				}
+			}
+
+			Subscribe(name, Handler);
+		}
+
+
 		/// <summary>
 		/// Register a callback handler for push notifications.
 		/// </summary>
@@ -111,12 +161,37 @@ namespace Beamable.Api.Notification
 		}
 
 		/// <summary>
+		/// Unregister all callback handlers for push notifications.
+		/// </summary>
+		/// <param name="name">The event name to unsubscribe all callbacks</param>
+		public void UnsubscribeAll(string name)
+		{
+			if (handlers.TryGetValue(name, out var found))
+			{
+				found.Clear();
+			}
+		}
+
+		/// <inheritdoc cref="INotificationService.Unsubscribe{T}(string, Action{T})"/>
+		public void Unsubscribe<T>(string name, Action<T> handler)
+		{
+			object boxedCallback = handler;
+			if (!typedHandlerObjects.Remove(boxedCallback))
+			{
+				Debug.LogWarning("No existing handler was found for the given handler.");
+			}
+		}
+
+		/// <summary>
 		/// Trigger the callbacks for a given notification.
 		/// </summary>
 		/// <param name="name">The event name to publish</param>
 		/// <param name="payload">The data to to make available to all subscribers</param>
 		public void Publish(string name, object payload)
 		{
+			if (pausedHandlers.Contains(name))
+				return;
+
 			if (handlers.TryGetValue(name, out var found))
 			{
 				for (var i = found.Count - 1; i > -1; i--)
@@ -124,6 +199,25 @@ namespace Beamable.Api.Notification
 					found[i](payload);
 				}
 			}
+		}
+
+		/// <summary>
+		/// Pause the callbacks for a given notification.
+		/// </summary>
+		/// <param name="name">The event name to pause</param>
+		public void Pause(string name)
+		{
+			pausedHandlers.Add(name);
+		}
+
+		/// <summary>
+		/// Resume the callbacks for a given notification.
+		/// </summary>
+		/// <param name="name">The event name to resume</param>
+		public void Resume(string name)
+		{
+			if (pausedHandlers.Contains(name))
+				pausedHandlers.Remove(name);
 		}
 
 		#region Push notifications

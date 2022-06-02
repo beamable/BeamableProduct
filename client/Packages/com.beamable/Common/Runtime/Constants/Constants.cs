@@ -7,6 +7,8 @@
 		public const string BEAMABLE_DOCS_WEBSITE = "docs.beamable.com";
 		public const string BEAMABLE_ASSET_GROUP = "Beamable Assets";
 
+		public const int SYSTEM_DEPENDENCY_ORDER = -1000;
+
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
@@ -47,27 +49,26 @@
 		public static class URLs
 		{
 			public const string URL_BEAMABLE_MAIN_WEBSITE = "https://www.beamable.com";
-			public const string URL_BEAMABLE_DOCS_WEBSITE = "https://docs.beamable.com";
+			public const string URL_BEAMABLE_DOCS_WEBSITE = "https://docs.beamable.com/docs";
 			public const string URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK = "https://www.beamable.com/blog/beamable-release-unity-sdk";
 			public const string URL_BEAMABLE_LEGAL_WEBSITE = "https://app.termly.io/document/terms-of-use-for-website/c44e18e4-675f-4eeb-8fa4-a9a5267ec2c5";
 
 			public static class Documentations
 			{
-				public const string URL_DOC_ACCOUNT_HUD = URL_BEAMABLE_DOCS_WEBSITE + "/account-hud";
-				public const string URL_DOC_ADMIN_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/admin-flow";
-				public const string URL_DOC_ANNOUNCEMENTS_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "announcements-flow";
-				public const string URL_DOC_CALENDAR_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/calendar-flow";
-				public const string URL_DOC_CURRENCY_HUD = URL_BEAMABLE_DOCS_WEBSITE + "/currency-hud";
-				public const string URL_DOC_LEADERBOARD_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/leaderboard-flow";
-				public const string URL_DOC_LOGIN_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/login-flow";
-				public const string URL_DOC_INVENTORY_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/inventory-flow";
-				public const string URL_DOC_STORE_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/store-flow";
+				public const string URL_DOC_ACCOUNT_HUD = URL_BEAMABLE_DOCS_WEBSITE + "/account-hud-prefab";
+				public const string URL_DOC_ADMIN_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/admin-feature-overview";
+				public const string URL_DOC_ANNOUNCEMENTS_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/announcements-feature-overview";
+				public const string URL_DOC_CURRENCY_HUD = URL_BEAMABLE_DOCS_WEBSITE + "/virtual-currency-prefab";
+				public const string URL_DOC_LEADERBOARD_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/leaderboards-feature-overview";
+				public const string URL_DOC_LOGIN_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/account-management-flow-prefab";
+				public const string URL_DOC_INVENTORY_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/inventory-feature-overview";
+				public const string URL_DOC_STORE_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/stores-feature-overview";
 				public const string URL_DOC_MICROSERVICES = URL_BEAMABLE_DOCS_WEBSITE + "/microservices-feature";
 
-				public const string URL_DOC_WINDOW_CONTENT_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager";
+				public const string URL_DOC_WINDOW_CONTENT_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager-overview";
 				public const string URL_DOC_WINDOW_CONTENT_NAMESPACES = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager#namespaces";
-				public const string URL_DOC_WINDOW_CONFIG_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager";
-				public const string URL_DOC_WINDOW_TOOLBOX = URL_BEAMABLE_DOCS_WEBSITE + "/toolbox";
+				public const string URL_DOC_WINDOW_CONFIG_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/configuration-manager-overview";
+				public const string URL_DOC_WINDOW_TOOLBOX = URL_BEAMABLE_DOCS_WEBSITE + "/unity-toolbox";
 			}
 		}
 		public static class MenuItems

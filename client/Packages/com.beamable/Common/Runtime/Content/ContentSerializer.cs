@@ -410,6 +410,10 @@ namespace Beamable.Common.Content
 				{
 					wrapper.SerializedName = attr.SerializedName;
 				}
+				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
+				{
+					wrapper.SerializedName = field.Name.Split('>')[0].Substring(1);
+				}
 				else
 				{
 					wrapper.SerializedName = field.Name;
@@ -658,15 +662,27 @@ namespace Beamable.Common.Content
 
 					if (propertyDict.TryGetValue("$link", out var linkValue) || propertyDict.TryGetValue("link", out linkValue))
 					{
-						if (!typeof(IContentLink).IsAssignableFrom(field.FieldType))
+						bool isContentLink = typeof(IContentLink).IsAssignableFrom(field.FieldType);
+						bool isContentRef = !isContentLink && typeof(IContentRef).IsAssignableFrom(field.FieldType);
+						string fieldId = linkValue.ToString() ?? string.Empty;
+						if (isContentLink)
 						{
-							throw new Exception($"Cannot deserialize a link into a field that isnt a link field=[{field.SerializedName}] type=[{field.FieldType}]");
+							var link = (IContentLink)Activator.CreateInstance(field.FieldType);
+							link.SetId(fieldId);
+							link.OnCreated();
+							field.SetValue(instance, link);
 						}
-
-						var link = (IContentLink)Activator.CreateInstance(field.FieldType);
-						link.SetId(linkValue.ToString());
-						link.OnCreated();
-						field.SetValue(instance, link);
+						else if (isContentRef)
+						{
+							var contentRef = (IContentRef)Activator.CreateInstance(field.FieldType);
+							contentRef.SetId(fieldId);
+							field.SetValue(instance, contentRef);
+						}
+						else
+						{
+							throw new Exception(
+								$"Cannot deserialize a link into a field that isnt a link field=[{field.SerializedName}] type=[{field.FieldType}]");
+						}
 					}
 
 					if (propertyDict.TryGetValue("$links", out var linksValue) ||

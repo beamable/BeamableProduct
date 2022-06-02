@@ -137,6 +137,21 @@ namespace Beamable.Api
 			};
 		}
 
+		public void UnsubscribeAllNotifications()
+		{
+			notificationService?.UnsubscribeAll($"{service}.refresh");
+		}
+
+		public void PauseAllNotifications()
+		{
+			notificationService?.Pause($"{service}.refresh");
+		}
+
+		public void ResumeAllNotifications()
+		{
+			notificationService?.Resume($"{service}.refresh");
+		}
+
 		private void OnTimeOverride()
 		{
 			Refresh();
@@ -316,19 +331,15 @@ namespace Beamable.Api
 		}
 
 		/// <summary>
-		/// Manually fetch the available data.
+		/// <inheritdoc cref="GetLatest(string)"/>
 		/// </summary>
-		/// <returns></returns>
+		/// <returns><inheritdoc cref="GetLatest(string)"/></returns>
 		public Data GetLatest()
 		{
 			return GetLatest("");
 		}
 
-		/// <summary>
-		/// Manually fetch the available data.
-		/// </summary>
-		/// <param name="scope"></param>
-		/// <returns></returns>
+		/// <inheritdoc cref="ISupportGetLatest{TData}.GetLatest(string)"/>
 		public Data GetLatest(string scope)
 		{
 			Data data;
@@ -548,6 +559,7 @@ namespace Beamable
 {
 	public static class PlatformSubscribableExtensions
 	{
+		/// <inheritdoc cref="PlatformSubscribable{TScopedRsp, TData}.Subscribe(Action{TData})"/>
 		public static PlatformSubscription<TData> Subscribe<TPlatformSubscribable, TScopedRsp, TData>(
 		   this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
 		   Action<TData> callback)
@@ -587,6 +599,7 @@ namespace Beamable
 			   : subscribable.Subscribable.GetCurrent(scopes);
 		}
 
+		/// <inheritdoc cref="PlatformSubscribable{TScopedRsp, TData}.Subscribe(string, Action{TData})"/>
 		public static PlatformSubscription<TData> Subscribe<TPlatformSubscribable, TScopedRsp, TData>(
 		   this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
 		   string scopes,
@@ -597,6 +610,7 @@ namespace Beamable
 			return subscribable.Subscribable.Subscribe(scopes, callback);
 		}
 
+		/// <inheritdoc cref="PlatformSubscribable{TScopedRsp, TData}.GetLatest(string)"/>
 		public static TData GetLatest<TPlatformSubscribable, TScopedRsp, TData>(
 		   this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
 		   string scopes = "") where TPlatformSubscribable : PlatformSubscribable<TScopedRsp, TData>
