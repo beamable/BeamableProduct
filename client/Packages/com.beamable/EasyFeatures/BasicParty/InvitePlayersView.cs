@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			bool IsVisible { get; set; }
 			string PlayerName { get; set; }
+			List<PartySlotPresenter.ViewData> Players { get; set; }
 		}
 		
 		[SerializeField] private int _enrichOrder;
@@ -40,7 +42,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			_backButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			_createButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			_partyList.Setup(OnPlayerAccepted, OnAskedToLeave, OnPromoted);
+			_partyList.Setup(system.Players, OnPlayerAccepted, OnAskedToLeave, OnPromoted);
 		}
 
 		private void OnPromoted(string id)

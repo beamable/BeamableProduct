@@ -11,7 +11,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			List<PartySlotPresenter.ViewData> SlotsData { get; }
 			bool IsVisible { get; }
-			PartyData PartyData { get; }
+			Party Party { get; }
 			bool IsPlayerLeader { get; }
 		}
 
@@ -47,7 +47,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 			
-			_partyIdText.text = system.PartyData.PartyId;
+			_partyIdText.text = system.Party.PartyId;
 
 			_leadButtonsGroup.SetActive(system.IsPlayerLeader);
 			_nonLeadButtonsGroup.SetActive(!system.IsPlayerLeader);

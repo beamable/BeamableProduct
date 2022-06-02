@@ -73,9 +73,10 @@ namespace Beamable.EasyFeatures.BasicParty
 			OpenView(_currentView);
 		}
 
-		public void OpenPartyView(PartyData party)
+		public void OpenPartyView(Party party)
 		{
-			_partyPlayerSystem.PartyData = party;
+			_partyPlayerSystem.Party = party;
+			_partyPlayerSystem.Setup(party.Players);
 			OpenView(View.Party);
 		}
 		
@@ -85,8 +86,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			OpenView(View.Create);
 		}
 		
-		public void OpenInviteView()
+		public void OpenInviteView(List<PartySlotPresenter.ViewData> playerList)
 		{
+			_invitePlayersPlayerSystem.Players = playerList;
 			OpenView(View.Invite);
 		}
 		

@@ -81,10 +81,11 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (string.IsNullOrWhiteSpace(_system.PartyId))
 			{
+				// placeholder party ID generation
 				_system.PartyId = Random.Range(10000, 99999).ToString();
 			}
 
-			PartyData data = new PartyData
+			Party data = new Party
 			{
 				Access = _access, MaxPlayers = _system.MaxPlayers, PartyId = _system.PartyId,
 			};
