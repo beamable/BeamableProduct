@@ -27,7 +27,9 @@ namespace Beamable.Common.Reflection
 
 		public AttributeValidationResult(Attribute attribute, MemberInfo ownerMember, ReflectionCache.ValidationResultType type, string message)
 		{
-			System.Diagnostics.Debug.Assert(attribute is IReflectionAttribute, $"Attribute must implement the {nameof(IReflectionAttribute)}");
+			if(attribute != null)
+				System.Diagnostics.Debug.Assert(attribute is IReflectionAttribute, $"Attribute must implement the {nameof(IReflectionAttribute)}");
+			
 			Pair = new MemberAttribute(ownerMember, attribute);
 			Type = type;
 			Message = message;

@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
@@ -192,6 +193,7 @@ namespace Beamable.Server
          var contentTypeReflectionCache = new ContentTypeReflectionCache();
          _reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
          _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+         _reflectionCache.SetStorage(new BeamHintGlobalStorage());
 
          var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") && 
                                                                                   !asm.GetName().Name.StartsWith("nunit.") &&

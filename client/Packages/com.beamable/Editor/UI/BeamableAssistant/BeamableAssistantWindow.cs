@@ -78,12 +78,12 @@ namespace Beamable.Editor.Assistant
 			BeamEditor.DelayedInitializationCall(RunFocus, true);
 			void RunFocus()
 			{
-				if (_windowRoot != null && ActiveContext != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
+				if (_windowRoot != null && ActiveContext?.ServiceScope != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
 				else Refresh();
 				// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
 				// For now, just clear notifications whenever the window is focused
-				var hintNotificationManager = ActiveContext.ServiceScope.GetService<BeamHintNotificationManager>();
-				hintNotificationManager.ClearPendingNotifications();
+				var hintNotificationManager = ActiveContext?.ServiceScope?.GetService<BeamHintNotificationManager>();
+				hintNotificationManager?.ClearPendingNotifications();
 			}
 		}
 
@@ -202,8 +202,12 @@ namespace Beamable.Editor.Assistant
 		/// </summary>
 		public void FillDisplayingBeamHints(VisualElement container, List<BeamHintHeader> hintHeaders)
 		{
+			var hintDetailsReflectionCache = ActiveContext?.ServiceScope?.GetService<ReflectionCache>()?.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
+			if(hintDetailsReflectionCache == null)
+				return;
+
 			container.Clear();
-			var hintDetailsReflectionCache = ActiveContext.ServiceScope.GetService<ReflectionCache>().GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
+			
 			for (var headerIdx = 0; headerIdx < hintHeaders.Count; headerIdx++)
 			{
 				var beamHintHeader = hintHeaders[headerIdx];
@@ -221,8 +225,10 @@ namespace Beamable.Editor.Assistant
 		/// </summary>
 		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains, List<string> selectedDomains)
 		{
-			var hintDetailsReflectionCache = ActiveContext.ServiceScope.GetService<ReflectionCache>().GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
-
+			var hintDetailsReflectionCache = ActiveContext?.ServiceScope?.GetService<ReflectionCache>()?.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
+			if(hintDetailsReflectionCache == null)
+				return;
+			
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
 			var selectedIds = new List<int>();
 			var parentCache = new Dictionary<string, BeamHintDomainTreeViewItem>();
