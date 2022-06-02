@@ -446,7 +446,8 @@ namespace Beamable.Common.Api.Auth
 		Google,
 		GameCenter,
 		GameCenterLimited,
-		Steam
+		Steam,
+		GoogleGamesServices
 	}
 
 	public static class AuthThirdPartyMethods
@@ -476,6 +477,8 @@ namespace Beamable.Common.Api.Auth
 					return "gamecenterlimited";
 				case AuthThirdParty.Steam:
 					return "steam";
+				case AuthThirdParty.GoogleGamesServices:
+					return "googlePlayServices";
 				default:
 					return null;
 			}
