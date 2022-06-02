@@ -1,9 +1,6 @@
 using Beamable.Common.Api.Inventory;
-using Beamable.Common.Content;
 using NUnit.Framework;
-using System;
 using System.Collections.Generic;
-using System.Net.Mime;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 {
