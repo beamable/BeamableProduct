@@ -55,8 +55,8 @@ namespace Beamable.AccountManagement
 	public static class LoadingArgPromiseExtensions
 	{
 		public static LoadingArg ToLoadingArg<T>(this Promise<T> self,
-		                                         string message = "loading",
-		                                         bool critical = false)
+												 string message = "loading",
+												 bool critical = false)
 		{
 			var arg = new LoadingArg(message, critical);
 			self.Then(x => arg.Complete());
@@ -360,7 +360,7 @@ namespace Beamable.AccountManagement
 			var promise = new ThirdPartyLoginPromise(argument.ThirdParty);
 
 			WithLoading("Logging In...",
-			            promise.FlatMap(response => StartThirdPartyLogin(response, argument.ThirdParty)))
+						promise.FlatMap(response => StartThirdPartyLogin(response, argument.ThirdParty)))
 				.Error(HandleError);
 			DeferBroadcast(promise, s => s.ThirdPartyLoginAttempted);
 		}
@@ -441,14 +441,14 @@ namespace Beamable.AccountManagement
 		}
 
 		private Promise<User> StartThirdPartyLogin(ThirdPartyLoginResponse thirdPartyResponse,
-		                                           AuthThirdParty thirdParty)
+												   AuthThirdParty thirdParty)
 		{
 			return API.Instance.FlatMap(api => ThirdPartyLogin(api, thirdPartyResponse, thirdParty));
 		}
 
 		Promise<User> ThirdPartyLogin(IBeamableAPI beamableAPI,
-		                              ThirdPartyLoginResponse thirdPartyResponse,
-		                              AuthThirdParty thirdParty)
+									  ThirdPartyLoginResponse thirdPartyResponse,
+									  AuthThirdParty thirdParty)
 		{
 			if (thirdPartyResponse.Cancelled)
 			{
@@ -457,15 +457,15 @@ namespace Beamable.AccountManagement
 
 			var token = thirdPartyResponse.AuthToken;
 			return beamableAPI.AuthService.IsThirdPartyAvailable(thirdParty, token)
-			                  .FlatMap(available =>
-				                           HandleThirdPartyToken(beamableAPI, available, thirdPartyResponse,
-				                                                 thirdParty));
+							  .FlatMap(available =>
+										   HandleThirdPartyToken(beamableAPI, available, thirdPartyResponse,
+																 thirdParty));
 		}
 
 		Promise<User> HandleThirdPartyToken(IBeamableAPI beamableAPI,
-		                                    bool available,
-		                                    ThirdPartyLoginResponse thirdPartyResponse,
-		                                    AuthThirdParty thirdParty)
+											bool available,
+											ThirdPartyLoginResponse thirdPartyResponse,
+											AuthThirdParty thirdParty)
 		{
 			var userHasCredentials = beamableAPI.User.HasThirdPartyAssociation(thirdParty);
 
@@ -567,13 +567,13 @@ namespace Beamable.AccountManagement
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, string email, string password)
 		{
 			return de.AuthService.Login(email, password, false)
-			         .FlatMap(token => SetPendingUser(de, token));
+					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, AuthThirdParty thirdParty, string accessToken)
 		{
 			return de.AuthService.LoginThirdParty(thirdParty, accessToken, false)
-			         .FlatMap(token => SetPendingUser(de, token));
+					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> SetPendingUser(IBeamableAPI de, TokenResponse token)
@@ -588,22 +588,22 @@ namespace Beamable.AccountManagement
 		private Promise<Unit> LoginToNewUser(IBeamableAPI de)
 		{
 			return WithCriticalLoading("New Account...", de.AuthService.CreateUser()
-			                                               .FlatMap(de.ApplyToken));
+														   .FlatMap(de.ApplyToken));
 		}
 
 		private Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
 		{
 			return WithCriticalLoading("Loading...", de.AuthService.RegisterDBCredentials(email, password)
-			                                           .Then(de.UpdateUserData));
+													   .Then(de.UpdateUserData));
 		}
 
 		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
-		                                                    AuthThirdParty thirdParty,
-		                                                    string accessToken)
+															AuthThirdParty thirdParty,
+															string accessToken)
 		{
 			return WithCriticalLoading("Loading...",
-			                           de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
-			                             .Then(de.UpdateUserData));
+									   de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
+										 .Then(de.UpdateUserData));
 		}
 
 		private Promise<User> GetExistingAccount(IBeamableAPI de, UserBundle bundle)
@@ -642,7 +642,7 @@ namespace Beamable.AccountManagement
 		private Promise<bool> IsEmailRegistered(string email)
 		{
 			return API.Instance.FlatMap(de => de.AuthService.IsEmailAvailable(email)
-			                                    .Map(available => !available));
+												.Map(available => !available));
 		}
 
 		public void DeferBroadcast<TArg>(TArg arg, Func<AccountManagementSignals, DeSignal<TArg>> getter)
