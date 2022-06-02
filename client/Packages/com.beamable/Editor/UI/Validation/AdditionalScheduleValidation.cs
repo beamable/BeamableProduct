@@ -12,7 +12,7 @@ namespace Beamable.Editor.Models.Schedules
 		public static void ValidatePastDates(List<string> selectedDays, Action<bool, string> refreshConfirmButton)
 		{
 			int todayTimeStamp = int.Parse(DateTime.UtcNow.ToString("yyyyMMdd"));
-			
+
 			foreach (var selectedDay in selectedDays)
 			{
 				var splitted = selectedDay.Split('-');
