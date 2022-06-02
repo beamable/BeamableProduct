@@ -202,7 +202,7 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
 				// Keep rendering overrides within the render-able clients.
 				RenderingPlayerOverride = Mathf.Clamp(RenderingPlayerOverride, 0, ActiveContexts.Length - 1);
 				var renderingContext = ActiveContexts[RenderingPlayerOverride];
-				FeatureViewGroup.EnrichWithPlayerCodes(new List<string>() {renderingContext.PlayerCode});
+				_ = FeatureViewGroup.EnrichWithPlayerCodes(new List<string>() {renderingContext.PlayerCode});
 				AcceptanceView.RenderOnGUI();
 				DraftView.RenderOnGUI();
 				
@@ -214,7 +214,7 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
 			// If we are not rendering a specific-player's point of view, render all players sequentially.
 			foreach (var ctx in ActiveContexts)
 			{
-				FeatureViewGroup.EnrichWithPlayerCodes(new List<string>() {ctx.PlayerCode});
+				_ = FeatureViewGroup.EnrichWithPlayerCodes(new List<string>() {ctx.PlayerCode});
 				AcceptanceView.RenderOnGUI();
 				DraftView.RenderOnGUI();
 			}
