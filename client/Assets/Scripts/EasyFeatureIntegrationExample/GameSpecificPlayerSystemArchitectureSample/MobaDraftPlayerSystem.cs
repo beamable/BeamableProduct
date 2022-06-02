@@ -3,12 +3,10 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
 using Beamable.Experimental.Api.Matchmaking;
-using System;
+using Beamable.Server.Clients;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using UnityEngine.Assertions;
-using Beamable.Server.Clients;
 
 namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
 {
@@ -29,7 +27,7 @@ namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
         /// Add this system as a scoped dependency of every <see cref="BeamContext"/>.
         /// </summary>
         [RegisterBeamableDependencies()]
-        public static void RegisterService(IDependencyBuilder builder) => builder.AddScoped<MobaDraftPlayerSystem>();
+        public static void RegisterService(IDependencyBuilder builder) => builder.AddSingleton<MobaDraftPlayerSystem>();
 
         /// <summary>
         /// Fetches the authenticated user id of the user owning this <see cref="BeamContext"/>.
