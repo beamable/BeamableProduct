@@ -9,5 +9,8 @@ services:
       - ../../../:/Client
     environment:
       VERSION: ${VERSION:-0.0.0}
+      VERSION_PREFIX: ${VERSION_PREFIX}
+      VERSION_SUFFIX: ${VERSION_SUFFIX-""}
       DRY_RUN: ${DRY_RUN:-false}
+      NUGET_TOOLS_KEY: ${NUGET_TOOLS_KEY}
     

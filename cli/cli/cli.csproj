@@ -6,17 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <PackageId>BeamCli</PackageId>
-    <AssemblyName>Beamable.Cli</AssemblyName>
+    <PackageId>Beamable.Tools</PackageId>
+    <AssemblyName>Beamable.Tools</AssemblyName>
     <Authors>Beamable Team</Authors>
     <Company>Beamable</Company>
-
-    <!--  TODO: Jenkins should update this version string  -->
-    <Version>$(Version)</Version>
+    <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>beam</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
