@@ -422,6 +422,33 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		}
 
 		[Test]
+		public void PropertyColor()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""Color"": {
+         ""data"": {
+            ""r"":1,
+            ""g"":0,
+            ""b"":0,
+            ""a"":1
+         }
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<PropertyColorContent>(json);
+
+			Assert.AreEqual(1, o.Color.r);
+			Assert.AreEqual(0, o.Color.g);
+			Assert.AreEqual(0, o.Color.b);
+			Assert.AreEqual(1, o.Color.a);
+		}
+
+		[Test]
 		public void Ref_Legacy()
 		{
 			var json = @"{
@@ -1076,6 +1103,12 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		class ColorContent : TestContentObject
 		{
 			public Color color;
+		}
+
+		class PropertyColorContent : TestContentObject
+		{
+			[field: SerializeField]
+			public Color Color { get; set; }
 		}
 
 		class PrimitiveRef : TestContentRef<TestContent> { }

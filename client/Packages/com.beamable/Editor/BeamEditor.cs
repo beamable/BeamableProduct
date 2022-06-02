@@ -1,5 +1,6 @@
 using Beamable.AccountManagement;
 using Beamable.Api;
+using Beamable.Api.Caches;
 using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -20,6 +21,7 @@ using Beamable.Editor.Modules.EditorConfig;
 using Beamable.Editor.Realms;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
+using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
@@ -147,7 +149,7 @@ namespace Beamable
 					{
 						if (allowRetry)
 						{
-							BeamEditorContext.WriteConfig("", "");
+							BeamEditorContext.WriteConfig(string.Empty, string.Empty);
 							return TryInitConfigDatabase(false);
 						}
 						else
@@ -259,7 +261,8 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
 			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
 																											 provider.GetService<AccessTokenStorage>(),
-																											 null)
+																											 null,
+																											 provider.GetService<OfflineCache>())
 			{ RequestTimeoutMs = $"{30 * 1000}" }
 			);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
@@ -276,6 +279,9 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
+
+			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
+			BeamEditorContextDependencies.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
@@ -443,7 +449,7 @@ namespace Beamable
 
 			if (!ConfigFileExists)
 			{
-				SaveConfig("", "", BeamableEnvironment.ApiUrl);
+				SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
 				Logout();
 				InitializePromise = Promise.Success;
 				return;
@@ -459,7 +465,7 @@ namespace Beamable
 
 			if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
 			{
-				SaveConfig("", "", BeamableEnvironment.ApiUrl);
+				SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
 				Logout();
 				InitializePromise = Promise.Success;
 				return;
@@ -731,7 +737,7 @@ namespace Beamable
 				containerPrefix = containerPrefix
 			};
 
-			string path = "Assets/Beamable/Resources/config-defaults.txt";
+			string path = ConfigDatabase.GetFullPath("config-defaults");
 			var asJson = JsonUtility.ToJson(config, true);
 
 			var writeConfig = true;
@@ -746,7 +752,11 @@ namespace Beamable
 
 			if (writeConfig)
 			{
-				Directory.CreateDirectory("Assets/Beamable/Resources/");
+				string directoryName = Path.GetDirectoryName(path);
+				if (!string.IsNullOrWhiteSpace(directoryName))
+				{
+					Directory.CreateDirectory(directoryName);
+				}
 
 				if (File.Exists(path))
 				{
@@ -930,7 +940,6 @@ namespace Beamable
 				throw new Exception("Cannot switch to a realm with a null pid");
 			}
 
-			await ServiceScope.GetService<ContentIO>().FetchManifest();
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
 					  .GetMap(REALM_PREFERENCE)
@@ -941,10 +950,23 @@ namespace Beamable
 			if (CurrentRealm == null || !CurrentRealm.Equals(realm))
 			{
 				CurrentRealm = realm;
+				await SaveRealmInConfig();
+				await ServiceScope.GetService<ContentIO>().FetchManifest();
 				OnRealmChange?.Invoke(realm);
+				ProductionRealm = game;
+				return;
 			}
-			ProductionRealm = game;
+			else
+			{
+				await ServiceScope.GetService<ContentIO>().FetchManifest();
+			}
 
+			ProductionRealm = game;
+			await SaveRealmInConfig();
+		}
+
+		private async Promise SaveRealmInConfig()
+		{
 			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);

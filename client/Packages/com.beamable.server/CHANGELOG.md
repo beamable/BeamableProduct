@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unrelased]
+### Fixed
+- Microservices now correctly caches connection strings when `GetDatabase` is called on the `IStorageObjectConnectionProvider` service.  
+
+### Changed
+- Added log error when Microservice cannot start.
+
+### Fixed
+- Possible duplicate authorization requests.
+- Messages sent during a re-connection event will be re-attempted 10 times before failing.
 
 ## [1.2.0]
 ### Added
@@ -28,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Building microservices will always pull the latest version of dependent alpine linux Docker base images.
 - `ClientCallableAttribute` is now only accessible to authenticated users. For a fully public endpoint, use `CallableAttribute` instead.   
 - Microservices will be built specifically for linux/amd64 architecture. For developers with ARM based CPU architectures, enable to the `DockerBuildkit` setting in the Microservice Configuration to publish microservices. 
+- Building a microservice will always stop the microservice and its source generator if they are running. After the build, the source generator will be reset.
 
 ### Removed
 - `EnableDockerBuildkit` property from the MicroserviceConfiguration. By default, Docker buildkit will now be enabled. Disable it again with the new `DisableDockerBuildkit` field.

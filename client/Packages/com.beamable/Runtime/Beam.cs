@@ -27,6 +27,7 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
@@ -36,6 +37,7 @@ using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Chat;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
@@ -47,8 +49,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Beamable.Common.Api.Presence;
-using Beamable.Experimental.Api.Lobbies;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -117,11 +117,9 @@ namespace Beamable
 				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
 			}
 
-			// Flush cache that wasn't created with this version of the game.
-			OfflineCache.FlushInvalidCache();
-
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
+
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
@@ -149,7 +147,8 @@ namespace Beamable
 															  provider.GetService<PlatformRequester>(),
 															  provider,
 															  UnityUserDataCache<Dictionary<string, string>>
-																  .CreateInstance));
+																  .CreateInstance,
+															  provider.GetService<OfflineCache>()));
 			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
 				// the lobby service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),
@@ -215,6 +214,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
+			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+
 
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder);
 			//LoadCustomDependencies();

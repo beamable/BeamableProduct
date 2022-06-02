@@ -33,6 +33,15 @@ namespace Beamable.UI.Sdf
 			return new Rect(rect.position - half, rect.size + full);
 		}
 
+		public static Rect Map(this Rect rect, Rect map)
+		{
+			return Rect.MinMaxRect(
+				Mathf.Lerp(map.xMin, map.xMax, rect.xMin),
+				Mathf.Lerp(map.yMin, map.yMax, rect.yMin),
+				Mathf.Lerp(map.xMin, map.xMax, rect.xMax),
+				Mathf.Lerp(map.yMin, map.yMax, rect.yMax));
+		}
+
 		public static Vector2 GetBottomLeft(this Rect rect) => new Vector2(rect.xMin, rect.yMin);
 		public static Vector2 GetBottomRight(this Rect rect) => new Vector2(rect.xMax, rect.yMin);
 		public static Vector2 GetTopLeft(this Rect rect) => new Vector2(rect.xMin, rect.yMax);

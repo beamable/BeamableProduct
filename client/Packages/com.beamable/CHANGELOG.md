@@ -10,9 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
 
 ### Changed
-- Content validation for ID fields will now accept IDs without the prefix
+- Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
+- List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 
 ## [1.2.0]
 ### Added
@@ -42,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content tags are split on `','` characters in addition to `' '`s.
 - A `IBeamableDisposable`'s `OnDispose` method can now resolve services from the `IDependencyProvider` that is being disposed.
 - `HeartBeat` will now send heartbeat requests faster for our newer live backend services such as Lobbies
+- Content validation for ID fields will now accept IDs without the prefix
+- It is now possible to set background sprite as a main texture in SDF Image.
+- It is now possible to choose 9-slice source and Pixels Per Unit multiplier in SDF image.
 
 ### Fixed
 - StoreView prefab now works in landscape mode.
@@ -52,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account management will no longer log an error after pressing change password button more than once.
 - Content Manager no longer logs inaccurate warning after renaming content.
 - Notification handling for multiple `BeamContext` instances.
+- Listing 'sku' price type was incorrect. Fixed to 'skus'.
+- The player's location is detected automatically
+- Matchmaking no longer breaks after user switch from Account Management flow.
 
 ### Removed
 - Unity 2018 LTS support.
