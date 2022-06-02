@@ -70,7 +70,17 @@ namespace Beamable.Server
                 throw new Exception($"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
             }
 
-            var _ = beamableService.Start<TMicroService>(args);
+            try
+            {
+                var _ = beamableService.Start<TMicroService>(args);
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal("Failed to start. " + ex.GetType().Name + " / " + ex.Message);
+                Log.Fatal(ex.StackTrace);
+                throw;
+
+            }
 
             if (args.WatchToken)
             {
