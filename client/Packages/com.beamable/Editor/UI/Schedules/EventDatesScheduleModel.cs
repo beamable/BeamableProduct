@@ -33,14 +33,14 @@ namespace Beamable.Editor.Models.Schedules
 			_activeToHourComponent = activeToHourComponent;
 
 			_refreshConfirmButtonCallback = refreshConfirmButtonCallback;
-			
+
 			Validator = new ComponentsValidator(refreshConfirmButtonCallback);
 			Validator.RegisterRule(new AtLeastOneDaySelectedRule(_calendarComponent.Label), _calendarComponent);
-			
+
 			_calendarComponent.Calendar.OnValueChanged -= AdditionalValidation;
 			_calendarComponent.Calendar.OnValueChanged += AdditionalValidation;
 		}
-		
+
 		public override Schedule GetSchedule()
 		{
 			Schedule newSchedule = new Schedule();
