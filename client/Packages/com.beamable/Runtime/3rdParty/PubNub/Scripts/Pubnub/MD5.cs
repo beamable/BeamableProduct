@@ -715,7 +715,6 @@ namespace PubNubMessaging.Core
 			{
 				byte[] hashmessage = hmacsha256.ComputeHash(messageBytes);
 				return Convert.ToBase64String(hashmessage).Replace('+', '-').Replace('/', '_');
-				;
 			}
 		}
 	}

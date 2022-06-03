@@ -37,7 +37,8 @@ namespace Beamable.Editor.Content
 			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
 			{
 				var type = operation.ContentId.Split('.')[0];
-				if (!ContentRegistry.HasContentTypeValidClass(type))
+				var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+				if (!contentTypeReflectionCache.HasContentTypeValidClass(type))
 				{
 					Debug.LogWarning($"No C# class found for type=[{type}]. Skipping download process for this type.");
 					return null;
@@ -45,7 +46,7 @@ namespace Beamable.Editor.Content
 
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
 				{
-					var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
+					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 
 					var newAsset = serializer.DeserializeByType(response, contentType);
 					newAsset.Tags = operation.Tags;

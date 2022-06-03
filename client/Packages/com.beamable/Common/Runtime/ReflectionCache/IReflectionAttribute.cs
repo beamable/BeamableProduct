@@ -27,7 +27,9 @@ namespace Beamable.Common.Reflection
 
 		public AttributeValidationResult(Attribute attribute, MemberInfo ownerMember, ReflectionCache.ValidationResultType type, string message)
 		{
-			System.Diagnostics.Debug.Assert(attribute is IReflectionAttribute, $"Attribute must implement the {nameof(IReflectionAttribute)}");
+			if(attribute != null)
+				System.Diagnostics.Debug.Assert(attribute is IReflectionAttribute, $"Attribute must implement the {nameof(IReflectionAttribute)}");
+			
 			Pair = new MemberAttribute(ownerMember, attribute);
 			Type = type;
 			Message = message;
@@ -42,8 +44,8 @@ namespace Beamable.Common.Reflection
 		public static List<AttributeValidationResult> Validate(this IReadOnlyList<MemberAttribute> cachedMemberAttributes)
 		{
 			return cachedMemberAttributes
-				   .Select(pair => ((IReflectionAttribute)pair.Attribute).IsAllowedOnMember(pair.Info))
-				   .ToList();
+			       .Select(pair => ((IReflectionAttribute)pair.Attribute).IsAllowedOnMember(pair.Info))
+			       .ToList();
 		}
 
 		/// <summary>
@@ -57,26 +59,33 @@ namespace Beamable.Common.Reflection
 		/// <param name="validateOnMissing">Defines how the caller wants <paramref name="membersToCheck"/> to be validated when the attribute isn't found over a member.</param>
 		/// <returns>A list of <see cref="AttributeValidationResult"/> that can be used to display error/warnings or parse valid results.</returns>
 		public static List<AttributeValidationResult> GetAndValidateAttributeExistence(this IEnumerable<MemberInfo> membersToCheck,
-																					   AttributeOfInterest attributeOfInterest,
-																					   Func<MemberInfo, AttributeValidationResult> validateOnMissing)
+		                                                                               AttributeOfInterest attributeOfInterest,
+		                                                                               Func<MemberInfo, AttributeValidationResult> validateOnMissing)
 		{
 			var members = membersToCheck;
 			var validationResults = new List<AttributeValidationResult>();
 
 			foreach (var checkMember in members)
 			{
-				var attribute = checkMember.GetCustomAttribute(attributeOfInterest.AttributeType, false);
-				if (attribute != null)
-				{
-					var cast = (IReflectionAttribute)attribute;
-					var result = cast.IsAllowedOnMember(checkMember);
-
-					validationResults.Add(result);
-				}
-				else
+				var attributes = checkMember.GetCustomAttributes(attributeOfInterest.AttributeType, false);
+				if (attributes.Length == 0)
 				{
 					var result = validateOnMissing?.Invoke(checkMember);
 					if (result.HasValue) validationResults.Add(result.Value);
+				}
+				else
+				{
+					foreach (var attrObj in attributes)
+					{
+						var attribute = (Attribute)attrObj;
+						if (attribute != null)
+						{
+							var cast = (IReflectionAttribute)attribute;
+							var result = cast.IsAllowedOnMember(checkMember);
+
+							validationResults.Add(result);
+						}
+					}
 				}
 			}
 
@@ -102,26 +111,26 @@ namespace Beamable.Common.Reflection
 		/// The resulting lists can be used to process valid attributes or display context-sensitive error/warning messages. 
 		/// </summary>        
 		public static void SplitValidationResults(this IReadOnlyList<AttributeValidationResult> mainList,
-												  out List<AttributeValidationResult> valid,
-												  out List<AttributeValidationResult> warning,
-												  out List<AttributeValidationResult> error)
+		                                          out List<AttributeValidationResult> valid,
+		                                          out List<AttributeValidationResult> warning,
+		                                          out List<AttributeValidationResult> error)
 		{
 			var splitByType = mainList.GroupBy(res => res.Type).ToList();
 
 			valid = splitByType
-					.Where(group => group.Key == ReflectionCache.ValidationResultType.Valid)
-					.SelectMany(group => group)
-					.ToList();
+			        .Where(group => group.Key == ReflectionCache.ValidationResultType.Valid)
+			        .SelectMany(group => group)
+			        .ToList();
 
 			warning = splitByType
-					  .Where(group => group.Key == ReflectionCache.ValidationResultType.Warning)
-					  .SelectMany(group => group)
-					  .ToList();
+			          .Where(group => group.Key == ReflectionCache.ValidationResultType.Warning)
+			          .SelectMany(group => group)
+			          .ToList();
 
 			error = splitByType
-					.Where(group => group.Key == ReflectionCache.ValidationResultType.Error)
-					.SelectMany(group => group)
-					.ToList();
+			        .Where(group => group.Key == ReflectionCache.ValidationResultType.Error)
+			        .SelectMany(group => group)
+			        .ToList();
 		}
 
 		/// <summary>
@@ -136,7 +145,7 @@ namespace Beamable.Common.Reflection
 		public static Dictionary<MemberInfo, List<MemberAttribute>> CreateMemberAttributeOwnerLookupTable(this IEnumerable<MemberAttribute> attributePairs)
 		{
 			return attributePairs.GroupBy(memberAttributePair => (MemberInfo)memberAttributePair.Info.DeclaringType)
-								 .ToDictionary(groups => groups.Key, pairs => pairs.ToList());
+			                     .ToDictionary(groups => groups.Key, pairs => pairs.ToList());
 		}
 	}
 }

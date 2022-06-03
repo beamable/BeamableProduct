@@ -232,7 +232,7 @@ namespace Beamable.Common.Content
 			if (typeName == null)
 			{
 				// somehow, the runtime type isn't available. We should infer the typeName from the id.
-				typeName = ContentRegistry.GetTypeNameFromId(id);
+				typeName = ContentTypeReflectionCache.GetTypeNameFromId(id);
 			}
 
 			if (!string.Equals(_contentTypeName, typeName))
@@ -294,7 +294,7 @@ namespace Beamable.Common.Content
 		/// <returns></returns>
 		public static string GetContentTypeName(Type contentType)
 		{
-			return ContentRegistry.GetContentTypeName(contentType);
+			return ContentTypeReflectionCache.GetContentTypeName(contentType);
 		}
 
 

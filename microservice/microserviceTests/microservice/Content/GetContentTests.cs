@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
+using Beamable.Common.Reflection;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
 using Beamable.Server.Content;
@@ -13,6 +16,20 @@ namespace microserviceTests.microservice.Content
    [TestFixture]
    public class GetContentTests
    {
+      private ReflectionCache _cache;
+
+      [SetUp]
+      public void Setup()
+      {
+         _cache = new ReflectionCache();
+         var contentTypeCache = new ContentTypeReflectionCache();
+         _cache.RegisterTypeProvider(contentTypeCache);
+         _cache.RegisterReflectionSystem(contentTypeCache);
+
+         var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.FullName).ToList();
+         _cache.GenerateReflectionCache(asms);
+      }
+      
       [Test]
       public void Simple()
       {
@@ -49,7 +66,7 @@ namespace microserviceTests.microservice.Content
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
 
-         var contentService = new ContentService(requester, socketCtx, contentResolver);
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
          testSocket.Connect();
          testSocket.OnMessage((_, data, id) =>
@@ -118,7 +135,7 @@ namespace microserviceTests.microservice.Content
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
 
-         var contentService = new ContentService(requester, socketCtx, contentResolver);
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
          testSocket.Connect();
          testSocket.OnMessage((_, data, id) =>
@@ -197,7 +214,7 @@ namespace microserviceTests.microservice.Content
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
 
-         var contentService = new ContentService(requester, socketCtx, contentResolver);
+         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
          testSocket.Connect();
          testSocket.OnMessage((_, data, id) =>
