@@ -25,8 +25,9 @@ namespace Beamable.EasyFeatures.BasicLogin
 
 		public HomePageView HomePageView;
 		public SwitchPageView SwitchPageView;
+		public SignInPageView SignInPageView;
 
-		public MonoBehaviour[] MainPageViews => new MonoBehaviour[] {HomePageView, SwitchPageView};
+		public MonoBehaviour[] MainPageViews => new MonoBehaviour[] {HomePageView, SwitchPageView, SignInPageView};
 
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups  { get => new[] { LoginViewGroup }; set => LoginViewGroup = value.FirstOrDefault(); }
 		public bool RunOnEnable => _runOnEnable;
@@ -65,13 +66,21 @@ namespace Beamable.EasyFeatures.BasicLogin
 			var ctx = LoginViewGroup.AllPlayerContexts.GetSinglePlayerContext();
 			var viewDeps = ctx.ServiceProvider.GetService<ILoginDeps>();
 
-			if (viewDeps.AvailableSwitch.HasValue)
+			switch (viewDeps.State)
 			{
-				SelectView(SwitchPageView);
-				return;
+				case LoginFlowState.HOME:
+					SelectView(HomePageView);
+					break;
+				case LoginFlowState.SIGN_IN_OPTIONS:
+					SelectView(SignInPageView);
+					break;
+				case LoginFlowState.OFFER_SWITCH_USER:
+					SelectView(SwitchPageView);
+					break;
+				default:
+					Debug.LogWarning("Unknown view page.");
+					break;
 			}
-
-			SelectView(HomePageView);
 		}
 
 		protected virtual void SelectView(MonoBehaviour view)

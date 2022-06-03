@@ -46,5 +46,6 @@ namespace Beamable.EasyFeatures.BasicLogin.Scripts
 
 			OnAccountSelected?.Invoke();
 		}
+
 	}
 }

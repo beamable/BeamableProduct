@@ -51,6 +51,12 @@ namespace Beamable.Common.Content
 			HasValue = true;
 		}
 
+		public void ClearValue()
+		{
+			Value = default;
+			HasValue = false;
+		}
+
 		public override Type GetOptionalType()
 		{
 			return typeof(T);

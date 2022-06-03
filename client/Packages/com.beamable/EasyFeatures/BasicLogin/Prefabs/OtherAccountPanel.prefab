@@ -248,9 +248,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnrichOrder: 0
+  OnAccountSelected:
+    m_PersistentCalls:
+      m_Calls: []
   AliasText: {fileID: 4321579177672171626}
   SubText: {fileID: 6836865459311673507}
   AccountAvatarBehaviour: {fileID: 6125250226701224283}
+  SwitchButton: {fileID: 3843385443648918344}
   OtherUserIndex: 0
 --- !u!114 &3843385443648918344
 MonoBehaviour:
@@ -476,7 +480,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 66.75
+  m_fontSize: 72
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

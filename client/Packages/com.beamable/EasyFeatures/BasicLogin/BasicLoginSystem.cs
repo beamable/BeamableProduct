@@ -29,7 +29,11 @@ namespace Beamable.EasyFeatures.BasicLogin
 		public async Promise RefreshData()
 		{
 			var promises = new List<Promise<UserView>>();
-			promises.Add(GetCurrentUserView().Then(user => CurrentUser = user));
+
+			await _context.OnReady;
+			var user = _context.AuthorizedUser;
+
+			promises.Add(GetCurrentUserView().Then(userView => CurrentUser = userView));
 			AvailableUsers.Clear();
 			var deviceUsers = await _context.Api.GetDeviceUsers();
 			foreach (var deviceUser in deviceUsers)
@@ -53,8 +57,13 @@ namespace Beamable.EasyFeatures.BasicLogin
 
 		public void OfferUserSelection(UserView nextUser)
 		{
+			State = LoginFlowState.OFFER_SWITCH_USER;
 			AvailableSwitch.SetValue(nextUser);
-			// now what? need to switch view
+		}
+
+		public virtual void ShowSignInOptions()
+		{
+			State = LoginFlowState.SIGN_IN_OPTIONS;
 		}
 
 	}

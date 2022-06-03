@@ -1,5 +1,7 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicLogin.Scripts
 {
@@ -11,10 +13,12 @@ namespace Beamable.EasyFeatures.BasicLogin.Scripts
 		public OtherAccountView OtherAccountViewPrefab;
 		public RectTransform OtherAccountContainer;
 
+		public Button SignInButton;
 
-		public UnityEvent OnOtherAccountSelected;
+		public UnityEvent OnRequestedViewResolve;
 
 		public int GetEnrichOrder() => EnrichOrder;
+
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
@@ -26,9 +30,16 @@ namespace Beamable.EasyFeatures.BasicLogin.Scripts
 			{
 				var otherView = Instantiate(OtherAccountViewPrefab, OtherAccountContainer);
 				otherView.OtherUserIndex = i;
-				otherView.OnAccountSelected = OnOtherAccountSelected;
+				otherView.OnAccountSelected = OnRequestedViewResolve;
 				otherView.EnrichWithContext(managedPlayers);
 			}
+
+			// TODO: this event listener is getting added too many times
+			SignInButton.onClick.AddListener(() =>
+			{
+				viewDeps.ShowSignInOptions();
+				OnRequestedViewResolve?.Invoke();
+			});
 		}
 	}
 }

@@ -10,33 +10,6 @@ using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicLogin
 {
-	// public class BasicLoginView : MonoBehaviour, ISyncBeamableView
-	// {
-	// 	[Header("View Configuration")]
-	// 	public int EnrichOrder;
-	//
-	// 	public int GetEnrichOrder() => EnrichOrder;
-	//
-	// 	public void EnrichWithContext(BeamContextGroup managedPlayers)
-	// 	{
-	// 		// which element should be shown, given the state of the data?
-	// 		var currentContext = managedPlayers.GetSinglePlayerContext();
-	// 		var viewDeps = currentContext.ServiceProvider.GetService<ILoginDeps>();
-	//
-	// 		// if there is ever an available switch, we should show the available switch view.
-	// 		if (viewDeps.AvailableSwitch != null)
-	// 		{
-	// 			SwitchPageView.gameObject.SetActive(true);
-	// 			SwitchPageView.EnrichWithContext(managedPlayers);
-	// 		}
-	// 	}
-	//
-	// 	protected virtual void SelectView(ISyncBeamableView view)
-	// 	{
-	//
-	// 	}
-	// }
-
 	public interface ILoginDeps : IBeamableViewDeps
 	{
 		/// <summary>
@@ -56,12 +29,14 @@ namespace Beamable.EasyFeatures.BasicLogin
 		/// </summary>
 		OptionalUserView AvailableSwitch { get; }
 
-		// /// <summary>
-		// /// A <see cref="LoginFlowState"/> describes what the player is currently doing in the login flow.
-		// /// </summary>
-		// LoginFlowState State { get; }
+		/// <summary>
+		/// A <see cref="LoginFlowState"/> describes what the player is currently doing in the login flow.
+		/// </summary>
+		LoginFlowState State { get; }
 
 		void OfferUserSelection(UserView nextUser);
+
+		void ShowSignInOptions();
 	}
 
 	/// <summary>
@@ -75,9 +50,9 @@ namespace Beamable.EasyFeatures.BasicLogin
 		HOME,
 
 		/// <summary>
-		/// When the user is adding an email association to their account
+		/// When the user is picking what third party option they'd like to use to sign in.
 		/// </summary>
-		EMAIL_LOGIN,
+		SIGN_IN_OPTIONS,
 
 		/// <summary>
 		/// When the user is creating a new anonymous account
@@ -88,8 +63,41 @@ namespace Beamable.EasyFeatures.BasicLogin
 		ERROR,
 		FORGOT_PASSWORD,
 		FORGOT_PASSWORD_CONFIRM,
-		SWITCH_USER,
+
+		/// <summary>
+		/// When the user is confirming they want to switch accounts
+		/// </summary>
+		OFFER_SWITCH_USER,
 		SET_DETAILS
+	}
+
+	[Serializable]
+	public struct UserViewThirdPartyCredential
+	{
+		/// <summary>
+		/// The third party auth code
+		/// </summary>
+		public AuthThirdParty thirdParty;
+
+		/// <summary>
+		/// true if the user has the third party enabled on their account
+		/// </summary>
+		public bool hasCredential;
+
+		/// <summary>
+		/// true if game is configured to use this credential type.
+		/// </summary>
+		public bool isSupported;
+
+		/// <summary>
+		/// true if the UI should display that the user has this credential
+		/// </summary>
+		public bool ShouldShowIcon => isSupported && hasCredential;
+
+		/// <summary>
+		/// true if the UI should allow the user to register the credential again
+		/// </summary>
+		public bool ShouldShowButton => isSupported && !hasCredential;
 	}
 
 	[Serializable]
@@ -121,9 +129,19 @@ namespace Beamable.EasyFeatures.BasicLogin
 		public string email;
 
 		/// <summary>
+		/// true if the <see cref="email"/> field is not null or empty, suggesting that the user has an email credential
+		/// </summary>
+		public bool HasEmail => !string.IsNullOrEmpty(email);
+
+		/// <summary>
 		/// A set of third party association codes, if they exist.
 		/// </summary>
 		public string[] thirdPartyAssociations;
+
+		/// <summary>
+		/// A set of the <see cref="UserViewThirdPartyCredential"/>s that can be applied to the user.
+		/// </summary>
+		public UserViewThirdPartyCredential[] thirdParties;
 
 		/// <summary>
 		/// A set of device ids associated with the user
@@ -167,6 +185,7 @@ namespace Beamable.EasyFeatures.BasicLogin
 				refreshToken = context.AccessToken.RefreshToken,
 			};
 			view = await ApplyStats(statsApi, config, view, user.id);
+			view = await ApplyThirdParties(user, view, config);
 			return view;
 		}
 
@@ -192,6 +211,24 @@ namespace Beamable.EasyFeatures.BasicLogin
 			};
 
 			view = await ApplyStats(statsApi, config, view, bundle.User.id);
+			view = await ApplyThirdParties(bundle.User, view, config);
+			return view;
+		}
+
+		public static async Promise<UserView> ApplyThirdParties(User user, UserView view, AccountManagementConfiguration config)
+		{
+			var thirdParties = await config.GetAllEnabledThirdPartiesForUser(user);
+			view.thirdParties = new UserViewThirdPartyCredential[thirdParties.Count];
+			for (var i = 0; i < thirdParties.Count; i++)
+			{
+				var thirdParty = thirdParties[i];
+				view.thirdParties[i] = new UserViewThirdPartyCredential
+				{
+					isSupported = thirdParty.ThirdPartyEnabled,
+					hasCredential = thirdParty.HasAssociation,
+					thirdParty = thirdParty.ThirdParty
+				};
+			}
 			return view;
 		}
 
@@ -233,6 +270,49 @@ namespace Beamable.EasyFeatures.BasicLogin
 			}
 
 			return view;
+		}
+	}
+
+	public static class LoginViewExtensions
+	{
+
+		public static UserViewThirdPartyCredential Facebook(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.Facebook);
+		public static UserViewThirdPartyCredential Steam(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.Steam);
+
+		public static UserViewThirdPartyCredential Apple(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.Apple);
+
+		public static UserViewThirdPartyCredential Google(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.Google);
+
+		public static UserViewThirdPartyCredential FacebookLimited(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.FacebookLimited);
+
+		public static UserViewThirdPartyCredential GameCenter(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.GameCenter);
+
+		public static UserViewThirdPartyCredential GameCenterLimited(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.GameCenterLimited);
+
+		public static UserViewThirdPartyCredential GooglePlayGameServices(this UserViewThirdPartyCredential[] credentials) =>
+			FindThirdParty(credentials, AuthThirdParty.GoogleGamesServices);
+
+		public static UserViewThirdPartyCredential FindThirdParty(this UserViewThirdPartyCredential[] credentials, AuthThirdParty thirdParty)
+		{
+			for (var i = 0; i < credentials.Length; i++)
+			{
+				if (credentials[i].thirdParty == thirdParty)
+				{
+					return credentials[i];
+				}
+			}
+
+			return new UserViewThirdPartyCredential
+			{
+				thirdParty = thirdParty, hasCredential = false, isSupported = false
+			};
 		}
 	}
 
