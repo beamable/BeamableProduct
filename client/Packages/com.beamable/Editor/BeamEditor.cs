@@ -1,5 +1,6 @@
 using Beamable.AccountManagement;
 using Beamable.Api;
+using Beamable.Api.Caches;
 using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -260,7 +261,8 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
 			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
 																											 provider.GetService<AccessTokenStorage>(),
-																											 null)
+																											 null,
+																											 provider.GetService<OfflineCache>())
 			{ RequestTimeoutMs = $"{30 * 1000}" }
 			);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
@@ -279,13 +281,14 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
 
 			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
+			BeamEditorContextDependencies.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
 				BeamEditorContextDependencies.AddSingleton(globallyAccessibleHintSystem.GetType(), () => globallyAccessibleHintSystem);
 
-			// Set flag of FacebookImporter
-			BeamableFacebookImporter.SetFlag();
+			// Set flag of SocialsImporter
+			BeamableSocialsImporter.SetFlag();
 
 			async void InitDefaultContext()
 			{

@@ -28,6 +28,12 @@ namespace microserviceTests.microservice
       }
    }
 
+   [StorageObject("simple")]
+   public class SimpleStorageObject : MongoStorageObject
+   {
+      
+   }
+   
    [Microservice("simple", UseLegacySerialization = true)]
    public class SimpleMicroservice : Microservice
    {

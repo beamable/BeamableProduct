@@ -16,6 +16,11 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 
 		}
 
+		public void UnsubscribeAll(string name)
+		{
+
+		}
+
 		public void Subscribe<T>(string name, Action<T> handler)
 		{
 			throw new NotImplementedException();
@@ -30,6 +35,17 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 		{
 
 		}
+
+		public void Pause(string name)
+		{
+
+		}
+
+		public void Resume(string name)
+		{
+
+		}
+
 
 		public void CreateNotificationChannel(string id, string name, string description)
 		{
