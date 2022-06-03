@@ -9,11 +9,12 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
+			Party Party { get; set; }
 			bool IsVisible { get; set; }
-			string PlayerName { get; set; }
 			List<PartySlotPresenter.ViewData> Players { get; set; }
 		}
-		
+
+		public PartyFeatureControl FeatureControl;
 		[SerializeField] private int _enrichOrder;
 
 		[SerializeField] private TextMeshProUGUI _titleText;
@@ -21,41 +22,33 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private Button _settingsButton;
 		[SerializeField] private Button _backButton;
 		[SerializeField] private Button _createButton;
+		
+		private IDependencies _system;
 
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
-			var system = ctx.ServiceProvider.GetService<IDependencies>();
+			_system = ctx.ServiceProvider.GetService<IDependencies>();
 			
-			gameObject.SetActive(system.IsVisible);
-			if (!system.IsVisible)
+			gameObject.SetActive(_system.IsVisible);
+			if (!_system.IsVisible)
 			{
 				return;
 			}
 
-			_titleText.text = system.PlayerName;
+			_titleText.text = ctx.PlayerId.ToString();
 			
 			// set callbacks
 			_settingsButton.onClick.ReplaceOrAddListener(OnSettingsButtonClicked);
 			_backButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			_createButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			_partyList.Setup(system.Players, OnPlayerAccepted, OnAskedToLeave, OnPromoted, null);
+			_partyList.Setup(_system.Players, OnPlayerInvited, null, null, null);
 		}
 
-		private void OnPromoted(string id)
-		{
-			throw new System.NotImplementedException();
-		}
-
-		private void OnAskedToLeave(string id)
-		{
-			throw new System.NotImplementedException();
-		}
-
-		private void OnPlayerAccepted(string id)
+		private void OnPlayerInvited(string id)
 		{
 			throw new System.NotImplementedException();
 		}
@@ -67,7 +60,10 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnBackButtonClicked()
 		{
-			throw new System.NotImplementedException();
+			if (_system.Party != null)
+			{
+				FeatureControl.OpenPartyView(_system.Party);
+			}
 		}
 
 		private void OnSettingsButtonClicked()

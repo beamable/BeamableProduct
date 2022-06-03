@@ -79,7 +79,17 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnAddMember()
 		{
-			FeatureControl.OpenInviteView(new List<PartySlotPresenter.ViewData>());
+			List<PartySlotPresenter.ViewData> friendsList = new List<PartySlotPresenter.ViewData>()
+			{
+				new PartySlotPresenter.ViewData() {PlayerId = "Test player 1"},
+				new PartySlotPresenter.ViewData() {PlayerId = "Test player 2"},
+				new PartySlotPresenter.ViewData() {PlayerId = "Test player 3"},
+				new PartySlotPresenter.ViewData() {PlayerId = "Test player 4"},
+				new PartySlotPresenter.ViewData() {PlayerId = "Test player 5"},
+				new PartySlotPresenter.ViewData() {PlayerId = "Test player 6"},
+				new PartySlotPresenter.ViewData() {PlayerId = "Test player 7"},
+			};
+			FeatureControl.OpenInviteView(friendsList, _system.Party);
 		}
 
 		private void OnCopyIdButtonClicked()

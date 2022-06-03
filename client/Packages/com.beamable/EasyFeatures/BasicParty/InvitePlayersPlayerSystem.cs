@@ -4,8 +4,8 @@ namespace Beamable.EasyFeatures.BasicParty
 {
 	public class InvitePlayersPlayerSystem : InvitePlayersView.IDependencies
 	{
+		public Party Party { get; set; }
 		public bool IsVisible { get; set; }
-		public string PlayerName { get; set; }
 		public List<PartySlotPresenter.ViewData> Players { get; set; }
 	}
 }
