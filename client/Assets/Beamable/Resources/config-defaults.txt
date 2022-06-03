@@ -1,7 +1,7 @@
 {
-    "cid": "1323424830305280",
-    "alias": "chris-test-2",
-    "pid": "DE_1409075572900864",
+    "cid": "",
+    "alias": "",
+    "pid": "",
     "platform": "https://dev.api.beamable.com",
     "socket": "https://dev.api.beamable.com",
     "containerPrefix": ""
