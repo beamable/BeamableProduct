@@ -1,4 +1,5 @@
 using Beamable.Common.Reflection;
+using BeamableReflection;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -263,7 +264,7 @@ namespace Beamable.Common.Assistant
 	}
 
 	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-	public class BeamHintSystemAttribute : Attribute, IReflectionAttribute
+	public class BeamHintSystemAttribute : PreserveAttribute, IReflectionAttribute
 	{
 		public bool IsBeamContextSystem
 		{

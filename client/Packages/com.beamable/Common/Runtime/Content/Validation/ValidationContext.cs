@@ -81,7 +81,7 @@ namespace Beamable.Common.Content.Validation
 
 		public string GetTypeName(Type type)
 		{
-			return ContentRegistry.GetContentTypeName(type);
+			return ContentTypeReflectionCache.GetContentTypeName(type);
 		}
 
 
