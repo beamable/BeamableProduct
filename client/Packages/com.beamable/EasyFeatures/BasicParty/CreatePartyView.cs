@@ -11,7 +11,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			Party Party { get; set; }
 			bool IsVisible { get; set; }
-			bool ValidateConfirmButton();
+			bool ValidateConfirmButton(int maxPlayers);
 		}
 
 		public PartyFeatureControl FeatureControl;
@@ -29,7 +29,8 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private Button _backButton;
 
 		private IDependencies _system;
-		private bool _isSettingsView;
+		private bool _createNewParty;
+		private Party _party;
 
 		public int GetEnrichOrder() => _enrichOrder;
 		
@@ -43,19 +44,16 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				return;
 			}
-			
-			_isSettingsView = _system.Party == null;
-			if (_isSettingsView)
-			{
-				_system.Party = new Party();
-			}
-			_headerText.text = _isSettingsView ? "CREATE" : "SETTINGS";
-			_partyIdObject.gameObject.SetActive(!_isSettingsView);
-			_partyIdInputField.text = _isSettingsView ? "" : _system.Party.PartyId;
-			_maxPlayersTextField.text = _isSettingsView ? "" : _system.Party.MaxPlayers.ToString();
-			_publicAccessToggle.isOn = _isSettingsView || _system.Party.Access == PartyAccess.Public;
+
+			_createNewParty = _system.Party == null;
+			_party = _createNewParty ? new Party() : _system.Party.Clone() as Party;
+			_headerText.text = _createNewParty ? "CREATE" : "SETTINGS";
+			_partyIdObject.gameObject.SetActive(!_createNewParty);
+			_partyIdInputField.text = _createNewParty ? "" : _party.PartyId;
+			_maxPlayersTextField.text = _createNewParty ? "" : _party.MaxPlayers.ToString();
+			_publicAccessToggle.isOn = _createNewParty || _party.Access == PartyAccess.Public;
 			PartyAccessChanged(_publicAccessToggle.isOn);
-			MaxPlayersValueChanged(_system.Party.MaxPlayers.ToString());
+			MaxPlayersValueChanged(_party.MaxPlayers.ToString());
 			
 			// set callbacks
 			_maxPlayersTextField.onValueChanged.ReplaceOrAddListener(MaxPlayersValueChanged);
@@ -68,7 +66,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnCopyIdButtonClicked()
 		{
-			GUIUtility.systemCopyBuffer = _system.Party.PartyId;
+			GUIUtility.systemCopyBuffer = _party.PartyId;
 			Debug.Log("Party ID copied to clipboard");
 		}
 
@@ -76,8 +74,8 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (int.TryParse(value, out int maxPlayers))
 			{
-				_system.Party.MaxPlayers = maxPlayers;
-				_nextButton.interactable = _system.ValidateConfirmButton();
+				_party.MaxPlayers = maxPlayers;
+				_nextButton.interactable = _system.ValidateConfirmButton(_party.MaxPlayers);
 			}
 		}
 
@@ -101,18 +99,19 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnNextButtonClicked()
 		{
-			if (string.IsNullOrWhiteSpace(_system.Party.PartyId))
+			if (string.IsNullOrWhiteSpace(_party.PartyId))
 			{
 				// placeholder party ID generation
-				_system.Party.PartyId = Random.Range(10000, 99999).ToString();
+				_party.PartyId = Random.Range(10000, 99999).ToString();
 			}
-			
+
+			_system.Party = _party;			
 			FeatureControl.OpenPartyView(_system.Party);
 		}
 		
 		private void PartyAccessChanged(bool isPublic)
 		{
-			_system.Party.Access = isPublic ? PartyAccess.Public : PartyAccess.Private;
+			_party.Access = isPublic ? PartyAccess.Public : PartyAccess.Private;
 		}
 	}
 }

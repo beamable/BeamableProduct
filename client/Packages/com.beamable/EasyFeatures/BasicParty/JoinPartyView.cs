@@ -8,7 +8,9 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
+			string PartyId { get; set; }
 			bool IsVisible { get; set; }
+			bool ValidateJoinButton();
 		}
 
 		[SerializeField] private int _enrichOrder;
@@ -17,23 +19,34 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private Button _backButton;
 		[SerializeField] private Button _joinButton;
 		[SerializeField] private Button _cancelButton;
+		
+		private IDependencies _system;
 
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
-			var system = ctx.ServiceProvider.GetService<IDependencies>();
+			_system = ctx.ServiceProvider.GetService<IDependencies>();
 			
-			gameObject.SetActive(system.IsVisible);
-			if (!system.IsVisible)
+			gameObject.SetActive(_system.IsVisible);
+			if (!_system.IsVisible)
 			{
 				return;
 			}
 			
+			OnPartyIdValueChanged(_partyIdInputField.text);
+			
+			_partyIdInputField.onValueChanged.ReplaceOrAddListener(OnPartyIdValueChanged);
 			_joinButton.onClick.ReplaceOrAddListener(OnJoinButtonClicked);
 			_backButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			_cancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
+		}
+
+		private void OnPartyIdValueChanged(string value)
+		{
+			_system.PartyId = value;
+			_joinButton.interactable = _system.ValidateJoinButton();
 		}
 
 		private void OnCancelButtonClicked()

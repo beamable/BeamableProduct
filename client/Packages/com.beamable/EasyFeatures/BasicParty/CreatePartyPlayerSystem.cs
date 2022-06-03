@@ -6,9 +6,9 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public Party Party { get; set; }
 		public bool IsVisible { get; set; }
-		public bool ValidateConfirmButton()
+		public bool ValidateConfirmButton(int maxPlayers)
 		{
-			return Party != null && Party.MaxPlayers > 0;
+			return maxPlayers > 0;
 		}
 	}
 }
