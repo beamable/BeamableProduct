@@ -12,14 +12,16 @@ public class CliRequester : IBeamableRequester
 	private const string BASE_PATH = "https://dev.api.beamable.com";
 	public IAccessToken AccessToken => Token;
 	private CliToken Token { get; set; }
+	private string Pid { get; set; }
+	private string Cid { get; set; }
 
 	public CliRequester()
 	{
 		Token = null;
 	}
 
-	public void UpdateToken(TokenResponse response, string cid, string pid) =>
-		Token = new CliToken(response, cid, pid);
+	public void UpdateToken(TokenResponse response) =>
+		Token = new CliToken(response, Cid, Pid);
 	
 	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
@@ -27,36 +29,9 @@ public class CliRequester : IBeamableRequester
 		// Console.WriteLine($"Would have sent a {method} to {uri} but not implemented yet");
 		Console.WriteLine($"{method} call: {uri}");
 		// throw new NotImplementedException();
-		var client = new HttpClient();
-		var request = new HttpRequestMessage(FromMethod(method), BASE_PATH + uri);
-		request.Headers.Add("contentType", "application/json");
-		if (body != null)
-		{
-			if (body is string s)
-			{
-				byte[] bodyBytes = Encoding.UTF8.GetBytes(s);
-				request.Content = new ByteArrayContent(bodyBytes);
-			}
-			else
-			{
-				string ss = JsonSerializer.Serialize(body, new JsonSerializerOptions(){ IncludeFields = true});
-				request.Content = new StringContent(ss, Encoding.UTF8, "application/json");
-			}
-		}
-		
-		if (!string.IsNullOrEmpty(Token?.Cid))
-		{
-			client.DefaultRequestHeaders.Add("X-KS-CLIENTID", Token.Cid);
-		}
-		if (!string.IsNullOrEmpty(Token?.Pid))
-		{
-			client.DefaultRequestHeaders.Add("X-KS-PROJECTID", Token.Pid);
-		}
+		var client = GetClient(includeAuthHeader, Token?.Pid ?? Pid, Token?.Cid ?? Cid, Token);
+		var request = PrepareRequest(method, uri, body);
 
-		if (includeAuthHeader && !string.IsNullOrWhiteSpace(Token?.Token))
-		{
-			client.DefaultRequestHeaders.Add("Authorization", $"Bearer {AccessToken.Token}");
-		}
 		Console.WriteLine($"Calling: {request.ToString()}");
 		var result = client.Send(request);
 		Console.WriteLine("RESULT: " + result.ToString());
@@ -69,6 +44,51 @@ public class CliRequester : IBeamableRequester
 			}
 		}
 		return Promise<T>.Successful(default(T));
+	}
+
+	private static HttpRequestMessage PrepareRequest(Method method, string uri, object body = null)
+	{
+		var request = new HttpRequestMessage(FromMethod(method), BASE_PATH + uri);
+		
+		if (body == null)
+		{
+			return request;
+		}
+
+		if (body is string s)
+		{
+			byte[] bodyBytes = Encoding.UTF8.GetBytes(s);
+			request.Content = new ByteArrayContent(bodyBytes);
+		}
+		else
+		{
+			string ss = JsonSerializer.Serialize(body, new JsonSerializerOptions{ IncludeFields = true});
+			request.Content = new StringContent(ss, Encoding.UTF8, "application/json");
+		}
+
+		return request;
+	}
+
+	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, CliToken token)
+	{
+		var client = new HttpClient();
+		client.DefaultRequestHeaders.Add("contentType", "application/json");
+		
+		if (!string.IsNullOrEmpty(cid)) // use Cid as fallback for Token.Cid only
+		{
+			client.DefaultRequestHeaders.Add("X-KS-CLIENTID", cid);
+		}
+		if (!string.IsNullOrEmpty(pid))// use Pid as fallback for Token.Pid only
+		{
+			client.DefaultRequestHeaders.Add("X-KS-PROJECTID", pid);
+		}
+
+		if (includeAuthHeader && !string.IsNullOrWhiteSpace(token?.Token))
+		{
+			client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token.Token}");
+		}
+
+		return client;
 	}
 
 	public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
@@ -92,5 +112,11 @@ public class CliRequester : IBeamableRequester
 			Method.DELETE => HttpMethod.Delete,
 			_ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
 		};
+	}
+
+	public void SetPidAndCid(string cid, string pid)
+	{
+		Cid = cid;
+		Pid = pid;
 	}
 }

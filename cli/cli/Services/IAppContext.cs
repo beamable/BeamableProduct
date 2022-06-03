@@ -49,8 +49,9 @@ public class DefaultAppContext : IAppContext
 		var password = bindingContext.ParseResult.GetValueForOption(_passwordOption) ?? string.Empty;
 		var userName = bindingContext.ParseResult.GetValueForOption(_usernameOption) ?? string.Empty;
 		Console.WriteLine($"{userName}:{password}");
-		var resp = await _authApi.Login(userName, password);
-		_requester.UpdateToken(resp, Cid, Pid);
+		_requester.SetPidAndCid(Cid, Pid);
+		var resp = await _authApi.Login(userName, password, true, true);
+		_requester.UpdateToken(resp);
 		// generate token based on password and username
 	} 
 }
