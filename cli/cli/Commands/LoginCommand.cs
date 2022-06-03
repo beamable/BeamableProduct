@@ -1,18 +1,33 @@
-﻿namespace cli;
+﻿using Beamable.Common.Api.Auth;
+using UnityEngine;
 
-public class LoginCommandArgs : CommandArgs { }
+namespace cli;
+
+public class LoginCommandArgs : CommandArgs
+{
+	public string username;
+	public string password;
+}
 
 public class LoginCommand : AppCommand<LoginCommandArgs>
 {
-	private readonly IFakeService _fake;
-	
-	public LoginCommand(IFakeService fake) : base("login", "save credentials to file") { }
-	public override void Configure() {}
+	private readonly IAuthApi _authApi;
+
+	public LoginCommand(IAuthApi authApi) : base("login", "save credentials to file")
+	{
+		_authApi = authApi;
+	}
+
+	public override void Configure()
+	{
+		AddOption(new UsernameOption(), (args, i) => args.username = i);
+		AddOption(new PasswordOption(), (args, i) => args.password = i);
+	}
 
 	public override async Task Handle(LoginCommandArgs args)
 	{
-		// write the token that should exists in app context to a file
-		await Task.Delay(54);
-		Console.WriteLine("Writing");
+		var response = await _authApi.Login(args.username, args.password, true, true);
+		Console.WriteLine(response?.access_token);
+		// now save the token if login succeed
 	}
 }

@@ -40,6 +40,9 @@ public class CliRequester : IBeamableRequester
 			using var reader = new StreamReader(stream, Encoding.UTF8);
 			Console.WriteLine($"Content: {reader.ReadToEnd()}");
 		}
+
+		// TODO parse response
+
 		return Promise<T>.Successful(default(T));
 	}
 
@@ -69,7 +72,7 @@ public class CliRequester : IBeamableRequester
 	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, CliToken token)
 	{
 		var client = new HttpClient();
-		client.DefaultRequestHeaders.Add("contentType", "application/json");
+		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
 		
 		if (!string.IsNullOrEmpty(cid))
 		{

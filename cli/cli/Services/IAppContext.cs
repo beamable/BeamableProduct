@@ -24,20 +24,16 @@ public class DefaultAppContext : IAppContext
 	private readonly PasswordOption _passwordOption;
 	private readonly PidOption _pidOption;
 	private readonly UsernameOption _usernameOption;
-	private readonly IAuthApi _authApi;
 	private readonly CliRequester _requester;
 	public bool IsDryRun { get; set; }
 	public string Cid { get; set; }
 	public string Pid { get; set; }
-	
-	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PasswordOption passwordOption, PidOption pidOption, UsernameOption usernameOption, IAuthApi authApi, CliRequester requester)
+
+	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, CliRequester requester)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
-		_passwordOption = passwordOption;
 		_pidOption = pidOption;
-		_usernameOption = usernameOption;
-		_authApi = authApi;
 		_requester = requester;
 	}
 
@@ -46,14 +42,7 @@ public class DefaultAppContext : IAppContext
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
 		Cid = bindingContext.ParseResult.GetValueForOption(_cidOption) ?? "unset";
 		Pid = bindingContext.ParseResult.GetValueForOption(_pidOption) ?? "unset";
-		var password = bindingContext.ParseResult.GetValueForOption(_passwordOption) ?? string.Empty;
-		var userName = bindingContext.ParseResult.GetValueForOption(_usernameOption) ?? string.Empty;
 
 		_requester.SetPidAndCid(Cid, Pid);
-		var resp = await _authApi.Login(userName, password, true, true);
-
-		// generate token based on password and username
-		_requester.UpdateToken(resp);
-		
 	} 
 }
