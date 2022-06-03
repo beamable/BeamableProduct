@@ -1,5 +1,4 @@
 ﻿using Beamable.Common.Api.Auth;
-using UnityEngine;
 
 namespace cli;
 
