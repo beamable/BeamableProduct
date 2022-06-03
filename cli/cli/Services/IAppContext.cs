@@ -48,10 +48,12 @@ public class DefaultAppContext : IAppContext
 		Pid = bindingContext.ParseResult.GetValueForOption(_pidOption) ?? "unset";
 		var password = bindingContext.ParseResult.GetValueForOption(_passwordOption) ?? string.Empty;
 		var userName = bindingContext.ParseResult.GetValueForOption(_usernameOption) ?? string.Empty;
-		Console.WriteLine($"{userName}:{password}");
+
 		_requester.SetPidAndCid(Cid, Pid);
 		var resp = await _authApi.Login(userName, password, true, true);
-		_requester.UpdateToken(resp);
+
 		// generate token based on password and username
+		_requester.UpdateToken(resp);
+		
 	} 
 }

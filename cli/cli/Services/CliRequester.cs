@@ -26,22 +26,19 @@ public class CliRequester : IBeamableRequester
 	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		// Console.WriteLine($"Would have sent a {method} to {uri} but not implemented yet");
 		Console.WriteLine($"{method} call: {uri}");
-		// throw new NotImplementedException();
 		var client = GetClient(includeAuthHeader, Token?.Pid ?? Pid, Token?.Cid ?? Cid, Token);
 		var request = PrepareRequest(method, uri, body);
 
-		Console.WriteLine($"Calling: {request.ToString()}");
+		Console.WriteLine($"Calling: {request}");
 		var result = client.Send(request);
-		Console.WriteLine("RESULT: " + result.ToString());
+		Console.WriteLine($"RESULT: {result}");
+
 		if (result.Content != null)
 		{
-			var stream = result.Content.ReadAsStream();
-			using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-			{
-				Console.WriteLine($"Content: {reader.ReadToEnd()}");
-			}
+			Stream stream = result.Content.ReadAsStream();
+			using var reader = new StreamReader(stream, Encoding.UTF8);
+			Console.WriteLine($"Content: {reader.ReadToEnd()}");
 		}
 		return Promise<T>.Successful(default(T));
 	}
