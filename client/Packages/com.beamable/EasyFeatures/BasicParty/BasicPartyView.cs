@@ -15,6 +15,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			bool IsPlayerLeader { get; }
 		}
 
+		public PartyFeatureControl FeatureControl;
 		[SerializeField] private int _enrichOrder;
 
 		[Header("Components")]
@@ -30,28 +31,30 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private Button _createLobbyButton;
 		[SerializeField] private Button _joinLobbyButton;
 		[SerializeField] private Button _quickStartButton;
-		[SerializeField] private Button _invitePlayerButton;
+		[SerializeField] private Button _copyIdButton;
 		[SerializeField] private Button _nextButton;
 		[SerializeField] private Button _leaveButton;
+
+		private IDependencies _system;
 
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
-			var system = ctx.ServiceProvider.GetService<IDependencies>();
+			_system = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(system.IsVisible);
-			if (!system.IsVisible)
+			gameObject.SetActive(_system.IsVisible);
+			if (!_system.IsVisible)
 			{
 				return;
 			}
 			
-			_partyIdText.text = system.Party.PartyId;
+			_partyIdText.text = _system.Party.PartyId;
 
-			_leadButtonsGroup.SetActive(system.IsPlayerLeader);
-			_nonLeadButtonsGroup.SetActive(!system.IsPlayerLeader);
-			_settingsButton.gameObject.SetActive(system.IsPlayerLeader);
+			_leadButtonsGroup.SetActive(_system.IsPlayerLeader);
+			_nonLeadButtonsGroup.SetActive(!_system.IsPlayerLeader);
+			_settingsButton.gameObject.SetActive(_system.IsPlayerLeader);
 
 			// set callbacks
 			_backButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
@@ -60,10 +63,29 @@ namespace Beamable.EasyFeatures.BasicParty
 			_createLobbyButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
 			_joinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
 			_quickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
-			_invitePlayerButton.onClick.ReplaceOrAddListener(InvitePlayerButtonClicked);
+			_copyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			_nextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
-			
-			_partyList.Setup(new List<PartySlotPresenter.ViewData>(), OnPlayerAccepted, OnAskedToLeave, OnPromoted);
+
+			// temporary players list
+			List<PartySlotPresenter.ViewData> players = new List<PartySlotPresenter.ViewData>()
+			{
+				new PartySlotPresenter.ViewData {PlayerId = ctx.PlayerId.ToString()},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player"},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player"},
+				new PartySlotPresenter.ViewData {PlayerId = ""},
+			};
+			_partyList.Setup(players, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember);
+		}
+
+		private void OnAddMember()
+		{
+			FeatureControl.OpenInviteView(new List<PartySlotPresenter.ViewData>());
+		}
+
+		private void OnCopyIdButtonClicked()
+		{
+			GUIUtility.systemCopyBuffer = _system.Party.PartyId;
+			Debug.Log("Party ID copied to clipboard");
 		}
 
 		private void OnPromoted(string id)
@@ -86,11 +108,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			throw new System.NotImplementedException();
 		}
 
-		private void InvitePlayerButtonClicked()
-		{
-			throw new System.NotImplementedException();
-		}
-
 		private void QuickStartButtonClicked()
 		{
 			throw new System.NotImplementedException();
@@ -108,12 +125,12 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void SettingsButtonClicked()
 		{
-			throw new System.NotImplementedException();
+			FeatureControl.OpenCreatePartyView(_system.Party);
 		}
 
 		private void LeaveButtonClicked()
 		{
-			throw new System.NotImplementedException();
+			FeatureControl.OpenCreatePartyView();
 		}
 	}
 }

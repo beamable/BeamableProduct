@@ -14,7 +14,9 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private Button _acceptButton;
 		[SerializeField] private Button _askToLeaveButton;
 		[SerializeField] private Button _promoteButton;
+		[SerializeField] private Button _addMemberButton;
 		[SerializeField] private GameObject _expandableButtons;
+		[SerializeField] private GameObject _occupiedSlotGroup;
 
 		public struct ViewData
 		{
@@ -33,13 +35,19 @@ namespace Beamable.EasyFeatures.BasicParty
 		public void Setup(ViewData viewData,
 		                  Action<string> onAcceptButton,
 		                  Action<string> onAskToLeaveButton,
-		                  Action<string> onPromoteButton)
+		                  Action<string> onPromoteButton,
+		                  Action onAddMemberButton)
 		{
+			bool isSlotOccupied = !string.IsNullOrWhiteSpace(viewData.PlayerId);
+			_occupiedSlotGroup.SetActive(isSlotOccupied);
+			_addMemberButton.gameObject.SetActive(!isSlotOccupied);
+			
 			_avatarImage.sprite = viewData.Avatar;
 			_playerNameText.text = viewData.PlayerId;
-			_acceptButton.onClick.AddListener(() => onAcceptButton.Invoke(viewData.PlayerId));
-			_askToLeaveButton.onClick.AddListener(() => onAskToLeaveButton.Invoke(viewData.PlayerId));
-			_promoteButton.onClick.AddListener(() => onPromoteButton.Invoke(viewData.PlayerId));
+			_acceptButton.onClick.ReplaceOrAddListener(() => onAcceptButton(viewData.PlayerId));
+			_askToLeaveButton.onClick.ReplaceOrAddListener(() => onAskToLeaveButton(viewData.PlayerId));
+			_promoteButton.onClick.ReplaceOrAddListener(() => onPromoteButton(viewData.PlayerId));
+			_addMemberButton.onClick.ReplaceOrAddListener(() => onAddMemberButton());
 		}
 
 		public void ToggleExpand()

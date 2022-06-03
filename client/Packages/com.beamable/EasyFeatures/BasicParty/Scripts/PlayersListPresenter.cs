@@ -16,15 +16,17 @@ namespace Beamable.EasyFeatures.BasicParty
 		private Action<string> _onAcceptButtonClicked;
 		private Action<string> _onAskToLeaveClicked;
 		private Action<string> _onPromoteClicked;
+		private Action _onAddMemberClicked;
 		private List<PartySlotPresenter.ViewData> _slots;
 
-		public void Setup(List<PartySlotPresenter.ViewData> slots, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted)
+		public void Setup(List<PartySlotPresenter.ViewData> slots, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember)
 		{
 			_slots = slots;
 			_scrollView.SetContentProvider(this);
 			_onAcceptButtonClicked = onPlayerAccepted;
 			_onAskToLeaveClicked = onAskedToLeave;
 			_onPromoteClicked = onPromoted;
+			_onAddMemberClicked = onAddMember;
 			
 			ClearEntries();
 			SpawnEntries();
@@ -66,7 +68,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			var data = item as PartySlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be PartySlotPresenters");
 
-			spawned.Setup(data.ViewData, _onAcceptButtonClicked, _onAskToLeaveClicked, _onPromoteClicked);
+			spawned.Setup(data.ViewData, _onAcceptButtonClicked, _onAskToLeaveClicked, _onPromoteClicked, _onAddMemberClicked);
 
 			return spawned.GetComponent<RectTransform>();
 		}

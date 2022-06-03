@@ -42,7 +42,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			_backButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			_createButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			_partyList.Setup(system.Players, OnPlayerAccepted, OnAskedToLeave, OnPromoted);
+			_partyList.Setup(system.Players, OnPlayerAccepted, OnAskedToLeave, OnPromoted, null);
 		}
 
 		private void OnPromoted(string id)

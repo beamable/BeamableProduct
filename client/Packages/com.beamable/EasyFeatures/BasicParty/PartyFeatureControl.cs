@@ -77,12 +77,14 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			_partyPlayerSystem.Party = party;
 			_partyPlayerSystem.Setup(party.Players);
+			_partyPlayerSystem.IsPlayerLeader = true;	// temporary
 			OpenView(View.Party);
 		}
 		
-		public void OpenCreatePartyView(string partyId = "")
+		// when party data is provided the view turns to settings
+		public void OpenCreatePartyView(Party party = null)
 		{
-			_createPartyPlayerSystem.PartyId = partyId;
+			_createPartyPlayerSystem.Party = party;
 			OpenView(View.Create);
 		}
 		

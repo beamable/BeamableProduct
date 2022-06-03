@@ -9,9 +9,8 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
+			Party Party { get; set; }
 			bool IsVisible { get; set; }
-			string PartyId { get; set; }
-			int MaxPlayers { get; set; }
 			bool ValidateConfirmButton();
 		}
 
@@ -24,12 +23,13 @@ namespace Beamable.EasyFeatures.BasicParty
 		[SerializeField] private TMP_InputField _partyIdInputField;
 		[SerializeField] private TMP_InputField _maxPlayersTextField;
 		[SerializeField] private Toggle _publicAccessToggle;
+		[SerializeField] private Button _copyIdButton;
 		[SerializeField] private Button _nextButton;
 		[SerializeField] private Button _cancelButton;
 		[SerializeField] private Button _backButton;
 
-		private PartyAccess _access;
 		private IDependencies _system;
+		private bool _isSettingsView;
 
 		public int GetEnrichOrder() => _enrichOrder;
 		
@@ -44,58 +44,75 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 			
+			_isSettingsView = _system.Party == null;
+			if (_isSettingsView)
+			{
+				_system.Party = new Party();
+			}
+			_headerText.text = _isSettingsView ? "CREATE" : "SETTINGS";
+			_partyIdObject.gameObject.SetActive(!_isSettingsView);
+			_partyIdInputField.text = _isSettingsView ? "" : _system.Party.PartyId;
+			_maxPlayersTextField.text = _isSettingsView ? "" : _system.Party.MaxPlayers.ToString();
+			_publicAccessToggle.isOn = _isSettingsView || _system.Party.Access == PartyAccess.Public;
 			PartyAccessChanged(_publicAccessToggle.isOn);
-			bool createNew = string.IsNullOrWhiteSpace(_system.PartyId);
-			_partyIdObject.gameObject.SetActive(!createNew);
-			_partyIdInputField.text = _system.PartyId;
-			_headerText.text = createNew ? "CREATE" : "SETTINGS";
+			MaxPlayersValueChanged(_system.Party.MaxPlayers.ToString());
 			
 			// set callbacks
 			_maxPlayersTextField.onValueChanged.ReplaceOrAddListener(MaxPlayersValueChanged);
 			_publicAccessToggle.onValueChanged.ReplaceOrAddListener(PartyAccessChanged);
+			_copyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			_nextButton.onClick.ReplaceOrAddListener(OnNextButtonClicked);
 			_cancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
 			_backButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
+		}
+
+		private void OnCopyIdButtonClicked()
+		{
+			GUIUtility.systemCopyBuffer = _system.Party.PartyId;
+			Debug.Log("Party ID copied to clipboard");
 		}
 
 		private void MaxPlayersValueChanged(string value)
 		{
 			if (int.TryParse(value, out int maxPlayers))
 			{
-				_system.MaxPlayers = maxPlayers;
+				_system.Party.MaxPlayers = maxPlayers;
 				_nextButton.interactable = _system.ValidateConfirmButton();
 			}
 		}
 
 		private void OnBackButtonClicked()
 		{
-			throw new System.NotImplementedException();
+			ReturnToPartyView();
 		}
 		
 		private void OnCancelButtonClicked()
 		{
-			
+			ReturnToPartyView();
+		}
+
+		private void ReturnToPartyView()
+		{
+			if (_system.Party != null && !string.IsNullOrWhiteSpace(_system.Party.PartyId))
+			{
+				FeatureControl.OpenPartyView(_system.Party);
+			}
 		}
 
 		private void OnNextButtonClicked()
 		{
-			if (string.IsNullOrWhiteSpace(_system.PartyId))
+			if (string.IsNullOrWhiteSpace(_system.Party.PartyId))
 			{
 				// placeholder party ID generation
-				_system.PartyId = Random.Range(10000, 99999).ToString();
+				_system.Party.PartyId = Random.Range(10000, 99999).ToString();
 			}
-
-			Party data = new Party
-			{
-				Access = _access, MaxPlayers = _system.MaxPlayers, PartyId = _system.PartyId,
-			};
 			
-			FeatureControl.OpenPartyView(data);
+			FeatureControl.OpenPartyView(_system.Party);
 		}
 		
 		private void PartyAccessChanged(bool isPublic)
 		{
-			_access = isPublic ? PartyAccess.Public : PartyAccess.Private;
+			_system.Party.Access = isPublic ? PartyAccess.Public : PartyAccess.Private;
 		}
 	}
 }
