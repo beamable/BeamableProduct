@@ -419,7 +419,7 @@ namespace Beamable.Common.Reflection
 				foreach (var assembly in validAssemblies)
 				{
 					var types = assembly.GetTypes();
-					
+
 					foreach (var type in types)
 					{
 						// Get a list of all attributes of interest that were found on this type.
