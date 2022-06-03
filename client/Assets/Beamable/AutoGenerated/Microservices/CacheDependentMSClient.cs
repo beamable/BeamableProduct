@@ -34,15 +34,15 @@ namespace Beamable.Server.Clients
         }
         
         /// <summary>
-        /// Call the GetCachedView method on the CacheDependentMS microservice
-        /// <see cref="Beamable.Server.CacheDependentMS.GetCachedView"/>
+        /// Call the GetCachedView2 method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.GetCachedView2"/>
         /// </summary>
-        public Beamable.Common.Promise<Beamable.Common.Api.Leaderboards.LeaderBoardView> GetCachedView(int testParameters)
+        public Beamable.Common.Promise<Beamable.Common.Api.Leaderboards.LeaderBoardView> GetCachedView2(int testParameters)
         {
             string serialized_testParameters = this.SerializeArgument<int>(testParameters);
             string[] serializedFields = new string[] {
                     serialized_testParameters};
-            return this.Request<Beamable.Common.Api.Leaderboards.LeaderBoardView>("CacheDependentMS", "GetCachedView", serializedFields);
+            return this.Request<Beamable.Common.Api.Leaderboards.LeaderBoardView>("CacheDependentMS", "GetCachedView2", serializedFields);
         }
         
         /// <summary>

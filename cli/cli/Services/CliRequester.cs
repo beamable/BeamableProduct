@@ -4,6 +4,9 @@ using Beamable.Common.Api.Auth;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Beamable.Server.Common;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli;
 
@@ -22,8 +25,8 @@ public class CliRequester : IBeamableRequester
 
 	public void UpdateToken(TokenResponse response) =>
 		Token = new CliToken(response, Cid, Pid);
-	
-	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
+
+	public async Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
 		Console.WriteLine($"{method} call: {uri}");
@@ -34,22 +37,30 @@ public class CliRequester : IBeamableRequester
 		var result = client.Send(request);
 		Console.WriteLine($"RESULT: {result}");
 
+		T parsed = default(T);
 		if (result.Content != null)
 		{
 			Stream stream = result.Content.ReadAsStream();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
-			Console.WriteLine($"Content: {reader.ReadToEnd()}");
+			var rawResponse = await reader.ReadToEndAsync();
+			if (parser != null)
+			{
+				// if there is a custom parser, use that.
+				parsed = parser(rawResponse);
+			}
+			else
+			{
+				// otherwise use JSON
+				parsed = JsonConvert.DeserializeObject<T>(rawResponse, UnitySerializationSettings.Instance);
+			}
 		}
-
-		// TODO parse response
-
-		return Promise<T>.Successful(default(T));
+		return parsed;
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string uri, object body = null)
 	{
 		var request = new HttpRequestMessage(FromMethod(method), BASE_PATH + uri);
-		
+
 		if (body == null)
 		{
 			return request;
@@ -62,10 +73,9 @@ public class CliRequester : IBeamableRequester
 		}
 		else
 		{
-			string ss = JsonSerializer.Serialize(body, new JsonSerializerOptions{ IncludeFields = true});
+			var ss = JsonConvert.SerializeObject(body, UnitySerializationSettings.Instance);
 			request.Content = new StringContent(ss, Encoding.UTF8, "application/json");
 		}
-
 		return request;
 	}
 
