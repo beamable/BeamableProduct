@@ -74,11 +74,11 @@ public class CliRequester : IBeamableRequester
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json");
 		
-		if (!string.IsNullOrEmpty(cid)) // use Cid as fallback for Token.Cid only
+		if (!string.IsNullOrEmpty(cid))
 		{
 			client.DefaultRequestHeaders.Add("X-KS-CLIENTID", cid);
 		}
-		if (!string.IsNullOrEmpty(pid))// use Pid as fallback for Token.Pid only
+		if (!string.IsNullOrEmpty(pid))
 		{
 			client.DefaultRequestHeaders.Add("X-KS-PROJECTID", pid);
 		}
