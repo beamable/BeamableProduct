@@ -203,11 +203,11 @@ namespace Beamable.Editor.Assistant
 		public void FillDisplayingBeamHints(VisualElement container, List<BeamHintHeader> hintHeaders)
 		{
 			var hintDetailsReflectionCache = ActiveContext?.ServiceScope?.GetService<ReflectionCache>()?.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
-			if(hintDetailsReflectionCache == null)
+			if (hintDetailsReflectionCache == null)
 				return;
 
 			container.Clear();
-			
+
 			for (var headerIdx = 0; headerIdx < hintHeaders.Count; headerIdx++)
 			{
 				var beamHintHeader = hintHeaders[headerIdx];
@@ -226,9 +226,9 @@ namespace Beamable.Editor.Assistant
 		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains, List<string> selectedDomains)
 		{
 			var hintDetailsReflectionCache = ActiveContext?.ServiceScope?.GetService<ReflectionCache>()?.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
-			if(hintDetailsReflectionCache == null)
+			if (hintDetailsReflectionCache == null)
 				return;
-			
+
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
 			var selectedIds = new List<int>();
 			var parentCache = new Dictionary<string, BeamHintDomainTreeViewItem>();
