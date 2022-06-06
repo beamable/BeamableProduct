@@ -61,7 +61,7 @@ namespace Beamable.Editor.Content.Models
 		public void SetFromContent(IContentObject content)
 		{
 			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
-			
+
 			ContentType = content.GetType();
 			TypeName = contentTypeReflectionCache.TypeToName(ContentType);
 			LocalStatus = HostStatus.AVAILABLE;

@@ -27,7 +27,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
 			reflectionCache.GenerateReflectionCache(assembliesToSweep);
 		}
-		
+
 		[Test]
 		public void NonNested_Simple()
 		{
@@ -64,7 +64,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void Polymorphic_MissingSubType()
 		{
-			cache.AddContentTypeToDictionaries( typeof(SimpleContent));
+			cache.AddContentTypeToDictionaries(typeof(SimpleContent));
 
 			var type = cache.GetTypeFromId("simple.sub.foo");
 			Assert.AreEqual(typeof(SimpleContent), type);
@@ -73,7 +73,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Simple()
 		{
-			cache.AddContentTypeToDictionaries( typeof(SimpleFormerlyContent));
+			cache.AddContentTypeToDictionaries(typeof(SimpleFormerlyContent));
 
 			var type = cache.GetTypeFromId("oldschool.foo");
 			Assert.AreEqual(typeof(SimpleFormerlyContent), type);
@@ -82,8 +82,8 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Many()
 		{
-			cache.AddContentTypeToDictionaries( typeof(ManyFormerlyContent));
-			
+			cache.AddContentTypeToDictionaries(typeof(ManyFormerlyContent));
+
 			var type = cache.GetTypeFromId("cool.foo");
 			Assert.AreEqual(typeof(ManyFormerlyContent), type);
 		}
@@ -92,8 +92,8 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Polymorphic()
 		{
-			cache.AddContentTypeToDictionaries( typeof(SimpleFormerlyContent));
-			cache.AddContentTypeToDictionaries( typeof(SubFormerlyContent));
+			cache.AddContentTypeToDictionaries(typeof(SimpleFormerlyContent));
+			cache.AddContentTypeToDictionaries(typeof(SubFormerlyContent));
 
 			var type1 = cache.GetTypeFromId("oldschool.oldsub.foo");
 			var type2 = cache.GetTypeFromId("simple.oldsub.foo");
@@ -115,7 +115,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Missing_Polymorphic()
 		{
-			cache.AddContentTypeToDictionaries( typeof(SimpleFormerlyContent));
+			cache.AddContentTypeToDictionaries(typeof(SimpleFormerlyContent));
 
 			var type1 = cache.GetTypeFromId("oldschool.oldsub.foo");
 			var type2 = cache.GetTypeFromId("simple.oldsub.foo");
