@@ -71,7 +71,9 @@ namespace Beamable.Server.Editor.DockerCommands
 				case Architecture.X64:
 				case Architecture.X86:
 				default:
-					platformStr = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "--platform linux/x86_64" : "--platform linux/amd64";
+					platformStr = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 
+						"--platform linux/arm64" : 
+						"--platform linux/amd64";
 					break;
 
 			}
