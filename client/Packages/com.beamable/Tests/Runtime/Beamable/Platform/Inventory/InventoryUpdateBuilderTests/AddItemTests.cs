@@ -11,7 +11,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var updateBuilder = new InventoryUpdateBuilder();
 
-			var props = new Dictionary<string, string> {{"key", "value"}};
+			var props = new Dictionary<string, string> { { "key", "value" } };
 			var contentId = "contentId";
 			updateBuilder.AddItem(contentId, props);
 

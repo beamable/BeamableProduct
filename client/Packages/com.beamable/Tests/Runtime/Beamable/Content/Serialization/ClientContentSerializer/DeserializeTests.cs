@@ -31,7 +31,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
 			reflectionCache.GenerateReflectionCache(assembliesToSweep);
 		}
-		
+
 		[TearDown]
 		public void Teardown()
 		{

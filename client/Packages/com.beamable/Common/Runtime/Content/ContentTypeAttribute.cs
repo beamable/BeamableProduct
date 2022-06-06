@@ -27,7 +27,7 @@ namespace Beamable.Common.Content
 		{
 			TypeName = typeName;
 			SourcePath = sourcePath;
-			Names = new[] {typeName};
+			Names = new[] { typeName };
 		}
 
 		public string[] Names { get; }
@@ -90,7 +90,7 @@ namespace Beamable.Common.Content
 		public ContentFormerlySerializedAsAttribute(string oldTypeName)
 		{
 			OldTypeName = oldTypeName;
-			Names = new[] {oldTypeName};
+			Names = new[] { oldTypeName };
 		}
 
 		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)

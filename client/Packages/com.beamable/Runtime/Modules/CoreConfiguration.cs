@@ -159,9 +159,9 @@ namespace Beamable
 			Assembly[] playerAssemblies = CompilationPipeline.GetAssemblies();
 			AssembliesToSweep.AddRange(playerAssemblies.Select(asm => asm.name).Where(n => !string.IsNullOrEmpty(n)));
 			AssembliesToSweep = AssembliesToSweep.Distinct().ToList();
-			#if BEAMABLE_DEVELOPER
+#if BEAMABLE_DEVELOPER
 			AssembliesToSweep = AssembliesToSweep.Where(asm => !asm.Contains("Tests")).ToList();
-			#endif
+#endif
 			AssembliesToSweep.Sort();
 #endif
 		}

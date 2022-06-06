@@ -38,10 +38,10 @@ namespace Beamable.Common.Content
 		static ContentTypeReflectionCache()
 		{
 			ICONTENT_OBJECT_BASE_TYPE = new BaseTypeOfInterest(typeof(IContentObject), false);
-			CONTENT_TYPE_ATTRIBUTE = new AttributeOfInterest(typeof(ContentTypeAttribute), new Type[] { }, new[] {typeof(IContentObject)});
-			CONTENT_TYPE_FORMERLY_SERIALIZED_AS_ATTRIBUTE = new AttributeOfInterest(typeof(ContentFormerlySerializedAsAttribute), new Type[] { }, new[] {typeof(IContentObject)});
-			BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {ICONTENT_OBJECT_BASE_TYPE,};
-			ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {CONTENT_TYPE_ATTRIBUTE, CONTENT_TYPE_FORMERLY_SERIALIZED_AS_ATTRIBUTE};
+			CONTENT_TYPE_ATTRIBUTE = new AttributeOfInterest(typeof(ContentTypeAttribute), new Type[] { }, new[] { typeof(IContentObject) });
+			CONTENT_TYPE_FORMERLY_SERIALIZED_AS_ATTRIBUTE = new AttributeOfInterest(typeof(ContentFormerlySerializedAsAttribute), new Type[] { }, new[] { typeof(IContentObject) });
+			BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() { ICONTENT_OBJECT_BASE_TYPE, };
+			ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() { CONTENT_TYPE_ATTRIBUTE, CONTENT_TYPE_FORMERLY_SERIALIZED_AS_ATTRIBUTE };
 		}
 
 		public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
@@ -76,8 +76,8 @@ namespace Beamable.Common.Content
 			{
 				var warningMessage = "This type is not deserializable by Beamable and you will not be able to create content of this type directly via the Content Manager!";
 				var validationResults = cachedSubTypes.GetAndValidateAttributeExistence(CONTENT_TYPE_ATTRIBUTE,
-				                                                                        info => new AttributeValidationResult(
-					                                                                        null, info, ReflectionCache.ValidationResultType.Warning, warningMessage));
+																						info => new AttributeValidationResult(
+																							null, info, ReflectionCache.ValidationResultType.Warning, warningMessage));
 
 				validationResults.SplitValidationResults(out var valid, out var warnings, out var errors);
 
@@ -102,7 +102,7 @@ namespace Beamable.Common.Content
 			var formerContentTypeAttributePairs = new List<MemberAttribute>();
 			{
 				var validationResults = cachedSubTypes.GetAndValidateAttributeExistence(CONTENT_TYPE_FORMERLY_SERIALIZED_AS_ATTRIBUTE,
-				                                                                        info => new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Valid, ""));
+																						info => new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Valid, ""));
 
 				validationResults.SplitValidationResults(out var valid, out _, out var errors);
 
@@ -124,8 +124,8 @@ namespace Beamable.Common.Content
 			var nameValidationResults = mappings.GetAndValidateUniqueNamingAttributes<ContentTypeAttribute>();
 			{
 				nameValidationResults.PerAttributeNameValidations.SplitValidationResults(out var valid,
-				                                                                         out _,
-				                                                                         out var errors);
+																						 out _,
+																						 out var errors);
 
 				// Print out any errors due to incorrect names
 				if (errors.Count > 0)
@@ -145,7 +145,7 @@ namespace Beamable.Common.Content
 				var classToContentTypeDict = new Dictionary<Type, string>();
 
 				var validContentTypes = valid.Select(v => v.Pair.Info as Type).ToList();
-				
+
 				// Cache data 😃                   
 				foreach (var type in validContentTypes)
 				{
@@ -232,7 +232,7 @@ namespace Beamable.Common.Content
 
 			var startType = contentTypeAttribute.TypeName;
 
-			var possibleNames = new HashSet<string> {startType};
+			var possibleNames = new HashSet<string> { startType };
 
 			if (includeFormerlySerialized)
 			{
@@ -265,7 +265,7 @@ namespace Beamable.Common.Content
 
 		public static string GetContentTypeName(Type contentType) => GetAllValidContentTypeNames(contentType, false).First();
 
-		public IEnumerable<ContentTypePair> GetAll() => ClassToContentType.Select(kvp => new ContentTypePair {Type = kvp.Key, Name = kvp.Value});
+		public IEnumerable<ContentTypePair> GetAll() => ClassToContentType.Select(kvp => new ContentTypePair { Type = kvp.Key, Name = kvp.Value });
 
 		public IEnumerable<Type> GetContentTypes() => ClassToContentType.Keys;
 		public IEnumerable<string> GetContentClassIds() => ContentTypeToClass.Keys;
