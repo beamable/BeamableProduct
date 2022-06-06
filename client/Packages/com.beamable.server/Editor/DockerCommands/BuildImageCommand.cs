@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -56,6 +57,25 @@ namespace Beamable.Server.Editor.DockerCommands
 			processStartInfo.EnvironmentVariables["DOCKER_SCAN_SUGGEST"] = "false";
 		}
 
+		private string GetProcessArchitecture()
+		{
+			string platformStr = string.Empty;
+			switch (RuntimeInformation.ProcessArchitecture)
+			{
+				case Architecture.Arm:
+					platformStr = "--platform linux/arm/v7";
+					break;
+				case Architecture.Arm64:
+					platformStr = "--platform linux/arm64";
+					break;
+				case Architecture.X64:
+				case Architecture.X86:
+					platformStr = "--platform linux/amd64";
+					break;
+			}
+			return platformStr;
+		}
+		
 		public override string GetCommandString()
 		{
 			var pullStr = _pull ? "--pull" : "";
@@ -63,7 +83,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			pullStr = ""; // we cannot force the pull against the local image.
 #endif
 
-			var platformStr = "--platform linux/amd64";
+			var platformStr = GetProcessArchitecture();
 #if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
 			platformStr = "";
 #endif
