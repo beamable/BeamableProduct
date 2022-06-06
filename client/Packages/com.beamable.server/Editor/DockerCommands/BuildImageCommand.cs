@@ -72,6 +72,9 @@ namespace Beamable.Server.Editor.DockerCommands
 				case Architecture.X86:
 					platformStr = "--platform linux/amd64";
 					break;
+				default:
+					platformStr = "--platform linux/x86_64";
+					break;
 			}
 			return platformStr;
 		}
