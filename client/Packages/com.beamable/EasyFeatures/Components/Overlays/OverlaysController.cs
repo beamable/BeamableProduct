@@ -7,7 +7,8 @@ namespace Beamable.EasyFeatures.Components
 	{
 		[Header("Components")]
 		public GameObject Mask;
-
+		
+		[Header("Generic elements")]
 		public OverlayedLabel Label;
 		public OverlayedModalWindow ModalWindow;
 
@@ -39,7 +40,7 @@ namespace Beamable.EasyFeatures.Components
 			_currentObject = null;
 		}
 
-		private void Show(IOverlayComponent activeComponent, Action action)
+		protected void Show(IOverlayComponent activeComponent, Action action)
 		{
 			_currentObject?.Hide();
 			Mask.SetActive(true);

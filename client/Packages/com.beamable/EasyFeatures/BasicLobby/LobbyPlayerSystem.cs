@@ -70,6 +70,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 			return true;
 		}
 
+		public void UpdateLobby(string name, string description)
+		{
+			Lobby lobby = BeamContext.Lobby.State.Copy();
+			lobby.name = name;
+			lobby.description = description;
+			// TODO: invoke method for update after it will be created
+			//BeamContext.Lobby.State.Set(lobby);
+		}
+
 		public virtual void RegisterLobbyPlayers(List<LobbyPlayer> data)
 		{
 			BuildClientData(data, ref PlayerIds, ref PlayerReadiness);

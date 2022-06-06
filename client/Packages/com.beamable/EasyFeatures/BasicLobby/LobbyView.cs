@@ -24,8 +24,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			bool IsServerReady { get; }
 			bool IsMatchStarting { get; }
 			Promise LeaveLobby();
-			void SetPlayerReady(bool b);
+			void SetPlayerReady(bool value);
 			bool SetCurrentSelectedPlayer(int slotIndex);
+			void UpdateLobby(string name, string description);
 		}
 
 		[Header("View Configuration")]
@@ -48,6 +49,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public UnityEvent OnPlayerLeaveLobbyRequestSent;
 		public UnityEvent OnLobbyLeft;
 		public UnityEvent OnPlayerCardClicked;
+		public UnityEvent OnSettingButtonClicked;
 		
 		protected IDependencies System;
 
@@ -106,7 +108,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		private void SettingsButtonClicked() { }
+		private void SettingsButtonClicked()
+		{
+			if (!System.IsPlayerAdmin)
+			{
+				return;
+			}
+			
+			OnSettingButtonClicked?.Invoke();
+		}
 
 		private void ReadyButtonClicked()
 		{

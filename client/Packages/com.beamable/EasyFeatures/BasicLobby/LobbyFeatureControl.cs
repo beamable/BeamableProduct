@@ -1,9 +1,7 @@
 ﻿using Beamable.Common;
-using Beamable.Common.Api.Groups;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
-using Beamable.Experimental.Api.Lobbies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +24,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		[Header("Feature Control")]
 		[SerializeField] private bool _runOnEnable = true;
 		public BeamableViewGroup ViewGroup;
-		public OverlaysController OverlaysController;
+		public LobbyOverlaysController OverlaysController;
 
 		[Header("Components")]
 		public GameObject LoadingIndicator;
@@ -157,6 +155,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
 			BeamContext.Lobby.OnUpdated += OnLobbyUpdated;
+
 			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
 				
 			OpenView(View.InsideLobby);
@@ -164,6 +163,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private async void OnLobbyUpdated()
 		{
+			if (BeamContext.Lobby.State.players == null)
+			{
+				return;
+			}
+			
 			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
 			await ViewGroup.Enrich();
 		}
@@ -257,16 +261,16 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void PlayerLeaveLobbyRequestSent()
 		{
+			if (BeamContext.Lobby != null)
+			{
+				BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+			}
+			
 			ShowOverlayedLabel("Leaving lobby...");
 		}
 
 		public void LobbyLeft()
 		{
-			if (BeamContext.Lobby != null)
-			{
-				BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
-			}
-
 			OpenJoinLobbyView();
 			HideOverlay();
 		}
@@ -286,6 +290,21 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			
 			ShowConfirmWindow("Kick player", "Are You sure You want to kick this player?", ConfirmAction);
+		}
+
+		public void SettingsButtonClicked()
+		{
+			if (!LobbyPlayerSystem.IsPlayerAdmin)
+			{
+				return;
+			}
+
+			void ConfirmAction(string name, string description)
+			{
+				LobbyPlayerSystem.UpdateLobby(name, description);
+			}
+			
+			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction);
 		}
 		
 		#endregion

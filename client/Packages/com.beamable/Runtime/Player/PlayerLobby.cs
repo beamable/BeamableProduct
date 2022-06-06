@@ -5,7 +5,6 @@ using Beamable.Common.Player;
 using Beamable.Experimental.Api.Lobbies;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -32,21 +31,20 @@ namespace Beamable.Player
 			get => base.Value;
 			set
 			{
-				// TODO: check if this should be here, probably made mistake while resolving merge conflicts
-				// if (value != null)
-				// {
-				// 	if (_state == null)
-				// 	{
-				// 		_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
-				// 	}
-				// }
-				// else
-				// {
-				// 	if (_state != null)
-				// 	{
-				// 		_notificationService.Unsubscribe(UpdateName(_state.lobbyId), OnRawUpdate);
-				// 	}
-				// }
+				if (value != null)
+				{
+					if (_state == null)
+					{
+						_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
+					}
+				}
+				else
+				{
+					if (_state != null)
+					{
+						_notificationService.Unsubscribe(UpdateName(_state.lobbyId), OnRawUpdate);
+					}
+				}
 
 				if (_state == null)
 				{

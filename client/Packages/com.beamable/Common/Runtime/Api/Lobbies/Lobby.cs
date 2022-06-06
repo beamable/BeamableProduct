@@ -75,5 +75,20 @@ namespace Beamable.Experimental.Api.Lobbies
 			maxPlayers = updatedState?.maxPlayers ?? 0;
 			TriggerUpdate();
 		}
+
+		public Lobby Copy()
+		{
+			return new Lobby
+			{
+				lobbyId = lobbyId,
+				name = name,
+				description = description,
+				restriction = restriction,
+				host = host,
+				players = players,
+				passcode = passcode,
+				maxPlayers = maxPlayers
+			};
+		}
 	}
 }
