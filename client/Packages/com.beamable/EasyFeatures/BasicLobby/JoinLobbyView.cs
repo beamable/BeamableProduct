@@ -17,6 +17,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public interface IDependencies : IBeamableViewDeps
 		{
 			bool IsVisible { get; }
+			bool HasInitialData { get; set; }
 			bool IsLoading { get; set; }
 			int SelectedGameTypeIndex { get; set; }
 			int? SelectedLobbyIndex { get; }
@@ -63,7 +64,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
@@ -79,6 +80,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 			// Setting up all components
 			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected,
 			                  System.SelectedGameTypeIndex);
+			
+			if (!System.HasInitialData)
+			{
+				await System.GetLobbies();
+				System.HasInitialData = true;
+			}
 
 			FilterField.onValueChanged.ReplaceOrAddListener(OnFilterApplied);
 			PasscodeField.onValueChanged.ReplaceOrAddListener(OnPasscodeEntered);

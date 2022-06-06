@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api.Groups;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
@@ -79,6 +80,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			await ViewGroup.RebuildPlayerContexts(ViewGroup.AllPlayerCodes);
 
 			BeamContext = ViewGroup.AllPlayerContexts[0];
+			await BeamContext.OnReady;
 
 			MainLobbyPlayerSystem = BeamContext.ServiceProvider.GetService<MainLobbyPlayerSystem>();
 			JoinLobbyPlayerSystem = BeamContext.ServiceProvider.GetService<JoinLobbyPlayerSystem>();
@@ -90,9 +92,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			JoinLobbyPlayerSystem.Setup(GameTypes);
 			CreateLobbyPlayerSystem.Setup(GameTypes);
 
-			// We need some initial data before first Enrich will be called, TODO: think about moving it on first click
-			await JoinLobbyPlayerSystem.GetLobbies();
-			
 			JoinLobbyView joinLobbyView = ViewGroup.ManagedViews.OfType<JoinLobbyView>().First();
 			joinLobbyView.OnError = ShowErrorWindow;
 			
@@ -145,6 +144,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void OpenCreateLobbyView()
 		{
+			JoinLobbyPlayerSystem.HasInitialData = false;
 			OpenView(View.CreateLobby);
 		}
 
