@@ -2,11 +2,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli;
 

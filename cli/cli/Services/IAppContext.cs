@@ -1,5 +1,4 @@
 using System.CommandLine.Binding;
-using Beamable.Common.Api.Auth;
 
 namespace cli;
 
