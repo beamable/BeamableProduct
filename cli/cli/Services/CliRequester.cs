@@ -30,17 +30,17 @@ public class CliRequester : IBeamableRequester
 		bool useCache = false)
 	{
 		Console.WriteLine($"{method} call: {uri}");
-		var client = GetClient(includeAuthHeader, Token?.Pid ?? Pid, Token?.Cid ?? Cid, Token);
+		using HttpClient client = GetClient(includeAuthHeader, Token?.Pid ?? Pid, Token?.Cid ?? Cid, Token);
 		var request = PrepareRequest(method, uri, body);
 
 		Console.WriteLine($"Calling: {request}");
-		var result = client.Send(request);
+		var result = await client.SendAsync(request);
 		Console.WriteLine($"RESULT: {result}");
 
 		T parsed = default(T);
 		if (result.Content != null)
 		{
-			Stream stream = result.Content.ReadAsStream();
+			await using Stream stream = await result.Content.ReadAsStreamAsync();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
 			var rawResponse = await reader.ReadToEndAsync();
 			if (parser != null)
@@ -79,7 +79,7 @@ public class CliRequester : IBeamableRequester
 		return request;
 	}
 
-	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, CliToken token)
+	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, CliToken? token)
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
