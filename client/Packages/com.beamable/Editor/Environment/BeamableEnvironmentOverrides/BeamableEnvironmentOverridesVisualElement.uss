@@ -1,0 +1,35 @@
+.overrideField{
+    margin-left: 10px;
+    margin-top: 20px;
+    margin-right: 10px;
+    margin-bottom: 2px;
+}
+
+.defaultValueLabel{
+    font-size: 8px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.buttonsContainer{
+    flex-direction: row;
+    margin-left: 10px;
+    margin-top: 20px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.buttonsContainer > Button{
+    flex-grow: 1;
+}
+
+.topContainer{
+    background-color: darkgray;
+    border-radius: 5px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+}
+
+.topContainer > Button{
+    border-radius: 5px;
+}
