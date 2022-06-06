@@ -13,40 +13,40 @@ namespace Beamable.EasyFeatures.BasicParty
 			bool ValidateJoinButton();
 		}
 
-		[SerializeField] private int _enrichOrder;
+		public int EnrichOrder;
 
-		[SerializeField] private TMP_InputField _partyIdInputField;
-		[SerializeField] private Button _backButton;
-		[SerializeField] private Button _joinButton;
-		[SerializeField] private Button _cancelButton;
+		public TMP_InputField PartyIdInputField;
+		public Button BackButton;
+		public Button JoinButton;
+		public Button CancelButton;
 		
-		private IDependencies _system;
+		protected IDependencies System;
 
-		public int GetEnrichOrder() => _enrichOrder;
+		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
-			_system = ctx.ServiceProvider.GetService<IDependencies>();
+			System = ctx.ServiceProvider.GetService<IDependencies>();
 			
-			gameObject.SetActive(_system.IsVisible);
-			if (!_system.IsVisible)
+			gameObject.SetActive(System.IsVisible);
+			if (!System.IsVisible)
 			{
 				return;
 			}
 			
-			OnPartyIdValueChanged(_partyIdInputField.text);
+			OnPartyIdValueChanged(PartyIdInputField.text);
 			
-			_partyIdInputField.onValueChanged.ReplaceOrAddListener(OnPartyIdValueChanged);
-			_joinButton.onClick.ReplaceOrAddListener(OnJoinButtonClicked);
-			_backButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
-			_cancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
+			PartyIdInputField.onValueChanged.ReplaceOrAddListener(OnPartyIdValueChanged);
+			JoinButton.onClick.ReplaceOrAddListener(OnJoinButtonClicked);
+			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
+			CancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
 		}
 
 		private void OnPartyIdValueChanged(string value)
 		{
-			_system.PartyId = value;
-			_joinButton.interactable = _system.ValidateJoinButton();
+			System.PartyId = value;
+			JoinButton.interactable = System.ValidateJoinButton();
 		}
 
 		private void OnCancelButtonClicked()

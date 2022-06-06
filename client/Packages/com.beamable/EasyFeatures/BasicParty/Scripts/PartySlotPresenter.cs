@@ -9,14 +9,14 @@ namespace Beamable.EasyFeatures.BasicParty
 {
 	public class PartySlotPresenter : MonoBehaviour
 	{
-		[SerializeField] private Image _avatarImage;
-		[SerializeField] private TextMeshProUGUI _playerNameText;
-		[SerializeField] private Button _acceptButton;
-		[SerializeField] private Button _askToLeaveButton;
-		[SerializeField] private Button _promoteButton;
-		[SerializeField] private Button _addMemberButton;
-		[SerializeField] private GameObject _expandableButtons;
-		[SerializeField] private GameObject _occupiedSlotGroup;
+		public Image AvatarImage;
+		public TextMeshProUGUI PlayerNameText;
+		public Button AcceptButton;
+		public Button AskToLeaveButton;
+		public Button PromoteButton;
+		public Button AddMemberButton;
+		public GameObject ExpandableButtons;
+		public GameObject OccupiedSlotGroup;
 
 		public struct ViewData
 		{
@@ -39,20 +39,20 @@ namespace Beamable.EasyFeatures.BasicParty
 		                  Action onAddMemberButton)
 		{
 			bool isSlotOccupied = !string.IsNullOrWhiteSpace(viewData.PlayerId);
-			_occupiedSlotGroup.SetActive(isSlotOccupied);
-			_addMemberButton.gameObject.SetActive(!isSlotOccupied);
+			OccupiedSlotGroup.SetActive(isSlotOccupied);
+			AddMemberButton.gameObject.SetActive(!isSlotOccupied);
 			
-			_avatarImage.sprite = viewData.Avatar;
-			_playerNameText.text = viewData.PlayerId;
-			_acceptButton.onClick.ReplaceOrAddListener(() => onAcceptButton(viewData.PlayerId));
-			_askToLeaveButton.onClick.ReplaceOrAddListener(() => onAskToLeaveButton(viewData.PlayerId));
-			_promoteButton.onClick.ReplaceOrAddListener(() => onPromoteButton(viewData.PlayerId));
-			_addMemberButton.onClick.ReplaceOrAddListener(() => onAddMemberButton());
+			AvatarImage.sprite = viewData.Avatar;
+			PlayerNameText.text = viewData.PlayerId;
+			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptButton(viewData.PlayerId));
+			AskToLeaveButton.onClick.ReplaceOrAddListener(() => onAskToLeaveButton(viewData.PlayerId));
+			PromoteButton.onClick.ReplaceOrAddListener(() => onPromoteButton(viewData.PlayerId));
+			AddMemberButton.onClick.ReplaceOrAddListener(() => onAddMemberButton());
 		}
 
 		public void ToggleExpand()
 		{
-			_expandableButtons.SetActive(!_expandableButtons.activeSelf);
+			ExpandableButtons.SetActive(!ExpandableButtons.activeSelf);
 		}
 	}
 }

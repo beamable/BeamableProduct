@@ -15,37 +15,37 @@ namespace Beamable.EasyFeatures.BasicParty
 		}
 
 		public PartyFeatureControl FeatureControl;
-		[SerializeField] private int _enrichOrder;
+		public int EnrichOrder;
 
-		[SerializeField] private TextMeshProUGUI _titleText;
-		[SerializeField] private PlayersListPresenter _partyList;
-		[SerializeField] private Button _settingsButton;
-		[SerializeField] private Button _backButton;
-		[SerializeField] private Button _createButton;
+		public TextMeshProUGUI TitleText;
+		public PlayersListPresenter PartyList;
+		public Button SettingsButton;
+		public Button BackButton;
+		public Button CreateButton;
 		
-		private IDependencies _system;
+		protected IDependencies System;
 
-		public int GetEnrichOrder() => _enrichOrder;
+		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
-			_system = ctx.ServiceProvider.GetService<IDependencies>();
+			System = ctx.ServiceProvider.GetService<IDependencies>();
 			
-			gameObject.SetActive(_system.IsVisible);
-			if (!_system.IsVisible)
+			gameObject.SetActive(System.IsVisible);
+			if (!System.IsVisible)
 			{
 				return;
 			}
 
-			_titleText.text = ctx.PlayerId.ToString();
+			TitleText.text = ctx.PlayerId.ToString();
 			
 			// set callbacks
-			_settingsButton.onClick.ReplaceOrAddListener(OnSettingsButtonClicked);
-			_backButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
-			_createButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
+			SettingsButton.onClick.ReplaceOrAddListener(OnSettingsButtonClicked);
+			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
+			CreateButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			_partyList.Setup(_system.Players, OnPlayerInvited, null, null, null);
+			PartyList.Setup(System.Players, OnPlayerInvited, null, null, null);
 		}
 
 		private void OnPlayerInvited(string id)
@@ -60,9 +60,9 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnBackButtonClicked()
 		{
-			if (_system.Party != null)
+			if (System.Party != null)
 			{
-				FeatureControl.OpenPartyView(_system.Party);
+				FeatureControl.OpenPartyView(System.Party);
 			}
 		}
 

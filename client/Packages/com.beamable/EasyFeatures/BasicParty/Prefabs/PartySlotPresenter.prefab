@@ -1115,14 +1115,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9aa52712caca9e42b52fbd9e5e40915, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _avatarImage: {fileID: 6946535085472736105}
-  _playerNameText: {fileID: 6443954801838977889}
-  _acceptButton: {fileID: 5542326114139980189}
-  _askToLeaveButton: {fileID: 450531831482193945}
-  _promoteButton: {fileID: 1222238243831241241}
-  _addMemberButton: {fileID: 3681594742057099962}
-  _expandableButtons: {fileID: 3240089600006935131}
-  _occupiedSlotGroup: {fileID: 8273781914077720599}
+  AvatarImage: {fileID: 6946535085472736105}
+  PlayerNameText: {fileID: 6443954801838977889}
+  AcceptButton: {fileID: 5542326114139980189}
+  AskToLeaveButton: {fileID: 450531831482193945}
+  PromoteButton: {fileID: 1222238243831241241}
+  AddMemberButton: {fileID: 3681594742057099962}
+  ExpandableButtons: {fileID: 3240089600006935131}
+  OccupiedSlotGroup: {fileID: 8273781914077720599}
 --- !u!1 &7779768334568664732
 GameObject:
   m_ObjectHideFlags: 0

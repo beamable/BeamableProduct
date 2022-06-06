@@ -16,14 +16,13 @@ namespace Beamable.EasyFeatures.BasicParty
 			Invite,
 		}
 
-		[SerializeField] private bool _runOnEnable = true;
-		[SerializeField] private BeamableViewGroup _partyViewGroup;
+		public BeamableViewGroup _partyViewGroup;
 		public OverlaysController OverlaysController;
 		
-		private BasicPartyPlayerSystem _partyPlayerSystem;
-		private CreatePartyPlayerSystem _createPartyPlayerSystem;
-		private InvitePlayersPlayerSystem _invitePlayersPlayerSystem;
-		private JoinPartyPlayerSystem _joinPartyPlayerSystem;
+		protected BasicPartyPlayerSystem _partyPlayerSystem;
+		protected CreatePartyPlayerSystem _createPartyPlayerSystem;
+		protected InvitePlayersPlayerSystem _invitePlayersPlayerSystem;
+		protected JoinPartyPlayerSystem _joinPartyPlayerSystem;
 
 		private View _currentView = View.Create;
 
@@ -40,7 +39,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			builder.SetupUnderlyingSystemSingleton<InvitePlayersPlayerSystem, InvitePlayersView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<JoinPartyPlayerSystem, JoinPartyView.IDependencies>();
 		}
-		
+
+		[SerializeField]
+		private bool _runOnEnable = true;
 		public bool RunOnEnable
 		{
 			get => _runOnEnable;

@@ -9,24 +9,24 @@ namespace Beamable.EasyFeatures.BasicParty
 	public class PlayersListPresenter : MonoBehaviour, PoolableScrollView.IContentProvider
 	{
 		public PoolableScrollView PoolableScrollView;
-		[SerializeField] private PartySlotPresenter _partySlotPrefab;
-		[SerializeField] private PoolableScrollView _scrollView;
+		public PartySlotPresenter PartySlotPrefab;
+		public PoolableScrollView ScrollView;
 
-		private List<PartySlotPresenter> _spawnedEntries = new List<PartySlotPresenter>();
-		private Action<string> _onAcceptButtonClicked;
-		private Action<string> _onAskToLeaveClicked;
-		private Action<string> _onPromoteClicked;
-		private Action _onAddMemberClicked;
-		private List<PartySlotPresenter.ViewData> _slots;
+		protected List<PartySlotPresenter> SpawnedEntries = new List<PartySlotPresenter>();
+		protected Action<string> OnAcceptButtonClicked;
+		protected Action<string> OnAskToLeaveClicked;
+		protected Action<string> OnPromoteClicked;
+		protected Action OnAddMemberClicked;
+		protected List<PartySlotPresenter.ViewData> Slots;
 
 		public void Setup(List<PartySlotPresenter.ViewData> slots, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember)
 		{
-			_slots = slots;
-			_scrollView.SetContentProvider(this);
-			_onAcceptButtonClicked = onPlayerAccepted;
-			_onAskToLeaveClicked = onAskedToLeave;
-			_onPromoteClicked = onPromoted;
-			_onAddMemberClicked = onAddMember;
+			Slots = slots;
+			ScrollView.SetContentProvider(this);
+			OnAcceptButtonClicked = onPlayerAccepted;
+			OnAskToLeaveClicked = onAskedToLeave;
+			OnPromoteClicked = onPromoted;
+			OnAddMemberClicked = onAddMember;
 			
 			ClearEntries();
 			SpawnEntries();
@@ -34,20 +34,20 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		public void ClearEntries()
 		{
-			foreach (PartySlotPresenter slotPresenter in _spawnedEntries)
+			foreach (PartySlotPresenter slotPresenter in SpawnedEntries)
 			{
 				Destroy(slotPresenter.gameObject);
 			}
 			
-			_spawnedEntries.Clear();
+			SpawnedEntries.Clear();
 		}
 
 		public void SpawnEntries()
 		{
 			var items = new List<PoolableScrollView.IItem>();
-			for (var i = 0; i < _slots.Count; i++)
+			for (var i = 0; i < Slots.Count; i++)
 			{
-				var data = _slots[i];
+				var data = Slots[i];
 				var rankEntryPoolData = new PartySlotPresenter.PoolData
 				{
 					ViewData = data, Index = i, Height = 150.0f // TODO: expose this somewhere in inspector
@@ -61,14 +61,14 @@ namespace Beamable.EasyFeatures.BasicParty
 		public RectTransform Spawn(PoolableScrollView.IItem item, out int order)
 		{
 			// TODO: implement object pooling
-			var spawned = Instantiate(_partySlotPrefab);
-			_spawnedEntries.Add(spawned);
+			var spawned = Instantiate(PartySlotPrefab);
+			SpawnedEntries.Add(spawned);
 			order = -1;
 
 			var data = item as PartySlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be PartySlotPresenters");
 
-			spawned.Setup(data.ViewData, _onAcceptButtonClicked, _onAskToLeaveClicked, _onPromoteClicked, _onAddMemberClicked);
+			spawned.Setup(data.ViewData, OnAcceptButtonClicked, OnAskToLeaveClicked, OnPromoteClicked, OnAddMemberClicked);
 
 			return spawned.GetComponent<RectTransform>();
 		}
@@ -79,7 +79,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			
 			// TODO: implement object pooling
 			var slotPresenter = rt.GetComponent<PartySlotPresenter>();
-			_spawnedEntries.Remove(slotPresenter);
+			SpawnedEntries.Remove(slotPresenter);
 			Destroy(slotPresenter.gameObject);
 		}
 	}

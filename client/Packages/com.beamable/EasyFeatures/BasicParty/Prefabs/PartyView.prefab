@@ -363,12 +363,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   FeatureControl: {fileID: 8031874776286076267}
-  _enrichOrder: 0
-  _titleText: {fileID: 2853445842558688925}
-  _partyList: {fileID: 4177490966077650300}
-  _settingsButton: {fileID: 4824839072817135775}
-  _backButton: {fileID: 439243204419668200}
-  _createButton: {fileID: 40836364551271876}
+  EnrichOrder: 0
+  TitleText: {fileID: 2853445842558688925}
+  PartyList: {fileID: 4177490966077650300}
+  SettingsButton: {fileID: 4824839072817135775}
+  BackButton: {fileID: 439243204419668200}
+  CreateButton: {fileID: 40836364551271876}
 --- !u!114 &2499286166233491124
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -691,9 +691,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PoolableScrollView: {fileID: 7849133230134940573}
-  _partySlotPrefab: {fileID: 556094659948562150, guid: 3aa3e0df0a39db54b952a6b221ce60f9,
+  PartySlotPrefab: {fileID: 556094659948562150, guid: 3aa3e0df0a39db54b952a6b221ce60f9,
     type: 3}
-  _scrollView: {fileID: 7849133230134940573}
+  ScrollView: {fileID: 7849133230134940573}
 --- !u!114 &7431716297176699803
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1679,8 +1679,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 717.5, y: -55}
-  m_SizeDelta: {x: 425, y: 60}
+  m_AnchoredPosition: {x: 994.3966, y: -55}
+  m_SizeDelta: {x: 609.5977, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8582692545970808924
 MonoBehaviour:
@@ -3446,9 +3446,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PoolableScrollView: {fileID: 5326100242791128360}
-  _partySlotPrefab: {fileID: 556094659948562150, guid: 3aa3e0df0a39db54b952a6b221ce60f9,
+  PartySlotPrefab: {fileID: 556094659948562150, guid: 3aa3e0df0a39db54b952a6b221ce60f9,
     type: 3}
-  _scrollView: {fileID: 5326100242791128360}
+  ScrollView: {fileID: 5326100242791128360}
 --- !u!114 &5593837112615229962
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4048,19 +4048,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   FeatureControl: {fileID: 8031874776286076267}
-  _enrichOrder: 0
-  _partyIdText: {fileID: 491707221609981383}
-  _partyList: {fileID: 917273496467715652}
-  _leadButtonsGroup: {fileID: 3812096431988423751}
-  _nonLeadButtonsGroup: {fileID: 1106676821870671644}
-  _backButton: {fileID: 7154837091675907811}
-  _settingsButton: {fileID: 2403533104280602046}
-  _createLobbyButton: {fileID: 9008591003559927477}
-  _joinLobbyButton: {fileID: 8236127578800033316}
-  _quickStartButton: {fileID: 9005654422470141562}
-  _copyIdButton: {fileID: 2638000400959149078}
-  _nextButton: {fileID: 8971657186933146511}
-  _leaveButton: {fileID: 3992048262147189559}
+  EnrichOrder: 0
+  PartyIdText: {fileID: 491707221609981383}
+  PartyList: {fileID: 917273496467715652}
+  LeadButtonsGroup: {fileID: 3812096431988423751}
+  NonLeadButtonsGroup: {fileID: 1106676821870671644}
+  BackButton: {fileID: 7154837091675907811}
+  SettingsButton: {fileID: 2403533104280602046}
+  CreateLobbyButton: {fileID: 9008591003559927477}
+  JoinLobbyButton: {fileID: 8236127578800033316}
+  QuickStartButton: {fileID: 9005654422470141562}
+  CopyIdButton: {fileID: 2638000400959149078}
+  NextButton: {fileID: 8971657186933146511}
+  LeaveButton: {fileID: 3992048262147189559}
 --- !u!114 &6848503777562028130
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5603,8 +5603,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 490, y: -160}
-  m_SizeDelta: {x: 980, y: 100}
+  m_AnchoredPosition: {x: 674.5977, y: -160}
+  m_SizeDelta: {x: 1349.1954, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &6517655443471404342
 MonoBehaviour:
@@ -6362,8 +6362,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 696.25, y: -100}
-  m_SizeDelta: {x: 447.5, y: 100}
+  m_AnchoredPosition: {x: 973.1466, y: -100}
+  m_SizeDelta: {x: 632.0977, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &4093749818766816099
 CanvasRenderer:
@@ -6864,11 +6864,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6297b00424a6474479eaacc664a82ba8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enrichOrder: 0
-  _partyIdInputField: {fileID: 2984251837808087098}
-  _backButton: {fileID: 4053553624588519141}
-  _joinButton: {fileID: 6548002383429088114}
-  _cancelButton: {fileID: 7664702736250746814}
+  EnrichOrder: 0
+  PartyIdInputField: {fileID: 2984251837808087098}
+  BackButton: {fileID: 4053553624588519141}
+  JoinButton: {fileID: 6548002383429088114}
+  CancelButton: {fileID: 7664702736250746814}
 --- !u!114 &154972454787266384
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7137,8 +7137,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 262.5, y: -55}
-  m_SizeDelta: {x: 425, y: 60}
+  m_AnchoredPosition: {x: 354.79886, y: -55}
+  m_SizeDelta: {x: 609.5977, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &766888754169853316
 MonoBehaviour:
@@ -8285,9 +8285,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1e9a22244e476643af9c2d765663ec5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _runOnEnable: 1
   _partyViewGroup: {fileID: 6990043361450693263}
   OverlaysController: {fileID: 5009989870017663493}
+  _runOnEnable: 1
 --- !u!114 &6990043361450693263
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10271,8 +10271,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 223.75, y: -100}
-  m_SizeDelta: {x: 447.5, y: 100}
+  m_AnchoredPosition: {x: 316.04886, y: -100}
+  m_SizeDelta: {x: 632.0977, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &5255335136780051576
 CanvasRenderer:
@@ -10493,15 +10493,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FeatureControl: {fileID: 8031874776286076267}
   _enrichOrder: 0
-  _headerText: {fileID: 3447652497101467768}
-  _partyIdObject: {fileID: 7943177741523231724}
-  _partyIdInputField: {fileID: 4600850866310126949}
-  _maxPlayersTextField: {fileID: 7518668426211096054}
-  _publicAccessToggle: {fileID: 766888754169853316}
-  _copyIdButton: {fileID: 7023355791805420875}
-  _nextButton: {fileID: 4719666629951324744}
-  _cancelButton: {fileID: 7141182959318710890}
-  _backButton: {fileID: 7795869403800839039}
+  HeaderText: {fileID: 3447652497101467768}
+  PartyIdObject: {fileID: 7943177741523231724}
+  PartyIdInputField: {fileID: 4600850866310126949}
+  MaxPlayersTextField: {fileID: 7518668426211096054}
+  PublicAccessToggle: {fileID: 766888754169853316}
+  CopyIdButton: {fileID: 7023355791805420875}
+  NextButton: {fileID: 4719666629951324744}
+  CancelButton: {fileID: 7141182959318710890}
+  BackButton: {fileID: 7795869403800839039}
 --- !u!114 &8826405192363472405
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10706,8 +10706,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 490, y: 0}
-  m_SizeDelta: {x: 980, y: 150}
+  m_AnchoredPosition: {x: 674.5977, y: 0}
+  m_SizeDelta: {x: 1349.1954, y: 150}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &9146281098376872744
 GameObject:
