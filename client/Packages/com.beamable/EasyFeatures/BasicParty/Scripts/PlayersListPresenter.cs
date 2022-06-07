@@ -8,7 +8,6 @@ namespace Beamable.EasyFeatures.BasicParty
 {
 	public class PlayersListPresenter : MonoBehaviour, PoolableScrollView.IContentProvider
 	{
-		public PoolableScrollView PoolableScrollView;
 		public PartySlotPresenter PartySlotPrefab;
 		public PoolableScrollView ScrollView;
 
@@ -55,7 +54,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				items.Add(rankEntryPoolData);
 			}
 
-			PoolableScrollView.SetContent(items);
+			ScrollView.SetContent(items);
 		}
 
 		public RectTransform Spawn(PoolableScrollView.IItem item, out int order)
@@ -68,7 +67,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			var data = item as PartySlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be PartySlotPresenters");
 
-			spawned.Setup(data.ViewData, OnAcceptButtonClicked, OnAskToLeaveClicked, OnPromoteClicked, OnAddMemberClicked);
+			spawned.Setup(data, this, OnAcceptButtonClicked, OnAskToLeaveClicked, OnPromoteClicked, OnAddMemberClicked);
 
 			return spawned.GetComponent<RectTransform>();
 		}
@@ -81,6 +80,11 @@ namespace Beamable.EasyFeatures.BasicParty
 			var slotPresenter = rt.GetComponent<PartySlotPresenter>();
 			SpawnedEntries.Remove(slotPresenter);
 			Destroy(slotPresenter.gameObject);
+		}
+
+		public void UpdateContent()
+		{
+			ScrollView.SetDirtyContent();
 		}
 	}
 }
