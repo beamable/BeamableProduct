@@ -207,9 +207,8 @@ namespace Beamable.Content
 
 		private IPlatformService Platform => _provider.GetService<IPlatformService>();
 		private IConnectivityService _connectivityService;
-		private readonly OfflineCache _offlineCache;
-
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
+		private readonly OfflineCache _offlineCache;
 		private static bool _testScopeEnabled;
 
 		/// <summary>
@@ -225,7 +224,6 @@ namespace Beamable.Content
 		private Dictionary<string, ClientContentInfo> cachedManifestInfo;
 
 		private ClientManifest bakedManifest;
-
 		private ClientManifest BakedManifest
 		{
 			get => bakedManifest;
@@ -398,7 +396,7 @@ namespace Beamable.Content
 
 		public Promise<IContentObject> GetContent(string contentId, string manifestID = "")
 		{
-			var referencedType = ContentRegistry.GetTypeFromId(contentId);
+			var referencedType = Beam.GetReflectionSystem<ContentTypeReflectionCache>().GetTypeFromId(contentId);
 			return GetContent(contentId, referencedType, DetermineManifestID(manifestID));
 		}
 
@@ -452,7 +450,7 @@ namespace Beamable.Content
 
 		public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
 		{
-			var referencedType = ContentRegistry.GetTypeFromId(reference.GetId());
+			var referencedType = Beam.GetReflectionSystem<ContentTypeReflectionCache>().GetTypeFromId(reference.GetId());
 			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID));
 		}
 

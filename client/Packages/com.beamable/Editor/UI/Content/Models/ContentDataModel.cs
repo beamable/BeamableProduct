@@ -519,7 +519,7 @@ namespace Beamable.Editor.Content.Models
 		{
 			if (_idToContent.TryGetValue(oldId, out var oldItem))
 			{
-				var typeName = ContentRegistry.GetTypeNameFromId(content.Id);
+				var typeName = ContentTypeReflectionCache.GetTypeNameFromId(content.Id);
 				if (!_nameToType.ContainsKey(typeName))
 				{
 					var newTypeDesc = new ContentTypeDescriptor();
@@ -653,7 +653,7 @@ namespace Beamable.Editor.Content.Models
 			}
 			else
 			{
-				var typeName = ContentRegistry.GetTypeNameFromId(content.Id);
+				var typeName = ContentTypeReflectionCache.GetTypeNameFromId(content.Id);
 				if (!_nameToType.ContainsKey(typeName))
 				{
 					var newTypeDesc = new ContentTypeDescriptor();
