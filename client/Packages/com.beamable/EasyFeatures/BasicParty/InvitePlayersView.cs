@@ -45,7 +45,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			CreateButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			PartyList.Setup(System.Players, OnPlayerInvited, null, null, null);
+			PartyList.Setup(System.Players, true, OnPlayerInvited, null, null, null);
 		}
 
 		private void OnPlayerInvited(string id)

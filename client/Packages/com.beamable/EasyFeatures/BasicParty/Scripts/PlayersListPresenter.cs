@@ -10,6 +10,7 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public PartySlotPresenter PartySlotPrefab;
 		public PoolableScrollView ScrollView;
+		public float DefaultElementHeight = 150;
 
 		protected List<PartySlotPresenter> SpawnedEntries = new List<PartySlotPresenter>();
 		protected Action<string> OnAcceptButtonClicked;
@@ -17,8 +18,9 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected Action<string> OnPromoteClicked;
 		protected Action OnAddMemberClicked;
 		protected List<PartySlotPresenter.ViewData> Slots;
+		protected bool IsInviteList;
 
-		public void Setup(List<PartySlotPresenter.ViewData> slots, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember)
+		public void Setup(List<PartySlotPresenter.ViewData> slots, bool isInviteList, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember)
 		{
 			Slots = slots;
 			ScrollView.SetContentProvider(this);
@@ -26,6 +28,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			OnAskToLeaveClicked = onAskedToLeave;
 			OnPromoteClicked = onPromoted;
 			OnAddMemberClicked = onAddMember;
+			IsInviteList = isInviteList;
 			
 			ClearEntries();
 			SpawnEntries();
@@ -49,7 +52,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				var data = Slots[i];
 				var rankEntryPoolData = new PartySlotPresenter.PoolData
 				{
-					ViewData = data, Index = i, Height = 150.0f // TODO: expose this somewhere in inspector
+					ViewData = data, Index = i, Height = DefaultElementHeight
 				};
 				items.Add(rankEntryPoolData);
 			}
@@ -67,7 +70,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			var data = item as PartySlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be PartySlotPresenters");
 
-			spawned.Setup(data, this, OnAcceptButtonClicked, OnAskToLeaveClicked, OnPromoteClicked, OnAddMemberClicked);
+			spawned.Setup(data, this, IsInviteList, OnAcceptButtonClicked, OnAskToLeaveClicked, OnPromoteClicked, OnAddMemberClicked);
 
 			return spawned.GetComponent<RectTransform>();
 		}

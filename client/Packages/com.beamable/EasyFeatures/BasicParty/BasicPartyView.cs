@@ -74,7 +74,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				new PartySlotPresenter.ViewData {PlayerId = "Test player"},
 				new PartySlotPresenter.ViewData {PlayerId = ""},
 			};
-			PartyList.Setup(players, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember);
+			PartyList.Setup(players, false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember);
 		}
 
 		private void OnAddMember()
