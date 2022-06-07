@@ -3,6 +3,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -94,7 +95,12 @@ namespace Beamable.Common.Content
 
 		public object Serialize()
 		{
-			return new ArrayDict {{nameof(keys), keys}, {nameof(values), values}};
+			// Added similar serialization like in InventoryUpdateBuilder and ToNetworkJson method (it works!)
+			
+			return this?.Select(
+				kvp => new ArrayDict {{"name", kvp.Key}, {"value", kvp.Value}}).ToArray() ?? new object[] { };
 		}
+		
+
 	}
 }
