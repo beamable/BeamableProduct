@@ -67,32 +67,6 @@ namespace Beamable.Editor.Tests.Toolbox
 			Assert.AreEqual("tag:flow", text.value);
 		}
 
-		//Test how many widgets in toolbox appears when filtered
-		//DOES NOT WORK
-		/*[Test]
-		public void TestFilterToolbox()
-		{
-			IDependencyBuilder builder = new DependencyBuilder();
-			builder.AddSingleton<IToolboxViewService, MockToolboxViewService>();
-
-			provider = builder.Build();
-
-			IToolboxViewService model = provider.GetService<IToolboxViewService>();
-
-			ToolboxContentListVisualElement toolboxContent = new ToolboxContentListVisualElement();
-			toolboxContent.Refresh(provider);
-
-			model.SetQueryTag(WidgetTags.ADMIN, true);
-
-			var x = model.GetFilteredWidgets().Count();
-			var filter = toolboxContent.Q("gridContainer");
-			var cnt = filter.childCount;
-
-			Debug.Log(cnt);
-			Assert.AreEqual(1, cnt);
-			//Assert.AreEqual("Admin Flow", filter.ElementAt(0).name);
-		}*/
-
 		//Test how many widgets in toolbox appears when NOT filtered
 		[Test]
 		public void TestEmptyFilterToolbox()
