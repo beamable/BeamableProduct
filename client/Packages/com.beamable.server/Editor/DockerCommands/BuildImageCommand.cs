@@ -60,9 +60,9 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private string GetProcessArchitecture()
 		{
-			string platformStr = string.Empty;
-
-			if (CultureInfo.InvariantCulture.CompareInfo.IndexOf(SystemInfo.processorType, "ARM", CompareOptions.IgnoreCase) >= 0)
+			string platformStr;
+			// Mac with M1+ CPU's is returning keyword "Apple" which we can use to detect if architecture is amr64 instead of amd64 like in Intel CPU's. 
+			if (CultureInfo.InvariantCulture.CompareInfo.IndexOf(SystemInfo.processorType, "Apple", CompareOptions.IgnoreCase) >= 0)
 			{
 				platformStr = Environment.Is64BitProcess ? "--platform linux/arm64" : "--platform linux/arm/v7";
 			}
@@ -70,8 +70,6 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				platformStr = "--platform linux/amd64";
 			}
-
-			Debug.LogWarning($"ProcessorType=[{SystemInfo.processorType}] | platformStr=[{platformStr}]");
 			return platformStr;
 		}
 		
