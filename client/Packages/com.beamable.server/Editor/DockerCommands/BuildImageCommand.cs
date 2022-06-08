@@ -3,6 +3,7 @@ using Beamable.Server.Editor.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -60,23 +61,17 @@ namespace Beamable.Server.Editor.DockerCommands
 		private string GetProcessArchitecture()
 		{
 			string platformStr = string.Empty;
-			switch (RuntimeInformation.ProcessArchitecture)
-			{
-				case Architecture.Arm:
-					platformStr = "--platform linux/arm/v7";
-					break;
-				case Architecture.Arm64:
-					platformStr = "--platform linux/arm64";
-					break;
-				case Architecture.X64:
-				case Architecture.X86:
-				default:
-					platformStr = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 
-						"--platform linux/arm64" : 
-						"--platform linux/amd64";
-					break;
 
+			if (CultureInfo.InvariantCulture.CompareInfo.IndexOf(SystemInfo.processorType, "ARM", CompareOptions.IgnoreCase) >= 0)
+			{
+				platformStr = Environment.Is64BitProcess ? "--platform linux/arm64" : "--platform linux/arm/v7";
 			}
+			else
+			{
+				platformStr = "--platform linux/amd64";
+			}
+
+			Debug.LogWarning($"ProcessorType=[{SystemInfo.processorType}] | platformStr=[{platformStr}]");
 			return platformStr;
 		}
 		
