@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- Fixed microservices build issue on Mac with linux/arm64 CPU architecture
+- Fixed microservices build issue on Mac with ARM CPU architecture
 
 ## [1.2.1]
 ### Fixed
