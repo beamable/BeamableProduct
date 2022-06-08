@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -65,30 +66,23 @@ namespace Beamable.EasyFeatures.BasicParty
 			QuickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
 			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
-
-			// temporary players list
-			List<PartySlotPresenter.ViewData> players = new List<PartySlotPresenter.ViewData>()
-			{
-				new PartySlotPresenter.ViewData {PlayerId = ctx.PlayerId.ToString()},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player"},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player"},
-				new PartySlotPresenter.ViewData {PlayerId = ""},
-			};
-			PartyList.Setup(players, false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember);
+			
+			PartyList.Setup(System.Party.Players, false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.Party.MaxPlayers);
 		}
 
 		private void OnAddMember()
 		{
 			List<PartySlotPresenter.ViewData> friendsList = new List<PartySlotPresenter.ViewData>()
 			{
-				new PartySlotPresenter.ViewData() {PlayerId = "Test player 1"},
-				new PartySlotPresenter.ViewData() {PlayerId = "Test player 2"},
-				new PartySlotPresenter.ViewData() {PlayerId = "Test player 3"},
-				new PartySlotPresenter.ViewData() {PlayerId = "Test player 4"},
-				new PartySlotPresenter.ViewData() {PlayerId = "Test player 5"},
-				new PartySlotPresenter.ViewData() {PlayerId = "Test player 6"},
-				new PartySlotPresenter.ViewData() {PlayerId = "Test player 7"},
-			};
+				new PartySlotPresenter.ViewData {PlayerId = "Test player 1"},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player 2"},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player 3"},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player 4"},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player 5"},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player 6"},
+				new PartySlotPresenter.ViewData {PlayerId = "Test player 7"},
+			}.Where(player => !System.Party.Players.Contains(player)).ToList();
+
 			FeatureControl.OpenInviteView(friendsList, System.Party);
 		}
 

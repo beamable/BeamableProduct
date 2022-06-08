@@ -20,7 +20,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected List<PartySlotPresenter.ViewData> Slots;
 		protected bool IsInviteList;
 
-		public void Setup(List<PartySlotPresenter.ViewData> slots, bool isInviteList, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember)
+		public void Setup(List<PartySlotPresenter.ViewData> slots, bool isInviteList, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember, int maxPlayers = 0)
 		{
 			Slots = slots;
 			ScrollView.SetContentProvider(this);
@@ -31,7 +31,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			IsInviteList = isInviteList;
 			
 			ClearEntries();
-			SpawnEntries();
+			SpawnEntries(maxPlayers);
 		}
 
 		public void ClearEntries()
@@ -44,7 +44,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			SpawnedEntries.Clear();
 		}
 
-		public void SpawnEntries()
+		public void SpawnEntries(int maxPlayers)
 		{
 			var items = new List<PoolableScrollView.IItem>();
 			for (var i = 0; i < Slots.Count; i++)
@@ -55,6 +55,14 @@ namespace Beamable.EasyFeatures.BasicParty
 					ViewData = data, Index = i, Height = DefaultElementHeight
 				};
 				items.Add(rankEntryPoolData);
+			}
+
+			if (!IsInviteList && (maxPlayers <= 0 || items.Count < maxPlayers))
+			{
+				items.Add(new PartySlotPresenter.PoolData
+				{
+					Height = DefaultElementHeight, Index = Slots.Count - 1, ViewData = new PartySlotPresenter.ViewData()
+				});
 			}
 
 			ScrollView.SetContent(items);

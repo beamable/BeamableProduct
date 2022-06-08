@@ -11,7 +11,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			Party Party { get; set; }
 			bool IsVisible { get; set; }
-			List<PartySlotPresenter.ViewData> Players { get; set; }
+			List<PartySlotPresenter.ViewData> FriendsList { get; set; }
 		}
 
 		public PartyFeatureControl FeatureControl;
@@ -45,12 +45,17 @@ namespace Beamable.EasyFeatures.BasicParty
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			CreateButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			PartyList.Setup(System.Players, true, OnPlayerInvited, null, null, null);
+			PartyList.Setup(System.FriendsList, true, OnPlayerInvited, null, null, null);
 		}
 
 		private void OnPlayerInvited(string id)
 		{
-			throw new System.NotImplementedException();
+			PartySlotPresenter.ViewData newPlayer = new PartySlotPresenter.ViewData
+			{
+				Avatar = null, IsReady = false, PlayerId = id
+			};
+			System.Party.Players.Add(newPlayer);
+			OnBackButtonClicked();
 		}
 
 		private void OnCreateButtonClicked()

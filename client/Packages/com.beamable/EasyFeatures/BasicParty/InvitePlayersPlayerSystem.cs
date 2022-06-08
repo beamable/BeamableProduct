@@ -6,6 +6,6 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public Party Party { get; set; }
 		public bool IsVisible { get; set; }
-		public List<PartySlotPresenter.ViewData> Players { get; set; }
+		public List<PartySlotPresenter.ViewData> FriendsList { get; set; }
 	}
 }

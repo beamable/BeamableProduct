@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using Button = UnityEngine.UI.Button;
 using Toggle = UnityEngine.UI.Toggle;
@@ -19,6 +20,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		[Header("Components")]
 		public TextMeshProUGUI HeaderText;
+
 		public GameObject PartyIdObject;
 		public TMP_InputField PartyIdInputField;
 		public TMP_InputField MaxPlayersTextField;
@@ -33,12 +35,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected Party Party;
 
 		public int GetEnrichOrder() => _enrichOrder;
-		
+
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
-			
+
 			gameObject.SetActive(System.IsVisible);
 			if (!System.IsVisible)
 			{
@@ -47,6 +49,15 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			CreateNewParty = System.Party == null;
 			Party = CreateNewParty ? new Party() : System.Party.Clone() as Party;
+			Party.Players = CreateNewParty
+				? new List<PartySlotPresenter.ViewData>
+				{
+					new PartySlotPresenter.ViewData
+					{
+						Avatar = null, IsReady = false, PlayerId = ctx.PlayerId.ToString()
+					}
+				}
+				: Party.Players;
 			HeaderText.text = CreateNewParty ? "CREATE" : "SETTINGS";
 			PartyIdObject.gameObject.SetActive(!CreateNewParty);
 			PartyIdInputField.text = CreateNewParty ? "" : Party.PartyId;
@@ -54,7 +65,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			PublicAccessToggle.isOn = CreateNewParty || Party.Access == PartyAccess.Public;
 			PartyAccessChanged(PublicAccessToggle.isOn);
 			MaxPlayersValueChanged(Party.MaxPlayers.ToString());
-			
+
 			// set callbacks
 			MaxPlayersTextField.onValueChanged.ReplaceOrAddListener(MaxPlayersValueChanged);
 			PublicAccessToggle.onValueChanged.ReplaceOrAddListener(PartyAccessChanged);
@@ -83,7 +94,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			ReturnToPartyView();
 		}
-		
+
 		private void OnCancelButtonClicked()
 		{
 			ReturnToPartyView();
@@ -105,10 +116,10 @@ namespace Beamable.EasyFeatures.BasicParty
 				Party.PartyId = Random.Range(10000, 99999).ToString();
 			}
 
-			System.Party = Party;			
+			System.Party = Party;
 			FeatureControl.OpenPartyView(System.Party);
 		}
-		
+
 		private void PartyAccessChanged(bool isPublic)
 		{
 			Party.Access = isPublic ? PartyAccess.Public : PartyAccess.Private;
