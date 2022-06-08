@@ -690,10 +690,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9243f1cf570411d4fa5099e03b8c53d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PoolableScrollView: {fileID: 7849133230134940573}
   PartySlotPrefab: {fileID: 556094659948562150, guid: 3aa3e0df0a39db54b952a6b221ce60f9,
     type: 3}
   ScrollView: {fileID: 7849133230134940573}
+  DefaultElementHeight: 150
 --- !u!114 &7431716297176699803
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3445,10 +3445,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9243f1cf570411d4fa5099e03b8c53d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PoolableScrollView: {fileID: 5326100242791128360}
   PartySlotPrefab: {fileID: 556094659948562150, guid: 3aa3e0df0a39db54b952a6b221ce60f9,
     type: 3}
   ScrollView: {fileID: 5326100242791128360}
+  DefaultElementHeight: 150
 --- !u!114 &5593837112615229962
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4133,7 +4133,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6220621e85944052931311aac3cae87d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Label: {fileID: 0}
+  Label: {fileID: 657650763095666457}
 --- !u!114 &657650763095666457
 MonoBehaviour:
   m_ObjectHideFlags: 0

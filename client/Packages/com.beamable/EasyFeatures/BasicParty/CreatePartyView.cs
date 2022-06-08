@@ -67,7 +67,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnCopyIdButtonClicked()
 		{
 			GUIUtility.systemCopyBuffer = Party.PartyId;
-			Debug.Log("Party ID copied to clipboard");
+			FeatureControl.OverlaysController.ShowLabel("Party ID was copied", 3);
 		}
 
 		private void MaxPlayersValueChanged(string value)
