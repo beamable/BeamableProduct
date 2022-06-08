@@ -100,9 +100,9 @@ namespace Beamable.Editor.Assistant
 				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
 				hintNotificationManager.ClearPendingNotifications();
 				_windowRoot.MarkDirtyRepaint();
-				#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 				BeamableToolbarExtender.Repaint();
-				#endif
+#endif
 			}
 		}
 
