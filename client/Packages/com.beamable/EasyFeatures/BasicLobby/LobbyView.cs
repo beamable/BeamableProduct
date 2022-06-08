@@ -1,4 +1,6 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api;
+using Beamable.Common;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -31,6 +33,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		[Header("View Configuration")]
 		public int EnrichOrder;
+		public BeamableViewGroup ViewGroup;
 
 		[Header("Components")]
 		public TextMeshProUGUI Name;
@@ -50,6 +53,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public UnityEvent OnLobbyLeft;
 		public UnityEvent OnPlayerCardClicked;
 		public UnityEvent OnSettingButtonClicked;
+		
+		public Action<string> OnError;
 		
 		protected IDependencies System;
 
@@ -138,9 +143,20 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			else
 			{
-				OnPlayerLeaveLobbyRequestSent?.Invoke();
-				await System.LeaveLobby();
-				OnLobbyLeft?.Invoke();
+				try
+				{
+					OnPlayerLeaveLobbyRequestSent?.Invoke();
+					await System.LeaveLobby();
+					OnLobbyLeft?.Invoke();
+				}
+				catch (PlatformRequesterException e)
+				{
+					OnError?.Invoke(e.Message);
+					// if (e is PlatformRequesterException pre)
+					// {
+					// 	OnError?.Invoke(pre.Error.error);
+					// }
+				}
 			}
 		}
 	}

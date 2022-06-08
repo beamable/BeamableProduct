@@ -1,4 +1,5 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
@@ -23,6 +24,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		[Header("Feature Control")]
 		[SerializeField] private bool _runOnEnable = true;
+
 		public BeamableViewGroup ViewGroup;
 		public LobbyOverlaysController OverlaysController;
 
@@ -41,6 +43,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		protected JoinLobbyPlayerSystem JoinLobbyPlayerSystem;
 
 		public bool RunOnEnable { get => _runOnEnable; set => _runOnEnable = value; }
+
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups
 		{
 			get => new[] {ViewGroup};
@@ -92,9 +95,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			JoinLobbyView joinLobbyView = ViewGroup.ManagedViews.OfType<JoinLobbyView>().First();
 			joinLobbyView.OnError = ShowErrorWindow;
-			
+
 			CreateLobbyView createLobbyView = ViewGroup.ManagedViews.OfType<CreateLobbyView>().First();
 			createLobbyView.OnError = ShowErrorWindow;
+
+			LobbyView insideLobbyView = ViewGroup.ManagedViews.OfType<LobbyView>().First();
+			insideLobbyView.OnError = ShowErrorWindow;
 
 			OpenView(CurrentView);
 		}
@@ -157,7 +163,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			BeamContext.Lobby.OnUpdated += OnLobbyUpdated;
 
 			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
-				
+
 			OpenView(View.InsideLobby);
 		}
 
@@ -167,7 +173,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
 			await ViewGroup.Enrich();
 		}
@@ -202,11 +208,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			ShowOverlayedLabel("Creating lobby...");
 		}
-		
+
 		public virtual void CreateLobbyRequestReceived()
 		{
 			HideOverlay();
-			
+
 			if (BeamContext.Lobby.State != null)
 			{
 				CreateLobbyPlayerSystem.ResetData();
@@ -226,7 +232,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public virtual void JoinLobbyRequestReceived()
 		{
 			HideOverlay();
-			
+
 			if (BeamContext.Lobby.State != null)
 			{
 				OpenLobbyView();
@@ -244,19 +250,36 @@ namespace Beamable.EasyFeatures.BasicLobby
 		}
 
 		#endregion
-		
+
 		#region InsideLobbyView callbacks
 
 		public void AdminLeaveLobbyRequestSent()
 		{
 			async void ConfirmAction()
 			{
-				ShowOverlayedLabel("Leaving lobby...");
-				await LobbyPlayerSystem.LeaveLobby();
-				LobbyLeft();
+				if (BeamContext.Lobby != null)
+				{
+					BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+				}
+
+				try
+				{
+					ShowOverlayedLabel("Leaving lobby...");
+					await LobbyPlayerSystem.LeaveLobby();
+					LobbyLeft();
+				}
+				catch (Exception e)
+				{
+					if (e is PlatformRequesterException pre)
+					{
+						ShowErrorWindow(pre.Error.error);
+					}
+				}
 			}
-			
-			ShowConfirmWindow("Leaving lobby", "After leaving lobby it will be closed because You are an admin. Are You sure?", ConfirmAction);
+
+			ShowConfirmWindow("Leaving lobby",
+			                  "After leaving lobby it will be closed because You are an admin. Are You sure?",
+			                  ConfirmAction);
 		}
 
 		public void PlayerLeaveLobbyRequestSent()
@@ -265,7 +288,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
 			}
-			
+
 			ShowOverlayedLabel("Leaving lobby...");
 		}
 
@@ -281,14 +304,24 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			async void ConfirmAction()
 			{
-				ShowOverlayedLabel("Kicking player...");
-				await LobbyPlayerSystem.KickPlayer();
-				HideOverlay();
+				try
+				{
+					ShowOverlayedLabel("Kicking player...");
+					await LobbyPlayerSystem.KickPlayer();
+					HideOverlay();
+				}
+				catch (Exception e)
+				{
+					if (e is PlatformRequesterException pre)
+					{
+						ShowErrorWindow(pre.Error.error);
+					}
+				}
 			}
-			
+
 			ShowConfirmWindow("Kick player", "Are You sure You want to kick this player?", ConfirmAction);
 		}
 
@@ -303,10 +336,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				LobbyPlayerSystem.UpdateLobby(name, description);
 			}
-			
+
 			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction);
 		}
-		
+
 		#endregion
 	}
 }

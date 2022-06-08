@@ -76,7 +76,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			lobby.name = name;
 			lobby.description = description;
 			// TODO: invoke method for update after it will be created
-			//BeamContext.Lobby.State.Set(lobby);
+			// BeamContext.Lobby.State.Set(lobby); // This one works locally
 		}
 
 		public virtual void RegisterLobbyPlayers(List<LobbyPlayer> data)

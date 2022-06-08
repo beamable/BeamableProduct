@@ -1339,6 +1339,7 @@ MonoBehaviour:
   OverlaysController: {fileID: 9098526944487907905}
   LoadingIndicator: {fileID: 1760710101783103438}
   GameTypesRefs:
+  - Id: game_types.1vs1
   - Id: game_types.2vs2
   - Id: game_types.4vs4
   - Id: game_types.8vs8
@@ -7080,6 +7081,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnrichOrder: 0
+  ViewGroup: {fileID: 0}
   Name: {fileID: 1188065238205655801}
   Counter: {fileID: 1960714245594212628}
   LobbySlotsList: {fileID: 4093501080789288833}
