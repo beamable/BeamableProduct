@@ -8285,7 +8285,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1e9a22244e476643af9c2d765663ec5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _partyViewGroup: {fileID: 6990043361450693263}
+  PartyViewGroup: {fileID: 6990043361450693263}
   OverlaysController: {fileID: 5009989870017663493}
   _runOnEnable: 1
 --- !u!114 &6990043361450693263

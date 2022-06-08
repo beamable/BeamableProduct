@@ -16,13 +16,13 @@ namespace Beamable.EasyFeatures.BasicParty
 			Invite,
 		}
 
-		public BeamableViewGroup _partyViewGroup;
+		public BeamableViewGroup PartyViewGroup;
 		public OverlaysController OverlaysController;
 		
-		protected BasicPartyPlayerSystem _partyPlayerSystem;
-		protected CreatePartyPlayerSystem _createPartyPlayerSystem;
-		protected InvitePlayersPlayerSystem _invitePlayersPlayerSystem;
-		protected JoinPartyPlayerSystem _joinPartyPlayerSystem;
+		protected BasicPartyPlayerSystem PartyPlayerSystem;
+		protected CreatePartyPlayerSystem CreatePartyPlayerSystem;
+		protected InvitePlayersPlayerSystem InvitePlayersPlayerSystem;
+		protected JoinPartyPlayerSystem JoinPartyPlayerSystem;
 
 		private View _currentView = View.Create;
 
@@ -50,7 +50,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		public void OnEnable()
 		{
-			_partyViewGroup.RebuildManagedViews();
+			PartyViewGroup.RebuildManagedViews();
 
 			if (!_runOnEnable)
 			{
@@ -62,37 +62,37 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		public async void Run()
 		{
-			await _partyViewGroup.RebuildPlayerContexts(_partyViewGroup.AllPlayerCodes);
+			await PartyViewGroup.RebuildPlayerContexts(PartyViewGroup.AllPlayerCodes);
 
-			var beamContext = _partyViewGroup.AllPlayerContexts[0];
+			var beamContext = PartyViewGroup.AllPlayerContexts[0];
 
-			_partyPlayerSystem = beamContext.ServiceProvider.GetService<BasicPartyPlayerSystem>();
-			_createPartyPlayerSystem = beamContext.ServiceProvider.GetService<CreatePartyPlayerSystem>();
-			_invitePlayersPlayerSystem = beamContext.ServiceProvider.GetService<InvitePlayersPlayerSystem>();
-			_joinPartyPlayerSystem = beamContext.ServiceProvider.GetService<JoinPartyPlayerSystem>();
+			PartyPlayerSystem = beamContext.ServiceProvider.GetService<BasicPartyPlayerSystem>();
+			CreatePartyPlayerSystem = beamContext.ServiceProvider.GetService<CreatePartyPlayerSystem>();
+			InvitePlayersPlayerSystem = beamContext.ServiceProvider.GetService<InvitePlayersPlayerSystem>();
+			JoinPartyPlayerSystem = beamContext.ServiceProvider.GetService<JoinPartyPlayerSystem>();
 			
 			OpenView(_currentView);
 		}
 
 		public void OpenPartyView(Party party)
 		{
-			_partyPlayerSystem.Party = party;
-			_partyPlayerSystem.Setup(party.Players);
-			_partyPlayerSystem.IsPlayerLeader = true;	// temporary
+			PartyPlayerSystem.Party = party;
+			PartyPlayerSystem.Setup(party.Players);
+			PartyPlayerSystem.IsPlayerLeader = true;	// temporary
 			OpenView(View.Party);
 		}
 		
 		// when party data is provided the view turns to settings
 		public void OpenCreatePartyView(Party party = null)
 		{
-			_createPartyPlayerSystem.Party = party;
+			CreatePartyPlayerSystem.Party = party;
 			OpenView(View.Create);
 		}
 		
 		public void OpenInviteView(List<PartySlotPresenter.ViewData> friendsList, Party party)
 		{
-			_invitePlayersPlayerSystem.Players = friendsList;
-			_invitePlayersPlayerSystem.Party = party;
+			InvitePlayersPlayerSystem.Players = friendsList;
+			InvitePlayersPlayerSystem.Party = party;
 			OpenView(View.Invite);
 		}
 		
@@ -105,15 +105,15 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			_currentView = view;
 			UpdateVisibility();
-			await _partyViewGroup.Enrich();
+			await PartyViewGroup.Enrich();
 		}
 
 		private void UpdateVisibility()
 		{
-			_partyPlayerSystem.IsVisible = _currentView == View.Party;
-			_createPartyPlayerSystem.IsVisible = _currentView == View.Create;
-			_invitePlayersPlayerSystem.IsVisible = _currentView == View.Invite;
-			_joinPartyPlayerSystem.IsVisible = _currentView == View.Join;
+			PartyPlayerSystem.IsVisible = _currentView == View.Party;
+			CreatePartyPlayerSystem.IsVisible = _currentView == View.Create;
+			InvitePlayersPlayerSystem.IsVisible = _currentView == View.Invite;
+			JoinPartyPlayerSystem.IsVisible = _currentView == View.Join;
 		}
 	}
 }
