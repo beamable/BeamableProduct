@@ -1,9 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
-using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Basicmatchmaking;
 using Beamable.EasyFeatures.Components;
-using Beamable.Experimental.Api.Matchmaking;
 using EasyFeatures.BasicMatchmaking;
 using System;
 using System.Collections.Generic;
@@ -13,7 +11,6 @@ using UnityEngine.Assertions;
 
 namespace Beamable.EasyFeatures.BasicMatchmaking
 {
-	[BeamContextSystem]
 	public class MatchmakingFeatureControl : MonoBehaviour, IBeamableFeatureControl, IOverlayController
 	{
 		protected enum View
@@ -32,7 +29,6 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		
 		[Header("Fast-Path Configuration")]
 		public List<SimGameTypeRef> GameTypesRefs;
-		public int TimeoutSeconds;
 		
 		public BeamContext BeamContext;
 
@@ -49,13 +45,6 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		}
 		
 		public List<SimGameType> GameTypes { get; set; }
-		
-		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
-		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
-		{
-			builder.SetupUnderlyingSystemSingleton<StartMatchmakingPlayerSystem, StartMatchmakingView.IDependencies>();
-			builder.SetupUnderlyingSystemSingleton<MatchmakingRoomPlayerSystem, MatchmakingRoomView.IDependencies>();
-		}
 		
 		public void OnEnable()
 		{
@@ -84,7 +73,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 			GameTypes = await FetchGameTypes();
 
-			StartMatchmakingPlayerSystem.Setup(GameTypes, TimeoutSeconds);
+			StartMatchmakingPlayerSystem.Setup(GameTypes);
 			
 			StartMatchmakingView startMatchmakingView = ViewGroup.ManagedViews.OfType<StartMatchmakingView>().First();
 			startMatchmakingView.OnError = ShowErrorWindow;
@@ -129,59 +118,22 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 		public void HideOverlay()
 		{
-			OverlaysController.HideOverlay();
+			throw new NotImplementedException();
 		}
 
 		public void ShowOverlayedLabel(string label)
 		{
-			OverlaysController.ShowLabel(label);
+			throw new NotImplementedException();
 		}
 
 		public void ShowErrorWindow(string message)
 		{
-			OverlaysController.ShowError(message);
+			throw new NotImplementedException();
 		}
 
 		public void ShowConfirmWindow(string label, string message, Action confirmAction)
 		{
-			OverlaysController.ShowConfirm(label, message, confirmAction);
-		}
-
-		#endregion
-		
-		#region StartMatchmaking callback
-
-		public void StartMatchmakingRequestSent()
-		{
-			ShowOverlayedLabel("Searching...");
-			StartMatchmakingPlayerSystem.OnStateChanged += OnMatchmakingStateChanged;
-		}
-
-		public void StartMatchmakingResponseReceived()
-		{
-			
-		}
-
-		private void OnMatchmakingStateChanged(MatchmakingState currentState)
-		{
-			switch (currentState)
-			{
-				case MatchmakingState.Searching:
-					ShowOverlayedLabel("Searching...");
-					break;
-				case MatchmakingState.Ready:
-					HideOverlay();
-					StartMatchmakingPlayerSystem.OnStateChanged -= OnMatchmakingStateChanged;
-					break;
-				case MatchmakingState.Timeout:
-					ShowErrorWindow("Timeout");
-					StartMatchmakingPlayerSystem.OnStateChanged -= OnMatchmakingStateChanged;
-					break;
-				case MatchmakingState.Cancelled:
-					HideOverlay();
-					StartMatchmakingPlayerSystem.OnStateChanged -= OnMatchmakingStateChanged;
-					break;
-			}
+			throw new NotImplementedException();
 		}
 
 		#endregion
