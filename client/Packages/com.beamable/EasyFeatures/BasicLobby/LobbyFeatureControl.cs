@@ -337,7 +337,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				LobbyPlayerSystem.UpdateLobby(name, description);
 			}
 
-			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction);
+			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction, BeamContext.Lobby.Passcode);
 		}
 
 		#endregion
