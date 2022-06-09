@@ -79,6 +79,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 			// BeamContext.Lobby.State.Set(lobby); // This one works locally
 		}
 
+		public async Promise StartMatch()
+		{
+			// TODO: Implement match start here 
+			await Promise.Success.WaitForSeconds(3);
+		}
+
 		public virtual void RegisterLobbyPlayers(List<LobbyPlayer> data)
 		{
 			BuildClientData(data, ref PlayerIds, ref PlayerReadiness);

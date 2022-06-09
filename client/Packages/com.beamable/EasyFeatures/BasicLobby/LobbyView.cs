@@ -1,5 +1,4 @@
-﻿using Beamable.Api;
-using Beamable.Common;
+﻿using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -29,11 +28,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 			void SetPlayerReady(bool value);
 			bool SetCurrentSelectedPlayer(int slotIndex);
 			void UpdateLobby(string name, string description);
+			Promise StartMatch();
 		}
 
 		[Header("View Configuration")]
 		public int EnrichOrder;
-		public BeamableViewGroup ViewGroup;
 
 		[Header("Components")]
 		public TextMeshProUGUI Name;
@@ -43,7 +42,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public Button BackButton; 
 		public Button ReadyButton; 
-		public Button WaitingButton;
+		public Button NotReadyButton;
 		public Button StartButton;
 		public Button LeaveButton;
 
@@ -53,6 +52,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public UnityEvent OnLobbyLeft;
 		public UnityEvent OnPlayerCardClicked;
 		public UnityEvent OnSettingButtonClicked;
+		public UnityEvent OnStartMatchRequestSent;
+		public UnityEvent OnStartMatchResponseReceived;
 		
 		public Action<string> OnError;
 		
@@ -78,7 +79,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			// Buttons' callbacks
 			SettingsButton.onClick.ReplaceOrAddListener(SettingsButtonClicked);
 			ReadyButton.onClick.ReplaceOrAddListener(ReadyButtonClicked);
-			WaitingButton.onClick.ReplaceOrAddListener(WaitingButtonClicked);
+			NotReadyButton.onClick.ReplaceOrAddListener(NotReadyButtonClicked);
 			StartButton.onClick.ReplaceOrAddListener(StartButtonClicked);
 			LeaveButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
@@ -86,13 +87,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			// Buttons' visibility
 			SettingsButton.gameObject.SetActive(System.IsPlayerAdmin);
 			ReadyButton.gameObject.SetActive(!System.IsPlayerReady);
-			WaitingButton.gameObject.SetActive(System.IsPlayerReady);
+			NotReadyButton.gameObject.SetActive(System.IsPlayerReady);
 			StartButton.gameObject.SetActive(System.IsPlayerAdmin);
 
 			// Buttons' interactivity
 			StartButton.interactable = System.IsServerReady;
 			BackButton.interactable = !System.IsMatchStarting;
-			WaitingButton.interactable = !System.IsMatchStarting;
+			NotReadyButton.interactable = !System.IsMatchStarting;
 			LeaveButton.interactable = !System.IsMatchStarting;
 
 			LobbySlotsList.ClearPooledRankedEntries();
@@ -128,12 +129,34 @@ namespace Beamable.EasyFeatures.BasicLobby
 			System.SetPlayerReady(true);
 		}
 
-		private void WaitingButtonClicked()
+		private void NotReadyButtonClicked()
 		{
 			System.SetPlayerReady(false);
 		}
 
-		private void StartButtonClicked() { }
+		private async void StartButtonClicked()
+		{
+			if (!System.IsPlayerAdmin)
+			{
+				return;
+			}
+
+			try
+			{
+				OnStartMatchRequestSent?.Invoke();
+				await System.StartMatch();
+				OnStartMatchResponseReceived?.Invoke();
+			}
+			catch (Exception e)
+			{
+				OnError?.Invoke(e.Message);
+				// if (e is PlatformRequesterException pre)
+				// {
+				// 	OnError?.Invoke(pre.Error.error);
+				// }
+			}
+			
+		}
 
 		private async void LeaveButtonClicked()
 		{
@@ -149,7 +172,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 					await System.LeaveLobby();
 					OnLobbyLeft?.Invoke();
 				}
-				catch (PlatformRequesterException e)
+				catch (Exception e)
 				{
 					OnError?.Invoke(e.Message);
 					// if (e is PlatformRequesterException pre)

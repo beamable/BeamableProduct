@@ -253,6 +253,22 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		#region InsideLobbyView callbacks
 
+		public void StartMatchRequestSent()
+		{
+			if (BeamContext.Lobby != null)
+			{
+				BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+			}
+
+			ShowOverlayedLabel("Starting match...");
+		}
+
+		public void StartMatchResponseReceived()
+		{
+			HideOverlay();
+			// Switch to the other scene after match has started
+		}
+
 		public void AdminLeaveLobbyRequestSent()
 		{
 			async void ConfirmAction()

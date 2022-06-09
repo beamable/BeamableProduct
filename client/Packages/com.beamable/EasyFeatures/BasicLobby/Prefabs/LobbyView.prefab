@@ -2046,7 +2046,7 @@ GameObject:
   - component: {fileID: 1188065238002404907}
   - component: {fileID: 1733791340007399888}
   m_Layer: 5
-  m_Name: WaitingButton
+  m_Name: NotReadyButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7494,14 +7494,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnrichOrder: 0
-  ViewGroup: {fileID: 0}
   Name: {fileID: 1188065238205655801}
   Counter: {fileID: 1960714245594212628}
   LobbySlotsList: {fileID: 4093501080789288833}
   SettingsButton: {fileID: 1188065238635265561}
   BackButton: {fileID: 1188065238015951588}
   ReadyButton: {fileID: 1188065237864603425}
-  WaitingButton: {fileID: 1188065238002404907}
+  NotReadyButton: {fileID: 1188065238002404907}
   StartButton: {fileID: 1188065238450723740}
   LeaveButton: {fileID: 1188065237743201433}
   OnAdminLeaveLobbyRequestSent:
@@ -7565,6 +7564,34 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1188065237752030573}
         m_MethodName: SettingsButtonClicked
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnStartMatchRequestSent:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: StartMatchRequestSent
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnStartMatchResponseReceived:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: StartMatchResponseReceived
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8638,7 +8665,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: WAITING FOR LEADER
+  m_text: NOT READY
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
@@ -8708,10 +8735,10 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 1188065239610408360}
-    characterCount: 18
+    characterCount: 9
     spriteCount: 0
-    spaceCount: 2
-    wordCount: 3
+    spaceCount: 1
+    wordCount: 2
     linkCount: 0
     lineCount: 1
     pageCount: 1
@@ -10797,8 +10824,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 425.325, y: -40}
-  m_SizeDelta: {x: 454.675, y: 80}
+  m_AnchoredPosition: {x: 360.49, y: -40}
+  m_SizeDelta: {x: 519.51, y: 80}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &1478721493779084
 CanvasRenderer:
@@ -10856,8 +10883,8 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 60
+  m_fontSizeBase: 60
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -17453,7 +17480,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: -40}
-  m_SizeDelta: {x: 425.325, y: 80}
+  m_SizeDelta: {x: 360.49, y: 80}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &5052652781096257890
 CanvasRenderer:
