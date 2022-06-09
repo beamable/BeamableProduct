@@ -7,12 +7,12 @@ using Beamable.Editor.Realms;
 using Beamable.Editor.Modules.Account;
 using System;
 using Beamable.Common;
+using System.Linq;
 
 namespace Beamable.Editor.Tests
 {
 	public class MockToolboxViewService : IToolboxViewService
 	{
-		public static MockToolboxViewService Instance;
 		public List<RealmView> Realms { get; private set; }
 
 		public RealmView CurrentRealm { get; private set; }
@@ -26,7 +26,7 @@ namespace Beamable.Editor.Tests
 		public string FilterText { get; private set; }
 
 		private List<AnnouncementModelBase> _announcements = new List<AnnouncementModelBase>();
-		public IEnumerable<AnnouncementModelBase> Announcements => throw new NotImplementedException();
+		public IEnumerable<AnnouncementModelBase> Announcements { get; }
 
 		public event Action<List<RealmView>> OnAvailableRealmsChanged;
 		public event Action<RealmView> OnRealmChanged;
@@ -42,9 +42,17 @@ namespace Beamable.Editor.Tests
 			UseDefaultWidgetSource();
 		}
 
+		private void HandleRealmChanged(RealmView realm)
+		{
+			CurrentRealm = realm;
+			OnRealmChanged?.Invoke(realm);
+		}
+
 		public void Destroy()
 		{
-			throw new NotImplementedException();
+			OnAvailableRealmsChanged = null;
+			var api = BeamEditorContext.Default;
+			api.OnRealmChange -= HandleRealmChanged;
 		}
 
 		public IEnumerable<Widget> GetFilteredWidgets()
@@ -78,7 +86,7 @@ namespace Beamable.Editor.Tests
 
 		public bool IsSpecificAnnouncementCurrentlyDisplaying(Type type)
 		{
-			throw new NotImplementedException();
+			return Announcements.Any(announcement => announcement.GetType() == type);
 		}
 
 		public Promise<List<RealmView>> RefreshAvailableRealms()
@@ -105,7 +113,21 @@ namespace Beamable.Editor.Tests
 
 		public void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation)
 		{
-			throw new NotImplementedException();
+			var hasOrientation = (Query?.HasOrientationConstraint ?? false) &&
+								 Query.FilterIncludes(orientation);
+			var nextQuery = new ToolboxQuery(Query);
+
+			if (hasOrientation && !shouldHaveOrientation)
+			{
+				nextQuery.OrientationConstraint = nextQuery.OrientationConstraint & ~orientation;
+				nextQuery.HasOrientationConstraint = nextQuery.OrientationConstraint > 0;
+			}
+			else if (!hasOrientation && shouldHaveOrientation)
+			{
+				nextQuery.OrientationConstraint |= orientation;
+				nextQuery.HasOrientationConstraint = true;
+			}
+			SetQuery(nextQuery);
 		}
 
 		public void SetQuery(string filter)
@@ -154,23 +176,12 @@ namespace Beamable.Editor.Tests
 
 		public void UseDefaultWidgetSource()
 		{
-			//DO NOT USE THIS
-			//WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"BASE_PATH/Models/toolboxData.asset");
+			//ACTUAL DISK IMPLEMENTATION
+			//WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"{BASE_PATH}/Models/toolboxData.asset");
 			
+			//MOCK LOCAL DISK IMPLEMENTATION
 			WidgetSource = new ToolboxMockData();
 			OnWidgetSourceChanged?.Invoke(WidgetSource);
-
-			//DEBUG LOG
-			/*for (var i = 0; i < WidgetSource.Count; i++)
-			{
-				var widget = WidgetSource.Get(i);
-				Debug.Log(widget.Name);
-			}*/
-		}
-
-		public int DoSomething(int num)
-		{
-			return num;
 		}
 	}
 }
