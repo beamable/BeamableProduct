@@ -9,6 +9,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2]
+### Changed
+- Content creation menu list is now sorted
+
+### Fixed
+- User can no longer put past dates on Event and Listing schedules
+- Editor will re-attempt failed requests before auto logging out
+- DISABLE_BEAMABLE_TOOLBAR_EXTENDER directive now covers all scenarios
+- Trying to rename a deleted content object will no longer log an exception
+
 ## [1.2.0]
 ### Added
 - Unity 2021 LTS support.
