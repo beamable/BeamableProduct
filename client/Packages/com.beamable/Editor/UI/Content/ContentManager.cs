@@ -41,7 +41,8 @@ namespace Beamable.Editor.Content
 				RefreshServer();
 			};
 
-			Model.SetContentTypes(ContentRegistry.GetAll().ToList());
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			Model.SetContentTypes(contentTypeReflectionCache.GetAll().ToList());
 
 			ValidateContent(null, null); // start a validation in the background.
 

@@ -29,7 +29,7 @@ namespace Beamable.AccountManagement
 
 		public static AccountManagementConfiguration Instance => Get<AccountManagementConfiguration>();
 
-		public bool Facebook, Apple, Google;
+		public bool Facebook, Apple, Google, GooglePlayGames;
 
 		[Tooltip("Web App Google Client ID https://console.cloud.google.com/apis/credentials (note: Android needs web ID for auth)")]
 		public string GoogleClientID;

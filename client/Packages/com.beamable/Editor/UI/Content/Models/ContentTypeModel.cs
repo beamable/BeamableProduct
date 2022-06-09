@@ -60,8 +60,10 @@ namespace Beamable.Editor.Content.Models
 
 		public void SetFromContent(IContentObject content)
 		{
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+
 			ContentType = content.GetType();
-			TypeName = ContentRegistry.TypeToName(ContentType);
+			TypeName = contentTypeReflectionCache.TypeToName(ContentType);
 			LocalStatus = HostStatus.AVAILABLE;
 			ServerStatus = HostStatus.UNKNOWN;
 		}
@@ -71,7 +73,8 @@ namespace Beamable.Editor.Content.Models
 			TypeName = reference.TypeName;
 			ServerStatus = HostStatus.AVAILABLE;
 
-			if (ContentRegistry.TryGetType(TypeName, out var type))
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			if (contentTypeReflectionCache.TryGetType(TypeName, out var type))
 			{
 				ContentType = type;
 				LocalStatus = HostStatus.AVAILABLE;
