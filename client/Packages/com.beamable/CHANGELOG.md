@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content creation menu list is now sorted
 
 ### Fixed
-- User can no longer put past dates on Event and Listing schedules
 - Editor will re-attempt failed requests before auto logging out
 - DISABLE_BEAMABLE_TOOLBAR_EXTENDER directive now covers all scenarios
 - Trying to rename a deleted content object will no longer log an exception
