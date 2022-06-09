@@ -16,7 +16,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button CancelButton;
 		public Button ConfirmButton;
 
-		public void Show(string lobbyName, string description, Action<string, string> confirmAction, Action closeAction, string password = "")
+		public void Show(string lobbyName, string description, Action<string, string> confirmAction, Action closeAction, string password)
 		{
 			_nameField.SetTextWithoutNotify(lobbyName);
 			_descriptionField.SetTextWithoutNotify(description);

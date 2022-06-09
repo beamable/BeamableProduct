@@ -17,7 +17,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				{
 					HideOverlay();
 					confirmAction?.Invoke(newName, newDescription);
-				}, HideOverlay);
+				}, HideOverlay, password);
 			});
 		}
 	}

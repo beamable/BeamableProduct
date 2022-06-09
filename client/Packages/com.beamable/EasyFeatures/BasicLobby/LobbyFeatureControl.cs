@@ -332,9 +332,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 				return;
 			}
 
-			void ConfirmAction(string name, string description)
+			void ConfirmAction(string lobbyName, string description)
 			{
-				LobbyPlayerSystem.UpdateLobby(name, description);
+				LobbyPlayerSystem.UpdateLobby(lobbyName, description);
 			}
 
 			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction, BeamContext.Lobby.Passcode);
