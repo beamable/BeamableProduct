@@ -259,10 +259,10 @@ namespace Beamable
 			// Initialize BeamEditorContext dependencies
 			BeamEditorContextDependencies = new DependencyBuilder();
 			BeamEditorContextDependencies.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
-			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
-			                                                                                                 provider.GetService<AccessTokenStorage>(),
-			                                                                                                 null,
-			                                                                                                 provider.GetService<OfflineCache>()) {RequestTimeoutMs = $"{30 * 1000}"}
+			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(
+				provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
+				                                  provider.GetService<AccessTokenStorage>(),
+				                                  null) {RequestTimeoutMs = $"{30 * 1000}"}
 			);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
 			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
