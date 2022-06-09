@@ -1,20 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System;
+﻿using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEditor.VspAttribution.Beamable;
-using UnityEngine.TestTools;
-using UnityEditor;
-//using UnityEngine.UI;
 
-using Beamable.Common;
 using Beamable.Common.Dependencies;
-using Beamable.Editor.Environment;
-using Beamable.Editor.Tests;
-using Beamable.Editor.Toolbox.UI;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.UI;
@@ -32,7 +20,7 @@ namespace Beamable.Editor.Tests.Toolbox
 {
 	public class ToolboxTests
     {
-		public IDependencyProvider provider;
+		/*public IDependencyProvider provider;
 
 		//Test if ticking filter in tags will change the search bar value to tag:{tag}
 		[Test]
@@ -113,5 +101,6 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			Assert.NotNull(wnd);
 		}
+		*/
 	}
 }
