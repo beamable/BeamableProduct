@@ -243,8 +243,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			if (string.IsNullOrEmpty(contentItemDescriptor.AssetPath))
 			{
-				Debug.LogError(new Exception("ListView_OnItemChosen() Error : " +
-											 "no AssetPath for " + contentItemDescriptor.Name));
+				Debug.LogWarning($"The selected content=[{contentItemDescriptor.Name}] does not exist locally. First, download the content from the server to be able to edit it.");
 				return;
 			}
 

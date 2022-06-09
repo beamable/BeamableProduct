@@ -233,7 +233,7 @@ namespace Beamable.Common.Api.Inventory
 		public Promise<List<InventoryObject<TContent>>> ViewToItems<TContent>(InventoryView view, IEnumerable<string> filter = null) where TContent : ItemContent, new()
 		{
 			var filterSet = filter?.ToList();
-			var typeName = ContentRegistry.GetContentTypeName(typeof(TContent));
+			var typeName = ContentTypeReflectionCache.GetContentTypeName(typeof(TContent));
 
 			return Promise.Sequence(view.items
 				.Where(kvp => kvp.Key.StartsWith(typeName))
@@ -263,7 +263,7 @@ namespace Beamable.Common.Api.Inventory
 		public Promise<List<InventoryObject<TContent>>> GetItems<TContent>() where TContent : ItemContent, new()
 		{
 			// this is the same as running a getCurrent with a certain scope.
-			var typeName = ContentRegistry.GetContentTypeName(typeof(TContent));
+			var typeName = ContentTypeReflectionCache.GetContentTypeName(typeof(TContent));
 			return GetCurrent(typeName).FlatMap(view => ViewToItems<TContent>(view));
 		}
 

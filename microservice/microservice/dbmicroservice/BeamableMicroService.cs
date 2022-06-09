@@ -10,6 +10,8 @@ using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Assistant;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
@@ -40,6 +42,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Api.Notifications;
 using microservice.Common;
@@ -128,6 +131,8 @@ namespace Beamable.Server
 
       public bool HasInitialized { get; private set; }
 
+      public ReflectionCache _reflectionCache;
+      
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
@@ -184,12 +189,30 @@ namespace Beamable.Server
 
          RebuildRouteTable();
 
+         _reflectionCache = new ReflectionCache();
+         var contentTypeReflectionCache = new ContentTypeReflectionCache();
+         _reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
+         _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+         _reflectionCache.SetStorage(new BeamHintGlobalStorage());
+
+         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") && 
+                                                                                  !asm.GetName().Name.StartsWith("nunit.") &&
+                                                                                  !asm.GetName().Name.StartsWith("JetBrains.") &&
+                                                                                  !asm.GetName().Name.StartsWith("Microsoft.") &&
+                                                                                  !asm.GetName().Name.StartsWith("Serilog."))
+            .Select(asm => asm.GetName().Name)
+            .ToList();
+         BeamableLogger.Log($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
+         _reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
+
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
-         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver);
+         
+         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
+         
          InitServices();
 
          _serviceInitialized.Then(_ =>
@@ -557,6 +580,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
                .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
+               .AddSingleton<ReflectionCache>(_ => _reflectionCache)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
                .AddTransient<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)

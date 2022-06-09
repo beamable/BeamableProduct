@@ -291,8 +291,8 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<TestProperties>(Method.POST,
-			                                          client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("{\"<A>k__BackingField\": 7, \"<B>k__BackingField\": \"test string\"}");
+													  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("{\"<A>k__BackingField\": 7, \"<B>k__BackingField\": \"test string\"}");
 
 			var req = client.Request<TestProperties>(ROUTE, new string[] { });
 
