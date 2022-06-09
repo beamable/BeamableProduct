@@ -157,7 +157,9 @@ namespace Beamable.Editor.Assistant
 			_lastTickTime = currTickTime;
 			_hintPreferences.RebuildPerHintPreferences();
 			CheckNotifications();
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 			BeamableToolbarExtender.Repaint();
+#endif
 		}
 
 		private void CheckNotifications()

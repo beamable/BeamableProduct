@@ -3,8 +3,10 @@ using Beamable.Server.Editor.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -56,6 +58,24 @@ namespace Beamable.Server.Editor.DockerCommands
 			processStartInfo.EnvironmentVariables["DOCKER_SCAN_SUGGEST"] = "false";
 		}
 
+		private string GetProcessArchitecture()
+		{
+			string platformStr = string.Empty;
+			// Mac with M1+ processor returns the keyword "Apple", which we can use to detect if the architecture is arm64 instead of amd64, as is the case with Intel processors
+			if (CultureInfo.InvariantCulture.CompareInfo.IndexOf(SystemInfo.processorType, "Apple", CompareOptions.IgnoreCase) >= 0 ||
+				RuntimeInformation.OSArchitecture == Architecture.Arm ||
+				RuntimeInformation.OSArchitecture == Architecture.Arm64)
+			{
+				platformStr = Environment.Is64BitProcess ? "--platform linux/arm64" : "--platform linux/arm/v7";
+			}
+			else if (RuntimeInformation.OSArchitecture == Architecture.X64 ||
+					 RuntimeInformation.OSArchitecture == Architecture.X86)
+			{
+				platformStr = "--platform linux/amd64";
+			}
+			return platformStr;
+		}
+
 		public override string GetCommandString()
 		{
 			var pullStr = _pull ? "--pull" : "";
@@ -63,7 +83,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			pullStr = ""; // we cannot force the pull against the local image.
 #endif
 
-			var platformStr = "--platform linux/amd64";
+			var platformStr = GetProcessArchitecture();
 #if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
 			platformStr = "";
 #endif

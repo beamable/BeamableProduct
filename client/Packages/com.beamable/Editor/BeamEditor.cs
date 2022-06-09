@@ -160,6 +160,7 @@ namespace Beamable
 							return false;
 						}
 					}
+
 					throw;
 				}
 			}
@@ -302,13 +303,15 @@ namespace Beamable
 
 #if BEAMABLE_DEVELOPER
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
 #endif
 				IsInitialized = true;
 
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 				// Initialize toolbar
 				BeamableToolbarExtender.LoadToolbarExtender();
+#endif
 			}
 
 			InitDefaultContext();
@@ -500,7 +503,6 @@ namespace Beamable
 				{
 					LoadLastAuthenticatedUserDataForToken(accessToken, pid, out CurrentUser, out CurrentCustomer, out CurrentRealm);
 
-
 					if (CurrentUser == null || CurrentCustomer == null || CurrentRealm == null || accessToken.IsExpired)
 						await Login(accessToken);
 					else
@@ -542,7 +544,6 @@ namespace Beamable
 			var token = new AccessToken(accessTokenStorage, requester.Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
 			await Login(token);
-
 		}
 
 		public async Promise Login(AccessToken token, string pid = null)
@@ -581,7 +582,6 @@ namespace Beamable
 				else
 					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
 			}
-
 
 			await (realm == null ? Promise.Success : SwitchRealm(realm));
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
@@ -636,14 +636,13 @@ namespace Beamable
 			}
 		}
 
-
 		private Promise<Unit> SaveLastAuthenticatedUserDataForToken(AccessToken token, EditorUser authUserData, CustomerView authCustomerData, RealmView authRealmView)
 		{
 			var cid = token.Cid;
 			var pid = authRealmView.Pid;
 
-			var userSerializedData = SerializeToString(authUserData);// JsonUtility.ToJson(authUserData);
-			var customerSerializedData = SerializeToString(authCustomerData);// JsonUtility.ToJson(authCustomerData);
+			var userSerializedData = SerializeToString(authUserData); // JsonUtility.ToJson(authUserData);
+			var customerSerializedData = SerializeToString(authCustomerData); // JsonUtility.ToJson(authCustomerData);
 			var realmSerializedData = SerializeToString(authRealmView); //JsonUtility.ToJson(authRealmView);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_user_data", userSerializedData);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_customer_data", customerSerializedData);
@@ -654,7 +653,6 @@ namespace Beamable
 
 		private void ClearLastAuthenticatedUserDataForToken(AccessToken token, string pid)
 		{
-
 			if (string.IsNullOrEmpty(pid)) return; // nothing to do if the pid is empty.
 			var cid = token?.Cid;
 			if (string.IsNullOrEmpty(cid)) return; // nothing to do if the cid is empty.
@@ -794,7 +792,6 @@ namespace Beamable
 
 				AssetDatabase.Refresh();
 			}
-
 		}
 
 		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
@@ -803,6 +800,7 @@ namespace Beamable
 			{
 				host = BeamableEnvironment.ApiUrl;
 			}
+
 			WriteConfig(alias, pid, host, cid, containerPrefix);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
