@@ -16,7 +16,7 @@ namespace Beamable.Editor.Models.Schedules
 		private readonly LabeledCheckboxVisualElement _allDayComponent;
 		private readonly LabeledHourPickerVisualElement _periodFromHourComponent;
 		private readonly LabeledHourPickerVisualElement _periodToHourComponent;
-
+		
 		private Action<bool, string> _refreshConfirmButtonCallback;
 
 		public ListingDatesScheduleModel(LabeledTextField descriptionComponent,
