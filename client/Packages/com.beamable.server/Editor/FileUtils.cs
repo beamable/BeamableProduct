@@ -140,7 +140,7 @@ namespace Beamable.Server.Editor
 			}
 
 		}
-		
+
 		private static void OverrideDirectoryAttributes(DirectoryInfo dir, FileAttributes fileAttributes)
 		{
 			foreach (var subDir in dir.GetDirectories())
@@ -148,7 +148,7 @@ namespace Beamable.Server.Editor
 				OverrideDirectoryAttributes(subDir, fileAttributes);
 				subDir.Attributes = fileAttributes;
 			}
-			
+
 			foreach (var file in dir.GetFiles())
 			{
 				file.Attributes = fileAttributes;
