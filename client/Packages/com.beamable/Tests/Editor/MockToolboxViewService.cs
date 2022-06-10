@@ -1,13 +1,16 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Realms;
 using Beamable.Editor.Modules.Account;
-using System;
+
 using Beamable.Common;
+using Beamable.Common.Api;
 using System.Linq;
+using static Beamable.Common.Constants.Features.Toolbox;
 
 namespace Beamable.Editor.Tests
 {
@@ -176,9 +179,7 @@ namespace Beamable.Editor.Tests
 
 		public void UseDefaultWidgetSource()
 		{
-			//ACTUAL DISK IMPLEMENTATION
-			//WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"{BASE_PATH}/Models/toolboxData.asset");
-
+			WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"{BASE_PATH}/Models/toolboxData.asset");
 			OnWidgetSourceChanged?.Invoke(WidgetSource);
 		}
 	}
