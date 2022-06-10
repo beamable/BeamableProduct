@@ -93,7 +93,7 @@ namespace Beamable.Common.Content
 				this.Add(keys[i], values[i]);
 		}
 
-		public object Serialize()
+		public object SerializeAsArrayDict()
 		{
 			// Added similar serialization like in InventoryUpdateBuilder and ToNetworkJson method (it works!)
 			

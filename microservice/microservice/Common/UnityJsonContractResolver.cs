@@ -166,7 +166,7 @@ namespace Beamable.Server.Common
                 
                 ((ISerializationCallbackReceiver) value)?.OnBeforeSerialize();
                 
-                var serializeDictMethod = value?.GetType().GetMethod("Serialize");
+                var serializeDictMethod = value?.GetType().GetMethod("SerializeAsArrayDict");
                 
                 if (serializeDictMethod != null)
                 {
