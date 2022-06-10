@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.EasyFeatures.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using Button = UnityEngine.UI.Button;
-using Toggle = UnityEngine.UI.Toggle;
+using Random = UnityEngine.Random;
 
 namespace Beamable.EasyFeatures.BasicParty
 {
@@ -24,7 +27,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public GameObject PartyIdObject;
 		public TMP_InputField PartyIdInputField;
 		public TMP_InputField MaxPlayersTextField;
-		public Toggle PublicAccessToggle;
+		public MultiToggleComponent AccessToggle;
 		public Button CopyIdButton;
 		public Button NextButton;
 		public Button CancelButton;
@@ -62,17 +65,20 @@ namespace Beamable.EasyFeatures.BasicParty
 			PartyIdObject.gameObject.SetActive(!CreateNewParty);
 			PartyIdInputField.text = CreateNewParty ? "" : Party.PartyId;
 			MaxPlayersTextField.text = CreateNewParty ? "" : Party.MaxPlayers.ToString();
-			PublicAccessToggle.isOn = CreateNewParty || Party.Access == PartyAccess.Public;
-			PartyAccessChanged(PublicAccessToggle.isOn);
 			MaxPlayersValueChanged(Party.MaxPlayers.ToString());
+			AccessToggle.Setup(Enum.GetNames(typeof(PartyAccess)).ToList(), OnAccessOptionSelected, (int)Party.Access);
 
 			// set callbacks
 			MaxPlayersTextField.onValueChanged.ReplaceOrAddListener(MaxPlayersValueChanged);
-			PublicAccessToggle.onValueChanged.ReplaceOrAddListener(PartyAccessChanged);
 			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(OnNextButtonClicked);
 			CancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
+		}
+
+		private void OnAccessOptionSelected(int optionId)
+		{
+			Party.Access = (PartyAccess)optionId;
 		}
 
 		private void OnCopyIdButtonClicked()
@@ -118,11 +124,6 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			System.Party = Party;
 			FeatureControl.OpenPartyView(System.Party);
-		}
-
-		private void PartyAccessChanged(bool isPublic)
-		{
-			Party.Access = isPublic ? PartyAccess.Public : PartyAccess.Private;
 		}
 	}
 }

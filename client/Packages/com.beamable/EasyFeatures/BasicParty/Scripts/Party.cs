@@ -6,8 +6,8 @@ namespace Beamable.EasyFeatures.BasicParty
 {
 	public enum PartyAccess
 	{
-		Private,
-		Public,
+		Private = 0,
+		Public = 1,
 	}
 	
 	[Serializable]
