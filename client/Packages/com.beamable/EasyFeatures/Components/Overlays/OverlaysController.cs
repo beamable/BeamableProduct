@@ -7,16 +7,27 @@ namespace Beamable.EasyFeatures.Components
 	{
 		[Header("Components")]
 		public GameObject Mask;
-		
+
 		[Header("Generic elements")]
 		public OverlayedLabel Label;
+
 		public OverlayedModalWindow ModalWindow;
+		public OverlayedLabelWithButton LabelWithButton;
 
 		private IOverlayComponent _currentObject;
 
 		public void ShowLabel(string label)
 		{
 			Show(Label, () => { Label.Show(label); });
+		}
+
+		public void ShowLabelWithButton(string label, string buttonLabel, Action onClick)
+		{
+			Show(LabelWithButton, () => { LabelWithButton.Show(label, buttonLabel, ()=>
+			{
+				HideOverlay();
+				onClick?.Invoke();
+			}); });
 		}
 
 		public void ShowError(string message)
@@ -26,11 +37,14 @@ namespace Beamable.EasyFeatures.Components
 
 		public void ShowConfirm(string label, string message, Action confirmAction)
 		{
-			Show(ModalWindow, () => { ModalWindow.Show(label, message, ()=>
+			Show(ModalWindow, () =>
 			{
-				HideOverlay();
-				confirmAction?.Invoke();
-			}, HideOverlay, OverlayedModalWindow.Mode.Confirm); });
+				ModalWindow.Show(label, message, () =>
+				{
+					HideOverlay();
+					confirmAction?.Invoke();
+				}, HideOverlay, OverlayedModalWindow.Mode.Confirm);
+			});
 		}
 
 		public void HideOverlay()
