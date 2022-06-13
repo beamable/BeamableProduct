@@ -130,7 +130,6 @@ namespace Beamable.Editor.Content.Components
 				Root.RemoveFromClassList("validationError");
 			}
 			UpdateStatusIcon();
-			// UpdateLastChanged();
 		}
 
 		private void UpdateStatusIcon()

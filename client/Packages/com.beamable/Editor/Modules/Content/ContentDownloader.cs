@@ -50,7 +50,7 @@ namespace Beamable.Editor.Content
 
 					var newAsset = serializer.DeserializeByType(response, contentType);
 					newAsset.Tags = operation.Tags;
-					newAsset.LastChanged = operation.LastChanged ?? string.Empty;
+					newAsset.LastChanged = operation.LastChanged ?? operation.Created ?? string.Empty;
 
 					completed += 1;
 					progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
@@ -142,6 +142,7 @@ namespace Beamable.Editor.Content
 					Uri = reference.Uri,
 					Operation = exists ? "MODIFY" : "ADD",
 					Tags = reference.Tags,
+					Created = reference.Created,
 					LastChanged = reference.LastChanged
 				};
 
@@ -175,6 +176,7 @@ namespace Beamable.Editor.Content
 		public string Uri;
 		public string Operation;
 		public string[] Tags;
+		public string Created;
 		public string LastChanged;
 	}
 }

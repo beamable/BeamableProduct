@@ -218,6 +218,7 @@ namespace Beamable.Common.Content
 			set => _tags = value;
 		}
 
+		public string Created { get; private set; }
 		public string LastChanged { get; set; }
 
 		/// <summary>

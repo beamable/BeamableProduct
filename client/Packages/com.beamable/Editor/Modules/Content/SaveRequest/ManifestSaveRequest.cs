@@ -21,6 +21,7 @@ namespace Beamable.Editor.Content.SaveRequest
 		public string Id;
 		public string Version;
 		public string Uri;
+		public string Created;
 		public string TypeName => Id.Substring(0, Id.LastIndexOf('.'));
 		[CanBeNull] public string[] Tags;
 		[CanBeNull] public string Checksum;
@@ -33,6 +34,7 @@ namespace Beamable.Editor.Content.SaveRequest
 			s.Serialize("id", ref Id);
 			s.Serialize("version", ref Version);
 			s.Serialize("uri", ref Uri);
+			s.Serialize("created", ref Created);
 			s.Serialize("lastChanged", ref LastChanged);
 
 

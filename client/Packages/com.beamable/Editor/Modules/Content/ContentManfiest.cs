@@ -38,6 +38,7 @@ namespace Beamable.Editor.Content
 			   Visibility = r.visibility,
 			   Version = r.version,
 			   Tags = r.tags,
+			   Created = r.created,
 			   LastChanged = r.lastChanged
 		   })
 		   .ToList(); // shallow copy.
@@ -172,6 +173,7 @@ namespace Beamable.Editor.Content
 		public string uri;
 		public string checksum;
 		public string visibility;
+		public string created;
 		public string lastChanged;
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
@@ -183,6 +185,7 @@ namespace Beamable.Editor.Content
 			s.Serialize(nameof(uri), ref uri);
 			s.Serialize(nameof(checksum), ref checksum);
 			s.Serialize(nameof(visibility), ref visibility);
+			s.Serialize(nameof(created), ref created);
 			s.Serialize(nameof(lastChanged), ref lastChanged);
 		}
 	}

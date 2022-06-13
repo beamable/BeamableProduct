@@ -225,14 +225,13 @@ namespace Beamable.Editor.Content.Models
 		public HostStatus ServerStatus { get; private set; }
 		public string Id => $"{ContentType.TypeName}.{Name}";
 
-		public string LastChanged 
-		{	
-			get =>
-				string.IsNullOrWhiteSpace(_lastChanged)
-					? string.Empty
-					: DateTimeOffset.FromUnixTimeMilliseconds((long)Convert.ToDouble(_lastChanged)).DateTime
-					                .ToLocalTime()
-					                .ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
+		public string LastChanged
+		{
+			get => string.IsNullOrWhiteSpace(_lastChanged)
+				? string.Empty
+				: DateTimeOffset.FromUnixTimeMilliseconds((long)Convert.ToDouble(_lastChanged)).DateTime
+				                .ToLocalTime()
+				                .ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
 			set => _lastChanged = value; 
 		}
 		private string _lastChanged;
@@ -299,7 +298,7 @@ namespace Beamable.Editor.Content.Models
 				_serverData = reference;
 				ServerStatus = HostStatus.AVAILABLE;
 				ServerTags = new HashSet<string>(reference.Tags);
-				_serverLastChanged = reference.LastChanged;
+				_serverLastChanged = reference.LastChanged ?? reference.Created;
 				LastChanged = _serverLastChanged;
 				_allTags = CollectAllTags();
 			}
