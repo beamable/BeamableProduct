@@ -2,6 +2,7 @@
 using Beamable.Experimental.Api.Lobbies;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -43,7 +44,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			LobbyPlayer lobbyPlayer = BeamContext.Lobby.Players[CurrentlySelectedPlayerIndex.Value];
 			await BeamContext.Lobby.KickPlayer(lobbyPlayer.playerId);
 			CurrentlySelectedPlayerIndex = null;
@@ -51,23 +52,34 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public async void SetPlayerReady(bool value)
 		{
-			await BeamContext.Lobby.AddTags(new List<Tag>
-			{
-				new Tag(LobbyExtensions.TAG_PLAYER_READY, value.ToString().ToLower())
-			}, true);
+			await BeamContext.Lobby.AddTags(
+				new List<Tag> {new Tag(LobbyExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
 		}
 
-		public bool SetCurrentSelectedPlayer(int slotIndex)
+		public async Task PassLeadership()
 		{
-			LobbyPlayer player = BeamContext.Lobby.Players[slotIndex];
+			// TODO: invoke changing leadership in lobby
+			await Promise.Success.WaitForSeconds(2);
+		}
 
-			if (player.playerId == BeamContext.PlayerId.ToString())
+		public void SetCurrentSelectedPlayer(int slotIndex)
+		{
+			// LobbyPlayer player = BeamContext.Lobby.Players[slotIndex];
+
+			// We don't want to interact with card for self
+			// if (player.playerId == BeamContext.PlayerId.ToString())
+			// {
+			// 	return false;
+			// }
+
+			if (CurrentlySelectedPlayerIndex == slotIndex)
 			{
-				return false;
+				CurrentlySelectedPlayerIndex = null;
 			}
-
-			CurrentlySelectedPlayerIndex = slotIndex;
-			return true;
+			else
+			{
+				CurrentlySelectedPlayerIndex = slotIndex;
+			}
 		}
 
 		public void UpdateLobby(string name, string description)
@@ -108,9 +120,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			readiness.AddRange(entries.Select(player => player.IsReady()));
 		}
 
-		public List<LobbySlotPresenter.ViewData> BuildViewData()
+		private List<LobbySlotPresenter.ViewData> BuildViewData()
 		{
-			List<LobbySlotPresenter.ViewData> data = new List<LobbySlotPresenter.ViewData>(MaxPlayers);
+			List<LobbySlotPresenter.ViewData> slotsData = new List<LobbySlotPresenter.ViewData>(MaxPlayers);
 
 			for (int i = 0; i < MaxPlayers; i++)
 			{
@@ -120,6 +132,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 				{
 					entry.PlayerId = PlayerIds[i];
 					entry.IsReady = PlayerReadiness[i];
+					if (CurrentlySelectedPlayerIndex != null)
+					{
+						entry.IsUnfolded = CurrentlySelectedPlayerIndex == i;
+					}
+					else
+					{
+						entry.IsUnfolded = false;
+					}
 				}
 				else
 				{
@@ -127,10 +147,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 					entry.IsReady = false;
 				}
 
-				data.Add(entry);
+				slotsData.Add(entry);
 			}
 
-			return data;
+			return slotsData;
 		}
 	}
 }

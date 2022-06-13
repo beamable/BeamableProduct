@@ -26,7 +26,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			bool IsMatchStarting { get; }
 			Promise LeaveLobby();
 			void SetPlayerReady(bool value);
-			bool SetCurrentSelectedPlayer(int slotIndex);
+			void SetCurrentSelectedPlayer(int slotIndex);
 			void UpdateLobby(string name, string description);
 			Promise StartMatch();
 		}
@@ -36,27 +36,31 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		[Header("Components")]
 		public TextMeshProUGUI Name;
+
 		public TextMeshProUGUI Counter;
 		public LobbySlotsListPresenter LobbySlotsList;
 		public Button SettingsButton;
 
-		public Button BackButton; 
-		public Button ReadyButton; 
+		public Button BackButton;
+		public Button ReadyButton;
 		public Button NotReadyButton;
 		public Button StartButton;
 		public Button LeaveButton;
 
 		[Header("Callbacks")]
+		public UnityEvent OnRebuildRequested;
+
 		public UnityEvent OnAdminLeaveLobbyRequestSent;
 		public UnityEvent OnPlayerLeaveLobbyRequestSent;
 		public UnityEvent OnLobbyLeft;
-		public UnityEvent OnPlayerCardClicked;
+		public UnityEvent OnKickPlayerClicked;
+		public UnityEvent OnPassLeadershipClicked;
 		public UnityEvent OnSettingButtonClicked;
 		public UnityEvent OnStartMatchRequestSent;
 		public UnityEvent OnStartMatchResponseReceived;
-		
+
 		public Action<string> OnError;
-		
+
 		protected IDependencies System;
 
 		public int GetEnrichOrder() => EnrichOrder;
@@ -97,7 +101,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LeaveButton.interactable = !System.IsMatchStarting;
 
 			LobbySlotsList.ClearPooledRankedEntries();
-			LobbySlotsList.Setup(System.SlotsData, System.IsPlayerAdmin, OnAdminButtonClicked);
+			LobbySlotsList.Setup(System.SlotsData, System.IsPlayerAdmin, OnAdminButtonClicked, OnKickButtonClicked,
+			                     OnPassLeadershipButtonClicked);
 			LobbySlotsList.RebuildPooledLobbiesEntries();
 		}
 
@@ -107,11 +112,29 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
-			if (System.SetCurrentSelectedPlayer(slotIndex))
+
+			System.SetCurrentSelectedPlayer(slotIndex);
+			OnRebuildRequested?.Invoke();
+		}
+
+		private void OnKickButtonClicked(int slotIndex)
+		{
+			if (!System.IsPlayerAdmin)
 			{
-				OnPlayerCardClicked?.Invoke();
+				return;
 			}
+
+			OnKickPlayerClicked?.Invoke();
+		}
+
+		private void OnPassLeadershipButtonClicked(int slotIndex)
+		{
+			if (!System.IsPlayerAdmin)
+			{
+				return;
+			}
+
+			OnPassLeadershipClicked?.Invoke();
 		}
 
 		private void SettingsButtonClicked()
@@ -120,7 +143,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			OnSettingButtonClicked?.Invoke();
 		}
 
@@ -155,7 +178,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 				// 	OnError?.Invoke(pre.Error.error);
 				// }
 			}
-			
 		}
 
 		private async void LeaveButtonClicked()

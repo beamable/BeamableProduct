@@ -314,7 +314,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			HideOverlay();
 		}
 
-		public void PlayerCardClicked()
+		public void KickPlayerClicked()
 		{
 			if (LobbyPlayerSystem.CurrentlySelectedPlayerIndex == null)
 			{
@@ -340,6 +340,33 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			ShowConfirmWindow("Kick player", "Are You sure You want to kick this player?", ConfirmAction);
 		}
+		
+		public void PassLeadershipClicked()
+		{
+			if (LobbyPlayerSystem.CurrentlySelectedPlayerIndex == null)
+			{
+				return;
+			}
+
+			async void ConfirmAction()
+			{
+				try
+				{
+					ShowOverlayedLabel("Passing leadership...");
+					await LobbyPlayerSystem.PassLeadership();
+					HideOverlay();
+				}
+				catch (Exception e)
+				{
+					if (e is PlatformRequesterException pre)
+					{
+						ShowErrorWindow(pre.Error.error);
+					}
+				}
+			}
+
+			ShowConfirmWindow("Pass the leadership", "Are You sure You want to pass the leadership?", ConfirmAction);
+		}
 
 		public void SettingsButtonClicked()
 		{
@@ -357,5 +384,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 		}
 
 		#endregion
+
+		public async void RebuildRequested()
+		{
+			await ViewGroup.Enrich();
+		}
 	}
 }
