@@ -11,16 +11,18 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 	public class StartMatchmakingPlayerSystem : StartMatchmakingView.IDependencies
 	{
 		public event Action<MatchmakingState> OnStateChanged;
-		
+
 		public BeamContext BeamContext { get; }
-		
+
 		public bool IsVisible { get; set; }
 		public List<SimGameType> GameTypes { get; set; }
 		public int SelectedGameTypeIndex { get; set; }
 		public int TimeoutSeconds { get; set; }
 		public bool InProgress { get; set; }
+		public MatchmakingHandle CurrentMatchmakingHandle { get; set; }
 
 		private MatchmakingState _matchmakingState;
+
 		public MatchmakingState MatchmakingState
 		{
 			get => _matchmakingState;
@@ -35,7 +37,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		{
 			BeamContext = beamContext;
 		}
-		
+
 		public void Setup(List<SimGameType> gameTypes, int timeoutSeconds)
 		{
 			GameTypes = gameTypes;
@@ -48,16 +50,18 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		{
 			InProgress = true;
 
-			MatchmakingHandle matchmakingHandle = await BeamContext.Api.Experimental.MatchmakingService.StartMatchmaking(
-				GameTypes[SelectedGameTypeIndex].Id, OnUpdate, OnReady, OnTimeout,
-				TimeSpan.FromSeconds(TimeoutSeconds));
+			MatchmakingHandle matchmakingHandle =
+				await BeamContext.Api.Experimental.MatchmakingService.StartMatchmaking(
+					GameTypes[SelectedGameTypeIndex].Id, OnUpdate, OnReady, OnTimeout,
+					TimeSpan.FromSeconds(TimeoutSeconds));
 
 			RegisterMatchmakingHandle(matchmakingHandle);
 		}
 
 		private void RegisterMatchmakingHandle(MatchmakingHandle matchmakingHandle)
 		{
-			 MatchmakingState = matchmakingHandle.State;
+			CurrentMatchmakingHandle = matchmakingHandle;
+			MatchmakingState = matchmakingHandle.State;
 		}
 
 		private void OnUpdate(MatchmakingHandle matchmakingHandle)
@@ -78,6 +82,16 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			RegisterMatchmakingHandle(matchmakingHandle);
 			InProgress = false;
 			Debug.Log("OnTimeout");
+		}
+
+		public async void CancelMatchmaking()
+		{
+			if (CurrentMatchmakingHandle != null)
+			{
+				InProgress = false;
+				MatchmakingHandle matchmakingHandle = await CurrentMatchmakingHandle.Cancel();
+				RegisterMatchmakingHandle(matchmakingHandle);
+			}
 		}
 	}
 }

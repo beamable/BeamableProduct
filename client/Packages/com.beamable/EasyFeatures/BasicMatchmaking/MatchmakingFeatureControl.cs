@@ -21,25 +21,27 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			StartMatchmaking,
 			MatchmakingRoom
 		}
-		
+
 		[Header("Feature Control"), SerializeField]
 		private bool _runOnEnable = true;
+
 		public BeamableViewGroup ViewGroup;
 		public OverlaysController OverlaysController;
-		
+
 		[Header("Components")]
 		public GameObject LoadingIndicator;
-		
+
 		[Header("Fast-Path Configuration")]
 		public List<SimGameTypeRef> GameTypesRefs;
+
 		public int TimeoutSeconds;
-		
+
 		public BeamContext BeamContext;
 
 		protected View CurrentView = View.StartMatchmaking;
 		protected StartMatchmakingPlayerSystem StartMatchmakingPlayerSystem;
 		protected MatchmakingRoomPlayerSystem MatchmakingRoomPlayerSystem;
-		
+
 		public bool RunOnEnable { get => _runOnEnable; set => _runOnEnable = value; }
 
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups
@@ -47,16 +49,16 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			get => new[] {ViewGroup};
 			set => ViewGroup = value.FirstOrDefault();
 		}
-		
+
 		public List<SimGameType> GameTypes { get; set; }
-		
+
 		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<StartMatchmakingPlayerSystem, StartMatchmakingView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<MatchmakingRoomPlayerSystem, MatchmakingRoomView.IDependencies>();
 		}
-		
+
 		public void OnEnable()
 		{
 			ViewGroup.RebuildManagedViews();
@@ -85,10 +87,10 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			GameTypes = await FetchGameTypes();
 
 			StartMatchmakingPlayerSystem.Setup(GameTypes, TimeoutSeconds);
-			
+
 			StartMatchmakingView startMatchmakingView = ViewGroup.ManagedViews.OfType<StartMatchmakingView>().First();
 			startMatchmakingView.OnError = ShowErrorWindow;
-			
+
 			MatchmakingRoomView createLobbyView = ViewGroup.ManagedViews.OfType<MatchmakingRoomView>().First();
 			createLobbyView.OnError = ShowErrorWindow;
 
@@ -108,7 +110,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			StartMatchmakingPlayerSystem.IsVisible = CurrentView == View.StartMatchmaking;
 			MatchmakingRoomPlayerSystem.IsVisible = CurrentView == View.MatchmakingRoom;
 		}
-		
+
 		private async Promise<List<SimGameType>> FetchGameTypes()
 		{
 			Assert.IsTrue(GameTypesRefs.Count > 0, "Game types count configured in inspector must be greater than 0");
@@ -124,7 +126,6 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			return gameTypes;
 		}
 
-
 		#region IOverlayController
 
 		public void HideOverlay()
@@ -135,6 +136,11 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		public void ShowOverlayedLabel(string label)
 		{
 			OverlaysController.ShowLabel(label);
+		}
+
+		public void ShowOverlayedLabelWithButton(string label, string buttonLabel, Action onClick)
+		{
+			OverlaysController.ShowLabelWithButton(label, buttonLabel, onClick);
 		}
 
 		public void ShowErrorWindow(string message)
@@ -148,27 +154,21 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		}
 
 		#endregion
-		
+
 		#region StartMatchmaking callback
 
 		public void StartMatchmakingRequestSent()
 		{
-			ShowOverlayedLabel("Searching...");
+			ShowOverlayedLabelWithButton("Searching...", "CancelMatchmaking", StartMatchmakingPlayerSystem.CancelMatchmaking);
 			StartMatchmakingPlayerSystem.OnStateChanged += OnMatchmakingStateChanged;
 		}
 
-		public void StartMatchmakingResponseReceived()
-		{
-			
-		}
+		public void StartMatchmakingResponseReceived() { }
 
 		private void OnMatchmakingStateChanged(MatchmakingState currentState)
 		{
 			switch (currentState)
 			{
-				case MatchmakingState.Searching:
-					ShowOverlayedLabel("Searching...");
-					break;
 				case MatchmakingState.Ready:
 					HideOverlay();
 					StartMatchmakingPlayerSystem.OnStateChanged -= OnMatchmakingStateChanged;

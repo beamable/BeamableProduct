@@ -227,6 +227,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OverlaysController.ShowLabel(label);
 		}
 
+		public void ShowOverlayedLabelWithButton(string label, string buttonLabel, Action onClick)
+		{
+			OverlaysController.ShowLabelWithButton(label, buttonLabel, onClick);
+		}
+
 		public void ShowErrorWindow(string message)
 		{
 			OverlaysController.ShowError(message);

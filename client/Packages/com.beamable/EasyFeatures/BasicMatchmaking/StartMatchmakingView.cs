@@ -21,7 +21,6 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 			int TimeoutSeconds { get; set; }
 			bool InProgress { get; set; }
 			Promise StartMatchmaking();
-			
 		}
 
 		[Header("View Configuration")]
@@ -35,6 +34,7 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 
 		[Header("Callbacks")]
 		public UnityEvent OnStartMatchmakingRequestSent;
+
 		public UnityEvent OnStartMatchmakingResponseReceived;
 		public UnityEvent OnBackButtonClicked;
 
@@ -60,7 +60,6 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 			{
 				OnBackButtonClicked?.Invoke();
 			});
-
 		}
 
 		private void OnGameTypeSelected(int optionId)
@@ -79,7 +78,7 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 			{
 				return;
 			}
-			
+
 			try
 			{
 				OnStartMatchmakingRequestSent?.Invoke();

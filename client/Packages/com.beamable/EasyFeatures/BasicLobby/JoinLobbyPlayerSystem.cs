@@ -63,16 +63,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Passcode = string.Empty;
 		}
 
-		public virtual void RegisterLobbyData(SimGameType gameType,
-		                                      List<Lobby> data) =>
+		public virtual void RegisterLobbyData(SimGameType gameType, List<Lobby> data) =>
 			RegisterLobbyData(gameType.Id, data);
 
-		public virtual void RegisterLobbyData(SimGameTypeRef gameTypeRef,
-		                                      List<Lobby> data) =>
+		public virtual void RegisterLobbyData(SimGameTypeRef gameTypeRef, List<Lobby> data) =>
 			RegisterLobbyData(gameTypeRef.Id, data);
 
-		public virtual void RegisterLobbyData(string gameTypeId,
-		                                      List<Lobby> data)
+		public virtual void RegisterLobbyData(string gameTypeId, List<Lobby> data)
 		{
 			PerGameTypeLobbiesIds.TryGetValue(gameTypeId, out var ids);
 			PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var names);
