@@ -218,6 +218,7 @@ namespace Beamable.Common.Content
 			set => _tags = value;
 		}
 
+		public string LastChanged { get; set; }
 
 		/// <summary>
 		/// Set the &id and &version

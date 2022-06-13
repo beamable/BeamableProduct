@@ -37,7 +37,8 @@ namespace Beamable.Editor.Content
 			   Uri = r.uri,
 			   Visibility = r.visibility,
 			   Version = r.version,
-			   Tags = r.tags
+			   Tags = r.tags,
+			   LastChanged = r.lastChanged
 		   })
 		   .ToList(); // shallow copy.
 
@@ -171,6 +172,7 @@ namespace Beamable.Editor.Content
 		public string uri;
 		public string checksum;
 		public string visibility;
+		public string lastChanged;
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
@@ -181,6 +183,7 @@ namespace Beamable.Editor.Content
 			s.Serialize(nameof(uri), ref uri);
 			s.Serialize(nameof(checksum), ref checksum);
 			s.Serialize(nameof(visibility), ref visibility);
+			s.Serialize(nameof(lastChanged), ref lastChanged);
 		}
 	}
 
@@ -221,6 +224,7 @@ namespace Beamable.Editor.Content
 		public string[] Tags => Content.Tags;
 		public string Version => Content.Version;
 		public string AssetPath;
+		public string LastChanged => Content.LastChanged;
 		public IContentObject Content;
 
 	}

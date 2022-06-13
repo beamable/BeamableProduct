@@ -16,5 +16,6 @@ namespace Beamable.Content
 		public string Uri;
 		public string Checksum;
 		public string Type;
+		public string LastChanged;
 	}
 }

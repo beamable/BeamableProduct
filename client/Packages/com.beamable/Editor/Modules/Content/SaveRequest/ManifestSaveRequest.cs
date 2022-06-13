@@ -25,12 +25,15 @@ namespace Beamable.Editor.Content.SaveRequest
 		[CanBeNull] public string[] Tags;
 		[CanBeNull] public string Checksum;
 		[CanBeNull] public string Visibility;
+		[CanBeNull] public string LastChanged;
+
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
 			s.Serialize("type", ref Type);
 			s.Serialize("id", ref Id);
 			s.Serialize("version", ref Version);
 			s.Serialize("uri", ref Uri);
+			s.Serialize("lastChanged", ref LastChanged);
 
 
 			if (Tags != null)
