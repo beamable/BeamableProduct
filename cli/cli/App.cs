@@ -3,7 +3,6 @@ using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using Beamable.Common.Api;
-using Beamable.Common.Api.Auth;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace cli;
@@ -28,13 +27,11 @@ public class App
 		// add global options
 		Services.AddSingleton<DryRunOption>();
 		Services.AddSingleton<CidOption>();
-		Services.AddSingleton<PidOption>();
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
 			root.AddOption(provider.GetRequiredService<DryRunOption>());
 			root.AddOption(provider.GetRequiredService<CidOption>());
-			root.AddOption(provider.GetRequiredService<PidOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -42,14 +39,10 @@ public class App
 		// register services
 		Services.AddSingleton<IAppContext, DefaultAppContext>();
 		Services.AddSingleton<IFakeService, FakeService>();
-		Services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
-		Services.AddSingleton<CliRequester, CliRequester>();
-		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
-		Services.AddSingleton<IAuthApi, AuthApi>();
+		Services.AddSingleton<IBeamableRequester, CliRequester>();
 
 		// add commands
 		Services.AddRootCommand<AddCommand, AddCommandArgs>();
-		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
 
 		// customize
 		configurator?.Invoke(Services);
@@ -77,6 +70,7 @@ public class App
 		{
 			var appContext = Provider.GetRequiredService<IAppContext>();
 			appContext.Apply(consoleContext.BindingContext);
+
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		return commandLineBuilder.Build();

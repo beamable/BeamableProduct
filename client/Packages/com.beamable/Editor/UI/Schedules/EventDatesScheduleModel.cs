@@ -56,9 +56,7 @@ namespace Beamable.Editor.Models.Schedules
 
 		private void AdditionalValidation(List<string> selectedDays)
 		{
-			AdditionalScheduleValidation.ValidatePastDates(selectedDays, _refreshConfirmButtonCallback, out var isValid);
-			if (!isValid)
-				return;
+			AdditionalScheduleValidation.ValidatePastDates(selectedDays, _refreshConfirmButtonCallback);
 			Validator.ForceValidationCheck();
 		}
 	}

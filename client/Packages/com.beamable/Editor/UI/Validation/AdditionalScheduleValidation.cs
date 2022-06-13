@@ -9,7 +9,7 @@ namespace Beamable.Editor.Models.Schedules
 		/// <summary>
 		/// The validation will fail if the scheduled dates contain past dates (before DateTime.UtcNow)
 		/// </summary>
-		public static void ValidatePastDates(List<string> selectedDays, Action<bool, string> refreshConfirmButton, out bool isValid)
+		public static void ValidatePastDates(List<string> selectedDays, Action<bool, string> refreshConfirmButton)
 		{
 			int todayTimeStamp = int.Parse(DateTime.UtcNow.ToString("yyyyMMdd"));
 
@@ -24,12 +24,9 @@ namespace Beamable.Editor.Models.Schedules
 				if (timeStamp < todayTimeStamp)
 				{
 					refreshConfirmButton?.Invoke(false, "Date cannot be past");
-					isValid = false;
 					return;
 				}
 			}
-
-			isValid = true;
 			refreshConfirmButton?.Invoke(true, string.Empty);
 		}
 	}

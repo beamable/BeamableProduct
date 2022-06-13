@@ -24,7 +24,6 @@ namespace Beamable.Server.Editor
 			// remove everything in the hidden folder...
 			if (dirExists)
 			{
-				OverrideDirectoryAttributes(new DirectoryInfo(descriptor.BuildPath), FileAttributes.Normal);
 				Directory.Delete(descriptor.BuildPath, true);
 			}
 			Directory.CreateDirectory(descriptor.BuildPath);
@@ -141,18 +140,6 @@ namespace Beamable.Server.Editor
 
 		}
 
-		private static void OverrideDirectoryAttributes(DirectoryInfo dir, FileAttributes fileAttributes)
-		{
-			foreach (var subDir in dir.GetDirectories())
-			{
-				OverrideDirectoryAttributes(subDir, fileAttributes);
-				subDir.Attributes = fileAttributes;
-			}
 
-			foreach (var file in dir.GetFiles())
-			{
-				file.Attributes = fileAttributes;
-			}
-		}
 	}
 }

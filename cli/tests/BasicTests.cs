@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using cli;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
 using NUnit.Framework;
 
