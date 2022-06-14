@@ -1385,10 +1385,8 @@ MonoBehaviour:
   OverlaysController: {fileID: 9098526944487907905}
   LoadingIndicator: {fileID: 1760710101783103438}
   GameTypesRefs:
-  - Id: game_types.1vs1
-  - Id: game_types.2vs2
-  - Id: game_types.4vs4
-  - Id: game_types.8vs8
+  - Id: game_types.CoOp
+  - Id: game_types.CoOp1
   BeamContext:
     AuthorizedUser:
       _data:
@@ -2290,7 +2288,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1188065238015951589}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: OpenMainView
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1188065238016363340
 GameObject:
   m_ObjectHideFlags: 0
@@ -2851,7 +2860,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1188065238070853795}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: OpenMainView
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1188065238113385795
 GameObject:
   m_ObjectHideFlags: 0
@@ -5494,7 +5514,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1188065238785993148}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1188065237752030573}
+        m_MethodName: OpenMainView
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1188065238857452562
 GameObject:
   m_ObjectHideFlags: 0
