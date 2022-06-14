@@ -81,7 +81,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 				CurrentUserRankEntry.LoadingIndicator.Toggle(true);
 				RankEntries.ClearPooledRankedEntries();
 
-				RankEntries.Enrich(system.Entries);
+				RankEntries.Enrich(system.Entries, system.PlayerRank);
 				RankEntries.RebuildPooledRankEntries();
 
 				CurrentUserRankEntry.Enrich(system.PlayerAlias, system.PlayerAvatar, system.PlayerRank, system.PlayerScore, system.PlayerRank);
