@@ -100,7 +100,7 @@ namespace Beamable
 			var contentReflectionCache = new ContentTypeReflectionCache();
 			ReflectionCache.RegisterTypeProvider(contentReflectionCache);
 			ReflectionCache.RegisterReflectionSystem(contentReflectionCache);
-			
+
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance when in the editor. When not in the editor, the storage should really not
 			// be used and
 			// Finally, calls the Generate Reflection cache
