@@ -92,6 +92,7 @@ namespace Beamable.Editor.Login.UI
 
 		public static LoginWindow Instance { get; private set; }
 		public static bool IsInstantiated { get { return Instance != null; } }
+		public static bool IsDomainReloaded { get { return Instance != null && Instance.LoginManager?.OnComplete?.IsCompleted == false; } }
 		private VisualElement _windowRoot;
 
 		public LoginManager LoginManager;

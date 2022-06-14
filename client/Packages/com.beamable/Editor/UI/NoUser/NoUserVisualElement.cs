@@ -37,6 +37,14 @@ namespace Beamable.Editor.NoUser
 				});
 			};
 			this.Add(_root);
+			
+			if (LoginWindow.IsDomainReloaded) // domain reload fix when LoginWindow was opened
+			{
+				LoginWindow.CheckLogin().Then(_ =>
+				{
+					OnLoginCheckComplete?.Invoke();
+				});
+			}
 		}
 	}
 }
