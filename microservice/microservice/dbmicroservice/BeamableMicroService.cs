@@ -132,10 +132,12 @@ namespace Beamable.Server
       public bool HasInitialized { get; private set; }
 
       public ReflectionCache _reflectionCache;
-      
+
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
+      private CancellationTokenSource _serviceShutdownTokenSource = new CancellationTokenSource();
+      private Task _socketDaemen;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -195,7 +197,7 @@ namespace Beamable.Server
          _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
          _reflectionCache.SetStorage(new BeamHintGlobalStorage());
 
-         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") && 
+         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
                                                                                   !asm.GetName().Name.StartsWith("nunit.") &&
                                                                                   !asm.GetName().Name.StartsWith("JetBrains.") &&
                                                                                   !asm.GetName().Name.StartsWith("Microsoft.") &&
@@ -209,10 +211,10 @@ namespace Beamable.Server
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
-         
+
          _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
-         
+
          InitServices();
 
          _serviceInitialized.Then(_ =>
@@ -227,6 +229,8 @@ namespace Beamable.Server
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
+
+         _socketDaemen = SocketDaemen.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
 
          await SetupWebsocket(socket);
       }
@@ -290,6 +294,11 @@ namespace Beamable.Server
             Log.Debug("All pending tasks completed.");
          }
 
+         // stop the daemon from trying to re-authenticate
+         _serviceShutdownTokenSource.Cancel();
+         await _socketDaemen;
+
+         // close the connection itself
          await _connection.Close();
 
          sw.Stop();
@@ -333,7 +342,8 @@ namespace Beamable.Server
 
          try
          {
-            await _requester.Authenticate();
+            _socketRequesterContext.AuthorizationRequested = true;
+            await _requester.WaitForAuthorization();
 
             // Custom Initialization hook for C#MS --- will terminate MS user-code throws
             await ResolveCustomInitializationHook();
