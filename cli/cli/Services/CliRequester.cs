@@ -9,11 +9,11 @@ namespace cli;
 
 public class CliRequester : IBeamableRequester
 {
-	private const string BASE_PATH = "https://dev.api.beamable.com";
 	public IAccessToken AccessToken => Token;
 	private CliToken Token { get; set; }
 	private string Pid { get; set; }
 	private string Cid { get; set; }
+	private string PlatformPath { get; set; } = "https://api.beamable.com";
 
 	public CliRequester()
 	{
@@ -28,7 +28,7 @@ public class CliRequester : IBeamableRequester
 	{
 		Console.WriteLine($"{method} call: {uri}");
 		using HttpClient client = GetClient(includeAuthHeader, Token?.Pid ?? Pid, Token?.Cid ?? Cid, Token);
-		var request = PrepareRequest(method, uri, body);
+		var request = PrepareRequest(method, PlatformPath, uri, body);
 
 		Console.WriteLine($"Calling: {request}");
 		var result = await client.SendAsync(request);
@@ -54,9 +54,9 @@ public class CliRequester : IBeamableRequester
 		return parsed;
 	}
 
-	private static HttpRequestMessage PrepareRequest(Method method, string uri, object body = null)
+	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
 	{
-		var request = new HttpRequestMessage(FromMethod(method), BASE_PATH + uri);
+		var request = new HttpRequestMessage(FromMethod(method), basePath + uri);
 
 		if (body == null)
 		{
@@ -121,9 +121,10 @@ public class CliRequester : IBeamableRequester
 		};
 	}
 
-	public void SetPidAndCid(string cid, string pid)
+	public void Init(string cid, string pid, string platformPath)
 	{
 		Cid = cid;
 		Pid = pid;
+		PlatformPath = platformPath;
 	}
 }

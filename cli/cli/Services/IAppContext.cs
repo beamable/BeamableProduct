@@ -1,3 +1,4 @@
+using System.CommandLine;
 using System.CommandLine.Binding;
 using Newtonsoft.Json;
 
@@ -29,7 +30,8 @@ public class DefaultAppContext : IAppContext
 	public string Cid { get; set; }
 	public string Pid { get; set; }
 
-	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, CliRequester requester)
+	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption,
+	                         CliRequester requester)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -40,20 +42,27 @@ public class DefaultAppContext : IAppContext
 	public async void Apply(BindingContext bindingContext)
 	{
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
-
 		var dictionary = new Dictionary<string, string>();
 		bool configFileExists = false;
+
 		if (TryToFindBeamableConfigFolder(out var path))
 		{
 			configFileExists = TryToReadConfigFile(path, out dictionary);
 		}
 
-		Cid = bindingContext.ParseResult.GetValueForOption(_cidOption) ??
-		      (configFileExists && dictionary.ContainsKey("cid") ? dictionary["cid"] : "unset");
-		Pid = bindingContext.ParseResult.GetValueForOption(_pidOption) ?? 
-		      (configFileExists && dictionary.ContainsKey("pid") ? dictionary["pid"] : "unset");
+		string GetConfigValue(Option option, string id)
+		{
+			return (string) (bindingContext.ParseResult.GetValueForOption(option) ??
+			                 (configFileExists && dictionary.ContainsKey(id) ? dictionary[id] : "unset"));
+		}
 
-		_requester.SetPidAndCid(Cid, Pid);
+		Cid = GetConfigValue(_cidOption, "cid");
+		Pid = GetConfigValue(_pidOption, "pid");
+
+		var platformPath = configFileExists && dictionary.ContainsKey("platform")
+			? dictionary["platform"]
+			: "https://api.beamable.com";
+		_requester.Init(Cid, Pid, platformPath);
 	}
 
 	bool TryToFindBeamableConfigFolder(out string result)
@@ -76,10 +85,10 @@ public class DefaultAppContext : IAppContext
 				result = path;
 				return true;
 			}
-			
+
 			parentDir = parentDir.Parent;
 		}
-		
+
 		return false;
 	}
 
