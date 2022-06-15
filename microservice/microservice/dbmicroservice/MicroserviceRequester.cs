@@ -378,43 +378,6 @@ namespace Beamable.Server
          }
       }
 
-      // public async Promise Authenticate()
-      // {
-      //    var oldPromise = _authenticationPromise;
-      //
-      //    _authenticationPromise = new Promise<Unit>();
-      //
-      //    string CalculateSignature(string text)
-      //    {
-      //       System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
-      //       byte[] data = Encoding.UTF8.GetBytes(text);
-      //       byte[] hash = md5.ComputeHash(data);
-      //       return Convert.ToBase64String(hash);
-      //    }
-      //
-      //    Log.Debug("Authorizing WS connection");
-      //    var res = await Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-      //    Log.Debug("Got nonce");
-      //    var sig = CalculateSignature(_env.Secret + res.nonce);
-      //    var req = new MicroserviceAuthRequest
-      //    {
-      //       cid = _env.CustomerID,
-      //       pid = _env.ProjectName,
-      //       signature = sig
-      //    };
-      //    var authRes = await Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
-      //    if (!string.Equals("ok", authRes.result))
-      //    {
-      //       Log.Error("Authorization failed. result=[{result}]", authRes.result);
-      //       throw new Exception("Authorization failed");
-      //    }
-      //
-      //    Log.Debug("Authorization complete");
-      //
-      //    _authenticationPromise.CompleteSuccess(PromiseBase.Unit);
-      //    oldPromise.CompleteSuccess(PromiseBase.Unit);
-      // }
-
       /// <summary>
       /// Acknowledge a message from the websocket.
       /// </summary>
@@ -523,24 +486,9 @@ namespace Beamable.Server
                {
                   // need to wait for authentication to finish...
                   Log.Debug("Request {id} failed with 403. Will reauth and and retry.", req.id);
-                  //
-
-                  /*
-                   * step 1- tell the re-auth flow to reset
-                   * step 2- spin until the re-auth completes
-                   *
-                   *
-                   * *meanwhile*
-                   *
-                   * there is a deamon task that says
-                   * 1. should I re-auth? if yes, then do so. if no, Task.Delay() and retry
-                   *
-                   */
 
                   _socketContext.AuthorizationRequested = true;
                   return WaitForAuthorization().ToPromise().FlatMap(_ => Request(method, uri, body, includeAuthHeader, parser));
-
-                  //return Reauthenticate().FlatMap(_ => Request(method, uri, body, includeAuthHeader, parser));
                }
 
                throw ex;

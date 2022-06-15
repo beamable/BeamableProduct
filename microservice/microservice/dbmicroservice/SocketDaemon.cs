@@ -75,6 +75,16 @@ public class SocketDaemen
 		Log.Debug("Authorization complete");
 	}
 
+	/// <summary>
+	/// Kick off a long running task that will make sure the given <see cref="socketContext"/> is authenticated.
+	/// The daemon is running in a loop, checking the <see cref="SocketRequesterContext.AuthorizationRequested"/> field.
+	/// When it is true, the daemon will start ONE authorization flow, and then set the value to false.
+	/// </summary>
+	/// <param name="env"></param>
+	/// <param name="requester"></param>
+	/// <param name="socketContext"></param>
+	/// <param name="cancellationTokenSource"></param>
+	/// <returns>A task that completes the loop after the given <see cref="cancellationTokenSource"/> has requested a cancel</returns>
 	public static Task Start(
 		IMicroserviceArgs env, MicroserviceRequester requester, SocketRequesterContext socketContext,
 		CancellationTokenSource cancellationTokenSource)
