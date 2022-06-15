@@ -20,7 +20,7 @@ namespace Beamable.Editor.Tests.Toolbox
 {
 	public class ToolboxTests
     {
-		/*public IDependencyProvider provider;
+		public IDependencyProvider provider;
 
 		//Test if ticking filter in tags will change the search bar value to tag:{tag}
 		[Test]
@@ -101,6 +101,5 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			Assert.NotNull(wnd);
 		}
-		*/
 	}
 }
