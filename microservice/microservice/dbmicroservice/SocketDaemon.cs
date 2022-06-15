@@ -41,7 +41,7 @@ public class SocketDaemen
 				BeamableLogger.LogException(ex);
 			}
 
-			await Task.Delay(1);
+			await Task.Yield();
 		}
 	}
 
