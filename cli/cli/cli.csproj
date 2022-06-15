@@ -23,11 +23,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0-preview.4.22229.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
+    <ProjectReference Include="..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

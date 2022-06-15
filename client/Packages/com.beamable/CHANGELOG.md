@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 
+## [1.2.2]
+### Changed
+- Content creation menu list is now sorted
+
+### Fixed
+- Editor will re-attempt failed requests before auto logging out
+- DISABLE_BEAMABLE_TOOLBAR_EXTENDER directive now covers all scenarios
+- Trying to rename a deleted content object will no longer log an exception
+
 ## [1.2.0]
 ### Added
 - Unity 2021 LTS support.
