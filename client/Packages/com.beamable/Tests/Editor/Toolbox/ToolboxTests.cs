@@ -1,20 +1,11 @@
 ﻿using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
-
 using Beamable.Common.Dependencies;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.Components;
-using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
-
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 
 namespace Beamable.Editor.Tests.Toolbox
 {
