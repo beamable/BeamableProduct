@@ -1,4 +1,5 @@
 using System.CommandLine.Binding;
+using Newtonsoft.Json;
 
 namespace cli;
 
@@ -39,9 +40,62 @@ public class DefaultAppContext : IAppContext
 	public async void Apply(BindingContext bindingContext)
 	{
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
-		Cid = bindingContext.ParseResult.GetValueForOption(_cidOption) ?? "unset";
-		Pid = bindingContext.ParseResult.GetValueForOption(_pidOption) ?? "unset";
+
+		var dictionary = new Dictionary<string, string>();
+		bool configFileExists = false;
+		if (TryToFindBeamableConfigFolder(out var path))
+		{
+			configFileExists = TryToReadConfigFile(path, out dictionary);
+		}
+
+		Cid = bindingContext.ParseResult.GetValueForOption(_cidOption) ??
+		      (configFileExists && dictionary.ContainsKey("cid") ? dictionary["cid"] : "unset");
+		Pid = bindingContext.ParseResult.GetValueForOption(_pidOption) ?? 
+		      (configFileExists && dictionary.ContainsKey("pid") ? dictionary["pid"] : "unset");
 
 		_requester.SetPidAndCid(Cid, Pid);
-	} 
+	}
+
+	bool TryToFindBeamableConfigFolder(out string result)
+	{
+		const string CONFIG_FOLDER = ".beamable";
+		result = string.Empty;
+		var basePath = Directory.GetCurrentDirectory();
+		if (Directory.Exists(Path.Combine(basePath, CONFIG_FOLDER)))
+		{
+			result = Path.Combine(basePath, CONFIG_FOLDER);
+			return true;
+		}
+
+		var parentDir = Directory.GetParent(basePath);
+		while (parentDir != null)
+		{
+			var path = Path.Combine(parentDir.FullName, CONFIG_FOLDER);
+			if (Directory.Exists(path))
+			{
+				result = path;
+				return true;
+			}
+			
+			parentDir = parentDir.Parent;
+		}
+		
+		return false;
+	}
+
+	bool TryToReadConfigFile(string folderPath, out Dictionary<string, string> result)
+	{
+		const string CONFIG_DEFAULTS = "config-defaults.txt";
+		string fullPath = Path.Combine(folderPath, CONFIG_DEFAULTS);
+		result = new Dictionary<string, string>();
+		if (File.Exists(fullPath))
+		{
+			var content = File.ReadAllText(fullPath);
+			result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
+
+			return result is {Count: > 0};
+		}
+
+		return false;
+	}
 }
