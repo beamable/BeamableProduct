@@ -3,8 +3,6 @@ using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Leaderboards;
 using Beamable.Server.Api.Leaderboards;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Beamable.Server
@@ -56,7 +54,7 @@ namespace Beamable.Server
 			serviceBuilder.AddSingleton(_ => CachedData);
 
 			// Once the issue is fixed, you'll be able to simply say this.
-			// serviceBuilder.AddSingleton<Cache>(); 
+			// serviceBuilder.AddSingleton<Cache>();
 		}
 
 		/// <summary>
@@ -106,6 +104,7 @@ namespace Beamable.Server
 				   promise.CompleteSuccess(new Unit());
 			   });
 
+
 			return promise;
 
 
@@ -137,6 +136,8 @@ namespace Beamable.Server
 		[ClientCallable]
 		public LeaderBoardView GetCachedView()
 		{
+			UnityEngine.Debug.LogFormat("{0}", 0);
+			
 			return _instance.CachedView;
 		}
 
