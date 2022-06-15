@@ -41,7 +41,7 @@ public class SocketDaemen
 				BeamableLogger.LogException(ex);
 			}
 
-			await Task.Delay(1, cancellationTokenSource.Token);
+			await Task.Delay(1);
 		}
 	}
 
@@ -80,6 +80,6 @@ public class SocketDaemen
 		CancellationTokenSource cancellationTokenSource)
 	{
 		var daemon = new SocketDaemen(env, requester, socketContext);
-		return daemon.Run(cancellationTokenSource);
+		return Task.Run(() => daemon.Run(cancellationTokenSource), cancellationTokenSource.Token);
 	}
 }

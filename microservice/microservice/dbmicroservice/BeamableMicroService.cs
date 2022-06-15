@@ -136,7 +136,7 @@ namespace Beamable.Server
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
-      private CancellationTokenSource _serviceShutdownTokenSource = new CancellationTokenSource();
+      private CancellationTokenSource _serviceShutdownTokenSource;
       private Task _socketDaemen;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
@@ -204,7 +204,7 @@ namespace Beamable.Server
                                                                                   !asm.GetName().Name.StartsWith("Serilog."))
             .Select(asm => asm.GetName().Name)
             .ToList();
-         BeamableLogger.Log($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
+         Log.Debug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
          _reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
 
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
@@ -230,6 +230,7 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
+         _serviceShutdownTokenSource = new CancellationTokenSource();
          _socketDaemen = SocketDaemen.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
 
          await SetupWebsocket(socket);
@@ -327,7 +328,7 @@ namespace Beamable.Server
       {
          _connection = socket;
 
-         socket.OnDisconnect(async (s, wasClean) => await CloseConnection(s, wasClean));
+         socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
          socket.OnMessage( async (s, message, messageNumber) =>
          {
             try

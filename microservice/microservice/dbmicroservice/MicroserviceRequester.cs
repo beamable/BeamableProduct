@@ -346,8 +346,6 @@ namespace Beamable.Server
 
       private readonly SocketRequesterContext _socketContext;
 
-      private static Promise<Unit> _authenticationPromise = new Promise<Unit>();
-
       // TODO how do we handle Timeout errors?
       // TODO what does concurrency look like?
 
@@ -363,14 +361,14 @@ namespace Beamable.Server
       public async Task WaitForAuthorization(TimeSpan timeout=default)
       {
          var startTime = DateTime.UtcNow;
-         if (timeout < TimeSpan.Zero)
+         if (timeout <= default(TimeSpan))
          {
             timeout = TimeSpan.FromSeconds(10);
          }
 
          while (_socketContext.AuthorizationRequested)
          {
-            await Task.Yield();
+            await Task.Delay(1);
 
             var totalWaitedTime = DateTime.UtcNow - startTime;
             if (totalWaitedTime > timeout)
