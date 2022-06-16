@@ -131,6 +131,8 @@ namespace Beamable.Server
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
+      private CancellationTokenSource _serviceShutdownTokenSource;
+      private Task _socketDaemen;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -205,6 +207,9 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
+         _serviceShutdownTokenSource = new CancellationTokenSource();
+         _socketDaemen = SocketDaemen.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
+
          await SetupWebsocket(socket);
       }
 
@@ -267,6 +272,11 @@ namespace Beamable.Server
             Log.Debug("All pending tasks completed.");
          }
 
+         // stop the daemon from trying to re-authenticate
+         _serviceShutdownTokenSource.Cancel();
+         await _socketDaemen;
+
+         // close the connection itself
          await _connection.Close();
 
          sw.Stop();
@@ -295,7 +305,7 @@ namespace Beamable.Server
       {
          _connection = socket;
 
-         socket.OnDisconnect(async (s, wasClean) => await CloseConnection(s, wasClean));
+         socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
          socket.OnMessage( async (s, message, messageNumber) =>
          {
             try
@@ -310,7 +320,8 @@ namespace Beamable.Server
 
          try
          {
-            await _requester.Authenticate();
+            Interlocked.Increment(ref _socketRequesterContext.AuthorizationCounter);
+            await _requester.WaitForAuthorization();
 
             // Custom Initialization hook for C#MS --- will terminate MS user-code throws
             await ResolveCustomInitializationHook();
@@ -834,7 +845,7 @@ namespace Beamable.Server
 
       private async Task CloseConnection(IConnection ws, bool wasClean)
       {
-         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown]", wasClean, IsShuttingDown);
+         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, IsShuttingDown);
          if (!IsShuttingDown)
          {
             Log.Debug("ws connection dropped...");

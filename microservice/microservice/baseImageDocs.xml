@@ -70,6 +70,18 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:Beamable.Server.SocketDaemen.Start(Beamable.Server.IMicroserviceArgs,Beamable.Server.MicroserviceRequester,Beamable.Server.SocketRequesterContext,System.Threading.CancellationTokenSource)">
+            <summary>
+            Kick off a long running task that will make sure the given <see cref="!:socketContext"/> is authenticated.
+            The daemon is running in a loop, checking the <see cref="!:SocketRequesterContext.AuthorizationRequested"/> field.
+            When it is true, the daemon will start ONE authorization flow, and then set the value to false.
+            </summary>
+            <param name="env"></param>
+            <param name="requester"></param>
+            <param name="socketContext"></param>
+            <param name="cancellationTokenSource"></param>
+            <returns>A task that completes the loop after the given <see cref="!:cancellationTokenSource"/> has requested a cancel</returns>
+        </member>
         <member name="M:microservice.Common.AdminRoutes.HealthCheck">
             <summary>
             A simple method to check if the microservice can send and receive network traffic.
