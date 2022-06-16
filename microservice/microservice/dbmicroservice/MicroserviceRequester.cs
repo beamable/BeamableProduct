@@ -159,6 +159,7 @@ namespace Beamable.Server
          }
       }
 
+      public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
 
       public SocketRequesterContext(Func<Promise<IConnection>> socketGetter)
       {
@@ -336,8 +337,6 @@ namespace Beamable.Server
 
       private readonly SocketRequesterContext _socketContext;
 
-      private static Promise<Unit> _authenticationPromise = new Promise<Unit>();
-
       // TODO how do we handle Timeout errors?
       // TODO what does concurrency look like?
 
@@ -350,58 +349,24 @@ namespace Beamable.Server
 
       public IAccessToken AccessToken { get; }
 
-
-      private Promise<Unit> Reauthenticate()
+      public async Task WaitForAuthorization(TimeSpan timeout=default)
       {
-         lock (_authenticationPromise)
+         var startTime = DateTime.UtcNow;
+         if (timeout <= default(TimeSpan))
          {
-            if (_authenticationPromise.IsCompleted)
+            timeout = TimeSpan.FromSeconds(10);
+         }
+
+         while (_socketContext.AuthorizationCounter > 0)
+         {
+            await Task.Delay(1);
+
+            var totalWaitedTime = DateTime.UtcNow - startTime;
+            if (totalWaitedTime > timeout)
             {
-               // re-auth...
-               return Authenticate();
-            }
-            else
-            {
-               return _authenticationPromise;
+               throw new TimeoutException("waited for authorization for too long");
             }
          }
-      }
-
-      public async Promise Authenticate()
-      {
-         var oldPromise = _authenticationPromise;
-
-         _authenticationPromise = new Promise<Unit>();
-
-         string CalculateSignature(string text)
-         {
-            System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
-            byte[] data = Encoding.UTF8.GetBytes(text);
-            byte[] hash = md5.ComputeHash(data);
-            return Convert.ToBase64String(hash);
-         }
-
-         Log.Debug("Authorizing WS connection");
-         var res = await Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-         Log.Debug("Got nonce");
-         var sig = CalculateSignature(_env.Secret + res.nonce);
-         var req = new MicroserviceAuthRequest
-         {
-            cid = _env.CustomerID,
-            pid = _env.ProjectName,
-            signature = sig
-         };
-         var authRes = await Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
-         if (!string.Equals("ok", authRes.result))
-         {
-            Log.Error("Authorization failed. result=[{result}]", authRes.result);
-            throw new Exception("Authorization failed");
-         }
-
-         Log.Debug("Authorization complete");
-
-         _authenticationPromise.CompleteSuccess(PromiseBase.Unit);
-         oldPromise.CompleteSuccess(PromiseBase.Unit);
       }
 
       /// <summary>
@@ -512,8 +477,9 @@ namespace Beamable.Server
                {
                   // need to wait for authentication to finish...
                   Log.Debug("Request {id} failed with 403. Will reauth and and retry.", req.id);
-                  //
-                  return Reauthenticate().FlatMap(_ => Request(method, uri, body, includeAuthHeader, parser));
+
+                  Interlocked.Increment(ref _socketContext.AuthorizationCounter);
+                  return WaitForAuthorization().ToPromise().FlatMap(_ => Request(method, uri, body, includeAuthHeader, parser));
                }
 
                throw ex;

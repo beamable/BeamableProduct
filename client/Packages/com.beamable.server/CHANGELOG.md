@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `UnityEngine.Debug.LogFormat` now supported when used inside C#MS methods 
 
+### Changed
+- Socket re-authorization flow uses a spinlock mechanism instead of a mutex
+
+### Fixed
+- Socket re-connection waits for the socket to reconnect before yielding the task scheduler
+
 ## [1.2.2]
 ### Fixed
 - Fixed microservices build issue on Mac with ARM CPU architecture
