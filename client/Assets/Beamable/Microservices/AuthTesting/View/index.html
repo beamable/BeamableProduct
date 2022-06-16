@@ -1,0 +1,15 @@
+<div>
+    <button>
+        <span> click me </span>
+        <span id="count"> 0 </span>
+    </button>
+    <script lang="javascript">
+        var x = 0;
+        console.log('hello from microservice')
+        document.querySelector('button').addEventListener('click', evt => {
+            console.log('clicked', x);
+            x ++;
+            document.querySelector('button span#count').innerHTML = x;
+        });
+    </script>
+</div>

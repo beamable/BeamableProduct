@@ -1,0 +1,53 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        <script lang="javascript">
+            console.log('hello world');
+
+
+            // https://stackoverflow.com/questions/1197575/can-scripts-be-inserted-with-innerhtml
+            function nodeScriptReplace(node) {
+                if ( nodeScriptIs(node) === true ) {
+                        node.parentNode.replaceChild( nodeScriptClone(node) , node );
+                }
+                else {
+                        var i = -1, children = node.childNodes;
+                        while ( ++i < children.length ) {
+                            nodeScriptReplace( children[i] );
+                        }
+                }
+
+                return node;
+            }
+            function nodeScriptClone(node){
+                    var script  = document.createElement("script");
+                    script.text = node.innerHTML;
+
+                    var i = -1, attrs = node.attributes, attr;
+                    while ( ++i < attrs.length ) {                                    
+                        script.setAttribute( (attr = attrs[i]).name, attr.value );
+                    }
+                    return script;
+            }
+
+            function nodeScriptIs(node) {
+                    return node.tagName === 'SCRIPT';
+            }
+
+            // go to the microservice and get the component.
+            var componentUrl = 'https://dev.api.beamable.com/basic/1499568149464064.DE_1499568149464065.AB410E05-D720-5576-B3B9-98EE4A496322micro_AuthTesting/CustomComponent';
+            fetch(componentUrl).then(async res => {
+                var componentHtml = await res.json();
+                console.log(componentHtml);
+                var mountSite = document.querySelector('#mountSite');
+                mountSite.innerHTML = componentHtml;
+                nodeScriptReplace(mountSite);
+            });
+
+        </script>
+
+        <div id="mountSite">Loading...</div>
+    </body>
+</html>

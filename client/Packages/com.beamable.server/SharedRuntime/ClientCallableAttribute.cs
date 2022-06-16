@@ -11,7 +11,7 @@ namespace Beamable.Server
 	/// <summary>
 	/// Base callable attribute used to identify methods to be exposed by microservices as endpoints. This attribute makes the endpoint publicly accessible (no need for authentication).
 	/// <see cref="ClientCallableAttribute"/> forces the authentication to be required.
-	/// <see cref="AdminOnlyCallableAttribute"/> makes it so that only an admin/developer can reach the endpoint. 
+	/// <see cref="AdminOnlyCallableAttribute"/> makes it so that only an admin/developer can reach the endpoint.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
 	public class CallableAttribute : Attribute, INamingAttribute
@@ -81,7 +81,7 @@ namespace Beamable.Server
 	/// a %Microservice by a User account of any type.
 	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
 	/// - See Beamable.Server.Microservice script reference
 	/// - See Beamable.Server.AdminOnlyCallableAttribute script reference
@@ -95,13 +95,13 @@ namespace Beamable.Server
 	/// {
 	///
 	///   // Do something...
-	/// 
+	///
 	/// }
 	///
 	/// ```
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
 	public class ClientCallableAttribute : CallableAttribute
@@ -110,13 +110,31 @@ namespace Beamable.Server
 		public ClientCallableAttribute(string pathnameOverride = "", string[] requiredScopes = null) : base(pathnameOverride, requiredScopes, true) { }
 	}
 
+	// [AttributeUsage(AttributeTargets.Method)]
+	// public abstract class ViewCallableAttribute : CallableAttribute
+	// {
+	// 	public string UiRoute { get; }
+	// 	protected ViewCallableAttribute(string uiRoute) {
+	// 		UiRoute = uiRoute;
+	// 	}
+	// }
+	//
+	// [AttributeUsage(AttributeTargets.Method)]
+	// public class SvelteView : ViewCallableAttribute
+	// {
+	// 	public SvelteView(string uiRoute) : base(uiRoute)
+	// 	{
+	//
+	// 	}
+	// }
+
 	/// <summary>
 	/// This type defines the %Microservice method attribute for any
 	/// %Microservice method which can be called ONLY from a
 	/// %Microservice by a User account of %Admin type.
 	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
 	/// - See Beamable.Server.Microservice script reference
 	/// - See Beamable.Server.ClientCallableAttribute script reference
@@ -130,13 +148,13 @@ namespace Beamable.Server
 	/// {
 	///
 	///   // Do something...
-	/// 
+	///
 	/// }
 	///
 	/// ```
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
 	public class AdminOnlyCallableAttribute : ClientCallableAttribute

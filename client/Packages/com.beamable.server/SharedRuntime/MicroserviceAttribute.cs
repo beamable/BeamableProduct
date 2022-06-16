@@ -5,6 +5,24 @@ using System.Runtime.CompilerServices;
 
 namespace Beamable.Server
 {
+
+	public enum MicroViewSlot
+	{
+		PLAYER,
+		OPERATE
+	}
+
+	[AttributeUsage(AttributeTargets.Class)]
+	public class MicroViewAttribute : Attribute
+	{
+		public MicroViewSlot UIPath { get; }
+
+		public MicroViewAttribute(MicroViewSlot uiPath)
+		{
+			UIPath = uiPath;
+		}
+	}
+
 	[AttributeUsage(AttributeTargets.Class)]
 	public class MicroserviceAttribute : Attribute, INamingAttribute
 	{

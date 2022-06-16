@@ -1,4 +1,6 @@
 using Beamable.Common.Api;
+using Beamable.Server.Api.Inventory;
+using Beamable.Server.Editor;
 using System;
 
 namespace Beamable.Server
@@ -12,6 +14,25 @@ namespace Beamable.Server
 		public RequestContext Context;
 		public IBeamableRequester Requester;
 		public IBeamableServices Services;
+	}
+
+	public abstract class MicroView
+	{
+		public virtual string GenerateDockerBuildTemplate(MicroserviceDescriptor descriptor, ViewDescriptor view)
+		{
+			// TODO: take the source, and build it into the docker
+			return "RUN echo 'generated from custom view class'";
+		}
+
+		public virtual string GetHtml()
+		{
+			return "<button> Click it, or ticket </button>";
+		}
+	}
+
+	public class SvelteView : MicroView
+	{
+		// TODO: Create other standard views, like React, Vue, Solid, Angular, etc...
 	}
 
 	/// <summary>

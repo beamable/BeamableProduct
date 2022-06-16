@@ -50,6 +50,7 @@ namespace Beamable.Server.Editor
 		public class Registry : IReflectionSystem
 		{
 			private static readonly BaseTypeOfInterest MICROSERVICE_BASE_TYPE;
+			private static readonly BaseTypeOfInterest MICROVIEW_BASE_TYPE;
 			private static readonly BaseTypeOfInterest MONGO_STORAGE_OBJECT_BASE_TYPE;
 			private static readonly List<BaseTypeOfInterest> BASE_TYPES_OF_INTEREST;
 
@@ -223,7 +224,29 @@ namespace Beamable.Server.Editor
 							AttributePath = serviceAttribute.GetSourcePath(),
 							HasValidationError = hasError,
 							HasValidationWarning = hasWarning,
+							Views = new List<ViewDescriptor>()
 						};
+
+						Debug.Log("Creating descriptor fo!!!!!!!!r " + descriptor.Name);
+						// TODO: I know this isn't the best way to do this in the registry world.
+						var possibleViewTypes = type.Assembly.GetTypes()
+						                                        .Where(t => typeof(MicroView).IsAssignableFrom(t))
+						                                        .ToList();
+						Debug.Log("found " + possibleViewTypes.Count + " possible matches ");
+						foreach (var possibleViewType in possibleViewTypes)
+						{
+							Debug.Log("Type " + possibleViewType.Name + " / " +
+							          possibleViewType.GetCustomAttribute<MicroViewAttribute>());
+							// TODO: validate based on empty constructor
+							var viewAttr = possibleViewType.GetCustomAttribute<MicroViewAttribute>();
+							if (viewAttr == null) continue;
+							Debug.Log("Found real view " + viewAttr.GetType().Name);
+							descriptor.Views.Add(new ViewDescriptor
+							{
+								Type = possibleViewType,
+								Slot = viewAttr.UIPath
+							});
+						}
 
 						// Initialize the ClientCallableDescriptors if the type has any.
 						if (validClientCallablesLookup.TryGetValue(type, out var clientCallables))

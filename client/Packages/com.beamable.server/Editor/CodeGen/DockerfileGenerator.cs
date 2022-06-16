@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor.CodeGen
@@ -136,9 +137,26 @@ EXPOSE 80 2222
 			return DebuggingEnabled ? "debug" : "release";
 		}
 
+		private string GetViewDockerModifications()
+		{
+			return string.Join("\n", Descriptor.Views.Select(GetDockerModificationForView));
+		}
+
+		private string GetDockerModificationForView(ViewDescriptor viewDescriptor)
+		{
+			// instantiate
+			Debug.Log("Getting view for " + viewDescriptor.GetType().Name);
+
+			return viewDescriptor.CreateInstance().GenerateDockerBuildTemplate(Descriptor, viewDescriptor);
+		}
+
 		private string GetWatchDockerFile()
 		{
+
+			// TODO: Microfront-ends have 2 docker stages, first a build phase where they do a FROM node:whatever as front-end-build-env
+			// TODO:  and then a second phase that does the COPY --from=front-end-build-env /workingdir ./ui/dist
 			var text = $@"
+
 FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
 RUN dotnet --version
 WORKDIR /subapp
@@ -148,6 +166,7 @@ RUN cp /src/baseImageDocs.xml .
 
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 
+{GetViewDockerModifications()}
 {GetDebugLayer()}
 
 EXPOSE {HEALTH_PORT}
