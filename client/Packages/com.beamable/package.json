@@ -16,5 +16,12 @@
     "com.unity.modules.uielements": "1.0.0",
     "com.unity.addressables": "1.18.19",
     "com.unity.textmeshpro": "1.4.1"
-  }
+  },
+  "samples":[
+    {
+      "displayName": "Easy Feature - Leaderboards - Basic Integration",
+      "description": "Contains a simple scene with the most basic form of Easy Feature integration.",
+      "path": "Samples/EasyFeatureSamples/BasicIntegration"
+    }
+  ]
 }
