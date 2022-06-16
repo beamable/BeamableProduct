@@ -21,5 +21,7 @@ namespace Beamable.Server
       public void LogError(string error) => BeamableLogger.LogError(error);
 
       public void LogError(string error, params object[] args) => BeamableLogger.LogError(error, args);
+
+      public void LogFormat(string format, params object[] args) => BeamableLogger.Log(string.Format(format, args));
    }
 }
