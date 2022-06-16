@@ -231,7 +231,7 @@ namespace Beamable.Server
          var socket = await _webSocketPromise;
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
-         _socketDaemen = SocketDaemen.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
+         _socketDaemen = SocketDaemon.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
 
          await SetupWebsocket(socket);
       }
