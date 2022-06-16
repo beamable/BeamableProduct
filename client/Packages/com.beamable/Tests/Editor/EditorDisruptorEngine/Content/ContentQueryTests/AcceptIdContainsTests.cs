@@ -20,6 +20,19 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		}
 
 		[Test]
+		public void Accepts_CaseInsensitive()
+		{
+			var query = new ContentQuery
+			{
+				IdContainsConstraint = "FoOozle"
+			};
+			var content = new ExampleContent();
+			content.SetIdAndVersion("example.containsfOoOZLE", "");
+
+			Assert.IsTrue(query.AcceptIdContains(content));
+		}
+
+		[Test]
 		public void HandlesNullContent_NoConstraint()
 		{
 			var query = new ContentQuery
