@@ -8,13 +8,13 @@ using Serilog;
 
 namespace Beamable.Server;
 
-public class SocketDaemen
+public class SocketDaemon
 {
 	private readonly IMicroserviceArgs _env;
 	private readonly MicroserviceRequester _requester;
 	private readonly SocketRequesterContext _socketContext;
 
-	private SocketDaemen(IMicroserviceArgs env, MicroserviceRequester requester, SocketRequesterContext socketContext)
+	private SocketDaemon(IMicroserviceArgs env, MicroserviceRequester requester, SocketRequesterContext socketContext)
 	{
 		_env = env;
 		_requester = requester;
@@ -89,7 +89,7 @@ public class SocketDaemen
 		IMicroserviceArgs env, MicroserviceRequester requester, SocketRequesterContext socketContext,
 		CancellationTokenSource cancellationTokenSource)
 	{
-		var daemon = new SocketDaemen(env, requester, socketContext);
+		var daemon = new SocketDaemon(env, requester, socketContext);
 		return Task.Run(() => daemon.Run(cancellationTokenSource), cancellationTokenSource.Token);
 	}
 }
