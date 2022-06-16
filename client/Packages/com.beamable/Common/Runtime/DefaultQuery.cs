@@ -32,7 +32,7 @@ namespace Beamable.Common
 		{
 			if (IdContainsConstraint == null) return true;
 			if (id == null) return false;
-			return id.Split('.').Last().Contains(IdContainsConstraint.ToLower());
+			return id.ToLower().Split('.').Last().Contains(IdContainsConstraint.ToLower());
 		}
 
 	}
