@@ -869,7 +869,7 @@ namespace Beamable.Server
 
       private async Task CloseConnection(IConnection ws, bool wasClean)
       {
-         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown]", wasClean, IsShuttingDown);
+         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, IsShuttingDown);
          if (!IsShuttingDown)
          {
             Log.Debug("ws connection dropped...");
