@@ -73,7 +73,7 @@
         <member name="M:Beamable.Server.SocketDaemen.Start(Beamable.Server.IMicroserviceArgs,Beamable.Server.MicroserviceRequester,Beamable.Server.SocketRequesterContext,System.Threading.CancellationTokenSource)">
             <summary>
             Kick off a long running task that will make sure the given <see cref="!:socketContext"/> is authenticated.
-            The daemon is running in a loop, checking the <see cref="P:Beamable.Server.SocketRequesterContext.AuthorizationRequested"/> field.
+            The daemon is running in a loop, checking the <see cref="!:SocketRequesterContext.AuthorizationRequested"/> field.
             When it is true, the daemon will start ONE authorization flow, and then set the value to false.
             </summary>
             <param name="env"></param>

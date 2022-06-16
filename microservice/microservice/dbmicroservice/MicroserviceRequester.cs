@@ -159,16 +159,7 @@ namespace Beamable.Server
          }
       }
 
-      private int _isAuthorizationRequestedSignal = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
-      public bool AuthorizationRequested
-      {
-         get => (System.Threading.Interlocked.CompareExchange(ref _isAuthorizationRequestedSignal, 1, 1) == 1);
-         set
-         {
-            if (value) System.Threading.Interlocked.CompareExchange(ref _isAuthorizationRequestedSignal, 1, 0);
-            else System.Threading.Interlocked.CompareExchange(ref _isAuthorizationRequestedSignal, 0, 1);
-         }
-      }
+      public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
 
       public SocketRequesterContext(Func<Promise<IConnection>> socketGetter)
       {
@@ -366,7 +357,7 @@ namespace Beamable.Server
             timeout = TimeSpan.FromSeconds(10);
          }
 
-         while (_socketContext.AuthorizationRequested)
+         while (_socketContext.AuthorizationCounter > 0)
          {
             await Task.Delay(1);
 
@@ -487,7 +478,7 @@ namespace Beamable.Server
                   // need to wait for authentication to finish...
                   Log.Debug("Request {id} failed with 403. Will reauth and and retry.", req.id);
 
-                  _socketContext.AuthorizationRequested = true;
+                  Interlocked.Increment(ref _socketContext.AuthorizationCounter);
                   return WaitForAuthorization().ToPromise().FlatMap(_ => Request(method, uri, body, includeAuthHeader, parser));
                }
 

@@ -27,12 +27,12 @@ public class SocketDaemen
 		{
 			try
 			{
-				if (_socketContext.AuthorizationRequested)
+				if (_socketContext.AuthorizationCounter > 0)
 				{
 					// TODO do the authorization.
 					await Authenticate();
 
-					_socketContext.AuthorizationRequested = false;
+					Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
 				}
 			}
 			catch (Exception ex)
@@ -77,8 +77,8 @@ public class SocketDaemen
 
 	/// <summary>
 	/// Kick off a long running task that will make sure the given <see cref="socketContext"/> is authenticated.
-	/// The daemon is running in a loop, checking the <see cref="SocketRequesterContext.AuthorizationRequested"/> field.
-	/// When it is true, the daemon will start ONE authorization flow, and then set the value to false.
+	/// The daemon is running in a loop, checking the <see cref="SocketRequesterContext.AuthorizationCounter"/> field.
+	/// When it is positive, the daemon will start ONE authorization flow, and then set the value to zero.
 	/// </summary>
 	/// <param name="env"></param>
 	/// <param name="requester"></param>

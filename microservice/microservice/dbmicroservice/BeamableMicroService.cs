@@ -343,7 +343,7 @@ namespace Beamable.Server
 
          try
          {
-            _socketRequesterContext.AuthorizationRequested = true;
+            Interlocked.Increment(ref _socketRequesterContext.AuthorizationCounter);
             await _requester.WaitForAuthorization();
 
             // Custom Initialization hook for C#MS --- will terminate MS user-code throws
