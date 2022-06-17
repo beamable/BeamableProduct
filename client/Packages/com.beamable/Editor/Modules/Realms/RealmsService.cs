@@ -18,9 +18,9 @@ namespace Beamable.Editor.Realms
 
 	public class RealmsService
 	{
-		private readonly PlatformRequester _requester;
+		private readonly IPlatformRequester _requester;
 
-		public RealmsService(PlatformRequester requester)
+		public RealmsService(IPlatformRequester requester)
 		{
 			_requester = requester;
 		}

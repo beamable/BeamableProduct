@@ -23,7 +23,13 @@ namespace Beamable.Editor.Tests
 
 		public MockRealmsService(PlatformRequester requester)
 		{
-			_requester = requester;
+			//no platformRequester
+			//_requester = requester;
+
+			//make mock version ov PlatformRequester
+			//delete this mock realms service
+
+			//MockPlatformAPI already exist
 		}
 
 		public Promise<CustomerView> GetCustomerData()

@@ -280,7 +280,7 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
 			BeamEditorContextDependencies.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
 			BeamEditorContextDependencies.AddSingleton<AliasService>();
-			BeamEditorContextDependencies.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
+			BeamEditorContextDependencies.AddSingleton(provider => new RealmsService(provider.GetService<IPlatformRequester>()));
 
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
