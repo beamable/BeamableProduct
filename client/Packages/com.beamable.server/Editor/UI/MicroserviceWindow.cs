@@ -53,7 +53,6 @@ namespace Beamable.Editor.Microservice.UI
 		private MicroserviceContentVisualElement _microserviceContentVisualElement;
 		private LoadingBarElement _loadingBar;
 
-		// [SerializeField]
 		public MicroservicesDataModel Model => ActiveContext.ServiceScope.GetService<MicroservicesDataModel>();
 
 		private Promise<bool> checkDockerPromise;
@@ -83,13 +82,6 @@ namespace Beamable.Editor.Microservice.UI
 
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
-
-			// Create/Get the Model instance
-			// TODO: move this into the ActiveContext as a standalone system and remove all visual stuff from the model
-			// if (Model == null)
-			// 	Model = MicroservicesDataModel.Instance;
-			// else
-			// 	MicroservicesDataModel.Instance = Model;
 
 			SetForContent();
 		}
