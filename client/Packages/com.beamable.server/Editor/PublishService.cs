@@ -8,13 +8,16 @@ namespace Beamable.Server.Editor
 {
 	public class PublishService
 	{
-		private readonly BeamEditorContext _ctx;
-		private readonly AliasService _alias;
+		private readonly MicroservicesDataModel _model;
 
-		public PublishService(MicroservicesDataModel model, BeamEditorContext ctx, AliasService alias)
+		public PublishService(MicroservicesDataModel model)
 		{
-			_ctx = ctx;
-			_alias = alias;
+			_model = model;
+		}
+
+		public void Publish()
+		{
+
 		}
 	}
 }
