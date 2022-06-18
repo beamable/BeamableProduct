@@ -13,23 +13,9 @@ namespace Beamable.Microservices
 		public string CustomComponent()
 		{
 			var basePath = "authtesting/Beamable.Microservice.AuthTesting"; // TODO
-			var path = Path.Combine(basePath, "./View/index.html");
-			var html = File.ReadAllText(path);
-			return html;
+			var path = Path.Combine(basePath, "./View/dist/bundle.js");
+			var javascript = File.ReadAllText(path);
+			return "<script>" + javascript + "</script>";
 		}
-
-
-		[InitializeServices]
-		public static void Init(IServiceInitializer serviceInitializer)
-		{
-			Debug.Log("Running local init method");
-
-			// build the local front-ends...
-
-
-
-
-		}
-
 	}
 }

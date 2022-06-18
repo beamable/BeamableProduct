@@ -2,10 +2,14 @@
     <head>
 
     </head>
+    <style>
+        button {
+            /* we can influence the styles of the dynamic component */
+            color: red;
+        }
+    </style>
     <body>
         <script lang="javascript">
-            console.log('hello world');
-
 
             // https://stackoverflow.com/questions/1197575/can-scripts-be-inserted-with-innerhtml
             function nodeScriptReplace(node) {
@@ -36,18 +40,39 @@
                     return node.tagName === 'SCRIPT';
             }
 
-            // go to the microservice and get the component.
-            var componentUrl = 'https://dev.api.beamable.com/basic/1499568149464064.DE_1499568149464065.AB410E05-D720-5576-B3B9-98EE4A496322micro_AuthTesting/CustomComponent';
-            fetch(componentUrl).then(async res => {
-                var componentHtml = await res.json();
-                console.log(componentHtml);
-                var mountSite = document.querySelector('#mountSite');
-                mountSite.innerHTML = componentHtml;
-                nodeScriptReplace(mountSite);
-            });
+            // theoretically, this would be dynamically fetched by talking to Beamo to get a list of services, and then talking to each service for a list of endpoints that apply to a given mount site.
+            var componentUrl = 'https://dev.api.beamable.com/basic/1323424830305280.DE_1409075572900864.AB410E05-D720-5576-B3B9-98EE4A496322micro_AuthTesting/CustomComponent';
 
+            // dynamically import the component
+            const pendingImport = import(componentUrl, {
+                assert: {
+                    type: 'json' // our services can't return the correct MIME type, "text/html" without a lot of work, so we can trick the browser into consuming this as json, even though it isn't.
+                }
+            });
+            pendingImport.then(component => {
+                var mountSite = document.querySelector('#mountSite');
+                mountSite.innerHTML = component.default;
+                nodeScriptReplace(mountSite);
+
+                // TODO: I don't love these next two lines, because it implies that the mount site is aware that the component is a svelte component. On the other hand, we could standardize some beamable-esque method like this, to say, "load on this site"
+                var props = {}
+                new widget({target:mountSite, props});
+            })
         </script>
 
-        <div id="mountSite">Loading...</div>
+        <div>
+            <div>
+                The grey element is injected
+            </div>
+            <div style="background-color: lightgrey; 
+                        box-shadow: 0px 0px 12px 4px rgba(0,0,0,.3);
+                        padding: 12px;
+                        margin: 12px;">
+                <div id="mountSite">Loading...</div>
+            </div>
+            <div>
+                And now we are back on the main page
+            </div>
+        </div>
     </body>
 </html>
