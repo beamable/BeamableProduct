@@ -23,9 +23,9 @@ namespace Beamable.Server
 
    public static class ServiceMethodHelper
    {
-      public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, params ServiceMethodProvider[] serviceMethodProviders)
+      public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, IEnumerable<ServiceMethod> existingMethods, params ServiceMethodProvider[] serviceMethodProviders)
       {
-         var output = new List<ServiceMethod>();
+         var output = new List<ServiceMethod>(existingMethods);
          foreach (var provider in serviceMethodProviders)
          {
             output.AddRange(ScanType(serviceAttribute, provider));
@@ -106,11 +106,11 @@ namespace Beamable.Server
                namedDeserializers.Add(parameterName, deserializer);
                deserializers.Add(deserializer);
             }
-            
+
             MethodInvocation executor;
 
             var resultType = method.ReturnType;
-            
+
             if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
                resultType = typeof(Promise<Unit>);
 
@@ -121,7 +121,7 @@ namespace Beamable.Server
                   var promiseObject = closureMethod.Invoke(target, args);
                   var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
                      nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
-                  
+
                   return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
                      .Invoke(null, new[] {promiseObject});
                };
@@ -129,7 +129,7 @@ namespace Beamable.Server
             else
             {
                var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
-               
+
                if (isAsync)
                {
                   executor = (target, args) =>

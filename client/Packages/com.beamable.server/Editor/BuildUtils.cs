@@ -22,7 +22,7 @@ namespace Beamable.Server.Editor
 				var csProjFilePath = Path.Combine(descriptor.BuildPath, $"{descriptor.ImageName}.csproj");
 				var dockerfilePath = Path.Combine(descriptor.BuildPath, "Dockerfile");
 				(new ProgramCodeGenerator(descriptor)).GenerateCSharpCode(programFilePath);
-				(new DockerfileGenerator(descriptor, includeDebugTools, watch)).Generate(dockerfilePath);
+				(new DockerfileGenerator(descriptor, dependencies, includeDebugTools, watch)).Generate(dockerfilePath);
 				(new ProjectGenerator(descriptor, dependencies)).Generate(csProjFilePath);
 
 			}

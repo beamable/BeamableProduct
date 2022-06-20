@@ -9,13 +9,10 @@ namespace Beamable.Microservices
 	[Microservice("AuthTesting")]
 	public class AuthTesting : Microservice
 	{
-		[Callable]
-		public string CustomComponent()
+		[ClientCallable]
+		public int Add(int a, int b)
 		{
-			var basePath = "authtesting/Beamable.Microservice.AuthTesting"; // TODO
-			var path = Path.Combine(basePath, "./View/dist/bundle.js");
-			var javascript = File.ReadAllText(path);
-			return "<script>" + javascript + "</script>";
+			return a + b;
 		}
 	}
 }

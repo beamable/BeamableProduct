@@ -32,5 +32,12 @@ namespace microservice.Common
          var doc = SwaggerGenerator.GenerateDocument(Microservice);
          return SwaggerGenerator.GetDocJson(doc);
       }
+
+      [AdminOnlyCallable()]
+      public MicroViewManifest GetViewManifest()
+      {
+         // TODO: somehow scan the available routes
+         return Microservice.Views;
+      }
    }
 }

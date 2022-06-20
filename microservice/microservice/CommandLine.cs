@@ -46,6 +46,7 @@ namespace Beamable.Server
 			}
 			catch (Exception ex)
 			{
+				Console.WriteLine("ERROR: " + ex.Message);
 				Log.Fatal(ex.GetType().Name + " / " + ex.Message);
 				Log.Fatal(ex.StackTrace);
 			}

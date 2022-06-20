@@ -125,7 +125,7 @@ namespace microservice.Common
                 body.Content = new Dictionary<string, OpenApiMediaType>();
             }
 
-            var parameterComments = comments.Parameters?.ToDictionary(x => x.Name, x => x.Text) ?? new Dictionary<string, string>();
+            var parameterComments = comments?.Parameters?.ToDictionary(x => x.Name, x => x.Text) ?? new Dictionary<string, string>();
             string bodyDescription = "";
             for (var i = 0; i < method.ParameterNames.Count; i++)
             {
@@ -222,6 +222,7 @@ namespace microservice.Common
             var paths = new OpenApiPaths();
             foreach (var method in serviceMethods)
             {
+                if (!method.ShowInSwagger) continue;
                 var pathItem = GeneratePathItem(method);
                 paths.Add("/" + method.Path, pathItem);
             }
@@ -264,7 +265,7 @@ namespace microservice.Common
 
                 if (type == typeof(bool))
                     tmp.Default = new OpenApiBoolean(false);
-                
+
                 return tmp;
             }
 
@@ -274,7 +275,7 @@ namespace microservice.Common
                 Title = type.GetTypeString(),
                 Type = jsonType
             };
-            
+
             void HandleArray()
             {
                 // need to get element type.
@@ -295,10 +296,10 @@ namespace microservice.Common
                 foreach (var field in fields)
                 {
                     var fieldSchema = CreateSchema(field.FieldType);
-                    
+
                     if (field.FieldType == typeof(bool))
                         fieldSchema.Default = new OpenApiBoolean(false);
-                    
+
                     schema.Properties.Add(field.Name, fieldSchema);
                 }
             }

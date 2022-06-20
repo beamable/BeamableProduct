@@ -17,6 +17,7 @@ namespace Beamable.Server
 
    public class ServiceMethod
    {
+      public bool ShowInSwagger = true;
       public string Tag;
       public string Path;
       public Func<RequestContext, object> InstanceFactory;
@@ -41,7 +42,7 @@ namespace Beamable.Server
 
             var resultProperty = task.GetType().GetProperty("Result");
             var result = resultProperty.GetValue(task); // TODO: XXX It stinks that there is active reflection going on the callpath
-            
+
             if (result is string strResult)
             {
                return strResult; // If the data is already in a string format, then just use that.

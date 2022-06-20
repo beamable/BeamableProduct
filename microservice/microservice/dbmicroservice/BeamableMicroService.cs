@@ -37,7 +37,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
@@ -132,10 +131,11 @@ namespace Beamable.Server
       public bool HasInitialized { get; private set; }
 
       public ReflectionCache _reflectionCache;
-      
+
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
+      public MicroViewManifest Views { get; private set; }
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -189,13 +189,14 @@ namespace Beamable.Server
 
          RebuildRouteTable();
 
+
          _reflectionCache = new ReflectionCache();
          var contentTypeReflectionCache = new ContentTypeReflectionCache();
          _reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
          _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
          _reflectionCache.SetStorage(new BeamHintGlobalStorage());
 
-         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") && 
+         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
                                                                                   !asm.GetName().Name.StartsWith("nunit.") &&
                                                                                   !asm.GetName().Name.StartsWith("JetBrains.") &&
                                                                                   !asm.GetName().Name.StartsWith("Microsoft.") &&
@@ -209,10 +210,10 @@ namespace Beamable.Server
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
-         
+
          _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
-         
+
          InitServices();
 
          _serviceInitialized.Then(_ =>
@@ -299,7 +300,11 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-         ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute, new ServiceMethodProvider
+         Views = MicroViewHelper.Scan(MicroserviceType);
+
+         var viewRoutes = MicroViewHelper.BuildViewRoutes(_serviceAttribute, MicroserviceType, Views);
+
+         ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute, viewRoutes, new ServiceMethodProvider
             {
                instanceType = typeof(AdminRoutes),
                factory = BuildAdminInstance,

@@ -288,6 +288,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardOut(string data)
 		{
+			Debug.Log(data);
 			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardOut(data);
@@ -296,6 +297,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 		protected override void HandleStandardErr(string data)
 		{
+			Debug.LogError(data);
 			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardErr(data);

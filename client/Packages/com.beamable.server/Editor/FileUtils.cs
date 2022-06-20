@@ -132,7 +132,7 @@ namespace Beamable.Server.Editor
 				foreach (var subDir in subDirs)
 				{
 					var dirName = Path.GetFileName(subDir);
-					if (new[] { "~", "obj", "bin" }.Contains(dirName) || dirName.StartsWith("."))
+					if (new[] { "~", "obj", "bin", "node_modules" }.Contains(dirName) || dirName.StartsWith("."))
 						continue; // skip hidden or dumb folders...
 
 					directoryQueue.Enqueue(subDir);

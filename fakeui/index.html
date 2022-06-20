@@ -41,23 +41,49 @@
             }
 
             // theoretically, this would be dynamically fetched by talking to Beamo to get a list of services, and then talking to each service for a list of endpoints that apply to a given mount site.
-            var componentUrl = 'https://dev.api.beamable.com/basic/1323424830305280.DE_1409075572900864.AB410E05-D720-5576-B3B9-98EE4A496322micro_AuthTesting/CustomComponent';
+           
+            // step 0. talk to beamo to get a list of user services...
 
-            // dynamically import the component
-            const pendingImport = import(componentUrl, {
-                assert: {
-                    type: 'json' // our services can't return the correct MIME type, "text/html" without a lot of work, so we can trick the browser into consuming this as json, even though it isn't.
-                }
-            });
-            pendingImport.then(component => {
-                var mountSite = document.querySelector('#mountSite');
-                mountSite.innerHTML = component.default;
-                nodeScriptReplace(mountSite);
+            // step 1. fetch the view manifest from the service.
 
-                // TODO: I don't love these next two lines, because it implies that the mount site is aware that the component is a svelte component. On the other hand, we could standardize some beamable-esque method like this, to say, "load on this site"
-                var props = {}
-                new widget({target:mountSite, props});
-            })
+            (async function() { 
+
+                var viewManifestRoute = 'admin/GetViewManifest'
+                var serviceName = 'AuthTesting';
+                var cid = '1323424830305280';
+                var pid = 'DE_1409075572900864';
+                var prefix = 'AB410E05-D720-5576-B3B9-98EE4A496322';
+                var auth = 'bf32f8ab-97d9-4c13-b5dc-91a32269bddf';
+                var baseUrl = `https://dev.api.beamable.com/basic/${cid}.${pid}.${prefix}micro_${serviceName}`;
+                var viewManifestUrl = `${baseUrl}/${viewManifestRoute}`;
+            
+                var manifest = await (await fetch(viewManifestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${auth}`,
+                        'X-DE-SCOPE': `${cid}.${pid}`
+                    }
+                })).json();
+                console.log(manifest);
+
+                var componentUrl = `${baseUrl}/${manifest.Views[0].Path}`;
+                // dynamically import the component
+                const pendingImport = import(componentUrl, {
+                    assert: {
+                        type: 'json' // our services can't return the correct MIME type, "text/html" without a lot of work, so we can trick the browser into consuming this as json, even though it isn't.
+                    }
+                });
+                pendingImport.then(component => {
+                    var mountSite = document.querySelector('#mountSite');
+                    mountSite.innerHTML = component.default;
+                    nodeScriptReplace(mountSite);
+
+                    // TODO: I don't love these next two lines, because it implies that the mount site is aware that the component is a svelte component. On the other hand, we could standardize some beamable-esque method like this, to say, "load on this site"
+                    var props = {}
+                    new widget({target:mountSite, props});
+                })
+
+            })();
         </script>
 
         <div>

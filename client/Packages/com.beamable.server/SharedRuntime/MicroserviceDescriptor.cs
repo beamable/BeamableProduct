@@ -48,12 +48,21 @@ namespace Beamable.Server.Editor
 	{
 		public MicroViewSlot Slot;
 		public Type Type;
+		public string ViewName;
+		public string SourcePath;
 
 		public MicroView CreateInstance()
 		{
 			var instance = (MicroView)Activator.CreateInstance(Type);
 			return instance;
 		}
+
+		public string BuildEnvName => $"view-{ViewName}-env";
+
+		public string WorkingDir => $"/view-{ViewName}"; // in-container path
+
+		public string SourceDirectory => Path.GetDirectoryName(SourcePath);
+
 	}
 
 	[Serializable]

@@ -2,6 +2,9 @@ using Beamable.Common.Api;
 using Beamable.Server.Api.Inventory;
 using Beamable.Server.Editor;
 using System;
+using System.IO;
+using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Server
 {
@@ -18,15 +21,40 @@ namespace Beamable.Server
 
 	public abstract class MicroView
 	{
-		public virtual string GenerateDockerBuildTemplate(MicroserviceDescriptor descriptor, ViewDescriptor view)
+		protected const string BASE_IMAGE = "node:12";
+
+		public virtual string GenerateDockerBuildEnv(MicroserviceDescriptor service, ViewDescriptor view)
 		{
-			// TODO: take the source, and build it into the docker
-			return "RUN echo 'generated from custom view class'";
+			var srcPath = view.SourceDirectory.Substring(service.SourcePath.Length + 1);
+			srcPath = Path.Combine(service.Type.Assembly.GetName().Name , srcPath);
+
+			return $@"
+FROM {BASE_IMAGE} AS {view.BuildEnvName}
+
+# copy the various config files
+COPY ./{srcPath} {view.WorkingDir}
+
+# build the distro
+WORKDIR {view.WorkingDir}/app~
+RUN npm install
+RUN npm run build
+";
 		}
 
-		public virtual string GetHtml()
+		public virtual string GenerateDockerCopy(MicroserviceDescriptor service, ViewDescriptor view)
 		{
-			return "<button> Click it, or ticket </button>";
+			return $@"
+# copy the the front end distro from the build env
+COPY --from={view.BuildEnvName} {view.WorkingDir}/dist {view.WorkingDir}
+";
+		}
+
+		public virtual string GetHtml(string imageName, Type serviceTpe, ViewDescriptor view)
+		{
+			var basePath = $"{imageName}/{serviceTpe.Assembly.GetName().Name}";
+			var path = Path.Combine(basePath, $"{view.WorkingDir}/bundle.js");
+			var javascript = File.ReadAllText(path);
+			return "<script>" + javascript + "</script>";
 		}
 	}
 

@@ -15,11 +15,15 @@ namespace Beamable.Server
 	[AttributeUsage(AttributeTargets.Class)]
 	public class MicroViewAttribute : Attribute
 	{
+		public string ViewName { get; }
 		public MicroViewSlot UIPath { get; }
+		public string SourcePath { get; }
 
-		public MicroViewAttribute(MicroViewSlot uiPath)
+		public MicroViewAttribute(string viewName, MicroViewSlot uiPath,  [CallerFilePath] string sourcePath = "")
 		{
+			ViewName = viewName;
 			UIPath = uiPath;
+			SourcePath = sourcePath;
 		}
 	}
 

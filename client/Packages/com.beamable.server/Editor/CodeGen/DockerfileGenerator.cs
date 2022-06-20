@@ -9,6 +9,7 @@ namespace Beamable.Server.Editor.CodeGen
 	public class DockerfileGenerator
 	{
 		public MicroserviceDescriptor Descriptor { get; }
+		public MicroserviceDependencies Dependencies { get; }
 		public bool Watch { get; }
 		public MicroserviceConfigurationEntry Config { get; }
 
@@ -25,10 +26,11 @@ namespace Beamable.Server.Editor.CodeGen
 		public string BASE_TAG = BeamableEnvironment.BeamServiceTag;
 #endif
 
-		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
+		public DockerfileGenerator(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies, bool includeDebugTools, bool watch)
 		{
 			DebuggingEnabled = includeDebugTools;
 			Descriptor = descriptor;
+			Dependencies = dependencies;
 			Watch = watch;
 			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}
@@ -144,11 +146,19 @@ EXPOSE 80 2222
 
 		private string GetDockerModificationForView(ViewDescriptor viewDescriptor)
 		{
-			// instantiate
-			Debug.Log("Getting view for " + viewDescriptor.GetType().Name);
-
-			return viewDescriptor.CreateInstance().GenerateDockerBuildTemplate(Descriptor, viewDescriptor);
+			return viewDescriptor.CreateInstance().GenerateDockerBuildEnv(Descriptor, viewDescriptor);
 		}
+
+		private string GetViewDockerCopies()
+		{
+			return string.Join("\n", Descriptor.Views.Select(GetViewDockerCopyForView));
+		}
+
+		private string GetViewDockerCopyForView(ViewDescriptor viewDescriptor)
+		{
+			return viewDescriptor.CreateInstance().GenerateDockerCopy(Descriptor, viewDescriptor);
+		}
+
 
 		private string GetWatchDockerFile()
 		{
@@ -156,6 +166,8 @@ EXPOSE 80 2222
 			// TODO: Microfront-ends have 2 docker stages, first a build phase where they do a FROM node:whatever as front-end-build-env
 			// TODO:  and then a second phase that does the COPY --from=front-end-build-env /workingdir ./ui/dist
 			var text = $@"
+
+{GetViewDockerModifications()}
 
 FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
 RUN dotnet --version
@@ -166,12 +178,13 @@ RUN cp /src/baseImageDocs.xml .
 
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 
-{GetViewDockerModifications()}
 {GetDebugLayer()}
 
 EXPOSE {HEALTH_PORT}
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+
+{GetViewDockerCopies()}
 {GetEntryPoint()}
 ";
 			return text;
@@ -215,10 +228,18 @@ ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 			return text;
 		}
 
+		protected string GetIgnoreString()
+		{
+			return $@"
+# ignore unity hidden folders
+
+";
+		}
 
 		public void Generate(string filePath)
 		{
 			var content = GetString();
+			var ignore = GetIgnoreString();
 
 #if BEAMABLE_DEVELOPER
 			Beamable.Common.BeamableLogger.Log("DOCKER FILE");
@@ -226,6 +247,7 @@ ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 #endif
 
 			File.WriteAllText(filePath, content);
+			File.WriteAllText(Path.Combine(Path.GetDirectoryName(filePath), ".dockerignore"), ignore);
 		}
 
 	}

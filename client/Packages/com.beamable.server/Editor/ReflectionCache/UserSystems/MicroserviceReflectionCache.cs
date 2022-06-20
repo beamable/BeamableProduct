@@ -227,24 +227,21 @@ namespace Beamable.Server.Editor
 							Views = new List<ViewDescriptor>()
 						};
 
-						Debug.Log("Creating descriptor fo!!!!!!!!r " + descriptor.Name);
 						// TODO: I know this isn't the best way to do this in the registry world.
 						var possibleViewTypes = type.Assembly.GetTypes()
 						                                        .Where(t => typeof(MicroView).IsAssignableFrom(t))
 						                                        .ToList();
-						Debug.Log("found " + possibleViewTypes.Count + " possible matches ");
 						foreach (var possibleViewType in possibleViewTypes)
 						{
-							Debug.Log("Type " + possibleViewType.Name + " / " +
-							          possibleViewType.GetCustomAttribute<MicroViewAttribute>());
 							// TODO: validate based on empty constructor
 							var viewAttr = possibleViewType.GetCustomAttribute<MicroViewAttribute>();
 							if (viewAttr == null) continue;
-							Debug.Log("Found real view " + viewAttr.GetType().Name);
 							descriptor.Views.Add(new ViewDescriptor
 							{
 								Type = possibleViewType,
-								Slot = viewAttr.UIPath
+								Slot = viewAttr.UIPath,
+								SourcePath = viewAttr.SourcePath,
+								ViewName = viewAttr.ViewName
 							});
 						}
 
