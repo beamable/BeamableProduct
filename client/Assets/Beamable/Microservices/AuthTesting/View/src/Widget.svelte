@@ -8,6 +8,9 @@
     let b: number = 0;
     function doop(){
         world = a + b;
+        console.log(tuna);
+        console.log(window.tuna);
+        console.log(window);
     }
     function square(){
         world = sqrt(world);

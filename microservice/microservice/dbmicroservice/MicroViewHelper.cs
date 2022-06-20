@@ -26,8 +26,7 @@ public static class MicroViewHelper
 				// TODO: what scopes should this require? Sure it should require _something_
 				RequiredScopes = new HashSet<string>(),
 
-				// TODO: this is no good.
-				RequireAuthenticatedUser = false,
+				RequireAuthenticatedUser = true,
 
 				// views do not consume any parameters. (yet)
 				ParameterInfos = new List<ParameterInfo>(),

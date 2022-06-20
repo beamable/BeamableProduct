@@ -54,7 +54,7 @@ COPY --from={view.BuildEnvName} {view.WorkingDir}/dist {view.WorkingDir}
 			var basePath = $"{imageName}/{serviceTpe.Assembly.GetName().Name}";
 			var path = Path.Combine(basePath, $"{view.WorkingDir}/bundle.js");
 			var javascript = File.ReadAllText(path);
-			return "<script>" + javascript + "</script>";
+			return javascript;
 		}
 	}
 

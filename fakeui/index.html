@@ -46,6 +46,8 @@
 
             // step 1. fetch the view manifest from the service.
 
+            var tuna = 2;
+
             (async function() { 
 
                 var viewManifestRoute = 'admin/GetViewManifest'
@@ -67,23 +69,38 @@
                 console.log(manifest);
 
                 var componentUrl = `${baseUrl}/${manifest.Views[0].Path}`;
-                // dynamically import the component
-                const pendingImport = import(componentUrl, {
-                    assert: {
-                        type: 'json' // our services can't return the correct MIME type, "text/html" without a lot of work, so we can trick the browser into consuming this as json, even though it isn't.
-                    }
-                });
-                pendingImport.then(component => {
-                    var mountSite = document.querySelector('#mountSite');
-                    mountSite.innerHTML = component.default;
-                    nodeScriptReplace(mountSite);
 
-                    // TODO: I don't love these next two lines, because it implies that the mount site is aware that the component is a svelte component. On the other hand, we could standardize some beamable-esque method like this, to say, "load on this site"
+                var source = await (await fetch(componentUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${auth}`,
+                        'X-DE-SCOPE': `${cid}.${pid}`
+                    }
+                })).json();
+                console.log(source);
+
+                const scriptElement = document.createElement("script");
+                var mountSite = document.querySelector('#mountSite');
+
+                const wrapperScript = document.createElement("script");
+                wrapperScript.src = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+
+                var tuna = 1;
+                document.head.appendChild(wrapperScript);
+
+                // wait for the component to load.
+                setTimeout( () => {
+                    console.log(widget);
+                    mountSite.innerHTML = ''; // clear
                     var props = {}
                     new widget({target:mountSite, props});
-                })
+                }, 0)
 
+                // TODO: There is an issue, that scripts could be intentional malicious in a marketplace scenario. We'd want to make sure that a microfront-end CANNOT access anything beyond its own scope. http://jsfiddle.net/agoywobt/ this becomes a classic javascript security game of whack-ah-mole. 
             })();
+        </script>
+        <script>
+            // var tuna = 3;
         </script>
 
         <div>
