@@ -12,6 +12,8 @@ using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
 using Beamable.Platform.Tests;
 using Beamable.Editor.Realms;
+using Beamable.Api;
+using Beamable.Common.Api;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -31,7 +33,7 @@ namespace Tests
 		[Test]
         public void TestNetwork()
         {
-			var requester = new MockPlatformAPI();
+			var _requester = new MockPlatformAPI();
 
 			//BeamEditor line 234
 			//RealmsServices constructor
@@ -39,7 +41,7 @@ namespace Tests
 			//requester.MockRequest();
 			//
 			IDependencyBuilder builder = new DependencyBuilder();
-			builder.AddSingleton<Beamable.Api.IPlatformRequester, MockPlatformAPI>(requester);
+			builder.AddSingleton<IPlatformRequester, MockPlatformAPI>(_requester);
 			builder.AddSingleton<RealmsService>();
 
 			provider = builder.Build();
@@ -48,11 +50,17 @@ namespace Tests
 			
 			realmsService.GetCustomerData();
 
-			/*requester
-				.MockRequest<GetCustomerResponseDTO>(Beamable.Common.Api.Method.GET)
-				.WithResponse(new GetCustomerResponseDTO){
-				
-			}*/
+			_requester
+				.MockRequest<GetCustomerResponseDTO>(Method.GET)
+				.WithResponse(new GetCustomerResponseDTO { 
+					customer = new CustomerViewDTO
+					{
+						alias = "alias",
+						cid = 12345,
+						name = "fakeName",
+						projects = new List<ProjectViewDTO>()
+					}
+				});
 		}
     }
 }
