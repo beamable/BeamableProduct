@@ -5,8 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- Microservices now support private declarations of `Callable` methods.
+- Added log notifying users that Microservices don't currently support overloaded `Callable`. 
+
 ### Fixed
-- Microservices now properly log exceptions that happen during its initialization 
+- Microservices now properly log exceptions that happen during its initialization
 
 ## [1.2.3]
 ### Added

@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Common;
@@ -54,7 +55,7 @@ namespace Beamable.Server
             XmlDocsHelper.ProviderFactory = XmlDocsHelper.FileIOProvider;
         }
 
-        public static async void Start<TMicroService>() where TMicroService : Microservice
+        public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
             ConfigureLogging();
             ConfigureUnhandledError();

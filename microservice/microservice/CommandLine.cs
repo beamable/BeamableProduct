@@ -38,16 +38,20 @@ namespace Beamable.Server
 			return rootCommand.Invoke(args);
 		}
 
-		static void Run()
+		static async void Run()
 		{
 			try
 			{
-				MicroserviceBootstrapper.Start<TMicroService>();
+				await MicroserviceBootstrapper.Start<TMicroService>();
 			}
 			catch (Exception ex)
 			{
-				Log.Fatal(ex.GetType().Name + " / " + ex.Message);
-				Log.Fatal(ex.StackTrace);
+				// Just so we don't double log the same exception
+				if (ex is not BeamableMicroserviceException)
+				{
+					Log.Fatal(ex.GetType().Name + " / " + ex.Message);
+					Log.Fatal(ex.StackTrace);
+				}
 			}
 		}
 

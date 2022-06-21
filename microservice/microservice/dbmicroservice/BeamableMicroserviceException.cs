@@ -6,7 +6,8 @@ namespace Beamable.Server;
 public class BeamableMicroserviceException : Exception
 {
     public const string kBMS_UNHANDLED_EXCEPTION_ERROR_CODE = "000";
-    public const string kBMS_ERROR_CODE = "001";
+    public const string kBMS_ERROR_CODE_DUPLICATED_PARAMTER_NAME = "001";
+    public const string kBMS_ERROR_CODE_OVERLOADED_METHOD_UNSUPPORTED = "002";
         
     public string ErrorCode;
 
