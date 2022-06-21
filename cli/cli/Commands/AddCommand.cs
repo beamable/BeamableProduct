@@ -11,12 +11,12 @@ public class AddCommandArgs : CommandArgs
 
 public class AddCommand : AppCommand<AddCommandArgs>
 {
-	private readonly IFakeService _fake;
+	private readonly IAppContext _ctx;
 
-	public AddCommand(IFakeService fake)
+	public AddCommand(IAppContext ctx)
 		: base("add", "add 2 numbers")
 	{
-		_fake = fake;
+		_ctx = ctx;
 	}
 
 	public override void Configure()
@@ -30,9 +30,9 @@ public class AddCommand : AppCommand<AddCommandArgs>
 		AddArgument(b, (args, i) => args.b = i);
 	}
 
-	public override async Task Handle(AddCommandArgs args)
+	public override Task Handle(AddCommandArgs args)
 	{
-		var sum = await _fake.AddAsync(args.a, args.b);
-		Console.WriteLine("sum is " + sum);
+		Console.WriteLine(_ctx.Cid + "/" + _ctx.Pid + "/" + _ctx.Host);
+		return Task.CompletedTask;
 	}
 }

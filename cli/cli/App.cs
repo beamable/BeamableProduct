@@ -29,12 +29,14 @@ public class App
 		Services.AddSingleton<DryRunOption>();
 		Services.AddSingleton<CidOption>();
 		Services.AddSingleton<PidOption>();
+		Services.AddSingleton<PlatformOption>();
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
 			root.AddOption(provider.GetRequiredService<DryRunOption>());
 			root.AddOption(provider.GetRequiredService<CidOption>());
 			root.AddOption(provider.GetRequiredService<PidOption>());
+			root.AddOption(provider.GetRequiredService<PlatformOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -46,9 +48,11 @@ public class App
 		Services.AddSingleton<CliRequester, CliRequester>();
 		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		Services.AddSingleton<IAuthApi, AuthApi>();
+		Services.AddSingleton<ConfigService>();
 
 		// add commands
 		Services.AddRootCommand<AddCommand, AddCommandArgs>();
+		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
 
 		// customize

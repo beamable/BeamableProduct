@@ -9,6 +9,7 @@ public interface IAppContext
 	public bool IsDryRun { get; }
 	public string Cid { get; }
 	public string Pid { get; }
+	public string Host { get; }
 
 	/// <summary>
 	/// Control how basic options are found from the console context.
@@ -24,87 +25,59 @@ public class DefaultAppContext : IAppContext
 	private readonly CidOption _cidOption;
 	private readonly PasswordOption _passwordOption;
 	private readonly PidOption _pidOption;
+	private readonly PlatformOption _platformOption;
 	private readonly UsernameOption _usernameOption;
 	private readonly CliRequester _requester;
+	private readonly ConfigService _configService;
 	public bool IsDryRun { get; set; }
-	public string Cid { get; set; }
-	public string Pid { get; set; }
 
-	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption,
-	                         CliRequester requester)
+	private string? _cid, _pid, _host;
+
+	public string Cid => _cid;
+	public string Pid => _pid;
+	public string Host => _host;
+
+	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
+	                         CliRequester requester, ConfigService configService)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
 		_pidOption = pidOption;
+		_platformOption = platformOption;
 		_requester = requester;
+		_configService = configService;
 	}
 
 	public async void Apply(BindingContext bindingContext)
 	{
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
-		var dictionary = new Dictionary<string, string>();
-		bool configFileExists = false;
 
-		if (TryToFindBeamableConfigFolder(out var path))
+		if (!TryGetSetting(out _cid, bindingContext, _cidOption))
 		{
-			configFileExists = TryToReadConfigFile(path, out dictionary);
+			// TODO: throw an error saying a cid is required.
+		}
+		if (!TryGetSetting(out _pid, bindingContext, _pidOption))
+		{
+			// TODO: throw an error saying a cid is required.
 		}
 
-		string GetConfigValue(Option option, string id)
+		if (!TryGetSetting(out _host, bindingContext, _platformOption))
 		{
-			return (string) (bindingContext.ParseResult.GetValueForOption(option) ??
-			                 (configFileExists && dictionary.ContainsKey(id) ? dictionary[id] : "unset"));
+			// TODO: throw an error saying a platform is required.
 		}
 
-		Cid = GetConfigValue(_cidOption, "cid");
-		Pid = GetConfigValue(_pidOption, "pid");
-
-		var platformPath = configFileExists && dictionary.ContainsKey("platform")
-			? dictionary["platform"]
-			: "https://api.beamable.com";
-		_requester.Init(Cid, Pid, platformPath);
+		_requester.Init(Cid, Pid, Host);
 	}
 
-	bool TryToFindBeamableConfigFolder(out string result)
+	private bool TryGetSetting(out string? value, BindingContext context, ConfigurableOption option, string? defaultValue=null)
 	{
-		const string CONFIG_FOLDER = ".beamable";
-		result = string.Empty;
-		var basePath = Directory.GetCurrentDirectory();
-		if (Directory.Exists(Path.Combine(basePath, CONFIG_FOLDER)))
+		value = context.ParseResult.GetValueForOption(option);
+		if (value == null)
 		{
-			result = Path.Combine(basePath, CONFIG_FOLDER);
-			return true;
+			value = _configService.GetConfigString(option.OptionName, defaultValue);
 		}
 
-		var parentDir = Directory.GetParent(basePath);
-		while (parentDir != null)
-		{
-			var path = Path.Combine(parentDir.FullName, CONFIG_FOLDER);
-			if (Directory.Exists(path))
-			{
-				result = path;
-				return true;
-			}
-
-			parentDir = parentDir.Parent;
-		}
-
-		return false;
-	}
-
-	bool TryToReadConfigFile(string folderPath, out Dictionary<string, string> result)
-	{
-		const string CONFIG_DEFAULTS = "config-defaults.txt";
-		string fullPath = Path.Combine(folderPath, CONFIG_DEFAULTS);
-		result = new Dictionary<string, string>();
-		if (File.Exists(fullPath))
-		{
-			var content = File.ReadAllText(fullPath);
-			result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
-
-			return result is {Count: > 0};
-		}
-
-		return false;
+		var hasValue = !string.IsNullOrEmpty(value);
+		return hasValue;
 	}
 }
