@@ -30,6 +30,8 @@ public class App
 		Services.AddSingleton<CidOption>();
 		Services.AddSingleton<PidOption>();
 		Services.AddSingleton<PlatformOption>();
+		Services.AddSingleton<AccessTokenOption>();
+		Services.AddSingleton<RefreshTokenOption>();
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -37,6 +39,8 @@ public class App
 			root.AddOption(provider.GetRequiredService<CidOption>());
 			root.AddOption(provider.GetRequiredService<PidOption>());
 			root.AddOption(provider.GetRequiredService<PlatformOption>());
+			root.AddOption(provider.GetRequiredService<AccessTokenOption>());
+			root.AddOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -51,8 +55,10 @@ public class App
 		Services.AddSingleton<ConfigService>();
 
 		// add commands
-		Services.AddRootCommand<AddCommand, AddCommandArgs>();
+		Services.AddRootCommand<InitCommand, InitCommandArgs>();
+		Services.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
+		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
 
 		// customize
@@ -83,6 +89,19 @@ public class App
 			appContext.Apply(consoleContext.BindingContext);
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
+		commandLineBuilder.UseSuggestDirective();
+		commandLineBuilder.UseTypoCorrections();
+		commandLineBuilder.UseExceptionHandler((ex, ctx) =>
+		{
+			switch (ex)
+			{
+				case CliException cliException:
+					Console.Error.WriteLine(cliException.Message);
+					break;
+				default:
+					throw ex;
+			}
+		});
 		return commandLineBuilder.Build();
 	}
 

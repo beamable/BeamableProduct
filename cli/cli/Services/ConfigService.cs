@@ -1,10 +1,11 @@
+using System.Net.Http.Json;
 using Newtonsoft.Json;
 
 namespace cli;
 
+
 public class ConfigService
 {
-
 	public bool? ConfigFileExists { get; private set; }
 	public string? ConfigFilePath { get; private set; }
 
@@ -23,6 +24,31 @@ public class ConfigService
 		}
 
 		return defaultValue;
+	}
+
+	public string SetConfigString(string key, string value)
+	{
+		if (_config != null) _config[key] = value;
+		return _config[key];
+	}
+
+	public void SetBeamableDirectory(string dir)
+	{
+		ConfigFilePath = Path.Combine(dir, Constants.CONFIG_FOLDER);;
+	}
+
+	public void FlushConfig()
+	{
+		if (string.IsNullOrEmpty(ConfigFilePath))
+			throw new CliException("No beamable project exists. Please use beam init");
+		var json = JsonConvert.SerializeObject(_config);
+		if (!Directory.Exists(ConfigFilePath))
+		{
+			Directory.CreateDirectory(ConfigFilePath);
+		}
+		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		Console.WriteLine("Saving config to " + fullPath);
+		File.WriteAllText(fullPath, json);
 	}
 
 	void RefreshConfig()
