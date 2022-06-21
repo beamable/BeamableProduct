@@ -99,7 +99,8 @@ namespace Beamable.Server
                };
                if (namedDeserializers.ContainsKey(parameterName))
                {
-                  throw new Exception($"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]");
+                  throw new BeamableMicroserviceException($"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]")
+                     { ErrorCode = BeamableMicroserviceException.kBMS_ERROR_CODE};
                }
 
                parameterNames.Add(parameterName);

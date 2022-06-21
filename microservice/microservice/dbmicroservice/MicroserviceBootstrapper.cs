@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Common;
@@ -53,7 +54,7 @@ namespace Beamable.Server
             XmlDocsHelper.ProviderFactory = XmlDocsHelper.FileIOProvider;
         }
 
-        public static void Start<TMicroService>() where TMicroService : Microservice
+        public static async void Start<TMicroService>() where TMicroService : Microservice
         {
             ConfigureLogging();
             ConfigureUnhandledError();
@@ -69,24 +70,33 @@ namespace Beamable.Server
                 Log.Fatal("Version mismatch. Image built with {buildVersion}, but is executing with {executionVersion}. This is a fatal mistake.", args.SdkVersionBaseBuild, args.SdkVersionExecution);
                 throw new Exception($"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
             }
-
+            
             try
             {
-                var _ = beamableService.Start<TMicroService>(args);
+                await beamableService.Start<TMicroService>(args);
             }
             catch (Exception ex)
             {
-                Log.Fatal("Failed to start. " + ex.GetType().Name + " / " + ex.Message);
-                Log.Fatal(ex.StackTrace);
+                var message = new StringBuilder(1024 * 10);
+                
+                if (ex is not BeamableMicroserviceException beamEx)
+                    message.AppendLine($"[BeamErrorCode=BMS{BeamableMicroserviceException.kBMS_UNHANDLED_EXCEPTION_ERROR_CODE}]" +
+                                       $" Unhandled Exception Found! Please notify Beamable of your use case that led to this.");
+                else
+                    message.AppendLine($"[BeamErrorCode=BMS{beamEx.ErrorCode}] " +
+                                       $"Beamable Exception Found! If the message is unclear, please contact Beamable with your feedback.");
+                
+                message.AppendLine("Exception Info:");
+                message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
+                message.AppendLine("Stack Trace:");
+                message.AppendLine(ex.StackTrace);
+                Log.Fatal(message.ToString());
                 throw;
-
             }
 
-            if (args.WatchToken)
-            {
+            if (args.WatchToken) 
                 HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
-            }
-
+            
             beamableService.RunForever();
         }
     }
