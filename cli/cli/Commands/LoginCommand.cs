@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Api.Auth;
+using cli.Utils;
 using Spectre.Console;
 
 namespace cli;
@@ -14,12 +15,14 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	private readonly IAppContext _ctx;
 	private readonly ConfigService _configService;
 	private readonly IAuthApi _authApi;
+	private readonly CliRequester _requester;
 
-	public LoginCommand(IAppContext ctx, ConfigService configService, IAuthApi authApi) : base("login", "save credentials to file")
+	public LoginCommand(IAppContext ctx, ConfigService configService, IAuthApi authApi, CliRequester requester) : base("login", "save credentials to file")
 	{
 		_ctx = ctx;
 		_configService = configService;
 		_authApi = authApi;
+		_requester = requester;
 	}
 
 	public override void Configure()
@@ -32,19 +35,14 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	{
 		var username = GetUserName(args);
 		var password = GetPassword(args);
-
-		var response = await AnsiConsole.Status()
-			.Spinner(Spinner.Known.Circle)
-			.StartAsync("Authorizing...", async ctx =>
-
-				await _authApi.Login(username, password, true, true)
-			);
-
+		var response = await _authApi.Login(username, password, true, true).ShowLoading("Authorizing...");
 		_configService.SetConfigString(Constants.CONFIG_ACCESS_TOKEN, response.access_token);
 		_configService.SetConfigString(Constants.CONFIG_REFRESH_TOKEN, response.refresh_token);
 		_configService.FlushConfig();
 
-
+		args.username = username;
+		args.password = password;
+		_ctx.UpdateToken(response);
 	}
 
 	private string GetUserName(LoginCommandArgs args)

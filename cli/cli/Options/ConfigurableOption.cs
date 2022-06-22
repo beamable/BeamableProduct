@@ -12,3 +12,14 @@ public class ConfigurableOption : Option<String>
 		OptionName = optionName;
 	}
 }
+
+public class ConfigurableOptionFlag : Option<bool>
+{
+	public string OptionName { get; }
+
+	public ConfigurableOptionFlag(string optionName, string desc)
+		:base($"--{optionName}", desc)
+	{
+		OptionName = optionName;
+	}
+}

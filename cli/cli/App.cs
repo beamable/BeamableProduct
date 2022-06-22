@@ -4,6 +4,7 @@ using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Realms;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace cli;
@@ -32,6 +33,7 @@ public class App
 		Services.AddSingleton<PlatformOption>();
 		Services.AddSingleton<AccessTokenOption>();
 		Services.AddSingleton<RefreshTokenOption>();
+		Services.AddSingleton<VerboseOption>();
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -41,13 +43,15 @@ public class App
 			root.AddOption(provider.GetRequiredService<PlatformOption>());
 			root.AddOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddOption(provider.GetRequiredService<RefreshTokenOption>());
+			root.AddOption(provider.GetRequiredService<VerboseOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
 
 		// register services
 		Services.AddSingleton<IAppContext, DefaultAppContext>();
-		Services.AddSingleton<IFakeService, FakeService>();
+		Services.AddSingleton<IRealmsApi, RealmsService>();
+		Services.AddSingleton<IAliasService, AliasService>();
 		Services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
 		Services.AddSingleton<CliRequester, CliRequester>();
 		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
@@ -99,7 +103,9 @@ public class App
 					Console.Error.WriteLine(cliException.Message);
 					break;
 				default:
-					throw ex;
+					Console.Error.WriteLine(ex.Message);
+					Console.Error.WriteLine(ex.StackTrace);
+					break;
 			}
 		});
 		return commandLineBuilder.Build();

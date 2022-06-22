@@ -16,6 +16,8 @@ public class ConfigService
 		RefreshConfig();
 	}
 
+	public string PrettyPrint() => JsonConvert.SerializeObject(_config, Formatting.Indented);
+
 	public string? GetConfigString(string key, string? defaultValue=null)
 	{
 		if (_config?.TryGetValue(key, out var value) ?? false)
@@ -47,7 +49,6 @@ public class ConfigService
 			Directory.CreateDirectory(ConfigFilePath);
 		}
 		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_DEFAULTS_FILE_NAME);
-		Console.WriteLine("Saving config to " + fullPath);
 		File.WriteAllText(fullPath, json);
 	}
 
