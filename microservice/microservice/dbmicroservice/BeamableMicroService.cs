@@ -210,7 +210,8 @@ namespace Beamable.Server
          _serviceShutdownTokenSource = new CancellationTokenSource();
          _socketDaemen = SocketDaemon.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
 
-         await SetupWebsocket(socket);
+         var setupWebsocketTask = SetupWebsocket(socket);
+         setupWebsocketTask.Wait();
       }
 
       public void RunForever()
