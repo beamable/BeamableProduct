@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Microservices.View;
 using Beamable.Server;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Microservices
@@ -10,9 +11,10 @@ namespace Beamable.Microservices
 	public class AuthTesting : Microservice
 	{
 		[ClientCallable]
-		public int Add(int a, int b)
+		public async Promise<int> Add(int a, int b)
 		{
-			return a + b;
+			await Task.Delay(100);
+			return a + b + 1;
 		}
 	}
 }

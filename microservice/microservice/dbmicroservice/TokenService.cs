@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Server;
 using Serilog;
 [assembly: MetadataUpdateHandler(typeof(HotReloadMetadataUpdateHandler))]

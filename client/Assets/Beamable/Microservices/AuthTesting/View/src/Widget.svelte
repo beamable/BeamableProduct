@@ -3,14 +3,12 @@
     import {sqrt} from 'mathjs';
     import Doodad from './Doodad.svelte';
 
-    let world: number = 32;
+    let world: number = 2;
     let a: number = 0;
-    let b: number = 0;
+    let b: number = 5;
+    let xyz: string = 'tunafish';
     function doop(){
-        world = a + b;
-        console.log(tuna);
-        console.log(window.tuna);
-        console.log(window);
+        world = a * b;
     }
     function square(){
         world = sqrt(world);
@@ -20,7 +18,7 @@
 <div>
     Sum {world}
     <button on:click={doop}>
-        Add It Up
+        Multiply
     </button>
     <button on:click={square}>
         Sqrt

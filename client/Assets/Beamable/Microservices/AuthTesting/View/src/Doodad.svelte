@@ -4,7 +4,8 @@
 </script>
 <div>
     <form>
-        <label>{name}</label>
+        <label>{name}
+        </label>
         <input type="number" bind:value={value}>
     </form>
 </div>

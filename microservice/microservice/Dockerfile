@@ -12,5 +12,12 @@ RUN dotnet restore ./microservice.csproj
 COPY . .
 RUN dotnet publish ./microservice.csproj -c release -o /app
 
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    npm
+RUN npm install npm@latest -g && \
+    npm install n -g && \
+    n latest \
+
 WORKDIR /app
 ENTRYPOINT ["dotnet", "/app/microservice.dll"]

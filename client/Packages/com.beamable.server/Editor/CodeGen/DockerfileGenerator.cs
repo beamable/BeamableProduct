@@ -146,7 +146,7 @@ EXPOSE 80 2222
 
 		private string GetDockerModificationForView(ViewDescriptor viewDescriptor)
 		{
-			return viewDescriptor.CreateInstance().GenerateDockerBuildEnv(Descriptor, viewDescriptor);
+			return viewDescriptor.CreateInstance().GenerateDockerBuildEnv(Watch, Descriptor, viewDescriptor);
 		}
 
 		private string GetViewDockerCopies()
@@ -156,7 +156,7 @@ EXPOSE 80 2222
 
 		private string GetViewDockerCopyForView(ViewDescriptor viewDescriptor)
 		{
-			return viewDescriptor.CreateInstance().GenerateDockerCopy(Descriptor, viewDescriptor);
+			return viewDescriptor.CreateInstance().GenerateDockerCopy(Watch, Descriptor, viewDescriptor);
 		}
 
 

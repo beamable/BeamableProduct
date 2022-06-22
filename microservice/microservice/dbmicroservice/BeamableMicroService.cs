@@ -189,6 +189,13 @@ namespace Beamable.Server
 
          RebuildRouteTable();
 
+         Log.Debug("Starting views...");
+         foreach (var view in Views.Views)
+         {
+            Log.Debug($"Starting {view.Name}");
+            view.ViewDescriptor.CreateInstance().OnMicroserviceStarted(args.WatchToken, _serviceAttribute.MicroserviceName.ToLower(), MicroserviceType, view.ViewDescriptor);
+         }
+
 
          _reflectionCache = new ReflectionCache();
          var contentTypeReflectionCache = new ContentTypeReflectionCache();
