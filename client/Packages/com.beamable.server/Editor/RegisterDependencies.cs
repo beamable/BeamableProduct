@@ -10,7 +10,6 @@ namespace Beamable.Server.Editor
 		[RegisterBeamableDependencies(-1000, RegistrationOrigin.EDITOR)]
 		public static void Register(IDependencyBuilder builder)
 		{
-			builder.AddSingleton<PublishService>();
 			builder.LoadSingleton(provider => new MicroservicesDataModel());
 		}
 	}

@@ -30,9 +30,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var wnd = CreateInstance<PublishWindow>();
 
-			// get publish service.
-			editorContext.ServiceScope.GetService<PublishService>();
-
 			wnd.name = PUBLISH;
 			wnd.titleContent = new GUIContent(PUBLISH);
 			wnd.ShowUtility();
