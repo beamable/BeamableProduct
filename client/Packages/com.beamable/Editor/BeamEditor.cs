@@ -69,12 +69,15 @@ namespace Beamable
 		static BeamEditor()
 		{
 			Initialize();
+			AssemblyReloadEvents.beforeAssemblyReload += () =>
+			{
+				BeamEditorContext.StopAll().Wait();
+			};
 		}
 
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
@@ -290,6 +293,9 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			BeamEditorContextDependencies.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
+			BeamEditorContextDependencies.AddSingleton<ServiceStorage>();
+			EditorReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
+
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
 				BeamEditorContextDependencies.AddSingleton(globallyAccessibleHintSystem.GetType(), () => globallyAccessibleHintSystem);
@@ -416,6 +422,7 @@ namespace Beamable
 
 			var ctx = new BeamEditorContext();
 			ctx.Init(playerCode, dependencyBuilder);
+			All.Add(ctx);
 			EditorContexts[playerCode] = ctx;
 			return ctx;
 		}
@@ -1024,6 +1031,20 @@ namespace Beamable
 		}
 
 		#endregion
+
+		public static async Task StopAll()
+		{
+			foreach (var ctx in All)
+			{
+				await ctx.Stop();
+			}
+		}
+
+		private async Promise Stop()
+		{
+			IsStopped = true;
+			await ServiceScope.Dispose();
+		}
 	}
 
 	[Serializable]

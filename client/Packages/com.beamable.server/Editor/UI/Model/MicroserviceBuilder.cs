@@ -24,6 +24,7 @@ namespace Beamable.Editor.UI.Model
 				EditorApplication.delayCall += () => OnIsBuildingChanged?.Invoke(value);
 			}
 		}
+		[SerializeField]
 		private bool _isBuilding;
 
 		public string LastBuildImageId
@@ -36,6 +37,7 @@ namespace Beamable.Editor.UI.Model
 				EditorApplication.delayCall += () => OnLastImageIdChanged?.Invoke(value);
 			}
 		}
+		[SerializeField]
 		private string _lastImageId;
 
 		public bool HasImage => IsRunning || LastBuildImageId?.Length > 0;
@@ -44,6 +46,7 @@ namespace Beamable.Editor.UI.Model
 		public Action<bool> OnIsBuildingChanged;
 		public Action<string> OnLastImageIdChanged;
 
+		[SerializeField]
 		private string _buildPath;
 
 		public void ForwardEventsTo(MicroserviceBuilder oldBuilder)

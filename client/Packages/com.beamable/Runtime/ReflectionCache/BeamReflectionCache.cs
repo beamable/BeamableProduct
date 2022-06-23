@@ -106,10 +106,13 @@ namespace Beamable.Reflection
 			/// <summary>
 			/// Runs all functions annotated with <see cref="RegisterBeamableDependenciesAttribute"/>, in their correct order, with the given <paramref name="builderToConfigure"/>.
 			/// </summary>
-			public void LoadCustomDependencies(IDependencyBuilder builderToConfigure)
+			public void LoadCustomDependencies(IDependencyBuilder builderToConfigure, RegistrationOrigin origin=RegistrationOrigin.RUNTIME)
 			{
 				foreach (var registerBeamableDependencyFunction in _registerBeamableDependencyFunctions)
 				{
+					var matchesOrigin = origin.HasFlag(registerBeamableDependencyFunction
+					                                   .AttrAs<RegisterBeamableDependenciesAttribute>().Origin);
+					if (!matchesOrigin) continue;
 					try
 					{
 						var method = registerBeamableDependencyFunction.InfoAs<MethodInfo>();

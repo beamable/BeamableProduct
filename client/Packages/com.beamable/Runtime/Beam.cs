@@ -222,8 +222,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
 
-			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder);
-			//LoadCustomDependencies();
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder, RegistrationOrigin.RUNTIME);
 		}
 
 		/// <summary>

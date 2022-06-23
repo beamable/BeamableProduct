@@ -14,6 +14,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
+	[Serializable]
 	public abstract class ServiceModelBase : IBeamableService
 	{
 		private const float DEFAULT_HEIGHT = 300.0f;
