@@ -159,6 +159,9 @@ namespace Beamable.Server
          }
       }
 
+      /// <summary>
+      /// Tracks the number of requests that failed due to <see cref="UnauthenticatedException"/>.
+      /// </summary>
       public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
 
       public SocketRequesterContext(Func<Promise<IConnection>> socketGetter)
@@ -470,21 +473,24 @@ namespace Beamable.Server
 
          Log.Debug("sending request {msg}", msg);
          return _socketContext.SendMessageSafely(msg).FlatMap(_ =>
-         {
-            return firstAttempt.RecoverWith(ex =>
             {
-               if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+               MicroserviceAuthenticationDaemon.BumpRequestCounter();
+               return firstAttempt.RecoverWith(ex =>
                {
-                  // need to wait for authentication to finish...
-                  Log.Debug("Request {id} failed with 403. Will reauth and and retry.", req.id);
+                  if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+                  {
+                     // need to wait for authentication to finish...
+                     Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id, msg);
 
-                  Interlocked.Increment(ref _socketContext.AuthorizationCounter);
-                  return WaitForAuthorization().ToPromise().FlatMap(_ => Request(method, uri, body, includeAuthHeader, parser));
-               }
+                     MicroserviceAuthenticationDaemon.WakeAuthThread(ref _socketContext.AuthorizationCounter);
+                     return WaitForAuthorization().ToPromise().FlatMap(x => Request(method, uri, body, includeAuthHeader, parser));
+                  }
 
-               throw ex;
-            });
-         });
+                  MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter();
+                  throw ex;
+               });
+            })
+            .Then(_ => MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter());
       }
 
       /// <summary>
