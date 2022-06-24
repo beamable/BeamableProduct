@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4]
+### Added
+- Microservices now support private declarations of `Callable` methods.
+- Added log notifying users that Microservices don't currently support overloaded `Callable`. 
+
+### Fixed
+- Microservices now properly log exceptions that happen during its initialization
+- Issue in Microservices re-auth flow that caused high CPU utilization unnecessarily
+
 ## [1.2.3]
 ### Added
 - `UnityEngine.Debug.LogFormat` now supported when used inside C#MS methods 
