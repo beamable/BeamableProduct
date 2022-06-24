@@ -6,14 +6,16 @@ import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
 
 const production = true;
+const dist = process.env.view_dist_path || '../dist/bundle.js';
+const outputName = process.env.output_name || 'app';
 
 export default {
-	input: '../src/Widget.svelte',
+	input: 'index.ts',
 	output: {
-		sourcemap: true,
+		sourcemap: false,
 		format: 'iife',
-		name: 'widget',
-		file: '../dist/bundle.js'
+		name: outputName,
+		file: dist
 	},
 	plugins: [
 		svelte({

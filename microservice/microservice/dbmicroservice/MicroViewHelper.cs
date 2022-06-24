@@ -56,7 +56,7 @@ public static class MicroViewHelper
 		return routes;
 	}
 
-	public static MicroViewManifest Scan(Type microserviceType)
+	public static MicroViewManifest Scan(MicroserviceAttribute serviceAttribute, Type microserviceType)
 	{
 		var allTypes = microserviceType.Assembly.GetTypes();
 		var matchingTypes = allTypes.Where(t =>
@@ -72,6 +72,7 @@ public static class MicroViewHelper
 				return new MicroViewEntry
 				{
 					Name = attr.ViewName,
+					AppName = ViewDescriptor.GetAppName(serviceAttribute.MicroserviceName, attr.ViewName),
 					Slot = attr.UIPath,
 					Path = $"admin/views/{attr.UIPath}/{attr.ViewName}",
 					ViewDescriptor = new ViewDescriptor
@@ -79,6 +80,7 @@ public static class MicroViewHelper
 						ViewName = attr.ViewName,
 						Slot = attr.UIPath,
 						SourcePath = attr.SourcePath,
+						AppName = ViewDescriptor.GetAppName(serviceAttribute.MicroserviceName, attr.ViewName),
 						Type = type
 					}
 				};

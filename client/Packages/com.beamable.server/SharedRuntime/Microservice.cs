@@ -45,7 +45,7 @@ COPY ./{srcPath} {view.WorkingDir}
 # build the distro
 WORKDIR {view.WorkingDir}/app~
 RUN npm install
-RUN npm run build
+RUN view_dist_path={view.WorkingDir}/bundle.js output_name={view.AppName} npm run build
 ";
 		}
 

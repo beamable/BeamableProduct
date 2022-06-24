@@ -24,6 +24,7 @@ namespace Beamable.Microservices
 
 					proc.StartInfo.Arguments = $"run dev";
 					proc.StartInfo.EnvironmentVariables["view_dist_path"] = $"{view.WorkingDir}/bundle.js";
+					proc.StartInfo.EnvironmentVariables["output_name"] = view.AppName;
 					// Configure the process using the StartInfo properties.
 					proc.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 					proc.EnableRaisingEvents = true;

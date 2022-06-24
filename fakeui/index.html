@@ -68,19 +68,24 @@
                 })).json();
                 console.log(manifest);
 
-                var componentUrl = `${baseUrl}/${manifest.Views[0].Path}`;
+                // var componentUrl = `${baseUrl}/${manifest.Views[1].Path}`;
 
-                var source = await (await fetch(componentUrl, {
+                loadMicrofrontEnd('#mountSite1', manifest.Views[0])
+                loadMicrofrontEnd('#mountSite2', manifest.Views[1])
+                async function loadMicrofrontEnd(domSelector, view) {
+                    var componentUrl = `${baseUrl}/${view.Path}`
+                    console.log('loading', componentUrl)
+                    var source = await (await fetch(componentUrl, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${auth}`,
                         'X-DE-SCOPE': `${cid}.${pid}`
                     }
                 })).json();
-                console.log(source);
+                // console.log(source);
 
                 const scriptElement = document.createElement("script");
-                var mountSite = document.querySelector('#mountSite');
+                var mountSite = document.querySelector(domSelector);
 
                 const wrapperScript = document.createElement("script");
                 wrapperScript.src = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
@@ -90,11 +95,12 @@
 
                 // wait for the component to load.
                 setTimeout( () => {
-                    console.log(widget);
+                    // console.log(widget);
                     mountSite.innerHTML = ''; // clear
-                    var props = {}
-                    new widget({target:mountSite, props});
+                    window[view.AppName](mountSite);
                 }, 0)
+                }
+                
 
                 // TODO: There is an issue, that scripts could be intentional malicious in a marketplace scenario. We'd want to make sure that a microfront-end CANNOT access anything beyond its own scope. http://jsfiddle.net/agoywobt/ this becomes a classic javascript security game of whack-ah-mole. 
             })();
@@ -111,7 +117,21 @@
                         box-shadow: 0px 0px 12px 4px rgba(0,0,0,.3);
                         padding: 12px;
                         margin: 12px;">
-                <div id="mountSite">Loading...</div>
+                <div id="mountSite1">Loading...</div>
+            </div>
+            <div>
+                And now we are back on the main page
+            </div>
+        </div>
+        <div>
+            <div>
+                The grey element is injected
+            </div>
+            <div style="background-color: lightgrey; 
+                        box-shadow: 0px 0px 12px 4px rgba(0,0,0,.3);
+                        padding: 12px;
+                        margin: 12px;">
+                <div id="mountSite2">Loading...</div>
             </div>
             <div>
                 And now we are back on the main page

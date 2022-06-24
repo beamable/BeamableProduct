@@ -307,7 +307,7 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-         Views = MicroViewHelper.Scan(MicroserviceType);
+         Views = MicroViewHelper.Scan(_serviceAttribute, MicroserviceType);
 
          var viewRoutes = MicroViewHelper.BuildViewRoutes(_serviceAttribute, MicroserviceType, Views);
 

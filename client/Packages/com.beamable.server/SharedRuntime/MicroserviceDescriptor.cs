@@ -50,6 +50,11 @@ namespace Beamable.Server.Editor
 		public Type Type;
 		public string ViewName;
 		public string SourcePath;
+		public string AppName;
+
+		public static string GetAppName(string service, string viewName) =>
+			// TODO: there are absolutely possibilies for invalid javascript bundle names :/
+			$"micro_front_end_{service}_{viewName}".Replace("-", "_").Replace(".", "_");
 
 		public MicroView CreateInstance()
 		{

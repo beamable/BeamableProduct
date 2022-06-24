@@ -241,6 +241,7 @@ namespace Beamable.Server.Editor
 								Type = possibleViewType,
 								Slot = viewAttr.UIPath,
 								SourcePath = viewAttr.SourcePath,
+								AppName = ViewDescriptor.GetAppName(serviceAttribute.MicroserviceName, viewAttr.ViewName),
 								ViewName = viewAttr.ViewName
 							});
 						}
