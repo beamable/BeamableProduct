@@ -150,7 +150,7 @@ namespace Beamable.Server.Generator
 			targetUnit.Namespaces.Add(samples);
 
 			// need to scan and get methods.
-			var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+			var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			var allParameterTypes = new HashSet<Type>();
 			foreach (var method in allMethods)
 			{
