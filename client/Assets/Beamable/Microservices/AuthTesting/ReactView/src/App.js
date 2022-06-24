@@ -31,17 +31,11 @@ class App extends React.Component {
               <span> Add It Up </span>
             </button>
           </header>
+          <div className="turkey">
+            turkey
+          </div>
         </div>
     )
   }
 }
-
-//
-// function App() {
-//   var sum = 0
-//   return (
-
-//   );
-// }
-
 export default App;

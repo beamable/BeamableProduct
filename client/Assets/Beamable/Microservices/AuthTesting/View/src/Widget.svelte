@@ -15,8 +15,10 @@
     }
 
 </script>
-<div>
-    Sum {world}
+<div class="x">
+    <div class="y">
+        Sum {world}
+    </div>
     <button on:click={doop}>
         Multiply
     </button>
@@ -27,3 +29,8 @@
     <Doodad name="test1" bind:value={a}/>
     <Doodad name="test2" bind:value={b}/>
 </div>
+<style>
+    #turkey {
+        color: blue;
+    }
+</style>
