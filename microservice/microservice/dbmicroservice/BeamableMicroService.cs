@@ -152,6 +152,11 @@ namespace Beamable.Server
       };
 
       private int _connectionAttempt = 0;
+      
+      /// <summary>
+      /// We need to guarantee <see cref="ResolveCustomInitializationHook"/> only gets run once when we <see cref="SetupWebsocket"/>.
+      /// </summary>
+      private bool _ranCustomUserInitializationHooks = false;
 
       public BeamableMicroService(IConnectionProvider socketProvider=null, IContentResolver contentResolver=null)
       {
@@ -231,7 +236,7 @@ namespace Beamable.Server
          var socket = await _webSocketPromise;
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
-         _socketDaemen = SocketDaemon.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
+         _socketDaemen = MicroserviceAuthenticationDaemon.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
 
          var setupWebsocketTask = SetupWebsocket(socket);
          setupWebsocketTask.Wait();
@@ -239,7 +244,10 @@ namespace Beamable.Server
 
       public void RunForever()
       {
-         AppDomain.CurrentDomain.ProcessExit += async (sender, args) => await OnShutdown(sender, args);
+         AppDomain.CurrentDomain.ProcessExit += async (sender, args) =>
+         {
+            await OnShutdown(sender, args);
+         };
 
          CancellationTokenSource cancelSource = new CancellationTokenSource();
          cancelSource.Token.WaitHandle.WaitOne();
@@ -297,7 +305,7 @@ namespace Beamable.Server
          }
 
          // stop the daemon from trying to re-authenticate
-         _serviceShutdownTokenSource.Cancel();
+         MicroserviceAuthenticationDaemon.KillAuthThread(_serviceShutdownTokenSource);
          await _socketDaemen;
 
          // close the connection itself
@@ -344,11 +352,17 @@ namespace Beamable.Server
 
          try
          {
-            Interlocked.Increment(ref _socketRequesterContext.AuthorizationCounter);
+            MicroserviceAuthenticationDaemon.WakeAuthThread(ref _socketRequesterContext.AuthorizationCounter);
             await _requester.WaitForAuthorization();
 
-            // Custom Initialization hook for C#MS --- will terminate MS user-code throws
-            await ResolveCustomInitializationHook();
+            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+            if (!_ranCustomUserInitializationHooks)
+            {
+               await ResolveCustomInitializationHook();
+               _ranCustomUserInitializationHooks = true;
+            }
+            
 
             await ProvideService(QualifiedName);
 
@@ -363,6 +377,8 @@ namespace Beamable.Server
          }
 
       }
+
+      
 
       /// <summary>
       /// Handles custom initialization hooks. Makes the following assumptions:

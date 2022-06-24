@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Microservices now properly log exceptions that happen during its initialization
+- Issue in Microservices re-auth flow that caused high CPU utilization unnecessarily
 
 ## [1.2.3]
 ### Added
