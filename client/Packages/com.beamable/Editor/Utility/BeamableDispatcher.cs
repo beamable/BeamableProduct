@@ -29,12 +29,17 @@ namespace Beamable.Editor
 				yield return new WaitForWork(workQueue);
 				if (_forceStop) break;
 
-				var pendingWork = new Queue<Action>(workQueue);
-				workQueue.Clear();
+				Queue<Action> pendingWork;
+				lock (workQueue)
+				{
+					pendingWork = new Queue<Action>(workQueue);
+					workQueue.Clear();
+				}
 				foreach (var workItem in pendingWork)
 				{
 					try
 					{
+						Debug.Log("Doing work");
 						workItem?.Invoke();
 					}
 					catch (Exception ex)
@@ -87,7 +92,10 @@ namespace Beamable.Editor
 			if (_forceStop) throw new Exception("Cannot schedule work, because the scheduler has been stopped.");
 			if (_workQueues.TryGetValue(queueName, out var queue))
 			{
-				queue.Enqueue(work);
+				lock (queue)
+				{
+					queue.Enqueue(work);
+				}
 			}
 			else
 			{
