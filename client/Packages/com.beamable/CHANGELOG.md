@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 - The Beamable host URL is no longer sourced from `config-defaults.txt`. Instead, it comes from the `BeamableEnvironment` class. 
 
+## [1.2.4]
+no changes
+
 ## [1.2.3]
 ### Changed
 - Content query strings are no longer case sensitive
