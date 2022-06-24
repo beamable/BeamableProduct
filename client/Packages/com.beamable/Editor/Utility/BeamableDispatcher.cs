@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace Beamable.Editor
 {
+	/// <summary>
+	/// The dispatcher allows you to enqueue work to happen on the main unity thread without waiting for editor render frames.
+	/// Use the <see cref="Schedule(System.Action)"/> method to schedule work. 
+	/// </summary>
 	public class BeamableDispatcher : IBeamableDisposable
 	{
 		public const string DEFAULT_QUEUE_NAME = "beamable";
@@ -59,6 +63,13 @@ namespace Beamable.Editor
 			_runningSchedulers.Remove(queueName);
 		}
 
+		/// <summary>
+		/// Begin a new work queue.
+		/// There is always a default work queue, but if you'd like to start more for load reasons, use this.
+		/// You can stop a work queue by using the <see cref="StopAcceptingWork"/> method
+		/// </summary>
+		/// <param name="queueName">a unique name for your work queue</param>
+		/// <returns>true if the work queue was spawned, or false if the queue name is already running.</returns>
 		public bool Start(string queueName)
 		{
 			if (_workQueues.ContainsKey(queueName))
@@ -73,6 +84,12 @@ namespace Beamable.Editor
 			return true;
 		}
 
+		/// <summary>
+		/// Stop a work queue.
+		/// This will not cancel pending work on the queue, but will disallow new work to be scheduled. Existing work will execute, and then the work queue will stop.
+		/// </summary>
+		/// <param name="queueName">A queue name that was passed to <see cref="Start"/></param>
+		/// <returns>true if the queue was stopped, or false if there was no queue by the given name</returns>
 		public bool StopAcceptingWork(string queueName)
 		{
 			if (!_workQueues.ContainsKey(queueName))
@@ -84,6 +101,11 @@ namespace Beamable.Editor
 			return true;
 		}
 
+		/// <summary>
+		/// Schedule a piece of work to happen on the main Unity thread.
+		/// This method will automatically place the work on the default queue.
+		/// </summary>
+		/// <param name="work">The piece of work to execute later.</param>
 		public void Schedule(Action work) => Schedule(DEFAULT_QUEUE_NAME, work);
 
 		/// <summary>
@@ -122,7 +144,7 @@ namespace Beamable.Editor
 			return Promise.Success;
 		}
 
-		public class WaitForWork : CustomYieldInstruction
+		private class WaitForWork : CustomYieldInstruction
 		{
 			private readonly Queue<Action> _workQueue;
 
