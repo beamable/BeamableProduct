@@ -26,7 +26,10 @@ namespace Beamable.Editor
 		{
 			while (_workQueues.ContainsKey(queueName) && !_forceStop)
 			{
+				// Debug.Log("Scheduler waiting for work");
 				yield return new WaitForWork(workQueue);
+				// Debug.Log("Scheduler woke up");
+
 				if (_forceStop) break;
 
 				Queue<Action> pendingWork;
@@ -35,11 +38,13 @@ namespace Beamable.Editor
 					pendingWork = new Queue<Action>(workQueue);
 					workQueue.Clear();
 				}
+
+				// Debug.Log("Scheduler has " + pendingWork.Count + " things to do");
 				foreach (var workItem in pendingWork)
 				{
 					try
 					{
-						Debug.Log("Doing work");
+						// Debug.Log("Doing work");
 						workItem?.Invoke();
 					}
 					catch (Exception ex)
@@ -49,6 +54,7 @@ namespace Beamable.Editor
 					}
 				}
 			}
+			// Debug.Log("Scheduler exited");
 
 			_runningSchedulers.Remove(queueName);
 		}

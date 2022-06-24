@@ -22,8 +22,7 @@ namespace Beamable.Editor.UI.Model
 				if (value == _isRunning) return;
 				_isRunning = value;
 				// XXX: If OnIsRunningChanged is mutated at before delayCall triggers, non-deterministic behaviour could occur
-				// EditorApplication.delayCall += () => OnIsRunningChanged?.Invoke(value);
-				BeamEditorContext.Default.Dispatcher.Schedule();
+				BeamEditorContext.Default.Dispatcher.Schedule(() => OnIsRunningChanged?.Invoke(value));
 			}
 		}
 
