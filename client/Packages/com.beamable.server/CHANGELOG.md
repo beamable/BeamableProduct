@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Microservices now properly log exceptions that happen during its initialization
 - Microservice process commands now use the `BeamableDispatcher` instead of the `EditorApplication.delayCall`. This allows you to background Unity during long running microservice actions.
+- Issue in Microservices re-auth flow that caused high CPU utilization unnecessarily
 
 ## [1.2.3]
 ### Added
