@@ -1,15 +1,18 @@
 using System.CommandLine;
 using System.CommandLine.Binding;
+using System.Diagnostics;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
+using Serilog.Events;
 
 namespace cli;
 
 public interface IAppContext
 {
 	public bool IsDryRun { get; }
-	public bool IsVerbose { get; }
+	public LogEventLevel LogLevel { get; }
 	public string? Cid { get; }
 	public string? Pid { get; }
 	public string? Host { get; }
@@ -36,11 +39,11 @@ public class DefaultAppContext : IAppContext
 	private readonly PlatformOption _platformOption;
 	private readonly AccessTokenOption _accessTokenOption;
 	private readonly RefreshTokenOption _refreshTokenOption;
-	private readonly VerboseOption _verboseOption;
+	private readonly LogOption _logOption;
 	private readonly UsernameOption _usernameOption;
 	private readonly ConfigService _configService;
+	private readonly CliEnvironment _environment;
 	public bool IsDryRun { get; private set; }
-	public bool IsVerbose { get; private set; }
 
 	public IAccessToken Token => _token;
 	private CliToken _token;
@@ -52,10 +55,11 @@ public class DefaultAppContext : IAppContext
 	public string? Host => _host;
 
 	public string WorkingDirectory { get; private set; }
+	public LogEventLevel LogLevel { get; private set; }
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
-									AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, VerboseOption verboseOption,
-	                         ConfigService configService)
+									AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
+	                         ConfigService configService, CliEnvironment environment)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -63,14 +67,26 @@ public class DefaultAppContext : IAppContext
 		_platformOption = platformOption;
 		_accessTokenOption = accessTokenOption;
 		_refreshTokenOption = refreshTokenOption;
-		_verboseOption = verboseOption;
+		_logOption = logOption;
 		_configService = configService;
+		_environment = environment;
 	}
 
 	public void Apply(BindingContext bindingContext)
 	{
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
-		IsVerbose = bindingContext.ParseResult.GetValueForOption(_verboseOption);
+		
+		// Configure log level from option
+		{
+			var logLevelOption = bindingContext.ParseResult.GetValueForOption(_logOption);
+			if (!string.IsNullOrEmpty(logLevelOption))
+				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevelOption, true);
+			else if (!string.IsNullOrEmpty(_environment.LogLevel))
+				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), _environment.LogLevel, true);
+			else
+				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Warning;
+		}
+		
 		WorkingDirectory = Directory.GetCurrentDirectory();
 		if (!TryGetSetting(out _cid, bindingContext, _cidOption))
 		{
@@ -111,10 +127,18 @@ public class DefaultAppContext : IAppContext
 
 	private bool TryGetSetting(out string? value, BindingContext context, ConfigurableOption option, string? defaultValue=null)
 	{
+		// Try to get from option
 		value = context.ParseResult.GetValueForOption(option);
+		
+		// Try to get from config service
 		if (value == null)
-		{
 			value = _configService.GetConfigString(option.OptionName, defaultValue);
+
+		// Try to get from environment service.
+		if (string.IsNullOrEmpty(value))
+		{
+			_ = _environment.TryGetFromOption(option, out value);
+			BeamableLogger.Log($"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
 		}
 
 		var hasValue = !string.IsNullOrEmpty(value);
