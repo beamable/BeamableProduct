@@ -40,6 +40,7 @@ namespace Beamable.Editor.UI.Model
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+		public override bool IsArchived => Config.Archived;
 		public StorageConfigurationEntry Config { get; protected set; }
 
 		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
@@ -124,6 +125,28 @@ namespace Beamable.Editor.UI.Model
 				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Storages.Count - 1, ServiceType.StorageObject);
 				OnSortChanged?.Invoke();
 			}, isLast);
+			
+			evt.menu.AppendSeparator();
+			if (Config.Archived)
+			{
+				evt.menu.AppendAction("Unarchive", _ => Unarchive());
+			}
+			else
+			{
+				evt.menu.AppendAction("Archive", _ => Archive());
+			}
+		}
+
+		public void Archive()
+		{
+			Config.Archived = true;
+			MicroservicesDataModel.Instance.OnServiceArchived?.Invoke(this);
+		}
+
+		public void Unarchive()
+		{
+			Config.Archived = false;
+			MicroservicesDataModel.Instance.OnServiceUnarchived?.Invoke(this);
 		}
 
 		public override void Refresh(IDescriptor descriptor)
@@ -134,6 +157,7 @@ namespace Beamable.Editor.UI.Model
 			var oldBuilder = ServiceBuilder;
 			ServiceBuilder = serviceRegistry.GetStorageBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
+			Config = MicroserviceConfiguration.Instance.GetStorageEntry(Name);
 		}
 	}
 }
