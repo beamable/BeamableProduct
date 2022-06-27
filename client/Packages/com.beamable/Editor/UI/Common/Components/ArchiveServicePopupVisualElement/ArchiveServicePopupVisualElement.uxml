@@ -11,6 +11,7 @@
             <engine:Label name="contentLabelTop"/>
 			<engine:Label name="contentLabelBottom"/>
         </engine:VisualElement>
+		<beamable:LabeledCheckboxVisualElement name="checkbox" flip="True" flip-icon="True"/>
         <engine:VisualElement name="buttonsVisualElement">
             <beamable:GenericButtonVisualElement name="cancelButton" text="Cancel" type ="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="okButton" text="OK"/>
