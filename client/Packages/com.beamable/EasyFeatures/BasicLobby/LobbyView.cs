@@ -22,13 +22,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			bool IsVisible { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
-			bool IsServerReady { get; }
 			bool IsMatchStarting { get; }
 			Promise LeaveLobby();
 			void SetPlayerReady(bool value);
 			void SetCurrentSelectedPlayer(int slotIndex);
 			void UpdateLobby(string name, string description);
 			Promise StartMatch();
+			bool IsServerReady();
 		}
 
 		[Header("View Configuration")]
@@ -95,7 +95,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			StartButton.gameObject.SetActive(System.IsPlayerAdmin);
 
 			// Buttons' interactivity
-			StartButton.interactable = System.IsServerReady;
+			StartButton.interactable = System.IsServerReady();
 			BackButton.interactable = !System.IsMatchStarting;
 			NotReadyButton.interactable = !System.IsMatchStarting;
 			LeaveButton.interactable = !System.IsMatchStarting;

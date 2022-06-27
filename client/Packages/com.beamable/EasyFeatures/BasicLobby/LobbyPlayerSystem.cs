@@ -2,7 +2,6 @@
 using Beamable.Experimental.Api.Lobbies;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -19,7 +18,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public bool IsVisible { get; set; }
 		public bool IsPlayerAdmin => BeamContext.Lobby.Host == BeamContext.PlayerId.ToString();
 		public bool IsPlayerReady => BeamContext.Lobby.GetCurrentPlayer(BeamContext.PlayerId.ToString()).IsReady();
-		public bool IsServerReady => false;
 		public bool IsMatchStarting => false;
 		public int CurrentPlayers => SlotsData.Count(slot => slot.PlayerId != string.Empty);
 
@@ -56,21 +54,24 @@ namespace Beamable.EasyFeatures.BasicLobby
 				new List<Tag> {new Tag(LobbyExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
 		}
 
-		public async Task PassLeadership()
+		public async Promise PassLeadership()
 		{
-			// TODO: invoke changing leadership in lobby
-			await Promise.Success.WaitForSeconds(2);
+			if (CurrentlySelectedPlayerIndex != null)
+			{
+				await BeamContext.Lobby.Update(BeamContext.Lobby.Id, BeamContext.Lobby.Restriction,
+				                               newHost: PlayerIds[CurrentlySelectedPlayerIndex.Value]);
+			}
 		}
 
 		public void SetCurrentSelectedPlayer(int slotIndex)
 		{
-			// LobbyPlayer player = BeamContext.Lobby.Players[slotIndex];
+			LobbyPlayer player = BeamContext.Lobby.Players[slotIndex];
 
 			// We don't want to interact with card for self
-			// if (player.playerId == BeamContext.PlayerId.ToString())
-			// {
-			// 	return false;
-			// }
+			if (player.playerId == BeamContext.PlayerId.ToString())
+			{
+				return;
+			}
 
 			if (CurrentlySelectedPlayerIndex == slotIndex)
 			{
@@ -82,19 +83,22 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		public void UpdateLobby(string name, string description)
+		public async void UpdateLobby(string name, string description)
 		{
-			Lobby lobby = BeamContext.Lobby.State.Copy();
-			lobby.name = name;
-			lobby.description = description;
-			// TODO: invoke method for update after it will be created
-			// BeamContext.Lobby.State.Set(lobby); // This one works locally
+			await BeamContext.Lobby.Update(BeamContext.Default.Lobby.Id, BeamContext.Default.Lobby.Restriction, name,
+			                               description);
 		}
 
 		public async Promise StartMatch()
 		{
 			// TODO: Implement match start here 
 			await Promise.Success.WaitForSeconds(3);
+		}
+
+		public bool IsServerReady()
+		{
+			int counter = PlayerReadiness.Count(ready => ready);
+			return counter == BeamContext.Default.Lobby.MaxPlayers;
 		}
 
 		public virtual void RegisterLobbyPlayers(List<LobbyPlayer> data)

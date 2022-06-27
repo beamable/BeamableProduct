@@ -42,7 +42,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			var items = new List<PoolableScrollView.IItem>();
 			for (var i = 0; i < _entriesList.Count; i++)
 			{
-				var data = _entriesList[i];
+				LobbiesListEntryPresenter.ViewData data = _entriesList[i];
 				var rankEntryPoolData = new LobbiesListEntryPresenter.PoolData
 				{
 					ViewData = data, Index = i, Height = 100.0f // TODO: expose this somewhere in inspector

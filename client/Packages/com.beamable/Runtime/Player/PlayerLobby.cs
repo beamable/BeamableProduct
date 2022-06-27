@@ -121,17 +121,16 @@ namespace Beamable.Player
 		{
 			return _lobbyApi.FindLobbies();
 		}
-		
+
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
-		public async Promise Create(
-			string name,
-			LobbyRestriction restriction,
-			string gameTypeId,
-			string description = null,
-			List<Tag> playerTags = null,
-			int? maxPlayers = null,
-			int? passcodeLength = null,
-			List<string> statsToInclude = null)
+		public async Promise Create(string name,
+		                            LobbyRestriction restriction,
+		                            string gameTypeId,
+		                            string description = null,
+		                            List<Tag> playerTags = null,
+		                            int? maxPlayers = null,
+		                            int? passcodeLength = null,
+		                            List<string> statsToInclude = null)
 		{
 			State = await _lobbyApi.CreateLobby(
 				name,
@@ -145,25 +144,42 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
-		public async Promise Create(
-		  string name,
-		  LobbyRestriction restriction,
-		  SimGameTypeRef gameTypeRef = null,
-		  string description = null,
-		  List<Tag> playerTags = null,
-		  int? maxPlayers = null,
-		  int? passcodeLength = null,
-		  List<string> statsToInclude = null)
+		public async Promise Create(string name,
+		                            LobbyRestriction restriction,
+		                            SimGameTypeRef gameTypeRef = null,
+		                            string description = null,
+		                            List<Tag> playerTags = null,
+		                            int? maxPlayers = null,
+		                            int? passcodeLength = null,
+		                            List<string> statsToInclude = null)
 		{
 			State = await _lobbyApi.CreateLobby(
-			  name,
-			  restriction,
-			  gameTypeRef,
-			  description,
-			  playerTags,
-			  maxPlayers,
-			  passcodeLength,
-			  statsToInclude);
+				name,
+				restriction,
+				gameTypeRef,
+				description,
+				playerTags,
+				maxPlayers,
+				passcodeLength,
+				statsToInclude);
+		}
+		
+		/// <inheritdoc cref="ILobbyApi.UpdateLobby"/>
+		public async Promise Update(string lobbyId,
+		                            LobbyRestriction restriction,
+		                            string name = null,
+		                            string description = null,
+		                            string gameType = null,
+		                            int? maxPlayers = null,
+		                            string newHost = null)
+		{
+			State = await _lobbyApi.UpdateLobby(lobbyId, 
+			                                    restriction,
+			                                    name, 
+			                                    description, 
+			                                    gameType, 
+			                                    maxPlayers,
+			                                    newHost);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.JoinLobby"/>
