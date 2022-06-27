@@ -19,6 +19,7 @@ namespace Beamable.Tests.Content.Serialization.Support
 		public string Version { get; set; }
 		public string[] Tags { get; set; }
 		public string ManifestID { get; }
+		public long LastChanged { get; set; }
 
 		public void SetIdAndVersion(string id, string version)
 		{

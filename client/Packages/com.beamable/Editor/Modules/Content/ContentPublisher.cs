@@ -78,7 +78,8 @@ namespace Beamable.Editor.Content
 				Checksum = _io.Checksum(content),
 				Id = content.Id,
 				Content = content,
-				Tags = content.Tags
+				Tags = content.Tags,
+				LastChanged = content.LastChanged
 			};
 
 			return definition;
@@ -139,7 +140,8 @@ namespace Beamable.Editor.Content
 					Uri = entry.uri,
 					Version = entry.version,
 					Visibility = entry.visibility,
-					Type = "content"
+					Type = "content",
+					LastChanged = entry.lastChanged
 				};
 				var key = reference.Key;
 

@@ -12,12 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
+- `Latest update` field for content item in Content Manager.
+- Content items sort option by `Recently updated` in Content Manager.
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 - The Beamable host URL is no longer sourced from `config-defaults.txt`. Instead, it comes from the `BeamableEnvironment` class. 
+
+## [1.2.4]
+no changes
+
+## [1.2.3]
+### Changed
+- Content query strings are no longer case sensitive
 
 ## [1.2.4]
 no changes
