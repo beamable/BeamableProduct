@@ -1,4 +1,5 @@
-﻿using Beamable.Server.Editor;
+﻿using Beamable.Editor.UI.Components;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
+using static Beamable.Common.Constants.Features.Archive;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -133,7 +136,13 @@ namespace Beamable.Editor.UI.Model
 			}
 			else
 			{
-				evt.menu.AppendAction("Archive", _ => Archive());
+				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
+				{
+					var archiveServicePopup = new ArchiveServicePopupVisualElement();
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility(ARCHIVE_WINDOW_HEADER, archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.onClose += () => popupWindow.Close();
+					archiveServicePopup.onConfirm += Archive;
+				});
 			}
 		}
 
