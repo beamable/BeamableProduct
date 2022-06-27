@@ -13,9 +13,18 @@ public class CliToken : IAccessToken
 		Pid = pid;
 		ExpiresAt = DateTime.FromFileTimeUtc(response?.expires_in ?? 0);
 	}
-	public string Token { get; }
-	public string RefreshToken { get; }
+
+	public CliToken(string accessToken, string refreshToken, string cid, string pid)
+	{
+		Token = accessToken;
+		RefreshToken = refreshToken;
+		Cid = cid;
+		Pid = pid;
+		ExpiresAt = DateTime.Now + TimeSpan.FromMinutes(3);
+	}
+	public string Token { get; set; }
+	public string RefreshToken { get; set; }
 	public DateTime ExpiresAt { get; }
-	public string Cid { get; }
-	public string Pid { get; }
+	public string Cid { get; set; }
+	public string Pid { get; set; }
 }

@@ -1,4 +1,4 @@
-﻿namespace Beamable.Editor
+namespace Beamable.Common.Runtime
 {
 	public interface ISearchableElement
 	{

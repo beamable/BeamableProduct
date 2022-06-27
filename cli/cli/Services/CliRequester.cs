@@ -9,30 +9,39 @@ namespace cli;
 
 public class CliRequester : IBeamableRequester
 {
-	private const string BASE_PATH = "https://dev.api.beamable.com";
-	public IAccessToken AccessToken => Token;
-	private CliToken Token { get; set; }
-	private string Pid { get; set; }
-	private string Cid { get; set; }
+	private readonly IAppContext _ctx;
+	public IAccessToken AccessToken => _ctx.Token;
+	private string Pid => AccessToken.Pid;
+	private string Cid => AccessToken.Cid;
 
-	public CliRequester()
+	public CliRequester(IAppContext ctx)
 	{
-		Token = null;
+		_ctx = ctx;
 	}
-
-	public void UpdateToken(TokenResponse response) =>
-		Token = new CliToken(response, Cid, Pid);
-
 	public async Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		Console.WriteLine($"{method} call: {uri}");
-		using HttpClient client = GetClient(includeAuthHeader, Token?.Pid ?? Pid, Token?.Cid ?? Cid, Token);
-		var request = PrepareRequest(method, uri, body);
+		if (_ctx.IsVerbose)
+		{
+			Console.WriteLine($"{method} call: {uri}");
+		}
 
-		Console.WriteLine($"Calling: {request}");
+		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken);
+		var request = PrepareRequest(method, _ctx.Host, uri, body);
+
+		if (_ctx.IsVerbose)
+			Console.WriteLine($"Calling: {request}");
+
+		if (_ctx.IsDryRun)
+		{
+			Console.WriteLine($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
+			return default(T);
+		}
+
 		var result = await client.SendAsync(request);
-		Console.WriteLine($"RESULT: {result}");
+
+		if (_ctx.IsVerbose)
+			Console.WriteLine($"RESULT: {result}");
 
 		T parsed = default(T);
 		if (result.Content != null)
@@ -54,9 +63,9 @@ public class CliRequester : IBeamableRequester
 		return parsed;
 	}
 
-	private static HttpRequestMessage PrepareRequest(Method method, string uri, object body = null)
+	private static HttpRequestMessage PrepareRequest(Method method, string? basePath, string uri, object body = null)
 	{
-		var request = new HttpRequestMessage(FromMethod(method), BASE_PATH + uri);
+		var request = new HttpRequestMessage(FromMethod(method), basePath + uri);
 
 		if (body == null)
 		{
@@ -76,11 +85,11 @@ public class CliRequester : IBeamableRequester
 		return request;
 	}
 
-	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, CliToken? token)
+	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, IAccessToken? token)
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
-		
+
 		if (!string.IsNullOrEmpty(cid))
 		{
 			client.DefaultRequestHeaders.Add("X-KS-CLIENTID", cid);
@@ -121,9 +130,4 @@ public class CliRequester : IBeamableRequester
 		};
 	}
 
-	public void SetPidAndCid(string cid, string pid)
-	{
-		Cid = cid;
-		Pid = pid;
-	}
 }
