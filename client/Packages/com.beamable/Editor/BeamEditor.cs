@@ -289,6 +289,7 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
+			BeamEditorContextDependencies.AddSingleton<BeamableDispatcher>();
 			BeamEditorContextDependencies.AddTransient(() => BeamableEnvironment.Data);
 			BeamEditorContextDependencies.AddSingleton<EnvironmentService>();
 
@@ -437,6 +438,7 @@ namespace Beamable
 		public Promise InitializePromise { get; private set; }
 		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
+		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 
 		public CustomerView CurrentCustomer;
 		public RealmView CurrentRealm;

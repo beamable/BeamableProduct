@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
+- `BeamableDispatcher` for editor scenarios to manage registering callbacks on the Unity Editor thread without needing an editor render frame.
 - `Latest update` field for content item in Content Manager.
 - Content items sort option by `Recently updated` in Content Manager.
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
