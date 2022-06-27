@@ -13,10 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
 - `BeamableDispatcher` for editor scenarios to manage registering callbacks on the Unity Editor thread without needing an editor render frame.
+- `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
+- The Beamable host URL is no longer sourced from `config-defaults.txt`. Instead, it comes from the `BeamableEnvironment` class. 
+
+## [1.2.4]
+no changes
 
 ## [1.2.3]
 ### Changed

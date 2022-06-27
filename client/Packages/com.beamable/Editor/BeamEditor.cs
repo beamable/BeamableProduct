@@ -17,6 +17,7 @@ using Beamable.Editor.Alias;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
 using Beamable.Editor.Realms;
@@ -290,6 +291,8 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
 			BeamEditorContextDependencies.AddSingleton<BeamableDispatcher>();
+			BeamEditorContextDependencies.AddTransient(() => BeamableEnvironment.Data);
+			BeamEditorContextDependencies.AddSingleton<EnvironmentService>();
 
 			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			BeamEditorContextDependencies.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
@@ -477,7 +480,6 @@ namespace Beamable
 			ConfigDatabase.TryGetString("alias", out var alias);
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
-			var platform = ConfigDatabase.GetString("platform");
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
@@ -493,7 +495,7 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
 			requester.Pid = pid;
-			requester.Host = platform;
+			requester.Host = BeamableEnvironment.ApiUrl;
 			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 			async Promise Initialize()
