@@ -219,7 +219,7 @@ namespace Beamable.Common.Content
 		}
 
 		public string Created { get; private set; }
-		public string LastChanged { get; set; }
+		public long LastChanged { get; set; }
 
 		/// <summary>
 		/// Set the &id and &version

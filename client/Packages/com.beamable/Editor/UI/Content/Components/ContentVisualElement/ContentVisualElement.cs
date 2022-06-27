@@ -116,7 +116,7 @@ namespace Beamable.Editor.Content.Components
 			_nameTextField.value = ContentItemDescriptor.Name;
 			_pathLabel.text = ContentItemDescriptor.ContentType.ShortName;
 			_tagListVisualElement.TagDescriptors = ContentItemDescriptor.GetAllTags().ToList();
-			_lastChanged.text = ContentItemDescriptor.LastChanged; 
+			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged; 
 			// _tagListVisualElement.ContentItemDescriptor = _contentItemDescriptor;
 			_tagListVisualElement.Refresh();
 
@@ -182,7 +182,7 @@ namespace Beamable.Editor.Content.Components
 			{
 				_contentItemDescriptor.RefreshLatestUpdate();
 			}
-			_lastChanged.text = ContentItemDescriptor.LastChanged;
+			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged;
 		}
 
 		/// <summary>

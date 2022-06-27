@@ -21,12 +21,12 @@ namespace Beamable.Editor.Content.SaveRequest
 		public string Id;
 		public string Version;
 		public string Uri;
-		public string Created;
+		public long Created;
 		public string TypeName => Id.Substring(0, Id.LastIndexOf('.'));
 		[CanBeNull] public string[] Tags;
 		[CanBeNull] public string Checksum;
 		[CanBeNull] public string Visibility;
-		[CanBeNull] public string LastChanged;
+		public long LastChanged;
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{

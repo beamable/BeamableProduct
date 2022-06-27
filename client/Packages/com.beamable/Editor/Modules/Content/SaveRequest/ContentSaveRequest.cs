@@ -37,7 +37,7 @@ namespace Beamable.Editor.Content.SaveRequest
 		public string Checksum;
 		public ContentObject Content;
 		public string[] Tags;
-		public string LastChanged;
+		public long LastChanged;
 
 		//      public void Serialize(JsonSerializable.IStreamSerializer s)
 		//      {
@@ -88,7 +88,8 @@ namespace Beamable.Editor.Content.SaveRequest
 	[System.Serializable]
 	public class ContentReference
 	{
-		public string id, version, uri, checksum, visibility, lastChanged;
+		public string id, version, uri, checksum, visibility;
+		public long lastChanged;
 		public string[] tags;
 	}
 }

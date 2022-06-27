@@ -225,23 +225,20 @@ namespace Beamable.Editor.Content.Models
 		public HostStatus ServerStatus { get; private set; }
 		public string Id => $"{ContentType.TypeName}.{Name}";
 
-		public string LastChanged
-		{
-			get => string.IsNullOrWhiteSpace(_lastChanged)
-				? string.Empty
-				: DateTimeOffset.FromUnixTimeMilliseconds((long)Convert.ToDouble(_lastChanged)).DateTime
-				                .ToLocalTime()
-				                .ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
-			set => _lastChanged = value; 
-		}
-		private string _lastChanged;
+		public string GetFormattedLastChanged => LastChanged == 0
+			? string.Empty
+			: DateTimeOffset.FromUnixTimeMilliseconds(LastChanged).DateTime
+			                .ToLocalTime()
+			                .ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
+
+		public long LastChanged { get; private set; }
 
 		private LocalContentManifestEntry _localData;
 		private IContentObject _localContent;
 		private ManifestReferenceSuperset _serverData;
 		private List<ContentTagDescriptor> _allTags;
 		private string _localChecksum;
-		private string _serverLastChanged;
+		private long _serverLastChanged;
 
 		public ContentItemDescriptor(IContentObject content, ContentTypeDescriptor typeDescriptor, string assetPath)
 		{
@@ -298,7 +295,7 @@ namespace Beamable.Editor.Content.Models
 				_serverData = reference;
 				ServerStatus = HostStatus.AVAILABLE;
 				ServerTags = new HashSet<string>(reference.Tags);
-				_serverLastChanged = reference.LastChanged ?? reference.Created;
+				_serverLastChanged = reference.LastChanged != 0 ? reference.LastChanged : reference.Created;
 				LastChanged = _serverLastChanged;
 				_allTags = CollectAllTags();
 			}
@@ -359,8 +356,8 @@ namespace Beamable.Editor.Content.Models
 			AssetPath = null;
 			LocalTags = null;
 			_allTags = CollectAllTags();
-			_serverLastChanged = null;
-			LastChanged = null;
+			_serverLastChanged = 0;
+			LastChanged = 0;
 			OnEnriched?.Invoke(this);
 		}
 
@@ -478,7 +475,7 @@ namespace Beamable.Editor.Content.Models
 		
 		public void RefreshLatestUpdate(bool setOriginalLatestUpdate = false)
 		{
-			LastChanged = setOriginalLatestUpdate ? _serverLastChanged : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+			LastChanged = setOriginalLatestUpdate ? _serverLastChanged : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 		}
 
 		private void ContentObject_OnValidationChanged(List<ContentException> exceptions)

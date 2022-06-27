@@ -173,8 +173,8 @@ namespace Beamable.Editor.Content
 		public string uri;
 		public string checksum;
 		public string visibility;
-		public string created;
-		public string lastChanged;
+		public long created;
+		public long lastChanged;
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
@@ -227,7 +227,7 @@ namespace Beamable.Editor.Content
 		public string[] Tags => Content.Tags;
 		public string Version => Content.Version;
 		public string AssetPath;
-		public string LastChanged => Content.LastChanged;
+		public long LastChanged => Content.LastChanged;
 		public IContentObject Content;
 
 	}
