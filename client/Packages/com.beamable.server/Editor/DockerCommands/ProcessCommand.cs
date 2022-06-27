@@ -205,7 +205,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 						_process.OutputDataReceived += (sender, args) =>
 						{
-							EditorApplication.delayCall += () =>
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
 							{
 								try
 								{
@@ -215,11 +215,11 @@ namespace Beamable.Server.Editor.DockerCommands
 								{
 									Debug.LogException(ex);
 								}
-							};
+							});
 						};
 						_process.ErrorDataReceived += (sender, args) =>
 						{
-							EditorApplication.delayCall += () =>
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
 							{
 								try
 								{
@@ -229,7 +229,7 @@ namespace Beamable.Server.Editor.DockerCommands
 								{
 									Debug.LogException(ex);
 								}
-							};
+							});
 						};
 
 						_process.Start();
@@ -320,14 +320,13 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				await DockerCheckTask;
 
-				EditorApplication.delayCall += async () =>
-				{
+				BeamEditorContext.Default.Dispatcher.Schedule(async () => {
 					Debug.Log("Docker Desktop was closed!");
 					DockerNotRunning = true;
 
 					var tempQualifier = await BeamEditorWindow<MicroserviceWindow>.GetFullyInitializedWindow();
 					tempQualifier.RefreshWindowContent();
-				};
+				});
 			};
 
 			return true;

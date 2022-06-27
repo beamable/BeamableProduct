@@ -52,7 +52,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void Init()
 		{
-			EditorApplication.delayCall += () => // put in delayCall because the model needs to be initialized by other windows.
+			BeamEditorContext.Default.Dispatcher.Schedule(() =>
 			{
 				if (_model == null)
 				{
@@ -61,7 +61,7 @@ namespace Beamable.Editor.Microservice.UI
 				_model.DetachLogs(); // take note of the fact that logs are detached...
 				RegisterEvents();
 				Refresh();
-			};
+			});
 		}
 
 
