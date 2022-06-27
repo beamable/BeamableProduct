@@ -12,6 +12,7 @@
           <engine:TextField name="nameTextField"/>
           <engine:Label name="pathLabel"/>
           <beamable:TagListVisualElement name="tagListVisualElement"/>
+          <engine:Label name="lastChanged"/>
       </engine:VisualElement>
 
   </engine:VisualElement>
