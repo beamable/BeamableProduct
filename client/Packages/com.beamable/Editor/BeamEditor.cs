@@ -17,6 +17,7 @@ using Beamable.Editor;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
 using Beamable.Editor.Reflection;
@@ -68,12 +69,15 @@ namespace Beamable
 		static BeamEditor()
 		{
 			Initialize();
+			AssemblyReloadEvents.beforeAssemblyReload += () =>
+			{
+				BeamEditorContext.StopAll().Wait();
+			};
 		}
 
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
@@ -182,18 +186,18 @@ namespace Beamable
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
 			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
 				coreConfiguration.ReflectionSystemPaths
-								 .Where(Directory.Exists)
-								 .ToArray());
+				                 .Where(Directory.Exists)
+				                 .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-																	{
-																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-																	})
-																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-																	.Where(system => system.Enabled)
-																	.ToList();
+			                                                        {
+				                                                        var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+				                                                        return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+			                                                        })
+			                                                        .Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+			                                                        .Where(system => system.Enabled)
+			                                                        .ToList();
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
 
 			// Inject them into the ReflectionCache system in the correct order.
@@ -228,10 +232,10 @@ namespace Beamable
 						var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
 
 						var res = EditorUtility.DisplayDialogComplex("Beamable Assistant",
-																	 "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
-																	 "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
-																	 "No, I'll take my chances and don't bother me about these specific hints anymore.",
-																	 "No, I'll take my chances and don't bother me ever again about any hints.");
+						                                             "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
+						                                             "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
+						                                             "No, I'll take my chances and don't bother me about these specific hints anymore.",
+						                                             "No, I'll take my chances and don't bother me ever again about any hints.");
 
 						if (res == 0)
 						{
@@ -285,9 +289,15 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
+			BeamEditorContextDependencies.AddSingleton<BeamableDispatcher>();
+			BeamEditorContextDependencies.AddTransient(() => BeamableEnvironment.Data);
+			BeamEditorContextDependencies.AddSingleton<EnvironmentService>();
 
 			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			BeamEditorContextDependencies.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+
+			BeamEditorContextDependencies.AddSingleton<ServiceStorage>();
+			EditorReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
@@ -415,6 +425,7 @@ namespace Beamable
 
 			var ctx = new BeamEditorContext();
 			ctx.Init(playerCode, dependencyBuilder);
+			All.Add(ctx);
 			EditorContexts[playerCode] = ctx;
 			return ctx;
 		}
@@ -427,6 +438,7 @@ namespace Beamable
 		public Promise InitializePromise { get; private set; }
 		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
+		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 
 		public CustomerView CurrentCustomer;
 		public RealmView CurrentRealm;
@@ -467,7 +479,6 @@ namespace Beamable
 			ConfigDatabase.TryGetString("alias", out var alias);
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
-			var platform = ConfigDatabase.GetString("platform");
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
@@ -483,7 +494,7 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
 			requester.Pid = pid;
-			requester.Host = platform;
+			requester.Host = BeamableEnvironment.ApiUrl;
 			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 			async Promise Initialize()
@@ -840,7 +851,7 @@ namespace Beamable
 				SaveConfig(alias, pid, null, cid);
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
-											tokenResponse.refresh_token, tokenResponse.expires_in);
+				                            tokenResponse.refresh_token, tokenResponse.expires_in);
 				CurrentRealm = null; // erase the current realm; if there is one..
 				await Login(token, pid);
 				await DoSilentContentPublish(true);
@@ -911,8 +922,8 @@ namespace Beamable
 
 			// we need to remember the last realm the user was on in this game.
 			var hadSelectedPid = EditorPrefHelper
-								 .GetMap(REALM_PREFERENCE)
-								 .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
+			                     .GetMap(REALM_PREFERENCE)
+			                     .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
 
 			if (!hadSelectedPid)
 				existingPid = game.Pid;
@@ -945,9 +956,9 @@ namespace Beamable
 
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
-					  .GetMap(REALM_PREFERENCE)
-					  .Set($"{game.Cid}.{game.Pid}", pid)
-					  .Save();
+			          .GetMap(REALM_PREFERENCE)
+			          .Set($"{game.Cid}.{game.Pid}", pid)
+			          .Save();
 
 			var realm = realms.FirstOrDefault(r => string.Equals(r.Pid, pid));
 			if (CurrentRealm == null || !CurrentRealm.Equals(realm))
@@ -1023,6 +1034,20 @@ namespace Beamable
 		}
 
 		#endregion
+
+		public static async Task StopAll()
+		{
+			foreach (var ctx in All)
+			{
+				await ctx.Stop();
+			}
+		}
+
+		private async Promise Stop()
+		{
+			IsStopped = true;
+			await ServiceScope.Dispose();
+		}
 	}
 
 	[Serializable]

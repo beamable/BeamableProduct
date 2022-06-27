@@ -14,6 +14,7 @@ namespace UnityEngine
       void LogError(Exception ex);
       void LogError(string error);
       void LogError(string error, params object[] args);
+      void LogFormat(string format, params object[] args);
    }
    public class Debug
    {
@@ -33,5 +34,6 @@ namespace UnityEngine
       public static void LogError(string error) => Instance.LogError(error);
 
       public static void LogError(string error, params object[] args) => Instance.LogError(error, args);
+      public static void LogFormat(string format, params object[] args) => Instance.LogFormat(format, args);
    }
 }
