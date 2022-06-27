@@ -46,6 +46,9 @@
 /microservice/microserviceTests/bin/
 /microservice/microserviceTests/obj/
 /microservice/microserviceTests/.idea/
+/microservice/beamable.tooling.common/bin/
+/microservice/beamable.tooling.common/obj/
+/microservice/beamable.tooling.common/.idea/
 /microservice/*.sln.DotSettings.*
 
 /microservice/microservice/.idea/

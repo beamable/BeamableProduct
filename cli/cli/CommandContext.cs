@@ -36,6 +36,17 @@ public abstract class AppCommand<TArgs> : Command
 		base.AddArgument(arg);
 	}
 
+	protected void AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
+	{
+		var set = new Action<BindingContext, TArgs>((ctx, args) =>
+		{
+			var res = ctx.ParseResult.GetValueForOption(arg);
+			binder(args, res);
+		});
+		_bindingActions.Add(set);
+		base.AddOption(arg);
+	}
+
 	/// <summary>
 	/// Use this to add all arguments that will be used for this command.
 	/// Please use the <see cref="AddArgument{T}"/> method from within this function.
