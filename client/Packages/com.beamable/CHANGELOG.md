@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 
+## [1.2.4]
+no changes
+
+## [1.2.3]
+### Changed
+- Content query strings are no longer case sensitive
+
 ## [1.2.2]
 ### Changed
 - Content creation menu list is now sorted
