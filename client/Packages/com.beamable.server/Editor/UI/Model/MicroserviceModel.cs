@@ -201,6 +201,11 @@ namespace Beamable.Editor.UI.Model
 										  {
 											  IncludeDebugTools = !IncludeDebugTools;
 										  });
+			
+			evt.menu.BeamableAppendAction(@"Delete Microservice Files [TEST]", pos =>
+			                              {
+				                            MicroserviceEditor.DeleteMicroserviceFiles(Name);
+			                              });
 
 			if (!AreLogsAttached)
 			{
