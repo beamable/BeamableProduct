@@ -20,3 +20,4 @@ done
 
 # delete the /Samples directory
 rm -rf Samples/
+rm Samples.meta
