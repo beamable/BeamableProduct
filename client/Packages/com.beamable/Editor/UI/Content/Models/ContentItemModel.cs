@@ -4,6 +4,7 @@ using Beamable.Common.Content.Validation;
 using Beamable.Editor.Content.SaveRequest;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using static Beamable.Common.Constants.Directories;
@@ -224,12 +225,20 @@ namespace Beamable.Editor.Content.Models
 		public HostStatus ServerStatus { get; private set; }
 		public string Id => $"{ContentType.TypeName}.{Name}";
 
+		public string GetFormattedLastChanged => LastChanged == 0
+			? string.Empty
+			: DateTimeOffset.FromUnixTimeMilliseconds(LastChanged).DateTime
+			                .ToLocalTime()
+			                .ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
+
+		public long LastChanged { get; private set; }
+
 		private LocalContentManifestEntry _localData;
 		private IContentObject _localContent;
 		private ManifestReferenceSuperset _serverData;
 		private List<ContentTagDescriptor> _allTags;
 		private string _localChecksum;
-
+		private long _serverLastChanged;
 
 		public ContentItemDescriptor(IContentObject content, ContentTypeDescriptor typeDescriptor, string assetPath)
 		{
@@ -239,13 +248,14 @@ namespace Beamable.Editor.Content.Models
 			LocalTags = new HashSet<string>(content.Tags);
 			ServerStatus = HostStatus.NOT_AVAILABLE;
 			LocalStatus = HostStatus.AVAILABLE;
+			_serverLastChanged = content.LastChanged;
+			LastChanged = _serverLastChanged;
 			_localContent = content;
 			_allTags = CollectAllTags();
 
 			SetupLocalEventListeners();
 		}
-
-
+		
 		public ContentItemDescriptor(LocalContentManifestEntry entry, ContentTypeDescriptor typeDescriptor)
 		{
 			_localData = entry;
@@ -257,6 +267,8 @@ namespace Beamable.Editor.Content.Models
 			LocalTags = new HashSet<string>(_localData.Tags);
 			ServerStatus = HostStatus.UNKNOWN;
 			LocalStatus = HostStatus.AVAILABLE;
+			_serverLastChanged = entry.LastChanged;
+			LastChanged = _serverLastChanged;
 			_allTags = CollectAllTags();
 
 			SetupLocalEventListeners();
@@ -270,6 +282,8 @@ namespace Beamable.Editor.Content.Models
 			ServerTags = new HashSet<string>(entry.Tags);
 			ServerStatus = HostStatus.AVAILABLE;
 			LocalStatus = HostStatus.NOT_AVAILABLE;
+			_serverLastChanged = entry.LastChanged;
+			LastChanged = _serverLastChanged;
 			_allTags = CollectAllTags();
 		}
 
@@ -281,6 +295,8 @@ namespace Beamable.Editor.Content.Models
 				_serverData = reference;
 				ServerStatus = HostStatus.AVAILABLE;
 				ServerTags = new HashSet<string>(reference.Tags);
+				_serverLastChanged = reference.LastChanged != 0 ? reference.LastChanged : reference.Created;
+				LastChanged = _serverLastChanged;
 				_allTags = CollectAllTags();
 			}
 			catch (Exception ex)
@@ -297,10 +313,11 @@ namespace Beamable.Editor.Content.Models
 			_localContent = content;
 			_name = content.Id.Split('.').Last();
 			AssetPath = assetPath;
-
 			LocalTags = new HashSet<string>(content.Tags);
 			_allTags = CollectAllTags();
 			LocalStatus = HostStatus.AVAILABLE;
+			_serverLastChanged = content.LastChanged;
+			LastChanged = _serverLastChanged;
 
 			SetupLocalEventListeners();
 		}
@@ -316,7 +333,9 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			AssetPath = entry.AssetPath;
 			_allTags = CollectAllTags();
-
+			_serverLastChanged = entry.LastChanged;
+			LastChanged = _serverLastChanged;
+			
 			OnEnriched?.Invoke(this);
 		}
 
@@ -337,6 +356,8 @@ namespace Beamable.Editor.Content.Models
 			AssetPath = null;
 			LocalTags = null;
 			_allTags = CollectAllTags();
+			_serverLastChanged = 0;
+			LastChanged = 0;
 			OnEnriched?.Invoke(this);
 		}
 
@@ -451,7 +472,11 @@ namespace Beamable.Editor.Content.Models
 			_validationExceptions = null;
 			OnEnriched?.Invoke(this);
 		}
-
+		
+		public void RefreshLatestUpdate(bool setOriginalLatestUpdate = false)
+		{
+			LastChanged = setOriginalLatestUpdate ? _serverLastChanged : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+		}
 
 		private void ContentObject_OnValidationChanged(List<ContentException> exceptions)
 		{

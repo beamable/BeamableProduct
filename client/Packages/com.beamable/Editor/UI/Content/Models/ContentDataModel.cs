@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 
 namespace Beamable.Editor.Content.Models
 {
@@ -682,6 +683,8 @@ namespace Beamable.Editor.Content.Models
 
 		private void ContentItemDescriptor_OnEnriched(ContentItemDescriptor contentItemDescriptor)
 		{
+			EditorApplication.delayCall -= RefreshFilteredContents;
+			EditorApplication.delayCall += RefreshFilteredContents;
 			AccumulateContentTags(contentItemDescriptor);
 			OnItemEnriched?.Invoke(contentItemDescriptor);
 		}

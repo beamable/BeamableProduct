@@ -1,9 +1,7 @@
-using Beamable.Common;
-using Beamable.Common.Api;
 using Beamable.Common.Content;
 using System;
 
-namespace Beamable.Editor.Alias
+namespace Beamable.Common.Api.Realms
 {
 	public interface IAliasService
 	{
@@ -81,7 +79,6 @@ namespace Beamable.Editor.Alias
 			}
 		}
 	}
-
 
 
 
