@@ -5,6 +5,7 @@ using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
@@ -13,13 +14,12 @@ using Beamable.Config;
 using Beamable.Console;
 using Beamable.Content;
 using Beamable.Editor;
-using Beamable.Editor.Alias;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
-using Beamable.Editor.Realms;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.Toolbox.Models;
@@ -289,6 +289,9 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
+			BeamEditorContextDependencies.AddSingleton<BeamableDispatcher>();
+			BeamEditorContextDependencies.AddTransient(() => BeamableEnvironment.Data);
+			BeamEditorContextDependencies.AddSingleton<EnvironmentService>();
 
 			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			BeamEditorContextDependencies.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
@@ -435,6 +438,7 @@ namespace Beamable
 		public Promise InitializePromise { get; private set; }
 		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
+		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 
 		public CustomerView CurrentCustomer;
 		public RealmView CurrentRealm;
@@ -478,7 +482,6 @@ namespace Beamable
 			ConfigDatabase.TryGetString("alias", out var alias);
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
-			var platform = ConfigDatabase.GetString("platform");
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
@@ -494,7 +497,7 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
 			requester.Pid = pid;
-			requester.Host = platform;
+			requester.Host = BeamableEnvironment.ApiUrl;
 			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 			async Promise Initialize()

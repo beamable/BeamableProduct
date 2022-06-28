@@ -6,9 +6,9 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using Beamable.Common;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.Modules.Account;
-using Beamable.Editor.Realms;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;

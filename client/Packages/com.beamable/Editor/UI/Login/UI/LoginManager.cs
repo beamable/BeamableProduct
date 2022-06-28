@@ -1,7 +1,7 @@
 using Beamable.Common;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
-using Beamable.Editor.Realms;
 using System;
 using System.Collections.Generic;
 #if UNITY_2018
