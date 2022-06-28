@@ -86,14 +86,17 @@ namespace Beamable.Editor.Microservice.UI
 
 			SetForContent();
 
-			Model.OnServiceArchived += ServiceArchived;
-			Model.OnServiceUnarchived += ServiceArchived;
+			ActiveContext.OnServiceArchived -= ServiceArchived;
+			ActiveContext.OnServiceArchived += ServiceArchived;
+			
+			ActiveContext.OnServiceUnarchived -= ServiceArchived;
+			ActiveContext.OnServiceUnarchived += ServiceArchived;
 		}
 
 		private void OnDisable()
 		{
-			Model.OnServiceArchived -= ServiceArchived;
-			Model.OnServiceUnarchived -= ServiceArchived;
+			ActiveContext.OnServiceArchived -= ServiceArchived;
+			ActiveContext.OnServiceUnarchived -= ServiceArchived;
 		}
 
 		private void SetForContent()
@@ -199,7 +202,7 @@ namespace Beamable.Editor.Microservice.UI
 			_microserviceContentVisualElement?.Refresh();
 		}
 
-		private void ServiceArchived(ServiceModelBase model)
+		private void ServiceArchived()
 		{
 			_microserviceBreadcrumbsVisualElement.RefreshFiltering();
 		}

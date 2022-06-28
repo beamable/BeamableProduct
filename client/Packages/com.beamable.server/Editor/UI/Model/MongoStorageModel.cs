@@ -150,13 +150,15 @@ namespace Beamable.Editor.UI.Model
 		{
 			Debug.LogError($"DELETE ALL FILES {deleteAllFiles}");
 			Config.Archived = true;
-			MicroservicesDataModel.Instance.OnServiceArchived?.Invoke(this);
+			
+			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}
 
 		public void Unarchive()
 		{
 			Config.Archived = false;
-			MicroservicesDataModel.Instance.OnServiceUnarchived?.Invoke(this);
+			
+			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
 		}
 
 		public override void Refresh(IDescriptor descriptor)

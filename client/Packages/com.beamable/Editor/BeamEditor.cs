@@ -448,6 +448,9 @@ namespace Beamable
 		public event Action<RealmView> OnRealmChange;
 		public event Action<CustomerView> OnCustomerChange;
 		public event Action<EditorUser> OnUserChange;
+		
+		public Action OnServiceArchived;
+		public Action OnServiceUnarchived;
 
 		public void Init(string playerCode, IDependencyBuilder builder)
 		{

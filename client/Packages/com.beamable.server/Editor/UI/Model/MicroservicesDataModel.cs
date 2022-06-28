@@ -65,9 +65,6 @@ namespace Beamable.Editor.UI.Model
 		public Action<GetStatusResponse> OnStatusUpdated;
 		public Guid InstanceId = Guid.NewGuid();
 		
-		public Action<ServiceModelBase> OnServiceArchived;
-		public Action<ServiceModelBase> OnServiceUnarchived;
-
 		public void RefreshLocal()
 		{
 			var unseen = new HashSet<IBeamableService>(AllLocalServices);
