@@ -146,8 +146,9 @@ namespace Beamable.Editor.UI.Model
 			}
 		}
 
-		public void Archive()
+		public void Archive(bool deleteAllFiles)
 		{
+			Debug.LogError($"DELETE ALL FILES {deleteAllFiles}");
 			Config.Archived = true;
 			MicroservicesDataModel.Instance.OnServiceArchived?.Invoke(this);
 		}
