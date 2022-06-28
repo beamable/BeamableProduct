@@ -1,82 +1,82 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api.Content;
 using Beamable.Server;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTests
 {
-   [TestFixture]
-   public class HandleMessageTests
-   {
-      [SetUp]
-      [TearDown]
-      public void ResetContentInstance()
-      {
-         ContentApi.Instance = new Promise<IContentApi>();
-      }
+	[TestFixture]
+	public class HandleMessageTests
+	{
+		[SetUp]
+		[TearDown]
+		public void ResetContentInstance()
+		{
+			ContentApi.Instance = new Promise<IContentApi>();
+		}
 
-      [Test]
-      [Timeout(4 * 60 * 1000)]
-      public async Task EventSubscriptionMultiThreadedAccess()
-      {
-         var context = new SocketRequesterContext(() =>
-            throw new NotImplementedException("This test should never access the socket"));
-
-
-         const int threadCount = 500;
-         const int cycleCount = 1000;
-
-         const string eventName = "test";
-         const string eventPath = "event/test";
+		[Test]
+		[Timeout(4 * 60 * 1000)]
+		public async Task EventSubscriptionMultiThreadedAccess()
+		{
+			var context = new SocketRequesterContext(() =>
+			   throw new NotImplementedException("This test should never access the socket"));
 
 
-         Exception failure = null;
+			const int threadCount = 500;
+			const int cycleCount = 1000;
 
-         Task Launch(int threadNumber)
-         {
+			const string eventName = "test";
+			const string eventPath = "event/test";
 
-            var task = Task.Run(() =>
-            {
-               try
-               {
-                  var subscription = context.Subscribe<int>(eventName, _ =>
-                  {
-                     // do nothing...
-                  });
 
-                  for (var i = 0; i < cycleCount; i++)
-                  {
-                     var id = (threadNumber * cycleCount) + i;
-                     var rc = new RequestContext("cid", "pid", id, 200, 1, eventPath, "get", "1", new HashSet<string>());
-                     context.HandleMessage(rc, "");
-                  }
-               }
-               catch (Exception ex)
-               {
-                  failure = ex;
+			Exception failure = null;
 
-               }
-            });
-            return task;
-         }
+			Task Launch(int threadNumber)
+			{
 
-         var threads = new List<Task>();
-         for (var i = 0; i < threadCount; i++)
-         {
-            threads.Add(Launch(i));
-         }
+				var task = Task.Run(() =>
+				{
+					try
+					{
+						var subscription = context.Subscribe<int>(eventName, _ =>
+					{
+					  // do nothing...
+				  });
 
-         await Task.WhenAll(threads);
+						for (var i = 0; i < cycleCount; i++)
+						{
+							var id = (threadNumber * cycleCount) + i;
+							var rc = new RequestContext("cid", "pid", id, 200, 1, eventPath, "get", "1", new HashSet<string>());
+							context.HandleMessage(rc, "");
+						}
+					}
+					catch (Exception ex)
+					{
+						failure = ex;
 
-         if (failure != null)
-         {
-            Assert.Fail("Failed thread. " + failure.Message + " " + failure.StackTrace);
-         }
+					}
+				});
+				return task;
+			}
 
-      }
-   }
+			var threads = new List<Task>();
+			for (var i = 0; i < threadCount; i++)
+			{
+				threads.Add(Launch(i));
+			}
+
+			await Task.WhenAll(threads);
+
+			if (failure != null)
+			{
+				Assert.Fail("Failed thread. " + failure.Message + " " + failure.StackTrace);
+			}
+
+		}
+	}
 }

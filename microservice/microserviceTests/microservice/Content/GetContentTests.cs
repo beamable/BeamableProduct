@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
@@ -10,240 +6,244 @@ using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
 using Beamable.Server.Content;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace microserviceTests.microservice.Content
 {
-   [TestFixture]
-   public class GetContentTests
-   {
-      private ReflectionCache _cache;
+	[TestFixture]
+	public class GetContentTests
+	{
+		private ReflectionCache _cache;
 
-      [SetUp]
-      public void Setup()
-      {
-         _cache = new ReflectionCache();
-         var contentTypeCache = new ContentTypeReflectionCache();
-         _cache.RegisterTypeProvider(contentTypeCache);
-         _cache.RegisterReflectionSystem(contentTypeCache);
+		[SetUp]
+		public void Setup()
+		{
+			_cache = new ReflectionCache();
+			var contentTypeCache = new ContentTypeReflectionCache();
+			_cache.RegisterTypeProvider(contentTypeCache);
+			_cache.RegisterReflectionSystem(contentTypeCache);
 
-         var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.FullName).ToList();
-         _cache.GenerateReflectionCache(asms);
-      }
-      
-      [Test]
-      public void Simple()
-      {
-         var args = new TestArgs();
-         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
-         var contentResolver = new TestContentResolver(async (uri) =>
-         {
-            var content = new ItemContent();
-            content.SetContentName("foo");
+			var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.FullName).ToList();
+			_cache.GenerateReflectionCache(asms);
+		}
 
-
-            var serailizer = new MicroserviceContentSerializer();
-            var json = serailizer.Serialize(content);
-            return json;
-         });
-
-         TestSocket testSocket = null;
-         var socketProvider = new TestSocketProvider(socket =>
-         {
-            testSocket = socket;
-
-            socket.AddInitialContentMessageHandler(-1, new ContentReference
-            {
-               id = "items.foo",
-               version = "123",
-               uri = "items.foo",
-               visibility = "public"
-            });
-
-            // don't mock anything...
-         });
-
-         var socket = socketProvider.Create("test");
-         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
-
-         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
-
-         testSocket.Connect();
-         testSocket.OnMessage((_, data, id) =>
-         {
-            data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc, data);
-         });
+		[Test]
+		public void Simple()
+		{
+			var args = new TestArgs();
+			var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+			var contentResolver = new TestContentResolver(async (uri) =>
+			{
+				var content = new ItemContent();
+				content.SetContentName("foo");
 
 
-         contentService.Init();
+				var serailizer = new MicroserviceContentSerializer();
+				var json = serailizer.Serialize(content);
+				return json;
+			});
 
-         var fetchPromise = contentService.GetContent("items.foo");
-         var fetchTask = Task.Run(async () => await fetchPromise);
-         fetchTask.Wait(10);
-         Assert.IsTrue(fetchPromise.IsCompleted);
+			TestSocket testSocket = null;
+			var socketProvider = new TestSocketProvider(socket =>
+			{
+				testSocket = socket;
 
-         Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
+				socket.AddInitialContentMessageHandler(-1, new ContentReference
+				{
+					id = "items.foo",
+					version = "123",
+					uri = "items.foo",
+					visibility = "public"
+				});
 
-         Assert.IsTrue(testSocket.AllMocksCalled());
-      }
+			 // don't mock anything...
+		 });
 
-      [Test]
-      public void CachePurgedOnNewManifest()
-      {
-         var timesToGetContent = 100;
-         var fetchCounter = 0;
-         var args = new TestArgs();
-         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
-         var contentResolver = new TestContentResolver(async (uri) =>
-         {
-            fetchCounter++;
-            var content = new ItemContent();
-            content.SetContentName("foo");
+			var socket = socketProvider.Create("test");
+			var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+			var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
 
+			var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
-            var serailizer = new MicroserviceContentSerializer();
-            var json = serailizer.Serialize(content);
-            return json;
-         });
-
-         TestSocket testSocket = null;
-         var socketProvider = new TestSocketProvider(socket =>
-         {
-            testSocket = socket;
-
-            socket.AddInitialContentMessageHandler(-1, new ContentReference
-               {
-                  id = "items.foo",
-                  version = "123",
-                  uri = "items.foo",
-                  visibility = "public"
-               })
-               .AddInitialContentMessageHandler(-2, new ContentReference
-               {
-                  id = "items.foo",
-                  version = "123",
-                  uri = "items.foo.newversion",
-                  visibility = "public"
-               })
-               ;
-
-            // don't mock anything...
-         });
-
-         var socket = socketProvider.Create("test");
-         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
-
-         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
-
-         testSocket.Connect();
-         testSocket.OnMessage((_, data, id) =>
-         {
-            data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc, data);
-         });
+			testSocket.Connect();
+			testSocket.OnMessage((_, data, id) =>
+			{
+				data.TryBuildRequestContext(args, out var rc);
+				socketCtx.HandleMessage(rc, data);
+			});
 
 
-         contentService.Init();
+			contentService.Init();
 
-         for (var i = 0; i < timesToGetContent; i++)
-         {
-            var fetchPromise = contentService.GetContent("items.foo");
-            var fetchTask = Task.Run(async () => await fetchPromise);
-            fetchTask.Wait(10);
-            Assert.IsTrue(fetchPromise.IsCompleted);
-            Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
-         }
+			var fetchPromise = contentService.GetContent("items.foo");
+			var fetchTask = Task.Run(async () => await fetchPromise);
+			fetchTask.Wait(10);
+			Assert.IsTrue(fetchPromise.IsCompleted);
 
-         Assert.AreEqual(1, fetchCounter);
-         // purge the cache...
-         testSocket.SendToClient(ClientRequest.Event("content.manifest", 3, new { }));
+			Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
 
-         for (var i = 0; i < timesToGetContent; i++)
-         {
-            var fetchPromise = contentService.GetContent("items.foo");
-            var fetchTask = Task.Run(async () => await fetchPromise);
-            fetchTask.Wait(10);
-            Assert.IsTrue(fetchPromise.IsCompleted);
-            Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
-         }
+			Assert.IsTrue(testSocket.AllMocksCalled());
+		}
 
-         Assert.AreEqual(2, fetchCounter);
-
-
-         Assert.IsTrue(testSocket.AllMocksCalled());
-      }
-
-      [Test]
-      public async Task ContentOnlyFetchedOnce()
-      {
-         var timesToGetContent = 100;
-         var fetchCounter = 0;
-         var args = new TestArgs();
-         var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
-         var contentResolver = new TestContentResolver(async (uri) =>
-         {
-            fetchCounter++;
-            var content = new ItemContent();
-            content.SetContentName("foo");
+		[Test]
+		public void CachePurgedOnNewManifest()
+		{
+			var timesToGetContent = 100;
+			var fetchCounter = 0;
+			var args = new TestArgs();
+			var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+			var contentResolver = new TestContentResolver(async (uri) =>
+			{
+				fetchCounter++;
+				var content = new ItemContent();
+				content.SetContentName("foo");
 
 
-            var serailizer = new MicroserviceContentSerializer();
-            var json = serailizer.Serialize(content);
-            return json;
-         });
+				var serailizer = new MicroserviceContentSerializer();
+				var json = serailizer.Serialize(content);
+				return json;
+			});
 
-         TestSocket testSocket = null;
-         var socketProvider = new TestSocketProvider(socket =>
-         {
-            testSocket = socket;
+			TestSocket testSocket = null;
+			var socketProvider = new TestSocketProvider(socket =>
+			{
+				testSocket = socket;
 
-            socket.AddInitialContentMessageHandler(-1, new ContentReference
-            {
-               id = "items.foo",
-               version = "123",
-               uri = "items.foo",
-               visibility = "public"
-            });
+				socket.AddInitialContentMessageHandler(-1, new ContentReference
+				{
+					id = "items.foo",
+					version = "123",
+					uri = "items.foo",
+					visibility = "public"
+				})
+				.AddInitialContentMessageHandler(-2, new ContentReference
+				  {
+					  id = "items.foo",
+					  version = "123",
+					  uri = "items.foo.newversion",
+					  visibility = "public"
+				  })
+				;
 
-            // don't mock anything...
-         });
+			 // don't mock anything...
+		 });
 
-         var socket = socketProvider.Create("test");
-         var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
+			var socket = socketProvider.Create("test");
+			var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+			var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
 
-         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+			var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
-         testSocket.Connect();
-         testSocket.OnMessage((_, data, id) =>
-         {
-            data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc, data);
-         });
+			testSocket.Connect();
+			testSocket.OnMessage((_, data, id) =>
+			{
+				data.TryBuildRequestContext(args, out var rc);
+				socketCtx.HandleMessage(rc, data);
+			});
 
 
-         contentService.Init();
+			contentService.Init();
 
-         var tasks = new List<Task>();
-         for (var i = 0; i < timesToGetContent; i++)
-         {
-            tasks.Add(Task.Run(async () =>
-            {
+			for (var i = 0; i < timesToGetContent; i++)
+			{
+				var fetchPromise = contentService.GetContent("items.foo");
+				var fetchTask = Task.Run(async () => await fetchPromise);
+				fetchTask.Wait(10);
+				Assert.IsTrue(fetchPromise.IsCompleted);
+				Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
+			}
 
-               var fetchPromise = contentService.GetContent("items.foo");
-               var fetchTask = Task.Run(async () => await fetchPromise);
-               fetchTask.Wait(10);
-               Assert.IsTrue(fetchPromise.IsCompleted);
-               Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
-            }));
-         }
+			Assert.AreEqual(1, fetchCounter);
+			// purge the cache...
+			testSocket.SendToClient(ClientRequest.Event("content.manifest", 3, new { }));
 
-         await Task.WhenAll(tasks);
-         Assert.AreEqual(1, fetchCounter);
+			for (var i = 0; i < timesToGetContent; i++)
+			{
+				var fetchPromise = contentService.GetContent("items.foo");
+				var fetchTask = Task.Run(async () => await fetchPromise);
+				fetchTask.Wait(10);
+				Assert.IsTrue(fetchPromise.IsCompleted);
+				Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
+			}
 
-         Assert.IsTrue(testSocket.AllMocksCalled());
-      }
-   }
+			Assert.AreEqual(2, fetchCounter);
+
+
+			Assert.IsTrue(testSocket.AllMocksCalled());
+		}
+
+		[Test]
+		public async Task ContentOnlyFetchedOnce()
+		{
+			var timesToGetContent = 100;
+			var fetchCounter = 0;
+			var args = new TestArgs();
+			var reqCtx = new RequestContext(args.CustomerID, args.ProjectName, 1, 200, 1, "path", "GET", "");
+			var contentResolver = new TestContentResolver(async (uri) =>
+			{
+				fetchCounter++;
+				var content = new ItemContent();
+				content.SetContentName("foo");
+
+
+				var serailizer = new MicroserviceContentSerializer();
+				var json = serailizer.Serialize(content);
+				return json;
+			});
+
+			TestSocket testSocket = null;
+			var socketProvider = new TestSocketProvider(socket =>
+			{
+				testSocket = socket;
+
+				socket.AddInitialContentMessageHandler(-1, new ContentReference
+				{
+					id = "items.foo",
+					version = "123",
+					uri = "items.foo",
+					visibility = "public"
+				});
+
+			 // don't mock anything...
+		 });
+
+			var socket = socketProvider.Create("test");
+			var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
+			var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
+
+			var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+
+			testSocket.Connect();
+			testSocket.OnMessage((_, data, id) =>
+			{
+				data.TryBuildRequestContext(args, out var rc);
+				socketCtx.HandleMessage(rc, data);
+			});
+
+
+			contentService.Init();
+
+			var tasks = new List<Task>();
+			for (var i = 0; i < timesToGetContent; i++)
+			{
+				tasks.Add(Task.Run(async () =>
+				{
+
+					var fetchPromise = contentService.GetContent("items.foo");
+					var fetchTask = Task.Run(async () => await fetchPromise);
+					fetchTask.Wait(10);
+					Assert.IsTrue(fetchPromise.IsCompleted);
+					Assert.AreEqual("items.foo", fetchPromise.GetResult().Id);
+				}));
+			}
+
+			await Task.WhenAll(tasks);
+			Assert.AreEqual(1, fetchCounter);
+
+			Assert.IsTrue(testSocket.AllMocksCalled());
+		}
+	}
 }

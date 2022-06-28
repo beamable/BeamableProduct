@@ -1,8 +1,8 @@
-using System.CommandLine;
-using System.CommandLine.Binding;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
+using System.CommandLine;
+using System.CommandLine.Binding;
 
 namespace cli;
 
@@ -55,7 +55,7 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
 									AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, VerboseOption verboseOption,
-	                         ConfigService configService)
+							 ConfigService configService)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -109,7 +109,7 @@ public class DefaultAppContext : IAppContext
 		_token.RefreshToken = response.refresh_token;
 	}
 
-	private bool TryGetSetting(out string? value, BindingContext context, ConfigurableOption option, string? defaultValue=null)
+	private bool TryGetSetting(out string? value, BindingContext context, ConfigurableOption option, string? defaultValue = null)
 	{
 		value = context.ParseResult.GetValueForOption(option);
 		if (value == null)

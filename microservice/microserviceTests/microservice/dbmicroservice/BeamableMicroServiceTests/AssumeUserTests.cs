@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
@@ -6,6 +5,7 @@ using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
 using microserviceTests.microservice.Util;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTests;
 

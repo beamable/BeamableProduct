@@ -1,7 +1,7 @@
 namespace Beamable.Server
 {
-   public class SystemMethods
-   {
-      
-   }
+	public class SystemMethods
+	{
+
+	}
 }

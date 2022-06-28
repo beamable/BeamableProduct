@@ -1,11 +1,11 @@
-using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Microsoft.Extensions.DependencyInjection;
+using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 
 namespace cli;
 
@@ -21,7 +21,7 @@ public class App
 
 	public bool IsBuilt => Provider != null;
 
-	public virtual void Configure(Action<ServiceCollection>? configurator=null)
+	public virtual void Configure(Action<ServiceCollection>? configurator = null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
@@ -87,11 +87,11 @@ public class App
 	{
 		var root = Provider.GetRequiredService<RootCommand>();
 		var commandLineBuilder = new CommandLineBuilder(root);
-		commandLineBuilder.AddMiddleware( consoleContext =>
-		{
-			var appContext = Provider.GetRequiredService<IAppContext>();
-			appContext.Apply(consoleContext.BindingContext);
-		}, MiddlewareOrder.Configuration);
+		commandLineBuilder.AddMiddleware(consoleContext =>
+	   {
+		   var appContext = Provider.GetRequiredService<IAppContext>();
+		   appContext.Apply(consoleContext.BindingContext);
+	   }, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
