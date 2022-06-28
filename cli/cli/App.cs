@@ -2,17 +2,26 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using Beamable.Server.Common;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog.Formatting.Raw;
 
 namespace cli;
 
 public class App
 {
+	public static LoggingLevelSwitch LogLevel { get; set; }
+	
 	public ServiceCollection Services { get; set; }
 	public IServiceProvider Provider { get; set; }
+
 
 	public App()
 	{
@@ -21,11 +30,29 @@ public class App
 
 	public bool IsBuilt => Provider != null;
 
+	private static void ConfigureLogging()
+	{
+		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
+		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Warning };
+
+		// https://github.com/serilog/serilog/wiki/Configuration-Basics
+		Log.Logger = new LoggerConfiguration()
+			.MinimumLevel.ControlledBy(LogLevel)
+			.WriteTo.Console()
+			.CreateLogger();
+
+		BeamableLogProvider.Provider = new CliSerilogProvider();
+		CliSerilogProvider.LogContext.Value = Log.Logger;
+	}
+
+
 	public virtual void Configure(Action<ServiceCollection>? configurator=null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
+		ConfigureLogging();
+		
 		// add global options
 		Services.AddSingleton<DryRunOption>();
 		Services.AddSingleton<CidOption>();
@@ -33,7 +60,7 @@ public class App
 		Services.AddSingleton<PlatformOption>();
 		Services.AddSingleton<AccessTokenOption>();
 		Services.AddSingleton<RefreshTokenOption>();
-		Services.AddSingleton<VerboseOption>();
+		Services.AddSingleton<LogOption>();
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -43,7 +70,7 @@ public class App
 			root.AddOption(provider.GetRequiredService<PlatformOption>());
 			root.AddOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddOption(provider.GetRequiredService<RefreshTokenOption>());
-			root.AddOption(provider.GetRequiredService<VerboseOption>());
+			root.AddOption(provider.GetRequiredService<LogOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -57,6 +84,7 @@ public class App
 		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		Services.AddSingleton<IAuthApi, AuthApi>();
 		Services.AddSingleton<ConfigService>();
+		Services.AddSingleton<CliEnvironment>();
 
 		// add commands
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();

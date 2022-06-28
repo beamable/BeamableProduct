@@ -11,9 +11,10 @@ public class ConfigService
 
 	private Dictionary<string, string>? _config;
 
-	public ConfigService()
+	public ConfigService(CliEnvironment environment)
 	{
 		RefreshConfig();
+		ConfigFilePath = !string.IsNullOrEmpty(environment.ConfigDir) ? environment.ConfigDir : ConfigFilePath;
 	}
 
 	public string PrettyPrint() => JsonConvert.SerializeObject(_config, Formatting.Indented);
