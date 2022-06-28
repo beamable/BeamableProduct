@@ -2,7 +2,7 @@
 export ARGSV
 
 # fix up the samples folder.
-/bin/bash ./prepare-samples.sh
+./prepare-samples.sh
 
 if [ "$NPM_COMMAND" == "deprecate" ]
 then
