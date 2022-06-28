@@ -1,7 +1,7 @@
 namespace Beamable.Server.Content
 {
-   public class ContentManifestEvent
-   {
-      public string[] categories;
-   }
+	public class ContentManifestEvent
+	{
+		public string[] categories;
+	}
 }

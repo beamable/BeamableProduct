@@ -2,6 +2,7 @@ using System;
 
 namespace UnityEngine
 {
-   public class SerializeField : Attribute {
-   }
+	public class SerializeField : Attribute
+	{
+	}
 }

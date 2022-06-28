@@ -1,10 +1,10 @@
+using Beamable.Server.Editor;
+using Beamable.Server.Generator;
+using Serilog;
 using System;
 using System.CommandLine;
 using System.IO;
 using System.Reflection;
-using Beamable.Server.Editor;
-using Beamable.Server.Generator;
-using Serilog;
 
 namespace Beamable.Server
 {

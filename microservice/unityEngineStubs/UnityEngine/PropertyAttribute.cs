@@ -3,9 +3,9 @@ using System;
 
 namespace UnityEngine
 {
-   [AttributeUsage(AttributeTargets.Field)]
-   public abstract class PropertyAttribute : Attribute
-   {
-      public int order { get; set; }
-   }
+	[AttributeUsage(AttributeTargets.Field)]
+	public abstract class PropertyAttribute : Attribute
+	{
+		public int order { get; set; }
+	}
 }

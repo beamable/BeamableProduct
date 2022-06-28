@@ -1,7 +1,7 @@
 namespace Beamable.Server.Api.Content
 {
-   public class MicroserviceContentApi
-   {
-      
-   }
+	public class MicroserviceContentApi
+	{
+
+	}
 }

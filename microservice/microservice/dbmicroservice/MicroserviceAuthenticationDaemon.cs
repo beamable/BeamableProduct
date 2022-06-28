@@ -1,11 +1,11 @@
+using Beamable.Common;
+using Beamable.Common.Api;
+using Serilog;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Common.Api;
-using Serilog;
 
 namespace Beamable.Server;
 
@@ -21,7 +21,7 @@ public class MicroserviceAuthenticationDaemon
 	/// The <see cref="EventWaitHandle"/> we use to wake this thread up from its slumber so we can authenticate the C#MS with the Beamo service.
 	/// </summary>
 	public static readonly EventWaitHandle AUTH_THREAD_WAIT_HANDLE = new ManualResetEvent(false);
-	
+
 	/// <summary>
 	/// The total number of outgoing requests that actually go out through <see cref="MicroserviceRequester.Request{T}"/>.
 	/// </summary>
@@ -31,7 +31,7 @@ public class MicroserviceAuthenticationDaemon
 	/// The total number of outgoing requests that went out through <see cref="MicroserviceRequester.Request{T}"/> and whose promise handlers (for error or success) have run.
 	/// </summary>
 	private static ulong _OutgoingRequestProcessedCounter = 0;
-	
+
 	/// <summary>
 	/// Bumps the <see cref="_OutgoingRequestCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
 	/// </summary>
@@ -55,7 +55,7 @@ public class MicroserviceAuthenticationDaemon
 		Interlocked.Increment(ref authCounter);
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
-	
+
 	/// <summary>
 	/// Cancels the token and notifies the <see cref="AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up and catches fire 🔥.
 	/// </summary>
@@ -71,12 +71,12 @@ public class MicroserviceAuthenticationDaemon
 	/// The environment data that we need to make the <see cref="Authenticate"/> request.
 	/// </summary>
 	private readonly IMicroserviceArgs _env;
-	
+
 	/// <summary>
 	/// The requester instance so that we can make the <see cref="Authenticate"/> request.
 	/// </summary>
 	private readonly MicroserviceRequester _requester;
-	
+
 	/// <summary>
 	/// The <see cref="SocketRequesterContext"/> so we can keep track of the <see cref="SocketRequesterContext.AuthorizationCounter"/>.
 	/// </summary>
@@ -99,7 +99,7 @@ public class MicroserviceAuthenticationDaemon
 
 			// Gets the number of requests that have been made by the service so far...
 			var outgoingReqsCountAtStart = Interlocked.Read(ref _OutgoingRequestCounter);
-			
+
 			// Gets the number of requests that have been made by the service AND that have had their promise handlers run (for errors or success)
 			var outgoingReqsProcessedAtStart = Interlocked.Read(ref _OutgoingRequestProcessedCounter);
 
@@ -112,7 +112,7 @@ public class MicroserviceAuthenticationDaemon
 				{
 					// Do the authorization back and forth with Beamo
 					await Authenticate();
-					
+
 					// Resets the auth counter back to 0
 					Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
 				}
