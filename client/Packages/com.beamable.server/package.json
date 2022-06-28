@@ -15,5 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "com.beamable": "BUILD__SDK__VERSION__STRING"
-  }
+  },
+  "samples": []
 }

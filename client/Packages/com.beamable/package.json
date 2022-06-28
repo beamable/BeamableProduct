@@ -17,5 +17,6 @@
     "com.unity.addressables": "1.18.19",
     "com.unity.textmeshpro": "1.4.1",
     "com.unity.editorcoroutines": "1.0.0"
-  }
+  },
+  "samples": []
 }
