@@ -16,18 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Latest update` field for content item in Content Manager.
 - Content items sort option by `Recently updated` in Content Manager.
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
+- Added "experimental" package status support to the `PackageVersion` utility
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 - The Beamable host URL is no longer sourced from `config-defaults.txt`. Instead, it comes from the `BeamableEnvironment` class. 
+- Changed `PackageVersion` to accept "preview" prefix strings instead of requiring a direct match of the string "preview"
 
-## [1.2.4]
-no changes
-
-## [1.2.3]
-### Changed
-- Content query strings are no longer case sensitive
+### Fixed
+- Beamable button in Unity toolbar should be in correct position for production packages
 
 ## [1.2.4]
 no changes
