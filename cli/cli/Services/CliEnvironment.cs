@@ -10,7 +10,7 @@ public class CliEnvironment
         AccessToken = Environment.GetEnvironmentVariable(Constants.KEY_ENV_ACCESS_TOKEN) ?? string.Empty;
         RefreshToken = Environment.GetEnvironmentVariable(Constants.KEY_ENV_REFRESH_TOKEN) ?? string.Empty;
         ConfigDir = Environment.GetEnvironmentVariable(Constants.KEY_ENV_CONFIG_DIR) ?? string.Empty;
-        ConfigDir = Environment.GetEnvironmentVariable(Constants.KEY_ENV_LOG_LEVEL) ?? string.Empty;
+        LogLevel = Environment.GetEnvironmentVariable(Constants.KEY_ENV_LOG_LEVEL) ?? string.Empty;
     }
 
     public string Api { get; }
