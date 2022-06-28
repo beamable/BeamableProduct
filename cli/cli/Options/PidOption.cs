@@ -2,9 +2,9 @@
 
 namespace cli;
 
-public class PidOption : Option<string>
+public class PidOption : ConfigurableOption
 {
 	public PidOption()
-		:base("--pid", "a pid to use; will default to whatever is in the file system")
+		:base(Constants.CONFIG_PID, "a pid to use; will default to whatever is in the file system")
 	{ }
 }
