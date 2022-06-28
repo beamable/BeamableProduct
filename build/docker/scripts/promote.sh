@@ -1,6 +1,9 @@
 #!/bin/bash
 export ARGSV
 
+# fix up the samples folder.
+/bin/bash ./prepare-samples.sh
+
 if [ "$NPM_COMMAND" == "deprecate" ]
 then
   npm deprecate $VERSION "This package has been deprecated by Beamable."
