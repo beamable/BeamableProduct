@@ -124,10 +124,10 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <param name="newHost">New lobby host</param>
 		Promise<Lobby> UpdateLobby(string lobbyId,
 		                      LobbyRestriction restriction,
+		                      string newHost,
 		                      string name = null,
 		                      string description = null,
 		                      string gameType = null,
-		                      int? maxPlayers = null,
-		                      string newHost = null);
+		                      int? maxPlayers = null);
 	}
 }

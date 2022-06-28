@@ -3,8 +3,10 @@ using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
 using Beamable.Common.Player;
 using Beamable.Experimental.Api.Lobbies;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -14,9 +16,21 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerLobby : Observable<Lobby>, IDisposable
 	{
+		public enum LobbyEvent
+		{
+			LobbyDisbanded,
+			PlayerJoined,
+			PlayerLeft,
+			DataChanged,
+			None
+		}
+
+		public event Action<Exception> OnExceptionThrown;
+		
 		private readonly ILobbyApi _lobbyApi;
 		private readonly INotificationService _notificationService;
 		private Lobby _state;
+		public LobbyEvent LastLobbyEvent { get; private set; } = LobbyEvent.None;
 
 		public PlayerLobby(ILobbyApi lobbyApi, INotificationService notificationService)
 		{
@@ -167,19 +181,19 @@ namespace Beamable.Player
 		/// <inheritdoc cref="ILobbyApi.UpdateLobby"/>
 		public async Promise Update(string lobbyId,
 		                            LobbyRestriction restriction,
+		                            string newHost,
 		                            string name = null,
 		                            string description = null,
 		                            string gameType = null,
-		                            int? maxPlayers = null,
-		                            string newHost = null)
+		                            int? maxPlayers = null)
 		{
 			State = await _lobbyApi.UpdateLobby(lobbyId, 
 			                                    restriction,
+			                                    newHost,
 			                                    name, 
 			                                    description, 
 			                                    gameType, 
-			                                    maxPlayers,
-			                                    newHost);
+			                                    maxPlayers);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.JoinLobby"/>
@@ -235,7 +249,15 @@ namespace Beamable.Player
 		{
 			if (State == null) return; // nothing to do.
 
-			State = await _lobbyApi.GetLobby(State.lobbyId);
+			try
+			{
+				State = await _lobbyApi.GetLobby(State.lobbyId);
+			}
+			catch (Exception e)
+			{
+				State = null;
+				OnExceptionThrown?.Invoke(e);
+			}
 		}
 
 		public void Dispose()
@@ -245,7 +267,15 @@ namespace Beamable.Player
 
 		private void OnRawUpdate(object message)
 		{
-			var _ = Refresh(); // fire and forget- go update.
+			if (message is ArrayDict arrayDict && arrayDict.TryGetValue("event", out object changeEvent))
+			{
+				string value = (string)changeEvent;
+				LastLobbyEvent = Enum.TryParse(value, true, out LobbyEvent lobbyEvent) ? lobbyEvent : LobbyEvent.None;
+			}
+			
+			Debug.Log($"Origin: {LastLobbyEvent}");
+
+			var _ = Refresh();
 		}
 	}
 }

@@ -9,14 +9,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 		[Header("Lobby elements")]
 		public OverlayedLobbySettingsWindow SettingsWindow;
 
-		public void ShowLobbySettings(string name, string description, Action<string, string> confirmAction, string password = "")
+		public void ShowLobbySettings(string name, string description, Action<string, string, string> confirmAction, string password = "")
 		{
 			Show(SettingsWindow, () =>
 			{
-				SettingsWindow.Show(name, description, (newName, newDescription) =>
+				SettingsWindow.Show(name, description, (newName, newDescription, newHost) =>
 				{
 					HideOverlay();
-					confirmAction?.Invoke(newName, newDescription);
+					confirmAction?.Invoke(newName, newDescription, newHost);
 				}, HideOverlay, password);
 			});
 		}

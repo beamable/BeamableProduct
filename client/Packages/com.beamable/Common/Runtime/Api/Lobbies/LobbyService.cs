@@ -152,16 +152,16 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <inheritdoc cref="ILobbyApi.UpdateLobby"/>
 		public Promise<Lobby> UpdateLobby(string lobbyId,
 		                             LobbyRestriction restriction,
+		                             string newHost,
 		                             string name = null,
 		                             string description = null,
 		                             string gameType = null,
-		                             int? maxPlayers = null,
-		                             string newHost = null)
+		                             int? maxPlayers = null)
 		{
 			return _requester.Request<Lobby>(
 				Method.PUT,
 				$"/lobbies/{lobbyId}/metadata",
-				new UpdateLobbyRequest(name, description, restriction.ToString(), gameType, maxPlayers, newHost)
+				new UpdateLobbyRequest(name, description, restriction.ToString(), newHost, gameType, maxPlayers)
 			);
 		}
 	}

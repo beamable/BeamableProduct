@@ -83,9 +83,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		public async void UpdateLobby(string name, string description)
+		public async void UpdateLobby(string name, string description, string host)
 		{
-			await BeamContext.Lobby.Update(BeamContext.Default.Lobby.Id, BeamContext.Default.Lobby.Restriction, name,
+			await BeamContext.Lobby.Update(BeamContext.Default.Lobby.Id, BeamContext.Default.Lobby.Restriction, host, name,
 			                               description);
 		}
 

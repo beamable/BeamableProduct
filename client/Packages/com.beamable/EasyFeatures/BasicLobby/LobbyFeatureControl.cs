@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
+using Beamable.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -169,13 +170,20 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private async void OnLobbyUpdated()
 		{
-			if (BeamContext.Lobby.State.players == null)
+			switch (BeamContext.Lobby.LastLobbyEvent)
 			{
-				return;
+				case PlayerLobby.LobbyEvent.LobbyDisbanded:
+					ShowConfirmWindow("Lobby disbanded", "Lobby was disbanded", OpenMainView);
+					break;
+				case PlayerLobby.LobbyEvent.PlayerJoined:
+				case PlayerLobby.LobbyEvent.PlayerLeft:
+				case PlayerLobby.LobbyEvent.DataChanged:
+					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+					await ViewGroup.Enrich();
+					break;
+				case PlayerLobby.LobbyEvent.None:
+					break;
 			}
-
-			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
-			await ViewGroup.Enrich();
 		}
 
 		#region IOverlayController
@@ -354,6 +362,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				{
 					ShowOverlayedLabel("Passing leadership...");
 					await LobbyPlayerSystem.PassLeadership();
+					LobbyPlayerSystem.CurrentlySelectedPlayerIndex = null;
 					HideOverlay();
 				}
 				catch (Exception e)
@@ -375,9 +384,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 				return;
 			}
 
-			void ConfirmAction(string lobbyName, string description)
+			void ConfirmAction(string lobbyName, string description, string host)
 			{
-				LobbyPlayerSystem.UpdateLobby(lobbyName, description);
+				LobbyPlayerSystem.UpdateLobby(lobbyName, description, host);
 			}
 
 			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction, BeamContext.Lobby.Passcode);

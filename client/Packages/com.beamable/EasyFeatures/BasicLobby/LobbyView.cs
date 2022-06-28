@@ -1,4 +1,5 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api;
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -26,7 +27,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Promise LeaveLobby();
 			void SetPlayerReady(bool value);
 			void SetCurrentSelectedPlayer(int slotIndex);
-			void UpdateLobby(string name, string description);
+			void UpdateLobby(string name, string description, string host);
 			Promise StartMatch();
 			bool IsServerReady();
 		}
@@ -172,11 +173,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			catch (Exception e)
 			{
-				OnError?.Invoke(e.Message);
-				// if (e is PlatformRequesterException pre)
-				// {
-				// 	OnError?.Invoke(pre.Error.error);
-				// }
+				if (e is PlatformRequesterException pre)
+				{
+					OnError?.Invoke(pre.Error.error);
+				}
 			}
 		}
 
@@ -196,11 +196,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 				}
 				catch (Exception e)
 				{
-					OnError?.Invoke(e.Message);
-					// if (e is PlatformRequesterException pre)
-					// {
-					// 	OnError?.Invoke(pre.Error.error);
-					// }
+					if (e is PlatformRequesterException pre)
+					{
+						OnError?.Invoke(pre.Error.error);
+					}
 				}
 			}
 		}
