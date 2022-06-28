@@ -21,23 +21,21 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Tests.Toolbox
 {
-    public class ToolboxTests
+    public class ToolboxTests : EditorTest
     {
-		public IDependencyProvider provider;
+	    protected override void Configure(IDependencyBuilder builder)
+	    {
+		    builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
+	    }
 
 		//Test if ticking filter in tags will change the search bar value to tag:{tag}
 		[Test]
 		public void TestQueryTag()
 		{
-			IDependencyBuilder builder = new DependencyBuilder();
-			builder.AddSingleton<IToolboxViewService, MockToolboxViewService>();
-
-			provider = builder.Build();
-
-			IToolboxViewService model = provider.GetService<IToolboxViewService>();
+			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
 
 			ToolboxActionBarVisualElement tb = new ToolboxActionBarVisualElement();
-			tb.Refresh(provider);
+			tb.Refresh(Provider);
 
 			Button button = tb.Q<Button>("CategoryButton");
 			button.SendEvent(new ContextClickEvent());
