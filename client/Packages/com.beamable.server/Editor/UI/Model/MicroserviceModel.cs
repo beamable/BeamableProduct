@@ -344,13 +344,14 @@ $@"{{
 
 		public void Archive(bool deleteAllFiles)
 		{
+			Stop();
 			Debug.LogError($"DELETE ALL FILES {deleteAllFiles}");
-			Config.Archived = true;
+			if (!(RemoteStatus is {running: false} && deleteAllFiles))
+				Config.Archived = true;
+
+			MicroserviceEditor.DeleteMicroserviceFiles(this.Name);
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 
-			if (deleteAllFiles)
-				MicroserviceEditor.DeleteMicroserviceFiles(this.Name);
-			
 		}
 
 		public void Unarchive()
