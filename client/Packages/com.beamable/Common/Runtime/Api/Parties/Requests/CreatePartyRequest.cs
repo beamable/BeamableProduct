@@ -6,16 +6,19 @@ namespace Beamable.Experimental.Api.Parties
 	public class CreatePartyRequest
 	{
 		/// <summary>
-		/// Stringified version of the <see cref="PartyAccess"/>
+		/// Stringified version of the <see cref="PartyRestriction"/>
 		/// </summary>
-		public string access;
+		public string restriction;
 
-		public int? maxPlayers;
+		/// <summary>
+		/// Player id of a party leader.
+		/// </summary>
+		public string leader;
 
-		public CreatePartyRequest(string access, int? maxPlayers)
+		public CreatePartyRequest(string restriction, string leader)
 		{
-			this.access = access;
-			this.maxPlayers = maxPlayers;
+			this.restriction = restriction;
+			this.leader = leader;
 		}
 	}
 }

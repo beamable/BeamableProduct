@@ -6,16 +6,12 @@ namespace Beamable.Experimental.Api.Parties
 {
 	public interface IPartyApi
 	{
-		Promise<PartyQueryResponse> FindParties();
-
 		/// <summary>
 		/// Create a new <see cref="Party"/> with the current player as the host.
 		/// </summary>
-		/// <param name="access">The privacy value for the created party.</param>
-		/// <param name="maxPlayers">Configurable value for the maximum number of players this party can have.</param>
-		/// <param name="passcodeLength">Configurable value for how long the generated passcode should be.</param>
+		/// <param name="restriction">The privacy value for the created party.</param>
 		/// <returns><see cref="Promise{Party}"/> representing the created party.</returns>
-		Promise<Party> CreateParty(PartyAccess access, int? maxPlayers = null, int? passcodeLength = null);
+		Promise<Party> CreateParty(PartyRestriction restriction);
 
 		/// <summary>
 		/// Join a <see cref="Party"/> given its id.
@@ -44,5 +40,19 @@ namespace Beamable.Experimental.Api.Parties
 		/// <param name="lobbyId">The id of the <see cref="Party"/>.</param>
 		/// <param name="partyId">The id of the player to remove.</param>
 		Promise KickPlayer(string lobbyId, string partyId);
+
+		/// <summary>
+		/// Send a request to the given <see cref="Party"/> to promote the player with the given playerId to leader.
+		/// </summary>
+		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
+		/// <param name="playerId">The id of the player to promote.</param>
+		Promise PromoteToLeader(string partyId, string playerId);
+
+		/// <summary>
+		/// Send a request to the given <see cref="Party"/> to invite the player with the given playerId.
+		/// </summary>
+		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
+		/// <param name="playerId">The id of the player to invite.</param>
+		Promise InviteToParty(string partyId, string playerId);
 	}
 }

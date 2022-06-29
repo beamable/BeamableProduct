@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
+using System;
 
 namespace Beamable.Experimental.Api.Parties
 {
@@ -13,36 +14,67 @@ namespace Beamable.Experimental.Api.Parties
 			_requester = requester;
 			_userContext = userContext;
 		}
-		
-		public Promise<PartyQueryResponse> FindParties()
-		{
-			throw new System.NotImplementedException();
-		}
 
-		public Promise<Party> CreateParty(PartyAccess access, int? maxPlayers = null, int? passcodeLength = null)
+		public Promise<Party> CreateParty(PartyRestriction restriction)
 		{
-			return _requester.Request<Party>(Method.POST, "/parties",
-			                                 new CreatePartyRequest(access.ToString(), maxPlayers));
+			return _requester.Request<Party>(
+				Method.POST,
+				"/parties",
+				new CreatePartyRequest(
+					restriction.ToString(),
+					_userContext.UserId.ToString())
+			);
 		}
 
 		public Promise<Party> JoinParty(string partyId)
 		{
-			return null;
+			return _requester.Request<Party>(
+				Method.PUT,
+				$"/parties/{partyId}"
+			);
 		}
 
 		public Promise<Party> GetParty(string partyId)
 		{
-			throw new System.NotImplementedException();
+			return _requester.Request<Party>(
+				Method.GET,
+				$"/parties/{partyId}"
+			);
 		}
 
 		public Promise LeaveParty(string partyId)
 		{
-			throw new System.NotImplementedException();
+			return _requester.Request<Unit>(
+				Method.DELETE,
+				$"/parties/{partyId}"
+			).ToPromise();
 		}
 
-		public Promise KickPlayer(string lobbyId, string partyId)
+		public Promise KickPlayer(string partyId, string playerId)
 		{
-			throw new System.NotImplementedException();
+			return _requester.Request<Unit>(
+				Method.DELETE,
+				$"/parties/{partyId}",
+				new PlayerRequest(playerId)
+			).ToPromise();
+		}
+
+		public Promise PromoteToLeader(string partyId, string playerId)
+		{
+			return _requester.Request<Unit>(
+				Method.PUT,
+				$"/parties/{partyId}/promote",
+				new PlayerRequest(playerId)
+			).ToPromise();
+		}
+		
+		public Promise InviteToParty(string partyId, string playerId)
+		{
+			return _requester.Request<Unit>(
+				Method.POST,
+				$"/parties/{partyId}/invite",
+				new PlayerRequest(playerId)
+			).ToPromise();
 		}
 	}
 }

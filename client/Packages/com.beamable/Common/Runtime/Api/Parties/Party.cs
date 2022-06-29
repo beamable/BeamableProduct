@@ -10,32 +10,27 @@ namespace Beamable.Experimental.Api.Parties
 		/// <summary>
 		/// The id of the lobby. Use this id when making requests for a particular lobby via <see cref="IPartyApi"/>
 		/// </summary>
-		public string partyId;
+		public string id;
 
 		/// <summary>
 		/// String version of the `Access` property.
 		/// </summary>
-		public string access;
+		public string restriction;
 
 		/// <summary>
 		/// PlayerId of a player who created the party.
 		/// </summary>
-		public string host;
+		public string leader;
 
 		/// <summary>
-		/// Max number of players this party can hold.
+		/// List of ids of players who are currently active in the party.
 		/// </summary>
-		public int maxPlayers;
-
-		/// <summary>
-		/// List of <see cref="PartyPlayer"/> who are currently active in the party.
-		/// </summary>
-		public List<PartyPlayer> players;
+		public List<string> members;
 
 		/// <summary>
 		/// Either "Private" of "Public" representing who can join the <see cref="Party"/>
 		/// </summary>
-		public PartyAccess Access => (PartyAccess)Enum.Parse(typeof(PartyAccess), access);
+		public PartyRestriction Restriction => (PartyRestriction)Enum.Parse(typeof(PartyRestriction), restriction);
 
 		/// <summary>
 		/// Update the state of the current party with the data from another party instance.
@@ -44,11 +39,10 @@ namespace Beamable.Experimental.Api.Parties
 		/// <param name="updatedState">The latest copy of the party</param>
 		public void Set(Party updatedState)
 		{
-			partyId = updatedState?.partyId;
-			access = updatedState?.access;
-			host = updatedState?.host;
-			maxPlayers = updatedState?.maxPlayers ?? 0;
-			players = updatedState?.players;
+			id = updatedState?.id;
+			restriction = updatedState?.restriction;
+			leader = updatedState?.leader;
+			members = updatedState?.members;
 			TriggerUpdate();
 		}
 	}
