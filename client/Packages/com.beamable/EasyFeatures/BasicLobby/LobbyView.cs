@@ -1,5 +1,4 @@
-﻿using Beamable.Api;
-using Beamable.Common;
+﻿using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -173,10 +172,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 			catch (Exception e)
 			{
-				if (e is PlatformRequesterException pre)
-				{
-					OnError?.Invoke(pre.Error.error);
-				}
+				OnError?.Invoke(e.Message);
 			}
 		}
 
@@ -196,10 +192,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				}
 				catch (Exception e)
 				{
-					if (e is PlatformRequesterException pre)
-					{
-						OnError?.Invoke(pre.Error.error);
-					}
+					OnError?.Invoke(e.Message);
 				}
 			}
 		}

@@ -18,19 +18,23 @@ namespace Beamable.Player
 	{
 		public enum LobbyEvent
 		{
+			LobbyCreated,
 			LobbyDisbanded,
+			DataChanged,
 			PlayerJoined,
 			PlayerLeft,
-			DataChanged,
+			PlayerKicked,
+			HostPlayerChanged,
 			None
 		}
 
 		public event Action<Exception> OnExceptionThrown;
-		
+
 		private readonly ILobbyApi _lobbyApi;
 		private readonly INotificationService _notificationService;
 		private Lobby _state;
-		public LobbyEvent LastLobbyEvent { get; private set; } = LobbyEvent.None;
+
+		public ObservableChangeEvent<LobbyEvent, string> ChangeData;
 
 		public PlayerLobby(ILobbyApi lobbyApi, INotificationService notificationService)
 		{
@@ -177,7 +181,7 @@ namespace Beamable.Player
 				passcodeLength,
 				statsToInclude);
 		}
-		
+
 		/// <inheritdoc cref="ILobbyApi.UpdateLobby"/>
 		public async Promise Update(string lobbyId,
 		                            LobbyRestriction restriction,
@@ -187,12 +191,12 @@ namespace Beamable.Player
 		                            string gameType = null,
 		                            int? maxPlayers = null)
 		{
-			State = await _lobbyApi.UpdateLobby(lobbyId, 
+			State = await _lobbyApi.UpdateLobby(lobbyId,
 			                                    restriction,
 			                                    newHost,
-			                                    name, 
-			                                    description, 
-			                                    gameType, 
+			                                    name,
+			                                    description,
+			                                    gameType,
 			                                    maxPlayers);
 		}
 
@@ -255,6 +259,7 @@ namespace Beamable.Player
 			}
 			catch (Exception e)
 			{
+				Debug.Log(e.Message);
 				State = null;
 				OnExceptionThrown?.Invoke(e);
 			}
@@ -267,15 +272,37 @@ namespace Beamable.Player
 
 		private void OnRawUpdate(object message)
 		{
-			if (message is ArrayDict arrayDict && arrayDict.TryGetValue("event", out object changeEvent))
-			{
-				string value = (string)changeEvent;
-				LastLobbyEvent = Enum.TryParse(value, true, out LobbyEvent lobbyEvent) ? lobbyEvent : LobbyEvent.None;
-			}
-			
-			Debug.Log($"Origin: {LastLobbyEvent}");
-
+			ChangeData = ParseEvent(message);
 			var _ = Refresh();
+		}
+
+		protected override void ResetChangeData()
+		{
+			ChangeData = new ObservableChangeEvent<LobbyEvent, string> {Event = LobbyEvent.None, Data = String.Empty};
+		}
+
+		private ObservableChangeEvent<LobbyEvent, string> ParseEvent(object message)
+		{
+			ObservableChangeEvent<LobbyEvent, string> changeEvent = new ObservableChangeEvent<LobbyEvent, string>();
+
+			if (message is ArrayDict arrayDict)
+			{
+				if (arrayDict.TryGetValue("event", out object eventData))
+				{
+					string value = (string)eventData;
+					changeEvent.Event = Enum.TryParse(value, true, out LobbyEvent lobbyEvent)
+						? lobbyEvent
+						: LobbyEvent.None;
+				}
+
+				if (arrayDict.TryGetValue("playerId", out object playerId))
+				{
+					string value = (string)playerId;
+					changeEvent.Data = value;
+				}
+			}
+
+			return changeEvent;
 		}
 	}
 }

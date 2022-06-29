@@ -3,12 +3,14 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Events;
 
 namespace Beamable.EasyFeatures.BasicLobby
 {
@@ -34,6 +36,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		[Header("Fast-Path Configuration")]
 		public List<SimGameTypeRef> GameTypesRefs;
+
+		public UnityEvent OnMatchStarted;
 
 		public BeamContext BeamContext;
 
@@ -160,8 +164,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 				return;
 			}
 
-			BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
-			BeamContext.Lobby.OnUpdated += OnLobbyUpdated;
+			BeamContext.Lobby.OnLoadingFinished -= OnLobbyUpdated;
+			BeamContext.Lobby.OnLoadingFinished += OnLobbyUpdated;
 
 			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
 
@@ -170,10 +174,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private async void OnLobbyUpdated()
 		{
-			switch (BeamContext.Lobby.LastLobbyEvent)
+			if (BeamContext.Lobby.ChangeData.Event == PlayerLobby.LobbyEvent.None)
+			{
+				return;
+			}
+
+			switch (BeamContext.Lobby.ChangeData.Event)
 			{
 				case PlayerLobby.LobbyEvent.LobbyDisbanded:
-					ShowConfirmWindow("Lobby disbanded", "Lobby was disbanded", OpenMainView);
+					ShowInformWindow("Lobby disbanded", "Lobby was disbanded", OpenMainView);
 					break;
 				case PlayerLobby.LobbyEvent.PlayerJoined:
 				case PlayerLobby.LobbyEvent.PlayerLeft:
@@ -181,6 +190,26 @@ namespace Beamable.EasyFeatures.BasicLobby
 					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
 					await ViewGroup.Enrich();
 					break;
+				case PlayerLobby.LobbyEvent.PlayerKicked:
+					if (BeamContext.Lobby.ChangeData.Data == BeamContext.PlayerId.ToString())
+					{
+						ShowInformWindow("Player kicked", "You have been kicked", OpenMainView);
+					}
+					else
+					{
+						LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+						await ViewGroup.Enrich();
+					}
+					break;
+				case PlayerLobby.LobbyEvent.HostPlayerChanged:
+					if (BeamContext.Lobby.ChangeData.Data == BeamContext.PlayerId.ToString())
+					{
+						ShowInformWindow("Lobby host changed", "You have been promoted to lobby host", null);
+					}
+					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+					await ViewGroup.Enrich();
+					break;
+				case PlayerLobby.LobbyEvent.LobbyCreated:
 				case PlayerLobby.LobbyEvent.None:
 					break;
 			}
@@ -206,6 +235,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public void ShowConfirmWindow(string label, string message, Action confirmAction)
 		{
 			OverlaysController.ShowConfirm(label, message, confirmAction);
+		}
+
+		public void ShowInformWindow(string label, string message, Action confirmAction)
+		{
+			OverlaysController.ShowInform(label, message, confirmAction);
 		}
 
 		#endregion
@@ -274,7 +308,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public void StartMatchResponseReceived()
 		{
 			HideOverlay();
-			// Switch to the other scene after match has started
+			OnMatchStarted?.Invoke();
 		}
 
 		public void AdminLeaveLobbyRequestSent()
@@ -348,7 +382,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			ShowConfirmWindow("Kick player", "Are You sure You want to kick this player?", ConfirmAction);
 		}
-		
+
 		public void PassLeadershipClicked()
 		{
 			if (LobbyPlayerSystem.CurrentlySelectedPlayerIndex == null)
@@ -389,7 +423,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 				LobbyPlayerSystem.UpdateLobby(lobbyName, description, host);
 			}
 
-			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction, BeamContext.Lobby.Passcode);
+			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction,
+			                                     BeamContext.Lobby.Passcode);
 		}
 
 		#endregion
