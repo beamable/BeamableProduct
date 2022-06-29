@@ -1,5 +1,6 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 
+using Beamable.Common;
 using Beamable.Editor.Assistant;
 using System;
 using System.Collections.Generic;
@@ -235,7 +236,21 @@ namespace Beamable.Editor.ToolbarExtender
 			if (_hasPreviewPackages || _packageListRequest.IsCompleted)
 			{
 				// Parse package list only if we haven't detected that there are preview packages.
-				_hasPreviewPackages = _hasPreviewPackages || _packageListRequest.Result.Any(pck => pck.version.ToLower().Contains("preview") || string.IsNullOrEmpty(pck.versions.verified));
+				var foundPreviewPackages = _packageListRequest.Result.Any(package =>
+				{
+					// referencing https://docs.unity3d.com/Manual/upm-lifecycle.html
+					if (package.registry == null) return false; // no registry implies a local package, which won't trigger.
+					if (!PackageVersion.TryFromSemanticVersionString(package.version, out var version))
+					{
+						return true; // this isn't a valid package version, so we'll assume its a preview.
+					}
+
+					var isPreview = version.IsExperimental || version.IsPreview;
+					return isPreview;
+				});
+
+				// var foundPreviewPackages = _packageListRequest.Result.Any(pck => pck.version.ToLower().Contains("preview") || string.IsNullOrEmpty(pck.versions.verified));
+				_hasPreviewPackages = _hasPreviewPackages || foundPreviewPackages;
 				if (_hasPreviewPackages)
 				{
 					rightRect.xMax -= space;
