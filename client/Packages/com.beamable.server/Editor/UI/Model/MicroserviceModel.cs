@@ -346,7 +346,7 @@ $@"{{
 		{
 			Stop();
 			Debug.LogError($"DELETE ALL FILES {deleteAllFiles}");
-			if (!(RemoteStatus is {running: false} && deleteAllFiles))
+			if (!((RemoteStatus != null && !RemoteStatus.running) && deleteAllFiles))
 				Config.Archived = true;
 
 			MicroserviceEditor.DeleteMicroserviceFiles(this.Name);
