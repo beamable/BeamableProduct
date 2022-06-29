@@ -1,9 +1,9 @@
 
-using System.Threading.Tasks;
 using cli;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace tests;
 

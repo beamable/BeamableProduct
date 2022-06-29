@@ -1,5 +1,5 @@
-using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
+using System.CommandLine;
 
 namespace cli;
 

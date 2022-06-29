@@ -1,11 +1,11 @@
-using System.CommandLine;
-using System.CommandLine.Binding;
-using System.Diagnostics;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
 using Serilog.Events;
+using System.CommandLine;
+using System.CommandLine.Binding;
+using System.Diagnostics;
 
 namespace cli;
 
@@ -59,7 +59,7 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
 									AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
-	                         ConfigService configService, CliEnvironment environment)
+							 ConfigService configService, CliEnvironment environment)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -75,7 +75,7 @@ public class DefaultAppContext : IAppContext
 	public void Apply(BindingContext bindingContext)
 	{
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
-		
+
 		// Configure log level from option
 		{
 			var logLevelOption = bindingContext.ParseResult.GetValueForOption(_logOption);
@@ -86,7 +86,7 @@ public class DefaultAppContext : IAppContext
 			else
 				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Warning;
 		}
-		
+
 		WorkingDirectory = Directory.GetCurrentDirectory();
 		if (!TryGetSetting(out _cid, bindingContext, _cidOption))
 		{
@@ -125,11 +125,11 @@ public class DefaultAppContext : IAppContext
 		_token.RefreshToken = response.refresh_token;
 	}
 
-	private bool TryGetSetting(out string? value, BindingContext context, ConfigurableOption option, string? defaultValue=null)
+	private bool TryGetSetting(out string? value, BindingContext context, ConfigurableOption option, string? defaultValue = null)
 	{
 		// Try to get from option
 		value = context.ParseResult.GetValueForOption(option);
-		
+
 		// Try to get from config service
 		if (value == null)
 			value = _configService.GetConfigString(option.OptionName, defaultValue);

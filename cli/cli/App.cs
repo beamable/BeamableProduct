@@ -1,7 +1,3 @@
-using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -12,13 +8,17 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting.Raw;
+using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 
 namespace cli;
 
 public class App
 {
 	public static LoggingLevelSwitch LogLevel { get; set; }
-	
+
 	public ServiceCollection Services { get; set; }
 	public IServiceProvider Provider { get; set; }
 
@@ -46,13 +46,13 @@ public class App
 	}
 
 
-	public virtual void Configure(Action<ServiceCollection>? configurator=null)
+	public virtual void Configure(Action<ServiceCollection>? configurator = null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
 		ConfigureLogging();
-		
+
 		// add global options
 		Services.AddSingleton<DryRunOption>();
 		Services.AddSingleton<CidOption>();
@@ -115,11 +115,11 @@ public class App
 	{
 		var root = Provider.GetRequiredService<RootCommand>();
 		var commandLineBuilder = new CommandLineBuilder(root);
-		commandLineBuilder.AddMiddleware( consoleContext =>
-		{
-			var appContext = Provider.GetRequiredService<IAppContext>();
-			appContext.Apply(consoleContext.BindingContext);
-		}, MiddlewareOrder.Configuration);
+		commandLineBuilder.AddMiddleware(consoleContext =>
+	   {
+		   var appContext = Provider.GetRequiredService<IAppContext>();
+		   appContext.Apply(consoleContext.BindingContext);
+	   }, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();

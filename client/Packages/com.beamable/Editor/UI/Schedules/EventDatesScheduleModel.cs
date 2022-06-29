@@ -40,7 +40,7 @@ namespace Beamable.Editor.Models.Schedules
 			_calendarComponent.Calendar.OnValueChanged -= AdditionalValidation;
 			_calendarComponent.Calendar.OnValueChanged += AdditionalValidation;
 		}
-		
+
 		public override Schedule GetSchedule()
 		{
 			Schedule newSchedule = new Schedule();

@@ -198,12 +198,12 @@ namespace Beamable
 		/// <param name="isUnityVsp">is this package from Unity VSP?</param>
 		/// <param name="version">the package version</param>
 		public EnvironmentData(string environment,
-		                       string apiUrl,
-		                       string portalUrl,
-		                       string beamMongoExpressUrl,
-		                       string dockerRegistryUrl,
-		                       bool isUnityVsp,
-		                       PackageVersion version)
+							   string apiUrl,
+							   string portalUrl,
+							   string beamMongoExpressUrl,
+							   string dockerRegistryUrl,
+							   bool isUnityVsp,
+							   PackageVersion version)
 		{
 			this.environment = environment;
 			this.apiUrl = apiUrl;
@@ -213,7 +213,7 @@ namespace Beamable
 			this.isUnityVsp = isUnityVsp;
 			sdkVersion = version.ToString();
 		}
-		public EnvironmentData(){}
+		public EnvironmentData() { }
 
 		public EnvironmentData Clone()
 		{

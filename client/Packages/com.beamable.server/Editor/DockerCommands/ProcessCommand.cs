@@ -320,7 +320,8 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				await DockerCheckTask;
 
-				BeamEditorContext.Default.Dispatcher.Schedule(async () => {
+				BeamEditorContext.Default.Dispatcher.Schedule(async () =>
+				{
 					Debug.Log("Docker Desktop was closed!");
 					DockerNotRunning = true;
 

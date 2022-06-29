@@ -1,9 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using System.Text;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace cli;
 

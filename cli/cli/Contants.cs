@@ -16,22 +16,22 @@ public static class Constants
 	public const string CONFIG_ACCESS_TOKEN = "access_token";
 	public const string CONFIG_REFRESH_TOKEN = "refresh_token";
 
-	
+
 	/// <summary>
 	/// Key to extract <see cref="CliEnvironment.LogLevel"/> from <see cref="Environment.GetEnvironmentVariable(string)"/>. 
 	/// </summary>
 	public const string KEY_ENV_LOG_LEVEL = "BEAM_LOG_LEVEL";
-	
+
 	/// <summary>
 	/// Key to extract <see cref="CliEnvironment.Api"/> from <see cref="Environment.GetEnvironmentVariable(string)"/>.
 	/// </summary>
 	public const string KEY_ENV_API = "BEAM_API";
-	
+
 	/// <summary>
 	/// Key to extract <see cref="CliEnvironment.Cid"/> from <see cref="Environment.GetEnvironmentVariable(string)"/>.
 	/// </summary>
 	public const string KEY_ENV_CID = "BEAM_CID";
-	
+
 	/// <summary>
 	/// Key to extract <see cref="CliEnvironment.Pid"/> from <see cref="Environment.GetEnvironmentVariable(string)"/>.
 	/// </summary>
@@ -41,7 +41,7 @@ public static class Constants
 	/// Key to extract <see cref="CliEnvironment.AccessToken"/> from <see cref="Environment.GetEnvironmentVariable(string)"/>.
 	/// </summary>
 	public const string KEY_ENV_ACCESS_TOKEN = "BEAM_ACCESS_TOKEN";
-	
+
 	/// <summary>
 	/// Key to extract <see cref="CliEnvironment.RefreshToken"/> from <see cref="Environment.GetEnvironmentVariable(string)"/>.
 	/// </summary>

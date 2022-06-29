@@ -228,8 +228,8 @@ namespace Beamable.Editor.Content.Models
 		public string GetFormattedLastChanged => LastChanged == 0
 			? string.Empty
 			: DateTimeOffset.FromUnixTimeMilliseconds(LastChanged).DateTime
-			                .ToLocalTime()
-			                .ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
+							.ToLocalTime()
+							.ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
 
 		public long LastChanged { get; private set; }
 
@@ -255,7 +255,7 @@ namespace Beamable.Editor.Content.Models
 
 			SetupLocalEventListeners();
 		}
-		
+
 		public ContentItemDescriptor(LocalContentManifestEntry entry, ContentTypeDescriptor typeDescriptor)
 		{
 			_localData = entry;
@@ -335,7 +335,7 @@ namespace Beamable.Editor.Content.Models
 			_allTags = CollectAllTags();
 			_serverLastChanged = entry.LastChanged;
 			LastChanged = _serverLastChanged;
-			
+
 			OnEnriched?.Invoke(this);
 		}
 
@@ -472,7 +472,7 @@ namespace Beamable.Editor.Content.Models
 			_validationExceptions = null;
 			OnEnriched?.Invoke(this);
 		}
-		
+
 		public void RefreshLatestUpdate(bool setOriginalLatestUpdate = false)
 		{
 			LastChanged = setOriginalLatestUpdate ? _serverLastChanged : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

@@ -11,7 +11,7 @@ public class ConfigCommand : AppCommand<ConfigCommandArgs>
 {
 	private readonly ConfigService _configService;
 
-	public ConfigCommand( ConfigService configService) : base("config", "list the current configuration")
+	public ConfigCommand(ConfigService configService) : base("config", "list the current configuration")
 	{
 		_configService = configService;
 	}

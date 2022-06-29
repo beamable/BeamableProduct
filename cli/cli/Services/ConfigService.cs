@@ -1,5 +1,5 @@
-using System.Net.Http.Json;
 using Newtonsoft.Json;
+using System.Net.Http.Json;
 
 namespace cli;
 
@@ -19,7 +19,7 @@ public class ConfigService
 
 	public string PrettyPrint() => JsonConvert.SerializeObject(_config, Formatting.Indented);
 
-	public string? GetConfigString(string key, string? defaultValue=null)
+	public string? GetConfigString(string key, string? defaultValue = null)
 	{
 		if (_config?.TryGetValue(key, out var value) ?? false)
 		{
@@ -37,7 +37,7 @@ public class ConfigService
 
 	public void SetBeamableDirectory(string dir)
 	{
-		ConfigFilePath = Path.Combine(dir, Constants.CONFIG_FOLDER);;
+		ConfigFilePath = Path.Combine(dir, Constants.CONFIG_FOLDER); ;
 	}
 
 	public void FlushConfig()
@@ -95,7 +95,7 @@ public class ConfigService
 			var content = File.ReadAllText(fullPath);
 			result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
 
-			return result is {Count: > 0};
+			return result is { Count: > 0 };
 		}
 
 		return false;
