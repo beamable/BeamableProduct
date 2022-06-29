@@ -39,7 +39,7 @@ namespace Beamable.Editor.Content.Components
 		}
 		private string _statusClassName;
 		private string _previousStatusClassName;
-		
+
 		private TextField _nameTextField;
 		private Label _pathLabel;
 		private TagListVisualElement _tagListVisualElement;
@@ -116,7 +116,7 @@ namespace Beamable.Editor.Content.Components
 			_nameTextField.value = ContentItemDescriptor.Name;
 			_pathLabel.text = ContentItemDescriptor.ContentType.ShortName;
 			_tagListVisualElement.TagDescriptors = ContentItemDescriptor.GetAllTags().ToList();
-			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged; 
+			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged;
 			// _tagListVisualElement.ContentItemDescriptor = _contentItemDescriptor;
 			_tagListVisualElement.Refresh();
 
@@ -170,15 +170,15 @@ namespace Beamable.Editor.Content.Components
 
 		private void UpdateLastChanged()
 		{
-			if (string.IsNullOrWhiteSpace(_previousStatusClassName) )
+			if (string.IsNullOrWhiteSpace(_previousStatusClassName))
 				return;
-			
+
 			if (_statusClassName.Equals("inSync"))
 			{
 				_contentItemDescriptor.RefreshLatestUpdate(true);
 			}
 			else if (!_previousStatusClassName.Equals(_statusClassName) ||
-			         _previousStatusClassName.Equals(_statusClassName) && _statusClassName.Equals("modified"))
+					 _previousStatusClassName.Equals(_statusClassName) && _statusClassName.Equals("modified"))
 			{
 				_contentItemDescriptor.RefreshLatestUpdate();
 			}
