@@ -327,6 +327,7 @@ $@"{{
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			ServiceDescriptor = (MicroserviceDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
+			oldBuilder.Descriptor = descriptor;
 			ServiceBuilder = serviceRegistry.GetServiceBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
 		}
