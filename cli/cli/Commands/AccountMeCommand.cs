@@ -1,7 +1,7 @@
-using System.Net.Http.Json;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
 using Spectre.Console;
+using System.Net.Http.Json;
 
 namespace cli;
 
