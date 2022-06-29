@@ -1,13 +1,11 @@
-﻿using Beamable.Common;
-using Beamable.Common.Api.Realms;
-using Beamable.Editor.Modules.Account;
-using Beamable.Editor.Toolbox.Models;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using Beamable.Editor.Toolbox.Models;
+using Beamable.Editor.Modules.Account;
+using System;
+using Beamable.Common;
+using Beamable.Common.Api.Realms;
+using System.Linq;
 
 namespace Beamable.Editor.Tests
 {

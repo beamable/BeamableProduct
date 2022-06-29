@@ -1,14 +1,15 @@
-﻿using Beamable.Common.Dependencies;
-using Beamable.Editor.Toolbox.Components;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.UI;
-using Beamable.Editor.UI.Components;
-using NUnit.Framework;
+﻿using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+
+using Beamable.Common.Dependencies;
+using Beamable.Editor.Toolbox.Models;
+using Beamable.Editor.Toolbox.Components;
+using Beamable.Editor.UI;
+using Beamable.Editor.UI.Components;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -20,23 +21,21 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Tests.Toolbox
 {
-	public class ToolboxTests
-	{
-		public IDependencyProvider provider;
+    public class ToolboxTests : EditorTest
+    {
+	    protected override void Configure(IDependencyBuilder builder)
+	    {
+		    builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
+	    }
 
 		//Test if ticking filter in tags will change the search bar value to tag:{tag}
 		[Test]
 		public void TestQueryTag()
 		{
-			IDependencyBuilder builder = new DependencyBuilder();
-			builder.AddSingleton<IToolboxViewService, MockToolboxViewService>();
-
-			provider = builder.Build();
-
-			IToolboxViewService model = provider.GetService<IToolboxViewService>();
+			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
 
 			ToolboxActionBarVisualElement tb = new ToolboxActionBarVisualElement();
-			tb.Refresh(provider);
+			tb.Refresh(Provider);
 
 			Button button = tb.Q<Button>("CategoryButton");
 			button.SendEvent(new ContextClickEvent());
