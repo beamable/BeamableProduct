@@ -4,12 +4,14 @@ using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {
 	[System.Serializable]
-	public class MicroservicesDataModel
+	public class MicroservicesDataModel : IServiceStorable
 	{
+		private readonly BeamEditorContext _ctx;
 
 		public static MicroservicesDataModel GetInstance(BeamEditorContext context)
 		{
@@ -18,12 +20,6 @@ namespace Beamable.Editor.UI.Model
 		}
 
 		public static MicroservicesDataModel Instance => GetInstance(BeamEditorContext.Default);
-
-		public MicroservicesDataModel()
-		{
-			RefreshLocal();
-			RefreshServerManifest();
-		}
 
 		private MicroserviceReflectionCache.Registry _serviceRegistry;
 
@@ -63,8 +59,15 @@ namespace Beamable.Editor.UI.Model
 
 		public Action<ServiceManifest> OnServerManifestUpdated;
 		public Action<GetStatusResponse> OnStatusUpdated;
+
+		[NonSerialized]
 		public Guid InstanceId = Guid.NewGuid();
-		
+
+		public MicroservicesDataModel(BeamEditorContext ctx)
+		{
+			_ctx = ctx;
+		}
+
 		public void RefreshLocal()
 		{
 			var unseen = new HashSet<IBeamableService>(AllLocalServices);
@@ -102,8 +105,7 @@ namespace Beamable.Editor.UI.Model
 		public void RefreshServerManifest()
 		{
 			// TODO: Make this return a promise
-			var b = BeamEditorContext.Default;
-			b.GetMicroserviceManager().GetStatus().Then(status =>
+			_ctx.GetMicroserviceManager().GetStatus().Then(status =>
 			{
 				Status = status;
 				foreach (var serviceStatus in status.services)
@@ -112,7 +114,7 @@ namespace Beamable.Editor.UI.Model
 				}
 				OnStatusUpdated?.Invoke(status);
 			});
-			b.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
+			_ctx.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
 			{
 				ServerManifest = manifest;
 				foreach (var service in Services)
@@ -274,6 +276,17 @@ namespace Beamable.Editor.UI.Model
 		public void Destroy()
 		{
 			_serviceRegistry.OnDeploySuccess -= HandleMicroservicesDeploySuccess;
+		}
+
+		public void OnBeforeSaveState()
+		{
+
+		}
+
+		public void OnAfterLoadState()
+		{
+			RefreshLocal();
+			RefreshServerManifest();
 		}
 	}
 
