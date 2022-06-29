@@ -192,7 +192,8 @@ namespace Beamable.Editor.Content.Components
 							ContentId = toAdd.Id,
 							Operation = "upload",
 							Tags = toAdd.Tags,
-							Uri = ""
+							Uri = "",
+							LastChanged = desc.LastChanged
 						};
 						addSource.Add(data);
 					}
@@ -211,7 +212,8 @@ namespace Beamable.Editor.Content.Components
 							ContentId = toModify.Id,
 							Operation = "modify",
 							Tags = toModify.Tags,
-							Uri = ""
+							Uri = "",
+							LastChanged = desc.LastChanged
 						};
 						modifySource.Add(data);
 					}
@@ -230,7 +232,8 @@ namespace Beamable.Editor.Content.Components
 							ContentId = toDelete,
 							Tags = desc.ServerTags?.ToArray(),
 							Operation = "delete",
-							Uri = ""
+							Uri = "",
+							LastChanged = desc.LastChanged
 						};
 						deleteSource.Add(data);
 					}

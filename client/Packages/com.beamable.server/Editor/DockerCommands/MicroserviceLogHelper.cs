@@ -78,10 +78,11 @@ namespace Beamable.Server.Editor.DockerCommands
 					Parameters = new Dictionary<string, object>()
 				};
 
-				EditorApplication.delayCall += () =>
+				BeamEditorContext.Default.Dispatcher.Schedule(() =>
 				{
 					MicroservicesDataModel.Instance.AddLogMessage(storage, errorMessage);
-				};
+				});
+
 				return true;
 			}
 
@@ -104,10 +105,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				Parameters = new Dictionary<string, object>()
 			};
 
-			EditorApplication.delayCall += () =>
-			{
-				MicroservicesDataModel.Instance.AddLogMessage(storage, logMessage);
-			};
+			BeamEditorContext.Default.Dispatcher.Schedule(() => MicroservicesDataModel.Instance.AddLogMessage(storage, logMessage));
 			return true;
 
 		}
@@ -204,10 +202,8 @@ namespace Beamable.Server.Editor.DockerCommands
 					Level = logLevelValue,
 					Timestamp = LogMessage.GetTimeDisplay(time)
 				};
-				EditorApplication.delayCall += () =>
-				{
-					MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage);
-				};
+				BeamEditorContext.Default.Dispatcher.Schedule(() => MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage));
+
 				if (MicroserviceConfiguration.Instance.ForwardContainerLogsToUnityConsole)
 				{
 					Debug.Log($"{WithColor(Color.grey, $"[{label}]")} {WithColor(color, $"[{logLevel}]")} {WithColor(darkColor, $"{message}\n{objsToString}")}");
@@ -230,10 +226,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					Level = LogLevel.INFO,
 					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now)
 				};
-				EditorApplication.delayCall += () =>
-				{
-					MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage);
-				};
+				BeamEditorContext.Default.Dispatcher.Schedule(() => MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage));
 				return !MicroserviceConfiguration.Instance.ForwardContainerLogsToUnityConsole;
 #else
             return false;
@@ -253,11 +246,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				MessageColor = color,
 				Level = logLevel
 			};
-
-			EditorApplication.delayCall += () =>
-			{
-				MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage);
-			};
+			BeamEditorContext.Default.Dispatcher.Schedule(() => MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage));
 
 			return true;
 		}
@@ -284,10 +273,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			else if (ContextForLogs.Keys.Any(message.Contains))
 			{
 				var key = ContextForLogs.Keys.First(message.Contains);
-				EditorApplication.delayCall += () =>
-				{
-					Debug.LogError(ContextForLogs[key]);
-				};
+				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(ContextForLogs[key]));
 			}
 			else if (message.Contains("Success"))
 			{
