@@ -2,9 +2,9 @@ using System.CommandLine;
 
 namespace cli;
 
-public class CidOption : Option<string>
+public class CidOption : ConfigurableOption
 {
 	public CidOption()
-		:base("--cid", "a cid to use; will default to whatever is in the file system")
+		: base(Constants.CONFIG_CID, "a cid to use; will default to whatever is in the file system")
 	{ }
 }

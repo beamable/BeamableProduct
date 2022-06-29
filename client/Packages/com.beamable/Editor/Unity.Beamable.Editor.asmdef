@@ -11,6 +11,7 @@
         "Unity.TextMeshPro",
         "Unity.Beamable",
         "Unity.Beamable.Runtime.Common",
+        "Unity.EditorCoroutines.Editor",
         "Beamable.UnityUIExtensions",
         "Beamable.ConsoleCommands"
     ],

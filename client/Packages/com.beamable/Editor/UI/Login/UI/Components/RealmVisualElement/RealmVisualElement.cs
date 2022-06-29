@@ -1,4 +1,4 @@
-using Beamable.Editor.Realms;
+using Beamable.Common.Api.Realms;
 using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;

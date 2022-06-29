@@ -13,9 +13,9 @@ namespace Beamable.Server.Editor.ManagerClient
 	{
 		public const string SERVICE = "/basic/beamo";
 
-		public PlatformRequester Requester { get; }
+		public IPlatformRequester Requester { get; }
 
-		public MicroserviceManager(PlatformRequester requester)
+		public MicroserviceManager(IPlatformRequester requester)
 		{
 			Requester = requester;
 		}
