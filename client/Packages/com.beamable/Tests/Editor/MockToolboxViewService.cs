@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Realms;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.Modules.Account;
 using System;
 using Beamable.Common;
