@@ -8,6 +8,9 @@ namespace Beamable.Common
 	public class PackageVersion
 	{
 		private const string PREVIEW_STRING = "PREVIEW";
+		private const string PREVIEW_PREFIX_STRING = "PRE";
+		private const string EXPERIMENTAL_STRING = "EXPERIMENTAL";
+		private const string EXP_PREFIX_STRING = "EXP";
 		private const string RC_STRING = "RC";
 		private const string NIGHTLY_STRING = "NIGHTLY";
 		private const int UNASSIGNED_VALUE = -1;
@@ -20,7 +23,7 @@ namespace Beamable.Common
 		[SerializeField] private int _patch = UNASSIGNED_VALUE;
 		[SerializeField] private int _rc = UNASSIGNED_VALUE;
 		[SerializeField] private long _nightlyTime = UNASSIGNED_VALUE;
-		[SerializeField] private bool _isPreview;
+		[SerializeField] private bool _isPreview, _isExperimental;
 
 		/// <summary>
 		/// True if this package version is representing a release candidate version.
@@ -34,8 +37,15 @@ namespace Beamable.Common
 
 		/// <summary>
 		/// True if this package version is representing a preview build.
+		/// https://docs.unity3d.com/Manual/upm-lifecycle.html
 		/// </summary>
 		public bool IsPreview => _isPreview;
+
+		/// <summary>
+		/// True if this package version represents an experimental build.
+		/// https://docs.unity3d.com/Manual/upm-lifecycle.html
+		/// </summary>
+		public bool IsExperimental => _isExperimental;
 
 		/// <summary>
 		/// The major version is the first number in the semantic version string.
@@ -65,7 +75,7 @@ namespace Beamable.Common
 		/// </summary>
 		public int? RC => IsReleaseCandidate ? _rc : default;
 
-		public PackageVersion(int major, int minor, int patch, int rc = -1, long nightlyTime = -1, bool isPreview = false)
+		public PackageVersion(int major, int minor, int patch, int rc = -1, long nightlyTime = -1, bool isPreview = false, bool isExperimental=false)
 		{
 			_major = major;
 			_minor = minor;
@@ -73,6 +83,7 @@ namespace Beamable.Common
 			_rc = rc;
 			_nightlyTime = nightlyTime;
 			_isPreview = isPreview;
+			_isExperimental = isExperimental;
 		}
 
 		protected bool Equals(PackageVersion other)
@@ -161,6 +172,11 @@ namespace Beamable.Common
 				sb.Append(PREVIEW_SEPARATOR);
 				sb.Append(PREVIEW_STRING);
 			}
+			if (_isExperimental && _major != 0)
+			{
+				sb.Append(PREVIEW_SEPARATOR);
+				sb.Append(EXPERIMENTAL_STRING);
+			}
 
 			if (IsNightly)
 			{
@@ -202,6 +218,7 @@ namespace Beamable.Common
 
 		/// <summary>
 		/// Parse a string into a <see cref="PackageVersion"/>
+		/// https://docs.unity3d.com/Manual/upm-lifecycle.html
 		/// </summary>
 		/// <param name="semanticVersion">some semantic version string</param>
 		/// <returns>A <see cref="PackageVersion"/></returns>
@@ -214,14 +231,34 @@ namespace Beamable.Common
 			var rc = -1;
 			var nightlyTime = -1L;
 			var isPreview = false;
+			var isExp = false;
 
 			var buffer = "";
 			for (var i = 0; i < semanticVersion.Length; i++)
 			{
 				var c = semanticVersion[i];
-				if (!isPreview && buffer.Equals(PREVIEW_STRING))
+				if (!isPreview && buffer.ToLowerInvariant().StartsWith(PREVIEW_PREFIX_STRING.ToLowerInvariant()))
 				{
+					// consume the rest of the PREVIEW_STRING- which is until some delim.
+					while (c != PREVIEW_SEPARATOR && c != VERSION_SEPARATOR && i < semanticVersion.Length)
+					{
+						i++; // outside for loop modification.
+						c = semanticVersion[i];
+					}
+
 					isPreview = true;
+					buffer = "";
+				}
+				if (!isExp && buffer.ToLowerInvariant().StartsWith(EXP_PREFIX_STRING.ToLowerInvariant()))
+				{
+					// consume the rest of the PREVIEW_STRING- which is until some delim.
+					while (c != PREVIEW_SEPARATOR && c != VERSION_SEPARATOR && i < semanticVersion.Length)
+					{
+						i++; // outside for loop modification.
+						c = semanticVersion[i];
+					}
+
+					isExp = true;
 					buffer = "";
 				}
 
@@ -288,15 +325,26 @@ namespace Beamable.Common
 					}
 				}
 
+				if (lastChar && buffer.ToLowerInvariant().StartsWith(PREVIEW_PREFIX_STRING.ToLowerInvariant()))
+				{
+					isPreview = true;
+				}
+
+				if (lastChar && buffer.ToLowerInvariant().StartsWith(EXP_PREFIX_STRING.ToLowerInvariant()))
+				{
+					isExp = true;
+				}
 			}
 
+			isExp |= major == 0; // if the major version is a 0, then its implied to be a preview package.
 			return new PackageVersion(
 			   major: major,
 			   minor: minor,
 			   patch: patch,
 			   rc: rc,
 			   nightlyTime: nightlyTime,
-			   isPreview: isPreview);
+			   isPreview: isPreview,
+			   isExperimental: isExp);
 		}
 	}
 }
