@@ -1,8 +1,8 @@
-using System.CommandLine;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using cli.Utils;
 using Spectre.Console;
+using System.CommandLine;
 
 namespace cli;
 
@@ -18,7 +18,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 	private readonly IRealmsApi _realmsApi;
 	private readonly IAliasService _aliasService;
 
-	public InitCommand(IAppContext ctx, ConfigService configService, LoginCommand loginCommand, ConfigCommand configCommand, IRealmsApi realmsApi, IAliasService aliasService )
+	public InitCommand(IAppContext ctx, ConfigService configService, LoginCommand loginCommand, ConfigCommand configCommand, IRealmsApi realmsApi, IAliasService aliasService)
 		: base("init", "Initialize a new beamable project in the current directory.")
 	{
 		_ctx = ctx;

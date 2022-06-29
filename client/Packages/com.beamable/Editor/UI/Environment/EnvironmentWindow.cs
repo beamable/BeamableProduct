@@ -101,10 +101,10 @@ namespace Beamable.Editor.UI.Environment
 
 			_applyButton = root.Q<PrimaryButtonVisualElement>();
 			_applyButton.AddGateKeeper(validVersion,
-			                    _apiTextBox.AddErrorLabel("valid api url", CheckUrl),
-			                    _portalApiTextBox.AddErrorLabel("valid portal url", CheckUrl),
-			                    _mongoExpressTextBox.AddErrorLabel("valid mongo express url", CheckUrl),
-			                    _dockerRegTextBox.AddErrorLabel("valid docker registry url", CheckUrl));
+								_apiTextBox.AddErrorLabel("valid api url", CheckUrl),
+								_portalApiTextBox.AddErrorLabel("valid portal url", CheckUrl),
+								_mongoExpressTextBox.AddErrorLabel("valid mongo express url", CheckUrl),
+								_dockerRegTextBox.AddErrorLabel("valid docker registry url", CheckUrl));
 			_applyButton.Button.clickable.clicked += OnApplyClicked;
 
 			SetUIFromData();
@@ -130,7 +130,8 @@ namespace Beamable.Editor.UI.Environment
 			_service.SetOverrides(_data);
 		}
 
-		void SetUIFromData() {
+		void SetUIFromData()
+		{
 			_envTextBox.SetValueWithoutNotify(_data.Environment);
 			_apiTextBox.SetValueWithoutNotify(_data.ApiUrl);
 			_portalApiTextBox.SetValueWithoutNotify(_data.PortalUrl);
