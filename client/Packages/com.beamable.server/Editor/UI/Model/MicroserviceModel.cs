@@ -346,8 +346,15 @@ $@"{{
 		{
 			Stop();
 			Debug.LogError($"DELETE ALL FILES {deleteAllFiles}");
-			if (!((RemoteStatus != null && !RemoteStatus.running) && deleteAllFiles))
+
+			if (RemoteStatus != null && RemoteStatus.running)
+			{
+				if (!deleteAllFiles)
+					Config.Archived = true;
+			}
+			else
 				Config.Archived = true;
+
 
 			MicroserviceEditor.DeleteMicroserviceFiles(this.Name);
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
