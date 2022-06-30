@@ -146,10 +146,22 @@ namespace Beamable.Editor.UI.Model
 			}
 		}
 
-		public void Archive(bool deleteAllFiles)
+		public async void Archive(bool deleteAllFiles)
 		{
+			await Stop();
+
 			Debug.LogError($"DELETE ALL FILES {deleteAllFiles}");
-			Config.Archived = true;
+
+			if (RemoteReference != null && RemoteReference.enabled)
+			{
+				if (!deleteAllFiles)
+					Config.Archived = true;
+			}
+			else
+				Config.Archived = true;
+			
+			if (deleteAllFiles)
+				MicroserviceEditor.DeleteMicroserviceFiles(this.Name);
 			
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}
