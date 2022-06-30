@@ -1,5 +1,7 @@
 using Beamable.Common;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests.Common
 {
@@ -16,7 +18,7 @@ namespace Beamable.Editor.Tests.Common
 		public void CanFindPublicMethod()
 		{
 			var instance = new BaseClass();
-			instance.TryInvokeCallback(nameof(BaseClass.Tuna));
+			Assert.IsTrue(instance.TryInvokeCallback(nameof(BaseClass.Tuna)));
 			Assert.AreEqual(BaseClass.InvokeTunaCount, 1);
 		}
 
@@ -24,7 +26,7 @@ namespace Beamable.Editor.Tests.Common
 		public void CanFindPrivateMethod()
 		{
 			var instance = new BaseClass();
-			instance.TryInvokeCallback("Fish");
+			Assert.IsTrue(instance.TryInvokeCallback("Fish"));
 			Assert.AreEqual(BaseClass.InvokeFishCount, 1);
 		}
 
@@ -32,7 +34,7 @@ namespace Beamable.Editor.Tests.Common
 		public void CanFindPublicMethodFromBase()
 		{
 			var instance = new SubClass();
-			instance.TryInvokeCallback(nameof(BaseClass.Tuna));
+			Assert.IsTrue(instance.TryInvokeCallback(nameof(BaseClass.Tuna)));
 			Assert.AreEqual(BaseClass.InvokeTunaCount, 1);
 		}
 
@@ -40,8 +42,28 @@ namespace Beamable.Editor.Tests.Common
 		public void CanFindPrivateMethodFromBase()
 		{
 			var instance = new SubClass();
-			instance.TryInvokeCallback("Fish");
+			Assert.IsTrue(instance.TryInvokeCallback("Fish"));
 			Assert.AreEqual(BaseClass.InvokeFishCount, 1);
+		}
+
+		[Test]
+		public void ExpectAFailureWhenNoMethodExists()
+		{
+			var instance = new SubClass();
+			LogAssert.Expect(LogType.Error, "Callback method not found");
+			Assert.IsFalse(instance.TryInvokeCallback("DoesNotExist"));
+			Assert.AreEqual(BaseClass.InvokeFishCount, 0);
+			Assert.AreEqual(BaseClass.InvokeTunaCount, 0);
+
+		}
+
+		[Test]
+		public void ExpectAFailureWhenMethodHasParams()
+		{
+			var instance = new SubClass();
+			LogAssert.Expect(LogType.Error, "Callback method cannot not have parameters.");
+			Assert.IsFalse(instance.TryInvokeCallback(nameof(SubClass.HasParams)));
+			Assert.AreEqual(BaseClass.InvokeFishCount, 0);
 		}
 	}
 
@@ -63,6 +85,9 @@ namespace Beamable.Editor.Tests.Common
 
 	class SubClass : BaseClass
 	{
-
+		public void HasParams(int a)
+		{
+			InvokeFishCount++;
+		}
 	}
 }

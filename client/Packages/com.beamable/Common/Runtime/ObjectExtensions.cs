@@ -7,10 +7,10 @@ namespace Beamable.Common
 {
 	public static class ObjectExtensions
 	{
-		public static void TryInvokeCallback(this object target, string callbackMethodName, BindingFlags bindingFlags =
+		public static bool TryInvokeCallback(this object target, string callbackMethodName, BindingFlags bindingFlags =
 			                                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
 		{
-			void Attempt(Type type)
+			bool Attempt(Type type)
 			{
 				while (true)
 				{
@@ -28,21 +28,21 @@ namespace Beamable.Common
 						}
 
 						Debug.LogError("Callback method not found");
-						return;
+						return false;
 					}
 
 					if (method.GetParameters().Any())
 					{
 						Debug.LogError("Callback method cannot not have parameters.");
-						return;
+						return false;
 					}
 
 					method.Invoke(target, null);
-					break;
+					return true;
 				}
 			}
 
-			Attempt(target.GetType());
+			return Attempt(target.GetType());
 		}
 	}
 }
