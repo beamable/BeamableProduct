@@ -36,6 +36,7 @@ namespace Beamable
 	{
 		PlayerStats Stats { get; }
 		PlayerLobby Lobby { get; }
+		PlayerParty Party { get; }
 	}
 
 	/// <summary>
@@ -138,6 +139,9 @@ namespace Beamable
 		private PlayerStats _playerStats;
 
 		[SerializeField] private PlayerLobby _playerLobby;
+		
+		[SerializeField]
+		private PlayerParty _playerParty;
 
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
@@ -158,6 +162,11 @@ namespace Beamable
 		/// Access the <see cref="PlayerLobby"/> for this context.
 		/// </summary>
 		public PlayerLobby Lobby => _playerLobby = _playerLobby ?? _serviceScope.GetService<PlayerLobby>();
+
+		/// <summary>
+		/// Access the <see cref="PlayerParty"/> for this context.
+		/// </summary>
+		public PlayerParty Party => _playerParty = _playerParty ?? _serviceScope.GetService<PlayerParty>();
 
 		/// <summary>
 		/// <para>

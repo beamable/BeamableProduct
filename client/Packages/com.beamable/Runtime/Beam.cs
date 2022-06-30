@@ -216,6 +216,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
+			DependencyBuilder.AddScoped<PlayerParty>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
 
 			// register module configurations. XXX: move these registrations into their own modules?

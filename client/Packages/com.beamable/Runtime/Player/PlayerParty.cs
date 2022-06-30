@@ -1,0 +1,175 @@
+﻿using Beamable.Common;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Player;
+using Beamable.Experimental.Api.Parties;
+using System;
+using System.Collections.Generic;
+
+namespace Beamable.Player
+{
+	/// <summary>
+	/// Experimental API around managing a player's party state.
+	/// </summary>
+	[Serializable]
+	public class PlayerParty : Observable<Party>, IDisposable
+	{
+		private readonly IPartyApi _partyApi;
+		private readonly INotificationService _notificationService;
+		private Party _state;
+
+		public PlayerParty(IPartyApi partyApi, INotificationService notificationService)
+		{
+			_partyApi = partyApi;
+			_notificationService = notificationService;
+		}
+
+		private static string PlayersLeftName(string partyId) => $"party.players_left.{partyId}";
+		private static string PlayersJoinedName(string partyId) => $"party.players_joined.{partyId}";
+
+		public override Party Value
+		{
+			get => base.Value;
+			set
+			{
+				if (value != null)
+				{
+					if (_state == null)
+					{
+						_notificationService.Subscribe(PlayersLeftName(value.id), OnRawUpdate);
+						_notificationService.Subscribe(PlayersJoinedName(value.id), OnRawUpdate);
+					}
+				}
+				else
+				{
+					if (_state != null)
+					{
+						_notificationService.Unsubscribe(PlayersLeftName(_state.id), OnRawUpdate);
+						_notificationService.Unsubscribe(PlayersJoinedName(_state.id), OnRawUpdate);
+					}
+				}
+
+				if (_state == null)
+				{
+					_state = value;
+				}
+				else
+				{
+					_state.Set(value);
+				}
+
+				base.Value = value;
+			}
+		}
+
+		private void OnRawUpdate(object message)
+		{
+			var _ = Refresh();
+		}
+
+		protected override async Promise PerformRefresh()
+		{
+			if (State == null) return;
+
+			State = await _partyApi.GetParty(State.id);
+		}
+
+		/// <summary>
+		/// The current <see cref="Party"/> the player is in. If the player is not in a party, then this field is null.
+		/// A player can only be in one party at a time.
+		/// </summary>
+		public Party State
+		{
+			get => _state;
+			private set => Value = value;
+		}
+
+		
+		/// <summary>
+		/// Checks if the player is in a party.
+		/// </summary>
+		public bool IsInParty => State != null;
+
+		/// <inheritdoc cref="Party.id"/>
+		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
+		public string Id => SafeAccess(State?.id);
+		
+		/// <inheritdoc cref="Party.Restriction"/>
+		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
+		public PartyRestriction Restriction => SafeAccess(State.Restriction);
+		
+		/// <inheritdoc cref="Party.leader"/>
+		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
+		public string Leader => SafeAccess(State?.leader);
+		
+		/// <inheritdoc cref="Party.members"/>
+		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
+		public List<string> Members => SafeAccess(State?.members);
+
+		private T SafeAccess<T>(T value)
+		{
+			if (!IsInParty)
+			{
+				throw new NotInParty();
+			}
+
+			return value;
+		}
+
+		/// <inheritdoc cref="IPartyApi.CreateParty"/>
+		public async Promise Create(PartyRestriction restriction)
+		{
+			State = await _partyApi.CreateParty(restriction);
+		}
+
+		/// <inheritdoc cref="IPartyApi.JoinParty"/>
+		public async Promise Join(string partyId)
+		{
+			State = await _partyApi.JoinParty(partyId);
+		}
+
+		/// <inheritdoc cref="IPartyApi.LeaveParty"/>
+		public async Promise Leave()
+		{
+			if (State == null)
+			{
+				return;
+			}
+
+			try
+			{
+				await _partyApi.LeaveParty(State.id);
+			}
+			finally
+			{
+				State = null;
+			}
+		}
+
+		/// <inheritdoc cref="IPartyApi.InviteToParty"/>
+		public async Promise Invite(string playerId)
+		{
+			if (State == null)
+			{
+				return;
+			}
+			
+			await _partyApi.InviteToParty(State.id, playerId);
+		}
+
+		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
+		public async Promise Promote(string playerId)
+		{
+			if (State == null)
+			{
+				return;
+			}
+
+			await _partyApi.PromoteToLeader(State.id, playerId);
+		}
+		
+		public void Dispose()
+		{
+			_state = null;
+		}
+	}
+}

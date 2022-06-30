@@ -37,9 +37,9 @@ namespace Beamable.Experimental.Api.Parties
 		/// Send a request to the given <see cref="Party"/> to remove the player with the given playerId.
 		/// If the requesting player doesn't have the capability to boot players, this will throw an exception.
 		/// </summary>
-		/// <param name="lobbyId">The id of the <see cref="Party"/>.</param>
-		/// <param name="partyId">The id of the player to remove.</param>
-		Promise KickPlayer(string lobbyId, string partyId);
+		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
+		/// <param name="playerId">The id of the player to remove.</param>
+		Promise KickPlayer(string partyId, string playerId);
 
 		/// <summary>
 		/// Send a request to the given <see cref="Party"/> to promote the player with the given playerId to leader.
