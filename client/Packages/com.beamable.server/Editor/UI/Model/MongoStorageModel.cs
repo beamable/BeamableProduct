@@ -149,9 +149,7 @@ namespace Beamable.Editor.UI.Model
 		public async void Archive(bool deleteAllFiles)
 		{
 			await Stop();
-
-			Debug.LogError($"DELETE ALL FILES {deleteAllFiles}");
-
+			
 			if (RemoteReference != null && RemoteReference.enabled)
 			{
 				if (!deleteAllFiles)
