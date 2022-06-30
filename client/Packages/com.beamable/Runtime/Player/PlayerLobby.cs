@@ -32,7 +32,6 @@ namespace Beamable.Player
 
 		private readonly ILobbyApi _lobbyApi;
 		private readonly INotificationService _notificationService;
-		private Lobby _state;
 
 		public ObservableChangeEvent<LobbyEvent, string> ChangeData;
 
@@ -49,28 +48,14 @@ namespace Beamable.Player
 			get => base.Value;
 			set
 			{
+				if (base.Value != null)
+				{
+					_notificationService.Unsubscribe(UpdateName(base.Value.lobbyId), OnRawUpdate);
+				}
+				
 				if (value != null)
 				{
-					if (_state == null)
-					{
-						_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
-					}
-				}
-				else
-				{
-					if (_state != null)
-					{
-						_notificationService.Unsubscribe(UpdateName(_state.lobbyId), OnRawUpdate);
-					}
-				}
-
-				if (_state == null)
-				{
-					_state = value; // no one has a reference to this yet, so its fine to just do a SET.
-				}
-				else
-				{
-					_state.Set(value); // someone may have a reference to the state, so we want to keep their pointer alive, but point to modern data.
+					_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
 				}
 
 				base.Value = value;
@@ -78,51 +63,41 @@ namespace Beamable.Player
 		}
 
 		/// <summary>
-		/// The current <see cref="Lobby"/> the player is in. If the player is not a lobby, then this field is null.
-		/// A player can only be in one lobby at a time.
-		/// </summary>
-		public Lobby State
-		{
-			get => _state;
-			private set => Value = value;
-		}
-
-		/// <summary>
 		/// Checks if the player is in a lobby.
 		/// </summary>
-		public bool IsInLobby => State != null;
+		public bool IsInLobby => Value != null;
 
 		/// <inheritdoc cref="Lobby.lobbyId"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public string Id => SafeAccess(State?.lobbyId);
+		public string Id => SafeAccess(Value?.lobbyId);
 
 		/// <inheritdoc cref="Lobby.name"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public string Name => SafeAccess(State?.name);
+		public string Name => SafeAccess(Value?.name);
 
 		/// <inheritdoc cref="Lobby.description"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public string Description => SafeAccess(State?.description);
+		public string Description => SafeAccess(Value?.description);
 
 		/// <inheritdoc cref="Lobby.Restriction"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public LobbyRestriction Restriction => SafeAccess(State.Restriction);
+		public LobbyRestriction Restriction => SafeAccess(Value.Restriction);
 
 		/// <inheritdoc cref="Lobby.host"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public string Host => SafeAccess(State?.host);
+		public string Host => SafeAccess(Value?.host);
 
 		/// <inheritdoc cref="Lobby.players"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public List<LobbyPlayer> Players => SafeAccess(State?.players);
+		public List<LobbyPlayer> Players => SafeAccess(Value?.players);
 
 		/// <inheritdoc cref="Lobby.passcode"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public string Passcode => SafeAccess(State?.passcode);
+		public string Passcode => SafeAccess(Value?.passcode);
 
 		/// <inheritdoc cref="Lobby.maxPlayers"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current lobby.</para>
-		public int MaxPlayers => SafeAccess(State.maxPlayers);
+		public int MaxPlayers => SafeAccess(Value.maxPlayers);
 
 		private T SafeAccess<T>(T value)
 		{
@@ -150,7 +125,7 @@ namespace Beamable.Player
 		                            int? passcodeLength = null,
 		                            List<string> statsToInclude = null)
 		{
-			State = await _lobbyApi.CreateLobby(
+			Value = await _lobbyApi.CreateLobby(
 				name,
 				restriction,
 				gameTypeId,
@@ -171,7 +146,7 @@ namespace Beamable.Player
 		                            int? passcodeLength = null,
 		                            List<string> statsToInclude = null)
 		{
-			State = await _lobbyApi.CreateLobby(
+			Value = await _lobbyApi.CreateLobby(
 				name,
 				restriction,
 				gameTypeRef,
@@ -191,7 +166,7 @@ namespace Beamable.Player
 		                            string gameType = null,
 		                            int? maxPlayers = null)
 		{
-			State = await _lobbyApi.UpdateLobby(lobbyId,
+			Value = await _lobbyApi.UpdateLobby(lobbyId,
 			                                    restriction,
 			                                    newHost,
 			                                    name,
@@ -203,30 +178,30 @@ namespace Beamable.Player
 		/// <inheritdoc cref="ILobbyApi.JoinLobby"/>
 		public async Promise Join(string lobbyId, List<Tag> playerTags = null)
 		{
-			State = await _lobbyApi.JoinLobby(lobbyId, playerTags);
+			Value = await _lobbyApi.JoinLobby(lobbyId, playerTags);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.JoinLobbyByPasscode"/>
 		public async Promise JoinByPasscode(string passcode, List<Tag> playerTags = null)
 		{
-			State = await _lobbyApi.JoinLobbyByPasscode(passcode, playerTags);
+			Value = await _lobbyApi.JoinLobbyByPasscode(passcode, playerTags);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.AddPlayerTags"/>
 		public async Promise AddTags(List<Tag> tags, bool replace = false)
 		{
-			State = await _lobbyApi.AddPlayerTags(State.lobbyId, tags, replace: replace);
+			Value = await _lobbyApi.AddPlayerTags(Value.lobbyId, tags, replace: replace);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.RemovePlayerTags"/>
 		public async Promise RemoveTags(List<string> tags)
 		{
-			State = await _lobbyApi.RemovePlayerTags(State.lobbyId, tags);
+			Value = await _lobbyApi.RemovePlayerTags(Value.lobbyId, tags);
 		}
 
 		public async Promise KickPlayer(string playerId)
 		{
-			State = await _lobbyApi.KickPlayer(State.lobbyId, playerId);
+			Value = await _lobbyApi.KickPlayer(Value.lobbyId, playerId);
 		}
 
 		/// <summary>
@@ -234,40 +209,40 @@ namespace Beamable.Player
 		/// </summary>
 		public async Promise Leave()
 		{
-			if (State == null)
+			if (Value == null)
 			{
 				return;
 			}
 
 			try
 			{
-				await _lobbyApi.LeaveLobby(State.lobbyId);
+				await _lobbyApi.LeaveLobby(Value.lobbyId);
 			}
 			finally
 			{
-				State = null;
+				Value = null;
 			}
 		}
 
 		protected override async Promise PerformRefresh()
 		{
-			if (State == null) return; // nothing to do.
+			if (Value == null) return; // nothing to do.
 
 			try
 			{
-				State = await _lobbyApi.GetLobby(State.lobbyId);
+				Value = await _lobbyApi.GetLobby(Value.lobbyId);
 			}
 			catch (Exception e)
 			{
 				Debug.Log(e.Message);
-				State = null;
+				Value = null;
 				OnExceptionThrown?.Invoke(e);
 			}
 		}
 
 		public void Dispose()
 		{
-			_state = null;
+			Value = null;
 		}
 
 		private void OnRawUpdate(object message)

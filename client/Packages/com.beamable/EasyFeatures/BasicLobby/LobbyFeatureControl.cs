@@ -167,7 +167,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			BeamContext.Lobby.OnLoadingFinished -= OnLobbyUpdated;
 			BeamContext.Lobby.OnLoadingFinished += OnLobbyUpdated;
 
-			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+			LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.Value.players);
 
 			OpenView(View.InsideLobby);
 		}
@@ -187,7 +187,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				case PlayerLobby.LobbyEvent.PlayerJoined:
 				case PlayerLobby.LobbyEvent.PlayerLeft:
 				case PlayerLobby.LobbyEvent.DataChanged:
-					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.Value.players);
 					await ViewGroup.Enrich();
 					break;
 				case PlayerLobby.LobbyEvent.PlayerKicked:
@@ -197,7 +197,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 					}
 					else
 					{
-						LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+						LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.Value.players);
 						await ViewGroup.Enrich();
 					}
 					break;
@@ -206,7 +206,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 					{
 						ShowInformWindow("Lobby host changed", "You have been promoted to lobby host", null);
 					}
-					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.State.players);
+					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.Value.players);
 					await ViewGroup.Enrich();
 					break;
 				case PlayerLobby.LobbyEvent.LobbyCreated:
@@ -255,7 +255,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			HideOverlay();
 
-			if (BeamContext.Lobby.State != null)
+			if (BeamContext.Lobby.Value != null)
 			{
 				CreateLobbyPlayerSystem.ResetData();
 				OpenLobbyView();
@@ -275,7 +275,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			HideOverlay();
 
-			if (BeamContext.Lobby.State != null)
+			if (BeamContext.Lobby.Value != null)
 			{
 				OpenLobbyView();
 			}
@@ -401,10 +401,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				}
 				catch (Exception e)
 				{
-					if (e is PlatformRequesterException pre)
-					{
-						ShowErrorWindow(pre.Error.error);
-					}
+					ShowErrorWindow(e.Message);
 				}
 			}
 
