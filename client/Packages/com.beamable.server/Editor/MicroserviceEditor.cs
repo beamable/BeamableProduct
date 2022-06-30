@@ -266,14 +266,11 @@ namespace Beamable.Server.Editor
 						di.Delete();
 					}
 				}
-				
 			}
 			finally
 			{
 				AssetDatabase.StopAssetEditing();
 			}
-
-			AssetDatabase.Refresh();
 		}
 		
 		private static void SetupServiceFileInfo(string serviceName, string sourceFile, string targetFile)
