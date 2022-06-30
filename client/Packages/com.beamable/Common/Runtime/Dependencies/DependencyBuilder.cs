@@ -325,6 +325,45 @@ namespace Beamable.Common.Dependencies
 		IDependencyBuilder AddSingleton<T>();
 
 		/// <summary>
+		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
+		/// </summary>
+		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
+		/// <typeparam name="TNew">The new implementation type</typeparam>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(bool autoCreate=true) where TNew : TExisting;
+
+		/// <summary>
+		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
+		/// </summary>
+		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
+		/// <typeparam name="TNew">The new implementation type</typeparam>
+		/// <param name="newService">The instance of <see cref="TNew"/> that will be used </param>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate=true) where TNew : TExisting;
+
+		/// <summary>
+		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
+		/// </summary>
+		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
+		/// <typeparam name="TNew">The new implementation type</typeparam>
+		/// <param name="factory">A method that will be invoked to create the instance</param>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<TNew> factory, bool autoCreate=true) where TNew : TExisting;
+
+		/// <summary>
+		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
+		/// </summary>
+		/// <typeparam name="TExisting">The existing type that's implementation will be replaced</typeparam>
+		/// <typeparam name="TNew">The new implementation type</typeparam>
+		/// <param name="factory">A method that will be invoked to create the instance</param>
+		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
+		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<IDependencyProvider, TNew> factory, bool autoCreate=true) where TNew : TExisting;
+
+		/// <summary>
 		/// After you have registered all your services, use this method to finalize the builder and produce a
 		/// <see cref="IDependencyProvider"/> that can be used to get services.
 		/// The actual return value will be a <see cref="IDependencyProviderScope"/> which has lifecycle controls for the <see cref="IDependencyProvider"/>
@@ -480,6 +519,36 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddSingleton<T>() => AddSingleton<T, T>();
 
+		public IDependencyBuilder ReplaceSingleton<TExisting, TNew>(bool autoCreate = true)
+			where TNew : TExisting =>
+			ReplaceSingleton<TExisting, TNew>(Instantiate<TNew>, autoCreate);
+
+		public IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate = true)
+			where TNew : TExisting =>
+			ReplaceSingleton<TExisting, TNew>(() => newService, autoCreate);
+
+		public IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<TNew> factory, bool autoCreate = true)
+			where TNew : TExisting =>
+			ReplaceSingleton<TExisting, TNew>(_ => factory(), autoCreate);
+
+		public IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<IDependencyProvider, TNew> factory, bool autoCreate = true) where TNew : TExisting
+		{
+			if (autoCreate)
+			{
+				RemoveIfExists<TExisting>();
+			}
+			else
+			{
+				Remove<TExisting>();
+			}
+			SingletonServices.Add(new ServiceDescriptor
+			{
+				Interface = typeof(TExisting),
+				Implementation = typeof(TNew),
+				Factory = provider => factory(provider)
+			});
+			return this;
+		}
 
 		private TImpl Instantiate<TImpl>(IDependencyProvider provider)
 		{

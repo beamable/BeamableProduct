@@ -48,6 +48,12 @@ namespace Beamable.Editor
 		}
 	}
 
+	public interface IServiceStorable
+	{
+		void OnBeforeSaveState();
+		void OnAfterLoadState();
+	}
+
 	public class ServiceStorage
 	{
 		private readonly BeamEditorContext _context;
@@ -81,6 +87,11 @@ namespace Beamable.Editor
 			{
 				receiver.OnBeforeSerialize();
 			}
+
+			if (service is IServiceStorable storable)
+			{
+				storable.OnBeforeSaveState();
+			}
 			var json = JsonUtility.ToJson(service);
 			SessionState.SetString(GetKey<T>(name), json);
 		}
@@ -106,6 +117,11 @@ namespace Beamable.Editor
 				{
 					receiver.OnAfterDeserialize();
 				}
+			}
+
+			if (service is IServiceStorable storable)
+			{
+				storable.OnAfterLoadState();
 			}
 		}
 	}
