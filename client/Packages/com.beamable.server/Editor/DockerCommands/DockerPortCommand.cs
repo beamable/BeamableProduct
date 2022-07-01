@@ -4,6 +4,7 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		public bool ContainerExists;
 		public string LocalAddress;
+		public string LocalPort;
 	}
 
 	public class DockerPortCommand : DockerCommandReturnable<DockerPortResult>
@@ -38,7 +39,8 @@ namespace Beamable.Server.Editor.DockerCommands
 				Promise.CompleteSuccess(new DockerPortResult
 				{
 					ContainerExists = true,
-					LocalAddress = addr
+					LocalAddress = addr,
+					LocalPort = addr.Split(':')[1]
 				});
 			}
 

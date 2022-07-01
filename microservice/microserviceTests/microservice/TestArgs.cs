@@ -12,5 +12,6 @@ namespace microserviceTests.microservice
       public string SdkVersionBaseBuild { get; set; } = "test";
       public string SdkVersionExecution { get; set; } = "test";
       public bool WatchToken { get; }
+      public bool DisableCustomInitializationHooks { get; }
    }
 }

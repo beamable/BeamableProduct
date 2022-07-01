@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor;
@@ -351,6 +352,7 @@ namespace Beamable.Server.Editor
 					await forceStop.StartAsync(); // force the image to stop.
 					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
 
+					// Build the image
 					try
 					{
 						var buildCommand = new BuildImageCommand(descriptor,
@@ -361,11 +363,88 @@ namespace Beamable.Server.Editor
 					}
 					catch (Exception e)
 					{
-						OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
+						OnDeployFailed?.Invoke(model, $"Deploy failed due to {descriptor.Name} failing to build: {e}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 						return;
 					}
+
+					// Try to start the image and talk to it's healthcheck endpoint.
+					try
+					{
+						// Create a build that will build an image that doesn't run the custom initialization hooks
+						var beamable = BeamEditorContext.Default;
+						await beamable.InitializePromise;
+						var secret = await beamable.GetRealmSecret();
+						// check to see if the storage descriptor is running.
+						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
+						
+						
+						// We are now verifying the image we just built
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
+						
+						// Let's run it locally.
+						// At the moment we disable running custom hooks for this verification.
+						// This is because we cannot guarantee the user won't do anything in them to break this.
+						// TODO: Change algorithm to always have StorageObjects running locally during verification process.
+						// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
+						var runServiceCommand = new RunServiceCommand(descriptor, beamable.CurrentCustomer.Cid, secret, connectionStrings, false, false);
+						runServiceCommand.Start();
+
+						// Spin until the image has started
+						while (!(await new CheckImageCommand(descriptor).StartAsync())) 
+							await Task.Delay(1000, token);
+
+						async Promise<bool> IsHealthy()
+						{
+							var comm = new DockerPortCommand(descriptor, Constants.Features.Services.HEALTH_PORT);
+							var dockerPortResult = await comm.StartAsync();
+							
+							if (!dockerPortResult.ContainerExists)
+								return false;
+							
+							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
+							var res = await beamable.ServiceScope.GetService<IHttpRequester>()
+							                        .ManualRequest(Method.GET, $"http://localhost:{dockerPortResult.LocalPort}/health", parser: x => x);
+							return res.Contains("true");
+						}
+
+						// Wait until the container has completely booted up and it's Start function has finished.
+						var timeWaitingForBoot = 0f;
+						var isHealthy = false;
+						do
+						{
+							try
+							{
+								isHealthy = await IsHealthy();
+							}
+							catch
+							{
+								isHealthy = false;
+							}
+
+							await Task.Delay(500, token);
+							timeWaitingForBoot += .5f;
+						} while (timeWaitingForBoot <= 10f && !isHealthy);
+						
+						if (!isHealthy)
+						{
+							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
+							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+							return;
+						}
+
+						// Stop the container since we don't need to keep the local one alive anymore.
+						await new StopImageCommand(descriptor).StartAsync();
+					}
+					catch (Exception e)
+					{
+						OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+						return;
+					}
+
 
 					if (token.IsCancellationRequested)
 					{
