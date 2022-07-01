@@ -34,7 +34,7 @@ namespace Beamable.Common.Api.Realms
 
 		public Promise<List<RealmView>> GetGames()
 		{
-			if (string.IsNullOrEmpty(_requester.AccessToken.Cid))
+			if (string.IsNullOrEmpty(_requester.Cid))
 			{
 				return Promise<List<RealmView>>.Failed(new Exception("No Cid Available"));
 			}
@@ -59,24 +59,24 @@ namespace Beamable.Common.Api.Realms
 
 		public Promise<RealmView> GetRealm()
 		{
-			if (string.IsNullOrEmpty(_requester.AccessToken.Cid))
+			if (string.IsNullOrEmpty(_requester.Cid))
 			{
 				return Promise<RealmView>.Failed(new RealmServiceException("No Cid Available"));
 			}
 
-			if (string.IsNullOrEmpty(_requester.AccessToken.Pid))
+			if (string.IsNullOrEmpty(_requester.Pid))
 			{
 				return Promise<RealmView>.Successful(null);
 			}
 
-			return GetRealms().Map(all => { return all.Find(v => v.Pid == _requester.AccessToken.Pid); });
+			return GetRealms().Map(all => { return all.Find(v => v.Pid == _requester.Pid); });
 		}
 
 		private List<RealmView> ProcessProjects(List<ProjectViewDTO> projects)
 		{
 			var map = projects.Select(p => new RealmView
 			{
-				Cid = _requester.AccessToken.Cid,
+				Cid = _requester.Cid,
 				Pid = p.pid,
 				ProjectName = p.projectName,
 				Archived = p.archived,
@@ -128,7 +128,7 @@ namespace Beamable.Common.Api.Realms
 
 		public Promise<List<RealmView>> GetRealms(RealmView game = null)
 		{
-			var pid = game?.Pid ?? _requester.AccessToken.Pid ?? _requester.AccessToken?.Pid;
+			var pid = game?.Pid ?? _requester.Pid ?? _requester?.Pid;
 			return GetRealms(pid);
 		}
 
