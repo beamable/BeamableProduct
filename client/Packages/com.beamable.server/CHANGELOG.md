@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+### Added
+- Microservices have their initialization validated before publishing. 
+  - This is mostly a sanity check to catch some errors we can't catch in the Unity Editor.
+  - For now, we don't run any `InitializeServicesAttributes` when validating this.
+  - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process. 
+
 ## [1.2.4]
 ### Added
 - Microservices now support private declarations of `Callable` methods.
