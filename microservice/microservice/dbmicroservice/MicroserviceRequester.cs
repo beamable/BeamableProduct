@@ -342,6 +342,8 @@ namespace Beamable.Server
 
       // TODO how do we handle Timeout errors?
       // TODO what does concurrency look like?
+      public string Cid => _requestContext.Cid;
+      public string Pid => _requestContext.Pid;
 
       public MicroserviceRequester(IMicroserviceArgs env, RequestContext requestContext, SocketRequesterContext socketContext)
       {
