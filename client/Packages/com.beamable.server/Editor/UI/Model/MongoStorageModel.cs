@@ -159,7 +159,7 @@ namespace Beamable.Editor.UI.Model
 				Config.Archived = true;
 			
 			if (deleteAllFiles)
-				MicroserviceEditor.DeleteMicroserviceFiles(this.Name);
+				MicroserviceEditor.DeleteServiceFiles(_serviceDescriptor);
 			
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}

@@ -81,7 +81,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
 			DependencyBuilder.AddSingleton<BeamableVsp>();
-
+			DependencyBuilder.AddSingleton<BeamableDispatcher>();
+			
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
