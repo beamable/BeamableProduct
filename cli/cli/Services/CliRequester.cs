@@ -11,8 +11,8 @@ public class CliRequester : IBeamableRequester
 {
 	private readonly IAppContext _ctx;
 	public IAccessToken AccessToken => _ctx.Token;
-	private string Pid => AccessToken.Pid;
-	private string Cid => AccessToken.Cid;
+	public string Pid => AccessToken.Pid;
+	public string Cid => AccessToken.Cid;
 
 	public CliRequester(IAppContext ctx)
 	{
