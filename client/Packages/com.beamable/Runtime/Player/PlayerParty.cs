@@ -16,6 +16,8 @@ namespace Beamable.Player
 		private readonly IPartyApi _partyApi;
 		private readonly INotificationService _notificationService;
 		private Party _state;
+		private Action<object> _onPlayerJoined;
+		private Action<object> _onPlayerLeft;
 
 		public PlayerParty(IPartyApi partyApi, INotificationService notificationService)
 		{
@@ -35,16 +37,16 @@ namespace Beamable.Player
 				{
 					if (_state == null)
 					{
-						_notificationService.Subscribe(PlayersLeftName(value.id), OnRawUpdate);
-						_notificationService.Subscribe(PlayersJoinedName(value.id), OnRawUpdate);
+						_notificationService.Subscribe(PlayersLeftName(value.id), PlayerLeft);
+						_notificationService.Subscribe(PlayersJoinedName(value.id), PlayerJoined);
 					}
 				}
 				else
 				{
 					if (_state != null)
 					{
-						_notificationService.Unsubscribe(PlayersLeftName(_state.id), OnRawUpdate);
-						_notificationService.Unsubscribe(PlayersJoinedName(_state.id), OnRawUpdate);
+						_notificationService.Unsubscribe(PlayersLeftName(_state.id), PlayerLeft);
+						_notificationService.Unsubscribe(PlayersJoinedName(_state.id), PlayerJoined);
 					}
 				}
 
@@ -61,9 +63,16 @@ namespace Beamable.Player
 			}
 		}
 
-		private void OnRawUpdate(object message)
+		private async void PlayerJoined(object playerId)
 		{
-			var _ = Refresh();
+			await Refresh();
+			_onPlayerJoined?.Invoke(playerId);
+		}
+		
+		private async void PlayerLeft(object playerId)
+		{
+			await Refresh();
+			_onPlayerLeft?.Invoke(playerId);
 		}
 
 		protected override async Promise PerformRefresh()
@@ -116,9 +125,10 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
-		public async Promise Create(PartyRestriction restriction)
-		{
+		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null) {
 			State = await _partyApi.CreateParty(restriction);
+			_onPlayerJoined = onPlayerJoined;
+			_onPlayerLeft = onPlayerLeft;
 		}
 
 		/// <inheritdoc cref="IPartyApi.JoinParty"/>
