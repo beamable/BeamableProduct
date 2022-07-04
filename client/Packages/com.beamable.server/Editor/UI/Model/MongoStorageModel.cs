@@ -150,16 +150,14 @@ namespace Beamable.Editor.UI.Model
 		{
 			await Stop();
 			
-			if (RemoteReference != null && RemoteReference.enabled)
+			if (deleteAllFiles)
 			{
-				if (!deleteAllFiles)
-					Config.Archived = true;
+				MicroserviceEditor.DeleteServiceFiles(_serviceDescriptor);
 			}
 			else
+			{
 				Config.Archived = true;
-			
-			if (deleteAllFiles)
-				MicroserviceEditor.DeleteServiceFiles(_serviceDescriptor);
+			}
 			
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}

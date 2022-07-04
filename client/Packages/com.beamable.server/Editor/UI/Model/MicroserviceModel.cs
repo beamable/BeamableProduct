@@ -347,17 +347,15 @@ $@"{{
 			await Stop();
 			await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(ServiceDescriptor);
 
-			if (RemoteStatus != null && RemoteStatus.running)
+			if (deleteAllFiles)
 			{
-				if (!deleteAllFiles)
-					Config.Archived = true;
+				MicroserviceEditor.DeleteServiceFiles(_serviceDescriptor);
 			}
 			else
+			{
 				Config.Archived = true;
-			
-			if (deleteAllFiles)
-				MicroserviceEditor.DeleteServiceFiles(_serviceDescriptor);
-			
+			}
+
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}
 
