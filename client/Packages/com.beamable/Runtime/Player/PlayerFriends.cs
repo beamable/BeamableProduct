@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api.Social;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Collections.Generic;
 namespace Beamable.Player
 {
 	[Serializable]
-	public class PlayerFriends : Observable<SocialList>
+	public class PlayerFriends : Observable<SocialList>, IBeamableDisposable
 	{
 		/// <summary>
 		/// Use this to make sure the object is initialized.
@@ -59,5 +60,11 @@ namespace Beamable.Player
 		/// <param name="playerId">Id of the player to check.</param>
 		/// <returns>True if given player is a friend.</returns>
 		public bool IsFriend(long playerId) => Value.IsFriend(playerId);
+
+		public Promise OnDispose()
+		{
+			_socialApi = null;
+			return Promise.Success;
+		}
 	}
 }
