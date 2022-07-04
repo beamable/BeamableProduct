@@ -260,6 +260,11 @@ namespace Beamable.Server.Editor
 					FileUtil.DeleteFileOrDirectory(desc.HidePath);
 					FileUtil.DeleteFileOrDirectory(desc.BuildPath);
 				}
+				else if (descriptor is StorageObjectDescriptor storageDesc)
+				{
+					string directoryPath = Path.GetDirectoryName(storageDesc.AttributePath);
+					FileUtil.DeleteFileOrDirectory(directoryPath);
+				}
 			}
 			finally
 			{
