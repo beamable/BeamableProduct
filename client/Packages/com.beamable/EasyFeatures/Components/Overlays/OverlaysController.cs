@@ -32,14 +32,14 @@ namespace Beamable.EasyFeatures.Components
 
 		public void ShowError(string message)
 		{
-			Show(ModalWindow, () => { ModalWindow.Show("Error", message, HideOverlay, HideOverlay); });
+			Show(ModalWindow, () => { ModalWindow.Show(message, HideOverlay, HideOverlay); });
 		}
 
-		public void ShowInform(string label, string message, Action confirmAction)
+		public void ShowInform(string message, Action confirmAction)
 		{
 			Show(ModalWindow, () =>
 			{
-				ModalWindow.Show(label, message, () =>
+				ModalWindow.Show(message, () =>
 				{
 					HideOverlay();
 					confirmAction?.Invoke();
@@ -47,11 +47,11 @@ namespace Beamable.EasyFeatures.Components
 			});
 		}
 
-		public void ShowConfirm(string label, string message, Action confirmAction)
+		public void ShowConfirm(string message, Action confirmAction)
 		{
 			Show(ModalWindow, () =>
 			{
-				ModalWindow.Show(label, message, () =>
+				ModalWindow.Show(message, () =>
 				{
 					HideOverlay();
 					confirmAction?.Invoke();

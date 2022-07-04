@@ -182,7 +182,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			switch (BeamContext.Lobby.ChangeData.Event)
 			{
 				case PlayerLobby.LobbyEvent.LobbyDisbanded:
-					ShowInformWindow("Lobby disbanded", "Lobby was disbanded", OpenMainView);
+					ShowInformWindow("Lobby was disbanded", OpenMainView);
 					break;
 				case PlayerLobby.LobbyEvent.PlayerJoined:
 				case PlayerLobby.LobbyEvent.PlayerLeft:
@@ -193,7 +193,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				case PlayerLobby.LobbyEvent.PlayerKicked:
 					if (BeamContext.Lobby.ChangeData.Data == BeamContext.PlayerId.ToString())
 					{
-						ShowInformWindow("Player kicked", "You have been kicked", OpenMainView);
+						ShowInformWindow("You have been kicked", OpenMainView);
 					}
 					else
 					{
@@ -204,7 +204,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				case PlayerLobby.LobbyEvent.HostPlayerChanged:
 					if (BeamContext.Lobby.ChangeData.Data == BeamContext.PlayerId.ToString())
 					{
-						ShowInformWindow("Lobby host changed", "You have been promoted to lobby host", null);
+						ShowInformWindow("You have been promoted to lobby host", null);
 					}
 					LobbyPlayerSystem.RegisterLobbyPlayers(BeamContext.Lobby.Value.players);
 					await ViewGroup.Enrich();
@@ -232,14 +232,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OverlaysController.ShowError(message);
 		}
 
-		public void ShowConfirmWindow(string label, string message, Action confirmAction)
+		public void ShowConfirmWindow(string message, Action confirmAction)
 		{
-			OverlaysController.ShowConfirm(label, message, confirmAction);
+			OverlaysController.ShowConfirm(message, confirmAction);
 		}
 
-		public void ShowInformWindow(string label, string message, Action confirmAction)
+		public void ShowInformWindow(string message, Action confirmAction)
 		{
-			OverlaysController.ShowInform(label, message, confirmAction);
+			OverlaysController.ShowInform(message, confirmAction);
 		}
 
 		#endregion
@@ -335,8 +335,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				}
 			}
 
-			ShowConfirmWindow("Leaving lobby",
-			                  "After leaving lobby it will be closed because You are an admin. Are You sure?",
+			ShowConfirmWindow("After leaving lobby it will be closed because You are an admin. Are You sure?",
 			                  ConfirmAction);
 		}
 
@@ -380,7 +379,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				}
 			}
 
-			ShowConfirmWindow("Kick player", "Are You sure You want to kick this player?", ConfirmAction);
+			ShowConfirmWindow("Are You sure You want to kick this player?", ConfirmAction);
 		}
 
 		public void PassLeadershipClicked()
@@ -405,7 +404,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				}
 			}
 
-			ShowConfirmWindow("Pass the leadership", "Are You sure You want to pass the leadership?", ConfirmAction);
+			ShowConfirmWindow("Are You sure You want to pass the leadership?", ConfirmAction);
 		}
 
 		public void SettingsButtonClicked()
