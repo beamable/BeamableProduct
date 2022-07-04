@@ -56,7 +56,13 @@ namespace Beamable.Editor.UI.Model
 
 		[field: SerializeField]
 		public ServiceStatus RemoteStatus { get; protected set; }
-		public override bool IsArchived => Config.Archived;
+		
+		public override bool IsArchived
+		{
+			get => Config.Archived;
+			protected set => Config.Archived = value;
+		}
+
 		public MicroserviceConfigurationEntry Config => MicroserviceConfiguration.Instance.GetEntry(Descriptor.Name);
 		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>(); // TODO: This is whacky.
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
@@ -107,6 +113,7 @@ namespace Beamable.Editor.UI.Model
 			OnStop?.Invoke(task);
 			return task;
 		}
+		
 		public Task BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
@@ -340,29 +347,6 @@ $@"{{
 				process.Start();
 			}
 #endif
-		}
-
-		public async void Archive(bool deleteAllFiles)
-		{
-			await Stop();
-			await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(ServiceDescriptor);
-
-			if (deleteAllFiles)
-			{
-				MicroserviceEditor.DeleteServiceFiles(_serviceDescriptor);
-			}
-			else
-			{
-				Config.Archived = true;
-			}
-
-			BeamEditorContext.Default.OnServiceArchived?.Invoke();
-		}
-
-		public void Unarchive()
-		{
-			Config.Archived = false;
-			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
 		}
 		
 		public override void Refresh(IDescriptor descriptor)

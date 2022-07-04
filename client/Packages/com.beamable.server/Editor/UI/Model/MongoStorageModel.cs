@@ -43,7 +43,12 @@ namespace Beamable.Editor.UI.Model
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
-		public override bool IsArchived => Config.Archived;
+		
+		public override bool IsArchived
+		{
+			get => Config.Archived;
+			protected set => Config.Archived = value;
+		}
 		public StorageConfigurationEntry Config { get; protected set; }
 
 		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
@@ -144,29 +149,6 @@ namespace Beamable.Editor.UI.Model
 					archiveServicePopup.onConfirm += Archive;
 				});
 			}
-		}
-
-		public async void Archive(bool deleteAllFiles)
-		{
-			await Stop();
-			
-			if (deleteAllFiles)
-			{
-				MicroserviceEditor.DeleteServiceFiles(_serviceDescriptor);
-			}
-			else
-			{
-				Config.Archived = true;
-			}
-			
-			BeamEditorContext.Default.OnServiceArchived?.Invoke();
-		}
-
-		public void Unarchive()
-		{
-			Config.Archived = false;
-			
-			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
 		}
 
 		public override void Refresh(IDescriptor descriptor)
