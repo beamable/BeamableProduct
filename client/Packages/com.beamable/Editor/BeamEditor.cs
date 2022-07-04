@@ -87,6 +87,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
 			DependencyBuilder.AddSingleton<ServiceStorage>();
+			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
+			DependencyBuilder.AddSingleton<EnvironmentService>();
 		}
 	}
 
