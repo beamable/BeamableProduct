@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
 - Added "experimental" package status support to the `PackageVersion` utility
 - Adds `Cid` and `Pid` field to `IBeamableRequester` interface
+- Added `Friends` list accessible through the `BeamContext`
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
