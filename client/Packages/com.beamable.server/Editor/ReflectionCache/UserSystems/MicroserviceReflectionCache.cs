@@ -89,6 +89,7 @@ namespace Beamable.Server.Editor
 				_storageToBuilder.Clear();
 
 				Descriptors.Clear();
+				StorageDescriptors.Clear();
 				AllDescriptors.Clear();
 			}
 
