@@ -95,8 +95,11 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void OnDisable()
 		{
-			ActiveContext.OnServiceArchived -= ServiceArchived;
-			ActiveContext.OnServiceUnarchived -= ServiceArchived;
+			if (ActiveContext != null)
+			{
+				ActiveContext.OnServiceArchived -= ServiceArchived;
+				ActiveContext.OnServiceUnarchived -= ServiceArchived;
+			}
 		}
 
 		private void SetForContent()
