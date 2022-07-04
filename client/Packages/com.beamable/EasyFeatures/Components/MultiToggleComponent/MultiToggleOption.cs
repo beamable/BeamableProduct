@@ -14,6 +14,8 @@ namespace Beamable.EasyFeatures.Components
 		
 		private Action _onClickAction;
 
+		public Toggle Toggle => _toggle;
+
 		public void Setup(string option, Action onClickAction, ToggleGroup group, bool selected)
 		{
 			_onClickAction = onClickAction;

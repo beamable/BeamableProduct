@@ -45,6 +45,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ReadyButton;
 		public Button NotReadyButton;
 		public Button StartButton;
+		public Button StartButtonDisabled;
 		public Button LeaveButton;
 
 		[Header("Callbacks")]
@@ -92,13 +93,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			SettingsButton.gameObject.SetActive(System.IsPlayerAdmin);
 			ReadyButton.gameObject.SetActive(!System.IsPlayerReady);
 			NotReadyButton.gameObject.SetActive(System.IsPlayerReady);
-			StartButton.gameObject.SetActive(System.IsPlayerAdmin);
-
-			// Buttons' interactivity
-			StartButton.interactable = System.IsServerReady();
-			BackButton.interactable = !System.IsMatchStarting;
-			NotReadyButton.interactable = !System.IsMatchStarting;
-			LeaveButton.interactable = !System.IsMatchStarting;
+			StartButton.gameObject.SetActive(System.IsPlayerAdmin && System.IsServerReady());
+			StartButtonDisabled.gameObject.SetActive(System.IsPlayerAdmin && !System.IsServerReady());
 
 			LobbySlotsList.ClearPooledRankedEntries();
 			LobbySlotsList.Setup(System.SlotsData, System.IsPlayerAdmin, OnAdminButtonClicked, OnKickButtonClicked,
@@ -119,7 +115,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private void OnKickButtonClicked(int slotIndex)
 		{
-			if (!System.IsPlayerAdmin)
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
 			{
 				return;
 			}
@@ -129,7 +125,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private void OnPassLeadershipButtonClicked(int slotIndex)
 		{
-			if (!System.IsPlayerAdmin)
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
 			{
 				return;
 			}
@@ -139,7 +135,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private void SettingsButtonClicked()
 		{
-			if (!System.IsPlayerAdmin)
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
 			{
 				return;
 			}
@@ -149,17 +145,27 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private void ReadyButtonClicked()
 		{
+			if (System.IsMatchStarting)
+			{
+				return;
+			}
+			
 			System.SetPlayerReady(true);
 		}
 
 		private void NotReadyButtonClicked()
 		{
+			if (System.IsMatchStarting)
+			{
+				return;
+			}
+			
 			System.SetPlayerReady(false);
 		}
 
 		private async void StartButtonClicked()
 		{
-			if (!System.IsPlayerAdmin)
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
 			{
 				return;
 			}
@@ -178,6 +184,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private async void LeaveButtonClicked()
 		{
+			if (System.IsMatchStarting)
+			{
+				return;
+			}
+			
 			if (System.IsPlayerAdmin)
 			{
 				OnAdminLeaveLobbyRequestSent?.Invoke();

@@ -38,6 +38,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public TMP_InputField Name;
 		public TMP_InputField Description;
 		public Button ConfirmButton;
+		public Button ConfirmButtonDisabled;
 		public Button CancelButton;
 		public Button BackButton;
 
@@ -76,7 +77,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Name.onValueChanged.ReplaceOrAddListener(OnNameChanged);
 			Description.onValueChanged.ReplaceOrAddListener(OnDescriptionChanged);
 			ConfirmButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
-			ConfirmButton.interactable = System.ValidateConfirmButton();
+			ConfirmButton.gameObject.SetActive(System.ValidateConfirmButton());
+			ConfirmButtonDisabled.gameObject.SetActive(!System.ValidateConfirmButton());
 			CancelButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 		}
@@ -90,7 +92,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private void OnNameChanged(string value)
 		{
 			System.Name = value;
-			ConfirmButton.interactable = System.ValidateConfirmButton();
+			ConfirmButton.gameObject.SetActive(System.ValidateConfirmButton());
+			ConfirmButtonDisabled.gameObject.SetActive(!System.ValidateConfirmButton());
 		}
 
 		private void OnDescriptionChanged(string value)
