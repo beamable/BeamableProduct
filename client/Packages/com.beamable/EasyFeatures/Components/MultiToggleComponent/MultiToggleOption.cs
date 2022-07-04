@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Beamable.UI.Buss;
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,8 +11,9 @@ namespace Beamable.EasyFeatures.Components
 	{
 		[SerializeField] private Toggle _toggle;
 		[SerializeField] private TextMeshProUGUI _label;
-		[SerializeField] private Color _selectedColor;
-		[SerializeField] private Color _deselectedColor;
+
+		public BussElement MainBussElement;
+		public BussElement LabelBussElement;
 		
 		private Action _onClickAction;
 
@@ -23,8 +26,8 @@ namespace Beamable.EasyFeatures.Components
 			_toggle.group = group;
 			_toggle.onValueChanged.AddListener(ToggleClicked);
 			_toggle.SetIsOnWithoutNotify(selected);
-
-			_label.color = selected ? _selectedColor : _deselectedColor;
+			
+			ApplyStyle(selected);
 		}
 
 		private void ToggleClicked(bool value)
@@ -34,7 +37,28 @@ namespace Beamable.EasyFeatures.Components
 				_onClickAction.Invoke();
 			}
 			
-			_label.color = value ? _selectedColor : _deselectedColor;
+			ApplyStyle(value);
+		}
+
+		private void ApplyStyle(bool selected)
+		{
+			List<string> classes = new List<string>();
+			
+			if (selected)
+			{
+				classes.Add("toggle");
+				classes.Add("option");
+				classes.Add("selected");
+			}
+			else
+			{
+				classes.Add("toggle");
+				classes.Add("option");
+				classes.Add("deselected");
+			}
+			
+			MainBussElement.UpdateClasses(classes);
+			LabelBussElement.UpdateClasses(classes);
 		}
 	}
 }

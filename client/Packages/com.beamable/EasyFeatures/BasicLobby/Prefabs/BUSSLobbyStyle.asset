@@ -46,6 +46,11 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":25.0}'
+    - key: fontSize
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":0.0}'
     _selector: .button.menu
   - _properties:
     - key: fontSize
@@ -471,6 +476,80 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"AssetSerializationKey":0}'
     _selector: .button.secondary.label
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+    - key: borderColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+    - key: borderWidth
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":4.0}'
+    - key: fontColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.9921568632125855,"g":0.9450980424880981,"b":0.7882353067398071,"a":1.0}}'
+    - key: fontSize
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":36.0}'
+    - key: font
+      property:
+        type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"AssetSerializationKey":0}'
+    - key: textAlignment
+      property:
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":8194}'
+    _selector: .toggle.option.selected
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":0.0}}'
+    - key: borderColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+    - key: borderWidth
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":4.0}'
+    - key: fontColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+    - key: fontSize
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":36.0}'
+    - key: font
+      property:
+        type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"AssetSerializationKey":0}'
+    - key: textAlignment
+      property:
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":8194}'
+    _selector: .toggle.option.deselected
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   - {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}
