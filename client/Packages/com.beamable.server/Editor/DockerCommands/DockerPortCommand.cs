@@ -3,7 +3,7 @@ namespace Beamable.Server.Editor.DockerCommands
 	public class DockerPortResult
 	{
 		public bool ContainerExists;
-		public string LocalAddress;
+		public string LocalFullAddress;
 		public string LocalPort;
 	}
 
@@ -35,12 +35,18 @@ namespace Beamable.Server.Editor.DockerCommands
 			else
 			{
 				UnityEngine.Debug.Log("OUT:" + StandardOutBuffer);
-				var addr = StandardOutBuffer.Trim();
+				var fullAddr = StandardOutBuffer.Trim().Split(':');
+
+				var addr = fullAddr[0];
+				var port = fullAddr[1];
+
+				addr = addr == "0.0.0.0" ? "localhost" : addr;
+
 				Promise.CompleteSuccess(new DockerPortResult
 				{
 					ContainerExists = true,
-					LocalAddress = addr,
-					LocalPort = addr.Split(':')[1]
+					LocalFullAddress = $"{addr}:{port}",
+					LocalPort = port 
 				});
 			}
 

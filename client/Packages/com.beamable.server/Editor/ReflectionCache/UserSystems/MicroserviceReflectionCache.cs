@@ -336,6 +336,9 @@ namespace Beamable.Server.Editor
 
 				var nameToImageId = new Dictionary<string, string>();
 				var enabledServices = new List<string>();
+				
+				
+				var secret = await de.GetRealmSecret();
 
 				foreach (var descriptor in Descriptors)
 				{
@@ -372,41 +375,33 @@ namespace Beamable.Server.Editor
 					// Try to start the image and talk to it's healthcheck endpoint.
 					try
 					{
-						// Create a build that will build an image that doesn't run the custom initialization hooks
-						var beamable = BeamEditorContext.Default;
-						await beamable.InitializePromise;
-						var secret = await beamable.GetRealmSecret();
-						// check to see if the storage descriptor is running.
-						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
-						
-						
 						// We are now verifying the image we just built
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
+
+						// Check to see if the storage descriptor is running.
+						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
 						
+						// Create a build that will build an image that doesn't run the custom initialization hooks
 						// Let's run it locally.
 						// At the moment we disable running custom hooks for this verification.
 						// This is because we cannot guarantee the user won't do anything in them to break this.
 						// TODO: Change algorithm to always have StorageObjects running locally during verification process.
 						// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
-						var runServiceCommand = new RunServiceCommand(descriptor, beamable.CurrentCustomer.Cid, secret, connectionStrings, false, false);
+						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, secret, connectionStrings, false, false);
 						runServiceCommand.Start();
 
-						// Spin until the image has started
-						while (!(await new CheckImageCommand(descriptor).StartAsync())) 
-							await Task.Delay(1000, token);
-
-						async Promise<bool> IsHealthy()
+						async Promise<string> CheckHealthStatus()
 						{
 							var comm = new DockerPortCommand(descriptor, Constants.Features.Services.HEALTH_PORT);
 							var dockerPortResult = await comm.StartAsync();
-							
+
 							if (!dockerPortResult.ContainerExists)
-								return false;
-							
+								return "false";
+
 							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
-							var res = await beamable.ServiceScope.GetService<IHttpRequester>()
-							                        .ManualRequest(Method.GET, $"http://localhost:{dockerPortResult.LocalPort}/health", parser: x => x);
-							return res.Contains("true");
+							var res = await de.ServiceScope.GetService<IHttpRequester>()
+							                        .ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+							return res;
 						}
 
 						// Wait until the container has completely booted up and it's Start function has finished.
@@ -416,7 +411,12 @@ namespace Beamable.Server.Editor
 						{
 							try
 							{
-								isHealthy = await IsHealthy();
+								var healthStatus = await CheckHealthStatus();
+								if (healthStatus.Contains("true"))
+									isHealthy = true;
+
+								if (healthStatus.Contains("false"))
+									isHealthy = false;
 							}
 							catch
 							{
@@ -431,6 +431,10 @@ namespace Beamable.Server.Editor
 						{
 							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+							
+							// Stop the container since we don't need to keep the local one alive anymore.
+							await new StopImageCommand(descriptor).StartAsync();
+							
 							return;
 						}
 
