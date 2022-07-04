@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -45,9 +46,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ReadyButton;
 		public Button NotReadyButton;
 		public Button StartButton;
-		public Button StartButtonDisabled;
 		public Button LeaveButton;
 
+		public BussElement StartButtonBussElement;
+		
 		[Header("Callbacks")]
 		public UnityEvent OnRebuildRequested;
 
@@ -93,13 +95,34 @@ namespace Beamable.EasyFeatures.BasicLobby
 			SettingsButton.gameObject.SetActive(System.IsPlayerAdmin);
 			ReadyButton.gameObject.SetActive(!System.IsPlayerReady);
 			NotReadyButton.gameObject.SetActive(System.IsPlayerReady);
-			StartButton.gameObject.SetActive(System.IsPlayerAdmin && System.IsServerReady());
-			StartButtonDisabled.gameObject.SetActive(System.IsPlayerAdmin && !System.IsServerReady());
+			
+			ValidateStartButton();
 
 			LobbySlotsList.ClearPooledRankedEntries();
 			LobbySlotsList.Setup(System.SlotsData, System.IsPlayerAdmin, OnAdminButtonClicked, OnKickButtonClicked,
 			                     OnPassLeadershipButtonClicked);
 			LobbySlotsList.RebuildPooledLobbiesEntries();
+		}
+
+		private void ValidateStartButton()
+		{
+			bool buttonValid = System.IsPlayerAdmin && System.IsServerReady();
+			StartButton.interactable = buttonValid;
+			
+			List<string> classes = new List<string>();
+			
+			if (buttonValid)
+			{
+				classes.Add("button");
+				classes.Add("primary");
+			}
+			else
+			{
+				classes.Add("button");
+				classes.Add("disable");
+			}
+			
+			StartButtonBussElement.UpdateClasses(classes);
 		}
 
 		private void OnAdminButtonClicked(int slotIndex)

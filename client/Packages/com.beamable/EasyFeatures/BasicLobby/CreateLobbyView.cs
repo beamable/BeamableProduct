@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Lobbies;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,9 +39,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public TMP_InputField Name;
 		public TMP_InputField Description;
 		public Button ConfirmButton;
-		public Button ConfirmButtonDisabled;
 		public Button CancelButton;
 		public Button BackButton;
+		
+		public BussElement ConfirmButtonBussElement;
 
 		[Header("Callbacks")]
 		public UnityEvent OnCreateLobbyRequestSent;
@@ -77,10 +79,33 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Name.onValueChanged.ReplaceOrAddListener(OnNameChanged);
 			Description.onValueChanged.ReplaceOrAddListener(OnDescriptionChanged);
 			ConfirmButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
-			ConfirmButton.gameObject.SetActive(System.ValidateConfirmButton());
-			ConfirmButtonDisabled.gameObject.SetActive(!System.ValidateConfirmButton());
+			
+			ValidateConfirmButton();
+			
 			CancelButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
+		}
+		
+		private void ValidateConfirmButton()
+		{
+			bool canJoinLobby = System.ValidateConfirmButton();
+
+			ConfirmButton.interactable = canJoinLobby;
+
+			List<string> classes = new List<string>();
+			
+			if (canJoinLobby)
+			{
+				classes.Add("button");
+				classes.Add("primary");
+			}
+			else
+			{
+				classes.Add("button");
+				classes.Add("disable");
+			}
+			
+			ConfirmButtonBussElement.UpdateClasses(classes);
 		}
 
 		private void CancelButtonClicked()
@@ -92,8 +117,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private void OnNameChanged(string value)
 		{
 			System.Name = value;
-			ConfirmButton.gameObject.SetActive(System.ValidateConfirmButton());
-			ConfirmButtonDisabled.gameObject.SetActive(!System.ValidateConfirmButton());
+			ValidateConfirmButton();
 		}
 
 		private void OnDescriptionChanged(string value)

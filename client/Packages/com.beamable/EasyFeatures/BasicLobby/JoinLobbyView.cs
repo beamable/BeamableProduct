@@ -2,6 +2,7 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,6 +51,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ClearFilterButton;
 		public Button JoinLobbyButton;
 		public Button BackButton;
+		
+		public BussElement JoinLobbyButtonBussElement;
 
 		[Header("Callbacks")]
 		public UnityEvent OnGetLobbiesRequestSent;
@@ -76,7 +79,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-
+			
 			// Setting up all components
 			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected,
 			                  System.SelectedGameTypeIndex);
@@ -91,7 +94,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			PasscodeField.onValueChanged.ReplaceOrAddListener(OnPasscodeEntered);
 			ClearFilterButton.onClick.ReplaceOrAddListener(ClearButtonClicked);
 			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
-			JoinLobbyButton.interactable = System.CanJoinLobby();
+			ValidateJoinButton();
 			BackButton.onClick.ReplaceOrAddListener(BackButtonClicked);
 
 			FilterField.SetTextWithoutNotify(System.NameFilter);
@@ -108,6 +111,28 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbiesList.ClearPooledRankedEntries();
 			LobbiesList.Setup(System.LobbiesData, OnLobbySelected);
 			LobbiesList.RebuildPooledLobbiesEntries();
+		}
+
+		private void ValidateJoinButton()
+		{
+			bool canJoinLobby = System.CanJoinLobby();
+
+			JoinLobbyButton.interactable = canJoinLobby;
+
+			List<string> classes = new List<string>();
+			
+			if (canJoinLobby)
+			{
+				classes.Add("button");
+				classes.Add("primary");
+			}
+			else
+			{
+				classes.Add("button");
+				classes.Add("disable");
+			}
+			
+			JoinLobbyButtonBussElement.UpdateClasses(classes);
 		}
 
 		private async void JoinLobbyButtonClicked()
@@ -172,7 +197,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private void OnLobbySelected(int? lobbyId)
 		{
 			System.OnLobbySelected(lobbyId);
-			JoinLobbyButton.interactable = System.CanJoinLobby();
+			ValidateJoinButton();
 		}
 
 		private async void ClearButtonClicked()
