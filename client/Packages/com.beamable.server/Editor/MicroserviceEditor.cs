@@ -240,7 +240,7 @@ namespace Beamable.Server.Editor
 				{
 					return;
 				}
-
+				
 				var rootPath = Directory.GetParent(Application.dataPath).FullName;
 
 				foreach (var serviceCreateInfo in _serviceCreateInfos)
@@ -256,6 +256,7 @@ namespace Beamable.Server.Editor
 				
 				if (descriptor is MicroserviceDescriptor desc)
 				{
+					FileUtil.DeleteFileOrDirectory(desc.SourcePath);
 					FileUtil.DeleteFileOrDirectory(desc.HidePath);
 					FileUtil.DeleteFileOrDirectory(desc.BuildPath);
 				}
