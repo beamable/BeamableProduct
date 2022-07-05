@@ -75,7 +75,7 @@ namespace Beamable.Common
 		/// </summary>
 		public int? RC => IsReleaseCandidate ? _rc : default;
 
-		public PackageVersion(int major, int minor, int patch, int rc = -1, long nightlyTime = -1, bool isPreview = false, bool isExperimental=false)
+		public PackageVersion(int major, int minor, int patch, int rc = -1, long nightlyTime = -1, bool isPreview = false, bool isExperimental = false)
 		{
 			_major = major;
 			_minor = minor;
