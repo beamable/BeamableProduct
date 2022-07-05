@@ -9,7 +9,7 @@ public abstract class AppCommand<TArgs> : Command
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
 
-	protected AppCommand(string name, string? description = null) : base(name, description)
+	protected AppCommand(string name, string description = null) : base(name, description)
 	{
 	}
 
@@ -103,7 +103,7 @@ public interface ICommandFactory
 
 }
 
-public class CommandFactory<T> : ICommandFactory where T : Command
+public class CommandFactory : ICommandFactory
 {
 
 }
