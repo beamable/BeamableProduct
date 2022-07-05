@@ -331,7 +331,7 @@ namespace Beamable.Common.Dependencies
 		/// <typeparam name="TNew">The new implementation type</typeparam>
 		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
-		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(bool autoCreate=true) where TNew : TExisting;
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(bool autoCreate = true) where TNew : TExisting;
 
 		/// <summary>
 		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
@@ -341,7 +341,7 @@ namespace Beamable.Common.Dependencies
 		/// <param name="newService">The instance of <see cref="TNew"/> that will be used </param>
 		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
-		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate=true) where TNew : TExisting;
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate = true) where TNew : TExisting;
 
 		/// <summary>
 		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
@@ -351,7 +351,7 @@ namespace Beamable.Common.Dependencies
 		/// <param name="factory">A method that will be invoked to create the instance</param>
 		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
-		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<TNew> factory, bool autoCreate=true) where TNew : TExisting;
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<TNew> factory, bool autoCreate = true) where TNew : TExisting;
 
 		/// <summary>
 		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
@@ -361,7 +361,7 @@ namespace Beamable.Common.Dependencies
 		/// <param name="factory">A method that will be invoked to create the instance</param>
 		/// <param name="autoCreate">True by default. When true, if there was no existing service for <see cref="TExisting"/>, then the service will be registered. When false, an exception will be thrown. </param>
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
-		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<IDependencyProvider, TNew> factory, bool autoCreate=true) where TNew : TExisting;
+		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(Func<IDependencyProvider, TNew> factory, bool autoCreate = true) where TNew : TExisting;
 
 		/// <summary>
 		/// After you have registered all your services, use this method to finalize the builder and produce a
