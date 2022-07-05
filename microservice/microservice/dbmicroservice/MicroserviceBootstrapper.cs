@@ -41,12 +41,20 @@ namespace Beamable.Server
             BeamableSerilogProvider.LogContext.Value = Log.Logger;
         }
 
-        private static void ConfigureUnhandledError()
+        public static void ConfigureUnhandledError()
         {
             PromiseBase.SetPotentialUncaughtErrorHandler((promise, exception) =>
             {
-                BeamableLogger.LogError("Uncaught promise error. {promiseType} {message} {stack}", promise?.GetType(), exception.Message, exception.StackTrace);
-                throw exception;
+	            async Task DelayedCheck()
+	            {
+		            await Task.Yield();
+		            if (promise?.HadAnyErrbacks ?? true) return;
+
+		            BeamableLogger.LogError("Uncaught promise error. {promiseType} {message} {stack}", promise.GetType(), exception.Message, exception.StackTrace);
+		            throw exception;
+	            }
+
+	            _ = Task.Run(DelayedCheck);
             });
         }
 
@@ -71,7 +79,7 @@ namespace Beamable.Server
                 Log.Fatal("Version mismatch. Image built with {buildVersion}, but is executing with {executionVersion}. This is a fatal mistake.", args.SdkVersionBaseBuild, args.SdkVersionExecution);
                 throw new Exception($"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
             }
-            
+
             try
             {
                 await beamableService.Start<TMicroService>(args);
@@ -79,14 +87,14 @@ namespace Beamable.Server
             catch (Exception ex)
             {
                 var message = new StringBuilder(1024 * 10);
-                
+
                 if (ex is not BeamableMicroserviceException beamEx)
                     message.AppendLine($"[BeamErrorCode=BMS{BeamableMicroserviceException.kBMS_UNHANDLED_EXCEPTION_ERROR_CODE}]" +
                                        $" Unhandled Exception Found! Please notify Beamable of your use case that led to this.");
                 else
                     message.AppendLine($"[BeamErrorCode=BMS{beamEx.ErrorCode}] " +
                                        $"Beamable Exception Found! If the message is unclear, please contact Beamable with your feedback.");
-                
+
                 message.AppendLine("Exception Info:");
                 message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
                 message.AppendLine("Stack Trace:");
@@ -95,9 +103,9 @@ namespace Beamable.Server
                 throw;
             }
 
-            if (args.WatchToken) 
+            if (args.WatchToken)
                 HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
-            
+
             beamableService.RunForever();
         }
     }
