@@ -1,10 +1,12 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.Modules.Account;
-using Beamable.Editor.Realms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using static Beamable.Common.Constants.Features.Toolbox;
 
 namespace Beamable.Editor.Toolbox.Models
@@ -126,29 +128,32 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public Promise<List<RealmView>> RefreshAvailableRealms()
 		{
-			var api = BeamEditorContext.Default;
-			return api.ServiceScope.GetService<RealmsService>().GetRealms().Then(realms =>
+			return BeamEditorContext.Default.ServiceScope.GetService<RealmsService>().GetRealms().Then(realms =>
 			{
 				Realms = realms;
 				OnAvailableRealmsChanged?.Invoke(realms);
-			}).Error(err => api.Logout());
+			});
 		}
-
-
 
 		public void Initialize()
 		{
-			RefreshAvailableRealms();
+			RefreshAvailableRealms().Error(exception =>
+			{
+				if (exception is RequesterException)
+				{
+					RefreshAvailableRealms().Error(Debug.LogException);
+				}
+			});
 
 			var api = BeamEditorContext.Default;
-			api.OnRealmChange += API_OnRealmChanged;
+			api.OnRealmChange += HandleRealmChanged;
 			CurrentUser = api.CurrentUser;
 			OnUserChanged?.Invoke(CurrentUser);
 			CurrentRealm = api.CurrentRealm;
 			OnRealmChanged?.Invoke(CurrentRealm);
 		}
 
-		private void API_OnRealmChanged(RealmView realm)
+		private void HandleRealmChanged(RealmView realm)
 		{
 			CurrentRealm = realm;
 			OnRealmChanged?.Invoke(realm);
@@ -158,7 +163,7 @@ namespace Beamable.Editor.Toolbox.Models
 		{
 			OnAvailableRealmsChanged = null;
 			var api = BeamEditorContext.Default;
-			api.OnRealmChange -= API_OnRealmChanged;
+			api.OnRealmChange -= HandleRealmChanged;
 		}
 
 		public void SetQueryTag(WidgetTags tags, bool shouldHaveTag)

@@ -82,8 +82,15 @@ namespace Beamable.Common.Reflection
 				{
 					if (baseType.BaseType.IsAssignableFrom(type))
 					{
-						foundType = baseType;
-						return true;
+						switch (baseType.IncludesItself)
+						{
+							case true when baseType.BaseType == type:
+								foundType = baseType;
+								return true;
+							case false when baseType.BaseType != type:
+								foundType = baseType;
+								return true;
+						}
 					}
 				}
 				else

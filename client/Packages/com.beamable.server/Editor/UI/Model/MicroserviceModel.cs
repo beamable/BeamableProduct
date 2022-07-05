@@ -42,13 +42,20 @@ namespace Beamable.Editor.UI.Model
 
 		public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
 
+		[field: SerializeField]
 		public MicroserviceBuilder ServiceBuilder { get; protected set; }
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
+
+		[field: SerializeField]
 		public ServiceReference RemoteReference { get; protected set; }
+
+
+		[field: SerializeField]
 		public ServiceStatus RemoteStatus { get; protected set; }
-		public MicroserviceConfigurationEntry Config { get; protected set; }
-		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>();
+
+		public MicroserviceConfigurationEntry Config => MicroserviceConfiguration.Instance.GetEntry(Descriptor.Name);
+		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>(); // TODO: This is whacky.
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
 		public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
 		public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
@@ -81,7 +88,6 @@ namespace Beamable.Editor.UI.Model
 				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
 				RemoteStatus = dataModel.GetStatus(descriptor),
-				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
 			};
 		}
 
@@ -321,9 +327,9 @@ $@"{{
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			ServiceDescriptor = (MicroserviceDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
+			oldBuilder.Descriptor = descriptor;
 			ServiceBuilder = serviceRegistry.GetServiceBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
-			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}
 
 		// Chris took these out because they weren't being used yet, and were throwing warnings on package builds.

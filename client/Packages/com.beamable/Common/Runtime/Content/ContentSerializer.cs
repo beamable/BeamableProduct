@@ -603,13 +603,13 @@ namespace Beamable.Common.Content
 			// the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
 			var typeName = "";
 
-			var type = ContentRegistry.GetTypeFromId(id);
-			if (!ContentRegistry.TryGetName(type, out typeName))
+			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(id);
+			if (!ContentTypeReflectionCache.Instance.TryGetName(type, out typeName))
 			{
-				typeName = ContentRegistry.GetTypeNameFromId(id);
+				typeName = ContentTypeReflectionCache.GetTypeNameFromId(id);
 			}
 
-			var name = ContentRegistry.GetContentNameFromId(id);
+			var name = ContentTypeReflectionCache.GetContentNameFromId(id);
 			id = string.Join(".", typeName, name);
 
 			var version = root["version"];

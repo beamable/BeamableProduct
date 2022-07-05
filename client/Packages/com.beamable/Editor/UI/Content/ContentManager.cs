@@ -41,7 +41,8 @@ namespace Beamable.Editor.Content
 				RefreshServer();
 			};
 
-			Model.SetContentTypes(ContentRegistry.GetAll().ToList());
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			Model.SetContentTypes(contentTypeReflectionCache.GetAll().ToList());
 
 			ValidateContent(null, null); // start a validation in the background.
 
@@ -79,6 +80,7 @@ namespace Beamable.Editor.Content
 			var itemName = GET_NAME_FOR_NEW_CONTENT_FILE_BY_TYPE(itemType);
 			ContentObject content = ScriptableObject.CreateInstance(itemType) as ContentObject;
 			content.SetContentName(itemName);
+			content.LastChanged = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
 			Model.CreateItem(content);
 			return content;

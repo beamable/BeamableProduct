@@ -26,9 +26,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		[SerializeField] private bool isSet;
 		private CancellationTokenSource _tokenSource;
 
-		public static PublishWindow ShowPublishWindow(EditorWindow parent)
+		public static PublishWindow ShowPublishWindow(EditorWindow parent, BeamEditorContext editorContext)
 		{
 			var wnd = CreateInstance<PublishWindow>();
+
 			wnd.name = PUBLISH;
 			wnd.titleContent = new GUIContent(PUBLISH);
 			wnd.ShowUtility();
