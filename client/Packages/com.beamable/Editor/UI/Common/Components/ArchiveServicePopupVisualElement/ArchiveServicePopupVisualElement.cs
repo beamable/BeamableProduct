@@ -18,7 +18,7 @@ namespace Beamable.Editor.UI.Components
 		private PrimaryButtonVisualElement _okButton;
 		private GenericButtonVisualElement _cancelButton;
 		private LabeledCheckboxVisualElement _checkbox;
-		
+
 		public Action<bool> onConfirm;
 		public Action onClose;
 
@@ -34,17 +34,17 @@ namespace Beamable.Editor.UI.Components
 
 			_contentLabelTop = Root.Q<Label>("contentLabelTop");
 			_contentLabelTop.text = ARCHIVE_WINDOW_INFO_TEXT_TOP;
-			
+
 			_contentLabelBottom = Root.Q<Label>("contentLabelBottom");
 			_contentLabelBottom.text = ARCHIVE_WINDOW_INFO_TEXT_BOTTOM;
-				
+
 			_okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
 			_okButton.Button.clickable.clicked += HandleOkButtonClicked;
-			
+
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_checkbox.Refresh();
 			_checkbox.SetText(DELETE_ALL_FILES_TEXT);
-			
+
 			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			_cancelButton.OnClick += HandleCancelButtonClicked;
 

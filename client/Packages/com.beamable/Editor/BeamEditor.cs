@@ -466,7 +466,7 @@ namespace Beamable
 
 		public Action OnServiceArchived;
 		public Action OnServiceUnarchived;
-		
+
 		public void Init(string playerCode, IDependencyBuilder builder)
 		{
 			PlayerCode = playerCode;
