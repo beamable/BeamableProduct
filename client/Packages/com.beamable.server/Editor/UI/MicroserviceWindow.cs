@@ -88,7 +88,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			ActiveContext.OnServiceArchived -= ServiceArchived;
 			ActiveContext.OnServiceArchived += ServiceArchived;
-			
+
 			ActiveContext.OnServiceUnarchived -= ServiceArchived;
 			ActiveContext.OnServiceUnarchived += ServiceArchived;
 		}
