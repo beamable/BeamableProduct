@@ -29,22 +29,30 @@ namespace Beamable.Player
 		/// <summary>
 		/// This is a list of players which user added as friends.
 		/// </summary>
-		public List<Friend> FriendsList => Value?.friends;
+		public ObservableReadonlyList<Friend> FriendsList { get; private set; }
 		/// <summary>
 		/// This is a list of players which user blocked.
 		/// </summary>
-		public List<Common.Api.Social.Player> Blocked => Value?.blocked;
+		public ObservableReadonlyList<Common.Api.Social.Player> Blocked { get; private set; }
 
 		private ISocialApi _socialApi;
 
 		public PlayerFriends(ISocialApi socialApi)
 		{
 			_socialApi = socialApi;
+			FriendsList = new ObservableReadonlyList<Friend>(FriendsListRefresh);
+			Blocked = new ObservableReadonlyList<Common.Api.Social.Player>(BlockedListRefresh);
 		}
+
+		private Promise<List<Friend>> FriendsListRefresh() => Promise<List<Friend>>.Successful(Value?.friends);
+		
+		private Promise<List<Common.Api.Social.Player>> BlockedListRefresh() => Promise<List<Common.Api.Social.Player>>.Successful(Value?.blocked);
 
 		protected override async Promise PerformRefresh()
 		{
 			Value = await _socialApi.Get();
+			await FriendsList.Refresh();
+			await Blocked.Refresh();
 		}
 
 		/// <summary>
