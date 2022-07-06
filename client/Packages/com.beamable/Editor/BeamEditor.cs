@@ -82,7 +82,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<BeamableVsp>();
 			DependencyBuilder.AddSingleton<BeamableDispatcher>();
-			
+
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
@@ -463,9 +463,6 @@ namespace Beamable
 		public event Action<RealmView> OnRealmChange;
 		public event Action<CustomerView> OnCustomerChange;
 		public event Action<EditorUser> OnUserChange;
-		
-		public Action OnServiceArchived;
-		public Action OnServiceUnarchived;
 
 		public void Init(string playerCode, IDependencyBuilder builder)
 		{
