@@ -21,7 +21,7 @@ public class MicroserviceAuthenticationDaemon
 	/// The <see cref="EventWaitHandle"/> we use to wake this thread up from its slumber so we can authenticate the C#MS with the Beamo service.
 	/// </summary>
 	public static readonly EventWaitHandle AUTH_THREAD_WAIT_HANDLE = new ManualResetEvent(false);
-	
+
 	/// <summary>
 	/// The total number of outgoing requests that actually go out through <see cref="MicroserviceRequester.Request{T}"/>.
 	/// </summary>
@@ -31,7 +31,10 @@ public class MicroserviceAuthenticationDaemon
 	/// The total number of outgoing requests that went out through <see cref="MicroserviceRequester.Request{T}"/> and whose promise handlers (for error or success) have run.
 	/// </summary>
 	private static ulong _OutgoingRequestProcessedCounter = 0;
-	
+
+	// default is false, set 1 for true.
+	private static int _isSocketAuthorized = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
+
 	/// <summary>
 	/// Bumps the <see cref="_OutgoingRequestCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
 	/// </summary>
@@ -46,16 +49,24 @@ public class MicroserviceAuthenticationDaemon
 
 	/// <summary>
 	/// Increments the given <see cref="authCounter"/> and notifies the <see cref="AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up.
-	/// The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="Authenticate"/> task. 
+	/// The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="Authenticate"/> task.
 	/// </summary>
 	/// <param name="authCounter"><see cref="SocketRequesterContext.AuthorizationCounter"/> is what you should pass here.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void WakeAuthThread(ref int authCounter)
 	{
+		// IsSocketAuthorized = false;
 		Interlocked.Increment(ref authCounter);
+		Log.Debug($"Authorization Daemon waking thread. Requests=[{authCounter}]");
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
-	
+
+	public static void WakeAuthThreadWithoutAskingForNewAuth()
+	{
+		Log.Debug($"Authorization Daemon waking thread. ");
+		AUTH_THREAD_WAIT_HANDLE.Set();
+	}
+
 	/// <summary>
 	/// Cancels the token and notifies the <see cref="AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up and catches fire 🔥.
 	/// </summary>
@@ -71,12 +82,12 @@ public class MicroserviceAuthenticationDaemon
 	/// The environment data that we need to make the <see cref="Authenticate"/> request.
 	/// </summary>
 	private readonly IMicroserviceArgs _env;
-	
+
 	/// <summary>
 	/// The requester instance so that we can make the <see cref="Authenticate"/> request.
 	/// </summary>
 	private readonly MicroserviceRequester _requester;
-	
+
 	/// <summary>
 	/// The <see cref="SocketRequesterContext"/> so we can keep track of the <see cref="SocketRequesterContext.AuthorizationCounter"/>.
 	/// </summary>
@@ -94,27 +105,29 @@ public class MicroserviceAuthenticationDaemon
 		// While this thread isn't cancelled...
 		while (!cancellationTokenSource.IsCancellationRequested)
 		{
-			// Wait for it to be woken up via the Wait Handle. When it is woken up, it'll run the logic for us to [re]-auth with Beamo and then go back to sleep. 
+			// Wait for it to be woken up via the Wait Handle. When it is woken up, it'll run the logic for us to [re]-auth with Beamo and then go back to sleep.
 			AUTH_THREAD_WAIT_HANDLE.WaitOne();
 
 			// Gets the number of requests that have been made by the service so far...
 			var outgoingReqsCountAtStart = Interlocked.Read(ref _OutgoingRequestCounter);
-			
+
 			// Gets the number of requests that have been made by the service AND that have had their promise handlers run (for errors or success)
 			var outgoingReqsProcessedAtStart = Interlocked.Read(ref _OutgoingRequestProcessedCounter);
 
-			// Declare a variable that'll hold the total number of requests that have been made by the service AFTER we run authenticate. 
+			// Declare a variable that'll hold the total number of requests that have been made by the service AFTER we run authenticate.
 			ulong outgoingReqsCountAtEnd;
 			try
 			{
 				// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
+				Log.Debug($"Authorization Daemon checking for pending requests. Requests=[{_socketContext.AuthorizationCounter}]");
 				if (_socketContext.AuthorizationCounter > 0)
 				{
 					// Do the authorization back and forth with Beamo
 					await Authenticate();
-					
+
 					// Resets the auth counter back to 0
-					Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
+					// Log.Debug($"Authorization Daemon clearing pending requests.");
+					// Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
 				}
 			}
 			catch (Exception ex)
@@ -130,13 +143,13 @@ public class MicroserviceAuthenticationDaemon
 
 			// Wait until all requests that can fail, have actually failed or succeeded by waiting until the number of requests we've attempted since we started the auth process
 			// is the same or above the number of made requests that have been processed.
-			bool stillProcessingPotentiallyFailedReqs;
-			do
-			{
-				var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
-				stillProcessingPotentiallyFailedReqs = expectedReqsProcessed > Interlocked.Read(ref _OutgoingRequestProcessedCounter);
-				await Task.Delay(1);
-			} while (stillProcessingPotentiallyFailedReqs);
+			// bool stillProcessingPotentiallyFailedReqs;
+			// do
+			// {
+			// 	var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
+			// 	stillProcessingPotentiallyFailedReqs = expectedReqsProcessed > Interlocked.Read(ref _OutgoingRequestProcessedCounter);
+			// 	await Task.Delay(1);
+			// } while (stillProcessingPotentiallyFailedReqs);
 
 			// This solves an extremely unlikely race condition
 			Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
@@ -155,7 +168,8 @@ public class MicroserviceAuthenticationDaemon
 		}
 
 		Log.Debug("Authorizing WS connection");
-		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
+		var nonceRequest = _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
+		var res = await nonceRequest;
 		Log.Debug("Got nonce");
 		var sig = CalculateSignature(_env.Secret + res.nonce);
 		var req = new MicroserviceAuthRequest
@@ -170,7 +184,6 @@ public class MicroserviceAuthenticationDaemon
 			Log.Error("Authorization failed. result=[{result}]", authRes.result);
 			throw new Exception("Authorization failed");
 		}
-
 		Log.Debug("Authorization complete");
 	}
 

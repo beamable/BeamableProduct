@@ -75,7 +75,7 @@
         <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.WakeAuthThread(System.Int32@)">
             <summary>
             Increments the given <see cref="!:authCounter"/> and notifies the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up.
-            The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> task. 
+            The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> task.
             </summary>
             <param name="authCounter"><see cref="F:Beamable.Server.SocketRequesterContext.AuthorizationCounter"/> is what you should pass here.</param>
         </member>

@@ -29,7 +29,7 @@ namespace microserviceTests.microservice.Content
          var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.FullName).ToList();
          _cache.GenerateReflectionCache(asms);
       }
-      
+
       [Test]
       public void Simple()
       {
@@ -50,7 +50,6 @@ namespace microserviceTests.microservice.Content
          var socketProvider = new TestSocketProvider(socket =>
          {
             testSocket = socket;
-
             socket.AddInitialContentMessageHandler(-1, new ContentReference
             {
                id = "items.foo",
@@ -58,13 +57,14 @@ namespace microserviceTests.microservice.Content
                uri = "items.foo",
                visibility = "public"
             });
+            socket.SetAuthentication(true);
 
             // don't mock anything...
          });
 
          var socket = socketProvider.Create("test");
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
 
          var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
@@ -126,6 +126,7 @@ namespace microserviceTests.microservice.Content
                   uri = "items.foo.newversion",
                   visibility = "public"
                })
+               .SetAuthentication(true)
                ;
 
             // don't mock anything...
@@ -133,7 +134,7 @@ namespace microserviceTests.microservice.Content
 
          var socket = socketProvider.Create("test");
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
 
          var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
@@ -206,13 +207,14 @@ namespace microserviceTests.microservice.Content
                uri = "items.foo",
                visibility = "public"
             });
+            socket.SetAuthentication(true);
 
             // don't mock anything...
          });
 
          var socket = socketProvider.Create("test");
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
-         var requester = new MicroserviceRequester(args, reqCtx, socketCtx);
+         var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
 
          var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
 
