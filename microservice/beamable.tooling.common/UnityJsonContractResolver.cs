@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -41,7 +38,7 @@ namespace Beamable.Server.Common
             BaseConverter = baseConverter;
         }
 
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             if (value is ISerializationCallbackReceiver receiver)
             {
@@ -50,7 +47,7 @@ namespace Beamable.Server.Common
             BaseConverter.WriteJson(writer, value, serializer);
         }
 
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             var result = BaseConverter.ReadJson(reader, objectType, existingValue, serializer);
             if (result is ISerializationCallbackReceiver receiver)
@@ -122,7 +119,7 @@ namespace Beamable.Server.Common
             return validFields.Cast<MemberInfo>().ToList();
         }
 
-        protected override JsonConverter? ResolveContractConverter(Type objectType)
+        protected override JsonConverter ResolveContractConverter(Type objectType)
         {
             var baseConverter = base.ResolveContractConverter(objectType);
             if (objectType.IsSubclassOf(typeof(ISerializationCallbackReceiver)))
