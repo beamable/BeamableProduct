@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
 using Beamable.UI.Buss;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -119,20 +120,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			JoinLobbyButton.interactable = canJoinLobby;
 
-			List<string> classes = new List<string>();
-			
 			if (canJoinLobby)
 			{
-				classes.Add("button");
-				classes.Add("primary");
+				JoinLobbyButtonBussElement.SetButtonPrimary();
 			}
 			else
 			{
-				classes.Add("button");
-				classes.Add("disable");
+				JoinLobbyButtonBussElement.SetButtonDisabled();
 			}
-			
-			JoinLobbyButtonBussElement.UpdateClasses(classes);
 		}
 
 		private async void JoinLobbyButtonClicked()

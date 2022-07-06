@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.UI.Buss;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -109,20 +110,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 			bool buttonValid = System.IsPlayerAdmin && System.IsServerReady();
 			StartButton.interactable = buttonValid;
 			
-			List<string> classes = new List<string>();
-			
 			if (buttonValid)
 			{
-				classes.Add("button");
-				classes.Add("primary");
+				StartButtonBussElement.SetButtonPrimary();
 			}
 			else
 			{
-				classes.Add("button");
-				classes.Add("disable");
+				StartButtonBussElement.SetButtonDisabled();
 			}
-			
-			StartButtonBussElement.UpdateClasses(classes);
 		}
 
 		private void OnAdminButtonClicked(int slotIndex)

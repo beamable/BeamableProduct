@@ -4,6 +4,7 @@ using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Lobbies;
 using Beamable.UI.Buss;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -92,20 +93,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			ConfirmButton.interactable = canJoinLobby;
 
-			List<string> classes = new List<string>();
-			
 			if (canJoinLobby)
 			{
-				classes.Add("button");
-				classes.Add("primary");
+				ConfirmButtonBussElement.SetButtonPrimary();
 			}
 			else
 			{
-				classes.Add("button");
-				classes.Add("disable");
+				ConfirmButtonBussElement.SetButtonDisabled();
 			}
-			
-			ConfirmButtonBussElement.UpdateClasses(classes);
 		}
 
 		private void CancelButtonClicked()

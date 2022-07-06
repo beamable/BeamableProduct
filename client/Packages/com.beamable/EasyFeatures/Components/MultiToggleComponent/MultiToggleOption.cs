@@ -1,4 +1,5 @@
 ﻿using Beamable.UI.Buss;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -14,10 +15,8 @@ namespace Beamable.EasyFeatures.Components
 
 		public BussElement MainBussElement;
 		public BussElement LabelBussElement;
-		
-		private Action _onClickAction;
 
-		public Toggle Toggle => _toggle;
+		private Action _onClickAction;
 
 		public void Setup(string option, Action onClickAction, ToggleGroup group, bool selected)
 		{
@@ -26,8 +25,12 @@ namespace Beamable.EasyFeatures.Components
 			_toggle.group = group;
 			_toggle.onValueChanged.AddListener(ToggleClicked);
 			_toggle.SetIsOnWithoutNotify(selected);
-			
-			ApplyStyle(selected);
+
+			List<string> classes = new List<string> {"toggle", "option"};
+			MainBussElement.UpdateClasses(classes);
+			LabelBussElement.UpdateClasses(classes);
+
+			SetSelected(selected);
 		}
 
 		private void ToggleClicked(bool value)
@@ -36,29 +39,14 @@ namespace Beamable.EasyFeatures.Components
 			{
 				_onClickAction.Invoke();
 			}
-			
-			ApplyStyle(value);
+
+			SetSelected(value);
 		}
 
-		private void ApplyStyle(bool selected)
+		private void SetSelected(bool selected)
 		{
-			List<string> classes = new List<string>();
-			
-			if (selected)
-			{
-				classes.Add("toggle");
-				classes.Add("option");
-				classes.Add("selected");
-			}
-			else
-			{
-				classes.Add("toggle");
-				classes.Add("option");
-				classes.Add("deselected");
-			}
-			
-			MainBussElement.UpdateClasses(classes);
-			LabelBussElement.UpdateClasses(classes);
+			MainBussElement.SetSelected(selected);
+			LabelBussElement.SetSelected(selected);
 		}
 	}
 }

@@ -1,5 +1,6 @@
 ﻿using Beamable.UI.Buss;
 using Beamable.UI.Scripts;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -42,6 +43,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_onLobbySelected = onLobbySelected;
 
 			Button.onClick.ReplaceOrAddListener(OnClick);
+			FrameBussElement.UpdateClasses(new List<string> {"panel", "lobby"});
+			
 			SetSelected(false);
 		}
 
@@ -52,14 +55,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void SetSelected(bool value)
 		{
-			List<string> classes = new List<string> {"panel", "lobby"};
-
-			if (value)
-			{
-				classes.Add("selected");
-			}
-			
-			FrameBussElement.UpdateClasses(classes);
+			FrameBussElement.SetSelected(value);
 		}
 	}
 }
