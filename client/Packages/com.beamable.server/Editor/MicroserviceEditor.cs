@@ -229,7 +229,51 @@ namespace Beamable.Server.Editor
 
 			AssetDatabase.Refresh();
 		}
+		
+		public static void DeleteServiceFiles(IDescriptor descriptor)
+		{
+			AssetDatabase.StartAssetEditing();
+			
+			try
+			{
+				if (string.IsNullOrWhiteSpace(descriptor.Name))
+				{
+					return;
+				}
+				
+				var rootPath = Directory.GetParent(Application.dataPath).FullName;
 
+				foreach (var serviceCreateInfo in _serviceCreateInfos)
+				{
+					var relativeDestPath = Path.Combine(serviceCreateInfo.Value.DestinationDirectoryPath, descriptor.Name);
+					var absoluteDestPath = Path.Combine(rootPath, relativeDestPath);
+
+					if (Directory.Exists(absoluteDestPath))
+					{
+						FileUtil.DeleteFileOrDirectory(absoluteDestPath);
+					}
+				}
+				
+				if (descriptor is MicroserviceDescriptor desc)
+				{
+					FileUtil.DeleteFileOrDirectory(desc.SourcePath);
+					FileUtil.DeleteFileOrDirectory(desc.HidePath);
+					FileUtil.DeleteFileOrDirectory(desc.BuildPath);
+				}
+				else if (descriptor is StorageObjectDescriptor storageDesc)
+				{
+					string directoryPath = Path.GetDirectoryName(storageDesc.AttributePath);
+					FileUtil.DeleteFileOrDirectory(directoryPath);
+				}
+			}
+			finally
+			{
+				AssetDatabase.StopAssetEditing();
+			}
+			
+			AssetDatabase.Refresh();
+		}
+		
 		private static void SetupServiceFileInfo(string serviceName, string sourceFile, string targetFile)
 		{
 			var text = File.ReadAllText(sourceFile);

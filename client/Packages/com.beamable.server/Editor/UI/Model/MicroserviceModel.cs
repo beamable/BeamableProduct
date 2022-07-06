@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -18,6 +19,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
+using static Beamable.Common.Constants.Features.Archive;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -53,6 +56,12 @@ namespace Beamable.Editor.UI.Model
 
 		[field: SerializeField]
 		public ServiceStatus RemoteStatus { get; protected set; }
+		
+		public override bool IsArchived
+		{
+			get => Config.Archived;
+			protected set => Config.Archived = value;
+		}
 
 		public MicroserviceConfigurationEntry Config => MicroserviceConfiguration.Instance.GetEntry(Descriptor.Name);
 		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>(); // TODO: This is whacky.
@@ -104,6 +113,7 @@ namespace Beamable.Editor.UI.Model
 			OnStop?.Invoke(task);
 			return task;
 		}
+		
 		public Task BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
@@ -122,6 +132,7 @@ namespace Beamable.Editor.UI.Model
 			OnBuild?.Invoke(task);
 			return task;
 		}
+
 		public void OpenLocalDocs()
 		{
 			var de = BeamEditorContext.Default;
@@ -201,10 +212,26 @@ namespace Beamable.Editor.UI.Model
 										  {
 											  IncludeDebugTools = !IncludeDebugTools;
 										  });
-
+			
 			if (!AreLogsAttached)
 			{
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
+			}
+			
+			evt.menu.AppendSeparator();
+			if (Config.Archived)
+			{
+				evt.menu.AppendAction("Unarchive", _ => Unarchive());
+			}
+			else
+			{
+				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
+				{
+					var archiveServicePopup = new ArchiveServicePopupVisualElement();
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility(ARCHIVE_WINDOW_HEADER, archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.onClose += () => popupWindow.Close();
+					archiveServicePopup.onConfirm += Archive;
+				});
 			}
 		}
 
@@ -321,6 +348,7 @@ $@"{{
 			}
 #endif
 		}
+		
 		public override void Refresh(IDescriptor descriptor)
 		{
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
