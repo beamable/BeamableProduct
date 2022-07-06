@@ -62,20 +62,22 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private string GetProcessArchitecture()
 		{
-			string platformStr = string.Empty;
-			// Mac with M1+ processor returns the keyword "Apple", which we can use to detect if the architecture is arm64 instead of amd64, as is the case with Intel processors
-			if (CultureInfo.InvariantCulture.CompareInfo.IndexOf(SystemInfo.processorType, "Apple", CompareOptions.IgnoreCase) >= 0 ||
-				RuntimeInformation.OSArchitecture == Architecture.Arm ||
-				RuntimeInformation.OSArchitecture == Architecture.Arm64)
+			string architecture = "linux/amd64";
+			
+			if (_availableArchitectures.Contains(MicroserviceConfiguration.Instance.DockerCPUArchitecture))
 			{
-				platformStr = Environment.Is64BitProcess ? "--platform linux/arm64" : "--platform linux/arm/v7";
+				architecture = MicroserviceConfiguration.Instance.DockerCPUArchitecture;
 			}
-			else if (RuntimeInformation.OSArchitecture == Architecture.X64 ||
-					 RuntimeInformation.OSArchitecture == Architecture.X86)
+			else if (_availableArchitectures.Contains(architecture))
 			{
-				platformStr = "--platform linux/amd64";
+				Debug.LogError($"Docker build for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine. Fallback: {architecture}");
 			}
-			return platformStr;
+			else
+			{
+				Debug.LogError($"Docker build for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine.");
+			}
+
+			return $"--platform {architecture}";
 		}
 
 		public override string GetCommandString()
