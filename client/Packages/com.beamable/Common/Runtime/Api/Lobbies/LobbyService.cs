@@ -17,15 +17,40 @@ namespace Beamable.Experimental.Api.Lobbies
 			_userContext = userContext;
 		}
 
-		/// <inheritdoc cref="ILobbyApi.FindLobbies"/>
-		// TODO: This should also allow for all sorts of fun querying
-		public Promise<LobbyQueryResponse> FindLobbies()
-		{
-			return _requester.Request<LobbyQueryResponse>(
-			  Method.GET,
-			  $"/lobbies"
-			);
-		}
+    /// <inheritdoc cref="ILobbyApi.FindLobbies"/>
+    // TODO: This should also allow for all sorts of fun querying
+    public Promise<LobbyQueryResponse> FindLobbies()
+    {
+      return _requester.Request<LobbyQueryResponse>(
+        Method.GET,
+        $"/lobbies"
+      );
+    }
+    
+    /// <inheritdoc cref="ILobbyApi.CreateLobby"/>
+    public Promise<Lobby> CreateLobby(
+	    string name,
+	    LobbyRestriction restriction,
+	    string gameTypeId = null,
+	    string description = null,
+	    List<Tag> playerTags = null,
+	    int? maxPlayers = null,
+	    int? passcodeLength = null,
+	    List<string> statsToInclude = null)
+    {
+	    return _requester.Request<Lobby>(
+		    Method.POST,
+		    $"/lobbies",
+		    new CreateLobbyRequest(
+			    name,
+			    description,
+			    restriction.ToString(),
+			    gameTypeId,
+			    playerTags,
+			    maxPlayers,
+			    passcodeLength)
+	    );
+    }
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
 		public Promise<Lobby> CreateLobby(
