@@ -22,9 +22,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public bool IncludeDebugTools { get; }
 		public string ImageName { get; set; }
 		public string BuildPath { get; set; }
+		
 		public Promise<Unit> ReadyForExecution { get; private set; }
 
 		private Exception _constructorEx;
+		private List<string> _availableArchitectures;
 
 		public static bool WasEverBuildLocally(IDescriptor descriptor)
 		{
@@ -36,9 +38,10 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull = true)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, List<string> availableArchitectures, bool includeDebugTools, bool watch, bool pull = true)
 		{
 			_descriptor = descriptor;
+			_availableArchitectures = availableArchitectures;
 			_pull = pull;
 			IncludeDebugTools = includeDebugTools;
 			ImageName = descriptor.ImageName;
@@ -49,8 +52,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			// build the Program file, and place it in the temp dir.
 			BuildUtils.PrepareBuildContext(descriptor, includeDebugTools, watch);
 		}
-
-
+		
 		protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
 		{
 			base.ModifyStartInfo(processStartInfo);

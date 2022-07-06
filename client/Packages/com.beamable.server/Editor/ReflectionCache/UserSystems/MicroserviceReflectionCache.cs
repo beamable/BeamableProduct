@@ -360,10 +360,11 @@ namespace Beamable.Server.Editor
 
 					try
 					{
-						var buildCommand = new BuildImageCommand(descriptor,
-															 includeDebugTools: false,
-															 watch: false,
-															 pull: true);
+						var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
+						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
+						                                         includeDebugTools: false,
+						                                         watch: false,
+						                                         pull: true);
 						await buildCommand.StartAsync();
 					}
 					catch (Exception e)
