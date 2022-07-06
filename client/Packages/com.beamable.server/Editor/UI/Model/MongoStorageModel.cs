@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Model
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
-		
+
 		public override bool IsArchived
 		{
 			get => Config.Archived;
@@ -133,7 +133,7 @@ namespace Beamable.Editor.UI.Model
 				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Storages.Count - 1, ServiceType.StorageObject);
 				OnSortChanged?.Invoke();
 			}, isLast);
-			
+
 			evt.menu.AppendSeparator();
 			if (Config.Archived)
 			{

@@ -50,8 +50,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
 			{
 				if (storageObjectModel.IsArchived)
-					continue;;
-				
+					continue; ;
+
 				var isRelation = _dependentServices.Contains(storageObjectModel);
 				var newElement = new DependentServicesCheckboxVisualElement(isRelation) { MongoStorageModel = storageObjectModel };
 				newElement.OnServiceRelationChanged += TriggerServiceRelationChanged;
@@ -75,8 +75,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
 			{
 				if (storageObjectModel.IsArchived)
-					continue;;
-				
+					continue; ;
+
 				var newElement = new DependentServicesCheckboxVisualElement(false) { MongoStorageModel = storageObjectModel };
 				newElement.Refresh();
 				newElement.Q<BeamableCheckboxVisualElement>("checkbox").RemoveFromHierarchy();

@@ -56,7 +56,7 @@ namespace Beamable.Editor.UI.Model
 
 		[field: SerializeField]
 		public ServiceStatus RemoteStatus { get; protected set; }
-		
+
 		public override bool IsArchived
 		{
 			get => Config.Archived;
@@ -113,7 +113,7 @@ namespace Beamable.Editor.UI.Model
 			OnStop?.Invoke(task);
 			return task;
 		}
-		
+
 		public Task BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
@@ -212,12 +212,12 @@ namespace Beamable.Editor.UI.Model
 										  {
 											  IncludeDebugTools = !IncludeDebugTools;
 										  });
-			
+
 			if (!AreLogsAttached)
 			{
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
 			}
-			
+
 			evt.menu.AppendSeparator();
 			if (Config.Archived)
 			{
@@ -348,7 +348,7 @@ $@"{{
 			}
 #endif
 		}
-		
+
 		public override void Refresh(IDescriptor descriptor)
 		{
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.

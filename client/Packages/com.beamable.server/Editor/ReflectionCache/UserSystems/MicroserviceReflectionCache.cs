@@ -211,9 +211,9 @@ namespace Beamable.Server.Editor
 
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx")) continue;
-						
+
 						if (!File.Exists(serviceAttribute.GetSourcePath()))
-						    continue;
+							continue;
 
 						// Create descriptor
 						var hasWarning = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Warning;

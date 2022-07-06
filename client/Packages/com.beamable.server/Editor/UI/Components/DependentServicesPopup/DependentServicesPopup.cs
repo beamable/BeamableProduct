@@ -65,7 +65,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				if (storageObjectModel.IsArchived)
 					continue;
-				
+
 				var newElement = new DependentServicesStorageObjectEntryVisualElement { Model = storageObjectModel };
 				newElement.Refresh();
 				_storageObjectsContainer.Add(newElement);

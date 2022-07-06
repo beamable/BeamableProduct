@@ -229,18 +229,18 @@ namespace Beamable.Server.Editor
 
 			AssetDatabase.Refresh();
 		}
-		
+
 		public static void DeleteServiceFiles(IDescriptor descriptor)
 		{
 			AssetDatabase.StartAssetEditing();
-			
+
 			try
 			{
 				if (string.IsNullOrWhiteSpace(descriptor.Name))
 				{
 					return;
 				}
-				
+
 				var rootPath = Directory.GetParent(Application.dataPath).FullName;
 
 				foreach (var serviceCreateInfo in _serviceCreateInfos)
@@ -253,7 +253,7 @@ namespace Beamable.Server.Editor
 						FileUtil.DeleteFileOrDirectory(absoluteDestPath);
 					}
 				}
-				
+
 				if (descriptor is MicroserviceDescriptor desc)
 				{
 					FileUtil.DeleteFileOrDirectory(desc.SourcePath);
@@ -270,10 +270,10 @@ namespace Beamable.Server.Editor
 			{
 				AssetDatabase.StopAssetEditing();
 			}
-			
+
 			AssetDatabase.Refresh();
 		}
-		
+
 		private static void SetupServiceFileInfo(string serviceName, string sourceFile, string targetFile)
 		{
 			var text = File.ReadAllText(sourceFile);

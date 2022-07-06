@@ -112,7 +112,7 @@ namespace Beamable.Editor.UI.Model
 
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}
-		
+
 		public void Unarchive()
 		{
 			IsArchived = false;
