@@ -1,6 +1,7 @@
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -8,7 +9,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		protected override string NewServiceName { get; set; } = "NewStorageObject";
 		protected override string ScriptName => nameof(StorageObjectVisualElement);
-		protected override bool ShouldShowCreateDependentService => MicroservicesDataModel.Instance.Services.Count != 0;
+		protected override bool ShouldShowCreateDependentService => MicroservicesDataModel.Instance.Services.Any(x => !x.IsArchived);
 
 
 		protected override void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null)
@@ -17,7 +18,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected override void InitCreateDependentService()
 		{
-			_serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Services, "MicroServices");
+			_serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Services.Where(x => !x.IsArchived).ToList(), "MicroServices");
 		}
 	}
 }

@@ -141,7 +141,7 @@ namespace Beamable.Server.Editor
 
 		}
 
-		private static void OverrideDirectoryAttributes(DirectoryInfo dir, FileAttributes fileAttributes)
+		public static void OverrideDirectoryAttributes(DirectoryInfo dir, FileAttributes fileAttributes)
 		{
 			foreach (var subDir in dir.GetDirectories())
 			{

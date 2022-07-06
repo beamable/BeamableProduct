@@ -15,6 +15,7 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
+using System;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -84,6 +85,21 @@ namespace Beamable.Editor.Microservice.UI
 			ActiveContext.OnRealmChange += OnRealmChange;
 
 			SetForContent();
+
+			ActiveContext.OnServiceArchived -= ServiceArchived;
+			ActiveContext.OnServiceArchived += ServiceArchived;
+			
+			ActiveContext.OnServiceUnarchived -= ServiceArchived;
+			ActiveContext.OnServiceUnarchived += ServiceArchived;
+		}
+
+		private void OnDisable()
+		{
+			if (ActiveContext != null)
+			{
+				ActiveContext.OnServiceArchived -= ServiceArchived;
+				ActiveContext.OnServiceUnarchived -= ServiceArchived;
+			}
 		}
 
 		private void SetForContent()
@@ -187,6 +203,11 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			Debug.LogError(reason);
 			_microserviceContentVisualElement?.Refresh();
+		}
+
+		private void ServiceArchived()
+		{
+			_microserviceBreadcrumbsVisualElement.RefreshFiltering();
 		}
 	}
 }
