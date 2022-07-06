@@ -36,6 +36,9 @@ namespace Beamable.Editor.Content.Extensions
 				// case ContentSortType.PublishedDate:
 				// 	Debug.LogWarning("NOT IMPLEMENTED");
 				// 	break;
+				case ContentSortType.RecentlyUpdated:
+					sortedContentItems = contentItems.OrderByDescending(x => x.LastChanged).ToList();
+					break;
 				case ContentSortType.Status:
 					sortedContentItems = contentItems.OrderBy(x => x.Status).ToList();
 					break;

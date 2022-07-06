@@ -1,39 +1,35 @@
-using Beamable.Api;
-using Beamable.Common;
-using Beamable.Common.Api;
+using Beamable.Common.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Beamable.Editor.Realms
+namespace Beamable.Common.Api.Realms
 {
 	public class RealmServiceException : Exception
 	{
 
-		public RealmServiceException(string message) : base(message)
-		{
-
-		}
+		public RealmServiceException(string message) : base(message) { }
 	}
 
-	public class RealmsService
+	public class RealmsService : IRealmsApi
 	{
-		private readonly PlatformRequester _requester;
+		private readonly IBeamableRequester _requester;
 
-		public RealmsService(PlatformRequester requester)
+		public RealmsService(IBeamableRequester requester)
 		{
 			_requester = requester;
 		}
 
 		public Promise<CustomerView> GetCustomerData()
 		{
-			return _requester.Request<GetCustomerResponseDTO>(Method.GET, $"/basic/realms/customer", useCache: true).Map(resp => new CustomerView
-			{
-				Cid = resp.customer.cid.ToString(),
-				Alias = resp.customer.alias,
-				DisplayName = resp.customer.name,
-				Projects = ProcessProjects(resp.customer.projects)
-			});
+			return _requester.Request<GetCustomerResponseDTO>(Method.GET, $"/basic/realms/customer", useCache: true)
+							 .Map(resp => new CustomerView
+							 {
+								 Cid = resp.customer.cid.ToString(),
+								 Alias = resp.customer.alias,
+								 DisplayName = resp.customer.name,
+								 Projects = ProcessProjects(resp.customer.projects)
+							 });
 		}
 
 		public Promise<List<RealmView>> GetGames()
@@ -44,20 +40,21 @@ namespace Beamable.Editor.Realms
 			}
 
 			return _requester.Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/games", useCache: true)
-			   .Map(resp =>
-			   {
+							 .Map(resp =>
+							 {
 
-				   var processed = ProcessProjects(resp.projects);
-				   return processed;
-			   })
-			   .Recover(ex =>
-			{
-				if (ex is PlatformRequesterException err && err.Status == 403)
-				{
-					return new List<RealmView>(); // empty list.
-				}
-				throw ex;
-			});
+								 var processed = ProcessProjects(resp.projects);
+								 return processed;
+							 })
+							 .Recover(ex =>
+							 {
+								 if (ex is RequesterException err && err.Status == 403)
+								 {
+									 return new List<RealmView>(); // empty list.
+								 }
+
+								 throw ex;
+							 });
 		}
 
 		public Promise<RealmView> GetRealm()
@@ -66,6 +63,7 @@ namespace Beamable.Editor.Realms
 			{
 				return Promise<RealmView>.Failed(new RealmServiceException("No Cid Available"));
 			}
+
 			if (string.IsNullOrEmpty(_requester.Pid))
 			{
 				return Promise<RealmView>.Successful(null);
@@ -130,9 +128,10 @@ namespace Beamable.Editor.Realms
 
 		public Promise<List<RealmView>> GetRealms(RealmView game = null)
 		{
-			var pid = game?.Pid ?? _requester.Pid ?? _requester.AccessToken?.Pid;
+			var pid = game?.Pid ?? _requester.Pid ?? _requester?.Pid;
 			return GetRealms(pid);
 		}
+
 		public Promise<List<RealmView>> GetRealms(string pid)
 		{
 			if (string.IsNullOrEmpty(pid))
@@ -141,17 +140,18 @@ namespace Beamable.Editor.Realms
 			}
 
 			// TODO: Consider using helper methods here to do the parent/child stuff, and the bfs-depth-find stuff
-			return _requester.Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true)
-			   .Map(resp => ProcessProjects(resp.projects))
-			   .Recover(ex =>
-			   {
-				   if (ex is PlatformRequesterException err && err.Status == 403)
+			return _requester
+				   .Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true)
+				   .Map(resp => ProcessProjects(resp.projects))
+				   .Recover(ex =>
 				   {
-					   return new List<RealmView>(); // empty set.
-				   }
+					   if (ex is RequesterException err && err.Status == 403)
+					   {
+						   return new List<RealmView>(); // empty set.
+					   }
 
-				   throw ex;
-			   });
+					   throw ex;
+				   });
 
 		}
 	}
@@ -203,8 +203,8 @@ namespace Beamable.Editor.Realms
 		public RealmView FindRoot()
 		{
 			return Parent == null
-				   ? this
-				   : Parent.FindRoot();
+				? this
+				: Parent.FindRoot();
 		}
 
 		public int GetOrder()
@@ -248,6 +248,7 @@ namespace Beamable.Editor.Realms
 	{
 		public CustomerViewDTO customer;
 	}
+
 	[System.Serializable]
 	public class ProjectViewDTO
 	{

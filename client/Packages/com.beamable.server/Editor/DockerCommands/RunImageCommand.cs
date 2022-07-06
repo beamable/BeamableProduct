@@ -366,14 +366,11 @@ namespace Beamable.Server.Editor.DockerCommands
 			Task.Run(async () =>
 			{
 				await Task.Delay(500);
-				EditorApplication.delayCall += () =>
+				BeamEditorContext.Default.Dispatcher.Schedule(() =>
 				{
 					var prune = new PruneImageCommand(_descriptor);
-					var _ = prune.StartAsync().Then(__ =>
-					{
-
-					});
-				};
+					var _ = prune.StartAsync().Then(__ => { });
+				});
 			});
 		}
 

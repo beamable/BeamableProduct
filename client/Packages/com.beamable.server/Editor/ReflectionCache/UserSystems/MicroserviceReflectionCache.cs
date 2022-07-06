@@ -72,7 +72,6 @@ namespace Beamable.Server.Editor
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
 			public List<AttributeOfInterest> AttributesOfInterest => ATTRIBUTES_OF_INTEREST;
 
-			private Dictionary<string, MicroserviceStateMachine> _serviceToStateMachine = new Dictionary<string, MicroserviceStateMachine>();
 			private Dictionary<string, MicroserviceBuilder> _serviceToBuilder = new Dictionary<string, MicroserviceBuilder>();
 			private Dictionary<string, MongoStorageBuilder> _storageToBuilder = new Dictionary<string, MongoStorageBuilder>();
 
@@ -86,11 +85,11 @@ namespace Beamable.Server.Editor
 
 			public void ClearCachedReflectionData()
 			{
-				_serviceToStateMachine.Clear();
 				_serviceToBuilder.Clear();
 				_storageToBuilder.Clear();
 
 				Descriptors.Clear();
+				StorageDescriptors.Clear();
 				AllDescriptors.Clear();
 			}
 
@@ -213,6 +212,9 @@ namespace Beamable.Server.Editor
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx")) continue;
 
+						if (!File.Exists(serviceAttribute.GetSourcePath()))
+							continue;
+
 						// Create descriptor
 						var hasWarning = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Warning;
 						var hasError = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Error;
@@ -281,6 +283,9 @@ namespace Beamable.Server.Editor
 
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.StorageName.ToLower().Equals("xxxx")) continue;
+
+						if (!File.Exists(serviceAttribute.SourcePath))
+							continue;
 
 						// Create descriptor
 						var hasWarning = storageObjectValResults.Type == ReflectionCache.ValidationResultType.Warning;
@@ -475,6 +480,7 @@ namespace Beamable.Server.Editor
 						serviceName = sa.Name,
 						templateId = sa.TemplateId,
 						enabled = sa.Enabled,
+						archived = sa.Archived,
 						comments = sa.Comment,
 						imageId = kvp.Value,
 						dependencies = sa.Dependencies
@@ -490,6 +496,7 @@ namespace Beamable.Server.Editor
 				{
 					var sa = model.Services[uploadServiceReference.serviceName];
 					uploadServiceReference.enabled = sa.Enabled;
+					uploadServiceReference.archived = sa.Archived;
 				}
 
 				// 4- Make sure we only have each service once on the list.
@@ -512,6 +519,7 @@ namespace Beamable.Server.Editor
 						storageType = kvp.Value.Type,
 						templateId = kvp.Value.TemplateId,
 						enabled = kvp.Value.Enabled,
+						archived = kvp.Value.Archived
 					};
 				}).ToList();
 
@@ -615,6 +623,7 @@ namespace Beamable.Server.Editor
 							Comment = "",
 							Name = name,
 							Enabled = configEntry?.Enabled ?? true,
+							Archived = configEntry?.Archived ?? false,
 							TemplateId = configEntry?.TemplateId ?? "small",
 							Dependencies = serviceDependencies
 						};
@@ -640,6 +649,7 @@ namespace Beamable.Server.Editor
 							Name = name,
 							Type = configEntry?.StorageType ?? "mongov1",
 							Enabled = configEntry?.Enabled ?? true,
+							Archived = configEntry?.Archived ?? false,
 							TemplateId = configEntry?.TemplateId ?? "small",
 						};
 					}).ToList();
@@ -723,53 +733,6 @@ namespace Beamable.Server.Editor
 				builder.Init(descriptor);
 				_storageToBuilder.Add(key, builder);
 				return _storageToBuilder[key];
-			}
-
-			#endregion
-
-			#region On Script Reload Callbacks
-
-			[DidReloadScripts]
-			private static void AutomaticMachine()
-			{
-				// If we are not initialized, delay the call until we are.
-				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
-				{
-					EditorApplication.delayCall += AutomaticMachine;
-					return;
-				}
-				var registry = BeamEditor.GetReflectionSystem<Registry>();
-				if (DockerCommand.DockerNotInstalled) return;
-				try
-				{
-					foreach (var d in registry.Descriptors)
-					{
-						GetServiceStateMachine(registry, d);
-					}
-				}
-				catch (DockerNotInstalledException)
-				{
-					// do not do anything.
-				}
-
-				MicroserviceStateMachine GetServiceStateMachine(Registry microserviceRegistry, MicroserviceDescriptor descriptor)
-				{
-					var key = descriptor.Name;
-
-					if (!microserviceRegistry._serviceToStateMachine.ContainsKey(key))
-					{
-						var pw = new CheckImageCommand(descriptor);
-						pw.WriteLogToUnity = false;
-						pw.Start();
-						pw.Join();
-
-						var initialState = pw.IsRunning ? MicroserviceState.RUNNING : MicroserviceState.IDLE;
-
-						microserviceRegistry._serviceToStateMachine.Add(key, new MicroserviceStateMachine(descriptor, initialState));
-					}
-
-					return microserviceRegistry._serviceToStateMachine[key];
-				}
 			}
 
 			#endregion

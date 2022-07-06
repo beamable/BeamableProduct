@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fixed
+- Failed promises no longer log exception info after an exception handler is registered on the same execution cycle.
+- "Connection is closed" log exception no longer prints incorrectly.
+
+## [1.2.4]
+### Added
+- Microservices now support private declarations of `Callable` methods.
+- Added log notifying users that Microservices don't currently support overloaded `Callable`. 
+
+### Fixed
+- Microservices now properly log exceptions that happen during its initialization
+- Microservice process commands now use the `BeamableDispatcher` instead of the `EditorApplication.delayCall`. This allows you to background Unity during long running microservice actions.
+- Issue in Microservices re-auth flow that caused high CPU utilization unnecessarily
+
+## [1.2.3]
+### Added
+- `UnityEngine.Debug.LogFormat` now supported when used inside C#MS methods 
+
+### Changed
+- Socket re-authorization flow uses a spinlock mechanism instead of a mutex
+
+### Fixed
+- Socket re-connection waits for the socket to reconnect before yielding the task scheduler
+
 ## [1.2.2]
 ### Fixed
 - Fixed microservices build issue on Mac with ARM CPU architecture

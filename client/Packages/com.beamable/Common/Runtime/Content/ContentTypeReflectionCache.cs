@@ -81,19 +81,23 @@ namespace Beamable.Common.Content
 
 				validationResults.SplitValidationResults(out var valid, out var warnings, out var errors);
 
+#if UNITY_EDITOR
 				// Warning level validations that happen for the content type attribute.
 				if (warnings.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_CONTENT_TYPE_ATTRIBUTE_MISSING);
 					_hintStorage.AddOrReplaceHint(hint, warnings);
 				}
+#endif
 
+#if UNITY_EDITOR
 				// Error level validations that happen for the content type attribute.
 				if (errors.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_INVALID_CONTENT_TYPE_ATTRIBUTE);
 					_hintStorage.AddOrReplaceHint(hint, errors);
 				}
+#endif
 
 				contentTypeAttributePairs.AddRange(valid.Select(a => a.Pair));
 			}
@@ -106,12 +110,14 @@ namespace Beamable.Common.Content
 
 				validationResults.SplitValidationResults(out var valid, out _, out var errors);
 
+#if UNITY_EDITOR
 				// Error validation for attributes placed on invalid classes/types over which they have no effect.
 				if (errors.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_INVALID_CONTENT_FORMERLY_SERIALIZED_AS_ATTRIBUTE);
 					_hintStorage.AddOrReplaceHint(hint, errors);
 				}
+#endif
 
 				formerContentTypeAttributePairs.AddRange(valid.Where(a => a.Pair.Attribute != null).Select(a => a.Pair));
 			}
@@ -127,19 +133,23 @@ namespace Beamable.Common.Content
 																						 out _,
 																						 out var errors);
 
+#if UNITY_EDITOR
 				// Print out any errors due to incorrect names
 				if (errors.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_INVALID_CONTENT_TYPE_ATTRIBUTE);
 					_hintStorage.AddOrReplaceHint(hint, errors);
 				}
+#endif
 
+#if UNITY_EDITOR
 				// Print out any errors due to name collisions.
 				if (nameValidationResults.PerNameCollisions.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_CONTENT_TYPE_NAME_COLLISION);
 					_hintStorage.AddOrReplaceHint(hint, nameValidationResults.PerNameCollisions);
 				}
+#endif
 
 				var contentTypeToClassDict = new Dictionary<string, Type>();
 				var classToContentTypeDict = new Dictionary<Type, string>();

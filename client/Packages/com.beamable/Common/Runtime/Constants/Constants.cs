@@ -84,6 +84,7 @@
 					public const string MICROSERVICES_MANAGER = "Microservices Manager";
 					public const string PORTAL = "Portal";
 					public const string TOOLBOX = "Toolbox";
+					public const string ENVIRONMENT = "Beamable Environment";
 					public const string BEAMABLE_ASSISTANT = BEAMABLE + " Assistant";
 					public const string BUSS = BEAMABLE + " Styles";
 					public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
@@ -103,6 +104,7 @@
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER = MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Beamable Developer";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Microservices";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_POOLING = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Pooling";
+					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_ENV = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Change Environment";
 
 					//Menu Items: Window (#ifdef BEAMABLE_DEVELOPER)
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BEAMABLE_DEVELOPER_SAMPLES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Samples";

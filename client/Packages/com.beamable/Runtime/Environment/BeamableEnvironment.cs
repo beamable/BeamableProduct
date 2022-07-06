@@ -4,6 +4,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.IO;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Environment;
 
 namespace Beamable
 {
@@ -88,11 +89,19 @@ namespace Beamable
 		public static void ReloadEnvironment()
 		{
 			string envText = "";
+
 #if UNITY_EDITOR
 			envText = File.ReadAllText(FilePath);
 #else
 			envText = Resources.Load<TextAsset>(ResourcesPath).text;
 #endif
+
+			var overrideFile = Resources.Load<TextAsset>(Path.GetFileNameWithoutExtension(OVERRIDE_PATH));
+			if (overrideFile)
+			{
+				envText = overrideFile.text;
+			}
+
 			var rawDict = Json.Deserialize(envText) as ArrayDict;
 			JsonSerializable.Deserialize(Data, rawDict);
 		}
@@ -101,6 +110,37 @@ namespace Beamable
 	[Serializable]
 	public class EnvironmentData : JsonSerializable.ISerializable
 	{
+		public static EnvironmentData BeamableDev => new EnvironmentData
+		{
+			environment = "dev",
+			apiUrl = "https://dev.api.beamable.com",
+			portalUrl = "https://beta-dev-portal.beamable.com",
+			beamMongoExpressUrl = "https://dev.storage.beamable.com",
+			dockerRegistryUrl = "https://dev-microservices.beamable.com/v2/",
+			isUnityVsp = false,
+			_version = "0.0.0"
+		};
+		public static EnvironmentData BeamableStaging => new EnvironmentData
+		{
+			environment = "staging",
+			apiUrl = "https://staging.api.beamable.com",
+			portalUrl = "https://beta-staging-portal.beamable.com",
+			beamMongoExpressUrl = "https://staging.storage.beamable.com",
+			dockerRegistryUrl = "https://staging-microservices.beamable.com/v2/",
+			isUnityVsp = false,
+			_version = "0.0.0"
+		};
+		public static EnvironmentData BeamableProduction => new EnvironmentData
+		{
+			environment = "prod",
+			apiUrl = "https://api.beamable.com",
+			portalUrl = "https://beta-portal.beamable.com",
+			beamMongoExpressUrl = "https://storage.beamable.com",
+			dockerRegistryUrl = "https://microservices.beamable.com/v2/",
+			isUnityVsp = false,
+			_version = "0.0.0"
+		};
+
 		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
@@ -147,6 +187,40 @@ namespace Beamable
 		/// </summary>
 		public bool IsUnityVsp => isUnityVsp;
 
+		/// <summary>
+		/// construct a new data structure
+		/// </summary>
+		/// <param name="environment">a name for this environment. </param>
+		/// <param name="apiUrl">where to find beamable</param>
+		/// <param name="portalUrl">where to find the portal</param>
+		/// <param name="beamMongoExpressUrl">where to find the mongo express page</param>
+		/// <param name="dockerRegistryUrl">where to find the beamable docker registry</param>
+		/// <param name="isUnityVsp">is this package from Unity VSP?</param>
+		/// <param name="version">the package version</param>
+		public EnvironmentData(string environment,
+							   string apiUrl,
+							   string portalUrl,
+							   string beamMongoExpressUrl,
+							   string dockerRegistryUrl,
+							   bool isUnityVsp,
+							   PackageVersion version)
+		{
+			this.environment = environment;
+			this.apiUrl = apiUrl;
+			this.portalUrl = portalUrl;
+			this.beamMongoExpressUrl = beamMongoExpressUrl;
+			this.dockerRegistryUrl = dockerRegistryUrl;
+			this.isUnityVsp = isUnityVsp;
+			sdkVersion = version.ToString();
+		}
+		public EnvironmentData() { }
+
+		public EnvironmentData Clone()
+		{
+			var json = JsonSerializable.ToJson(this);
+			var clone = JsonSerializable.FromJson<EnvironmentData>(json);
+			return clone;
+		}
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
