@@ -100,6 +100,7 @@ public class DefaultAppContext : IAppContext
 
 		if (!TryGetSetting(out _host, bindingContext, _platformOption))
 		{
+			_host = Constants.DEFAULT_PLATFORM;
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
