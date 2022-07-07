@@ -140,7 +140,8 @@ namespace Beamable.Server
 
    public class SocketRequesterContext
    {
-      private readonly Func<Promise<IConnection>> _socketGetter;
+	   public MicroserviceAuthenticationDaemon Daemon { get; set; }
+	   private readonly Func<Promise<IConnection>> _socketGetter;
       public Promise<IConnection> Socket => _socketGetter();
 
       private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
@@ -159,14 +160,9 @@ namespace Beamable.Server
          }
       }
 
-      /// <summary>
-      /// Tracks the number of requests that failed due to <see cref="UnauthenticatedException"/>.
-      /// </summary>
-      public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
-
       public SocketRequesterContext(Func<Promise<IConnection>> socketGetter)
       {
-         _socketGetter = () =>
+	      _socketGetter = () =>
          {
             if (!HasSocketClosed)
             {
@@ -185,24 +181,25 @@ namespace Beamable.Server
 		      timeout = TimeSpan.FromSeconds(10);
 	      }
 
-	      if (AuthorizationCounter <= 0)
+	      if (Daemon.AuthorizationCounter <= 0)
 	      {
-		      Log.Verbose("Waiting for authorization, but auth is already done.");
+		      Log.Verbose($"Waiting for authorization, but auth is already done. message=[{message}]");
 		      return;
 	      }
 
-	      var enteringCount = AuthorizationCounter;
-	      while (AuthorizationCounter > 0)
+	      var enteringCount = Daemon.AuthorizationCounter;
+	      while (Daemon.AuthorizationCounter > 0)
 	      {
 		      await Task.Delay(1);
 
 		      var totalWaitedTime = DateTime.UtcNow - startTime;
 		      if (totalWaitedTime > timeout)
 		      {
-			      var exitCount = AuthorizationCounter;
+			      var exitCount = Daemon.AuthorizationCounter;
 			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
 	      }
+	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }
 
       public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10)
@@ -504,14 +501,14 @@ namespace Beamable.Server
 			         // need to wait for authentication to finish...
 			         Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id, msg);
 
-			         MicroserviceAuthenticationDaemon.BumpRequestCounter();
-			         MicroserviceAuthenticationDaemon.WakeAuthThread(ref _socketContext.AuthorizationCounter);
+			         _socketContext.Daemon.BumpRequestCounter();
+			         _socketContext.Daemon.WakeAuthThread();
 			         var waitForAuth = WaitForAuthorization(message:msg).ToPromise();
 			         return waitForAuth
 				         .FlatMap(x =>
 					         Request(method, uri, body, includeAuthHeader, parser, useCache))
-				         .Error(_ => MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter())
-				         .Then(_ => MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter());
+				         .Error(_ => _socketContext.Daemon.BumpRequestProcessedCounter())
+				         .Then(_ => _socketContext.Daemon.BumpRequestProcessedCounter());
 			         ;
 		         }
 		         throw ex;

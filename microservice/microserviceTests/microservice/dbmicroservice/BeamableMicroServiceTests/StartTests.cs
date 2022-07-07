@@ -29,7 +29,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [TearDown]
         public void ResetContentInstance()
         {
-            ContentApi.Instance = new Promise<IContentApi>();
+	        ContentApi.Instance = new Promise<IContentApi>();
+	        BeamableMicroService._contentService = null;
         }
 
         [Test]
@@ -1213,6 +1214,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 1, dbid));
 
+            await Task.Delay(1000); // the auth cycle will take some time to figure itself out, and if we trigger a shutdown too soon, the request id of the shutdown will get bungled with the re-auth flow.
             await ms.OnShutdown(this, null);
             Assert.IsTrue(testSocket.AllMocksCalled());
         }

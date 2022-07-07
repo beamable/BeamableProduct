@@ -220,6 +220,9 @@ namespace Beamable.Server
          _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
 
+         _serviceShutdownTokenSource = new CancellationTokenSource();
+         (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
+
          InitServices();
 
          _serviceInitialized.Then(_ =>
@@ -234,9 +237,6 @@ namespace Beamable.Server
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
-
-         _serviceShutdownTokenSource = new CancellationTokenSource();
-         _socketDaemen = MicroserviceAuthenticationDaemon.Start(_args, _requester, _socketRequesterContext, _serviceShutdownTokenSource);
 
          var setupWebsocketTask = SetupWebsocket(socket);
          setupWebsocketTask.Wait();
@@ -305,7 +305,7 @@ namespace Beamable.Server
          }
 
          // stop the daemon from trying to re-authenticate
-         MicroserviceAuthenticationDaemon.KillAuthThread(_serviceShutdownTokenSource);
+         _socketRequesterContext.Daemon.KillAuthThread(_serviceShutdownTokenSource);
          await _socketDaemen;
 
          // close the connection itself
@@ -352,7 +352,7 @@ namespace Beamable.Server
 
          try
          {
-            MicroserviceAuthenticationDaemon.WakeAuthThread(ref _socketRequesterContext.AuthorizationCounter);
+	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization();
 
             // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
@@ -585,6 +585,7 @@ namespace Beamable.Server
                .AddScoped(MicroserviceType)
                .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
+               .AddSingleton(_socketRequesterContext.Daemon)
                .AddSingleton<IRealmInfo>(_args)
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
                .AddTransient<IBeamableRequester, MicroserviceRequester>((provider) => new MicroserviceRequester(_args, provider.GetService<RequestContext>(), _socketRequesterContext, true))
