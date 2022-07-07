@@ -365,7 +365,17 @@ namespace Beamable.Server.Editor
 						                                         includeDebugTools: false,
 						                                         watch: false,
 						                                         pull: true);
-						await buildCommand.StartAsync();
+						
+						if (!buildCommand.GetProcessArchitecture().Contains("amd"))
+						{
+							OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported builds {buildCommand.GetProcessArchitecture()} architecture of {descriptor.Name}.");
+							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+							return;
+						}
+						
+						var tmpBuild = await buildCommand.StartAsync();
+						
 					}
 					catch (Exception e)
 					{

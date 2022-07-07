@@ -60,7 +60,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			processStartInfo.EnvironmentVariables["DOCKER_SCAN_SUGGEST"] = "false";
 		}
 
-		private string GetProcessArchitecture()
+		public string GetProcessArchitecture()
 		{
 			string architecture = "linux/amd64";
 			
@@ -70,14 +70,14 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 			else if (_availableArchitectures.Contains(architecture))
 			{
-				Debug.LogError($"Docker build for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine. Fallback: {architecture}");
+				Debug.LogError($"Docker builds for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine. Fallback: {architecture}");
 			}
 			else
 			{
-				Debug.LogError($"Docker build for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine.");
+				Debug.LogError($"Docker builds for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine.");
 			}
 
-			return $"--platform {architecture}";
+			return architecture;
 		}
 
 		public override string GetCommandString()
@@ -87,7 +87,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			pullStr = ""; // we cannot force the pull against the local image.
 #endif
 
-			var platformStr = GetProcessArchitecture();
+			var platformStr = $"--platform {GetProcessArchitecture()}";
 #if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
 			platformStr = "";
 #endif
