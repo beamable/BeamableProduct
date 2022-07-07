@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.2.5]
 ### Fixed
 - Failed promises no longer log exception info after an exception handler is registered on the same execution cycle.
 - "Connection is closed" log exception no longer prints incorrectly.

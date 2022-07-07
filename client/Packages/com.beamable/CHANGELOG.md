@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Beamable button in Unity toolbar should be in correct position for production packages
+
+## [1.2.5]
+### Fixed
 - CurrencyHUD no longer throws null reference error when associated currency content has no addressable icon. 
 
 ## [1.2.4]
