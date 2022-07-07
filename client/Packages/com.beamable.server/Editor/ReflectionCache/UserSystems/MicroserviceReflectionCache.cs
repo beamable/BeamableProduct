@@ -367,7 +367,7 @@ namespace Beamable.Server.Editor
 						                                         watch: false,
 						                                         pull: true);
 						
-						if (!string.Equals(buildCommand.GetProcessArchitecture(), SUPPORTED_DEPLOY_ARCHITECTURE))
+						if (!buildCommand.GetProcessArchitecture().Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
 						{
 							OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported builds {buildCommand.GetProcessArchitecture()} architecture of {descriptor.Name}.");
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
