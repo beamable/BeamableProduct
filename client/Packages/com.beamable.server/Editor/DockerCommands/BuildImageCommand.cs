@@ -63,22 +63,15 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public string GetProcessArchitecture()
 		{
-			string architecture = DEFAULT_DOCKER_BUILD_ARCHITECTURE;
-			
 			if (_availableArchitectures.Contains(MicroserviceConfiguration.Instance.DockerCPUArchitecture))
 			{
-				architecture = MicroserviceConfiguration.Instance.DockerCPUArchitecture;
-			}
-			else if (_availableArchitectures.Contains(architecture))
-			{
-				Debug.LogError($"Docker builds for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine. Fallback: {architecture}");
+				return MicroserviceConfiguration.Instance.DockerCPUArchitecture;
 			}
 			else
 			{
-				Debug.LogError($"Docker builds for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine.");
+				throw new Exception(
+					$"Docker builds for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine.");
 			}
-
-			return architecture;
 		}
 
 		public override string GetCommandString()
