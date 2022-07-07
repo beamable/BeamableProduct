@@ -56,6 +56,8 @@ public class App
 		Services.AddSingleton<CidOption>();
 		Services.AddSingleton<PidOption>();
 		Services.AddSingleton<PlatformOption>();
+		Services.AddSingleton<LimitOption>();
+		Services.AddSingleton<SkipOption>();
 		Services.AddSingleton<AccessTokenOption>();
 		Services.AddSingleton<RefreshTokenOption>();
 		Services.AddSingleton<LogOption>();
@@ -91,7 +93,8 @@ public class App
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Services.AddRootCommand<BeamoCommand, BeamoCommandArgs>();
-		Services.AddCommand<BeamoManifestCommand, BeamoManifestArgs, BeamoCommand>();
+		Services.AddCommand<BeamoCurrentManifestCommand, BeamoManifestArgs, BeamoCommand>();
+		Services.AddCommand<BeamoManifestsCommand, BeamoManifestsArgs, BeamoCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
 
 		// customize

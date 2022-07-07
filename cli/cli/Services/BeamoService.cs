@@ -28,6 +28,13 @@ public class BeamoService {
 			                services = new List<ServiceStatus>()
 		                });
 	}
+
+	public Promise<List<ServiceManifest>> GetManifests()
+	{
+		return Requester.Request<GetManifestsResponse>(Method.GET, $"{SERVICE}/manifests")
+		                .Map(res => res.manifests)
+		                .RecoverFrom40x(err => new List<ServiceManifest>());
+	}
 }
 
 [System.Serializable]

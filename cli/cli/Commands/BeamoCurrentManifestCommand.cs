@@ -3,11 +3,11 @@ using Spectre.Console;
 
 namespace cli;
 
-public class BeamoManifestCommand : AppCommand<BeamoManifestArgs>
+public class BeamoCurrentManifestCommand : AppCommand<BeamoManifestArgs>
 {
 	private readonly BeamoService _beamoService;
 	
-	public BeamoManifestCommand(BeamoService beamoService) : base("manifest", "outputs manifest json to console")
+	public BeamoCurrentManifestCommand(BeamoService beamoService) : base("current", "outputs current manifest json to console")
 	{
 		_beamoService = beamoService;
 	}
