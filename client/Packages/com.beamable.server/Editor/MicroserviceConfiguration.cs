@@ -339,6 +339,7 @@ namespace Beamable.Server.Editor
 		public string StorageName;
 		public string StorageType;
 		public bool Enabled;
+		public bool Archived;
 		public string TemplateId;
 
 		[Tooltip("When running locally, what port will the data be available on?")]
@@ -376,6 +377,7 @@ namespace Beamable.Server.Editor
 		public string ServiceName;
 		[Tooltip("If the service should be running on the cloud, in the current realm.")]
 		public bool Enabled;
+		public bool Archived;
 		public string TemplateId;
 
 		[Tooltip("When the container is built, inject the following string into the built docker file.")]
