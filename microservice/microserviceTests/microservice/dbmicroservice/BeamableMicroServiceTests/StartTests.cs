@@ -1219,7 +1219,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
-        [Timeout(20000)]
+        [Timeout(120000)]
         public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
         {
             LoggingUtil.Init();
@@ -1237,9 +1237,13 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	            await noncePromise;
 	            return res.Succeed(new MicroserviceNonceResponse { nonce = "testnonce" });
             };
+            int successCount = 0;
+            int authFailCount = 0;
+
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
+
                 socket
                 .WithName("first")
                 .AddStandardMessageHandlers()
@@ -1247,11 +1251,23 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageMatcher
                       .WithRouteContains("basic/accounts")
                       .WithBody<dynamic>(d => d.gamerTag == dbid),
-                   MessageResponder.AuthFailure(),
-                   MessageFrequency.Between(1, 3), "original failure") // is it reasonable to assume that at least 3 requests make it out before the auth flow kicks?
+                   MessageResponder.Custom(res =>
+                   {
+	                   if (noncePromise.IsCompleted)
+	                   {
+		                   Interlocked.Increment(ref successCount);
+		                   return res.Succeed(new User { email = fakeEmail });
+	                   }
+
+	                   Interlocked.Increment(ref authFailCount);
+	                   return res.AuthFailure();
+                   }),
+                   MessageFrequency.AtLeast(1),
+                   "original failure"
+                   )
                 .AddMessageHandler(
                    MessageMatcher.WithRouteContains("nonce"),
-                   MessageResponder.SuccessYourWay(nonceSuccess),
+                   MessageResponder.CustomAsync(nonceSuccess),
                    MessageFrequency.OnlyOnce(), "re-nonce"
                 )
                 .AddMessageHandler(
@@ -1263,14 +1279,6 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    }),
                    MessageFrequency.OnlyOnce(), "re-auth"
                 )
-                .AddMessageHandler(
-                   MessageMatcher
-                      .WithRouteContains("basic/accounts")
-                      .WithBody<dynamic>(d => d.gamerTag == dbid),
-                   MessageResponder.Success(new User { email = fakeEmail }),
-                   MessageFrequency.Exactly(failureCount),
-                   "account-success-after-failure") // allow 2000 retries...
-
                 .AddMessageHandler(
                    MessageMatcher
                       .WithPositiveReqId()
@@ -1304,6 +1312,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             await ms.OnShutdown(this, null);
             Assert.IsTrue(testSocket.AllMocksCalled());
+            Assert.IsTrue(authFailCount <= failureCount); // it cannot be the case that we failed more messages for auth failure than we had original requests.
+            Assert.AreEqual(failureCount, successCount); // we need to make sure that the success message came back for each failure, eventually.
         }
 
     }

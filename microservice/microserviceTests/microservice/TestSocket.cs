@@ -316,6 +316,11 @@ namespace Beamable.Microservice.Tests.Socket
             return req => req.AuthFailure();
         }
 
+        public static TestSocketResponseGenerator Custom(TestSocketResponseGenerator generator)
+        {
+	        return generator;
+        }
+
         public static TestSocketResponseGeneratorAsync SuccessWithDelay<T>(int ms, Func<T> bodyGenerator)
         {
 	        return async res =>
@@ -340,7 +345,7 @@ namespace Beamable.Microservice.Tests.Socket
             };
         }
 
-        public static TestSocketResponseGeneratorAsync SuccessYourWay(TestSocketResponseGeneratorAsync response)
+        public static TestSocketResponseGeneratorAsync CustomAsync(TestSocketResponseGeneratorAsync response)
         {
 	        return response;
         }
