@@ -895,7 +895,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             testSocket.Fault();
 
             // wait longer than the message's delay..
-            await Task.Delay(550);
+            await Task.Delay(1550);
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
