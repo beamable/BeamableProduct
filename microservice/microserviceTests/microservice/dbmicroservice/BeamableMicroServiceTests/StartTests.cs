@@ -1217,75 +1217,19 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
-         [Test]
+        [Test]
         [NonParallelizable]
-        public async Task HandleAuthDrop_WithMultipleRequestsInFlight()
+        [Timeout(20000)]
+        public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
         {
             LoggingUtil.Init();
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var dbid = 123;
             var fakeEmail = "fake@example.com";
-            var nonceDelay = 10;
-            var authDelay = 100;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
-            {
-                testSocket = socket;
-                socket
-                .WithName("first")
-                .AddStandardMessageHandlers()
-                .AddMessageHandler(
-                   MessageMatcher
-                      .WithRouteContains("basic/accounts")
-                      .WithBody<dynamic>(d => d.gamerTag == dbid),
-                   MessageResponder.AuthFailure(),
-                   MessageFrequency.Exactly(2)) // issue two auth failures
-                .AddAuthMessageHandlersWithDelay(nonceDelay, authDelay, 5) // but only allow one re-auth to trigger...
-                .AddMessageHandler(
-                   MessageMatcher
-                      .WithRouteContains("basic/accounts")
-                      .WithBody<dynamic>(d => d.gamerTag == dbid),
-                   MessageResponder.Success(new User { email = fakeEmail }),
-                   MessageFrequency.Exactly(2)) // allow 2 retries...
-
-                .AddMessageHandler(
-                   MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == fakeEmail),
-                   MessageResponder.NoResponse(),
-                   MessageFrequency.OnlyOnce()
-                )
-                .AddMessageHandler(
-                   MessageMatcher.WithReqId(2).WithStatus(200).WithPayload<string>(n => n == fakeEmail),
-                   MessageResponder.NoResponse(),
-                   MessageFrequency.OnlyOnce()
-                );
-
-
-            }), contentResolver);
-
-            await ms.Start<SimpleMicroservice>(new TestArgs());
-            Assert.IsTrue(ms.HasInitialized);
-
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, dbid, dbid));
-            await Task.Delay(nonceDelay + 10); // simulate a bit of time, while the original auth message is out...
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, dbid, dbid));
-
-            await ms.OnShutdown(this, null);
-            Assert.IsTrue(testSocket.AllMocksCalled());
-        }
-
-        [Test]
-        [NonParallelizable]
-        [Timeout(20000)]
-        public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
-        {
-            LoggingUtil.Init(LogEventLevel.Verbose);
-            TestSocket testSocket = null;
-            var contentResolver = new TestContentResolver();
-            var dbid = 123;
-            var fakeEmail = "fake@example.com";
             var nonceDelay = 2500; // needs to be well above how long it takes to issue failureCount requests
             var authDelay = 100;
-            const int failureCount = 100;
+            const int failureCount = 2000;
             var sent = false;
             var noncePromise = new Promise();
             TestSocketResponseGeneratorAsync nonceSuccess = async res =>
@@ -1304,7 +1248,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("basic/accounts")
                       .WithBody<dynamic>(d => d.gamerTag == dbid),
                    MessageResponder.AuthFailure(),
-                   MessageFrequency.Exactly(failureCount), "original failure")
+                   MessageFrequency.Between(1, 3), "original failure") // is it reasonable to assume that at least 3 requests make it out before the auth flow kicks?
                 .AddMessageHandler(
                    MessageMatcher.WithRouteContains("nonce"),
                    MessageResponder.SuccessYourWay(nonceSuccess),
@@ -1354,18 +1298,13 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                     testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", index, 1, dbid));
                 }));
             }
-
-            // sw.Stop();
-            // var time = sw.Elapsed.Seconds;
-
-            // sw.Restart();
             await Task.Delay(nonceDelay);
-            // sw.Stop();
             noncePromise.CompleteSuccess();
-            // sent = true;
 
             var waitingTask = Task.WhenAll(tasks);
-            await waitingTask.WaitAsync(TimeSpan.FromSeconds(12));
+            await waitingTask;
+
+            // await waitingTask.WaitAsync(TimeSpan.FromSeconds(12));
             // testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 0, dbid));
 
             await ms.OnShutdown(this, null);

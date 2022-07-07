@@ -191,14 +191,16 @@ namespace Beamable.Server
 		      return;
 	      }
 
+	      var enteringCount = AuthorizationCounter;
 	      while (AuthorizationCounter > 0)
 	      {
-		      await Task.Delay(10);
+		      await Task.Delay(1);
 
 		      var totalWaitedTime = DateTime.UtcNow - startTime;
 		      if (totalWaitedTime > timeout)
 		      {
-			      throw new TimeoutException($"waited for authorization for too long. Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
+			      var exitCount = AuthorizationCounter;
+			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
 	      }
       }
@@ -215,7 +217,7 @@ namespace Beamable.Server
 		                     " message = " + message);
 		         if (awaitAuthorization)
 		         {
-			         await WaitForAuthorization( message: message);
+			        await WaitForAuthorization( message: message);
 		         }
 
 		         // authorization needs to be complete if this is any message _other_ than auth related
@@ -430,9 +432,9 @@ namespace Beamable.Server
          return _socketContext.SendMessageSafely(msg);
       }
 
-      public Promise<T> InternalRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+      public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
 	      Func<string, T> parser = null,
-	      bool useCache = false, bool? waitForAuthOverride=null)
+	      bool useCache = false)
       {
 // TODO: What do we do about includeAuthHeader?
          // TODO: What do we do about useCache?
@@ -509,26 +511,16 @@ namespace Beamable.Server
 			         MicroserviceAuthenticationDaemon.BumpRequestCounter();
 			         MicroserviceAuthenticationDaemon.WakeAuthThread(ref _socketContext.AuthorizationCounter);
 			         var waitForAuth = WaitForAuthorization(message:msg).ToPromise();
-			         waitForAuth.Recover(_ => PromiseBase.Unit).Then(_ =>
-			         {
-				         MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter();
-			         });
 			         return waitForAuth
 				         .FlatMap(x =>
-					         InternalRequest(method, uri, body, includeAuthHeader, parser, useCache, false));
+					         Request(method, uri, body, includeAuthHeader, parser, useCache))
+				         .Error(_ => MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter())
+				         .Then(_ => MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter());
+			         ;
 		         }
-
-		         // MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter();
 		         throw ex;
 	         });
          });
-         // .Then(_ => MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter());
-      }
-
-      public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
-         bool useCache = false)
-      {
-	      return InternalRequest(method, uri, body, includeAuthHeader, parser, useCache);
       }
 
       /// <summary>

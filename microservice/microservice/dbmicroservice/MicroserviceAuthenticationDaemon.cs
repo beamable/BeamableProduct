@@ -57,7 +57,7 @@ public class MicroserviceAuthenticationDaemon
 	{
 		// IsSocketAuthorized = false;
 		Interlocked.Increment(ref authCounter);
-		Log.Debug($"Authorization Daemon waking thread. Requests=[{authCounter}]");
+		Log.Debug($"Authorization Daemon is being requested. Requests=[{authCounter}]");
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
 
@@ -107,6 +107,7 @@ public class MicroserviceAuthenticationDaemon
 		{
 			// Wait for it to be woken up via the Wait Handle. When it is woken up, it'll run the logic for us to [re]-auth with Beamo and then go back to sleep.
 			AUTH_THREAD_WAIT_HANDLE.WaitOne();
+			Log.Verbose($"Authorization Daemon has been woken.");
 
 			// Gets the number of requests that have been made by the service so far...
 			var outgoingReqsCountAtStart = Interlocked.Read(ref _OutgoingRequestCounter);
@@ -119,15 +120,15 @@ public class MicroserviceAuthenticationDaemon
 			try
 			{
 				// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
-				Log.Debug($"Authorization Daemon checking for pending requests. Requests=[{_socketContext.AuthorizationCounter}]");
+				Log.Verbose($"Authorization Daemon checking for pending requests. Requests=[{_socketContext.AuthorizationCounter}]");
 				if (_socketContext.AuthorizationCounter > 0)
 				{
 					// Do the authorization back and forth with Beamo
 					await Authenticate();
 
 					// Resets the auth counter back to 0
-					// Log.Debug($"Authorization Daemon clearing pending requests.");
-					// Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
+					Log.Verbose($"Authorization Daemon clearing pending requests.");
+					Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
 				}
 			}
 			catch (Exception ex)
@@ -143,15 +144,16 @@ public class MicroserviceAuthenticationDaemon
 
 			// Wait until all requests that can fail, have actually failed or succeeded by waiting until the number of requests we've attempted since we started the auth process
 			// is the same or above the number of made requests that have been processed.
-			// bool stillProcessingPotentiallyFailedReqs;
-			// do
-			// {
-			// 	var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
-			// 	stillProcessingPotentiallyFailedReqs = expectedReqsProcessed > Interlocked.Read(ref _OutgoingRequestProcessedCounter);
-			// 	await Task.Delay(1);
-			// } while (stillProcessingPotentiallyFailedReqs);
+			bool stillProcessingPotentiallyFailedReqs;
+			do
+			{
+				var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
+				stillProcessingPotentiallyFailedReqs = expectedReqsProcessed > Interlocked.Read(ref _OutgoingRequestProcessedCounter);
+				await Task.Delay(1);
+			} while (stillProcessingPotentiallyFailedReqs);
 
 			// This solves an extremely unlikely race condition
+			Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call.");
 			Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
 			AUTH_THREAD_WAIT_HANDLE.Reset();
 		}

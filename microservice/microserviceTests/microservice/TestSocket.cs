@@ -383,6 +383,15 @@ namespace Beamable.Microservice.Tests.Socket
                 Min = min
             };
         }
+
+        public static MessageFrequencyRequirements Between(int min, int max)
+        {
+	        return new MessageFrequencyRequirements
+	        {
+		        Min = min,
+		        Max = max
+	        };
+        }
     }
 
     public class MessageFrequencyRequirements
