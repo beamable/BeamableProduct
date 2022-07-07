@@ -140,7 +140,8 @@ namespace Beamable.Server
 
    public class SocketRequesterContext
    {
-      private readonly Func<Promise<IConnection>> _socketGetter;
+	   public MicroserviceAuthenticationDaemon Daemon { get; set; }
+	   private readonly Func<Promise<IConnection>> _socketGetter;
       public Promise<IConnection> Socket => _socketGetter();
 
       private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
@@ -159,14 +160,9 @@ namespace Beamable.Server
          }
       }
 
-      /// <summary>
-      /// Tracks the number of requests that failed due to <see cref="UnauthenticatedException"/>.
-      /// </summary>
-      public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
-
       public SocketRequesterContext(Func<Promise<IConnection>> socketGetter)
       {
-         _socketGetter = () =>
+	      _socketGetter = () =>
          {
             if (!HasSocketClosed)
             {
@@ -176,21 +172,59 @@ namespace Beamable.Server
          };
       }
 
-      public async Promise SendMessageSafely(string message, int retryCount=10)
+
+      public async Task WaitForAuthorization(TimeSpan timeout=default, string message=null)
+      {
+	      var startTime = DateTime.UtcNow;
+	      if (timeout <= default(TimeSpan))
+	      {
+		      timeout = TimeSpan.FromSeconds(10);
+	      }
+
+	      if (Daemon.AuthorizationCounter <= 0)
+	      {
+		      Log.Verbose($"Waiting for authorization, but auth is already done. message=[{message}]");
+		      return;
+	      }
+
+	      var enteringCount = Daemon.AuthorizationCounter;
+	      while (Daemon.AuthorizationCounter > 0)
+	      {
+		      await Task.Delay(1);
+
+		      var totalWaitedTime = DateTime.UtcNow - startTime;
+		      if (totalWaitedTime > timeout)
+		      {
+			      var exitCount = Daemon.AuthorizationCounter;
+			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
+		      }
+	      }
+	      Log.Verbose($"Leaving wait for send. message=[{message}]");
+      }
+
+      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10)
       {
          var failures = new List<Exception>();
          for (var retry = 0; retry < retryCount; retry++)
          {
-            try
-            {
-               var connection = await Socket;
-               await connection.SendMessage(message);
-               return;
-            }
-            catch (Exception ex)
-            {
-               failures.Add(ex);
-            }
+	         try
+	         {
+		         var connection = await Socket;
+		         if (awaitAuthorization)
+		         {
+			        await WaitForAuthorization( message: message);
+		         }
+
+		         // authorization needs to be complete if this is any message _other_ than auth related
+		         await connection.SendMessage(message);
+		         return;
+	         }
+	         catch (Exception ex)
+	         {
+		         failures.Add(ex);
+		         await Task.Delay(
+			         250); // wait awhile before trying again; so that its likely authorization has finished.
+	         }
          }
          // all attempts have failed : (
          var finalEx = new SocketClosedException(failures);
@@ -339,38 +373,24 @@ namespace Beamable.Server
       protected readonly RequestContext _requestContext;
 
       private readonly SocketRequesterContext _socketContext;
+      private readonly bool _waitForAuthorization;
 
       // TODO how do we handle Timeout errors?
       // TODO what does concurrency look like?
+      public string Cid => _requestContext.Cid;
+      public string Pid => _requestContext.Pid;
 
-      public MicroserviceRequester(IMicroserviceArgs env, RequestContext requestContext, SocketRequesterContext socketContext)
+      public MicroserviceRequester(IMicroserviceArgs env, RequestContext requestContext, SocketRequesterContext socketContext, bool waitForAuthorization)
       {
          _env = env;
          _requestContext = requestContext;
          _socketContext = socketContext;
+         _waitForAuthorization = waitForAuthorization;
       }
 
       public IAccessToken AccessToken { get; }
 
-      public async Task WaitForAuthorization(TimeSpan timeout=default)
-      {
-         var startTime = DateTime.UtcNow;
-         if (timeout <= default(TimeSpan))
-         {
-            timeout = TimeSpan.FromSeconds(10);
-         }
-
-         while (_socketContext.AuthorizationCounter > 0)
-         {
-            await Task.Delay(1);
-
-            var totalWaitedTime = DateTime.UtcNow - startTime;
-            if (totalWaitedTime > timeout)
-            {
-               throw new TimeoutException("waited for authorization for too long");
-            }
-         }
-      }
+      public Task WaitForAuthorization(TimeSpan timeout = default, string message=null) => _socketContext.WaitForAuthorization(timeout, message);
 
       /// <summary>
       /// Acknowledge a message from the websocket.
@@ -407,10 +427,10 @@ namespace Beamable.Server
          return _socketContext.SendMessageSafely(msg);
       }
 
-      public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
-         bool useCache = false)
+      public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+	      Func<string, T> parser = null, bool useCache = false)
       {
-         // TODO: What do we do about includeAuthHeader?
+// TODO: What do we do about includeAuthHeader?
          // TODO: What do we do about useCache?
 
          // peel off the first slash of the uri, because socket paths are not relative, they are absolute. // TODO: xxx gross.
@@ -472,25 +492,30 @@ namespace Beamable.Server
          }
 
          Log.Debug("sending request {msg}", msg);
-         return _socketContext.SendMessageSafely(msg).FlatMap(_ =>
-            {
-               MicroserviceAuthenticationDaemon.BumpRequestCounter();
-               return firstAttempt.RecoverWith(ex =>
-               {
-                  if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
-                  {
-                     // need to wait for authentication to finish...
-                     Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id, msg);
+         _socketContext.Daemon.BumpRequestCounter();
+         return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
+	         {
+		         return firstAttempt.RecoverWith(ex =>
+			         {
+				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+				         {
+					         // need to wait for authentication to finish...
+					         Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id,
+						         msg);
 
-                     MicroserviceAuthenticationDaemon.WakeAuthThread(ref _socketContext.AuthorizationCounter);
-                     return WaitForAuthorization().ToPromise().FlatMap(x => Request(method, uri, body, includeAuthHeader, parser));
-                  }
+					         _socketContext.Daemon.WakeAuthThread();
+					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
+					         return waitForAuth
+							         .FlatMap(x =>
+								         Request(method, uri, body, includeAuthHeader, parser, useCache))
+						         ;
+				         }
 
-                  MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter();
-                  throw ex;
-               });
-            })
-            .Then(_ => MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter());
+				         _socketContext.Daemon.BumpRequestProcessedCounter();
+				         throw ex;
+			         });
+	         })
+	         .Then(_ => _socketContext.Daemon.BumpRequestProcessedCounter());
       }
 
       /// <summary>
