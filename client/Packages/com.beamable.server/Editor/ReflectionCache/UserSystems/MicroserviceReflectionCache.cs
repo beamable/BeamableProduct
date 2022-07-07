@@ -24,6 +24,7 @@ using UnityEditor.Callbacks;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 using static Beamable.Common.Constants.MenuItems.Assets.Orders;
+using static Beamable.Common.Constants.Features.Docker;
 using LogMessage = Beamable.Editor.UI.Model.LogMessage;
 
 namespace Beamable.Server.Editor
@@ -366,7 +367,7 @@ namespace Beamable.Server.Editor
 						                                         watch: false,
 						                                         pull: true);
 						
-						if (!buildCommand.GetProcessArchitecture().Contains("amd"))
+						if (!string.Equals(buildCommand.GetProcessArchitecture(), SUPPORTED_DEPLOY_ARCHITECTURE))
 						{
 							OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported builds {buildCommand.GetProcessArchitecture()} architecture of {descriptor.Name}.");
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);

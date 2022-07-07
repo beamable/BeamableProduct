@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Debug = UnityEngine.Debug;
+using static Beamable.Common.Constants.Features.Docker;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
@@ -62,7 +63,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public string GetProcessArchitecture()
 		{
-			string architecture = "linux/amd64";
+			string architecture = DEFAULT_DOCKER_BUILD_ARCHITECTURE;
 			
 			if (_availableArchitectures.Contains(MicroserviceConfiguration.Instance.DockerCPUArchitecture))
 			{
