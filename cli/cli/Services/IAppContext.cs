@@ -1,11 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Newtonsoft.Json;
 using Serilog.Events;
-using System.CommandLine;
 using System.CommandLine.Binding;
-using System.Diagnostics;
 
 namespace cli;
 
@@ -13,9 +10,9 @@ public interface IAppContext
 {
 	public bool IsDryRun { get; }
 	public LogEventLevel LogLevel { get; }
-	public string? Cid { get; }
-	public string? Pid { get; }
-	public string? Host { get; }
+	public string Cid { get; }
+	public string Pid { get; }
+	public string Host { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
 
@@ -34,13 +31,11 @@ public class DefaultAppContext : IAppContext
 {
 	private readonly DryRunOption _dryRunOption;
 	private readonly CidOption _cidOption;
-	private readonly PasswordOption _passwordOption;
 	private readonly PidOption _pidOption;
 	private readonly PlatformOption _platformOption;
 	private readonly AccessTokenOption _accessTokenOption;
 	private readonly RefreshTokenOption _refreshTokenOption;
 	private readonly LogOption _logOption;
-	private readonly UsernameOption _usernameOption;
 	private readonly ConfigService _configService;
 	private readonly CliEnvironment _environment;
 	public bool IsDryRun { get; private set; }
@@ -48,11 +43,11 @@ public class DefaultAppContext : IAppContext
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
-	private string? _cid, _pid, _host;
+	private string _cid, _pid, _host;
 
-	public string? Cid => _cid;
-	public string? Pid => _pid;
-	public string? Host => _host;
+	public string Cid => _cid;
+	public string Pid => _pid;
+	public string Host => _host;
 
 	public string WorkingDirectory { get; private set; }
 	public LogEventLevel LogLevel { get; private set; }
@@ -126,7 +121,7 @@ public class DefaultAppContext : IAppContext
 		_token.RefreshToken = response.refresh_token;
 	}
 
-	private bool TryGetSetting(out string? value, BindingContext context, ConfigurableOption option, string? defaultValue = null)
+	private bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
 	{
 		// Try to get from option
 		value = context.ParseResult.GetValueForOption(option);
