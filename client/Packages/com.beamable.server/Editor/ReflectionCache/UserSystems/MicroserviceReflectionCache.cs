@@ -90,6 +90,7 @@ namespace Beamable.Server.Editor
 				_storageToBuilder.Clear();
 
 				Descriptors.Clear();
+				StorageDescriptors.Clear();
 				AllDescriptors.Clear();
 			}
 
@@ -212,6 +213,9 @@ namespace Beamable.Server.Editor
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx")) continue;
 
+						if (!File.Exists(serviceAttribute.GetSourcePath()))
+							continue;
+
 						// Create descriptor
 						var hasWarning = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Warning;
 						var hasError = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Error;
@@ -280,6 +284,9 @@ namespace Beamable.Server.Editor
 
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.StorageName.ToLower().Equals("xxxx")) continue;
+
+						if (!File.Exists(serviceAttribute.SourcePath))
+							continue;
 
 						// Create descriptor
 						var hasWarning = storageObjectValResults.Type == ReflectionCache.ValidationResultType.Warning;
@@ -556,6 +563,7 @@ namespace Beamable.Server.Editor
 						serviceName = sa.Name,
 						templateId = sa.TemplateId,
 						enabled = sa.Enabled,
+						archived = sa.Archived,
 						comments = sa.Comment,
 						imageId = kvp.Value,
 						dependencies = sa.Dependencies
@@ -571,6 +579,7 @@ namespace Beamable.Server.Editor
 				{
 					var sa = model.Services[uploadServiceReference.serviceName];
 					uploadServiceReference.enabled = sa.Enabled;
+					uploadServiceReference.archived = sa.Archived;
 				}
 
 				// 4- Make sure we only have each service once on the list.
@@ -593,6 +602,7 @@ namespace Beamable.Server.Editor
 						storageType = kvp.Value.Type,
 						templateId = kvp.Value.TemplateId,
 						enabled = kvp.Value.Enabled,
+						archived = kvp.Value.Archived
 					};
 				}).ToList();
 
@@ -696,6 +706,7 @@ namespace Beamable.Server.Editor
 							Comment = "",
 							Name = name,
 							Enabled = configEntry?.Enabled ?? true,
+							Archived = configEntry?.Archived ?? false,
 							TemplateId = configEntry?.TemplateId ?? "small",
 							Dependencies = serviceDependencies
 						};
@@ -721,6 +732,7 @@ namespace Beamable.Server.Editor
 							Name = name,
 							Type = configEntry?.StorageType ?? "mongov1",
 							Enabled = configEntry?.Enabled ?? true,
+							Archived = configEntry?.Archived ?? false,
 							TemplateId = configEntry?.TemplateId ?? "small",
 						};
 					}).ToList();

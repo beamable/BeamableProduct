@@ -362,16 +362,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 			SortServices(ServiceType.StorageObject);
 		}
 
-		private bool ShouldDisplayService(ServiceType type)
+		private bool ShouldDisplayService(ServiceType type, bool isArchived)
 		{
 			switch (Model.Filter)
 			{
 				case ServicesDisplayFilter.AllTypes:
-					return true;
+					return !isArchived;
 				case ServicesDisplayFilter.Microservices:
-					return type == ServiceType.MicroService;
+					return !isArchived && type == ServiceType.MicroService;
 				case ServicesDisplayFilter.Storages:
-					return type == ServiceType.StorageObject;
+					return !isArchived && type == ServiceType.StorageObject;
+				case ServicesDisplayFilter.Archived:
+					return isArchived;
 				default:
 					return false;
 			}
@@ -426,7 +428,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 					continue;
 
 				var serviceType = Model.GetModelServiceType(serviceStatus.Key);
-				if (!ShouldDisplayService(serviceType))
+				var isArchived = serviceType == ServiceType.MicroService ?
+					MicroserviceConfiguration.Instance.GetEntry(serviceStatus.Key).Archived :
+					MicroserviceConfiguration.Instance.GetStorageEntry(serviceStatus.Key).Archived;
+				if (!ShouldDisplayService(serviceType, isArchived))
 					continue;
 
 				ServiceBaseVisualElement serviceElement = null;
