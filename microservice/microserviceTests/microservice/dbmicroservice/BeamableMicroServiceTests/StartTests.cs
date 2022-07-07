@@ -1312,6 +1312,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var waitingTask = Task.WhenAll(tasks);
             await waitingTask;
 
+            await Task.Delay(1000);
             await ms.OnShutdown(this, null);
             Assert.IsTrue(testSocket.AllMocksCalled());
             Assert.IsTrue(authFailCount <= failureCount); // it cannot be the case that we failed more messages for auth failure than we had original requests.
