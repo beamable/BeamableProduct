@@ -23,6 +23,7 @@ namespace Beamable.Player
 		{
 			_partyApi = partyApi;
 			_notificationService = notificationService;
+			Members = new ObservableReadonlyList<string>(RefreshMembersList);
 		}
 
 		private static string PlayersLeftName(string partyId) => $"party.players_left.{partyId}";
@@ -74,12 +75,15 @@ namespace Beamable.Player
 			await Refresh();
 			_onPlayerLeft?.Invoke(playerId);
 		}
+		
+		private Promise<List<string>> RefreshMembersList() => Promise<List<string>>.Successful(_state.members);
 
 		protected override async Promise PerformRefresh()
 		{
 			if (State == null) return;
 
 			State = await _partyApi.GetParty(State.id);
+			await Members.Refresh();
 		}
 
 		/// <summary>
@@ -112,7 +116,7 @@ namespace Beamable.Player
 		
 		/// <inheritdoc cref="Party.members"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
-		public List<string> Members => SafeAccess(State?.members);
+		public ObservableReadonlyList<string> Members { get; private set; }
 
 		private T SafeAccess<T>(T value)
 		{
@@ -127,6 +131,7 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
 		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null) {
 			State = await _partyApi.CreateParty(restriction);
+			await Members.Refresh();
 			_onPlayerJoined = onPlayerJoined;
 			_onPlayerLeft = onPlayerLeft;
 		}
