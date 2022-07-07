@@ -33,23 +33,20 @@ namespace Beamable.Editor.Tests.Toolbox
 		{
 			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
 
-			ToolboxActionBarVisualElement tb = new ToolboxActionBarVisualElement();
-			tb.Refresh(Provider);
-
-			Button button = tb.Q<Button>("CategoryButton");
-			button.SendEvent(new ContextClickEvent());
-
-			SearchBarVisualElement searchBar = tb.Q<SearchBarVisualElement>();
-
-			CategoryDropdownVisualElement content = new CategoryDropdownVisualElement();
-
-			//List of all tags in widget source
-			var listRoot = content.Q<VisualElement>("tagList");
+			ToolboxActionBarVisualElement tbActionBar = new ToolboxActionBarVisualElement();
+			tbActionBar.Refresh(Provider);
 
 			model.SetQueryTag(WidgetTags.FLOW, true);
 
-			SearchBarVisualElement search = tb.Q<SearchBarVisualElement>();
+			var search = tbActionBar.Q<SearchBarVisualElement>();
 			TextField text = search.Q<TextField>();
+
+			var w = model.GetFilteredWidgets();
+
+			foreach (var i in w)
+			{
+				Debug.Log(i.Name);
+			}
 
 			Debug.Log(text.value);
 			Assert.AreEqual("tag:flow", text.value);
@@ -89,7 +86,7 @@ namespace Beamable.Editor.Tests.Toolbox
 			Debug.Log(search.Value);
 
 			Assert.AreEqual(true, drp[1].Q<Toggle>().value);
-			Assert.AreEqual("layout:landscape", text.value);
+			Assert.AreEqual("layout:landscape", search.Value);
 			Assert.AreEqual(4, x.Count());
 		}
 
@@ -104,12 +101,17 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			model.SetQueryTag(WidgetTags.FLOW, true);
 
-			var x = model.GetFilteredWidgets().Count();
+			var w = model.GetFilteredWidgets();
+
+			foreach (var i in w)
+			{
+				Debug.Log(i.Name);
+			}
 
 			var filter = toolboxContent.Q("gridContainer");
 			var cnt = filter.childCount;
 
-			Assert.AreEqual(8, x);
+			Assert.AreEqual(8, cnt);
 		}
 	}
 }
