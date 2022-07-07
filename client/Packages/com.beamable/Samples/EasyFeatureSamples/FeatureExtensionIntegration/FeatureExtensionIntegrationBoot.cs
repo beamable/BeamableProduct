@@ -1,4 +1,3 @@
-#define ENABLE_FEATURE_EXTENSION_SAMPLE
 using Beamable.Api.Leaderboard;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
@@ -17,8 +16,6 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 	[BeamContextSystem]
 	public class FeatureExtensionIntegrationBoot : MonoBehaviour
 	{
-
-#if ENABLE_FEATURE_EXTENSION_SAMPLE
 		/// <summary>
 		/// This function can be used to modify Beamable's Dependency Injection <see cref="Beamable.Beam"/> and <see cref="Beamable.BeamContext"/>.
 		/// </summary>
@@ -37,7 +34,6 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 				BasicLeaderboardPlayerSystem,
 				BasicLeaderboardView.ILeaderboardDeps>();
 		}
-#endif
 		
 		public GameObject LeaderboardPrefab;
 		private BasicLeaderboardFeatureControl _leaderboardInstance;
