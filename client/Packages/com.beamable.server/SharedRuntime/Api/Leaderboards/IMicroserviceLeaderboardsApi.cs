@@ -78,7 +78,13 @@ namespace Beamable.Server.Api.Leaderboards
 		/// <returns>A <see cref="Promise"/> containing a <see cref="GetPlayerLeaderboardsResponse"/> that has a set of <see cref="LeaderBoardView"/>s</returns>
 		Promise<GetPlayerLeaderboardsResponse> GetPlayerLeaderboards(long gamerTag);
 
-		Promise<EmptyResponse> DeleteEntry(string boardId, long gamerTag);
+		/// <summary>
+		/// Call to remove gamerTag from the leaderboard.
+		/// </summary>
+		/// <param name="leaderboardId">The ID of leaderboard from which the player's entry should be removed</param>
+		/// <param name="gamerTag">The gamertag of the player.</param>
+		/// <returns></returns>
+		Promise<EmptyResponse> RemovePlayerEntry(string leaderboardId, long gamerTag);
 	}
 
 	[System.Serializable]

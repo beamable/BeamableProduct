@@ -179,9 +179,9 @@ namespace Beamable.Server.Api.Leaderboards
             );
         }
 
-        public Promise<EmptyResponse> DeleteEntry(string boardId, long gamerTag)
+        public Promise<EmptyResponse> RemovePlayerEntry(string leaderboardId, long gamerTag)
         {
-	        return ResolveAssignment(boardId, gamerTag).FlatMap(assignment =>
+	        return ResolveAssignment(leaderboardId, gamerTag).FlatMap(assignment =>
 	        {
 		        using var pooledBuilder = StringBuilderPool.StaticPool.Spawn();
 
