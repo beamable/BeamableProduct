@@ -369,7 +369,7 @@ namespace Beamable.Server.Editor
 						
 						if (!buildCommand.GetProcessArchitecture().Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
 						{
-							OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported builds {buildCommand.GetProcessArchitecture()} architecture of {descriptor.Name}.");
+							OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {buildCommand.GetProcessArchitecture()} architecture of {descriptor.Name}.");
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 							return;
