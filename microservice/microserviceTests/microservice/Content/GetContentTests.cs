@@ -17,21 +17,7 @@ namespace microserviceTests.microservice.Content
    [TestFixture]
    public class GetContentTests
    {
-      private ReflectionCache _cache;
-
-      [SetUp]
-      public void Setup()
-      {
-         _cache = new ReflectionCache();
-         var contentTypeCache = new ContentTypeReflectionCache();
-         _cache.RegisterTypeProvider(contentTypeCache);
-         _cache.RegisterReflectionSystem(contentTypeCache);
-
-         var asms = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.FullName).ToList();
-         _cache.GenerateReflectionCache(asms);
-      }
-
-      [Test]
+	   [Test]
       public void Simple()
       {
          var args = new TestArgs();
@@ -69,7 +55,7 @@ namespace microserviceTests.microservice.Content
          (_, socketCtx.Daemon) =
 	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
 
-         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+         var contentService = new ContentService(requester, socketCtx, contentResolver);
 
          testSocket.Connect();
          testSocket.OnMessage((_, data, id) =>
@@ -141,7 +127,7 @@ namespace microserviceTests.microservice.Content
          (_, socketCtx.Daemon) =
 	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
 
-         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+         var contentService = new ContentService(requester, socketCtx, contentResolver);
 
          testSocket.Connect();
          testSocket.OnMessage((_, data, id) =>
@@ -223,7 +209,7 @@ namespace microserviceTests.microservice.Content
          (_, socketCtx.Daemon) =
 	         MicroserviceAuthenticationDaemon.Start(args, requester, new CancellationTokenSource());
 
-         var contentService = new ContentService(requester, socketCtx, contentResolver, _cache);
+         var contentService = new ContentService(requester, socketCtx, contentResolver);
 
          testSocket.Connect();
          testSocket.OnMessage((_, data, id) =>

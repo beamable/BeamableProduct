@@ -131,8 +131,6 @@ namespace Beamable.Server
 
       public bool HasInitialized { get; private set; }
 
-      public ReflectionCache _reflectionCache;
-
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
@@ -196,28 +194,12 @@ namespace Beamable.Server
 
          RebuildRouteTable();
 
-         _reflectionCache = new ReflectionCache();
-         var contentTypeReflectionCache = new ContentTypeReflectionCache();
-         _reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
-         _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
-         _reflectionCache.SetStorage(new BeamHintGlobalStorage());
-
-         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
-                                                                                  !asm.GetName().Name.StartsWith("nunit.") &&
-                                                                                  !asm.GetName().Name.StartsWith("JetBrains.") &&
-                                                                                  !asm.GetName().Name.StartsWith("Microsoft.") &&
-                                                                                  !asm.GetName().Name.StartsWith("Serilog."))
-            .Select(asm => asm.GetName().Name)
-            .ToList();
-         Log.Debug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
-         _reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
-
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
 
-         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
+         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver);
          ContentApi.Instance.CompleteSuccess(_contentService);
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
@@ -609,7 +591,6 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
                .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
-               .AddSingleton<ReflectionCache>(_ => _reflectionCache)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
                .AddTransient<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
