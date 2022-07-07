@@ -28,6 +28,7 @@ using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
@@ -194,7 +195,11 @@ namespace Beamable
 																   // the matchmaking service needs a special instance of the beamable api requester
 																   provider.GetService<IBeamableApiRequester>())
 			);
-			DependencyBuilder.AddSingleton<SocialService>();
+			DependencyBuilder.AddSingleton<ISocialApi>(provider => 
+				                                           new SocialService(
+					                                           provider.GetService<IUserContext>(), 
+					                                           provider.GetService<IBeamableRequester>()
+					                                           ));
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
@@ -212,6 +217,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
+			DependencyBuilder.AddScoped<PlayerFriends>();
 
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
