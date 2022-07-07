@@ -305,7 +305,7 @@ namespace Beamable.Server
          }
 
          // stop the daemon from trying to re-authenticate
-         _socketRequesterContext.Daemon.KillAuthThread(_serviceShutdownTokenSource);
+         _socketRequesterContext.Daemon.KillAuthThread();
          await _socketDaemen;
 
          // close the connection itself

@@ -79,7 +79,7 @@
             </summary>
             <param name="authCounter"><see cref="!:SocketRequesterContext.AuthorizationCounter"/> is what you should pass here.</param>
         </member>
-        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.KillAuthThread(System.Threading.CancellationTokenSource)">
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.KillAuthThread">
             <summary>
             Cancels the token and notifies the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up and catches fire 🔥.
             </summary>

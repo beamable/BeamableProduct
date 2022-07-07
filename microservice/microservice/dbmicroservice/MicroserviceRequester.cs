@@ -492,28 +492,30 @@ namespace Beamable.Server
          }
 
          Log.Debug("sending request {msg}", msg);
+         _socketContext.Daemon.BumpRequestCounter();
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
-         {
-	         return firstAttempt.RecoverWith(ex =>
 	         {
-		         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
-		         {
-			         // need to wait for authentication to finish...
-			         Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id, msg);
+		         return firstAttempt.RecoverWith(ex =>
+			         {
+				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+				         {
+					         // need to wait for authentication to finish...
+					         Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id,
+						         msg);
 
-			         _socketContext.Daemon.BumpRequestCounter();
-			         _socketContext.Daemon.WakeAuthThread();
-			         var waitForAuth = WaitForAuthorization(message:msg).ToPromise();
-			         return waitForAuth
-				         .FlatMap(x =>
-					         Request(method, uri, body, includeAuthHeader, parser, useCache))
-				         .Error(_ => _socketContext.Daemon.BumpRequestProcessedCounter())
-				         .Then(_ => _socketContext.Daemon.BumpRequestProcessedCounter());
-			         ;
-		         }
-		         throw ex;
-	         });
-         });
+					         _socketContext.Daemon.WakeAuthThread();
+					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
+					         return waitForAuth
+							         .FlatMap(x =>
+								         Request(method, uri, body, includeAuthHeader, parser, useCache))
+						         ;
+				         }
+
+				         _socketContext.Daemon.BumpRequestProcessedCounter();
+				         throw ex;
+			         });
+	         })
+	         .Then(_ => _socketContext.Daemon.BumpRequestProcessedCounter());
       }
 
       /// <summary>

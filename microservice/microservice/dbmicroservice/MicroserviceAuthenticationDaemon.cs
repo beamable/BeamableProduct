@@ -63,9 +63,9 @@ public class MicroserviceAuthenticationDaemon
 	/// </summary>
 	/// <param name="cancellation"><see cref="BeamableMicroService._serviceShutdownTokenSource"/> is what you should pass here.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void KillAuthThread(CancellationTokenSource cancellation)
+	public void KillAuthThread()
 	{
-		cancellation.Cancel();
+		_tokenSource.Cancel();
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
 
@@ -84,6 +84,8 @@ public class MicroserviceAuthenticationDaemon
 	/// </summary>
 	public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
 
+	private CancellationTokenSource _tokenSource;
+
 	private MicroserviceAuthenticationDaemon(IMicroserviceArgs env, MicroserviceRequester requester)
 	{
 		_env = env;
@@ -92,6 +94,7 @@ public class MicroserviceAuthenticationDaemon
 
 	private async Task Run(CancellationTokenSource cancellationTokenSource)
 	{
+		_tokenSource = cancellationTokenSource;
 		// While this thread isn't cancelled...
 		while (!cancellationTokenSource.IsCancellationRequested)
 		{
