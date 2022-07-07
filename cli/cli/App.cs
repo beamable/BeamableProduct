@@ -2,12 +2,10 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
-using Beamable.Server.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Formatting.Raw;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
@@ -84,6 +82,7 @@ public class App
 		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		Services.AddSingleton<IAuthApi, AuthApi>();
 		Services.AddSingleton<ConfigService>();
+		Services.AddSingleton<BeamoService>();
 		Services.AddSingleton<CliEnvironment>();
 
 		// add commands
@@ -91,6 +90,8 @@ public class App
 		Services.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
+		Services.AddRootCommand<BeamoCommand, BeamoCommandArgs>();
+		Services.AddCommand<BeamoManifestCommand, BeamoManifestArgs, BeamoCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
 
 		// customize

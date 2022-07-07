@@ -43,7 +43,7 @@ public class PostManifestRequest
 [System.Serializable]
 public class ServiceManifest
 {
-	public long id;
+	public string id;
 	public long created;
 	public List<ServiceReference> manifest = new List<ServiceReference>();
 	public List<ServiceStorageReference> storageReference = new List<ServiceStorageReference>();
