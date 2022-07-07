@@ -32,9 +32,6 @@ public class MicroserviceAuthenticationDaemon
 	/// </summary>
 	private static ulong _OutgoingRequestProcessedCounter = 0;
 
-	// default is false, set 1 for true.
-	private static int _isSocketAuthorized = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
-
 	/// <summary>
 	/// Bumps the <see cref="_OutgoingRequestCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
 	/// </summary>
@@ -55,15 +52,8 @@ public class MicroserviceAuthenticationDaemon
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void WakeAuthThread(ref int authCounter)
 	{
-		// IsSocketAuthorized = false;
 		Interlocked.Increment(ref authCounter);
 		Log.Debug($"Authorization Daemon is being requested. Requests=[{authCounter}]");
-		AUTH_THREAD_WAIT_HANDLE.Set();
-	}
-
-	public static void WakeAuthThreadWithoutAskingForNewAuth()
-	{
-		Log.Debug($"Authorization Daemon waking thread. ");
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
 
@@ -170,8 +160,7 @@ public class MicroserviceAuthenticationDaemon
 		}
 
 		Log.Debug("Authorizing WS connection");
-		var nonceRequest = _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-		var res = await nonceRequest;
+		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
 		Log.Debug("Got nonce");
 		var sig = CalculateSignature(_env.Secret + res.nonce);
 		var req = new MicroserviceAuthRequest

@@ -894,7 +894,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             testSocket.Fault();
 
             // wait longer than the message's delay..
-            await Task.Delay(1000);
+            await Task.Delay(550);
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -1287,8 +1287,6 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            // var sw = new Stopwatch();
-            // sw.Start();
             var tasks = new List<Task>();
             for (var i = 0; i < failureCount; i++)
             {
@@ -1304,11 +1302,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var waitingTask = Task.WhenAll(tasks);
             await waitingTask;
 
-            // await waitingTask.WaitAsync(TimeSpan.FromSeconds(12));
-            // testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 0, dbid));
-
             await ms.OnShutdown(this, null);
-            var unfinished = testSocket.UnfinishedMocks().ToList();
             Assert.IsTrue(testSocket.AllMocksCalled());
         }
 

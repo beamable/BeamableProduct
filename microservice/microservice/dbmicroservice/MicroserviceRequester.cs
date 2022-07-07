@@ -213,8 +213,6 @@ namespace Beamable.Server
 	         try
 	         {
 		         var connection = await Socket;
-		         Log.Verbose("About to send request. Waited for socket. Need auth? " + awaitAuthorization +
-		                     " message = " + message);
 		         if (awaitAuthorization)
 		         {
 			        await WaitForAuthorization( message: message);
@@ -433,8 +431,7 @@ namespace Beamable.Server
       }
 
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
-	      Func<string, T> parser = null,
-	      bool useCache = false)
+	      Func<string, T> parser = null, bool useCache = false)
       {
 // TODO: What do we do about includeAuthHeader?
          // TODO: What do we do about useCache?
@@ -500,7 +497,6 @@ namespace Beamable.Server
          Log.Debug("sending request {msg}", msg);
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
          {
-	         // MicroserviceAuthenticationDaemon.BumpRequestCounter();
 	         return firstAttempt.RecoverWith(ex =>
 	         {
 		         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
