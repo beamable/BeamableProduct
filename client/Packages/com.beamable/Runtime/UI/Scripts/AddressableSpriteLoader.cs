@@ -87,13 +87,14 @@ namespace Beamable.UI.Scripts
 
 		/// <summary>
 		/// Given a sprite asset reference, fetch its texture.
+		/// If the given <see cref="AssetReferenceSprite"/> isn't valid or doesn't exist, the resulting texture will be null.
 		/// </summary>
 		/// <param name="reference">The addressable sprite.</param>
 		/// <returns>The 2D texture of that sprite.</returns>
 		public static Promise<Texture2D> LoadTexture(this AssetReferenceSprite reference)
 		{
 			if (!reference.RuntimeKeyIsValid())
-				return Promise<Texture2D>.Failed(null);
+				return Promise<Texture2D>.Successful(null);
 
 			var sprite = LoadSprite(reference);
 			return sprite?.Map(s =>
