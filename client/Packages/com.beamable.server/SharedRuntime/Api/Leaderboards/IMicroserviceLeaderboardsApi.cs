@@ -79,7 +79,7 @@ namespace Beamable.Server.Api.Leaderboards
 		Promise<GetPlayerLeaderboardsResponse> GetPlayerLeaderboards(long gamerTag);
 
 		/// <summary>
-		/// Call to remove gamerTag from the leaderboard.
+		/// Call to remove the player's entry from the leaderboard.
 		/// </summary>
 		/// <param name="leaderboardId">The ID of leaderboard from which the player's entry should be removed</param>
 		/// <param name="gamerTag">The gamertag of the player.</param>
