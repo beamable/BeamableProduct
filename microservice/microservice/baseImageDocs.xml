@@ -72,14 +72,14 @@
             Bumps the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon._OutgoingRequestProcessedCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
             </summary>
         </member>
-        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.WakeAuthThread(System.Int32@)">
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.WakeAuthThread">
             <summary>
             Increments the given <see cref="!:authCounter"/> and notifies the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up.
-            The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> task. 
+            The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> task.
             </summary>
-            <param name="authCounter"><see cref="F:Beamable.Server.SocketRequesterContext.AuthorizationCounter"/> is what you should pass here.</param>
+            <param name="authCounter"><see cref="!:SocketRequesterContext.AuthorizationCounter"/> is what you should pass here.</param>
         </member>
-        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.KillAuthThread(System.Threading.CancellationTokenSource)">
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.KillAuthThread">
             <summary>
             Cancels the token and notifies the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up and catches fire 🔥.
             </summary>
@@ -95,15 +95,15 @@
             The requester instance so that we can make the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> request.
             </summary>
         </member>
-        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon._socketContext">
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon.AuthorizationCounter">
             <summary>
-            The <see cref="T:Beamable.Server.SocketRequesterContext"/> so we can keep track of the <see cref="F:Beamable.Server.SocketRequesterContext.AuthorizationCounter"/>.
+            Tracks the number of requests that failed due to <see cref="T:Beamable.Server.UnauthenticatedException"/>.
             </summary>
         </member>
-        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.Start(Beamable.Server.IMicroserviceArgs,Beamable.Server.MicroserviceRequester,Beamable.Server.SocketRequesterContext,System.Threading.CancellationTokenSource)">
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.Start(Beamable.Server.IMicroserviceArgs,Beamable.Server.MicroserviceRequester,System.Threading.CancellationTokenSource)">
             <summary>
             Kick off a long running task that will make sure the given <see cref="!:socketContext"/> is authenticated.
-            The daemon is running in a loop, checking the <see cref="F:Beamable.Server.SocketRequesterContext.AuthorizationCounter"/> field.
+            The daemon is running in a loop, checking the <see cref="!:SocketRequesterContext.AuthorizationCounter"/> field.
             When it is positive, the daemon will start ONE authorization flow, and then set the value to zero.
             </summary>
             <param name="env"></param>
@@ -131,11 +131,6 @@
             <param name="logEvent">The event to format.</param>
             <param name="output">The output.</param>
             <param name="valueFormatter">A value formatter for <see cref="T:Serilog.Events.LogEventPropertyValue" />s on the event.</param>
-        </member>
-        <member name="F:Beamable.Server.SocketRequesterContext.AuthorizationCounter">
-            <summary>
-            Tracks the number of requests that failed due to <see cref="T:Beamable.Server.UnauthenticatedException"/>.
-            </summary>
         </member>
         <member name="M:Beamable.Server.MicroserviceRequester.Acknowledge(Beamable.Server.RequestContext,Beamable.Server.WebsocketErrorResponse)">
             <summary>
