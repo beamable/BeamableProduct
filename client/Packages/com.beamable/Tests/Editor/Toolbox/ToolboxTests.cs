@@ -27,31 +27,6 @@ namespace Beamable.Editor.Tests.Toolbox
 			builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
 		}
 
-		//Test if ticking filter in tags will change the search bar value to tag:{tag}
-		[Test]
-		public void TestQueryTag()
-		{
-			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
-
-			ToolboxActionBarVisualElement tbActionBar = new ToolboxActionBarVisualElement();
-			tbActionBar.Refresh(Provider);
-
-			model.SetQueryTag(WidgetTags.FLOW, true);
-
-			var search = tbActionBar.Q<SearchBarVisualElement>();
-			TextField text = search.Q<TextField>();
-
-			var w = model.GetFilteredWidgets();
-
-			foreach (var i in w)
-			{
-				Debug.Log(i.Name);
-			}
-
-			Debug.Log(text.value);
-			Assert.AreEqual("tag:flow", text.value);
-		}
-
 		//Test if setting search bar to "layout:landscape" will filter toolbox widgets and tick landscape in layout dropdown
 		[Test]
 		public void LayoutSearchbarLandscapeTest()
