@@ -14,6 +14,9 @@ namespace Beamable.Platform.Tests
 		public AuthService AuthApi { get; set; }
 		public IAccessToken AccessToken { get; set; }
 
+		public string Cid => AccessToken.Cid;
+		public string Pid => AccessToken.Pid;
+
 		public delegate Promise<T> RequestJsonFunction<T>(Method method, string uri, JsonSerializable.ISerializable body,
 		   bool includeAuthHeader = true);
 

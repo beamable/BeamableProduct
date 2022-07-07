@@ -239,6 +239,9 @@ namespace Beamable.Editor.UI.Model
 		public bool ContainsRemoteOnlyModel(string serviceName) => AllRemoteOnlyServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 		public bool ContainsModel(string serviceName) => AllLocalServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 
+		public bool IsArchived(string serviceName) =>
+			AllLocalServices.First(s => s.Descriptor.Name.Equals(serviceName)).IsArchived;
+
 		public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
 		   GetModel<T>(descriptor.Name);
 
@@ -299,6 +302,7 @@ namespace Beamable.Editor.UI.Model
 	{
 		AllTypes,
 		Microservices,
-		Storages
+		Storages,
+		Archived
 	}
 }

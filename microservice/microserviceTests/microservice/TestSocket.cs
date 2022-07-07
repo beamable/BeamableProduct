@@ -835,7 +835,7 @@ namespace Beamable.Microservice.Tests.Socket
         }
 
         public bool MockIsConnectionOpen = true;
-        public async Promise SendMessage(string message)
+        public async Task SendMessage(string message)
         {
             if (!MockIsConnectionOpen)
             {
