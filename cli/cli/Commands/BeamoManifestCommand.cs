@@ -5,11 +5,11 @@ namespace cli;
 
 public class BeamoManifestCommand : AppCommand<BeamoManifestArgs>
 {
-	BeamoService BeamoService { get; }
+	private readonly BeamoService _beamoService;
 	
 	public BeamoManifestCommand(BeamoService beamoService) : base("manifest", "outputs manifest json to console")
 	{
-		BeamoService = beamoService;
+		_beamoService = beamoService;
 	}
 	public override void Configure()
 	{
@@ -21,7 +21,7 @@ public class BeamoManifestCommand : AppCommand<BeamoManifestArgs>
 		                                .Spinner(Spinner.Known.Default)
 		                                .StartAsync("Sending Request...", async ctx =>
 
-			                                            await BeamoService.GetCurrentManifest()
+			                                            await _beamoService.GetCurrentManifest()
 		                                );
 		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
 	}

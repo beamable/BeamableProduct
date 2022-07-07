@@ -18,6 +18,16 @@ public class BeamoService {
 		                .Map(res => res.manifest)
 		                .RecoverFrom40x(ex => new ServiceManifest());
 	}
+	
+	public Promise<GetStatusResponse> GetStatus()
+	{
+		return Requester.Request<GetStatusResponse>(Method.GET, $"{SERVICE}/status")
+		                .RecoverFrom40x(err => new GetStatusResponse
+		                {
+			                isCurrent = false,
+			                services = new List<ServiceStatus>()
+		                });
+	}
 }
 
 [System.Serializable]

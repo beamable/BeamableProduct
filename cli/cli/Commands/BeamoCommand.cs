@@ -1,24 +1,31 @@
-﻿namespace cli;
+﻿using Newtonsoft.Json;
+using Spectre.Console;
+
+namespace cli;
 public class BeamoCommandArgs : CommandArgs { }
 
 public class BeamoCommand : AppCommand<BeamoCommandArgs>
 {
-	private readonly ConfigService _configService;
+	private readonly BeamoService _beamoService;
 
-	public BeamoCommand(ConfigService configService) : base("beamo", "list the current configuration")
+	public BeamoCommand(BeamoService beamoService) : base("beamo", "outputs status call to console")
 	{
-		_configService = configService;
+		_beamoService = beamoService;
 	}
 	public override void Configure()
 	{
 		// nothing to do.
 	}
 
-	public override Task Handle(BeamoCommandArgs args)
+	public override async Task Handle(BeamoCommandArgs args)
 	{
-		Console.WriteLine(_configService.ConfigFilePath);
-		Console.WriteLine(_configService.PrettyPrint());
-		return Task.CompletedTask;
+		var response = await AnsiConsole.Status()
+		                                .Spinner(Spinner.Known.Default)
+		                                .StartAsync("Sending Request...", async ctx =>
+
+			                                            await _beamoService.GetStatus()
+		                                );
+		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
 	}
 }
 
