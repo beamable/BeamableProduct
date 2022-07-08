@@ -109,6 +109,25 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// </summary>
 		/// <param name="lobbyId">The id of the <see cref="Lobby"/>.</param>
 		/// <param name="playerId">The id of the player to remove.</param>
-		Promise KickPlayer(string lobbyId, string playerId);
+		Promise<Lobby> KickPlayer(string lobbyId, string playerId);
+
+		/// <summary>
+		/// Send a request to the given <see cref="Lobby"/> to update its data. If the
+		/// requesting player doesn't have the capability to boot players, this will throw an exception.
+		/// </summary>
+		/// <param name="lobbyId">The id of the <see cref="Lobby"/>.</param>
+		/// <param name="name">New lobby name</param>
+		/// <param name="description">New lobby description</param>
+		/// <param name="restriction">New restriction</param>
+		/// <param name="gameType">New game type</param>
+		/// <param name="maxPlayers">New max players value</param>
+		/// <param name="newHost">New lobby host</param>
+		Promise<Lobby> UpdateLobby(string lobbyId,
+		                      LobbyRestriction restriction,
+		                      string newHost,
+		                      string name = null,
+		                      string description = null,
+		                      string gameType = null,
+		                      int? maxPlayers = null);
 	}
 }

@@ -14,14 +14,12 @@ namespace Beamable.EasyFeatures.Components
 		}
 
 		[Header("Components")]
-		public TextMeshProUGUI Label;
 		public TextMeshProUGUI Content;
 		public Button CancelButton;
 		public Button ConfirmButton;
 		
-		public void Show(string label, string content, Action confirmAction, Action closeAction, Mode mode = Mode.Default)
+		public void Show(string content, Action confirmAction, Action closeAction, Mode mode = Mode.Default)
 		{
-			Label.text = label;
 			Content.text = content;
 
 			CancelButton.onClick.ReplaceOrAddListener(closeAction.Invoke);

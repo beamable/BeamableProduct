@@ -3,6 +3,8 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Lobbies;
+using Beamable.UI.Buss;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,6 +42,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ConfirmButton;
 		public Button CancelButton;
 		public Button BackButton;
+		
+		public BussElement ConfirmButtonBussElement;
 
 		[Header("Callbacks")]
 		public UnityEvent OnCreateLobbyRequestSent;
@@ -76,9 +80,27 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Name.onValueChanged.ReplaceOrAddListener(OnNameChanged);
 			Description.onValueChanged.ReplaceOrAddListener(OnDescriptionChanged);
 			ConfirmButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
-			ConfirmButton.interactable = System.ValidateConfirmButton();
+			
+			ValidateConfirmButton();
+			
 			CancelButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
+		}
+		
+		private void ValidateConfirmButton()
+		{
+			bool canJoinLobby = System.ValidateConfirmButton();
+
+			ConfirmButton.interactable = canJoinLobby;
+
+			if (canJoinLobby)
+			{
+				ConfirmButtonBussElement.SetButtonPrimary();
+			}
+			else
+			{
+				ConfirmButtonBussElement.SetButtonDisabled();
+			}
 		}
 
 		private void CancelButtonClicked()
@@ -90,7 +112,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private void OnNameChanged(string value)
 		{
 			System.Name = value;
-			ConfirmButton.interactable = System.ValidateConfirmButton();
+			ValidateConfirmButton();
 		}
 
 		private void OnDescriptionChanged(string value)

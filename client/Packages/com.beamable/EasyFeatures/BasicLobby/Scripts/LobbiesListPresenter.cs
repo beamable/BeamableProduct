@@ -12,7 +12,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public LobbiesListEntryPresenter LobbyEntryPrefab;
 		
 		[Header("Components")]
-		public GameObjectToggler LoadingIndicator;
 		public PoolableScrollView PoolableScrollView;
 		
 		private readonly List<LobbiesListEntryPresenter> _spawnedEntries = new List<LobbiesListEntryPresenter>();
@@ -30,8 +29,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void ClearPooledRankedEntries()
 		{
-			LoadingIndicator.Toggle(true);
-
 			foreach (LobbiesListEntryPresenter entryPresenter in _spawnedEntries)
 			{
 				Destroy(entryPresenter.gameObject);
@@ -45,7 +42,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			var items = new List<PoolableScrollView.IItem>();
 			for (var i = 0; i < _entriesList.Count; i++)
 			{
-				var data = _entriesList[i];
+				LobbiesListEntryPresenter.ViewData data = _entriesList[i];
 				var rankEntryPoolData = new LobbiesListEntryPresenter.PoolData
 				{
 					ViewData = data, Index = i, Height = 100.0f // TODO: expose this somewhere in inspector
@@ -54,7 +51,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 
 			PoolableScrollView.SetContent(items);
-			LoadingIndicator.Toggle(false);
 		}
 		
 		public RectTransform Spawn(PoolableScrollView.IItem item, out int order)
