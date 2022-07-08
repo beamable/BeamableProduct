@@ -12,9 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - For now, we don't run any `InitializeServicesAttributes` when validating this.
   - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process. 
   
+
+## [1.2.5]
 ### Fixed
 - Failed promises no longer log exception info after an exception handler is registered on the same execution cycle.
 - "Connection is closed" log exception no longer prints incorrectly.
+- Requests no longer attempt to send while authorization process is happening.
 
 
 ## [1.2.4]

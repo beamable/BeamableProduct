@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
 - Added "experimental" package status support to the `PackageVersion` utility
 - Adds `Cid` and `Pid` field to `IBeamableRequester` interface
+- Added `Friends` list accessible through the `BeamContext`
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
@@ -28,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Beamable button in Unity toolbar should be in correct position for production packages
+
+## [1.2.5]
+### Fixed
 - CurrencyHUD no longer throws null reference error when associated currency content has no addressable icon. 
 
 ## [1.2.4]
