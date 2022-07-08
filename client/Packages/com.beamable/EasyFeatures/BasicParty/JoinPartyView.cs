@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using Beamable.UI.Buss;
+using EasyFeatures.Components;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,6 +21,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button BackButton;
 		public Button JoinButton;
 		public Button CancelButton;
+		public BussElement JoinButtonBussElement;
 		
 		protected IDependencies System;
 
@@ -43,10 +46,26 @@ namespace Beamable.EasyFeatures.BasicParty
 			CancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
 		}
 
+		private void ValidateJoinButton()
+		{
+			bool canJoinParty = System.ValidateJoinButton();
+
+			JoinButton.interactable = canJoinParty;
+
+			if (canJoinParty)
+			{
+				JoinButtonBussElement.SetButtonPrimary();
+			}
+			else
+			{
+				JoinButtonBussElement.SetButtonDisabled();
+			}
+		}
+
 		private void OnPartyIdValueChanged(string value)
 		{
 			System.PartyId = value;
-			JoinButton.interactable = System.ValidateJoinButton();
+			ValidateJoinButton();
 		}
 
 		private void OnCancelButtonClicked()

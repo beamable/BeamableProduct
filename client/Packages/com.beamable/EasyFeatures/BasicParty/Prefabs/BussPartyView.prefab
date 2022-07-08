@@ -6452,7 +6452,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7227cc6e5d284bc8a8d62058d0c123a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _optionPrefab: {fileID: 1015058147811585724, guid: decb3e35ab75e5044bf0934623ecef41,
+  _optionPrefab: {fileID: 5477887666387231030, guid: decb3e35ab75e5044bf0934623ecef41,
     type: 3}
   _toggleGroup: {fileID: 6517655443471404342}
 --- !u!1 &4496042331200451488
@@ -7577,6 +7577,7 @@ MonoBehaviour:
   Mask: {fileID: 4147590013864938985}
   Label: {fileID: 41138426068734286}
   ModalWindow: {fileID: 2992764932221887101}
+  LabelWithButton: {fileID: 0}
 --- !u!1 &5883914012215805702
 GameObject:
   m_ObjectHideFlags: 0
@@ -8026,6 +8027,7 @@ MonoBehaviour:
   BackButton: {fileID: 4053553624588519141}
   JoinButton: {fileID: 6548002383429088114}
   CancelButton: {fileID: 7664702736250746814}
+  JoinButtonBussElement: {fileID: 819211492010915643}
 --- !u!114 &154972454787266384
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10494,7 +10496,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a9f536a6b444a949143d99ea21742a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Label: {fileID: 1234085239853048158}
   Content: {fileID: 3108457487900426076}
   CancelButton: {fileID: 6799485910865879652}
   ConfirmButton: {fileID: 6158966984611317535}
@@ -10534,7 +10535,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -74.99988, y: 0}
+  m_AnchoredPosition: {x: -75, y: 0}
   m_SizeDelta: {x: -530, y: -75}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &5691862051769646127
@@ -12338,6 +12339,7 @@ MonoBehaviour:
   NextButton: {fileID: 4719666629951324744}
   CancelButton: {fileID: 7141182959318710890}
   BackButton: {fileID: 7795869403800839039}
+  NextButtonBussElement: {fileID: 6390733183148494032}
 --- !u!114 &8826405192363472405
 MonoBehaviour:
   m_ObjectHideFlags: 0

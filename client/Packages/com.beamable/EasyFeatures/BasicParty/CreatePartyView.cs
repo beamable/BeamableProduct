@@ -1,4 +1,6 @@
 ﻿using Beamable.EasyFeatures.Components;
+using Beamable.UI.Buss;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,6 +34,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button NextButton;
 		public Button CancelButton;
 		public Button BackButton;
+		public BussElement NextButtonBussElement;
 
 		protected IDependencies System;
 		protected bool CreateNewParty;
@@ -76,6 +79,22 @@ namespace Beamable.EasyFeatures.BasicParty
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 		}
 
+		private void ValidateNextButton()
+		{
+			bool canCreateParty = System.ValidateConfirmButton(Party.MaxPlayers);
+
+			NextButton.interactable = canCreateParty;
+
+			if (canCreateParty)
+			{
+				NextButtonBussElement.SetButtonPrimary();
+			}
+			else
+			{
+				NextButtonBussElement.SetButtonDisabled();
+			}
+		}
+
 		private void OnAccessOptionSelected(int optionId)
 		{
 			Party.Access = (PartyAccess)optionId;
@@ -92,7 +111,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			if (int.TryParse(value, out int maxPlayers))
 			{
 				Party.MaxPlayers = maxPlayers;
-				NextButton.interactable = System.ValidateConfirmButton(Party.MaxPlayers);
+				ValidateNextButton();
 			}
 		}
 
