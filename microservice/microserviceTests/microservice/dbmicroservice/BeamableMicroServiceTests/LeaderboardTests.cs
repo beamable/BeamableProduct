@@ -56,7 +56,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "LeaderboardCreateFromTemplateCallableTest", 1, 1, "leaderboard", contentId));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", nameof(SimpleMicroservice.LeaderboardCreateFromTemplateCallableTest), 1, 1, "leaderboard", contentId));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -86,7 +86,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<SimpleMicroservice>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "LeaderboardCreateFromCodeCallableTest", 1, 1, "leaderboard"));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", nameof(SimpleMicroservice.LeaderboardCreateFromCodeCallableTest), 1, 1, "leaderboard"));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
@@ -287,6 +287,38 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      [Test]
+      [NonParallelizable]
+      public async Task Call_RemovePlayerEntryFromLeaderboard()
+      {
+	      LoggingUtil.Init();
+	      TestSocket testSocket = null;
+	      
+	      var dbid = 12345;
+	      var expectedLeaderboardBody = "{\"id\":"+dbid+"}";
+	      var expectedJObject = JObject.Parse(expectedLeaderboardBody);
+	      var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+	      {
+		      testSocket = socket;
+		      socket.AddStandardMessageHandlers()
+		            .AddMessageHandler(
+			            MessageMatcher
+				            .WithBody<JObject>(n => JToken.DeepEquals(expectedJObject, n))
+				            .WithReqId(-3),
+			            MessageResponder.NoResponse(),
+			            MessageFrequency.OnlyOnce());
+	      }));
+
+	      await ms.Start<SimpleMicroservice>(new TestArgs());
+	      Assert.IsTrue(ms.HasInitialized);
+
+	      testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", nameof(SimpleMicroservice.RemovePlayerEntry), 1, 1, "leaderboard.test", dbid));
+
+	      // simulate shutdown event...
+	      await ms.OnShutdown(this, null);
+	      Assert.IsTrue(testSocket.AllMocksCalled());
       }
 	}
 }

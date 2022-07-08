@@ -187,6 +187,12 @@ namespace microserviceTests.microservice
          var res = await Services.Leaderboards.GetPlayerLeaderboards(dbid);
          return res.lbs.Count;
       }
+      
+      [ClientCallable]
+      public async Task RemovePlayerEntry(string leaderboardId, long dbid)
+      {
+	      await Services.Leaderboards.RemovePlayerEntry(leaderboardId, dbid);
+      }
 
       [ClientCallable]
       public async Task<string> GetUserEmail(int dbid)
