@@ -635,17 +635,14 @@ namespace Beamable.Microservice.Tests.Socket
         {
             MockConnect = () =>
             {
-                Console.WriteLine("Connecting Test Socket...");
                 _onConnectionCallbacks?.Invoke(this);
             };
             MockOnConnect = (cb) =>
             {
-                Console.WriteLine("Adding Socket Connection Listener...");
                 _onConnectionCallbacks += cb;
             };
             MockOnMessage = (cb) =>
             {
-                Console.WriteLine("Adding Socket Message Listener...");
                 _onMessageCallbacks += cb;
             };
             // MockSendMessage = async (msg) =>
