@@ -15,6 +15,7 @@ using microserviceTests.microservice.Util;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Serilog.Events;
+using Serilog.Sinks.TestCorrelator;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -386,7 +387,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleSimple_FailGetUserViaAccessToken()
         {
-            LoggingUtil.Init();
+            LoggingUtil.InitTestCorrelator();
             TestSocket testSocket = null;
             const int testCount = 3000;
             var contentResolver = new TestContentResolver(async uri => "{}");
@@ -417,6 +418,14 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             await Task.WhenAll(tasks);
             await Task.Delay(10);
+
+            var notImplementedLogs = TestCorrelator.GetLogEventsFromCurrentContext()
+	            .Where(l => l.Level == LogEventLevel.Error)
+	            .Select(l => l.RenderMessage())
+	            .Where(l => l.Contains("This version of GetUser is not supported in the Microservice environment"))
+	            .ToList();
+            Assert.AreEqual(testCount, notImplementedLogs.Count);
+
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
             //Assert.IsTrue(testSocket.AllMocksCalled());
