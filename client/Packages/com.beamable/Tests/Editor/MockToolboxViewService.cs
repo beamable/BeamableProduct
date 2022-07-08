@@ -142,7 +142,6 @@ namespace Beamable.Editor.Tests
 
 		public void SetQuery(ToolboxQuery query)
 		{
-			Debug.Log("In Fake ToolboxViewService");
 			var oldFilterText = FilterText;
 			Query = query;
 			FilterText = query.ToString();
