@@ -75,6 +75,15 @@ namespace microserviceTests.microservice
          await Task.Delay(ms);
          return ms;
       }
+      
+      [ClientCallable]
+      public async Task<string> DelayThenGetEmail(int ms, long dbid)
+      {
+	      await Task.Delay(ms);
+	      var getUser = Services.Auth.GetUser(dbid);
+	      var output = await getUser;
+	      return output.email;
+      }
 
       [ClientCallable]
       public async Promise<int> PromiseTestMethod()
