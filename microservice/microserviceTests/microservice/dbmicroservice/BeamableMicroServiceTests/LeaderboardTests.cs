@@ -309,6 +309,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			      .AddMessageHandler(
 				      MessageMatcher
 					      .WithRouteContains("assignment")
+					      .WithRouteContains($"boardId={leaderbaordId}")
 					      .WithMethod(Method.GET),
 				      MessageResponder.Success(new LeaderboardAssignmentInfo(leaderbaordId, dbid)),
 				      MessageFrequency.OnlyOnce()
@@ -332,7 +333,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	      await ms.Start<SimpleMicroservice>(new TestArgs());
 	      Assert.IsTrue(ms.HasInitialized);
 
-	      testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", nameof(SimpleMicroservice.RemovePlayerEntry), 1, 1, "leaderboard.test", dbid));
+	      testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", nameof(SimpleMicroservice.RemovePlayerEntry), 1, 1, leaderbaordId, dbid));
 
 	      // simulate shutdown event...
 	      await ms.OnShutdown(this, null);
