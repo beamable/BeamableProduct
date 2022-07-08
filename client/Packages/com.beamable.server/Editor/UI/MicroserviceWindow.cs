@@ -217,7 +217,7 @@ namespace Beamable.Editor.Microservice.UI
 		private void OnServiceDeleteProceed()
 		{
 			var root = this.GetRootVisualContainer();
-			root.SetEnabled(false);
+			root?.SetEnabled(false);
 		}
 	}
 }
