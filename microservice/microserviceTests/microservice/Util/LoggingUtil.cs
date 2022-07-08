@@ -22,5 +22,18 @@ namespace microserviceTests.microservice.Util
             BeamableSerilogProvider.LogContext.Value = Log.Logger;
 
         }
+
+        public static void InitTestCorrelator(LogEventLevel logLevel=LogEventLevel.Warning)
+        {
+	        BeamableLogProvider.Provider = new BeamableSerilogProvider();
+	        Debug.Instance = new MicroserviceDebug();
+	        // https://github.com/serilog/serilog/wiki/Configuration-Basics
+	        Log.Logger = new LoggerConfiguration()
+		        .MinimumLevel.Is(logLevel)
+		        .WriteTo.TestCorrelator()
+		        .CreateLogger();
+	        BeamableSerilogProvider.LogContext.Value = Log.Logger;
+
+        }
     }
 }
