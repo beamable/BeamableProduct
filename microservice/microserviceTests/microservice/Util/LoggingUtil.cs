@@ -4,6 +4,7 @@ using Core.Server.Common;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Raw;
+using Serilog.Sinks.TestCorrelator;
 using UnityEngine;
 
 namespace microserviceTests.microservice.Util
@@ -25,6 +26,7 @@ namespace microserviceTests.microservice.Util
 
         public static void InitTestCorrelator(LogEventLevel logLevel=LogEventLevel.Warning)
         {
+	        TestCorrelator.CreateContext();
 	        BeamableLogProvider.Provider = new BeamableSerilogProvider();
 	        Debug.Instance = new MicroserviceDebug();
 	        // https://github.com/serilog/serilog/wiki/Configuration-Basics
