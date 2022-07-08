@@ -344,6 +344,15 @@ namespace Beamable.Server.Editor
 				var nameToImageId = new Dictionary<string, string>();
 				var enabledServices = new List<string>();
 
+				
+				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
+				
+				if (!MicroserviceConfiguration.Instance.DockerCPUArchitecture.Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
+				{
+					OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture.");
+					return;
+				}
+				
 				foreach (var descriptor in Descriptors)
 				{
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
@@ -361,21 +370,12 @@ namespace Beamable.Server.Editor
 
 					try
 					{
-						var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
 						                                         includeDebugTools: false,
 						                                         watch: false,
 						                                         pull: true);
 						
-						if (!buildCommand.GetProcessArchitecture().Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
-						{
-							OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {buildCommand.GetProcessArchitecture()} architecture of {descriptor.Name}.");
-							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-
-							return;
-						}
-						
-						var tmpBuild = await buildCommand.StartAsync();
+						await buildCommand.StartAsync();
 						
 					}
 					catch (Exception e)

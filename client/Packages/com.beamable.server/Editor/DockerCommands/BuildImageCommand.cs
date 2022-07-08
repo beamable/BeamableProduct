@@ -80,10 +80,10 @@ namespace Beamable.Server.Editor.DockerCommands
 #if BEAMABLE_DEVELOPER
 			pullStr = ""; // we cannot force the pull against the local image.
 #endif
-
-			var platformStr = $"--platform {GetProcessArchitecture()}";
-#if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
-			platformStr = "";
+			var platformStr = "";
+			
+#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+			platformStr = $"--platform {GetProcessArchitecture()}";
 #endif
 
 			return $"{DockerCmd} build {pullStr} {platformStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
