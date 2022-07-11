@@ -2,7 +2,7 @@ using System;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
-	public class GetImageIdCommand : DockerCommandReturnable<ImageDetails>
+	public class GetImageDetailsCommand : DockerCommandReturnable<ImageDetails>
 	{
 		public string ImageName { get; }
 		private bool WasBuildLocally { get; }
@@ -10,7 +10,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		private const char SEPARATOR = ',';
 		private const char ID_SEPARATOR = ':';
 
-		public GetImageIdCommand(IDescriptor descriptor)
+		public GetImageDetailsCommand(IDescriptor descriptor)
 		{
 			ImageName = descriptor.ImageName;
 			WasBuildLocally = BuildImageCommand.WasEverBuildLocally(descriptor);

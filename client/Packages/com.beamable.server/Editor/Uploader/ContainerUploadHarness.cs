@@ -46,7 +46,7 @@ namespace Beamable.Server.Editor.Uploader
 
 		public async Task<ImageDetails> GetImageId(MicroserviceDescriptor descriptor)
 		{
-			var command = new GetImageIdCommand(descriptor);
+			var command = new GetImageDetailsCommand(descriptor);
 			var imageId = await command.StartAsync();
 
 			return imageId;

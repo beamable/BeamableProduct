@@ -411,7 +411,7 @@ namespace Beamable.Server.Editor
 					var imageId = imageDetails.imageId;
 					if (string.IsNullOrEmpty(imageId))
 					{
-						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
+						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
