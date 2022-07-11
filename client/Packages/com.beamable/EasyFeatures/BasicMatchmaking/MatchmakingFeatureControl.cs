@@ -148,9 +148,14 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			OverlaysController.ShowError(message);
 		}
 
-		public void ShowConfirmWindow(string label, string message, Action confirmAction)
+		public void ShowConfirmWindow(string message, Action confirmAction)
 		{
-			OverlaysController.ShowConfirm(label, message, confirmAction);
+			OverlaysController.ShowConfirm(message, confirmAction);
+		}
+
+		public void ShowInformWindow(string message, Action confirmAction)
+		{
+			OverlaysController.ShowInform(message, confirmAction);
 		}
 
 		#endregion
