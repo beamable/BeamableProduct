@@ -1,6 +1,7 @@
 using Beamable.Common.Api;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Server
 {
@@ -22,7 +23,7 @@ namespace Beamable.Server
 	{
 		public List<Exception> FailedAttemptExceptions { get; }
 
-		public SocketClosedException(List<Exception> failedAttemptExceptions) : base(500, "socket", "the socket is closed. Too many retries have happened, and the message cannot be sent.")
+		public SocketClosedException(List<Exception> failedAttemptExceptions) : base(500, "socket", "the socket is closed. Too many retries have happened, and the message cannot be sent. internal errors=" + string.Join("\n", failedAttemptExceptions.Select(x => x?.Message)))
 		{
 			FailedAttemptExceptions = failedAttemptExceptions;
 		}

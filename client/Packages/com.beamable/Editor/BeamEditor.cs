@@ -55,6 +55,43 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
+
+	public static class BeamEditorDependencies
+	{
+		public static IDependencyBuilder DependencyBuilder;
+
+		static BeamEditorDependencies()
+		{
+			DependencyBuilder = new DependencyBuilder();
+			DependencyBuilder.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
+			DependencyBuilder.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
+																											 provider.GetService<AccessTokenStorage>(),
+																											 null,
+																											 provider.GetService<OfflineCache>())
+			{ RequestTimeoutMs = $"{30 * 1000}" }
+			);
+			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
+			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
+			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
+
+			DependencyBuilder.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
+			DependencyBuilder.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
+			DependencyBuilder.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
+			DependencyBuilder.AddSingleton<AliasService>();
+			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
+
+			DependencyBuilder.AddSingleton<BeamableVsp>();
+			DependencyBuilder.AddSingleton<BeamableDispatcher>();
+
+			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
+			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+
+			DependencyBuilder.AddSingleton<ServiceStorage>();
+			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
+			DependencyBuilder.AddSingleton<EnvironmentService>();
+		}
+	}
+
 	[InitializeOnLoad, BeamContextSystem]
 	public static class BeamEditor
 	{
@@ -186,18 +223,18 @@ namespace Beamable
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
 			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
 				coreConfiguration.ReflectionSystemPaths
-				                 .Where(Directory.Exists)
-				                 .ToArray());
+								 .Where(Directory.Exists)
+								 .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-			                                                        {
-				                                                        var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-				                                                        return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-			                                                        })
-			                                                        .Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-			                                                        .Where(system => system.Enabled)
-			                                                        .ToList();
+																	{
+																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+																	})
+																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+																	.Where(system => system.Enabled)
+																	.ToList();
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
 
 			// Inject them into the ReflectionCache system in the correct order.
@@ -232,10 +269,10 @@ namespace Beamable
 						var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
 
 						var res = EditorUtility.DisplayDialogComplex("Beamable Assistant",
-						                                             "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
-						                                             "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
-						                                             "No, I'll take my chances and don't bother me about these specific hints anymore.",
-						                                             "No, I'll take my chances and don't bother me ever again about any hints.");
+																	 "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
+																	 "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
+																	 "No, I'll take my chances and don't bother me about these specific hints anymore.",
+																	 "No, I'll take my chances and don't bother me ever again about any hints.");
 
 						if (res == 0)
 						{
@@ -267,36 +304,10 @@ namespace Beamable
 			}
 
 			// Initialize BeamEditorContext dependencies
-			BeamEditorContextDependencies = new DependencyBuilder();
-			BeamEditorContextDependencies.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
-			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
-																											 provider.GetService<AccessTokenStorage>(),
-																											 null,
-																											 provider.GetService<OfflineCache>())
-			{ RequestTimeoutMs = $"{30 * 1000}" }
-			);
-			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
-			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
-			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
-
-			BeamEditorContextDependencies.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
-			BeamEditorContextDependencies.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
-			BeamEditorContextDependencies.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
-			BeamEditorContextDependencies.AddSingleton<AliasService>();
-			BeamEditorContextDependencies.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
-
+			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
-			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
-			BeamEditorContextDependencies.AddSingleton<BeamableDispatcher>();
-			BeamEditorContextDependencies.AddTransient(() => BeamableEnvironment.Data);
-			BeamEditorContextDependencies.AddSingleton<EnvironmentService>();
-
-			BeamEditorContextDependencies.AddSingleton<IToolboxViewService, ToolboxViewService>();
-			BeamEditorContextDependencies.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
-
-			BeamEditorContextDependencies.AddSingleton<ServiceStorage>();
 			EditorReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
@@ -452,6 +463,9 @@ namespace Beamable
 		public event Action<RealmView> OnRealmChange;
 		public event Action<CustomerView> OnCustomerChange;
 		public event Action<EditorUser> OnUserChange;
+
+		public Action OnServiceArchived;
+		public Action OnServiceUnarchived;
 
 		public void Init(string playerCode, IDependencyBuilder builder)
 		{
@@ -851,7 +865,7 @@ namespace Beamable
 				SaveConfig(alias, pid, null, cid);
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
-				                            tokenResponse.refresh_token, tokenResponse.expires_in);
+											tokenResponse.refresh_token, tokenResponse.expires_in);
 				CurrentRealm = null; // erase the current realm; if there is one..
 				await Login(token, pid);
 				await DoSilentContentPublish(true);
@@ -922,8 +936,8 @@ namespace Beamable
 
 			// we need to remember the last realm the user was on in this game.
 			var hadSelectedPid = EditorPrefHelper
-			                     .GetMap(REALM_PREFERENCE)
-			                     .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
+								 .GetMap(REALM_PREFERENCE)
+								 .TryGetValue($"{CurrentCustomer.Cid}.{game.Pid}", out var existingPid);
 
 			if (!hadSelectedPid)
 				existingPid = game.Pid;
@@ -956,9 +970,9 @@ namespace Beamable
 
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
-			          .GetMap(REALM_PREFERENCE)
-			          .Set($"{game.Cid}.{game.Pid}", pid)
-			          .Save();
+					  .GetMap(REALM_PREFERENCE)
+					  .Set($"{game.Cid}.{game.Pid}", pid)
+					  .Save();
 
 			var realm = realms.FirstOrDefault(r => string.Equals(r.Pid, pid));
 			if (CurrentRealm == null || !CurrentRealm.Equals(realm))

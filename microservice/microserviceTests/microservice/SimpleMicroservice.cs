@@ -75,6 +75,15 @@ namespace microserviceTests.microservice
          await Task.Delay(ms);
          return ms;
       }
+      
+      [ClientCallable]
+      public async Task<string> DelayThenGetEmail(int ms, long dbid)
+      {
+	      await Task.Delay(ms);
+	      var getUser = Services.Auth.GetUser(dbid);
+	      var output = await getUser;
+	      return output.email;
+      }
 
       [ClientCallable]
       public async Promise<int> PromiseTestMethod()
@@ -186,6 +195,12 @@ namespace microserviceTests.microservice
       {
          var res = await Services.Leaderboards.GetPlayerLeaderboards(dbid);
          return res.lbs.Count;
+      }
+      
+      [ClientCallable]
+      public async Task RemovePlayerEntry(string leaderboardId, long dbid)
+      {
+	      await Services.Leaderboards.RemovePlayerEntry(leaderboardId, dbid);
       }
 
       [ClientCallable]

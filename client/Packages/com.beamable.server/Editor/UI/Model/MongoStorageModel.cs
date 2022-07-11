@@ -1,4 +1,5 @@
-﻿using Beamable.Server.Editor;
+﻿using Beamable.Editor.UI.Components;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
+using static Beamable.Common.Constants.Features.Archive;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -40,6 +43,12 @@ namespace Beamable.Editor.UI.Model
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+
+		public override bool IsArchived
+		{
+			get => Config.Archived;
+			protected set => Config.Archived = value;
+		}
 		public StorageConfigurationEntry Config { get; protected set; }
 
 		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
@@ -124,6 +133,22 @@ namespace Beamable.Editor.UI.Model
 				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Storages.Count - 1, ServiceType.StorageObject);
 				OnSortChanged?.Invoke();
 			}, isLast);
+
+			evt.menu.AppendSeparator();
+			if (Config.Archived)
+			{
+				evt.menu.AppendAction("Unarchive", _ => Unarchive());
+			}
+			else
+			{
+				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
+				{
+					var archiveServicePopup = new ArchiveServicePopupVisualElement();
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility(ARCHIVE_WINDOW_HEADER, archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.onClose += () => popupWindow.Close();
+					archiveServicePopup.onConfirm += Archive;
+				});
+			}
 		}
 
 		public override void Refresh(IDescriptor descriptor)
@@ -134,6 +159,7 @@ namespace Beamable.Editor.UI.Model
 			var oldBuilder = ServiceBuilder;
 			ServiceBuilder = serviceRegistry.GetStorageBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
+			Config = MicroserviceConfiguration.Instance.GetStorageEntry(Name);
 		}
 	}
 }

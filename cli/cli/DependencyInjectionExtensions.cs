@@ -1,5 +1,5 @@
-using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
+using System.CommandLine;
 
 namespace cli;
 
@@ -22,7 +22,7 @@ public static class DependencyInjectionExtensions
 		collection.AddSingleton<ICommandFactory>(provider =>
 		{
 			// TODO: Benchmark this init. Even if its 2ms, thats too slow for when the CLI grows to cover the entire Beamable backend. (2ms * 100 commands = too long)
-			var factory = new CommandFactory<TCommand>();
+			var factory = new CommandFactory();
 			var root = provider.GetRequiredService<TBaseCommand>();
 			var command = provider.GetRequiredService<TCommand>();
 

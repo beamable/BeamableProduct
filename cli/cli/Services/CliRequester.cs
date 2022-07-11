@@ -1,9 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using System.Text;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace cli;
 
@@ -11,8 +11,8 @@ public class CliRequester : IBeamableRequester
 {
 	private readonly IAppContext _ctx;
 	public IAccessToken AccessToken => _ctx.Token;
-	private string Pid => AccessToken.Pid;
-	private string Cid => AccessToken.Cid;
+	public string Pid => AccessToken.Pid;
+	public string Cid => AccessToken.Cid;
 
 	public CliRequester(IAppContext ctx)
 	{
@@ -21,27 +21,22 @@ public class CliRequester : IBeamableRequester
 	public async Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		if (_ctx.IsVerbose)
-		{
-			Console.WriteLine($"{method} call: {uri}");
-		}
+		BeamableLogger.Log($"{method} call: {uri}");
 
 		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken);
 		var request = PrepareRequest(method, _ctx.Host, uri, body);
 
-		if (_ctx.IsVerbose)
-			Console.WriteLine($"Calling: {request}");
+		BeamableLogger.Log($"Calling: {request}");
 
 		if (_ctx.IsDryRun)
 		{
-			Console.WriteLine($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
+			BeamableLogger.Log($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
 			return default(T);
 		}
 
 		var result = await client.SendAsync(request);
 
-		if (_ctx.IsVerbose)
-			Console.WriteLine($"RESULT: {result}");
+		BeamableLogger.Log($"RESULT: {result}");
 
 		T parsed = default(T);
 		if (result.Content != null)
