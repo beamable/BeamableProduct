@@ -10,8 +10,8 @@ using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
-using Debug = UnityEngine.Debug;
 using static Beamable.Common.Constants.Features.Docker;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
@@ -23,7 +23,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public bool IncludeDebugTools { get; }
 		public string ImageName { get; set; }
 		public string BuildPath { get; set; }
-		
+
 		public Promise<Unit> ReadyForExecution { get; private set; }
 
 		private Exception _constructorEx;
@@ -53,7 +53,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			// build the Program file, and place it in the temp dir.
 			BuildUtils.PrepareBuildContext(descriptor, includeDebugTools, watch);
 		}
-		
+
 		protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
 		{
 			base.ModifyStartInfo(processStartInfo);
@@ -81,7 +81,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			pullStr = ""; // we cannot force the pull against the local image.
 #endif
 			var platformStr = "";
-			
+
 #if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
 			platformStr = $"--platform {GetProcessArchitecture()}";
 #endif
