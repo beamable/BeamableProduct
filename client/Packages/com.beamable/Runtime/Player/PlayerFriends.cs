@@ -45,7 +45,7 @@ namespace Beamable.Player
 		}
 
 		private Promise<List<Friend>> FriendsListRefresh() => Promise<List<Friend>>.Successful(Value?.friends);
-		
+
 		private Promise<List<Common.Api.Social.Player>> BlockedListRefresh() => Promise<List<Common.Api.Social.Player>>.Successful(Value?.blocked);
 
 		protected override async Promise PerformRefresh()

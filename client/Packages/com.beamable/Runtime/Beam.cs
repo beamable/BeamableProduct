@@ -195,11 +195,11 @@ namespace Beamable
 																   // the matchmaking service needs a special instance of the beamable api requester
 																   provider.GetService<IBeamableApiRequester>())
 			);
-			DependencyBuilder.AddSingleton<ISocialApi>(provider => 
-				                                           new SocialService(
-					                                           provider.GetService<IUserContext>(), 
-					                                           provider.GetService<IBeamableRequester>()
-					                                           ));
+			DependencyBuilder.AddSingleton<ISocialApi>(provider =>
+														   new SocialService(
+															   provider.GetService<IUserContext>(),
+															   provider.GetService<IBeamableRequester>()
+															   ));
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
