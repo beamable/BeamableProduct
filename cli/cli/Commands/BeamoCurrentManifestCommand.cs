@@ -27,4 +27,7 @@ public class BeamoCurrentManifestCommand : AppCommand<BeamoManifestArgs>
 	}
 }
 
-public class BeamoManifestArgs : CommandArgs { }
+public class BeamoManifestArgs : CommandArgs
+{
+	public string jsonPath;
+}

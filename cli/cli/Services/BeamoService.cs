@@ -5,20 +5,44 @@ namespace cli;
 
 public class BeamoService { 
 	public const string SERVICE = "/basic/beamo";
-	public CliRequester Requester { get; }
+	public IBeamableRequester Requester { get; }
 	
-	public BeamoService(CliRequester requester)
+	public BeamoService(IBeamableRequester requester)
 	{
 		Requester = requester;
 	}
-	
+
 	public Promise<ServiceManifest> GetCurrentManifest()
 	{
 		return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest/current", "{}")
 		                .Map(res => res.manifest)
 		                .RecoverFrom40x(ex => new ServiceManifest());
 	}
-	
+
+	public Promise<ServiceManifest> GetManifest(long id)
+	{
+		return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest?id={id}")
+		                .Map(res => res.manifest);
+	}
+
+	public Promise<List<ServiceManifest>> GetManifests()
+	{
+		return Requester.Request<GetManifestsResponse>(Method.GET, $"{SERVICE}/manifests")
+		                .Map(res => res.manifests)
+		                .RecoverFrom40x(err => new List<ServiceManifest>());
+	}
+
+	public Promise<Unit> Deploy(ServiceManifest manifest)
+	{
+		var post = new PostManifestRequest
+		{
+			comments = manifest.comments,
+			manifest = manifest.manifest,
+			storageReferences = manifest.storageReference
+		};
+		return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE}/manifest", post).ToUnit();
+	}
+
 	public Promise<GetStatusResponse> GetStatus()
 	{
 		return Requester.Request<GetStatusResponse>(Method.GET, $"{SERVICE}/status")
@@ -27,13 +51,6 @@ public class BeamoService {
 			                isCurrent = false,
 			                services = new List<ServiceStatus>()
 		                });
-	}
-
-	public Promise<List<ServiceManifest>> GetManifests()
-	{
-		return Requester.Request<GetManifestsResponse>(Method.GET, $"{SERVICE}/manifests")
-		                .Map(res => res.manifests)
-		                .RecoverFrom40x(err => new List<ServiceManifest>());
 	}
 }
 

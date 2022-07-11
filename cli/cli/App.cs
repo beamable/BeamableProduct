@@ -58,6 +58,7 @@ public class App
 		Services.AddSingleton<PlatformOption>();
 		Services.AddSingleton<LimitOption>();
 		Services.AddSingleton<SkipOption>();
+		Services.AddSingleton<DeployFilePathOption>();
 		Services.AddSingleton<AccessTokenOption>();
 		Services.AddSingleton<RefreshTokenOption>();
 		Services.AddSingleton<LogOption>();
@@ -95,6 +96,7 @@ public class App
 		Services.AddRootCommand<BeamoCommand, BeamoCommandArgs>();
 		Services.AddCommand<BeamoCurrentManifestCommand, BeamoManifestArgs, BeamoCommand>();
 		Services.AddCommand<BeamoManifestsCommand, BeamoManifestsArgs, BeamoCommand>();
+		Services.AddCommand<BeamoDeployCommand, BeamoDeployArgs, BeamoCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
 
 		// customize

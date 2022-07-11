@@ -25,7 +25,7 @@ public class BeamoManifestsCommand : AppCommand<BeamoManifestsArgs>
 
 			                                            await _beamoService.GetManifests()
 		                                );
-		response = args.limit > 0 ? response.Skip(args.skip).Take(args.limit).ToList() : response.Skip(args.skip).ToList();
+		response = response.Skip(args.skip).Take(args.limit > 0 ? args.limit : int.MaxValue).ToList();
 		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
 	}
 }
