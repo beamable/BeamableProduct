@@ -44,6 +44,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button BackButton;
 		
 		public BussElement ConfirmButtonBussElement;
+		public BussElement ConfirmButtonLabelBussElement;
 
 		[Header("Callbacks")]
 		public UnityEvent OnCreateLobbyRequestSent;

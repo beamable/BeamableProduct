@@ -569,7 +569,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
           Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         json: '{"Enum":8194}'
-    _selector: .toggle.option.deselected
+    _selector: .toggle.option
   - _properties:
     - key: fontColor
       property:
