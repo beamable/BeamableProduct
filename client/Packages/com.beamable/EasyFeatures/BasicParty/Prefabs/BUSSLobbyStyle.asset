@@ -803,6 +803,28 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":15.0}'
     _selector: .panel.lobby.avatar
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":0.0}}'
+    - key: borderMode
+      property:
+        type: Beamable.UI.Buss.BorderModeBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":0}'
+    - key: borderWidth
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":5.0}'
+    - key: borderColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.6627451181411743,"g":0.30588236451148989,"b":0.0,"a":1.0}}'
+    _selector: .button.outline.add
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   - {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}

@@ -783,7 +783,7 @@ MonoBehaviour:
   _elasticity: 0.1
   _inertia: 1
   _decelerationRate: 0.135
-  _spacing: 10
+  _spacing: 20
   _trackLastElement: 0
   _trackSpeedFactor: 4
   _childAlignment: 1
@@ -3989,7 +3989,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -25.000067}
+  m_AnchoredPosition: {x: 0, y: -25}
   m_SizeDelta: {x: 0, y: -10.0001335}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5326100242791128360
@@ -4012,7 +4012,7 @@ MonoBehaviour:
   _elasticity: 0.1
   _inertia: 1
   _decelerationRate: 0.135
-  _spacing: 10
+  _spacing: 20
   _trackLastElement: 0
   _trackSpeedFactor: 4
   _childAlignment: 1
