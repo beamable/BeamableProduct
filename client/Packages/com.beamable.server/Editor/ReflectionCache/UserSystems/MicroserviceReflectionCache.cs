@@ -24,6 +24,7 @@ using UnityEditor.Callbacks;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 using static Beamable.Common.Constants.MenuItems.Assets.Orders;
+using static Beamable.Common.Constants.Features.Docker;
 using LogMessage = Beamable.Editor.UI.Model.LogMessage;
 
 namespace Beamable.Server.Editor
@@ -343,6 +344,15 @@ namespace Beamable.Server.Editor
 				var nameToImageId = new Dictionary<string, string>();
 				var enabledServices = new List<string>();
 
+				
+				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
+				
+				if (!MicroserviceConfiguration.Instance.DockerCPUArchitecture.Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
+				{
+					OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture.");
+					return;
+				}
+				
 				foreach (var descriptor in Descriptors)
 				{
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
@@ -360,11 +370,13 @@ namespace Beamable.Server.Editor
 
 					try
 					{
-						var buildCommand = new BuildImageCommand(descriptor,
-															 includeDebugTools: false,
-															 watch: false,
-															 pull: true);
+						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
+						                                         includeDebugTools: false,
+						                                         watch: false,
+						                                         pull: true);
+						
 						await buildCommand.StartAsync();
+						
 					}
 					catch (Exception e)
 					{
