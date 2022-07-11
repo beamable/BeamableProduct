@@ -89,9 +89,9 @@ namespace Beamable.Editor.UI.Model
 				await TryToStop(); // for it to stop.
 				await BeamServicesCodeWatcher.StopClientSourceCodeGenerator((MicroserviceDescriptor)Descriptor);
 			}
-			
+
 			var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
-			
+
 			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, availableArchitectures, includeDebuggingTools, isWatch);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
@@ -138,7 +138,8 @@ namespace Beamable.Editor.UI.Model
 			var getChecksum = new GetImageIdCommand(Descriptor);
 			try
 			{
-				LastBuildImageId = await getChecksum.StartAsync();
+				var details = await getChecksum.StartAsync();
+				LastBuildImageId = details.imageId;
 			}
 			catch (Exception e)
 			{

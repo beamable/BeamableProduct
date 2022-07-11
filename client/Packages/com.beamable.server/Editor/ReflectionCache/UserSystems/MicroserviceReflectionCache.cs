@@ -341,18 +341,20 @@ namespace Beamable.Server.Editor
 				var existingManifest = await client.GetCurrentManifest();
 				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 
-				var nameToImageId = new Dictionary<string, string>();
+				var nameToImageDetails = new Dictionary<string, ImageDetails>();
 				var enabledServices = new List<string>();
 
-				
+
 				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
-				
+
+#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
 				if (!MicroserviceConfiguration.Instance.DockerCPUArchitecture.Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
 				{
 					OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture.");
 					return;
 				}
-				
+#endif
+
 				foreach (var descriptor in Descriptors)
 				{
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
@@ -374,9 +376,9 @@ namespace Beamable.Server.Editor
 						                                         includeDebugTools: false,
 						                                         watch: false,
 						                                         pull: true);
-						
+
 						await buildCommand.StartAsync();
-						
+
 					}
 					catch (Exception e)
 					{
@@ -405,7 +407,8 @@ namespace Beamable.Server.Editor
 						Message = $"Getting Id service=[{descriptor.Name}]"
 					});
 
-					var imageId = await uploader.GetImageId(descriptor);
+					var imageDetails = await uploader.GetImageId(descriptor);
+					var imageId = imageDetails.imageId;
 					if (string.IsNullOrEmpty(imageId))
 					{
 						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
@@ -413,7 +416,7 @@ namespace Beamable.Server.Editor
 						return;
 					}
 
-					nameToImageId.Add(descriptor.Name, imageId);
+					nameToImageDetails.Add(descriptor.Name, imageDetails);
 
 					if (existingServiceToState.TryGetValue(descriptor.Name, out var existingReference))
 					{
@@ -484,7 +487,7 @@ namespace Beamable.Server.Editor
 
 				// Manifest Building:
 				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them).
-				var localServiceReferences = nameToImageId.Select(kvp =>
+				var localServiceReferences = nameToImageDetails.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];
 					return new ServiceReference()
@@ -494,7 +497,8 @@ namespace Beamable.Server.Editor
 						enabled = sa.Enabled,
 						archived = sa.Archived,
 						comments = sa.Comment,
-						imageId = kvp.Value,
+						imageId = kvp.Value.imageId,
+						imageCpuArch = kvp.Value.cpuArch,
 						dependencies = sa.Dependencies
 					};
 				});
@@ -508,6 +512,7 @@ namespace Beamable.Server.Editor
 				{
 					var sa = model.Services[uploadServiceReference.serviceName];
 					uploadServiceReference.enabled = sa.Enabled;
+					uploadServiceReference.templateId = sa.TemplateId;
 					uploadServiceReference.archived = sa.Archived;
 				}
 
