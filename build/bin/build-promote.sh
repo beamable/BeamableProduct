@@ -23,7 +23,7 @@ export LOCAL_REPO_TAG=beamservice:${BEAMSERVICE_TAG}
 export REMOTE_REPO_TAG=beamableinc/${LOCAL_REPO_TAG}
 
 echo "Building Microservice base image..."
-docker build -t ${LOCAL_REPO_TAG} ../microservice/microservice --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
+docker build -t ${LOCAL_REPO_TAG} ../microservice/microservice --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
 
 echo "Pushing Microservice base image..."
 docker login -u ${DOCKER_HUB_USER} -p ${DOCKER_HUB_PASSWORD}
