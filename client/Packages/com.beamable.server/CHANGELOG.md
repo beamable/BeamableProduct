@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6]
+### Added
+- `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
+
+### Fixed
+- Microservices may be built from either ARM or x86 based computers and uploaded to Beamable.
+
 ## [1.2.5]
 ### Fixed
 - Failed promises no longer log exception info after an exception handler is registered on the same execution cycle.
