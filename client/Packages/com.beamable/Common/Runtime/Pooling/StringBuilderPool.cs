@@ -23,6 +23,9 @@ namespace Beamable.Common.Pooling
 #else
 		private static System.Threading.ThreadLocal<StringBuilderPool> safeStaticPoolLocal = new System.Threading.ThreadLocal<StringBuilderPool>();
 
+		private static System.Threading.ThreadLocal<StringBuilderPool> kLargeStaticPool =
+			new System.Threading.ThreadLocal<StringBuilderPool>();
+
 		public static StringBuilderPool StaticPool
 		{
 			get
@@ -33,6 +36,19 @@ namespace Beamable.Common.Pooling
 				}
 
 				return safeStaticPoolLocal.Value;
+			}
+		}
+
+		public static StringBuilderPool LargeStaticPool
+		{
+			get
+			{
+				if (kLargeStaticPool.Value == null)
+				{
+					kLargeStaticPool.Value = new StringBuilderPool(3, 512);
+				}
+
+				return kLargeStaticPool.Value;
 			}
 		}
 #endif

@@ -43,6 +43,7 @@ using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Stats;
 using Beamable.Common.Reflection;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Api.Notifications;
 using microservice.Common;
@@ -617,6 +618,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
+               .AddTransient<IMicroserviceChatApi, MicroserviceChatApi>()
                .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
                .AddSingleton<ReflectionCache>(_ => _reflectionCache)
@@ -848,7 +850,8 @@ namespace Beamable.Server
             Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
             TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
             RealmConfig= provider.GetRequiredService<IMicroserviceRealmConfigService>(),
-            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>()
+            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
+            Chat = provider.GetRequiredService<IMicroserviceChatApi>()
          };
          return services;
       }
@@ -873,7 +876,8 @@ namespace Beamable.Server
             Tournament = new MicroserviceTournamentApi(stats, requester, ctx),
             TrialData = new MicroserviceCloudDataApi(requester, ctx),
             RealmConfig= new RealmConfigService(requester),
-            Commerce = new MicroserviceCommerceApi(requester)
+            Commerce = new MicroserviceCommerceApi(requester),
+            Chat = new MicroserviceChatApi(requester, ctx)
          };
 
          return services;

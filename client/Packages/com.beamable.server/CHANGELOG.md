@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User can specify Microservices build CPU architecture. 
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
 - Added microservice archive/unarchive feature.
+- Basic Chat SDK functions to Microservice
 
 ## [1.2.6]
 ### Added
