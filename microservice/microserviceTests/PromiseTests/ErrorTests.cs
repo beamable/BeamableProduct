@@ -21,13 +21,7 @@ public class ErrorTests
 	[SetUp]
 	public void Setup()
 	{
-		BeamableLogProvider.Provider = new BeamableSerilogProvider();
-		Debug.Instance = new MicroserviceDebug();
-		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		Log.Logger = new LoggerConfiguration()
-			.MinimumLevel.Warning()
-			.WriteTo.TestCorrelator().CreateLogger();
-		BeamableSerilogProvider.LogContext.Value = Log.Logger;
+		LoggingUtil.InitTestCorrelator();
 	}
 
 	[Test]

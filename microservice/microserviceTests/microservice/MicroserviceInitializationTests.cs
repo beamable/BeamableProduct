@@ -13,6 +13,7 @@ using microservice;
 using microserviceTests.microservice.Util;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using Serilog.Events;
 
 namespace microserviceTests.microservice
 {
@@ -22,7 +23,7 @@ namespace microserviceTests.microservice
         public class SingletonCache_Success : Microservice
         {
             public static readonly ServiceCacheData Cache = new ServiceCacheData();
-            
+
             public class ServiceCacheData
             {
                 public List<int> Cache = new List<int>();
@@ -48,18 +49,18 @@ namespace microserviceTests.microservice
             {
                 var initializationPromise = new Promise<Unit>();
                 var asd = initializer.GetServiceAsCache<ServiceCacheData>();
-                
+
                 asd.Cache.Add(1);
                 initializationPromise.CompleteSuccess(new Unit());
                 return await initializationPromise;
             }
         }
-        
+
         [Microservice(nameof(SingletonCache_CacheGuard))]
         public class SingletonCache_CacheGuard : Microservice
         {
             public static readonly ServiceCacheData Cache = new ServiceCacheData();
-            
+
             public class ServiceCacheData
             {
                 public List<int> Cache = new List<int>();
@@ -86,7 +87,7 @@ namespace microserviceTests.microservice
                 var initializationPromise = new Promise<Unit>();
 
                 // Since we shutdown the application if any exceptions are thrown during this promise chain, we need to try-catch this to validate that
-                // we are indeed throwing a InaccessibleServiceException if the requested service wasn't registered as a singleton service.  
+                // we are indeed throwing a InaccessibleServiceException if the requested service wasn't registered as a singleton service.
                 // If we don't do this, the test fails due to we shutting down the running application --- don't do this in production code unless you know what you are
                 // doing for your specific use-case.
                 try
@@ -97,18 +98,18 @@ namespace microserviceTests.microservice
                 {
                     Assert.IsTrue(exception.GetType() == typeof(InaccessibleServiceException));
                 }
-                
+
                 initializationPromise.CompleteSuccess(new Unit());
                 return await initializationPromise;
             }
         }
-        
+
 
         [Microservice(nameof(ExecutionOrder))]
         public class ExecutionOrder : Microservice
         {
             public static readonly ExecutionCounter CachedCounter = new ExecutionCounter();
-            
+
             public class ExecutionCounter
             {
                 public static readonly List<int> ConfigureCounter = new List<int>();
@@ -138,10 +139,10 @@ namespace microserviceTests.microservice
 
             [InitializeServices(ExecutionOrder = 2)]
             public static Promise<Unit> InitializeSecond(IServiceInitializer initializer)
-            {   
+            {
                 return initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(1).ToPromise().ToUnit();
             }
-            
+
             [InitializeServices(ExecutionOrder = 4)]
             public static async Promise<Unit> InitializeFourth(IServiceInitializer initializer)
             {
@@ -150,7 +151,7 @@ namespace microserviceTests.microservice
                 promise.CompleteSuccess(new Unit());
                 return await promise;
             }
-            
+
             [InitializeServices(ExecutionOrder = 3)]
             public static async Task InitializeThird(IServiceInitializer initializer)
             {
@@ -161,7 +162,7 @@ namespace microserviceTests.microservice
             public static void InitializeFirst(IServiceInitializer initializer)
             {
                 initializer.GetServiceAsCache<ExecutionCounter>().InitializeCounter.Add(0);
-                //await initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(0);  <<----- Causes non-deterministic behaviour as async void methods are not awaitable when called via reflection.  
+                //await initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(0);  <<----- Causes non-deterministic behaviour as async void methods are not awaitable when called via reflection.
             }
         }
 
@@ -187,13 +188,13 @@ namespace microserviceTests.microservice
             Assert.IsTrue(service.Cache.Count > 0);
             await ms.OnShutdown(this, null);
         }
-        
-        
+
+
         [Test]
         [NonParallelizable]
         public async Task Test_SingletonCache_CacheGuard()
         {
-            LoggingUtil.Init();
+            LoggingUtil.Init(LogEventLevel.Verbose);
             var contentResolver = new TestContentResolver(async uri => { return "{}"; });
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
@@ -207,16 +208,16 @@ namespace microserviceTests.microservice
             }
             catch (Exception e)
             {
-                
+
             }
-            
-            
+
+
             // Assert.IsTrue(!ms.HasInitialized); => We don't test this to be true as the exception intentionally causes a process termination and therefore terminates the test ---
             // so we catch the exception and don't test for this. TODO: Find a better way to test this that doesn't involve a bunch of extra complexity to abstract the Environment.Exit call.
 
             await ms.OnShutdown(this, null);
         }
-        
+
         [Test]
         [NonParallelizable]
         public async Task Test_SupportedSignaturesAndInitExecutionOrder()
@@ -247,9 +248,9 @@ namespace microserviceTests.microservice
             {
                 Assert.IsTrue(service.InitializeCounter[i] == i);
             }
-            
+
             await ms.OnShutdown(this, null);
         }
-        
+
     }
 }
