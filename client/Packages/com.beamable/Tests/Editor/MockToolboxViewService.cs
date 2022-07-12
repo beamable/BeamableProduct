@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Modules.Account;
-using System;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Common.Api.Realms;
+using Beamable.Editor.Modules.Account;
+using Beamable.Editor.Toolbox.Models;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Editor.Tests
 {
@@ -142,7 +142,6 @@ namespace Beamable.Editor.Tests
 
 		public void SetQuery(ToolboxQuery query)
 		{
-			Debug.Log("In Fake ToolboxViewService");
 			var oldFilterText = FilterText;
 			Query = query;
 			FilterText = query.ToString();

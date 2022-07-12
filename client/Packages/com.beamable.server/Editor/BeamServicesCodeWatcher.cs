@@ -374,7 +374,7 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		public static MicroserviceDescriptor GetGeneratorDescriptor(MicroserviceDescriptor service)
+		public static MicroserviceDescriptor GetGeneratorDescriptor(IDescriptor service)
 		{
 			return new MicroserviceDescriptor
 			{
@@ -384,7 +384,7 @@ namespace Beamable.Server.Editor
 			};
 		}
 
-		public static async Promise StopClientSourceCodeGenerator(MicroserviceDescriptor service)
+		public static async Promise StopClientSourceCodeGenerator(IDescriptor service)
 		{
 			var generatorDesc = GetGeneratorDescriptor(service);
 			var command = new StopImageReturnableCommand(generatorDesc);
@@ -429,13 +429,17 @@ namespace Beamable.Server.Editor
 			// definately stop the image, even if there was doubt it was running. Because if we do a "build", any existing image will ABSOLUTELY be ruined by the overcopy.
 			new StopImageReturnableCommand(generatorDesc).StartAsync().Then(__ =>
 			{
-				var buildCommand = new BuildImageCommand(generatorDesc, false, true);
-				buildCommand.StartAsync().Then(_ =>
+				var getArchitecturesCommand = new GetBuildOutputArchitectureCommand();
+				getArchitecturesCommand.StartAsync().Then(arch =>
 				{
-					var clientCommand = new RunClientGenerationCommand(generatorDesc);
-					clientCommand.Start();
-					// TODO: add some sort of "cleanup" operation
-					// TODO: consider add info hint when the generator image is running
+					var buildCommand = new BuildImageCommand(generatorDesc, arch, false, true);
+					buildCommand.StartAsync().Then(_ =>
+					{
+						var clientCommand = new RunClientGenerationCommand(generatorDesc);
+						clientCommand.Start();
+						// TODO: add some sort of "cleanup" operation
+						// TODO: consider add info hint when the generator image is running
+					});
 				});
 			});
 		}

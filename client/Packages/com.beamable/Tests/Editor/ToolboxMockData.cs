@@ -1,5 +1,5 @@
-﻿using Beamable.Editor.UI.Common;
 using Beamable.Editor.Toolbox.Models;
+using Beamable.Editor.UI.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +17,8 @@ namespace Beamable.Editor.Tests
 				new Widget() {
 					Name = "Admin Flow",
 					Description = "UI for game commands and cheats",
-					OrientationSupport = 1&2,
-					Tags = WidgetTags.FLOW & WidgetTags.ADMIN,
+					OrientationSupport = WidgetOrientationSupport.PORTRAIT | WidgetOrientationSupport.LANDSCAPE,
+					Tags = WidgetTags.FLOW | WidgetTags.ADMIN,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -27,8 +27,8 @@ namespace Beamable.Editor.Tests
 				new Widget() {
 					Name = "Currency HUD",
 					Description = "UI for virtual currency",
-					OrientationSupport = 1&2,
-					Tags =  WidgetTags.COMPONENT & WidgetTags.SHOP & WidgetTags.INVENTORY & WidgetTags.CURRENCY,
+					OrientationSupport = WidgetOrientationSupport.PORTRAIT | WidgetOrientationSupport.LANDSCAPE,
+					Tags =  WidgetTags.COMPONENT | WidgetTags.SHOP | WidgetTags.INVENTORY | WidgetTags.CURRENCY,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -37,8 +37,8 @@ namespace Beamable.Editor.Tests
 				new Widget() {
 					Name = "Account HUD",
 					Description = "UI to open login flow",
-					OrientationSupport = 1&2,
-					Tags =  WidgetTags.COMPONENT & WidgetTags.ACCOUNTS,
+					OrientationSupport = WidgetOrientationSupport.PORTRAIT | WidgetOrientationSupport.LANDSCAPE,
+					Tags =  WidgetTags.COMPONENT | WidgetTags.ACCOUNTS,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -48,7 +48,7 @@ namespace Beamable.Editor.Tests
 					Name = "Account Management Flow",
 					Description = "Allows users to manage account",
 					OrientationSupport = WidgetOrientationSupport.PORTRAIT,
-					Tags =  WidgetTags.FLOW & WidgetTags.ACCOUNTS,
+					Tags =  WidgetTags.FLOW | WidgetTags.ACCOUNTS,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -58,7 +58,7 @@ namespace Beamable.Editor.Tests
 					Name = "Leaderboard Flow",
 					Description = "Allow user to manage leaderboard",
 					OrientationSupport = WidgetOrientationSupport.PORTRAIT,
-					Tags =  WidgetTags.FLOW & WidgetTags.LEADERBOARDS,
+					Tags =  WidgetTags.FLOW | WidgetTags.LEADERBOARDS,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -68,7 +68,7 @@ namespace Beamable.Editor.Tests
 					Name = "Leaderboard Flow (NEW)",
 					Description = "Allow user to manage leaderboard",
 					OrientationSupport = WidgetOrientationSupport.PORTRAIT,
-					Tags =  WidgetTags.FLOW & WidgetTags.LEADERBOARDS,
+					Tags =  WidgetTags.FLOW | WidgetTags.LEADERBOARDS,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -78,7 +78,7 @@ namespace Beamable.Editor.Tests
 					Name = "Announcement Flow",
 					Description = "Allow user to manage announcements",
 					OrientationSupport = WidgetOrientationSupport.PORTRAIT,
-					Tags =  WidgetTags.FLOW & WidgetTags.INVENTORY & WidgetTags.CURRENCY,
+					Tags =  WidgetTags.FLOW | WidgetTags.INVENTORY | WidgetTags.CURRENCY,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -88,7 +88,7 @@ namespace Beamable.Editor.Tests
 					Name = "Inventory Flow",
 					Description = "Allow user to manage inventory",
 					OrientationSupport = WidgetOrientationSupport.PORTRAIT,
-					Tags =  WidgetTags.FLOW & WidgetTags.ADMIN,
+					Tags =  WidgetTags.FLOW | WidgetTags.ADMIN,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -98,7 +98,7 @@ namespace Beamable.Editor.Tests
 					Name = "Tournament Flow",
 					Description = "Allow user set up a recurring tournament",
 					OrientationSupport = WidgetOrientationSupport.LANDSCAPE,
-					Tags =  WidgetTags.FLOW & WidgetTags.LEADERBOARDS,
+					Tags =  WidgetTags.FLOW | WidgetTags.LEADERBOARDS,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -108,7 +108,7 @@ namespace Beamable.Editor.Tests
 					Name = "Store Flow",
 					Description = "Allow user to shop",
 					OrientationSupport = WidgetOrientationSupport.PORTRAIT,
-					Tags =  WidgetTags.FLOW & WidgetTags.SHOP,
+					Tags =  WidgetTags.FLOW | WidgetTags.SHOP,
 					Icon = new Texture2D(128, 128),
 					Prefab = new GameObject()
 				},
@@ -130,4 +130,3 @@ namespace Beamable.Editor.Tests
 
 	}
 }
-

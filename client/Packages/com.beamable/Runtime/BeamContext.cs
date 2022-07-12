@@ -11,6 +11,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -139,6 +140,9 @@ namespace Beamable
 
 		[SerializeField] private PlayerLobby _playerLobby;
 
+		[SerializeField]
+		private PlayerFriends _playerFriends;
+
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -178,6 +182,8 @@ namespace Beamable
 		/// Access the <see cref="IBeamableAPI"/> for this player.
 		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
+
+		public PlayerFriends Friends => _playerFriends = _playerFriends ?? _serviceScope.GetService<PlayerFriends>();
 
 		public string TimeOverride
 		{
@@ -418,8 +424,6 @@ namespace Beamable
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
-
-
 		}
 
 
