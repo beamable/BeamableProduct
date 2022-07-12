@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
--  User can specify Microservices build CPU architecture. 
+- User can specify Microservices build CPU architecture. 
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
+- Added microservice archive/unarchive feature.
+
+## [1.2.6]
+### Fixed
+- Microservices may be built from either ARM or x86 based computers and uploaded to Beamable.
 
 ## [1.2.5]
 ### Fixed
