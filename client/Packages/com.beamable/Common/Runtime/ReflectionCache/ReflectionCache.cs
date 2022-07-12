@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 using static System.Diagnostics.Debug;
 
 namespace Beamable.Common.Reflection
@@ -418,6 +419,7 @@ namespace Beamable.Common.Reflection
 				foreach (var assembly in validAssemblies)
 				{
 					var types = assembly.GetTypes();
+
 					foreach (var type in types)
 					{
 						// Get a list of all attributes of interest that were found on this type.

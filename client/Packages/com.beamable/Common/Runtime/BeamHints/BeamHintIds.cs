@@ -91,6 +91,12 @@ namespace Beamable.Common.Assistant
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_SYSTEM_ATTRIBUTE = GenerateHintId("MisconfiguredHintSystemAttribute", ATTRIBUTE_VALIDATION_ID_PREFIX);
 
+		// Content - Code Misuse IDs
+		[BeamHintId] public static readonly string ID_CONTENT_TYPE_ATTRIBUTE_MISSING = GenerateHintId("ContentTypeAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_CONTENT_TYPE_NAME_COLLISION = GenerateHintId("ContentTypeNameCollision", ATTRIBUTE_NAME_COLLISION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_INVALID_CONTENT_TYPE_ATTRIBUTE = GenerateHintId("InvalidContentTypeAttribute", ATTRIBUTE_VALIDATION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_INVALID_CONTENT_FORMERLY_SERIALIZED_AS_ATTRIBUTE = GenerateHintId("InvalidContentFormerlySerializedAsAttribute", ATTRIBUTE_VALIDATION_ID_PREFIX);
+
 		// Microservices - Code Misuse IDs
 		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MICROSERVICE_NAME_COLLISION = GenerateHintId("MicroserviceNameCollision", ATTRIBUTE_NAME_COLLISION_ID_PREFIX);

@@ -10,7 +10,7 @@ namespace Beamable.Common.Content
 		{
 			if (query.TypeConstraints != null)
 			{
-				var type = ContentRegistry.GetTypeFromId(info.contentId);
+				var type = ContentTypeReflectionCache.Instance.GetTypeFromId(info.contentId);
 				if (!query.AcceptType(type))
 				{
 					return false;

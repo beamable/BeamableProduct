@@ -9,6 +9,7 @@ on:
     paths:
       - 'client/**'
       - 'microservice/**'
+      - 'cli/**'
 
 jobs:
   testMicroserviceBaseImage:
@@ -39,7 +40,34 @@ jobs:
         run: dotnet build --configuration Release --no-restore microservice/microserviceTests
       - name: Test
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
-
+  testCli:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: cli-tests-${{ github.head_ref }}
+      cancel-in-progress: true
+    strategy:
+      matrix:
+        dotnet-version: ['6.0.x' ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - name: Install dependencies
+        run: dotnet restore cli/tests
+      - name: Build
+        run: dotnet build --configuration Release --no-restore cli/tests
+      - name: Test
+        run: dotnet test --configuration Release --no-restore cli/tests
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -196,7 +224,7 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2.0.4
         timeout-minutes: 30
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}

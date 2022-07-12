@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "displayName": "Beamable Server",
   "description": "Write server authoritative code from Unity. Host your services on Beamable",
-  "unity": "2018.4",
+  "unity": "2019.4",
   "changelogUrl": "https://github.com/beamable/Changelogs/blob/ci/com-beamable-server-changelog.md",
   "documentationUrl": "https://docs.beamable.com/docs/microservices-manager",
   "keywords": [
@@ -15,5 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "com.beamable": "BUILD__SDK__VERSION__STRING"
-  }
+  },
+  "samples": []
 }

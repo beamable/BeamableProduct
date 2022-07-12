@@ -9,7 +9,8 @@
         "Beamable.Service",
         "Beamable.SmallerJSON",
         "Beamable.ConsoleCommands",
-        "Unity.Beamable.Runtime.Common"
+        "Unity.Beamable.Runtime.Common",
+        "Google.Play.Games"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

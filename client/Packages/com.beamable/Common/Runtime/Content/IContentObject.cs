@@ -30,6 +30,7 @@ namespace Beamable.Common.Content
 		/// </summary>
 		string[] Tags { get; }
 		string ManifestID { get; }
+		long LastChanged { get; set; }
 
 		/// <summary>
 		/// Set Id And Version

@@ -14,12 +14,18 @@ docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml build -
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml up --exit-code-from microservice # Runs containers and checks the exit code
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml down # TODO: Ensure that this down command executes
 
+echo "Building CLI build"
+docker-compose --no-ansi -f docker/cli/docker-compose.yml up --build --exit-code-from cli
+docker-compose --no-ansi -f docker/cli/docker-compose.yml down # TODO: Ensure that this down command executes
+
 export BEAMSERVICE_TAG=${ENVIRONMENT}_${VERSION:-0.0.0}
 export LOCAL_REPO_TAG=beamservice:${BEAMSERVICE_TAG}
 export REMOTE_REPO_TAG=beamableinc/${LOCAL_REPO_TAG}
 
 echo "Building Microservice base image..."
-docker build -t ${LOCAL_REPO_TAG} ../microservice/microservice --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
+docker --version
+docker buildx ls
+docker build -t ${LOCAL_REPO_TAG} ../microservice/microservice --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
 
 echo "Pushing Microservice base image..."
 docker login -u ${DOCKER_HUB_USER} -p ${DOCKER_HUB_PASSWORD}

@@ -13,6 +13,7 @@ namespace Beamable.Editor.Content.Helpers
 			{ ContentSortType.TypeAZ, "Type (A-Z)" },
 			{ ContentSortType.TypeZA, "Type (Z-A)" },
 			//{ ContentSortType.PublishedDate, "Published Date" },
+			{ ContentSortType.RecentlyUpdated, "Recently updated" },
 			{ ContentSortType.Status, "Status" }
 		};
 
@@ -33,6 +34,7 @@ namespace Beamable.Editor.Content.Helpers
 		TypeAZ,
 		TypeZA,
 		//PublishedDate,
-		Status
+		Status,
+		RecentlyUpdated
 	}
 }

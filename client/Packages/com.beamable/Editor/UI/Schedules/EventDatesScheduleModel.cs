@@ -33,14 +33,14 @@ namespace Beamable.Editor.Models.Schedules
 			_activeToHourComponent = activeToHourComponent;
 
 			_refreshConfirmButtonCallback = refreshConfirmButtonCallback;
-			
+
 			Validator = new ComponentsValidator(refreshConfirmButtonCallback);
 			Validator.RegisterRule(new AtLeastOneDaySelectedRule(_calendarComponent.Label), _calendarComponent);
-			
+
 			_calendarComponent.Calendar.OnValueChanged -= AdditionalValidation;
 			_calendarComponent.Calendar.OnValueChanged += AdditionalValidation;
 		}
-		
+
 		public override Schedule GetSchedule()
 		{
 			Schedule newSchedule = new Schedule();
@@ -56,7 +56,9 @@ namespace Beamable.Editor.Models.Schedules
 
 		private void AdditionalValidation(List<string> selectedDays)
 		{
-			AdditionalScheduleValidation.ValidatePastDates(selectedDays, _refreshConfirmButtonCallback);
+			AdditionalScheduleValidation.ValidatePastDates(selectedDays, _refreshConfirmButtonCallback, out var isValid);
+			if (!isValid)
+				return;
 			Validator.ForceValidationCheck();
 		}
 	}

@@ -45,6 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _servicesFilter;
 		private Label _servicesFilterLabel;
 		private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
+		private ServicesDisplayFilter _filter;
 
 		public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
 		{
@@ -114,12 +115,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var content = new ServiceFilterDropdownVisualElement();
 			content.Refresh();
-			var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 75), content);
+			var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 100), content);
 			content.OnNewServicesDisplayFilterSelected += filter =>
 			{
 				wnd.Close();
+				_filter = filter;
 				OnNewServicesDisplayFilterSelected?.Invoke(filter);
 			};
+		}
+
+		public void RefreshFiltering()
+		{
+			OnNewServicesDisplayFilterSelected?.Invoke(_filter);
 		}
 
 		public void UpdateSelectAllCheckboxValue(int selectedServicesAmount, int servicesAmount)

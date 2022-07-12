@@ -37,7 +37,8 @@ namespace Beamable.Editor.Content
 			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
 			{
 				var type = operation.ContentId.Split('.')[0];
-				if (!ContentRegistry.HasContentTypeValidClass(type))
+				var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+				if (!contentTypeReflectionCache.HasContentTypeValidClass(type))
 				{
 					Debug.LogWarning($"No C# class found for type=[{type}]. Skipping download process for this type.");
 					return null;
@@ -45,10 +46,14 @@ namespace Beamable.Editor.Content
 
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
 				{
-					var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
+					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 
 					var newAsset = serializer.DeserializeByType(response, contentType);
 					newAsset.Tags = operation.Tags;
+
+					newAsset.LastChanged = operation.LastChanged == 0
+						? operation.Created == 0 ? 0 : operation.Created
+						: operation.LastChanged;
 
 					completed += 1;
 					progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
@@ -139,7 +144,9 @@ namespace Beamable.Editor.Content
 					ContentId = reference.Id,
 					Uri = reference.Uri,
 					Operation = exists ? "MODIFY" : "ADD",
-					Tags = reference.Tags
+					Tags = reference.Tags,
+					Created = reference.Created,
+					LastChanged = reference.LastChanged
 				};
 
 				var list = exists ? _overwrites : _additions;
@@ -172,5 +179,7 @@ namespace Beamable.Editor.Content
 		public string Uri;
 		public string Operation;
 		public string[] Tags;
+		public long Created;
+		public long LastChanged;
 	}
 }

@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Debug = UnityEngine.Debug;
+using static Beamable.Common.Constants.Features.Docker;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
@@ -20,9 +21,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public bool IncludeDebugTools { get; }
 		public string ImageName { get; set; }
 		public string BuildPath { get; set; }
+		
 		public Promise<Unit> ReadyForExecution { get; private set; }
 
 		private Exception _constructorEx;
+		private List<string> _availableArchitectures;
 
 		public static bool WasEverBuildLocally(IDescriptor descriptor)
 		{
@@ -34,9 +37,10 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull = true)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, List<string> availableArchitectures, bool includeDebugTools, bool watch, bool pull = true)
 		{
 			_descriptor = descriptor;
+			_availableArchitectures = availableArchitectures;
 			_pull = pull;
 			IncludeDebugTools = includeDebugTools;
 			ImageName = descriptor.ImageName;
@@ -47,13 +51,25 @@ namespace Beamable.Server.Editor.DockerCommands
 			// build the Program file, and place it in the temp dir.
 			BuildUtils.PrepareBuildContext(descriptor, includeDebugTools, watch);
 		}
-
-
+		
 		protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
 		{
 			base.ModifyStartInfo(processStartInfo);
 			processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] = MicroserviceConfiguration.Instance.DisableDockerBuildkit ? "0" : "1";
 			processStartInfo.EnvironmentVariables["DOCKER_SCAN_SUGGEST"] = "false";
+		}
+
+		public string GetProcessArchitecture()
+		{
+			if (_availableArchitectures.Contains(MicroserviceConfiguration.Instance.DockerCPUArchitecture))
+			{
+				return MicroserviceConfiguration.Instance.DockerCPUArchitecture;
+			}
+			else
+			{
+				throw new Exception(
+					$"Docker builds for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine.");
+			}
 		}
 
 		public override string GetCommandString()
@@ -62,10 +78,10 @@ namespace Beamable.Server.Editor.DockerCommands
 #if BEAMABLE_DEVELOPER
 			pullStr = ""; // we cannot force the pull against the local image.
 #endif
-
-			var platformStr = "--platform linux/amd64";
-#if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
-			platformStr = "";
+			var platformStr = "";
+			
+#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+			platformStr = $"--platform {GetProcessArchitecture()}";
 #endif
 
 			return $"{DockerCmd} build {pullStr} {platformStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";

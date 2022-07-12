@@ -1,5 +1,5 @@
 using Beamable.Common;
-using Beamable.Editor.Realms;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using System.Collections.Generic;

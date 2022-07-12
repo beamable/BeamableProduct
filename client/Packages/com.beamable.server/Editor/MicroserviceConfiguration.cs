@@ -109,9 +109,11 @@ namespace Beamable.Server.Editor
 #endif
 			}
 		}
+		
 #pragma warning disable CS0219
 		public string WindowsDockerCommand = DOCKER_LOCATION;
 		public string UnixDockerCommand = "/usr/local/bin/docker";
+		public string DockerCPUArchitecture = "linux/amd64";
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
 		public string WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
@@ -339,6 +341,7 @@ namespace Beamable.Server.Editor
 		public string StorageName;
 		public string StorageType;
 		public bool Enabled;
+		public bool Archived;
 		public string TemplateId;
 
 		[Tooltip("When running locally, what port will the data be available on?")]
@@ -376,6 +379,7 @@ namespace Beamable.Server.Editor
 		public string ServiceName;
 		[Tooltip("If the service should be running on the cloud, in the current realm.")]
 		public bool Enabled;
+		public bool Archived;
 		public string TemplateId;
 
 		[Tooltip("When the container is built, inject the following string into the built docker file.")]

@@ -62,7 +62,7 @@ namespace Beamable.Editor.Toolbox.Components
 		{
 			base.Refresh();
 
-			Model = provider.GetService<IToolboxViewService>();
+			Model = Provider.GetService<IToolboxViewService>();
 
 			var contentButton = Root.Q<Button>("contentManager");
 			contentButton.clickable.clicked += async () => { await ContentManagerWindow.Init(); };

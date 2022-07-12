@@ -1,4 +1,5 @@
 using Beamable.Api;
+using Beamable.Api.Caches;
 using Beamable.Api.Stats;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Stats;
@@ -16,7 +17,7 @@ namespace Beamable.Tests.Modules.Stats.StatObjectTests
 		protected override void OnSetupBeamable()
 		{
 			base.OnSetupBeamable();
-			MockApi.StatsService = new StatsService(MockPlatform, MockRequester, null, UnityUserDataCache<Dictionary<string, string>>.CreateInstance);
+			MockApi.StatsService = new StatsService(MockPlatform, MockRequester, null, UnityUserDataCache<Dictionary<string, string>>.CreateInstance, new OfflineCache());
 		}
 
 		[Test]

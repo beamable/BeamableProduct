@@ -12,3 +12,6 @@ dotnet publish ../client/Packages/com.beamable.server/SharedRuntime -c release -
 
 echo "Building Stubs..."
 dotnet publish ../microservice/unityEngineStubs -c release -o $lib_path
+
+echo "Building Tools..."
+dotnet publish ../microservice/beamable.tooling.common -c release -o $lib_path

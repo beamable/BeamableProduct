@@ -22,10 +22,12 @@ namespace Beamable.Api.Stats
 	/// </summary>
 	public class StatsService : AbsStatsApi
 	{
+		private readonly OfflineCache _offlineCache;
 
-		public StatsService(IUserContext platform, IBeamableRequester requester, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
+		public StatsService(IUserContext platform, IBeamableRequester requester, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction, OfflineCache offlineCache)
 		: base(requester, platform, provider, factoryFunction)
 		{
+			_offlineCache = offlineCache;
 		}
 
 		protected override Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix, List<long> gamerTags)
@@ -45,7 +47,10 @@ namespace Beamable.Api.Stats
 			   useCache: true
 			).RecoverWith(ex =>
 			   {
-				   return OfflineCache.RecoverDictionary<string, string>(ex, "stats", Requester.AccessToken, gamerTags).Map(
+				   if (!_offlineCache.UseOfflineCache)
+					   return Promise<BatchReadStatsResponse>.Successful(new BatchReadStatsResponse());
+
+				   return _offlineCache.RecoverDictionary<string, string>(ex, "stats", Requester.AccessToken, gamerTags).Map(
 				   stats =>
 				   {
 					   var results = stats.Select(kvp =>
@@ -81,7 +86,8 @@ namespace Beamable.Api.Stats
 					* Successfully looked up stats. Commit them to the offline cache.
 					*
 					*/
-				   OfflineCache.Merge("stats", Requester.AccessToken, playerStats);
+				   if (_offlineCache.UseOfflineCache)
+					   _offlineCache.Merge("stats", Requester.AccessToken, playerStats);
 			   });
 		}
 

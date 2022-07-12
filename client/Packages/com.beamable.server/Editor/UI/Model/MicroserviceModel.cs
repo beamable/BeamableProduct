@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -18,6 +19,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
+using static Beamable.Common.Constants.Features.Archive;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -42,13 +45,26 @@ namespace Beamable.Editor.UI.Model
 
 		public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
 
+		[field: SerializeField]
 		public MicroserviceBuilder ServiceBuilder { get; protected set; }
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
+
+		[field: SerializeField]
 		public ServiceReference RemoteReference { get; protected set; }
+
+
+		[field: SerializeField]
 		public ServiceStatus RemoteStatus { get; protected set; }
-		public MicroserviceConfigurationEntry Config { get; protected set; }
-		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>();
+
+		public override bool IsArchived
+		{
+			get => Config.Archived;
+			protected set => Config.Archived = value;
+		}
+
+		public MicroserviceConfigurationEntry Config => MicroserviceConfiguration.Instance.GetEntry(Descriptor.Name);
+		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>(); // TODO: This is whacky.
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
 		public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
 		public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
@@ -81,7 +97,6 @@ namespace Beamable.Editor.UI.Model
 				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
 				RemoteStatus = dataModel.GetStatus(descriptor),
-				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
 			};
 		}
 
@@ -98,6 +113,7 @@ namespace Beamable.Editor.UI.Model
 			OnStop?.Invoke(task);
 			return task;
 		}
+
 		public Task BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
@@ -116,6 +132,7 @@ namespace Beamable.Editor.UI.Model
 			OnBuild?.Invoke(task);
 			return task;
 		}
+
 		public void OpenLocalDocs()
 		{
 			var de = BeamEditorContext.Default;
@@ -199,6 +216,22 @@ namespace Beamable.Editor.UI.Model
 			if (!AreLogsAttached)
 			{
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
+			}
+
+			evt.menu.AppendSeparator();
+			if (Config.Archived)
+			{
+				evt.menu.AppendAction("Unarchive", _ => Unarchive());
+			}
+			else
+			{
+				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
+				{
+					var archiveServicePopup = new ArchiveServicePopupVisualElement();
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility(ARCHIVE_WINDOW_HEADER, archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.onClose += () => popupWindow.Close();
+					archiveServicePopup.onConfirm += Archive;
+				});
 			}
 		}
 
@@ -315,15 +348,16 @@ $@"{{
 			}
 #endif
 		}
+
 		public override void Refresh(IDescriptor descriptor)
 		{
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			ServiceDescriptor = (MicroserviceDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
+			oldBuilder.Descriptor = descriptor;
 			ServiceBuilder = serviceRegistry.GetServiceBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
-			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}
 
 		// Chris took these out because they weren't being used yet, and were throwing warnings on package builds.

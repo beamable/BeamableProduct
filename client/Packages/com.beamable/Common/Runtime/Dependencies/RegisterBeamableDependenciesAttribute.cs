@@ -8,6 +8,16 @@ using System.Reflection;
 namespace Beamable.Common.Dependencies
 {
 	/// <summary>
+	/// Use this enum to specify where your dependencies should be applied.
+	/// </summary>
+	[Flags]
+	public enum RegistrationOrigin
+	{
+		RUNTIME = 1,
+		EDITOR = 2
+	}
+
+	/// <summary>
 	/// Use this attribute to register custom services when Beamable starts up.
 	/// You should use this on a method that takes one parameter of type <see cref="IDependencyBuilder"/>.
 	/// Add whatever services you want to on the builder instance. Any service you register will exist for each BeamContext.
@@ -24,14 +34,16 @@ namespace Beamable.Common.Dependencies
 		};
 
 		public static readonly string ValidSignaturesText = string.Join(", ", ValidSignatures.Select(sig => sig.ToHumanReadableSignature()));
+		public RegistrationOrigin Origin { get; }
 
 		/// <summary>
 		/// Defines the order in which the functions with <see cref="RegisterBeamableDependenciesAttribute"/> will run.
 		/// </summary>
 		public int Order { get; set; }
 
-		public RegisterBeamableDependenciesAttribute(int order = 0)
+		public RegisterBeamableDependenciesAttribute(int order = 0, RegistrationOrigin origin = RegistrationOrigin.RUNTIME)
 		{
+			Origin = origin;
 			Order = order;
 		}
 

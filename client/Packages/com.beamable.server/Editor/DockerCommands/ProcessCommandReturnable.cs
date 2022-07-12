@@ -66,7 +66,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				Resolve();
 			}
 
-			EditorApplication.delayCall += Callback;
+			BeamEditorContext.Default.Dispatcher.Schedule(Callback);
 			_finished = true;
 		}
 	}

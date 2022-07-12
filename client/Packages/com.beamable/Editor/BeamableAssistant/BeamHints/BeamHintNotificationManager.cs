@@ -17,6 +17,7 @@ namespace Beamable.Editor.Assistant
 	/// whenever the <see cref="BeamableAssistantWindow"/> is opened or focused. 
 	/// </summary>
 	// ReSharper disable once ClassNeverInstantiated.Global
+	[BeamHintSystem()]
 	public class BeamHintNotificationManager : IBeamHintSystem
 	{
 		private const string NOTIFICATION_SESSION_KEY = "BEAM_HINT_NOTIFICATION_SESSION_KEY";
@@ -60,9 +61,9 @@ namespace Beamable.Editor.Assistant
 		{
 			// Pick up hints that have already been notified this session.
 			_hintsDisplayedThisSession = SessionState.GetString(NOTIFICATION_SESSION_KEY, "")
-			                                         .Split(new[] {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}, StringSplitOptions.RemoveEmptyEntries)
-			                                         .Select(BeamHintHeader.DeserializeBeamHintHeader)
-			                                         .ToList();
+													 .Split(new[] { BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries)
+													 .Select(BeamHintHeader.DeserializeBeamHintHeader)
+													 .ToList();
 
 			_lastDetectedContextObjects = new Dictionary<BeamHintHeader, object>();
 
@@ -166,11 +167,11 @@ namespace Beamable.Editor.Assistant
 			if (_hintStorage == null) return;
 
 			UpdateNotifications(_hintPreferences,
-			                    _hintStorage.All.ToList(),
-			                    _hintsDisplayedThisSession,
-			                    _lastDetectedContextObjects,
-			                    _pendingNotificationHints,
-			                    _pendingNotificationValidations);
+								_hintStorage.All.ToList(),
+								_hintsDisplayedThisSession,
+								_lastDetectedContextObjects,
+								_pendingNotificationHints,
+								_pendingNotificationValidations);
 
 			// NOTE: Commented out block below is useful when you want to update only a specific sub-set of hints based on domain and log them.
 
@@ -241,16 +242,16 @@ namespace Beamable.Editor.Assistant
 		/// <param name="outPendingNotificationHints">The output list of detected <see cref="BeamHintType.Hint"/> type notifications.</param>
 		/// <param name="outPendingNotificationValidations">The output list of detected <see cref="BeamHintType.Validation"/> type notifications.</param>
 		private static void UpdateNotifications(IBeamHintPreferencesManager beamHintPreferencesManager,
-		                                        IReadOnlyCollection<BeamHint> hintsToUpdate,
-		                                        List<BeamHintHeader> hintsClearedThisSession,
-		                                        Dictionary<BeamHintHeader, object> lastDetectedContextObjects,
-		                                        List<BeamHintHeader> outPendingNotificationHints,
-		                                        List<BeamHintHeader> outPendingNotificationValidations)
+												IReadOnlyCollection<BeamHint> hintsToUpdate,
+												List<BeamHintHeader> hintsClearedThisSession,
+												Dictionary<BeamHintHeader, object> lastDetectedContextObjects,
+												List<BeamHintHeader> outPendingNotificationHints,
+												List<BeamHintHeader> outPendingNotificationValidations)
 		{
 			beamHintPreferencesManager.SplitHintsByNotificationPreferences(hintsToUpdate,
-			                                                               out var toNotifyNever,
-			                                                               out var sessionNotify,
-			                                                               out var contextObjectChangeNotify);
+																		   out var toNotifyNever,
+																		   out var sessionNotify,
+																		   out var contextObjectChangeNotify);
 
 			var notYetNotifiedThisSession = sessionNotify.Where(hint => !hintsClearedThisSession.Contains(hint.Header)).ToList();
 			var notYetNotifiedWithCurrentContextObj = contextObjectChangeNotify.Where(hint =>
@@ -260,9 +261,9 @@ namespace Beamable.Editor.Assistant
 			}).ToList();
 
 			var toNotify = notYetNotifiedThisSession
-			               .Union(notYetNotifiedWithCurrentContextObj)
-			               .Except(toNotifyNever)
-			               .ToList();
+						   .Union(notYetNotifiedWithCurrentContextObj)
+						   .Except(toNotifyNever)
+						   .ToList();
 
 			outPendingNotificationHints.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Hint) != 0).Select(h => h.Header).Distinct());
 			outPendingNotificationValidations.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Validation) != 0).Select(h => h.Header).Distinct());

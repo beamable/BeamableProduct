@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using microservice.Common;
 using static Beamable.Common.Constants.Features.Content;
@@ -99,19 +100,21 @@ namespace Beamable.Server.Content
 
       private readonly Cache<ContentCacheKey, IContentObject> _contentCache;
       private readonly object _manifestLock = new object();
+      private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
 
-      public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver)
+      public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
       {
          _contentCache = new Cache<ContentCacheKey, IContentObject>(CacheResolver);
          _requester = requester;
          _socket = socket;
          _contentResolver = contentResolver;
+         _contentTypeReflectionCache = reflectionCache.GetFirstSystemOfType<ContentTypeReflectionCache>();
       }
 
       private async Task<IContentObject> CacheResolver(ContentCacheKey key)
       {
          var json = await _contentResolver.RequestContent(key.Uri);
-         var referencedType = ContentRegistry.GetTypeFromId(key.Id);
+         var referencedType = _contentTypeReflectionCache.GetTypeFromId(key.Id);
          var content = _serializer.DeserializeByType(json, referencedType);
          return content;
       }
@@ -232,13 +235,13 @@ namespace Beamable.Server.Content
 
       public Promise<IContentObject> GetContent(string contentId, string manifestID = "")
       {
-         var referencedType = ContentRegistry.GetTypeFromId(contentId);
+         var referencedType = _contentTypeReflectionCache.GetTypeFromId(contentId);
          return GetContent(contentId, referencedType);
       }
 
       public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
       {
-         var referencedType = ContentRegistry.GetTypeFromId(reference.GetId());
+         var referencedType = _contentTypeReflectionCache.GetTypeFromId(reference.GetId());
          return GetContent(reference.GetId(), referencedType);
       }
 

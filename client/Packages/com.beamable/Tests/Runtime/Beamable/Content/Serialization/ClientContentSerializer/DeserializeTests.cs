@@ -1,9 +1,12 @@
+using Beamable.Common.Assistant;
 using Beamable.Common.Content;
+using Beamable.Common.Reflection;
 using Beamable.Tests.Content.Serialization.Support;
 using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -13,6 +16,22 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 {
 	public class DeserializeTests
 	{
+		public ContentTypeReflectionCache cache;
+
+		[SetUp]
+		public void Setup()
+		{
+			var reflectionCache = new ReflectionCache();
+			var hintStorage = new BeamHintGlobalStorage();
+			cache = new ContentTypeReflectionCache();
+			reflectionCache.RegisterTypeProvider(cache);
+			reflectionCache.RegisterReflectionSystem(cache);
+			reflectionCache.SetStorage(hintStorage);
+
+			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
+			reflectionCache.GenerateReflectionCache(assembliesToSweep);
+		}
+
 		[TearDown]
 		public void Teardown()
 		{
@@ -419,6 +438,33 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			Assert.AreEqual(0, o.color.g);
 			Assert.AreEqual(0, o.color.b);
 			Assert.AreEqual(1, o.color.a);
+		}
+
+		[Test]
+		public void PropertyColor()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""Color"": {
+         ""data"": {
+            ""r"":1,
+            ""g"":0,
+            ""b"":0,
+            ""a"":1
+         }
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<PropertyColorContent>(json);
+
+			Assert.AreEqual(1, o.Color.r);
+			Assert.AreEqual(0, o.Color.g);
+			Assert.AreEqual(0, o.Color.b);
+			Assert.AreEqual(1, o.Color.a);
 		}
 
 		[Test]
@@ -1014,8 +1060,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
+			cache.AddContentTypeToDictionaries(typeof(FormerlyContentName));
 			var s = new TestSerializer();
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type> { typeof(FormerlyContentName) });
 			var o = s.Deserialize<FormerlyContentName>(json);
 
 			Assert.AreEqual(5, o.x);
@@ -1076,6 +1122,12 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		class ColorContent : TestContentObject
 		{
 			public Color color;
+		}
+
+		class PropertyColorContent : TestContentObject
+		{
+			[field: SerializeField]
+			public Color Color { get; set; }
 		}
 
 		class PrimitiveRef : TestContentRef<TestContent> { }

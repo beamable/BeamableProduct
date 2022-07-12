@@ -27,6 +27,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private MicroserviceModel _microserviceModel;
 
+		public override void Refresh()
+		{
+			base.Refresh();
+		}
+
 		protected override void OnDestroy()
 		{
 			base.OnDestroy();

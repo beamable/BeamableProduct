@@ -6,15 +6,16 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using Beamable.Common;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.Modules.Account;
-using Beamable.Editor.Realms;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
+using System;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -53,8 +54,7 @@ namespace Beamable.Editor.Microservice.UI
 		private MicroserviceContentVisualElement _microserviceContentVisualElement;
 		private LoadingBarElement _loadingBar;
 
-		[SerializeField]
-		public MicroservicesDataModel Model;
+		public MicroservicesDataModel Model => ActiveContext.ServiceScope.GetService<MicroservicesDataModel>();
 
 		private Promise<bool> checkDockerPromise;
 
@@ -84,14 +84,22 @@ namespace Beamable.Editor.Microservice.UI
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
 
-			// Create/Get the Model instance
-			// TODO: move this into the ActiveContext as a standalone system and remove all visual stuff from the model
-			if (Model == null)
-				Model = MicroservicesDataModel.Instance;
-			else
-				MicroservicesDataModel.Instance = Model;
-
 			SetForContent();
+
+			ActiveContext.OnServiceArchived -= ServiceArchived;
+			ActiveContext.OnServiceArchived += ServiceArchived;
+
+			ActiveContext.OnServiceUnarchived -= ServiceArchived;
+			ActiveContext.OnServiceUnarchived += ServiceArchived;
+		}
+
+		private void OnDisable()
+		{
+			if (ActiveContext != null)
+			{
+				ActiveContext.OnServiceArchived -= ServiceArchived;
+				ActiveContext.OnServiceUnarchived -= ServiceArchived;
+			}
 		}
 
 		private void SetForContent()
@@ -158,7 +166,7 @@ namespace Beamable.Editor.Microservice.UI
 			_actionBarVisualElement.OnCreateNewClicked += _microserviceContentVisualElement
 				.DisplayCreatingNewService;
 
-			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this);
+			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this, ActiveContext);
 
 			_actionBarVisualElement.OnRefreshButtonClicked += RefreshWindowContent;
 
@@ -195,6 +203,11 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			Debug.LogError(reason);
 			_microserviceContentVisualElement?.Refresh();
+		}
+
+		private void ServiceArchived()
+		{
+			_microserviceBreadcrumbsVisualElement.RefreshFiltering();
 		}
 	}
 }

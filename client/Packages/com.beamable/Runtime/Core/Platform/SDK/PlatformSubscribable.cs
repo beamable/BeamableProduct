@@ -137,6 +137,21 @@ namespace Beamable.Api
 			};
 		}
 
+		public void UnsubscribeAllNotifications()
+		{
+			notificationService?.UnsubscribeAll($"{service}.refresh");
+		}
+
+		public void PauseAllNotifications()
+		{
+			notificationService?.Pause($"{service}.refresh");
+		}
+
+		public void ResumeAllNotifications()
+		{
+			notificationService?.Resume($"{service}.refresh");
+		}
+
 		private void OnTimeOverride()
 		{
 			Refresh();

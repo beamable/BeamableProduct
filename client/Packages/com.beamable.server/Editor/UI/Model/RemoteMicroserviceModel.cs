@@ -19,8 +19,7 @@ namespace Beamable.Editor.UI.Model
 				ServiceDescriptor = descriptor,
 				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
-				RemoteStatus = dataModel.GetStatus(descriptor),
-				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
+				RemoteStatus = dataModel.GetStatus(descriptor)
 			};
 		}
 

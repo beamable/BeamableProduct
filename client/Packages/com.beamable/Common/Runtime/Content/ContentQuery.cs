@@ -64,7 +64,7 @@ namespace Beamable.Common.Content
 				{
 					try
 					{
-						var type = ContentRegistry.NameToType(typeName);
+						var type = ContentTypeReflectionCache.Instance.NameToType(typeName);
 						types.Add(type);
 					}
 					catch (Exception ex)
@@ -250,7 +250,7 @@ namespace Beamable.Common.Content
 			{
 				return false;
 			}
-			str = $"t:{string.Join(" ", query.TypeConstraints.Select(ContentRegistry.TypeToName))}";
+			str = $"t:{string.Join(" ", query.TypeConstraints.Select(ContentTypeReflectionCache.Instance.TypeToName))}";
 			return true;
 		}
 
