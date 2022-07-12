@@ -109,7 +109,7 @@ namespace Beamable.Server.Editor
 #endif
 			}
 		}
-		
+
 #pragma warning disable CS0219
 		public string WindowsDockerCommand = DOCKER_LOCATION;
 		public string UnixDockerCommand = "/usr/local/bin/docker";
