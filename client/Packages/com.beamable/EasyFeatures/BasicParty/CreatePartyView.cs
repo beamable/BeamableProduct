@@ -1,4 +1,5 @@
-﻿using Beamable.EasyFeatures.Components;
+﻿using Beamable.Avatars;
+using Beamable.EasyFeatures.Components;
 using Beamable.UI.Buss;
 using EasyFeatures.Components;
 using System;
@@ -60,7 +61,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				{
 					new PartySlotPresenter.ViewData
 					{
-						Avatar = null, IsReady = false, PlayerId = ctx.PlayerId.ToString()
+						Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = ctx.PlayerId.ToString()
 					}
 				}
 				: Party.Players;

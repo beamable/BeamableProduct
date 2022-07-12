@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -36,14 +35,15 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button NextButton;
 		public Button LeaveButton;
 
+		protected BeamContext Context;
 		protected IDependencies System;
 
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			var ctx = managedPlayers.GetSinglePlayerContext();
-			System = ctx.ServiceProvider.GetService<IDependencies>();
+			Context = managedPlayers.GetSinglePlayerContext();
+			System = Context.ServiceProvider.GetService<IDependencies>();
 
 			gameObject.SetActive(System.IsVisible);
 			if (!System.IsVisible)
@@ -72,18 +72,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnAddMember()
 		{
-			List<PartySlotPresenter.ViewData> friendsList = new List<PartySlotPresenter.ViewData>()
-			{
-				new PartySlotPresenter.ViewData {PlayerId = "Test player 1"},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player 2"},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player 3"},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player 4"},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player 5"},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player 6"},
-				new PartySlotPresenter.ViewData {PlayerId = "Test player 7"},
-			}.Where(player => !System.Party.Players.Contains(player)).ToList();
-
-			FeatureControl.OpenInviteView(friendsList, System.Party);
+			FeatureControl.OpenInviteView(System.Party);
 		}
 
 		private void OnCopyIdButtonClicked()

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Avatars;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,7 +12,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			Party Party { get; set; }
 			bool IsVisible { get; set; }
-			List<PartySlotPresenter.ViewData> FriendsList { get; set; }
 		}
 
 		public PartyFeatureControl FeatureControl;
@@ -27,7 +27,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
@@ -45,14 +45,26 @@ namespace Beamable.EasyFeatures.BasicParty
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			CreateButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			PartyList.Setup(System.FriendsList, true, OnPlayerInvited, null, null, null);
+			// prepare players view data
+			await ctx.Friends.OnReady;	// show loading
+			var friendsList = ctx.Friends.FriendsList;
+			PartySlotPresenter.ViewData[] viewData = new PartySlotPresenter.ViewData[friendsList.Count];
+			for (int i = 0; i < viewData.Length; i++)
+			{
+				viewData[i] = new PartySlotPresenter.ViewData
+				{
+					Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = friendsList[i].playerId
+				};
+			}
+			
+			PartyList.Setup(viewData.ToList(), true, OnPlayerInvited, null, null, null);
 		}
 
 		private void OnPlayerInvited(string id)
 		{
 			PartySlotPresenter.ViewData newPlayer = new PartySlotPresenter.ViewData
 			{
-				Avatar = null, IsReady = false, PlayerId = id
+				Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = id
 			};
 			System.Party.Players.Add(newPlayer);
 			OnBackButtonClicked();
