@@ -1,8 +1,11 @@
 ﻿using Beamable.Common;
+using Beamable.UI.Buss;
+using EasyFeatures.Components;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicLobby
@@ -17,18 +20,21 @@ namespace Beamable.EasyFeatures.BasicLobby
 			string Description { get; }
 			int MaxPlayers { get; }
 			int CurrentPlayers { get; }
+			int? CurrentlySelectedPlayerIndex { get; set; }
 			bool IsVisible { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
-			bool IsServerReady { get; }
 			bool IsMatchStarting { get; }
 			Promise LeaveLobby();
+			void SetPlayerReady(bool value);
+			void SetCurrentSelectedPlayer(int slotIndex);
+			void UpdateLobby(string name, string description, string host);
+			Promise StartMatch();
+			bool IsServerReady();
 		}
 
 		[Header("View Configuration")]
 		public int EnrichOrder;
-
-		public LobbyFeatureControl FeatureControl;
 
 		[Header("Components")]
 		public TextMeshProUGUI Name;
@@ -37,90 +43,186 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public LobbySlotsListPresenter LobbySlotsList;
 		public Button SettingsButton;
 
-		public Button BackButton; 
-		public Button ReadyButton; 
-		public Button WaitingButton;
+		public Button BackButton;
+		public Button ReadyButton;
+		public Button NotReadyButton;
 		public Button StartButton;
 		public Button LeaveButton;
 
-		private IDependencies _system;
+		public BussElement StartButtonBussElement;
+		
+		[Header("Callbacks")]
+		public UnityEvent OnRebuildRequested;
+
+		public UnityEvent OnAdminLeaveLobbyRequestSent;
+		public UnityEvent OnPlayerLeaveLobbyRequestSent;
+		public UnityEvent OnLobbyLeft;
+		public UnityEvent OnKickPlayerClicked;
+		public UnityEvent OnPassLeadershipClicked;
+		public UnityEvent OnSettingButtonClicked;
+		public UnityEvent OnStartMatchRequestSent;
+		public UnityEvent OnStartMatchResponseReceived;
+
+		public Action<string> OnError;
+
+		protected IDependencies System;
 
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
-			_system = ctx.ServiceProvider.GetService<IDependencies>();
+			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(_system.IsVisible);
+			gameObject.SetActive(System.IsVisible);
 
-			if (!_system.IsVisible)
+			if (!System.IsVisible)
 			{
 				return;
 			}
 
-			Name.text = _system.Name;
-			Counter.text = $"{_system.CurrentPlayers}/{_system.MaxPlayers}";
+			Name.text = System.Name;
+			Counter.text = $"{System.CurrentPlayers}/{System.MaxPlayers}";
 
 			// Buttons' callbacks
 			SettingsButton.onClick.ReplaceOrAddListener(SettingsButtonClicked);
 			ReadyButton.onClick.ReplaceOrAddListener(ReadyButtonClicked);
-			WaitingButton.onClick.ReplaceOrAddListener(WaitingButtonClicked);
+			NotReadyButton.onClick.ReplaceOrAddListener(NotReadyButtonClicked);
 			StartButton.onClick.ReplaceOrAddListener(StartButtonClicked);
 			LeaveButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
 
 			// Buttons' visibility
-			SettingsButton.gameObject.SetActive(_system.IsPlayerAdmin);
-			ReadyButton.gameObject.SetActive(!_system.IsPlayerReady);
-			WaitingButton.gameObject.SetActive(_system.IsPlayerReady);
-			StartButton.gameObject.SetActive(_system.IsPlayerAdmin);
-
-			// Buttons' interactivity
-			StartButton.interactable = _system.IsServerReady;
-			BackButton.interactable = !_system.IsMatchStarting;
-			WaitingButton.interactable = !_system.IsMatchStarting;
-			LeaveButton.interactable = !_system.IsMatchStarting;
+			SettingsButton.gameObject.SetActive(System.IsPlayerAdmin);
+			ReadyButton.gameObject.SetActive(!System.IsPlayerReady);
+			NotReadyButton.gameObject.SetActive(System.IsPlayerReady);
+			
+			ValidateStartButton();
 
 			LobbySlotsList.ClearPooledRankedEntries();
-			LobbySlotsList.Setup(_system.SlotsData, _system.IsPlayerAdmin, OnReadyButtonClicked,
-			                     OnNotReadyButtonClicked, OnAdminButtonClicked);
+			LobbySlotsList.Setup(System.SlotsData, System.IsPlayerAdmin, OnAdminButtonClicked, OnKickButtonClicked,
+			                     OnPassLeadershipButtonClicked);
 			LobbySlotsList.RebuildPooledLobbiesEntries();
 		}
 
-		private void OnReadyButtonClicked(int slotIndex) { }
-
-		private void OnNotReadyButtonClicked(int slotIndex) { }
-
-		private void OnAdminButtonClicked(int slotIndex) { }
-
-		private void SettingsButtonClicked() { }
-
-		private void ReadyButtonClicked() { }
-
-		private void WaitingButtonClicked() { }
-
-		private void StartButtonClicked() { }
-
-		private void LeaveButtonClicked()
+		private void ValidateStartButton()
 		{
-			async void LeaveLobby()
+			bool buttonValid = System.IsPlayerAdmin && System.IsServerReady();
+			StartButton.interactable = buttonValid;
+			
+			if (buttonValid)
 			{
-				FeatureControl.ShowOverlayedLabel("Leaving lobby...");
-				await _system.LeaveLobby();
-				FeatureControl.HideOverlay();
-				FeatureControl.OpenJoinLobbyView();
-			}
-
-			if (_system.IsPlayerAdmin)
-			{
-				FeatureControl.ShowConfirmWindow("Leaving lobby",
-				                                 "After leaving lobby it will be closed because You are an admin. Are You sure?",
-				                                 LeaveLobby);
+				StartButtonBussElement.SetButtonPrimary();
 			}
 			else
 			{
-				LeaveLobby();
+				StartButtonBussElement.SetButtonDisabled();
+			}
+		}
+
+		private void OnAdminButtonClicked(int slotIndex)
+		{
+			if (!System.IsPlayerAdmin)
+			{
+				return;
+			}
+
+			System.SetCurrentSelectedPlayer(slotIndex);
+			OnRebuildRequested?.Invoke();
+		}
+
+		private void OnKickButtonClicked(int slotIndex)
+		{
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
+			{
+				return;
+			}
+
+			OnKickPlayerClicked?.Invoke();
+		}
+
+		private void OnPassLeadershipButtonClicked(int slotIndex)
+		{
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
+			{
+				return;
+			}
+
+			OnPassLeadershipClicked?.Invoke();
+		}
+
+		private void SettingsButtonClicked()
+		{
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
+			{
+				return;
+			}
+
+			OnSettingButtonClicked?.Invoke();
+		}
+
+		private void ReadyButtonClicked()
+		{
+			if (System.IsMatchStarting)
+			{
+				return;
+			}
+			
+			System.SetPlayerReady(true);
+		}
+
+		private void NotReadyButtonClicked()
+		{
+			if (System.IsMatchStarting)
+			{
+				return;
+			}
+			
+			System.SetPlayerReady(false);
+		}
+
+		private async void StartButtonClicked()
+		{
+			if (!System.IsPlayerAdmin || System.IsMatchStarting)
+			{
+				return;
+			}
+
+			try
+			{
+				OnStartMatchRequestSent?.Invoke();
+				await System.StartMatch();
+				OnStartMatchResponseReceived?.Invoke();
+			}
+			catch (Exception e)
+			{
+				OnError?.Invoke(e.Message);
+			}
+		}
+
+		private async void LeaveButtonClicked()
+		{
+			if (System.IsMatchStarting)
+			{
+				return;
+			}
+			
+			if (System.IsPlayerAdmin)
+			{
+				OnAdminLeaveLobbyRequestSent?.Invoke();
+			}
+			else
+			{
+				try
+				{
+					OnPlayerLeaveLobbyRequestSent?.Invoke();
+					await System.LeaveLobby();
+					OnLobbyLeft?.Invoke();
+				}
+				catch (Exception e)
+				{
+					OnError?.Invoke(e.Message);
+				}
 			}
 		}
 	}

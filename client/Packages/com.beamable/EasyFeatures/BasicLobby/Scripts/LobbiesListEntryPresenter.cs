@@ -1,5 +1,8 @@
-﻿using Beamable.UI.Scripts;
+﻿using Beamable.UI.Buss;
+using Beamable.UI.Scripts;
+using EasyFeatures.Components;
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,8 +30,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 		[Header("Components")]
 		public TextMeshProUGUI Name;
 		public TextMeshProUGUI Users;
-		public GameObject SelectionMark;
 		public Button Button;
+
+		public BussElement FrameBussElement;
 
 		private Action<LobbiesListEntryPresenter> _onLobbySelected;
 
@@ -39,6 +43,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_onLobbySelected = onLobbySelected;
 
 			Button.onClick.ReplaceOrAddListener(OnClick);
+			FrameBussElement.UpdateClasses(new List<string> {"panel", "lobby"});
+			
 			SetSelected(false);
 		}
 
@@ -49,7 +55,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public void SetSelected(bool value)
 		{
-			SelectionMark.SetActive(value);
+			FrameBussElement.SetSelected(value);
 		}
 	}
 }

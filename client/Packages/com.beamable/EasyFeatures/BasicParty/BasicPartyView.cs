@@ -95,13 +95,13 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnPromoted(string id)
 		{
 			// TODO Add confirm action once Party SDK is ready
-			FeatureControl.OverlaysController.ShowConfirm("Promote to lead", $"Are you sure you want to transfer lead to {id}?", null);
+			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to transfer lead to {id}?", null);
 		}
 
 		private void OnAskedToLeave(string id)
 		{
 			// TODO Add confirm action once Party SDK is ready
-			FeatureControl.OverlaysController.ShowConfirm("Ask to leave", $"Are you sure you want to ask {id} to leave the party?", null);
+			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to ask {id} to leave the party?", null);
 		}
 
 		private void OnPlayerAccepted(string id)

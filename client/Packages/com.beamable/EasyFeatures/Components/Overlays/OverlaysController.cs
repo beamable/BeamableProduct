@@ -9,8 +9,11 @@ namespace Beamable.EasyFeatures.Components
 		[Header("Components")]
 		public GameObject Mask;
 
+		[Header("Generic elements")]
 		public OverlayedLabel Label;
+
 		public OverlayedModalWindow ModalWindow;
+		public OverlayedLabelWithButton LabelWithButton;
 
 		private IOverlayComponent _currentObject;
 
@@ -24,18 +27,42 @@ namespace Beamable.EasyFeatures.Components
 			}
 		}
 
-		public void ShowError(string message)
+		public void ShowLabelWithButton(string label, string buttonLabel, Action onClick)
 		{
-			Show(ModalWindow, () => { ModalWindow.Show("Error", message, HideOverlay, HideOverlay); });
-		}
-
-		public void ShowConfirm(string label, string message, Action confirmAction)
-		{
-			Show(ModalWindow, () => { ModalWindow.Show(label, message, ()=>
+			Show(LabelWithButton, () => { LabelWithButton.Show(label, buttonLabel, ()=>
 			{
 				HideOverlay();
-				confirmAction?.Invoke();
-			}, HideOverlay, OverlayedModalWindow.Mode.Confirm); });
+				onClick?.Invoke();
+			}); });
+		}
+
+		public void ShowError(string message)
+		{
+			Show(ModalWindow, () => { ModalWindow.Show(message, HideOverlay, HideOverlay); });
+		}
+
+		public void ShowInform(string message, Action confirmAction)
+		{
+			Show(ModalWindow, () =>
+			{
+				ModalWindow.Show(message, () =>
+				{
+					HideOverlay();
+					confirmAction?.Invoke();
+				}, HideOverlay);
+			});
+		}
+
+		public void ShowConfirm(string message, Action confirmAction)
+		{
+			Show(ModalWindow, () =>
+			{
+				ModalWindow.Show(message, () =>
+				{
+					HideOverlay();
+					confirmAction?.Invoke();
+				}, HideOverlay, OverlayedModalWindow.Mode.Confirm);
+			});
 		}
 
 		public void HideOverlay()
@@ -45,7 +72,7 @@ namespace Beamable.EasyFeatures.Components
 			_currentObject = null;
 		}
 
-		private void Show(IOverlayComponent activeComponent, Action action)
+		protected void Show(IOverlayComponent activeComponent, Action action)
 		{
 			_currentObject?.Hide();
 			Mask.SetActive(true);

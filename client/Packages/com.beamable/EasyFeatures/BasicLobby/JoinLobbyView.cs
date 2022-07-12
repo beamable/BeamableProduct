@@ -2,6 +2,8 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.EasyFeatures.Components;
+using Beamable.UI.Buss;
+using EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +19,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public interface IDependencies : IBeamableViewDeps
 		{
 			bool IsVisible { get; }
+			bool HasInitialData { get; set; }
 			bool IsLoading { get; set; }
 			int SelectedGameTypeIndex { get; set; }
 			int? SelectedLobbyIndex { get; }
@@ -49,6 +52,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ClearFilterButton;
 		public Button JoinLobbyButton;
 		public Button BackButton;
+		
+		public BussElement JoinLobbyButtonBussElement;
 
 		[Header("Callbacks")]
 		public UnityEvent OnGetLobbiesRequestSent;
@@ -63,7 +68,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
@@ -75,16 +80,22 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-
+			
 			// Setting up all components
 			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected,
 			                  System.SelectedGameTypeIndex);
+			
+			if (!System.HasInitialData)
+			{
+				await System.GetLobbies();
+				System.HasInitialData = true;
+			}
 
 			FilterField.onValueChanged.ReplaceOrAddListener(OnFilterApplied);
 			PasscodeField.onValueChanged.ReplaceOrAddListener(OnPasscodeEntered);
 			ClearFilterButton.onClick.ReplaceOrAddListener(ClearButtonClicked);
 			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
-			JoinLobbyButton.interactable = System.CanJoinLobby();
+			ValidateJoinButton();
 			BackButton.onClick.ReplaceOrAddListener(BackButtonClicked);
 
 			FilterField.SetTextWithoutNotify(System.NameFilter);
@@ -101,6 +112,22 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbiesList.ClearPooledRankedEntries();
 			LobbiesList.Setup(System.LobbiesData, OnLobbySelected);
 			LobbiesList.RebuildPooledLobbiesEntries();
+		}
+
+		private void ValidateJoinButton()
+		{
+			bool canJoinLobby = System.CanJoinLobby();
+
+			JoinLobbyButton.interactable = canJoinLobby;
+
+			if (canJoinLobby)
+			{
+				JoinLobbyButtonBussElement.SetButtonPrimary();
+			}
+			else
+			{
+				JoinLobbyButtonBussElement.SetButtonDisabled();
+			}
 		}
 
 		private async void JoinLobbyButtonClicked()
@@ -165,7 +192,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private void OnLobbySelected(int? lobbyId)
 		{
 			System.OnLobbySelected(lobbyId);
-			JoinLobbyButton.interactable = System.CanJoinLobby();
+			ValidateJoinButton();
 		}
 
 		private async void ClearButtonClicked()

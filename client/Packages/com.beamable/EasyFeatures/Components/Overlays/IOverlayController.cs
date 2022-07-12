@@ -7,6 +7,7 @@ namespace Beamable.EasyFeatures.Components
 		void HideOverlay();
 		void ShowOverlayedLabel(string label);
 		void ShowErrorWindow(string message);
-		void ShowConfirmWindow(string label, string message, Action confirmAction);
+		void ShowConfirmWindow(string message, Action confirmAction);
+		void ShowInformWindow(string message, Action confirmAction);
 	}
 }
