@@ -585,12 +585,12 @@ namespace Beamable.Common.Content
 
 
 		protected abstract TContent CreateInstance<TContent>() where TContent : TContentBase, IContentObject, new();
-		public TContentBase DeserializeByType(string json, Type contentType)
+		public TContentBase DeserializeByType(string json, Type contentType, bool safeMode = false)
 		{
 			return (TContentBase)GetType()
 			   .GetMethod(nameof(Deserialize))
 			   .MakeGenericMethod(contentType)
-			   .Invoke(this, new[] { json });
+			   .Invoke(this, new object[] { json, safeMode });
 		}
 		public TContent Deserialize<TContent>(string json, bool safeMode = false)
 		   where TContent : TContentBase, IContentObject, new()
