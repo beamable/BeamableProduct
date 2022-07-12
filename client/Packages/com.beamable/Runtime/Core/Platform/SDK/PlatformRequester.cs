@@ -40,6 +40,7 @@ namespace Beamable.Api
 	public class PlatformRequester : IPlatformRequester, IHttpRequester
 	{
 		private const string ACCEPT_HEADER = "application/json";
+		private readonly PackageVersion _beamableVersion;
 		private AccessTokenStorage _accessTokenStorage;
 		private IConnectivityService _connectivityService;
 		private bool _disposed;
@@ -58,9 +59,10 @@ namespace Beamable.Api
 
 		private readonly OfflineCache _offlineCache;
 
-		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
+		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
+			_beamableVersion = beamableVersion;
 			_accessTokenStorage = accessTokenStorage;
 			_connectivityService = connectivityService;
 			_offlineCache = offlineCache;
@@ -68,7 +70,7 @@ namespace Beamable.Api
 
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = new PlatformRequester(Host, _accessTokenStorage, _connectivityService, _offlineCache)
+			var requester = new PlatformRequester(Host, _beamableVersion, _accessTokenStorage, _connectivityService, _offlineCache)
 			{
 				Cid = Cid,
 				Pid = Pid,
@@ -316,41 +318,46 @@ namespace Beamable.Api
 			request.SetRequestHeader("Accept", ACCEPT_HEADER);
 			if (!string.IsNullOrEmpty(Cid))
 			{
-				request.SetRequestHeader("X-KS-CLIENTID", Cid);
+				request.SetRequestHeader(Constants.Requester.HEADER_CID, Cid);
 			}
 
 			if (!string.IsNullOrEmpty(Pid))
 			{
-				request.SetRequestHeader("X-KS-PROJECTID", Pid);
+				request.SetRequestHeader(Constants.Requester.HEADER_PID, Pid);
 			}
+
+			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, "");
+			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
+			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
+
 
 			if (includeAuthHeader)
 			{
 				var authHeader = GenerateAuthorizationHeader();
 				if (authHeader != null)
 				{
-					request.SetRequestHeader("Authorization", authHeader);
+					request.SetRequestHeader(Constants.Requester.HEADER_AUTH, authHeader);
 				}
 			}
 
 			if (Shard != null)
 			{
-				request.SetRequestHeader("X-KS-SHARD", Shard);
+				request.SetRequestHeader(Constants.Requester.HEADER_SHARD, Shard);
 			}
 
 			if (TimeOverride != null)
 			{
-				request.SetRequestHeader("X-KS-TIME", TimeOverride);
+				request.SetRequestHeader(Constants.Requester.HEADER_TIME_OVERRIDE, TimeOverride);
 			}
 
 			if (Language != null)
 			{
-				request.SetRequestHeader("Accept-Language", Language);
+				request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, Language);
 			}
 
 			if (RequestTimeoutMs != null)
 			{
-				request.SetRequestHeader("X-KS-TIMEOUT", RequestTimeoutMs);
+				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
 			}
 
 			return request;
