@@ -92,6 +92,7 @@ namespace Beamable.Server
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
+      private const int ShutdownMinCycleTimeMilliseconds = 100;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
       private IConnection _connection;
       private readonly IConnectionProvider _connectionProvider;
@@ -273,8 +274,17 @@ namespace Beamable.Server
             var secondsLeft = millisecondsLeft / 1000;
             Log.Debug("Waiting up to {shutdownTimeLimit} seconds for tasks to complete.", secondsLeft);
             var pendingTasks = _runningTaskTable.Values.ToArray();
+            var startedWaitingAt = sw.ElapsedMilliseconds;
             Task.WaitAll(pendingTasks, TimeSpan.FromMilliseconds(millisecondsLeft));
-
+            /* we need to wait a minimum number of moments in this loop so we don't exhaust the task cycle.
+             What can happen is that all the tasks are DONE, so, the WaitAll completes. However, the task hasn't removed itself from the _runningTaskTable yet,
+             because its continuation hasn't been executed. And then, if that happens, we enter a scenario where this method just loops and loops, and since the Task.WaitAll
+             is always complete, the other continuation takes a long time to get scheduled.
+             */
+            var stoppedWaitingAt = sw.ElapsedMilliseconds;
+            var waitedForMilliseconds = stoppedWaitingAt - startedWaitingAt;
+            var requiredWaitTimeLeft = Math.Max(0, ShutdownMinCycleTimeMilliseconds - waitedForMilliseconds);
+            await Task.Delay(TimeSpan.FromMilliseconds(requiredWaitTimeLeft));
          }
          if (_runningTaskTable.Count > 0)
          {

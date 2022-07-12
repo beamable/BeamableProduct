@@ -178,5 +178,23 @@ namespace Beamable.Server.Api.Leaderboards
                 $"/basic/leaderboards/player?dbid={gamerTag}"
             );
         }
+
+        public Promise<EmptyResponse> RemovePlayerEntry(string leaderboardId, long gamerTag)
+        {
+	        return ResolveAssignment(leaderboardId, gamerTag).FlatMap(assignment =>
+	        {
+		        using var pooledBuilder = StringBuilderPool.StaticPool.Spawn();
+
+		        var req = new ArrayDict {{"id", gamerTag}};
+		        var body = Json.Serialize(req, pooledBuilder.Builder);
+		        string encodedBoardId = Requester.EscapeURL(assignment.leaderboardId);
+
+		        return Requester.Request<EmptyResponse>(
+			        Method.DELETE,
+			        $"/object/leaderboards/{encodedBoardId}/entry",
+			        body
+		        );
+	        });
+        }
     }
 }
