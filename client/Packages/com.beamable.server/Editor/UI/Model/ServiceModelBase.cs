@@ -14,6 +14,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
+	[Serializable]
 	public abstract class ServiceModelBase : IBeamableService
 	{
 		private const float DEFAULT_HEIGHT = 300.0f;
@@ -41,6 +42,8 @@ namespace Beamable.Editor.UI.Model
 		public abstract IBeamableBuilder Builder { get; }
 		public ServiceType ServiceType => Descriptor.ServiceType;
 		public string Name => Descriptor.Name;
+		public virtual bool IsArchived { get; protected set; }
+
 		public bool IsSelected
 		{
 			get => _isSelected;
@@ -93,6 +96,28 @@ namespace Beamable.Editor.UI.Model
 		public abstract Task Start();
 		public abstract Task Stop();
 
+		public async void Archive(bool deleteAllFiles)
+		{
+			await Stop();
+			await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(Descriptor);
+
+			if (deleteAllFiles)
+			{
+				MicroserviceEditor.DeleteServiceFiles(Descriptor);
+			}
+			else
+			{
+				IsArchived = true;
+			}
+
+			BeamEditorContext.Default.OnServiceArchived?.Invoke();
+		}
+
+		public void Unarchive()
+		{
+			IsArchived = false;
+			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
+		}
 		protected void OpenCode()
 		{
 			var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);

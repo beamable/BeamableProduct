@@ -1,6 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 using System.CommandLine.Binding;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace cli;
 
@@ -9,7 +9,7 @@ public abstract class AppCommand<TArgs> : Command
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
 
-	protected AppCommand(string name, string? description = null) : base(name, description)
+	protected AppCommand(string name, string description = null) : base(name, description)
 	{
 	}
 
@@ -34,6 +34,17 @@ public abstract class AppCommand<TArgs> : Command
 		});
 		_bindingActions.Add(set);
 		base.AddArgument(arg);
+	}
+
+	protected void AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
+	{
+		var set = new Action<BindingContext, TArgs>((ctx, args) =>
+		{
+			var res = ctx.ParseResult.GetValueForOption(arg);
+			binder(args, res);
+		});
+		_bindingActions.Add(set);
+		base.AddOption(arg);
 	}
 
 	/// <summary>
@@ -92,7 +103,7 @@ public interface ICommandFactory
 
 }
 
-public class CommandFactory<T> : ICommandFactory where T : Command
+public class CommandFactory : ICommandFactory
 {
 
 }

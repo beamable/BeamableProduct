@@ -20,8 +20,8 @@ namespace Beamable.Api
 	{
 		AccessToken Token { get; set; }
 		string TimeOverride { get; set; }
-		string Cid { get; set; }
-		string Pid { get; set; }
+		new string Cid { get; set; }
+		new string Pid { get; set; }
 		string Language { get; set; }
 		IAuthApi AuthService { set; }
 		void DeleteToken();

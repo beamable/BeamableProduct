@@ -92,6 +92,7 @@ namespace Beamable.Server
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
+      private const int ShutdownMinCycleTimeMilliseconds = 100;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
       private IConnection _connection;
       private readonly IConnectionProvider _connectionProvider;
@@ -132,10 +133,12 @@ namespace Beamable.Server
       public bool HasInitialized { get; private set; }
 
       public ReflectionCache _reflectionCache;
-      
+
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
+      private CancellationTokenSource _serviceShutdownTokenSource;
+      private Task _socketDaemen;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -150,6 +153,11 @@ namespace Beamable.Server
       };
 
       private int _connectionAttempt = 0;
+
+      /// <summary>
+      /// We need to guarantee <see cref="ResolveCustomInitializationHook"/> only gets run once when we <see cref="SetupWebsocket"/>.
+      /// </summary>
+      private bool _ranCustomUserInitializationHooks = false;
 
       public BeamableMicroService(IConnectionProvider socketProvider=null, IContentResolver contentResolver=null)
       {
@@ -195,24 +203,27 @@ namespace Beamable.Server
          _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
          _reflectionCache.SetStorage(new BeamHintGlobalStorage());
 
-         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") && 
+         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
                                                                                   !asm.GetName().Name.StartsWith("nunit.") &&
                                                                                   !asm.GetName().Name.StartsWith("JetBrains.") &&
                                                                                   !asm.GetName().Name.StartsWith("Microsoft.") &&
                                                                                   !asm.GetName().Name.StartsWith("Serilog."))
             .Select(asm => asm.GetName().Name)
             .ToList();
-         BeamableLogger.Log($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
+         Log.Debug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
          _reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
 
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
-         _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
+         _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
-         
+
          _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
-         
+
+         _serviceShutdownTokenSource = new CancellationTokenSource();
+         (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
+
          InitServices();
 
          _serviceInitialized.Then(_ =>
@@ -228,12 +239,16 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         await SetupWebsocket(socket);
+         var setupWebsocketTask = SetupWebsocket(socket);
+         setupWebsocketTask.Wait();
       }
 
       public void RunForever()
       {
-         AppDomain.CurrentDomain.ProcessExit += async (sender, args) => await OnShutdown(sender, args);
+         AppDomain.CurrentDomain.ProcessExit += async (sender, args) =>
+         {
+            await OnShutdown(sender, args);
+         };
 
          CancellationTokenSource cancelSource = new CancellationTokenSource();
          cancelSource.Token.WaitHandle.WaitOne();
@@ -277,8 +292,17 @@ namespace Beamable.Server
             var secondsLeft = millisecondsLeft / 1000;
             Log.Debug("Waiting up to {shutdownTimeLimit} seconds for tasks to complete.", secondsLeft);
             var pendingTasks = _runningTaskTable.Values.ToArray();
+            var startedWaitingAt = sw.ElapsedMilliseconds;
             Task.WaitAll(pendingTasks, TimeSpan.FromMilliseconds(millisecondsLeft));
-
+            /* we need to wait a minimum number of moments in this loop so we don't exhaust the task cycle.
+             What can happen is that all the tasks are DONE, so, the WaitAll completes. However, the task hasn't removed itself from the _runningTaskTable yet,
+             because its continuation hasn't been executed. And then, if that happens, we enter a scenario where this method just loops and loops, and since the Task.WaitAll
+             is always complete, the other continuation takes a long time to get scheduled.
+             */
+            var stoppedWaitingAt = sw.ElapsedMilliseconds;
+            var waitedForMilliseconds = stoppedWaitingAt - startedWaitingAt;
+            var requiredWaitTimeLeft = Math.Max(0, ShutdownMinCycleTimeMilliseconds - waitedForMilliseconds);
+            await Task.Delay(TimeSpan.FromMilliseconds(requiredWaitTimeLeft));
          }
          if (_runningTaskTable.Count > 0)
          {
@@ -290,6 +314,11 @@ namespace Beamable.Server
             Log.Debug("All pending tasks completed.");
          }
 
+         // stop the daemon from trying to re-authenticate
+         _socketRequesterContext.Daemon.KillAuthThread();
+         await _socketDaemen;
+
+         // close the connection itself
          await _connection.Close();
 
          sw.Stop();
@@ -318,7 +347,7 @@ namespace Beamable.Server
       {
          _connection = socket;
 
-         socket.OnDisconnect(async (s, wasClean) => await CloseConnection(s, wasClean));
+         socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
          socket.OnMessage( async (s, message, messageNumber) =>
          {
             try
@@ -333,10 +362,17 @@ namespace Beamable.Server
 
          try
          {
-            await _requester.Authenticate();
+	         _socketRequesterContext.Daemon.WakeAuthThread();
+            await _requester.WaitForAuthorization();
 
-            // Custom Initialization hook for C#MS --- will terminate MS user-code throws
-            await ResolveCustomInitializationHook();
+            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+            if (!_ranCustomUserInitializationHooks)
+            {
+               await ResolveCustomInitializationHook();
+               _ranCustomUserInitializationHooks = true;
+            }
+
 
             await ProvideService(QualifiedName);
 
@@ -351,6 +387,8 @@ namespace Beamable.Server
          }
 
       }
+
+
 
       /// <summary>
       /// Handles custom initialization hooks. Makes the following assumptions:
@@ -557,9 +595,10 @@ namespace Beamable.Server
                .AddScoped(MicroserviceType)
                .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
+               .AddSingleton(_socketRequesterContext.Daemon)
                .AddSingleton<IRealmInfo>(_args)
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
-               .AddTransient<IBeamableRequester, MicroserviceRequester>()
+               .AddTransient<IBeamableRequester, MicroserviceRequester>((provider) => new MicroserviceRequester(_args, provider.GetService<RequestContext>(), _socketRequesterContext, true))
                .AddTransient<IUserContext>(provider => provider.GetService<RequestContext>())
                .AddTransient<IMicroserviceAuthApi, ServerAuthApi>()
                .AddTransient<IMicroserviceStatsApi, MicroserviceStatsApi>()
@@ -787,7 +826,7 @@ namespace Beamable.Server
 
       private IBeamableRequester GenerateRequester(RequestContext ctx)
       {
-         return new MicroserviceRequester(_args, ctx, _socketRequesterContext);
+         return new MicroserviceRequester(_args, ctx, _socketRequesterContext, true);
       }
 
       private IBeamableServices ExtractSdks(IServiceProvider provider)
@@ -858,7 +897,7 @@ namespace Beamable.Server
 
       private async Task CloseConnection(IConnection ws, bool wasClean)
       {
-         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown]", wasClean, IsShuttingDown);
+         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, IsShuttingDown);
          if (!IsShuttingDown)
          {
             Log.Debug("ws connection dropped...");

@@ -28,8 +28,10 @@ using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
@@ -95,6 +97,10 @@ namespace Beamable
 				ReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
 				ReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
 			}
+			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
+			var contentReflectionCache = new ContentTypeReflectionCache();
+			ReflectionCache.RegisterTypeProvider(contentReflectionCache);
+			ReflectionCache.RegisterReflectionSystem(contentReflectionCache);
 
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance when in the editor. When not in the editor, the storage should really not
 			// be used and
@@ -189,7 +195,11 @@ namespace Beamable
 																   // the matchmaking service needs a special instance of the beamable api requester
 																   provider.GetService<IBeamableApiRequester>())
 			);
-			DependencyBuilder.AddSingleton<SocialService>();
+			DependencyBuilder.AddSingleton<ISocialApi>(provider =>
+														   new SocialService(
+															   provider.GetService<IUserContext>(),
+															   provider.GetService<IBeamableRequester>()
+															   ));
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
@@ -207,6 +217,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
+			DependencyBuilder.AddScoped<PlayerFriends>();
 
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
@@ -217,8 +228,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
 
-			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder);
-			//LoadCustomDependencies();
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder, RegistrationOrigin.RUNTIME);
 		}
 
 		/// <summary>
