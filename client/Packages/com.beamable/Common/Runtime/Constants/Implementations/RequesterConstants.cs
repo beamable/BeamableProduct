@@ -42,17 +42,27 @@ namespace Beamable.Common
 			/// <summary>
 			/// The header that contains the runtime version of the Beamable SDK. Ex: 1.2.5, or 0.18.5
 			/// </summary>
-			public const string HEADER_BEAMABLE_VERSION = "X-KS-BEAM-VERSION";
+			public const string HEADER_BEAMABLE_VERSION = "X-KS-BEAM-SDK-VERSION";
 
 			/// <summary>
-			/// The header that contains the runtime version of Unity. Ex: 2019.3.1
+			/// The header that contains the runtime version of the engine. Ex: 2019.3.1
+			/// This is the version of the calling user agent. For example, if the user agent is Unity, then this
+			/// is the unity version. But if the agent is Portal, or Unreal, then this is the application version of those platforms.
 			/// </summary>
-			public const string HEADER_UNITY_VERSION = "X-KS-UNITY-VERSION";
+			public const string HEADER_UNITY_VERSION = "X-KS-USER-AGENT-VERSION";
+
+			/// <summary>
+			/// The header that contains the calling user agent. This could be Unity, UnityEditor, Portal, GCD, Unreal, etc....
+			/// </summary>
+			public const string HEADER_ENGINE_TYPE = "X-KS-USER-AGENT";
 
 			/// <summary>
 			/// The header that contains the game version. This is a developer controlled version. Its the Application.version
 			/// </summary>
-			public const string HEADER_APPLICATION_VERSION = "X-KS-APP-VERSION";
+			public const string HEADER_APPLICATION_VERSION = "X-KS-GAME-VERSION";
+
+			public const string USER_AGENT_UNITY = "Unity";
+			public const string USER_AGENT_UNITY_EDITOR = "UnityEditor";
 		}
 	}
 }
