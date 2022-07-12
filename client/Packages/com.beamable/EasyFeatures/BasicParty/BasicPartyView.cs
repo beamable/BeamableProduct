@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Experimental.Api.Parties;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,6 +14,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			bool IsVisible { get; }
 			Party Party { get; }
 			bool IsPlayerLeader { get; }
+			int MaxPlayers { get; }
 		}
 
 		public PartyFeatureControl FeatureControl;
@@ -51,7 +53,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 			
-			PartyIdText.text = System.Party.PartyId;
+			PartyIdText.text = System.Party.id;
 
 			LeadButtonsGroup.SetActive(System.IsPlayerLeader);
 			NonLeadButtonsGroup.SetActive(!System.IsPlayerLeader);
@@ -67,7 +69,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
 			
-			PartyList.Setup(System.Party.Players, false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.Party.MaxPlayers);
+			
+			
+			PartyList.Setup(System.Party.members, false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
 		}
 
 		private void OnAddMember()
@@ -77,7 +81,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnCopyIdButtonClicked()
 		{
-			GUIUtility.systemCopyBuffer = System.Party.PartyId;
+			GUIUtility.systemCopyBuffer = System.Party.id;
 			FeatureControl.OverlaysController.ShowLabel("Party ID was copied", 3);
 		}
 

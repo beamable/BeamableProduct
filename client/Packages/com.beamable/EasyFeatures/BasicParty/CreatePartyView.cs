@@ -1,5 +1,6 @@
 ﻿using Beamable.Avatars;
 using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Parties;
 using Beamable.UI.Buss;
 using EasyFeatures.Components;
 using System;
@@ -8,7 +9,6 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using Button = UnityEngine.UI.Button;
-using Random = UnityEngine.Random;
 
 namespace Beamable.EasyFeatures.BasicParty
 {
@@ -16,8 +16,9 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			Party Party { get; set; }
 			bool IsVisible { get; set; }
+			int MaxPlayers { get; set; }
+			PartyRestriction PartyRestriction { get; set; }
 			bool ValidateConfirmButton(int maxPlayers);
 		}
 
@@ -37,16 +38,16 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button BackButton;
 		public BussElement NextButtonBussElement;
 
+		protected BeamContext Context;
 		protected IDependencies System;
 		protected bool CreateNewParty;
-		protected Party Party;
 
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			var ctx = managedPlayers.GetSinglePlayerContext();
-			System = ctx.ServiceProvider.GetService<IDependencies>();
+			Context = managedPlayers.GetSinglePlayerContext();
+			System = Context.ServiceProvider.GetService<IDependencies>();
 
 			gameObject.SetActive(System.IsVisible);
 			if (!System.IsVisible)
@@ -54,23 +55,22 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 
-			CreateNewParty = System.Party == null;
-			Party = CreateNewParty ? new Party() : System.Party.Clone() as Party;
+			CreateNewParty = Context.Party.IsInParty;
 			Party.Players = CreateNewParty
 				? new List<PartySlotPresenter.ViewData>
 				{
 					new PartySlotPresenter.ViewData
 					{
-						Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = ctx.PlayerId.ToString()
+						Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = Context.PlayerId.ToString()
 					}
 				}
 				: Party.Players;
 			HeaderText.text = CreateNewParty ? "CREATE" : "SETTINGS";
 			PartyIdObject.gameObject.SetActive(!CreateNewParty);
 			PartyIdInputField.text = CreateNewParty ? "" : Party.PartyId;
-			MaxPlayersTextField.text = CreateNewParty ? "" : Party.MaxPlayers.ToString();
-			MaxPlayersValueChanged(Party.MaxPlayers.ToString());
-			AccessToggle.Setup(Enum.GetNames(typeof(PartyAccess)).ToList(), OnAccessOptionSelected, (int)Party.Access);
+			MaxPlayersTextField.text = CreateNewParty ? "" : System.MaxPlayers.ToString();
+			MaxPlayersValueChanged(System.MaxPlayers.ToString());
+			AccessToggle.Setup(Enum.GetNames(typeof(PartyRestriction)).ToList(), OnAccessOptionSelected, (int)System.PartyRestriction);
 
 			// set callbacks
 			MaxPlayersTextField.onValueChanged.ReplaceOrAddListener(MaxPlayersValueChanged);
@@ -111,7 +111,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (int.TryParse(value, out int maxPlayers))
 			{
-				Party.MaxPlayers = maxPlayers;
+				System.MaxPlayers = maxPlayers;
 				ValidateNextButton();
 			}
 		}
@@ -134,16 +134,18 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 		}
 
-		private void OnNextButtonClicked()
+		private async void OnNextButtonClicked()
 		{
-			if (string.IsNullOrWhiteSpace(Party.PartyId))
-			{
-				// placeholder party ID generation
-				Party.PartyId = Random.Range(10000, 99999).ToString();
-			}
+			// show loading
+			await Context.Party.Create(PartyRestriction.Unrestricted, OnPlayerJoined, OnPlayerJoined);
 
-			System.Party = Party;
+			System.Party = Context.Party.State;
 			FeatureControl.OpenPartyView(System.Party);
+		}
+
+		private void OnPlayerJoined(object obj)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

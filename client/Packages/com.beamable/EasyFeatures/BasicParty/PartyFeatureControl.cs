@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Parties;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -77,7 +78,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public void OpenPartyView(Party party)
 		{
 			PartyPlayerSystem.Party = party;
-			PartyPlayerSystem.Setup(party.Players);
+			PartyPlayerSystem.Setup(party.members);
 			PartyPlayerSystem.IsPlayerLeader = true;	// temporary
 			OpenView(View.Party);
 		}

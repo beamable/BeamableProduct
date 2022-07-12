@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Avatars;
+using Beamable.Experimental.Api.Parties;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.EasyFeatures.BasicParty
 {
@@ -8,18 +11,27 @@ namespace Beamable.EasyFeatures.BasicParty
 		public bool IsVisible { get; set; }
 		public Party Party { get; set; }
 		public bool IsPlayerLeader { get; set; }
+		public int MaxPlayers { get; set; }
 
-		private List<PartySlotPresenter.ViewData> _players;
+		private List<string> _players;
 		
-		public void Setup(List<PartySlotPresenter.ViewData> players)
+		public void Setup(List<string> players)
 		{
 			_players = players;
 		}
 		
 		private List<PartySlotPresenter.ViewData> BuildViewData()
 		{
-			List<PartySlotPresenter.ViewData> data = new List<PartySlotPresenter.ViewData>(_players);
-			return data;
+			PartySlotPresenter.ViewData[] data = new PartySlotPresenter.ViewData[_players.Count];
+			for (int i = 0; i < data.Length; i++)
+			{
+				data[i] = new PartySlotPresenter.ViewData
+				{
+					Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = _players[i]
+				};
+			}
+			
+			return data.ToList();
 		}
 	}
 }

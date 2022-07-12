@@ -100,7 +100,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// Checks if the player is in a party.
 		/// </summary>
-		public bool IsInParty => State != null;
+		public bool IsInParty => State != null && Value != null;
 
 		/// <inheritdoc cref="Party.id"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>

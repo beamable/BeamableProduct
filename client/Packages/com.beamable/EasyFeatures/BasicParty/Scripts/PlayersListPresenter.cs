@@ -1,6 +1,8 @@
-﻿using Beamable.UI.Scripts;
+﻿using Beamable.Avatars;
+using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -20,9 +22,18 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected List<PartySlotPresenter.ViewData> Slots;
 		protected bool IsInviteList;
 
-		public void Setup(List<PartySlotPresenter.ViewData> slots, bool isInviteList, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember, int maxPlayers = 0)
+		public void Setup(List<string> players, bool isInviteList, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember, int maxPlayers = 0)
 		{
-			Slots = slots;
+			PartySlotPresenter.ViewData[] viewData = new PartySlotPresenter.ViewData[players.Count];
+			for (int i = 0; i < players.Count; i++)
+			{
+				viewData[i] = new PartySlotPresenter.ViewData
+				{
+					Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = players[i]
+				};
+			}
+			
+			Slots = viewData.ToList();
 			ScrollView.SetContentProvider(this);
 			OnAcceptButtonClicked = onPlayerAccepted;
 			OnAskToLeaveClicked = onAskedToLeave;
