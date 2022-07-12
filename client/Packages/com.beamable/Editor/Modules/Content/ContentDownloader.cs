@@ -49,7 +49,7 @@ namespace Beamable.Editor.Content
 				{
 					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 
-					bool isSafeMode = ContentConfiguration.Instance.EnableBakedContentCompression;
+					bool isSafeMode = ContentConfiguration.Instance.DisableContentDownloadExceptions;
 					
 					var newAsset = serializer.DeserializeByType(response, contentType, isSafeMode);
 					newAsset.Tags = operation.Tags;

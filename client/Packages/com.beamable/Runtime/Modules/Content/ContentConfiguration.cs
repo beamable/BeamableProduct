@@ -46,7 +46,7 @@ namespace Beamable.Content
 		public bool BakeContentOnBuild = true;
 		
 		[Tooltip("This options is used for disable content download exceptions to allow manual repairs.")]
-		public bool DisableContentDownloadExceptions = true;
+		public bool DisableContentDownloadExceptions = false;
 
 		public ContentParameterProvider ParameterProvider
 		{
