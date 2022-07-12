@@ -191,7 +191,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2.0.4
         if: ${{ github.ref == 'refs/heads/main' }}
         timeout-minutes: 30
         env:
@@ -209,7 +209,7 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2.0.4
         if: ${{ github.ref == 'refs/heads/staging' }}
         timeout-minutes: 30
         env:
@@ -227,7 +227,7 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Staging
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2.0.4
         if: ${{ github.ref == 'refs/heads/production' }}
         timeout-minutes: 30
         env:

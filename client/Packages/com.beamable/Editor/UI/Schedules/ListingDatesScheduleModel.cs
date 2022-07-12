@@ -16,7 +16,7 @@ namespace Beamable.Editor.Models.Schedules
 		private readonly LabeledCheckboxVisualElement _allDayComponent;
 		private readonly LabeledHourPickerVisualElement _periodFromHourComponent;
 		private readonly LabeledHourPickerVisualElement _periodToHourComponent;
-		
+
 		private Action<bool, string> _refreshConfirmButtonCallback;
 
 		public ListingDatesScheduleModel(LabeledTextField descriptionComponent,
@@ -35,10 +35,10 @@ namespace Beamable.Editor.Models.Schedules
 			_periodToHourComponent = periodToHourComponent;
 
 			_refreshConfirmButtonCallback = refreshConfirmButton;
-			
+
 			Validator = new ComponentsValidator(refreshConfirmButton);
 			Validator.RegisterRule(new AtLeastOneDaySelectedRule(_calendarComponent.Label), _calendarComponent);
-			
+
 			_calendarComponent.Calendar.OnValueChanged -= AdditionalValidation;
 			_calendarComponent.Calendar.OnValueChanged += AdditionalValidation;
 		}
@@ -81,7 +81,9 @@ namespace Beamable.Editor.Models.Schedules
 
 		private void AdditionalValidation(List<string> selectedDays)
 		{
-			AdditionalScheduleValidation.ValidatePastDates(selectedDays, _refreshConfirmButtonCallback);
+			AdditionalScheduleValidation.ValidatePastDates(selectedDays, _refreshConfirmButtonCallback, out var isValid);
+			if (!isValid)
+				return;
 			Validator.ForceValidationCheck();
 		}
 	}

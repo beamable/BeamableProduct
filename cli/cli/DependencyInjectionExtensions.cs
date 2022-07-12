@@ -1,0 +1,39 @@
+using Microsoft.Extensions.DependencyInjection;
+using System.CommandLine;
+
+namespace cli;
+
+public static class DependencyInjectionExtensions
+{
+	public static ServiceCollection AddRootCommand<TCommand, TArgs>(this ServiceCollection collection)
+		where TArgs : CommandArgs
+		where TCommand : AppCommand<TArgs>
+	{
+		return AddCommand<TCommand, TArgs, RootCommand>(collection);
+	}
+
+	public static ServiceCollection AddCommand<TCommand, TArgs, TBaseCommand>(this ServiceCollection collection)
+		where TArgs : CommandArgs
+		where TCommand : AppCommand<TArgs>
+		where TBaseCommand : Command
+	{
+		collection.AddSingleton<TCommand>();
+		collection.AddTransient<TArgs>();
+		collection.AddSingleton<ICommandFactory>(provider =>
+		{
+			// TODO: Benchmark this init. Even if its 2ms, thats too slow for when the CLI grows to cover the entire Beamable backend. (2ms * 100 commands = too long)
+			var factory = new CommandFactory();
+			var root = provider.GetRequiredService<TBaseCommand>();
+			var command = provider.GetRequiredService<TCommand>();
+
+			command.Configure();
+			var binder = new AppCommand<TArgs>.Binder(command, provider);
+			command.SetHandler((TArgs args) => command.Handle(args), binder);
+			root.AddCommand(command);
+
+			return factory;
+		});
+
+		return collection;
+	}
+}

@@ -286,6 +286,23 @@ namespace Beamable.Server.Tests.Runtime
 		}
 
 		[UnityTest]
+		public IEnumerator CanDeserializeProperties()
+		{
+			var client = new TestClient(ROUTE);
+
+			MockRequester.MockRequest<TestProperties>(Method.POST,
+													  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("{\"<A>k__BackingField\": 7, \"<B>k__BackingField\": \"test string\"}");
+
+			var req = client.Request<TestProperties>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+			var obj = req.GetResult();
+			Assert.AreEqual(obj.A, 7);
+			Assert.AreEqual(obj.B, "test string");
+		}
+
+		[UnityTest]
 		public IEnumerator CanDeserializeContentObject()
 		{
 			var client = new TestClient(ROUTE);

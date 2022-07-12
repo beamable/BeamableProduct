@@ -1,19 +1,38 @@
+using Beamable.Common.Assistant;
 using Beamable.Common.Content;
+using Beamable.Common.Reflection;
 using Beamable.Tests.Content.Serialization.Support;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Tests.Content.ContentRegistryTests
 {
 	public class GetTypeFromIdTests
 	{
+		public ReflectionCache reflectionCache;
+		public ContentTypeReflectionCache cache;
+
+		[SetUp]
+		public void Setup()
+		{
+			reflectionCache = new ReflectionCache();
+			var hintStorage = new BeamHintGlobalStorage();
+			cache = new ContentTypeReflectionCache();
+			reflectionCache.RegisterTypeProvider(cache);
+			reflectionCache.RegisterReflectionSystem(cache);
+			reflectionCache.SetStorage(hintStorage);
+
+			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
+			reflectionCache.GenerateReflectionCache(assembliesToSweep);
+		}
+
 		[Test]
 		public void NonNested_Simple()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleContent) });
-
-			var type = ContentRegistry.GetTypeFromId("simple.foo");
+			cache.AddContentTypeToDictionaries(typeof(SimpleContent));
+			var type = cache.GetTypeFromId("simple.foo");
 
 			Assert.AreEqual(typeof(SimpleContent), type);
 		}
@@ -21,9 +40,9 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void Polymorphic_Simple()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleContent), typeof(SimpleSubContent) });
-
-			var type = ContentRegistry.GetTypeFromId("simple.sub.foo");
+			cache.AddContentTypeToDictionaries(typeof(SimpleContent));
+			cache.AddContentTypeToDictionaries(typeof(SimpleSubContent));
+			var type = cache.GetTypeFromId("simple.sub.foo");
 
 			Assert.AreEqual(typeof(SimpleSubContent), type);
 		}
@@ -31,50 +50,41 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void NonNested_MissingType()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { });
-
-			var type = ContentRegistry.GetTypeFromId("simple.foo");
-
+			var type = cache.GetTypeFromId("simple.foo");
 			Assert.AreEqual(typeof(ContentObject), type);
 		}
 
 		[Test]
 		public void Polymorphic_MissingAllTypes()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { });
-
-			var type = ContentRegistry.GetTypeFromId("simple.sub.foo");
-
+			var type = cache.GetTypeFromId("simple.sub.foo");
 			Assert.AreEqual(typeof(ContentObject), type);
 		}
 
 		[Test]
 		public void Polymorphic_MissingSubType()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleContent) });
+			cache.AddContentTypeToDictionaries(typeof(SimpleContent));
 
-			var type = ContentRegistry.GetTypeFromId("simple.sub.foo");
-
+			var type = cache.GetTypeFromId("simple.sub.foo");
 			Assert.AreEqual(typeof(SimpleContent), type);
 		}
 
 		[Test]
 		public void FormerlySerializedAs_Simple()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleFormerlyContent) });
+			cache.AddContentTypeToDictionaries(typeof(SimpleFormerlyContent));
 
-			var type = ContentRegistry.GetTypeFromId("oldschool.foo");
-
+			var type = cache.GetTypeFromId("oldschool.foo");
 			Assert.AreEqual(typeof(SimpleFormerlyContent), type);
 		}
 
 		[Test]
 		public void FormerlySerializedAs_Many()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(ManyFormerlyContent) });
+			cache.AddContentTypeToDictionaries(typeof(ManyFormerlyContent));
 
-			var type = ContentRegistry.GetTypeFromId("cool.foo");
-
+			var type = cache.GetTypeFromId("cool.foo");
 			Assert.AreEqual(typeof(ManyFormerlyContent), type);
 		}
 
@@ -82,12 +92,13 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Polymorphic()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleFormerlyContent), typeof(SubFormerlyContent) });
+			cache.AddContentTypeToDictionaries(typeof(SimpleFormerlyContent));
+			cache.AddContentTypeToDictionaries(typeof(SubFormerlyContent));
 
-			var type1 = ContentRegistry.GetTypeFromId("oldschool.oldsub.foo");
-			var type2 = ContentRegistry.GetTypeFromId("simple.oldsub.foo");
-			var type3 = ContentRegistry.GetTypeFromId("oldschool.sub.foo");
-			var type4 = ContentRegistry.GetTypeFromId("simple.sub.foo");
+			var type1 = cache.GetTypeFromId("oldschool.oldsub.foo");
+			var type2 = cache.GetTypeFromId("simple.oldsub.foo");
+			var type3 = cache.GetTypeFromId("oldschool.sub.foo");
+			var type4 = cache.GetTypeFromId("simple.sub.foo");
 			Assert.AreEqual(typeof(SubFormerlyContent), type1);
 			Assert.AreEqual(typeof(SubFormerlyContent), type2);
 			Assert.AreEqual(typeof(SubFormerlyContent), type3);
@@ -97,20 +108,18 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Missing()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { });
-
-			var type = ContentRegistry.GetTypeFromId("oldschool.foo");
+			var type = cache.GetTypeFromId("oldschool.foo");
 			Assert.AreEqual(typeof(ContentObject), type);
 		}
 
 		[Test]
 		public void FormerlySerializedAs_Missing_Polymorphic()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleFormerlyContent) });
+			cache.AddContentTypeToDictionaries(typeof(SimpleFormerlyContent));
 
-			var type1 = ContentRegistry.GetTypeFromId("oldschool.oldsub.foo");
-			var type2 = ContentRegistry.GetTypeFromId("simple.oldsub.foo");
-			var type3 = ContentRegistry.GetTypeFromId("oldschool.sub.foo");
+			var type1 = cache.GetTypeFromId("oldschool.oldsub.foo");
+			var type2 = cache.GetTypeFromId("simple.oldsub.foo");
+			var type3 = cache.GetTypeFromId("oldschool.sub.foo");
 			Assert.AreEqual(typeof(SimpleFormerlyContent), type1);
 			Assert.AreEqual(typeof(SimpleFormerlyContent), type2);
 			Assert.AreEqual(typeof(SimpleFormerlyContent), type3);
