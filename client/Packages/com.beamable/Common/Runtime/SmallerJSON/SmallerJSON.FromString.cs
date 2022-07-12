@@ -112,7 +112,7 @@ namespace Beamable.Serialization.SmallerJSON
 		readonly string _chars;
 		readonly int _length;
 		int _pos;
-		bool _safeMode;
+		bool _disableExceptions;
 
 		private static ThreadLocal<StringCacheEntry[]> safePooledStringCache = new ThreadLocal<StringCacheEntry[]>();
 
@@ -126,7 +126,7 @@ namespace Beamable.Serialization.SmallerJSON
 
 		private StringBuilder _builder;
 
-		internal StringBasedParser(string jsonChars, bool safeMode = false)
+		internal StringBasedParser(string jsonChars, bool disableExceptions = false)
 		{
 			_chars = jsonChars;
 			_pos = 0;
@@ -134,7 +134,7 @@ namespace Beamable.Serialization.SmallerJSON
 			_stringCache = GetStringCache();
 			_stringCacheCounter = 0;
 			_builder = new StringBuilder();
-			_safeMode = safeMode;
+			_disableExceptions = disableExceptions;
 		}
 
 		public void Dispose()

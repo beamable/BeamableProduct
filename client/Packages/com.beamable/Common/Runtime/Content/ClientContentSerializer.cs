@@ -19,7 +19,7 @@ namespace Beamable.Common.Content.Serialization
 			return ScriptableObject.CreateInstance<TContent>();
 		}
 
-		public static TContent DeserializeContent<TContent>(string json, bool safeMode = false) where TContent : ContentObject, IContentObject, new() =>
-		   Instance.Deserialize<TContent>(json, safeMode);
+		public static TContent DeserializeContent<TContent>(string json, bool disableExceptions = false) where TContent : ContentObject, IContentObject, new() =>
+		   Instance.Deserialize<TContent>(json, disableExceptions);
 	}
 }

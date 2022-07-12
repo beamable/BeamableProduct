@@ -49,9 +49,9 @@ namespace Beamable.Editor.Content
 				{
 					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 
-					bool isSafeMode = ContentConfiguration.Instance.DisableContentDownloadExceptions;
+					bool disableExceptions = ContentConfiguration.Instance.DisableContentDownloadExceptions;
 					
-					var newAsset = serializer.DeserializeByType(response, contentType, isSafeMode);
+					var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
 					newAsset.Tags = operation.Tags;
 
 					newAsset.LastChanged = operation.LastChanged == 0
