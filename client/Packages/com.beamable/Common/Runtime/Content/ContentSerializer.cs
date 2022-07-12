@@ -175,7 +175,7 @@ namespace Beamable.Common.Content
 		}
 
 
-		protected object DeserializeResult(object preParsedValue, Type type)
+		protected object DeserializeResult(object preParsedValue, Type type, bool safeMode)
 		{
 
 			try
@@ -190,7 +190,7 @@ namespace Beamable.Common.Content
 					}
 					else
 					{
-						var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
+						var value = DeserializeResult(preParsedValue, optional.GetOptionalType(), safeMode);
 						optional.SetValue(value);
 					}
 
@@ -303,7 +303,7 @@ namespace Beamable.Common.Content
 
 						foreach (var kvp in dictionary)
 						{
-							var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType);
+							var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType, safeMode);
 							dictInst.Add(kvp.Key, convertedValue);
 						}
 
@@ -313,7 +313,7 @@ namespace Beamable.Common.Content
 						var fieldType = type.GetElementType();
 						for (var index = 0; index < list.Count; index++)
 						{
-							output[index] = DeserializeResult(list[index], fieldType);
+							output[index] = DeserializeResult(list[index], fieldType, safeMode);
 						}
 
 						return output;
@@ -328,10 +328,13 @@ namespace Beamable.Common.Content
 						   : Activator.CreateInstance(type);
 						var outputList = (IList)listInstance;
 						if (list.Count > 0 && listElementType == null)
+						{
 							throw new Exception($"Unable to deserialize list element type. {type}");
+						}
+
 						foreach (var elem in list)
 						{
-							var elemValue = DeserializeResult(elem, listElementType);
+							var elemValue = DeserializeResult(elem, listElementType, safeMode);
 							outputList.Add(elemValue);
 						}
 
@@ -362,7 +365,7 @@ namespace Beamable.Common.Content
 							object fieldValue = null;
 							if (dict.TryGetValue(field.SerializedName, out var property))
 							{
-								fieldValue = DeserializeResult(property, field.FieldType);
+								fieldValue = DeserializeResult(property, field.FieldType, safeMode);
 							}
 							else
 							{
@@ -374,14 +377,14 @@ namespace Beamable.Common.Content
 									{
 										// we found the field!!!
 										foundFormerly = true;
-										fieldValue = DeserializeResult(property, field.FieldType);
+										fieldValue = DeserializeResult(property, field.FieldType, safeMode);
 										break;
 									}
 								}
 
 								if (!foundFormerly)
 								{
-									fieldValue = DeserializeResult(null, field.FieldType);
+									fieldValue = DeserializeResult(null, field.FieldType, safeMode);
 								}
 							}
 
@@ -396,8 +399,15 @@ namespace Beamable.Common.Content
 			}
 			catch (Exception)
 			{
-				Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{preParsedValue}]");
-				throw;
+				if (!safeMode)
+				{
+					Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{preParsedValue}]");
+					throw;
+				}
+				else
+				{
+					return null;
+				}
 			}
 		}
 		private List<FieldInfoWrapper> GetFieldInfos(Type type)
@@ -582,17 +592,17 @@ namespace Beamable.Common.Content
 			   .MakeGenericMethod(contentType)
 			   .Invoke(this, new[] { json });
 		}
-		public TContent Deserialize<TContent>(string json)
+		public TContent Deserialize<TContent>(string json, bool safeMode = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
-			var deserializedResult = Json.Deserialize(json);
+			var deserializedResult = Json.Deserialize(json, safeMode);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
 
-			return ConvertItem<TContent>(root);
+			return ConvertItem<TContent>(root, safeMode);
 		}
 
-		public TContent ConvertItem<TContent>(ArrayDict root)
+		public TContent ConvertItem<TContent>(ArrayDict root, bool safeMode)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
@@ -654,7 +664,7 @@ namespace Beamable.Common.Content
 				{
 					if (propertyDict.TryGetValue("data", out var dataValue))
 					{
-						var hackResult = DeserializeResult(dataValue, field.FieldType);
+						var hackResult = DeserializeResult(dataValue, field.FieldType, safeMode);
 						field.SetValue(instance, hackResult);
 						if (hackResult is ISerializationCallbackReceiver rec && !(hackResult is IIgnoreSerializationCallbacks))
 							rec.OnAfterDeserialize();

@@ -56,12 +56,42 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.IsNull(o.code);
 		}
+		
+		[Test]
+		public void DeserializingWrongObjectValueDoesntBreak()
+		{
+			var json = @"{
+               ""id"": ""test.nothing"",
+               ""version"": ""123"",
+				""properties"": {
+				""number"": { ""data"": 4 },
+                ""tst1"": {""data"": {""a"" : ""1"", ""b"" : ""2""}},
+                ""tst2"": {""data"": ""test"" },
+                ""tst3"": {""data"": [1,2,3,4] },
+               },
 
+            }";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<ExtendedSimpleContent>(json, true);
+
+			//Assert.AreEqual(null, o.dictInputButIntArray);
+			//Assert.AreEqual(null, o.arrayInputButSingleInt);
+			Assert.AreEqual(4, o.number);
+		}
+		
 #pragma warning disable CS0649
 
 		class SimpleContent : TestContentObject
 		{
 			public int number;
+		}
+		
+		class ExtendedSimpleContent : SimpleContent
+		{
+			public int tst1;
+			public int tst2;
+			public int tst3;
 		}
 
 		class ContentWithNestedType : TestContentObject

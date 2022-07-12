@@ -51,7 +51,7 @@ namespace Beamable.Serialization.SmallerJSON
 			return obj;
 		}
 
-		public static object Deserialize(string json)
+		public static object Deserialize(string json, bool safeMode = false)
 		{
 			// save the string for debug information
 			if (json == null)
@@ -59,7 +59,7 @@ namespace Beamable.Serialization.SmallerJSON
 				return null;
 			}
 
-			using (var parser = new StringBasedParser(json))
+			using (var parser = new StringBasedParser(json, safeMode))
 			{
 				var obj = parser.ParseValue();
 				return obj;
