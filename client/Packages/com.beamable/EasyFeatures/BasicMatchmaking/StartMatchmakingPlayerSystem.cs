@@ -11,17 +11,15 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 	public class StartMatchmakingPlayerSystem : StartMatchmakingView.IDependencies
 	{
 		public event Action<MatchmakingState> OnStateChanged;
+		
+		private MatchmakingState _matchmakingState;
 
 		public BeamContext BeamContext { get; }
-
 		public bool IsVisible { get; set; }
 		public List<SimGameType> GameTypes { get; set; }
 		public int SelectedGameTypeIndex { get; set; }
-		public int TimeoutSeconds { get; set; }
 		public bool InProgress { get; set; }
 		public MatchmakingHandle CurrentMatchmakingHandle { get; set; }
-
-		private MatchmakingState _matchmakingState;
 
 		public MatchmakingState MatchmakingState
 		{
@@ -38,11 +36,10 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			BeamContext = beamContext;
 		}
 
-		public void Setup(List<SimGameType> gameTypes, int timeoutSeconds)
+		public void Setup(List<SimGameType> gameTypes)
 		{
 			GameTypes = gameTypes;
 			SelectedGameTypeIndex = 0;
-			TimeoutSeconds = timeoutSeconds;
 			InProgress = false;
 		}
 
@@ -52,8 +49,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 			MatchmakingHandle matchmakingHandle =
 				await BeamContext.Api.Experimental.MatchmakingService.StartMatchmaking(
-					GameTypes[SelectedGameTypeIndex].Id, OnUpdate, OnReady, OnTimeout,
-					TimeSpan.FromSeconds(TimeoutSeconds));
+					GameTypes[SelectedGameTypeIndex].Id, OnUpdate, OnReady, OnTimeout);
 
 			RegisterMatchmakingHandle(matchmakingHandle);
 		}

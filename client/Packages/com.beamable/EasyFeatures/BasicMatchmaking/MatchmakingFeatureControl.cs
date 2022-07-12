@@ -1,10 +1,10 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Basicmatchmaking;
 using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Matchmaking;
-using EasyFeatures.BasicMatchmaking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,8 +33,6 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 		[Header("Fast-Path Configuration")]
 		public List<SimGameTypeRef> GameTypesRefs;
-
-		public int TimeoutSeconds;
 
 		public BeamContext BeamContext;
 
@@ -86,7 +84,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 			GameTypes = await FetchGameTypes();
 
-			StartMatchmakingPlayerSystem.Setup(GameTypes, TimeoutSeconds);
+			StartMatchmakingPlayerSystem.Setup(GameTypes);
 
 			StartMatchmakingView startMatchmakingView = ViewGroup.ManagedViews.OfType<StartMatchmakingView>().First();
 			startMatchmakingView.OnError = ShowErrorWindow;
@@ -160,15 +158,14 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 		#endregion
 
-		#region StartMatchmaking callback
+		#region StartMatchmaking callbacks
 
 		public void StartMatchmakingRequestSent()
 		{
-			ShowOverlayedLabelWithButton("Searching...", "CancelMatchmaking", StartMatchmakingPlayerSystem.CancelMatchmaking);
+			ShowOverlayedLabelWithButton("Searching...", "CancelMatchmaking",
+			                             StartMatchmakingPlayerSystem.CancelMatchmaking);
 			StartMatchmakingPlayerSystem.OnStateChanged += OnMatchmakingStateChanged;
 		}
-
-		public void StartMatchmakingResponseReceived() { }
 
 		private void OnMatchmakingStateChanged(MatchmakingState currentState)
 		{
@@ -177,6 +174,9 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 				case MatchmakingState.Ready:
 					HideOverlay();
 					StartMatchmakingPlayerSystem.OnStateChanged -= OnMatchmakingStateChanged;
+					MatchmakingRoomPlayerSystem.RegisterMatch(GameTypes[StartMatchmakingPlayerSystem.SelectedGameTypeIndex],
+						StartMatchmakingPlayerSystem.CurrentMatchmakingHandle.Match);
+					OpenView(View.MatchmakingRoom);
 					break;
 				case MatchmakingState.Timeout:
 					ShowErrorWindow("Timeout");
@@ -189,6 +189,100 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			}
 		}
 
+		#endregion
+		
+		#region Inside match callbacks
+		public void StartMatchRequestSent()
+		{
+			// if (BeamContext.Lobby != null)
+			// {
+			// 	BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+			// }
+
+			ShowOverlayedLabel("Starting match...");
+		}
+
+		public void StartMatchResponseReceived()
+		{
+			HideOverlay();
+			// OnMatchStarted?.Invoke();
+		}
+
+		public void AdminLeaveMatchRequestSent()
+		{
+			async void ConfirmAction()
+			{
+				// if (BeamContext.Lobby != null)
+				// {
+				// 	BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+				// }
+
+				try
+				{
+					ShowOverlayedLabel("Leaving lobby...");
+					await MatchmakingRoomPlayerSystem.LeaveMatch();
+					MatchLeft();
+				}
+				catch (Exception e)
+				{
+					if (e is PlatformRequesterException pre)
+					{
+						ShowErrorWindow(pre.Error.error);
+					}
+				}
+			}
+
+			ShowConfirmWindow("After leaving match it will be closed because You are an admin. Are You sure?",
+			                  ConfirmAction);
+		}
+
+		public void PlayerLeaveMatchRequestSent()
+		{
+			// if (BeamContext.Lobby != null)
+			// {
+			// 	BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
+			// }
+
+			ShowOverlayedLabel("Leaving match...");
+		}
+
+		public void MatchLeft()
+		{
+			OpenView(View.StartMatchmaking);
+			HideOverlay();
+		}
+
+		public void KickPlayerClicked()
+		{
+			if (MatchmakingRoomPlayerSystem.CurrentlySelectedPlayerIndex == null)
+			{
+				return;
+			}
+
+			async void ConfirmAction()
+			{
+				try
+				{
+					ShowOverlayedLabel("Kicking player...");
+					await MatchmakingRoomPlayerSystem.KickPlayer();
+					HideOverlay();
+				}
+				catch (Exception e)
+				{
+					if (e is PlatformRequesterException pre)
+					{
+						ShowErrorWindow(pre.Error.error);
+					}
+				}
+			}
+
+			ShowConfirmWindow("Are You sure You want to kick this player?", ConfirmAction);
+		}
+		
+		public async void RebuildRequested()
+		{
+			await ViewGroup.Enrich();
+		}
 		#endregion
 	}
 }

@@ -18,7 +18,6 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 			bool IsVisible { get; set; }
 			List<SimGameType> GameTypes { get; }
 			int SelectedGameTypeIndex { get; set; }
-			int TimeoutSeconds { get; set; }
 			bool InProgress { get; set; }
 			Promise StartMatchmaking();
 		}
@@ -28,15 +27,10 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 
 		[Header("Components")]
 		public MultiToggleComponent TypesToggle;
-
 		public Button StartMatchmakingButton;
-		public Button BackButton;
 
 		[Header("Callbacks")]
 		public UnityEvent OnStartMatchmakingRequestSent;
-
-		public UnityEvent OnStartMatchmakingResponseReceived;
-		public UnityEvent OnBackButtonClicked;
 
 		public Action<string> OnError;
 
@@ -56,10 +50,6 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 			                  System.SelectedGameTypeIndex);
 
 			StartMatchmakingButton.onClick.ReplaceOrAddListener(StartMatchmakingButtonClicked);
-			BackButton.onClick.ReplaceOrAddListener(() =>
-			{
-				OnBackButtonClicked?.Invoke();
-			});
 		}
 
 		private void OnGameTypeSelected(int optionId)
