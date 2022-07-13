@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added "experimental" package status support to the `PackageVersion` utility
 - Adds `Cid` and `Pid` field to `IBeamableRequester` interface
 - Added `Friends` list accessible through the `BeamContext`
+- Added posibility of disable content serialization exceptions during content download to allow manual repair for corrupted files. 
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
