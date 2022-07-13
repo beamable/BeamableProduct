@@ -74,10 +74,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			var s = new TestSerializer();
 			var o = s.Deserialize<ExtendedSimpleContent>(json, true);
-
-			//Assert.AreEqual(null, o.dictInputButIntArray);
-			//Assert.AreEqual(null, o.arrayInputButSingleInt);
+			
 			Assert.AreEqual(4, o.number);
+			Assert.Pass($"[nothing] file is corrupted. Repair content before publish.");
 		}
 		
 #pragma warning disable CS0649
