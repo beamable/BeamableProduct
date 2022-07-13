@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Components;
+using Beamable.Editor.Toolbox.Models;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -40,6 +41,7 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 		private Button _accountButton;
 		private RealmButtonVisualElement _realmButton;
+		public IWebsiteHook WebsiteHook;
 
 		public ToolboxBreadcrumbsVisualElement() : base(nameof(ToolboxBreadcrumbsVisualElement))
 		{
@@ -51,9 +53,11 @@ namespace Beamable.Editor.Toolbox.Components
 			_realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
 			_realmButton.Refresh();
 
+			//_websiteHook = ActiveContext.ServiceScope.GetService<IToolboxViewService>();
+
 			var portalButton = Root.Q<Button>("openPortalButton");
 			portalButton.text = (Commons.OPEN + " " + Names.PORTAL).ToUpper();
-			portalButton.clickable.clicked += () => GetPortalUrl.Then(Application.OpenURL);
+			portalButton.clickable.clicked += () => GetPortalUrl.Then(WebsiteHook.OpenUrl);
 			var m = new ContextualMenuManipulator(rightClickEvt =>
 			{
 				rightClickEvt.menu.BeamableAppendAction("Copy Url",
