@@ -464,6 +464,7 @@ namespace Beamable
 		public event Action<CustomerView> OnCustomerChange;
 		public event Action<EditorUser> OnUserChange;
 
+		public Action OnServiceDeleteProceed;
 		public Action OnServiceArchived;
 		public Action OnServiceUnarchived;
 
