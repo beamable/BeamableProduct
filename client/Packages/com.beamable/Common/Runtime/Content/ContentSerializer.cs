@@ -339,11 +339,7 @@ namespace Beamable.Common.Content
 						}
 
 						return outputList;
-
-
-
-
-
+					
 					case ArrayDict assetDict when typeof(AssetReference).IsAssignableFrom(type):
 						object guid = "";
 						assetDict.TryGetValue("referenceKey", out guid);
@@ -595,7 +591,7 @@ namespace Beamable.Common.Content
 		public TContent Deserialize<TContent>(string json, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
-			var deserializedResult = Json.Deserialize(json, disableExceptions);
+			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
 
