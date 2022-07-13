@@ -168,6 +168,16 @@ namespace Beamable.Editor.UI.Model
 
 		public void AddLogMessage(IDescriptor descriptor, LogMessage message) => AddLogMessage(descriptor.Name, message);
 
+		public void AddLogException(IDescriptor descriptor, Exception ex)
+		{
+			AddLogMessage(descriptor, new LogMessage
+			{
+				Level = LogLevel.ERROR,
+				Message = $"{ex.GetType().Name} - {ex.Message}\n{ex.StackTrace}",
+				Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+			});
+		}
+
 		public ServiceStatus GetStatus(MicroserviceDescriptor descriptor)
 		{
 			return Status?.services?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));

@@ -89,7 +89,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -98,7 +98,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardErr(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardErr(data);
 			}

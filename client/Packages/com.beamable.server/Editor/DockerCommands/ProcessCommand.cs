@@ -187,14 +187,21 @@ namespace Beamable.Server.Editor.DockerCommands
 					_standardOutComplete = new TaskCompletionSource<int>();
 					EventHandler eh = (s, e) =>
 					{
-						// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-						_hasExited = true;
-						_exitCode = _process.ExitCode;
+						Task.Run(async () =>
+						{
+							await Task.Delay(1); // give 1 ms for log messages to eep out
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
+							{
+								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+								_hasExited = true;
+								_exitCode = _process.ExitCode;
 
-						OnExit?.Invoke(_process.ExitCode);
-						HandleOnExit();
+								OnExit?.Invoke(_process.ExitCode);
+								HandleOnExit();
 
-						_status.TrySetResult(0);
+								_status.TrySetResult(0);
+							});
+						});
 					};
 
 					_process.Exited += eh;

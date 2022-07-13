@@ -511,6 +511,9 @@ namespace Beamable
 			requester.Host = BeamableEnvironment.ApiUrl;
 			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
+			// pre-initialize the dispatcher to dodge having to make the dependency scope handling multi-threaded inserts
+			ServiceScope.GetService<BeamableDispatcher>();
+
 			async Promise Initialize()
 			{
 				// Attempts to login with recovery.

@@ -110,7 +110,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		}
 
-		public static bool HandleLog(IDescriptor descriptor, string label, string data)
+		public static bool HandleLog(IDescriptor descriptor, string label, string data, DateTime fallbackTime=default)
 		{
 			if (Json.Deserialize(data) is ArrayDict jsonDict)
 			{
@@ -218,14 +218,23 @@ namespace Beamable.Server.Editor.DockerCommands
 			else
 			{
 #if !BEAMABLE_LEGACY_MSW
+				if (fallbackTime <= default(DateTime))
+				{
+					fallbackTime = DateTime.Now;
+				}
 				var logMessage = new LogMessage
 				{
-					Message = $"{label}: {data}",
+					Message = $"{(string.IsNullOrEmpty(label) ? "" : $"{label}: ")}{data}",
 					Parameters = new Dictionary<string, object>(),
 					ParameterText = "",
 					Level = LogLevel.INFO,
-					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now)
+					Timestamp = LogMessage.GetTimeDisplay(fallbackTime)
 				};
+				if (string.IsNullOrEmpty(logMessage.Message))
+				{
+					return false;
+				}
+
 				BeamEditorContext.Default.Dispatcher.Schedule(() => MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage));
 				return !MicroserviceConfiguration.Instance.ForwardContainerLogsToUnityConsole;
 #else
