@@ -228,6 +228,7 @@ namespace Beamable.Editor.Content
 		public string Version => Content.Version;
 		public string AssetPath;
 		public long LastChanged => Content.LastChanged;
+		public bool IsCorrupted => Content.IsCorrupted;
 		public IContentObject Content;
 
 	}

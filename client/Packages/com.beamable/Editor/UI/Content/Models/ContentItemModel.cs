@@ -271,7 +271,7 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			_serverLastChanged = entry.LastChanged;
 			LastChanged = _serverLastChanged;
-			IsCorrupted = entry.Content.IsCorrupted;
+			IsCorrupted = entry.IsCorrupted;
 			_allTags = CollectAllTags();
 
 			SetupLocalEventListeners();
@@ -321,7 +321,8 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			_serverLastChanged = content.LastChanged;
 			LastChanged = _serverLastChanged;
-
+			IsCorrupted = content.IsCorrupted;
+			
 			SetupLocalEventListeners();
 		}
 
@@ -338,6 +339,7 @@ namespace Beamable.Editor.Content.Models
 			_allTags = CollectAllTags();
 			_serverLastChanged = entry.LastChanged;
 			LastChanged = _serverLastChanged;
+			IsCorrupted = entry.IsCorrupted;
 
 			OnEnriched?.Invoke(this);
 		}
@@ -361,6 +363,7 @@ namespace Beamable.Editor.Content.Models
 			_allTags = CollectAllTags();
 			_serverLastChanged = 0;
 			LastChanged = 0;
+			IsCorrupted = false;
 			OnEnriched?.Invoke(this);
 		}
 
