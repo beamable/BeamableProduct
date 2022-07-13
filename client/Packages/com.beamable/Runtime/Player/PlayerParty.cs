@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Player;
 using Beamable.Experimental.Api.Parties;
@@ -15,14 +16,16 @@ namespace Beamable.Player
 	{
 		private readonly IPartyApi _partyApi;
 		private readonly INotificationService _notificationService;
+		private readonly IUserContext _userContext;
 		private Party _state;
 		private Action<object> _onPlayerJoined;
 		private Action<object> _onPlayerLeft;
 
-		public PlayerParty(IPartyApi partyApi, INotificationService notificationService)
+		public PlayerParty(IPartyApi partyApi, INotificationService notificationService, IUserContext userContext)
 		{
 			_partyApi = partyApi;
 			_notificationService = notificationService;
+			_userContext = userContext;
 			Members = new ObservableReadonlyList<string>(RefreshMembersList);
 		}
 
@@ -113,6 +116,11 @@ namespace Beamable.Player
 		/// <inheritdoc cref="Party.leader"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
 		public string Leader => SafeAccess(State?.leader);
+
+		/// <summary>
+		/// This property checks if the current player is a party leader.
+		/// </summary>
+		public bool IsLeader => SafeAccess(State?.leader).Equals(_userContext.UserId.ToString());
 		
 		/// <inheritdoc cref="Party.members"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
@@ -128,18 +136,25 @@ namespace Beamable.Player
 			return value;
 		}
 
-		/// <inheritdoc cref="IPartyApi.CreateParty"/>
-		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null) {
-			State = await _partyApi.CreateParty(restriction);
-			await Members.Refresh();
+		public void RegisterCallbacks(Action<object> onPlayerJoined, Action<object> onPlayerLeft)
+		{
 			_onPlayerJoined = onPlayerJoined;
 			_onPlayerLeft = onPlayerLeft;
+		}
+		
+		/// <inheritdoc cref="IPartyApi.CreateParty"/>
+		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null) 
+		{
+			State = await _partyApi.CreateParty(restriction);
+			await Members.Refresh();
+			RegisterCallbacks(onPlayerJoined, onPlayerLeft);
 		}
 
 		/// <inheritdoc cref="IPartyApi.JoinParty"/>
 		public async Promise Join(string partyId)
 		{
 			State = await _partyApi.JoinParty(partyId);
+			await Members.Refresh();
 		}
 
 		/// <inheritdoc cref="IPartyApi.LeaveParty"/>

@@ -15,6 +15,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			bool ValidateJoinButton();
 		}
 
+		public PartyFeatureControl FeatureControl;
 		public int EnrichOrder;
 
 		public TMP_InputField PartyIdInputField;
@@ -22,15 +23,16 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button JoinButton;
 		public Button CancelButton;
 		public BussElement JoinButtonBussElement;
-		
+
+		protected BeamContext Context;
 		protected IDependencies System;
 
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			var ctx = managedPlayers.GetSinglePlayerContext();
-			System = ctx.ServiceProvider.GetService<IDependencies>();
+			Context = managedPlayers.GetSinglePlayerContext();
+			System = Context.ServiceProvider.GetService<IDependencies>();
 			
 			gameObject.SetActive(System.IsVisible);
 			if (!System.IsVisible)
@@ -78,9 +80,10 @@ namespace Beamable.EasyFeatures.BasicParty
 			throw new System.NotImplementedException();
 		}
 
-		private void OnJoinButtonClicked()
+		private async void OnJoinButtonClicked()
 		{
-			throw new System.NotImplementedException();
+			await Context.Party.Join(System.PartyId); // add loading
+			FeatureControl.OpenPartyView();
 		}
 	}
 }

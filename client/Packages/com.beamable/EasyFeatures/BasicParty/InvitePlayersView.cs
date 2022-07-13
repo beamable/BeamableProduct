@@ -1,5 +1,4 @@
-﻿using Beamable.Avatars;
-using System.Linq;
+﻿using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -48,18 +47,20 @@ namespace Beamable.EasyFeatures.BasicParty
 			// prepare friends list
 			await Context.Friends.OnReady;	// show loading
 			var friendsList = Context.Friends.FriendsList;
-			string[] friends = new string[friendsList.Count];
+			string[] friends = new string[friendsList.Count + 1];
 			for (int i = 0; i < friends.Length; i++)
 			{
-				friends[i] = friendsList[i].playerId;
+				// friends[i] = friendsList[i].playerId;
+				friends[i] = "1498853117138039";
 			}
 			
 			PartyList.Setup(friends.ToList(), true, OnPlayerInvited, null, null, null);
 		}
 
-		private void OnPlayerInvited(string id)
+		private async void OnPlayerInvited(string id)
 		{
 			// send invite request
+			await Context.Party.Invite(id);	// add loading
 			OnBackButtonClicked();
 		}
 
@@ -70,10 +71,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnBackButtonClicked()
 		{
-			if (Context.Party.IsInParty)
-			{
-				FeatureControl.OpenPartyView();
-			}
+			FeatureControl.OpenPartyView();
 		}
 
 		private void OnSettingsButtonClicked()

@@ -1,13 +1,12 @@
-﻿using Beamable.Avatars;
-using Beamable.EasyFeatures.Components;
+﻿using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Parties;
 using Beamable.UI.Buss;
 using EasyFeatures.Components;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using Button = UnityEngine.UI.Button;
 
 namespace Beamable.EasyFeatures.BasicParty
@@ -41,6 +40,11 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected BeamContext Context;
 		protected IDependencies System;
 		protected bool CreateNewParty;
+
+		[Header("Callbacks")]
+		public UnityEvent OnCreatePartyRequestSent;
+		public UnityEvent OnCreatePartyResponseReceived;
+		public UnityEvent CancelButtonClicked;
 
 		public int GetEnrichOrder() => _enrichOrder;
 
@@ -119,22 +123,22 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void ReturnToPartyView()
 		{
-			if (Context.Party.IsInParty)
-			{
-				FeatureControl.OpenPartyView();
-			}
+			FeatureControl.OpenPartyView();
 		}
 
 		private async void OnNextButtonClicked()
 		{
-			// show loading
-			await Context.Party.Create(System.PartyRestriction, OnMembersChanged, OnMembersChanged);
+			if (Context.Party.IsInParty)
+			{
+				// update party settings
+			}
+			else
+			{
+				// show loading
+				await Context.Party.Create(System.PartyRestriction);
+			}
+			
 			FeatureControl.OpenPartyView();
-		}
-
-		private void OnMembersChanged(object playerId)
-		{
-			throw new NotImplementedException();
 		}
 	}
 }

@@ -1,5 +1,4 @@
-﻿using Beamable.Experimental.Api.Parties;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -13,7 +12,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			List<PartySlotPresenter.ViewData> SlotsData { get; }
 			bool IsVisible { get; }
-			bool IsPlayerLeader { get; }
 			int MaxPlayers { get; }
 		}
 
@@ -55,9 +53,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			
 			PartyIdText.text = Context.Party.Id;
 
-			LeadButtonsGroup.SetActive(System.IsPlayerLeader);
-			NonLeadButtonsGroup.SetActive(!System.IsPlayerLeader);
-			SettingsButton.gameObject.SetActive(System.IsPlayerLeader);
+			LeadButtonsGroup.SetActive(Context.Party.IsLeader);
+			NonLeadButtonsGroup.SetActive(!Context.Party.IsLeader);
+			SettingsButton.gameObject.SetActive(Context.Party.IsLeader);
 
 			// set callbacks
 			BackButton.onClick.ReplaceOrAddListener(LeaveButtonClicked);
@@ -68,10 +66,19 @@ namespace Beamable.EasyFeatures.BasicParty
 			QuickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
 			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
-			
-			
+			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft);
 			
 			PartyList.Setup(Context.Party.Members.ToList(), false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
+		}
+
+		private void OnPlayerJoined(object obj)
+		{
+			PartyList.UpdateContent();
+		}
+		
+		private void OnPlayerLeft(object obj)
+		{
+			PartyList.UpdateContent();
 		}
 
 		private void OnAddMember()
@@ -127,9 +134,20 @@ namespace Beamable.EasyFeatures.BasicParty
 			FeatureControl.OpenCreatePartyView();
 		}
 
-		private void LeaveButtonClicked()
+		private async void LeaveButtonClicked()
 		{
-			FeatureControl.OpenCreatePartyView();
+			await Context.Party.Leave();
+			FeatureControl.OpenJoinView();
+		}
+
+		public void PlayerJoined(object playerId)
+		{
+			
+		}
+
+		public void PlayerLeft(object playerId)
+		{
+			
 		}
 	}
 }

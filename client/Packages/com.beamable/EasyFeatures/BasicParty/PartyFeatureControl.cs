@@ -85,7 +85,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 			
 			PartyPlayerSystem.Setup(Context.Party.Members.ToList());
-			PartyPlayerSystem.IsPlayerLeader = true;	// temporary
 			OpenView(View.Party);
 		}
 		

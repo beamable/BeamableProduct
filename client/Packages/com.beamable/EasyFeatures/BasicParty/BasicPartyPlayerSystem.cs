@@ -10,7 +10,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public List<PartySlotPresenter.ViewData> SlotsData => BuildViewData();
 		public bool IsVisible { get; set; }
 		public Party Party { get; set; }
-		public bool IsPlayerLeader { get; set; }
 		public int MaxPlayers { get; set; }
 
 		private List<string> _players;
