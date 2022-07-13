@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
 - Added microservice archive/unarchive feature.
 
+### Changed
+- local microservice logs will appear for dotnet watch command
+
+### Fixed
+- Microservice related actions can run while Unity is a background process.
+
 ## [1.2.6]
 ### Added
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
