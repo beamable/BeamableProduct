@@ -23,6 +23,7 @@ export LOCAL_REPO_TAG=beamservice:${BEAMSERVICE_TAG}
 export REMOTE_REPO_TAG=beamableinc/${LOCAL_REPO_TAG}
 
 echo "Building Microservice base image..."
+docker --version
 docker build -t ${LOCAL_REPO_TAG} ../microservice/microservice --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
 
 echo "Pushing Microservice base image..."
