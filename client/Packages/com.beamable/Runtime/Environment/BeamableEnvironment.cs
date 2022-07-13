@@ -109,9 +109,9 @@ namespace Beamable
 		private static string GetSocketUrl()
 		{
 			string url = Data.ApiUrl
-			                 .Replace("localhost", "host.docker.internal")
-			                 .Replace("http://", "ws://")
-			                 .Replace("https://", "wss://");
+							 .Replace("localhost", "host.docker.internal")
+							 .Replace("http://", "ws://")
+							 .Replace("https://", "wss://");
 			return $"{url}/socket";
 		}
 	}
