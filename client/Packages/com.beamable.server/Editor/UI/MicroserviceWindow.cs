@@ -73,7 +73,7 @@ namespace Beamable.Editor.Microservice.UI
 			minSize = new Vector2(550, 200);
 
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
-				await checkDockerPromise;
+			await checkDockerPromise;
 
 			void OnUserChange(EditorUser _) => BuildWithContext();
 			void OnRealmChange(RealmView _) => _microserviceContentVisualElement?.StopAllServices(true, RealmSwitchDialog.TITLE, RealmSwitchDialog.MESSAGE, RealmSwitchDialog.OK);
