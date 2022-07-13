@@ -10,7 +10,6 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			Party Party { get; set; }
 			bool IsVisible { get; set; }
 		}
 
@@ -22,15 +21,16 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button SettingsButton;
 		public Button BackButton;
 		public Button CreateButton;
-		
+
+		protected BeamContext Context;
 		protected IDependencies System;
 
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			var ctx = managedPlayers.GetSinglePlayerContext();
-			System = ctx.ServiceProvider.GetService<IDependencies>();
+			Context = managedPlayers.GetSinglePlayerContext();
+			System = Context.ServiceProvider.GetService<IDependencies>();
 			
 			gameObject.SetActive(System.IsVisible);
 			if (!System.IsVisible)
@@ -38,35 +38,28 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 
-			TitleText.text = ctx.PlayerId.ToString();
+			TitleText.text = Context.PlayerId.ToString();
 			
 			// set callbacks
 			SettingsButton.onClick.ReplaceOrAddListener(OnSettingsButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 			CreateButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
-			// prepare players view data
-			await ctx.Friends.OnReady;	// show loading
-			var friendsList = ctx.Friends.FriendsList;
-			PartySlotPresenter.ViewData[] viewData = new PartySlotPresenter.ViewData[friendsList.Count];
-			for (int i = 0; i < viewData.Length; i++)
+			// prepare friends list
+			await Context.Friends.OnReady;	// show loading
+			var friendsList = Context.Friends.FriendsList;
+			string[] friends = new string[friendsList.Count];
+			for (int i = 0; i < friends.Length; i++)
 			{
-				viewData[i] = new PartySlotPresenter.ViewData
-				{
-					Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = friendsList[i].playerId
-				};
+				friends[i] = friendsList[i].playerId;
 			}
 			
-			PartyList.Setup(viewData.ToList(), true, OnPlayerInvited, null, null, null);
+			PartyList.Setup(friends.ToList(), true, OnPlayerInvited, null, null, null);
 		}
 
 		private void OnPlayerInvited(string id)
 		{
-			PartySlotPresenter.ViewData newPlayer = new PartySlotPresenter.ViewData
-			{
-				Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = id
-			};
-			System.Party.Players.Add(newPlayer);
+			// send invite request
 			OnBackButtonClicked();
 		}
 
@@ -77,9 +70,9 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnBackButtonClicked()
 		{
-			if (System.Party != null)
+			if (Context.Party.IsInParty)
 			{
-				FeatureControl.OpenPartyView(System.Party);
+				FeatureControl.OpenPartyView();
 			}
 		}
 

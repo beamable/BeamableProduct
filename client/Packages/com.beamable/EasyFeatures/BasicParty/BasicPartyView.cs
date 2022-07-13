@@ -1,5 +1,6 @@
 ﻿using Beamable.Experimental.Api.Parties;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +13,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			List<PartySlotPresenter.ViewData> SlotsData { get; }
 			bool IsVisible { get; }
-			Party Party { get; }
 			bool IsPlayerLeader { get; }
 			int MaxPlayers { get; }
 		}
@@ -53,7 +53,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 			
-			PartyIdText.text = System.Party.id;
+			PartyIdText.text = Context.Party.Id;
 
 			LeadButtonsGroup.SetActive(System.IsPlayerLeader);
 			NonLeadButtonsGroup.SetActive(!System.IsPlayerLeader);
@@ -71,17 +71,17 @@ namespace Beamable.EasyFeatures.BasicParty
 			
 			
 			
-			PartyList.Setup(System.Party.members, false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
+			PartyList.Setup(Context.Party.Members.ToList(), false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
 		}
 
 		private void OnAddMember()
 		{
-			FeatureControl.OpenInviteView(System.Party);
+			FeatureControl.OpenInviteView();
 		}
 
 		private void OnCopyIdButtonClicked()
 		{
-			GUIUtility.systemCopyBuffer = System.Party.id;
+			GUIUtility.systemCopyBuffer = Context.Party.Id;
 			FeatureControl.OverlaysController.ShowLabel("Party ID was copied", 3);
 		}
 
@@ -124,7 +124,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void SettingsButtonClicked()
 		{
-			FeatureControl.OpenCreatePartyView(System.Party);
+			FeatureControl.OpenCreatePartyView();
 		}
 
 		private void LeaveButtonClicked()

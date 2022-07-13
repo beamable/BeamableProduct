@@ -55,19 +55,10 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 
-			CreateNewParty = Context.Party.IsInParty;
-			Party.Players = CreateNewParty
-				? new List<PartySlotPresenter.ViewData>
-				{
-					new PartySlotPresenter.ViewData
-					{
-						Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = Context.PlayerId.ToString()
-					}
-				}
-				: Party.Players;
+			CreateNewParty = !Context.Party.IsInParty;
 			HeaderText.text = CreateNewParty ? "CREATE" : "SETTINGS";
 			PartyIdObject.gameObject.SetActive(!CreateNewParty);
-			PartyIdInputField.text = CreateNewParty ? "" : Party.PartyId;
+			PartyIdInputField.text = CreateNewParty ? "" : Context.Party.Id;
 			MaxPlayersTextField.text = CreateNewParty ? "" : System.MaxPlayers.ToString();
 			MaxPlayersValueChanged(System.MaxPlayers.ToString());
 			AccessToggle.Setup(Enum.GetNames(typeof(PartyRestriction)).ToList(), OnAccessOptionSelected, (int)System.PartyRestriction);
@@ -82,7 +73,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void ValidateNextButton()
 		{
-			bool canCreateParty = System.ValidateConfirmButton(Party.MaxPlayers);
+			bool canCreateParty = System.ValidateConfirmButton(System.MaxPlayers);
 
 			NextButton.interactable = canCreateParty;
 
@@ -98,12 +89,12 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnAccessOptionSelected(int optionId)
 		{
-			Party.Access = (PartyAccess)optionId;
+			System.PartyRestriction = (PartyRestriction)optionId;
 		}
 
 		private void OnCopyIdButtonClicked()
 		{
-			GUIUtility.systemCopyBuffer = Party.PartyId;
+			GUIUtility.systemCopyBuffer = Context.Party.Id;
 			FeatureControl.OverlaysController.ShowLabel("Party ID was copied", 3);
 		}
 
@@ -128,22 +119,20 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void ReturnToPartyView()
 		{
-			if (System.Party != null && !string.IsNullOrWhiteSpace(System.Party.PartyId))
+			if (Context.Party.IsInParty)
 			{
-				FeatureControl.OpenPartyView(System.Party);
+				FeatureControl.OpenPartyView();
 			}
 		}
 
 		private async void OnNextButtonClicked()
 		{
 			// show loading
-			await Context.Party.Create(PartyRestriction.Unrestricted, OnPlayerJoined, OnPlayerJoined);
-
-			System.Party = Context.Party.State;
-			FeatureControl.OpenPartyView(System.Party);
+			await Context.Party.Create(System.PartyRestriction, OnMembersChanged, OnMembersChanged);
+			FeatureControl.OpenPartyView();
 		}
 
-		private void OnPlayerJoined(object obj)
+		private void OnMembersChanged(object playerId)
 		{
 			throw new NotImplementedException();
 		}

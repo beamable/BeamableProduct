@@ -1,7 +1,7 @@
 ﻿using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
-using Beamable.Experimental.Api.Parties;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicParty
@@ -19,7 +19,8 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		public BeamableViewGroup PartyViewGroup;
 		public OverlaysController OverlaysController;
-		
+
+		protected BeamContext Context;
 		protected BasicPartyPlayerSystem PartyPlayerSystem;
 		protected CreatePartyPlayerSystem CreatePartyPlayerSystem;
 		protected InvitePlayersPlayerSystem InvitePlayersPlayerSystem;
@@ -65,34 +66,37 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			await PartyViewGroup.RebuildPlayerContexts(PartyViewGroup.AllPlayerCodes);
 
-			var beamContext = PartyViewGroup.AllPlayerContexts[0];
+			Context = PartyViewGroup.AllPlayerContexts[0];
+			await Context.OnReady;
 
-			PartyPlayerSystem = beamContext.ServiceProvider.GetService<BasicPartyPlayerSystem>();
-			CreatePartyPlayerSystem = beamContext.ServiceProvider.GetService<CreatePartyPlayerSystem>();
-			InvitePlayersPlayerSystem = beamContext.ServiceProvider.GetService<InvitePlayersPlayerSystem>();
-			JoinPartyPlayerSystem = beamContext.ServiceProvider.GetService<JoinPartyPlayerSystem>();
+			PartyPlayerSystem = Context.ServiceProvider.GetService<BasicPartyPlayerSystem>();
+			CreatePartyPlayerSystem = Context.ServiceProvider.GetService<CreatePartyPlayerSystem>();
+			InvitePlayersPlayerSystem = Context.ServiceProvider.GetService<InvitePlayersPlayerSystem>();
+			JoinPartyPlayerSystem = Context.ServiceProvider.GetService<JoinPartyPlayerSystem>();
 			
 			OpenView(_currentView);
 		}
 
-		public void OpenPartyView(Party party)
+		public void OpenPartyView()
 		{
-			PartyPlayerSystem.Party = party;
-			PartyPlayerSystem.Setup(party.members);
+			if (!Context.Party.IsInParty)
+			{
+				return;
+			}
+			
+			PartyPlayerSystem.Setup(Context.Party.Members.ToList());
 			PartyPlayerSystem.IsPlayerLeader = true;	// temporary
 			OpenView(View.Party);
 		}
 		
 		// when party data is provided the view turns to settings
-		public void OpenCreatePartyView(Party party = null)
+		public void OpenCreatePartyView()
 		{
-			CreatePartyPlayerSystem.Party = party;
 			OpenView(View.Create);
 		}
 		
-		public void OpenInviteView(Party party)
+		public void OpenInviteView()
 		{
-			InvitePlayersPlayerSystem.Party = party;
 			OpenView(View.Invite);
 		}
 		
