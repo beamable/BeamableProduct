@@ -670,6 +670,7 @@ namespace Beamable.Common.Content
 						catch (ContentCorruptedException)
 						{
 							instance.IsCorrupted = true;
+							Debug.LogError($"[{name}] file is corrupted. Repair content before publish.");
 						}
 					}
 
