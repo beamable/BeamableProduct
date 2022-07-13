@@ -31,6 +31,7 @@ namespace Beamable.Common.Content
 		string[] Tags { get; }
 		string ManifestID { get; }
 		long LastChanged { get; set; }
+		bool IsCorrupted { get; set; }
 
 		/// <summary>
 		/// Set Id And Version

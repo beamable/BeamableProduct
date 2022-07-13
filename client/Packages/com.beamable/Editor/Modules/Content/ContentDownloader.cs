@@ -184,5 +184,6 @@ namespace Beamable.Editor.Content
 		public string[] Tags;
 		public long Created;
 		public long LastChanged;
+		public bool IsCorrupted;
 	}
 }

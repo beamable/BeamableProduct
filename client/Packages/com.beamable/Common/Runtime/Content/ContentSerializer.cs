@@ -177,7 +177,6 @@ namespace Beamable.Common.Content
 
 		protected object DeserializeResult(object preParsedValue, Type type, bool disableExceptions)
 		{
-
 			try
 			{
 				if (typeof(Optional).IsAssignableFrom(type))
@@ -402,7 +401,7 @@ namespace Beamable.Common.Content
 				}
 				else
 				{
-					return null;
+					throw new ContentCorruptedException();
 				}
 			}
 		}
@@ -660,10 +659,18 @@ namespace Beamable.Common.Content
 				{
 					if (propertyDict.TryGetValue("data", out var dataValue))
 					{
-						var hackResult = DeserializeResult(dataValue, field.FieldType, disableExceptions);
-						field.SetValue(instance, hackResult);
-						if (hackResult is ISerializationCallbackReceiver rec && !(hackResult is IIgnoreSerializationCallbacks))
-							rec.OnAfterDeserialize();
+						try
+						{
+							var hackResult = DeserializeResult(dataValue, field.FieldType, disableExceptions);
+							field.SetValue(instance, hackResult);
+							if (hackResult is ISerializationCallbackReceiver rec &&
+							    !(hackResult is IIgnoreSerializationCallbacks))
+								rec.OnAfterDeserialize();
+						}
+						catch (ContentCorruptedException)
+						{
+							instance.IsCorrupted = true;
+						}
 					}
 
 					if (propertyDict.TryGetValue("$link", out var linkValue) || propertyDict.TryGetValue("link", out linkValue))

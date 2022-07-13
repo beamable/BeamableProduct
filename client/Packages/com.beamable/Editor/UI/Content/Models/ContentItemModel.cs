@@ -232,6 +232,7 @@ namespace Beamable.Editor.Content.Models
 							.ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
 
 		public long LastChanged { get; private set; }
+		public bool IsCorrupted { get; private set; }
 
 		private LocalContentManifestEntry _localData;
 		private IContentObject _localContent;
@@ -250,6 +251,7 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			_serverLastChanged = content.LastChanged;
 			LastChanged = _serverLastChanged;
+			IsCorrupted = content.IsCorrupted;
 			_localContent = content;
 			_allTags = CollectAllTags();
 
@@ -269,6 +271,7 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			_serverLastChanged = entry.LastChanged;
 			LastChanged = _serverLastChanged;
+			IsCorrupted = entry.Content.IsCorrupted;
 			_allTags = CollectAllTags();
 
 			SetupLocalEventListeners();
