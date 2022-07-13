@@ -59,7 +59,7 @@ namespace Beamable
 		/// <summary>
 		/// The websocket address for Beamable
 		/// </summary>
-		public static string SocketUrl => $"{Data.ApiUrl.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
+		public static string SocketUrl => GetSocketUrl();
 
 		/// <summary>
 		/// The Docker tag for the beam service base image that will be used to build microservices.
@@ -104,6 +104,15 @@ namespace Beamable
 
 			var rawDict = Json.Deserialize(envText) as ArrayDict;
 			JsonSerializable.Deserialize(Data, rawDict);
+		}
+
+		private static string GetSocketUrl()
+		{
+			string url = Data.ApiUrl
+			                 .Replace("localhost", "host.docker.internal")
+			                 .Replace("http://", "ws://")
+			                 .Replace("https://", "wss://");
+			return $"{url}/socket";
 		}
 	}
 
