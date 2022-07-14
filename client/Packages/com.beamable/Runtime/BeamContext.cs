@@ -452,7 +452,7 @@ namespace Beamable
 			try
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 			}
 			catch (NoConnectivityException)
@@ -552,7 +552,6 @@ namespace Beamable
 				// _connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
 			}
 			AuthorizedUser.Value = user;
-			_requester.Language = user.language ?? _requester.Language;
 		}
 
 		private async Promise InitStep_StartPubnub()
@@ -596,7 +595,6 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = SessionServiceHelper.GetISO639CountryCodeFromSystemLanguage().ToLower();
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();

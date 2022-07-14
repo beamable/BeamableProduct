@@ -125,14 +125,12 @@ namespace Beamable.Api.Auth
 	/// </summary>
 	public class AuthService : AuthApi, IAuthService
 	{
-		private readonly IPlatformRequester _requester;
 		private readonly IDeviceIdResolver _deviceIdResolver;
 		const string DEVICE_ID_URI = ACCOUNT_URL + "/me";
 		const string DEVICE_DELETE_URI = ACCOUNT_URL + "/me/device";
 
-		public AuthService(IPlatformRequester requester, IDeviceIdResolver deviceIdResolver = null, IAuthSettings settings = null) : base(requester, settings)
+		public AuthService(IBeamableRequester requester, IDeviceIdResolver deviceIdResolver = null, IAuthSettings settings = null) : base(requester, settings)
 		{
-			_requester = requester;
 			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
 		}
 
@@ -147,19 +145,6 @@ namespace Beamable.Api.Auth
 
 		public Promise<User> SetLanguage(SystemLanguage language) =>
 			SetLanguage(SessionServiceHelper.GetISO639CountryCodeFromSystemLanguage(language));
-
-		/// <summary>
-		/// <inheritdoc cref="IAuthApi.SetLanguage"/>
-		/// After this method completes, the <see cref="IPlatformRequester"/>'s internal language header will be set to the user's language.
-		/// <see cref="IAuthApi.SetLanguage"/>
-		/// </summary>
-		public override async Promise<User> SetLanguage(string languageCodeISO6391)
-		{
-			var result = await base.SetLanguage(languageCodeISO6391);
-			// but now, after we've set the language... we should update the requester's language too..
-			_requester.Language = result.language;
-			return result;
-		}
 
 		public async Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true)
 		{

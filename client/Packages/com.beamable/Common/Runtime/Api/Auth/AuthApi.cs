@@ -30,7 +30,7 @@ namespace Beamable.Common.Api.Auth
 			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
 		}
 
-		public virtual Promise<User> GetUser(TokenResponse token)
+		public Promise<User> GetUser(TokenResponse token)
 		{
 			var tokenizedRequester = _requester.WithAccessToken(token);
 			return tokenizedRequester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
