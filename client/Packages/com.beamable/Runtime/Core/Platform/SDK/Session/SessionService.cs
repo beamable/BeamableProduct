@@ -25,9 +25,10 @@ namespace Beamable.Api.Sessions
 		/// </param>
 		/// <param name="locale">
 		/// The language code string that the session should use.
+		/// By default, the Application.systemLanguage will be used to infer the locale, but you can override this.
 		/// </param>
 		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
-		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale);
+		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale=null);
 
 		/// <summary>
 		/// Get the current <see cref="Session"/> of a player by their gamertag.
@@ -154,6 +155,13 @@ namespace Beamable.Api.Sessions
 				: Promise<ArrayDict>.Successful(null);
 		}
 
+		private Promise<string> GenerateCustomLocale()
+		{
+			return (_parameterProvider != null)
+				? _parameterProvider.GetCustomLocale()
+				: Promise<string>.Successful(SessionServiceHelper.GetISO639CountryCodeFromSystemLanguage());
+		}
+
 		/// <summary>
 		/// Starts a new Beamable user session. A session will record user analytics and track the user's play times.
 		/// This method is automatically called by the Beamable SDK anytime the user changes and when Beamable SDK is initialized.
@@ -161,10 +169,11 @@ namespace Beamable.Api.Sessions
 		/// <param name="advertisingId"></param>
 		/// <param name="locale"></param>
 		/// <returns></returns>
-		public Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale)
+		public async Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale=null)
 		{
 			SessionStartedAt = Time.realtimeSinceStartup;
-			
+			locale = locale ?? await GenerateCustomLocale();
+
 			var args = new SessionStartRequestArgs {advertisingId = advertisingId, locale = locale};
 			var deviceParams = GenerateDeviceParams(args);
 			var promise = GenerateCustomParams(deviceParams, user);
@@ -172,7 +181,7 @@ namespace Beamable.Api.Sessions
 			var languageContext = new SessionLanguageContext {code = locale, ctx = LanguageContext.ISO639.ToString()};
 			var serializedLanguageContext = GenerateSessionLanguageContextParams(languageContext);
 
-			return promise.FlatMap(customParams =>
+			return await promise.FlatMap(customParams =>
 			{
 				var req = new ArrayDict
 				{
