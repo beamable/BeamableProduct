@@ -20,9 +20,9 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected Action<string> OnPromoteClicked;
 		protected Action OnAddMemberClicked;
 		protected List<PartySlotPresenter.ViewData> Slots;
-		protected bool IsInviteList;
+		protected bool AreElementsExpandable;
 
-		public void Setup(List<string> players, bool isInviteList, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember, int maxPlayers = 0)
+		public void Setup(List<string> players, bool areElementsExpandable, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember, int maxPlayers = 0)
 		{
 			PartySlotPresenter.ViewData[] viewData = new PartySlotPresenter.ViewData[players.Count];
 			for (int i = 0; i < players.Count; i++)
@@ -39,7 +39,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			OnAskToLeaveClicked = onAskedToLeave;
 			OnPromoteClicked = onPromoted;
 			OnAddMemberClicked = onAddMember;
-			IsInviteList = isInviteList;
+			AreElementsExpandable = areElementsExpandable;
 			
 			ClearEntries();
 			SpawnEntries(maxPlayers);
@@ -68,7 +68,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				items.Add(rankEntryPoolData);
 			}
 
-			if (!IsInviteList && (maxPlayers <= 0 || items.Count < maxPlayers))
+			if (AreElementsExpandable && (maxPlayers <= 0 || items.Count < maxPlayers))
 			{
 				items.Add(new PartySlotPresenter.PoolData
 				{
@@ -89,7 +89,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			var data = item as PartySlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be PartySlotPresenters");
 
-			spawned.Setup(data, this, IsInviteList, OnAcceptButtonClicked, OnAskToLeaveClicked, OnPromoteClicked, OnAddMemberClicked);
+			spawned.Setup(data, this, AreElementsExpandable, OnAcceptButtonClicked, OnAskToLeaveClicked, OnPromoteClicked, OnAddMemberClicked);
 
 			return spawned.GetComponent<RectTransform>();
 		}

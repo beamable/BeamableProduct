@@ -73,7 +73,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void SetupPartyList()
 		{
-			PartyList.Setup(Context.Party.Members.ToList(), false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
+			PartyList.Setup(Context.Party.Members.ToList(), Context.Party.IsLeader, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
 		}
 
 		protected virtual void OnPlayerJoined(object playerId)

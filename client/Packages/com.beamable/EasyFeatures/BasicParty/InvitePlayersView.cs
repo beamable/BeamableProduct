@@ -54,14 +54,13 @@ namespace Beamable.EasyFeatures.BasicParty
 				friends[i] = "1498853117138039";
 			}
 			
-			PartyList.Setup(friends.ToList(), true, OnPlayerInvited, null, null, null);
+			PartyList.Setup(friends.ToList(), false, OnPlayerInvited, null, null, null);
 		}
 
 		private async void OnPlayerInvited(string id)
 		{
 			// send invite request
 			await Context.Party.Invite(id);	// add loading
-			OnBackButtonClicked();
 		}
 
 		private void OnCreateButtonClicked()

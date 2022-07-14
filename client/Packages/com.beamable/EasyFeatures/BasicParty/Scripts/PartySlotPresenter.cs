@@ -21,7 +21,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		protected PlayersListPresenter ListPresenter;
 		protected PoolData Item;
-		protected bool IsInviteList;
+		protected bool IsExpandable;
 
 		public struct ViewData
 		{
@@ -39,7 +39,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		
 		public void Setup(PoolData item,
 		                  PlayersListPresenter listPresenter,
-		                  bool isInviteList,
+		                  bool isExpandable,
 		                  Action<string> onAcceptButton,
 		                  Action<string> onAskToLeaveButton,
 		                  Action<string> onPromoteButton,
@@ -58,12 +58,12 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			ListPresenter = listPresenter;
 			Item = item;
-			IsInviteList = isInviteList;
+			IsExpandable = isExpandable;
 		}
 
 		public void ToggleExpand()
 		{
-			if (IsInviteList)
+			if (!IsExpandable || BeamContext.Default.Party.Leader == Item.ViewData.PlayerId)
 			{
 				return;
 			}
