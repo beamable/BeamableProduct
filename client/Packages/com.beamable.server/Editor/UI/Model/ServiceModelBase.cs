@@ -103,6 +103,7 @@ namespace Beamable.Editor.UI.Model
 
 			if (deleteAllFiles)
 			{
+				BeamEditorContext.Default.OnServiceDeleteProceed?.Invoke();
 				MicroserviceEditor.DeleteServiceFiles(Descriptor);
 			}
 			else
