@@ -68,17 +68,22 @@ namespace Beamable.EasyFeatures.BasicParty
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
 			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft);
 			
+			SetupPartyList();
+		}
+
+		private void SetupPartyList()
+		{
 			PartyList.Setup(Context.Party.Members.ToList(), false, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
 		}
 
-		private void OnPlayerJoined(object obj)
+		protected virtual void OnPlayerJoined(object playerId)
 		{
-			PartyList.UpdateContent();
+			SetupPartyList();
 		}
 		
-		private void OnPlayerLeft(object obj)
+		protected virtual void OnPlayerLeft(object playerId)
 		{
-			PartyList.UpdateContent();
+			SetupPartyList();
 		}
 
 		private void OnAddMember()
@@ -95,7 +100,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnPromoted(string id)
 		{
 			// TODO Add confirm action once Party SDK is ready
-			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to transfer lead to {id}?", null);
+			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to transfer lead to {id}?", () => PromotePlayer(id));
+		}
+
+		private async void PromotePlayer(string id)
+		{
+			await Context.Party.Promote(id);
 		}
 
 		private void OnAskedToLeave(string id)
@@ -138,16 +148,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			await Context.Party.Leave();
 			FeatureControl.OpenJoinView();
-		}
-
-		public void PlayerJoined(object playerId)
-		{
-			
-		}
-
-		public void PlayerLeft(object playerId)
-		{
-			
 		}
 	}
 }
