@@ -2,11 +2,23 @@
 
 namespace Beamable.Api.Sessions
 {
-	public class SessionServiceHelper
+	public static class SessionServiceHelper
 	{
-		public static string GetISO639CountryCodeFromSystemLanague()
+		/// <summary>
+		/// Returns the current ISO639-1 language code
+		/// </summary>
+		/// <returns>A ISO639-1 language code</returns>
+		public static string GetISO639CountryCodeFromSystemLanguage() =>
+			GetISO639CountryCodeFromSystemLanguage(Application.systemLanguage);
+
+		/// <summary>
+		/// Return the ISO639-1 language code from a given <see cref="SystemLanguage"/>
+		/// Use the <see cref="GetISO639CountryCodeFromSystemLanguage()"/> to get the language code for the current application
+		/// </summary>
+		/// <param name="lang">The <see cref="SystemLanguage"/></param>
+		/// <returns>a ISO639-1 language code</returns>
+		public static string GetISO639CountryCodeFromSystemLanguage(SystemLanguage lang)
 		{
-			SystemLanguage lang = Application.systemLanguage;
 			string res = "en";
 			switch (lang)
 			{
