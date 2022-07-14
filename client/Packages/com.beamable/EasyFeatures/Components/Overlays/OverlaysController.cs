@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using UnityEngine;
 
 namespace Beamable.EasyFeatures.Components
@@ -17,14 +16,9 @@ namespace Beamable.EasyFeatures.Components
 
 		private IOverlayComponent _currentObject;
 
-		public void ShowLabel(string label, float duration = -1)
+		public void ShowLabel(string label)
 		{
 			Show(Label, () => { Label.Show(label); });
-
-			if (duration > 0)
-			{
-				StartCoroutine(HideAfterDelay(duration));
-			}
 		}
 
 		public void ShowLabelWithButton(string label, string buttonLabel, Action onClick)
@@ -78,12 +72,6 @@ namespace Beamable.EasyFeatures.Components
 			Mask.SetActive(true);
 			action?.Invoke();
 			_currentObject = activeComponent;
-		}
-		
-		private IEnumerator HideAfterDelay(float delay)
-		{
-			yield return new WaitForSeconds(delay);
-			HideOverlay();
 		}
 	}
 }
