@@ -94,7 +94,8 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnCopyIdButtonClicked()
 		{
 			GUIUtility.systemCopyBuffer = Context.Party.Id;
-			FeatureControl.OverlaysController.ShowLabel("Party ID was copied", 3);
+			// below should be displayed a toast message
+			// FeatureControl.OverlaysController.ShowLabel("Party ID was copied", 3);
 		}
 
 		private void OnPromoted(string id)
