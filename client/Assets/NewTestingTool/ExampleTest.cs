@@ -3,12 +3,10 @@ using System.Threading.Tasks;
 
 public class ExampleTest : Testable
 {
-	private void Start() => TestController.Instance.InvokeNextTest();
-
 	[TestStep(1)]
 	private void TestMethodWithoutArguments()
 	{
-		TestableDebug.Log($"Result=[Hello World!] Method=[{nameof(TestMethodWithoutArguments)}]");
+		TestableDebug.Log($">>> Result=[Hello World!] Method=[{nameof(TestMethodWithoutArguments)}]");
 		TestController.Instance.InvokeNextTest();
 	}
 	
@@ -16,7 +14,7 @@ public class ExampleTest : Testable
 	private async Task TestMethodWithArguments(string arg1, string arg2)
 	{
 		await Task.Delay(0);
-		TestableDebug.Log($"Result=[{arg1} {arg2}!] Method=[{nameof(TestMethodWithArguments)}]");
+		TestableDebug.Log($">>> Result=[{arg1} {arg2}!] Method=[{nameof(TestMethodWithArguments)}]");
 		TestController.Instance.InvokeNextTest();
 	}
 	
@@ -26,7 +24,7 @@ public class ExampleTest : Testable
 	{
 		await Task.Delay(0);
 		var sum = arg1 + arg2;
-		TestableDebug.Log($"Result=[{sum}] Method=[{nameof(TestMethodWithArgumentsAndMultipleSteps)}]");
+		TestableDebug.Log($">>> Result=[{sum}] Method=[{nameof(TestMethodWithArgumentsAndMultipleSteps)}]");
 		TestController.Instance.InvokeNextTest();
 	}
 }
