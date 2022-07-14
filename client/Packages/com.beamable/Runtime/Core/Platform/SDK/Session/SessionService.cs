@@ -164,12 +164,12 @@ namespace Beamable.Api.Sessions
 		public Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale)
 		{
 			SessionStartedAt = Time.realtimeSinceStartup;
-
+			
 			var args = new SessionStartRequestArgs {advertisingId = advertisingId, locale = locale};
 			var deviceParams = GenerateDeviceParams(args);
 			var promise = GenerateCustomParams(deviceParams, user);
 
-			var languageContext = new SessionLanguageContext {code = locale, ctx = LanguageContext.UNITY.ToString()};
+			var languageContext = new SessionLanguageContext {code = locale, ctx = LanguageContext.ISO639.ToString()};
 			var serializedLanguageContext = GenerateSessionLanguageContextParams(languageContext);
 
 			return promise.FlatMap(customParams =>
