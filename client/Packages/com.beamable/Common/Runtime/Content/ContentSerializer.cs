@@ -171,15 +171,11 @@ namespace Beamable.Common.Content
 
 					return Json.Serialize(dict, new StringBuilder());
 			}
-
 		}
-
-
-		protected object DeserializeResult(object preParsedValue, Type type, bool disableExceptions)
+		
+		protected object DeserializeResult(object preParsedValue, Type type)
 		{
-			try
-			{
-				if (typeof(Optional).IsAssignableFrom(type))
+			if (typeof(Optional).IsAssignableFrom(type))
 				{
 					var optional = (Optional)Activator.CreateInstance(type);
 
@@ -189,7 +185,7 @@ namespace Beamable.Common.Content
 					}
 					else
 					{
-						var value = DeserializeResult(preParsedValue, optional.GetOptionalType(), disableExceptions);
+						var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
 						optional.SetValue(value);
 					}
 
@@ -302,7 +298,7 @@ namespace Beamable.Common.Content
 
 						foreach (var kvp in dictionary)
 						{
-							var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType, disableExceptions);
+							var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType);
 							dictInst.Add(kvp.Key, convertedValue);
 						}
 
@@ -312,7 +308,7 @@ namespace Beamable.Common.Content
 						var fieldType = type.GetElementType();
 						for (var index = 0; index < list.Count; index++)
 						{
-							output[index] = DeserializeResult(list[index], fieldType, disableExceptions);
+							output[index] = DeserializeResult(list[index], fieldType);
 						}
 
 						return output;
@@ -333,7 +329,7 @@ namespace Beamable.Common.Content
 
 						foreach (var elem in list)
 						{
-							var elemValue = DeserializeResult(elem, listElementType, disableExceptions);
+							var elemValue = DeserializeResult(elem, listElementType);
 							outputList.Add(elemValue);
 						}
 
@@ -360,7 +356,7 @@ namespace Beamable.Common.Content
 							object fieldValue = null;
 							if (dict.TryGetValue(field.SerializedName, out var property))
 							{
-								fieldValue = DeserializeResult(property, field.FieldType, disableExceptions);
+								fieldValue = DeserializeResult(property, field.FieldType);
 							}
 							else
 							{
@@ -372,14 +368,14 @@ namespace Beamable.Common.Content
 									{
 										// we found the field!!!
 										foundFormerly = true;
-										fieldValue = DeserializeResult(property, field.FieldType, disableExceptions);
+										fieldValue = DeserializeResult(property, field.FieldType);
 										break;
 									}
 								}
 
 								if (!foundFormerly)
 								{
-									fieldValue = DeserializeResult(null, field.FieldType, disableExceptions);
+									fieldValue = DeserializeResult(null, field.FieldType);
 								}
 							}
 
@@ -391,20 +387,8 @@ namespace Beamable.Common.Content
 					default:
 						throw new Exception($"Cannot deserialize type [{type.Name}]");
 				}
-			}
-			catch (Exception)
-			{
-				if (!disableExceptions)
-				{
-					Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{preParsedValue}]");
-					throw;
-				}
-				else
-				{
-					throw new ContentCorruptedException();
-				}
-			}
 		}
+		
 		private List<FieldInfoWrapper> GetFieldInfos(Type type)
 		{
 			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
@@ -661,16 +645,24 @@ namespace Beamable.Common.Content
 					{
 						try
 						{
-							var hackResult = DeserializeResult(dataValue, field.FieldType, disableExceptions);
+							var hackResult = DeserializeResult(dataValue, field.FieldType);
 							field.SetValue(instance, hackResult);
 							if (hackResult is ISerializationCallbackReceiver rec &&
 							    !(hackResult is IIgnoreSerializationCallbacks))
 								rec.OnAfterDeserialize();
 						}
-						catch (ContentCorruptedException)
+						catch (Exception e)
 						{
-							instance.IsCorrupted = true;
-							Debug.LogError($"[{name}] file is corrupted. Repair content before publish.");
+							if (!disableExceptions)
+							{
+								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{dataValue}]");
+								throw;
+							}
+							else
+							{
+								instance.IsCorrupted = true;
+								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{type.Name}] exception=[{e.Message}]");
+							}
 						}
 					}
 
