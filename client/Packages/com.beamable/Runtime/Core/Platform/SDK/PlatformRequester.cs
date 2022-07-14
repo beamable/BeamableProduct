@@ -20,9 +20,12 @@ namespace Beamable.Api
 	{
 		AccessToken Token { get; set; }
 		string TimeOverride { get; set; }
-		string Cid { get; set; }
-		string Pid { get; set; }
+		new string Cid { get; set; }
+		new string Pid { get; set; }
+
+		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		string Language { get; set; }
+
 		IAuthApi AuthService { set; }
 		void DeleteToken();
 	}
@@ -337,11 +340,6 @@ namespace Beamable.Api
 			if (TimeOverride != null)
 			{
 				request.SetRequestHeader("X-KS-TIME", TimeOverride);
-			}
-
-			if (Language != null)
-			{
-				request.SetRequestHeader("Accept-Language", Language);
 			}
 
 			if (RequestTimeoutMs != null)
