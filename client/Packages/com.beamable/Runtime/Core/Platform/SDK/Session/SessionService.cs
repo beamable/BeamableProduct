@@ -81,9 +81,9 @@ namespace Beamable.Api.Sessions
 		public float TimeSinceLastSessionStart => Time.realtimeSinceStartup - SessionStartedAt;
 
 		public SessionService(IBeamableRequester requester,
-		                      IDependencyProvider provider,
-		                      SessionParameterProvider parameterProvider,
-		                      SessionDeviceOptions deviceOptions)
+							  IDependencyProvider provider,
+							  SessionParameterProvider parameterProvider,
+							  SessionDeviceOptions deviceOptions)
 		{
 			_requester = requester;
 			// _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
@@ -144,7 +144,7 @@ namespace Beamable.Api.Sessions
 
 		private ArrayDict GenerateSessionLanguageContextParams(SessionLanguageContext sessionLanguageContext)
 		{
-			return new ArrayDict {{"code", sessionLanguageContext.code}, {"ctx", sessionLanguageContext.ctx}};
+			return new ArrayDict { { "code", sessionLanguageContext.code }, { "ctx", sessionLanguageContext.ctx } };
 		}
 
 		private Promise<ArrayDict> GenerateCustomParams(ArrayDict deviceParams, User user)
@@ -164,12 +164,12 @@ namespace Beamable.Api.Sessions
 		public Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale)
 		{
 			SessionStartedAt = Time.realtimeSinceStartup;
-			
-			var args = new SessionStartRequestArgs {advertisingId = advertisingId, locale = locale};
+
+			var args = new SessionStartRequestArgs { advertisingId = advertisingId, locale = locale };
 			var deviceParams = GenerateDeviceParams(args);
 			var promise = GenerateCustomParams(deviceParams, user);
 
-			var languageContext = new SessionLanguageContext {code = locale, ctx = LanguageContext.ISO639.ToString()};
+			var languageContext = new SessionLanguageContext { code = locale, ctx = LanguageContext.ISO639.ToString() };
 			var serializedLanguageContext = GenerateSessionLanguageContextParams(languageContext);
 
 			return promise.FlatMap(customParams =>
