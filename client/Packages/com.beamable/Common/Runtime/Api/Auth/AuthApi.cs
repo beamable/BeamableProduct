@@ -25,7 +25,7 @@ namespace Beamable.Common.Api.Auth
 			return _requester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
 		}
 
-		public Promise<User> SetLanguage(string languageCodeISO6391)
+		public virtual Promise<User> SetLanguage(string languageCodeISO6391)
 		{
 			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
 		}
