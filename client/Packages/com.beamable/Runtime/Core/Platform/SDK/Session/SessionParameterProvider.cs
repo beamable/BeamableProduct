@@ -9,14 +9,6 @@ namespace Beamable.Api.Sessions
 {
 	public class SessionParameterProvider : ScriptableObject
 	{
-		/// <summary>
-		/// Override this method to create a custom locale
-		/// </summary>
-		/// <returns></returns>
-		public virtual Promise<string> GetCustomLocale()
-		{
-			return Promise<string>.Successful(SessionServiceHelper.GetISO639CountryCodeFromSystemLanguage());
-		}
 
 		public Promise<ArrayDict> GetCustomParameters(ArrayDict startingParameters, User user)
 		{

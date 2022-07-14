@@ -9,15 +9,6 @@ namespace Beamable.Common.Api.Auth
 		Promise<User> GetUser();
 
 		/// <summary>
-		/// Set the current user's language preference for Beamable.
-		/// </summary>
-		/// <param name="languageCodeISO6391">
-		/// The language code should be an ISO6391 string.
-		/// </param>
-		/// <returns>A <see cref="Promise{User"/> with the updated language information</returns>
-		Promise<User> SetLanguage(string languageCodeISO6391);
-
-		/// <summary>
 		/// Get a specific <see cref="User"/> by passing in a <see cref="TokenResponse"/> structure.
 		/// The <see cref="User"/> this method returns will be the one that has the token given.
 		/// In order to get a <see cref="TokenResponse"/>, you can use the

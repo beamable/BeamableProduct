@@ -3,7 +3,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
-using UnityEngine;
 
 namespace Beamable.Tests.Runtime.Api
 {
@@ -19,11 +18,6 @@ namespace Beamable.Tests.Runtime.Api
 		public Promise<User> GetUser()
 		{
 			return GetCurrentUserDelegate();
-		}
-
-		public Promise<User> SetLanguage(string languageCodeISO6391)
-		{
-			throw new NotImplementedException();
 		}
 
 		public Promise<User> GetUserForEditor()
@@ -113,11 +107,6 @@ namespace Beamable.Tests.Runtime.Api
 		public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
 		{
 			throw new System.NotImplementedException();
-		}
-
-		public Promise<User> SetLanguage(SystemLanguage language)
-		{
-			throw new NotImplementedException();
 		}
 
 		public Promise<bool> IsThisDeviceIdAvailable()

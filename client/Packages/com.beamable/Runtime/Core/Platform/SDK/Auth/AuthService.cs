@@ -1,9 +1,7 @@
-using Beamable.Api.Sessions;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
-using UnityEngine;
 
 namespace Beamable.Api.Auth
 {
@@ -21,13 +19,6 @@ namespace Beamable.Api.Auth
 	/// </summary>
 	public interface IAuthService : IAuthApi
 	{
-		/// <summary>
-		/// <inheritdoc cref="IAuthApi.SetLanguage(string)"/>
-		/// </summary>
-		/// <param name="language">Any <see cref="SystemLanguage"/></param>
-		/// <returns>A <see cref="Promise{User}"/> containing the updated user.</returns>
-		Promise<User> SetLanguage(SystemLanguage language);
-
 		/// <summary>
 		/// Check if the current device id is available to be associated with a <see cref="User"/>.
 		/// Each device id is only assignable to one <see cref="User"/>, so if one player registers the device id,
@@ -142,9 +133,6 @@ namespace Beamable.Api.Auth
 					$"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}", null, false)
 				.Map(resp => resp.available);
 		}
-
-		public Promise<User> SetLanguage(SystemLanguage language) =>
-			SetLanguage(SessionServiceHelper.GetISO639CountryCodeFromSystemLanguage(language));
 
 		public async Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true)
 		{
