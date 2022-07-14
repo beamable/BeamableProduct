@@ -581,7 +581,7 @@ namespace Beamable.Common.Content
 			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
-		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions)
+		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
