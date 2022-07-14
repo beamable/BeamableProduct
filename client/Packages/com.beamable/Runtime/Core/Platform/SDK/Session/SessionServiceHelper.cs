@@ -4,7 +4,7 @@ namespace Beamable.Api.Sessions
 {
 	public class SessionServiceHelper
 	{
-		public static string Get2LetterISOCodeFromSystemLanguage()
+		public static string GetISO639CountryCodeFromSystemLanague()
 		{
 			SystemLanguage lang = Application.systemLanguage;
 			string res = "en";
@@ -58,7 +58,7 @@ namespace Beamable.Api.Sessions
 					res = "fr";
 					break;
 				case SystemLanguage.German:
-					res = "DE";
+					res = "de";
 					break;
 				case SystemLanguage.Greek:
 					res = "el";
