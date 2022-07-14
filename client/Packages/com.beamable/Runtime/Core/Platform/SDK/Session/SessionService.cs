@@ -53,7 +53,6 @@ namespace Beamable.Api.Sessions
 		/// The number of seconds ago that the most recent session was started.
 		/// </summary>
 		float TimeSinceLastSessionStart { get; }
-
 	}
 
 	/// <summary>
@@ -81,7 +80,10 @@ namespace Beamable.Api.Sessions
 		public float SessionStartedAt { get; private set; }
 		public float TimeSinceLastSessionStart => Time.realtimeSinceStartup - SessionStartedAt;
 
-		public SessionService(IBeamableRequester requester, IDependencyProvider provider, SessionParameterProvider parameterProvider, SessionDeviceOptions deviceOptions)
+		public SessionService(IBeamableRequester requester,
+		                      IDependencyProvider provider,
+		                      SessionParameterProvider parameterProvider,
+		                      SessionDeviceOptions deviceOptions)
 		{
 			_requester = requester;
 			// _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
@@ -100,12 +102,13 @@ namespace Beamable.Api.Sessions
 				{
 					queryString += "&";
 				}
+
 				queryString += String.Format("gts={0}", gamerTags[i]);
 			}
 
 			return _requester.Request<MultiOnlineStatusesResponse>(
-			   Method.GET,
-			   String.Format("/presence/bulk?{0}", queryString)
+				Method.GET,
+				String.Format("/presence/bulk?{0}", queryString)
 			).Map(rsp =>
 			{
 				Dictionary<long, Session> result = new Dictionary<long, Session>();
@@ -116,8 +119,10 @@ namespace Beamable.Api.Sessions
 					{
 						dict[gamerTags[i]] = 0;
 					}
+
 					result.Add(gamerTags[i], new Session(dict[gamerTags[i]]));
 				}
+
 				return result;
 			});
 		}
@@ -137,9 +142,16 @@ namespace Beamable.Api.Sessions
 			return deviceParams;
 		}
 
+		private ArrayDict GenerateSessionLanguageContextParams(SessionLanguageContext sessionLanguageContext)
+		{
+			return new ArrayDict {{"code", sessionLanguageContext.code}, {"ctx", sessionLanguageContext.ctx}};
+		}
+
 		private Promise<ArrayDict> GenerateCustomParams(ArrayDict deviceParams, User user)
 		{
-			return (_parameterProvider != null) ? _parameterProvider.GetCustomParameters(deviceParams, user) : Promise<ArrayDict>.Successful(null);
+			return (_parameterProvider != null)
+				? _parameterProvider.GetCustomParameters(deviceParams, user)
+				: Promise<ArrayDict>.Successful(null);
 		}
 
 		/// <summary>
@@ -152,33 +164,36 @@ namespace Beamable.Api.Sessions
 		public Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale)
 		{
 			SessionStartedAt = Time.realtimeSinceStartup;
-			var args = new SessionStartRequestArgs
-			{
-				advertisingId = advertisingId,
-				locale = locale
-			};
-			var deviceParams = GenerateDeviceParams(args);
 
+			var args = new SessionStartRequestArgs {advertisingId = advertisingId, locale = locale};
+			var deviceParams = GenerateDeviceParams(args);
 			var promise = GenerateCustomParams(deviceParams, user);
+
+			var languageContext = new SessionLanguageContext {code = locale, ctx = LanguageContext.UNITY.ToString()};
+			var serializedLanguageContext = GenerateSessionLanguageContextParams(languageContext);
 
 			return promise.FlatMap(customParams =>
 			{
 				var req = new ArrayDict
-			   {
-			   {"platform", Application.platform.ToString()},
-			   {"device", SystemInfo.deviceModel.ToString()},
-			   {"locale", locale}
-			   };
+				{
+					{"platform", Application.platform.ToString()},
+					{"device", SystemInfo.deviceModel.ToString()},
+					{"locale", locale},
+					{"language", serializedLanguageContext},
+				};
+
 				if (customParams != null && customParams.Count > 0)
 				{
 					req["customParams"] = customParams;
 				}
+
 				var json = Json.Serialize(req, new StringBuilder());
+
 				return _requester.Request<EmptyResponse>(
-				Method.POST,
-				"/basic/session",
-				json
-			 );
+					Method.POST,
+					"/basic/session",
+					json
+				);
 			});
 		}
 
@@ -190,8 +205,8 @@ namespace Beamable.Api.Sessions
 		public Promise<EmptyResponse> SendHeartbeat()
 		{
 			return _requester.Request<EmptyResponse>(
-			   Method.POST,
-			   "/basic/session/heartbeat"
+				Method.POST,
+				"/basic/session/heartbeat"
 			);
 		}
 
@@ -199,6 +214,21 @@ namespace Beamable.Api.Sessions
 		{
 			return cache.Get(gamerTag);
 		}
+	}
+
+	[Serializable]
+	public class SessionLanguageContext
+	{
+		public string code;
+		public string ctx;
+	}
+
+	[Serializable]
+	public enum LanguageContext
+	{
+		UNITY,
+		ISO6391,
+		ISO639
 	}
 
 	public class SessionStartRequestArgs
@@ -220,6 +250,7 @@ namespace Beamable.Api.Sessions
 				var next = statuses[i];
 				result[next.gt] = next.heartbeat;
 			}
+
 			return result;
 		}
 	}
@@ -234,6 +265,7 @@ namespace Beamable.Api.Sessions
 	public class Session
 	{
 		private static readonly DateTime Jan1st1970 = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
 		private static long CurrentTimeSeconds()
 		{
 			return (long)(DateTime.UtcNow - Jan1st1970).TotalSeconds;
