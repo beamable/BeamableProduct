@@ -57,24 +57,5 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			Assert.AreEqual(url, websiteHook.Url);
 		}
-
-		[UnityTest]
-		public IEnumerator ButtonClickTest()
-		{
-			var wasClicked = false;
-
-			var button = new Button();
-			var window = button.MountForTest();
-			button.clickable.clicked += () =>
-			{
-				wasClicked = true;
-			};
-
-			yield return null; // before continuing, we need to wait a frame, so that Unity can trigger the layout code on the test window
-
-			button.SendTestClick();
-			window.Close();
-			Assert.IsTrue(wasClicked);
-		}
 	}
 }
