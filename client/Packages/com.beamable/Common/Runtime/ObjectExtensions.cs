@@ -8,7 +8,7 @@ namespace Beamable.Common
 	public static class ObjectExtensions
 	{
 		public static bool TryInvokeCallback(this object target, string callbackMethodName, BindingFlags bindingFlags =
-			                                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+												 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
 		{
 			bool Attempt(Type type)
 			{
