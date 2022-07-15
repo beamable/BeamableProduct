@@ -1,4 +1,4 @@
-﻿namespace NewTestingTool
+﻿namespace NewTestingTool.Constants
 {
 	public static class TestConstants
 	{
