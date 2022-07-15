@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Docker.DotNet.Models;
+using TaskStatus = System.Threading.Tasks.TaskStatus;
 
 namespace cli;
 
@@ -8,20 +9,21 @@ public partial class BeamoLocalService
 	/// <summary>
 	/// Forces a synchronization between the current Docker Daemon state and the given BeamoServiceInstance lists. It:
 	/// <list type="bullet">
-	/// <item>Removes all service instances whose <see cref="BeamoServiceInstance.ContainerId"/> have no corresponding container id in the list of existing containers we get from docker.</item>
+	/// <item>Tries to access each image corresponding to a <see cref="BeamoServiceDefinition"/>, if none exists, clear <see cref="BeamoServiceDefinition.ImageId"/>. If exists, ensures it matches it.</item>
+	/// <item>Removes all <see cref="BeamoServiceInstance"/>s whose <see cref="BeamoServiceInstance.ContainerName"/>s don't exist in the list of existing containers we get from docker.</item>
 	/// <item>Adds a <see cref="BeamoServiceInstance"/> to the list for each container using an Image whose image id matches a <see cref="BeamoServiceDefinition.ImageId"/>.</item>
 	/// <item>Updates the running/not running state of each <see cref="BeamoServiceInstance"/>.</item>
 	/// </list> 
 	/// </summary>
-	/// <param name="existingServiceInstances"></param>
-	public async Task UpdateContainerStatusFromDocker(List<BeamoServiceInstance> existingServiceInstances)
+	/// <param name="serviceDefinitions">The list of all service definitions we care about synchronizing.</param>
+	/// <param name="existingServiceInstances">The list it should update with the running <see cref="BeamoServiceInstance"/>.</param>
+	public async Task SynchronizeInstanceStatusWithDocker(List<BeamoServiceDefinition> serviceDefinitions, List<BeamoServiceInstance> existingServiceInstances)
 	{
 		// Make sure we know about all images that match our beamo ids and make sure all image ids that we know about are still there. 
-		foreach (var sd in BeamoManifest.ServiceDefinitions)
+		foreach (var sd in serviceDefinitions)
 		{
 			try
 			{
-				BeamableLogger.LogWarning("aisdjoiajsdoiajodjasjdoias");
 				var inspectResponse = await _client.Images.InspectImageAsync(sd.BeamoId);
 				sd.ImageId = inspectResponse.ID;
 			}
@@ -34,13 +36,13 @@ public partial class BeamoLocalService
 		var allLocalContainers = await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
 
 		// Remove all service instances that no longer exist
-		existingServiceInstances.RemoveAll(si => allLocalContainers.Count(dc => dc.ID == si.ContainerId) < 1);
+		existingServiceInstances.RemoveAll(si => allLocalContainers.Count(dc => dc.Names.Contains(si.ContainerName)) < 1);
 
 		// For all containers that still exist and any new ones
 		foreach (var dockerContainer in allLocalContainers)
 		{
 			// Check to see if it is a container using a BeamoService image --- skip if not.
-			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => c.ImageId == dockerContainer.ImageID)?.BeamoId;
+			var beamoId = serviceDefinitions.FirstOrDefault(c => c.ImageId == dockerContainer.ImageID)?.BeamoId;
 			if (string.IsNullOrEmpty(beamoId))
 			{
 				BeamableLogger.LogWarning($"Skipping container [{dockerContainer.ID}] because no ImageId matched this containers Image={dockerContainer.Image} or ImageId={dockerContainer.ImageID}");
@@ -77,14 +79,21 @@ public partial class BeamoLocalService
 	}
 
 	/// <summary>
-	/// 
+	/// Kick off a long running task that receives updates from the docker engine.
 	/// </summary>
-	public async Task BeginListeningToDocker()
+	public async Task StartListeningToDocker()
 	{
-		// Don't await this as the thread this spawns never yields until it's cancelled.
-		_client.System.MonitorEventsAsync(new ContainerEventsParameters(), new Progress<Message>(DockerSystemEventHandler), _dockerListeningThreadCancel.Token);
+		// Cancel the thread if it's already running.
+		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
+			_dockerListeningThreadCancel.Cancel();
+
+		// Start the long running task. We don't "await" this task as it never yields until it's cancelled.
+		_dockerListeningThread = _client.System.MonitorEventsAsync(new ContainerEventsParameters(), new Progress<Message>(DockerSystemEventHandler), _dockerListeningThreadCancel.Token);
+		// We await this instead for API consistency...
 		await Task.CompletedTask;
 
+		// This is the actual handler that updates the state according to the event message.
+		// Since Docker API docs are not the best. I recommend using JsonConvert.SerializeObject and print out the object that their APIs return to debug or add to any of this stuff.
 		async void DockerSystemEventHandler(Message message)
 		{
 			var messageType = message.Type;
@@ -144,6 +153,9 @@ public partial class BeamoLocalService
 		}
 	}
 
+	/// <summary>
+	/// Cancel the long-running thread created by <see cref="StartListeningToDocker"/>.
+	/// </summary>
 	public async Task StopListeningToDocker()
 	{
 		_dockerListeningThreadCancel.Cancel();
@@ -151,61 +163,60 @@ public partial class BeamoLocalService
 	}
 
 
+	/// <summary>
+	/// Short hand to check if a service is running or not.
+	/// </summary>
 	public bool IsBeamoServiceRunning(string beamoId)
 	{
 		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId);
 		return si != null && si.IsRunning;
 	}
 
+	/// <summary>
+	/// Short hand to check if a specific service's container is running or not.
+	/// </summary>
 	public bool IsBeamoServiceRunning(string beamoId, string containerName)
 	{
 		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId && si.ContainerName == containerName);
 		return si != null && si.IsRunning;
 	}
 
-	public async Task ResetServiceToDefaultValues(string beamoId)
-	{
-		var serviceDefinition = BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
-		if (serviceDefinition != null)
-		{
-			await CleanUpDocker(serviceDefinition);
 
-			switch (serviceDefinition.Protocol)
-			{
-				case BeamoProtocolType.HttpMicroservice:
-					await PrepareDefaultLocalProtocol_HttpMicroservice(serviceDefinition, serviceDefinition.LocalProtocol as HttpMicroserviceLocalProtocol);
-					await PrepareDefaultRemoteProtocol_HttpMicroservice(serviceDefinition, serviceDefinition.RemoteProtocol as HttpMicroserviceRemoteProtocol);
-					break;
-				case BeamoProtocolType.EmbeddedMongoDb:
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
-		}
-
-		await Task.CompletedTask;
-	}
-
-
+	/// <summary>
+	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
+	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
+	/// </summary>
 	public async Task DeployToLocalClient(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string> onServiceDeployCompleted = null, Action<JSONMessage> handler = null)
 	{
 		deployBeamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
 
+		// Get all services that must be deployed
 		var serviceDefinitionsToDeploy = deployBeamoIds.Select(reqId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == reqId)).ToList();
-		SplitLayersByProtocolType(serviceDefinitionsToDeploy, out var builtLayers);
 
-		var prepareImages = new List<Task>();
-		prepareImages.AddRange(localManifest.ServiceDefinitions.Select(c => PrepareBeamoServiceImage(c, handler)));
-
-		try
+		// Guarantee they each don't have cyclical dependencies.
 		{
+			var dependencyChecksForServicesToDeploy = await Task.WhenAll(serviceDefinitionsToDeploy.Select(sd =>
+			{
+				return Task.Run(() => ValidateBeamoService_NoCyclicalDependencies(sd, localManifest.ServiceDefinitions));
+			}));
+
+
+			var indexOfServiceWithCyclicalDependency = dependencyChecksForServicesToDeploy.ToList().IndexOf(false);
+			if (indexOfServiceWithCyclicalDependency != -1)
+				throw new CliException($"{serviceDefinitionsToDeploy[indexOfServiceWithCyclicalDependency].BeamoId} has cyclical dependencies!");
+		}
+
+
+		// Builds all images for all services that are defined.
+		{
+			var prepareImages = new List<Task>();
+			prepareImages.AddRange(localManifest.ServiceDefinitions.Select(c => PrepareBeamoServiceImage(c, handler)));
 			await Task.WhenAll(prepareImages);
 		}
-		catch (Exception e)
-		{
-			// TODO: Add actual exception handling here for when an image fails to build.
-			throw;
-		}
+
+
+		// Build dependency layers split by protocol type.
+		SplitLayersByProtocolType(serviceDefinitionsToDeploy, out var builtLayers);
 
 		// For each layer, run through the containers of each type on that layer and do what is needed to deploy them
 		// We already know that all containers are properly built here, so we just need to create the containers and run them.

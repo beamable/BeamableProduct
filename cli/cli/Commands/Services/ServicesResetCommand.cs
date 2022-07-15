@@ -30,8 +30,8 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 
 	public override async Task Handle(ServicesResetCommandArgs args)
 	{
-		await _localBeamo.UpdateContainerStatusFromDocker(_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
-		await _localBeamo.BeginListeningToDocker();
+		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest.ServiceDefinitions, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
+		await _localBeamo.StartListeningToDocker();
 
 		if (args.BeamoIdsToReset == null)
 		{
@@ -66,6 +66,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 				var progressTasks = args.BeamoIdsToReset.Select(id => ctx.AddTask($"Reseting Local Service with {id}")).ToList();
 				var actualTasks = args.BeamoIdsToReset.Select(async id =>
 				{
+					await _localBeamo.CleanUpDocker(id);
 					await _localBeamo.ResetServiceToDefaultValues(id);
 					var progressTask = progressTasks.First(pt => pt.Description.Contains(id));
 					progressTask.Increment(progressTask.MaxValue);

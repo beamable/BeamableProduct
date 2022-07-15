@@ -41,8 +41,8 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
 	{
-		await _localBeamo.UpdateContainerStatusFromDocker(_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
-		await _localBeamo.BeginListeningToDocker();
+		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest.ServiceDefinitions, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
+		await _localBeamo.StartListeningToDocker();
 
 		if (args.BeamoIdsToDeploy == null)
 			args.BeamoIdsToDeploy = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
@@ -59,11 +59,21 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 				.StartAsync(async ctx =>
 				{
 					var allProgressTasks = args.BeamoIdsToDeploy.Select(id => ctx.AddTask($"Deploying Service {id}")).ToList();
-					await _localBeamo.DeployToLocalClient(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy, beamoId =>
+					try
 					{
-						var progressTask = allProgressTasks.First(pt => pt.Description.Contains(beamoId));
-						progressTask.Increment(progressTask.MaxValue);
-					});
+						await _localBeamo.DeployToLocalClient(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy, beamoId =>
+						{
+							var progressTask = allProgressTasks.First(pt => pt.Description.Contains(beamoId));
+							progressTask.Increment(progressTask.MaxValue);
+						});
+					}
+					catch (CliException e)
+					{
+						if (e.Message.Contains("cyclical", StringComparison.InvariantCultureIgnoreCase))
+							AnsiConsole.MarkupLine($"[red]{e.Message}[/]");
+						else
+							throw;
+					}
 				});
 
 			_localBeamo.SaveBeamoLocalManifest();

@@ -25,6 +25,7 @@ public partial class BeamoLocalService
 	private readonly string _beamoLocalManifestFile;
 	private readonly string _beamoLocalRuntimeFile;
 
+	private Task _dockerListeningThread;
 	private readonly CancellationTokenSource _dockerListeningThreadCancel;
 
 	/**
@@ -268,6 +269,16 @@ public partial class BeamoLocalService
 		return foundContainer;
 	}
 
+	/// <summary>
+	/// Resets the protocol data for the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> to the default settings. 
+	/// </summary>
+	public async Task<bool> ResetServiceToDefaultValues(string beamoId)
+	{
+		var localUpdated = await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_HttpMicroservice, CancellationToken.None);
+		var remoteUpdated = await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_HttpMicroservice, CancellationToken.None);
+		return localUpdated && remoteUpdated;
+	}
+
 
 	/// <summary>
 	/// Uses the given image (name or id) to create/replace the container with the given name and configurations.
@@ -500,6 +511,12 @@ public partial class BeamoLocalService
 		return tarball;
 	}
 
+	public async Task CleanUpDocker(string beamoId)
+	{
+		var serviceDefinition = BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
+		if (serviceDefinition != null)
+			await CleanUpDocker(serviceDefinition);
+	}
 
 	/// <summary>
 	/// Deletes all containers and images related to the given <see cref="BeamoServiceDefinition"/>.
