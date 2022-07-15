@@ -83,10 +83,3 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: b1a79b87bea824d73b2f9ccee427d075, type: 3}
     Prefab: {fileID: 3430546881456503221, guid: a97507b4b127e4f88ab7dedd815fa760,
       type: 3}
-  - Name: Lobby Flow (BUSS variant)
-    Description: Basic lobby example
-    OrientationSupport: 1
-    Tags: 0
-    Icon: {fileID: 2800000, guid: 1d8c576d1706445ea82c8614c8267f17, type: 3}
-    Prefab: {fileID: 5679227975823887877, guid: 08f0fa3e933bd854dbbba5b53d9d7ba0,
-      type: 3}
