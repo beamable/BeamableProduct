@@ -123,7 +123,6 @@ namespace Beamable.Editor.Toolbox.UI
 
 			_breadcrumbsVisualElement = root.Q<ToolboxBreadcrumbsVisualElement>("breadcrumbsVisualElement");
 			_breadcrumbsVisualElement.Refresh();
-			_breadcrumbsVisualElement.WebsiteHook = ActiveContext.ServiceScope.GetService<IWebsiteHook>();
 
 			_contentListVisualElement = root.Q<ToolboxContentListVisualElement>("contentListVisualElement");
 			_contentListVisualElement.Refresh();

@@ -11,10 +11,10 @@ namespace Beamable.Editor.Tests
 {
 	public class MockWebsiteHook : IWebsiteHook
 	{
+		public string Url { get; set; }
 		public void OpenUrl(string url)
 		{
-			//sets the given url into a public variable
-			throw new System.NotImplementedException();
+			Url = url;
 		}
 	}
 }

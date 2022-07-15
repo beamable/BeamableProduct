@@ -41,7 +41,7 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 		private Button _accountButton;
 		private RealmButtonVisualElement _realmButton;
-		public IWebsiteHook WebsiteHook;
+		private IWebsiteHook WebsiteHook { get; set; }
 
 		public ToolboxBreadcrumbsVisualElement() : base(nameof(ToolboxBreadcrumbsVisualElement))
 		{
@@ -53,7 +53,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
 			_realmButton.Refresh();
 
-			//_websiteHook = ActiveContext.ServiceScope.GetService<IToolboxViewService>();
+			WebsiteHook = Provider.GetService<IWebsiteHook>();
 
 			var portalButton = Root.Q<Button>("openPortalButton");
 			portalButton.text = (Commons.OPEN + " " + Names.PORTAL).ToUpper();

@@ -17,13 +17,16 @@ namespace Beamable.Editor.Toolbox.Models
 {
 	public interface IWebsiteHook
 	{
+		string Url { get; }
 		void OpenUrl(string url);
 	}
 
 	public class WebsiteHook : IWebsiteHook
 	{
+		public string Url { get; private set; }
 		public void OpenUrl(string url)
 		{
+			Url = url;
 			Application.OpenURL(url);
 		}
 	}
