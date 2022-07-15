@@ -95,7 +95,10 @@ namespace Beamable.Editor.UI.Model
 				await TryToStop(); // for it to stop.
 				await BeamServicesCodeWatcher.StopClientSourceCodeGenerator((MicroserviceDescriptor)Descriptor);
 			}
-			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools, isWatch);
+
+			var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
+
+			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, availableArchitectures, includeDebuggingTools, isWatch);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			try

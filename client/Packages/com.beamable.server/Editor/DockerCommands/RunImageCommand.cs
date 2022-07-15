@@ -285,7 +285,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			_descriptor = descriptor;
 			ImageName = imageName;
 			ContainerName = containerName;
-
+			UnityLogLabel = null;
 			Environment = env ?? new Dictionary<string, string>();
 			Ports = ports ?? new Dictionary<uint, uint>();
 			NamedVolumes = namedVolumes ?? new Dictionary<string, string>();
@@ -294,7 +294,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -302,7 +302,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 		protected override void HandleStandardErr(string data)
 		{
-			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardErr(data);
 			}

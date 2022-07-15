@@ -365,19 +365,14 @@ namespace Beamable.Server
 	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization();
 
-            // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
-            // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
-            // TODO that will not boot correctly.
-            if (!_args.DisableCustomInitializationHooks)
+            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+            if (!_ranCustomUserInitializationHooks)
             {
-	            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
-	            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-	            if (!_ranCustomUserInitializationHooks)
-	            {
-		            await ResolveCustomInitializationHook();
-		            _ranCustomUserInitializationHooks = true;
-	            }
+               await ResolveCustomInitializationHook();
+               _ranCustomUserInitializationHooks = true;
             }
+
 
             await ProvideService(QualifiedName);
 
@@ -499,7 +494,7 @@ namespace Beamable.Server
          Log.Debug("starting ws connection");
          void Attempt()
          {
-            Log.Debug("connecting to ws... ");
+            Log.Debug($"connecting to ws ({Host}) ... ");
             var ws = _connectionProvider.Create(Host);
             ws.OnConnect(socket =>
             {
