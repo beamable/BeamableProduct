@@ -162,7 +162,6 @@ public partial class BeamoLocalService
 		await Task.CompletedTask;
 	}
 
-
 	/// <summary>
 	/// Short hand to check if a service is running or not.
 	/// </summary>
@@ -180,7 +179,6 @@ public partial class BeamoLocalService
 		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId && si.ContainerName == containerName);
 		return si != null && si.IsRunning;
 	}
-
 
 	/// <summary>
 	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
@@ -247,39 +245,45 @@ public partial class BeamoLocalService
 		}
 	}
 
-	private static void SplitLayersByProtocolType(IEnumerable<BeamoServiceDefinition> containers, out Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>>[] splitContainers)
+	/// <summary>
+	/// Given a Directed Acyclic Graph of <paramref name="serviceDefinitions"/>, builds a dictionary for each of the graph's layers. This dictionary splits the services in each layer by their
+	/// <see cref="BeamoProtocolType"/>. 
+	/// </summary>
+	private static void SplitLayersByProtocolType(List<BeamoServiceDefinition> serviceDefinitions, out Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>>[] splitContainers)
 	{
-		var containersToSplit = containers.ToList();
-		BuildLayeredDependencies(containersToSplit, out var layers);
+		// Builds the dependency layers
+		BuildLayeredDependencies(serviceDefinitions, out var layers);
 
+		// Split each layer by their BeamoProtocolType
 		splitContainers = new Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>>[layers.Length];
 		for (var layerIdx = 0; layerIdx < layers.Length; layerIdx++)
 		{
 			var builtLayer = layers[layerIdx];
 			var perProtocolSplit = builtLayer
-				.GroupBy(i => containersToSplit[i].Protocol)
-				.ToDictionary(g => g.Key, g => g.Select(i => containersToSplit[i]).ToList());
+				.GroupBy(i => serviceDefinitions[i].Protocol)
+				.ToDictionary(g => g.Key, g => g.Select(i => serviceDefinitions[i]).ToList());
 
 			splitContainers[layerIdx] = perProtocolSplit;
 		}
 	}
 
-	private static void BuildLayeredDependencies(IEnumerable<BeamoServiceDefinition> containers, out int[][] builtLayers)
+	/// <summary>
+	/// Topological sorting of the dependency graph. Basically, this returns layers of dependency counts. In acyclic graphs, which the service definitions must be, this
+	/// guarantee's not dependency conflicts.
+	/// </summary>
+	/// <param name="serviceDefinitions">The Directed Acyclic Graph of <see cref="BeamoServiceDefinition"/>s.</param>
+	/// <param name="builtLayers">An array of layers, each containing indices into <paramref name="serviceDefinitions"/> for services in that layer.</param>
+	private static void BuildLayeredDependencies(List<BeamoServiceDefinition> serviceDefinitions, out int[][] builtLayers)
 	{
-		// TODO: Assert no cyclical dependencies exist:
-		// TODO   - For each, container just expend dependencies into a queue until we find the original container or we run out of expanded nodes. 
-
-		var containerList = containers.ToList();
-
 		// Find the layers of dependency counts
-		var layers = containerList
+		var layers = serviceDefinitions
 			.GroupBy(c => c.DependsOnBeamoIds.Length).ToList();
 
 		// Sort the layers by count (smallest number of dependencies first)
 		layers.Sort((g1, g2) => g1.Key.CompareTo(g2.Key));
 
 		// Build them into a list of indices into the unsorted list of containers (the parameter list)
-		builtLayers = layers.Select(g => g.Select(c => containerList.IndexOf(c)).ToArray()).ToArray();
+		builtLayers = layers.Select(g => g.Select(c => serviceDefinitions.IndexOf(c)).ToArray()).ToArray();
 	}
 }
 
