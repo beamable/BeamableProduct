@@ -10,7 +10,7 @@ namespace Beamable.Editor
 {
 	/// <summary>
 	/// The dispatcher allows you to enqueue work to happen on the main unity thread without waiting for editor render frames.
-	/// Use the <see cref="Schedule(System.Action)"/> method to schedule work. 
+	/// Use the <see cref="Schedule(System.Action)"/> method to schedule work.
 	/// </summary>
 	public class BeamableDispatcher : IBeamableDisposable
 	{
@@ -79,7 +79,7 @@ namespace Beamable.Editor
 
 			var queue = new Queue<Action>();
 			_workQueues.Add(queueName, queue);
-			var coroutine = EditorCoroutineUtility.StartCoroutineOwnerless(Scheduler(queueName, queue));
+			var coroutine = EditorCoroutineUtility.StartCoroutine(Scheduler(queueName, queue), this);
 			_runningSchedulers[queueName] = coroutine;
 			return true;
 		}
