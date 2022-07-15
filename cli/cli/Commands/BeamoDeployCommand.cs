@@ -7,7 +7,7 @@ public class BeamoDeployCommand : AppCommand<BeamoDeployArgs>
 {
 	private readonly BeamoService _beamoService;
 	
-	public BeamoDeployCommand(BeamoService beamoService) : base("current", "outputs current manifest json to console")
+	public BeamoDeployCommand(BeamoService beamoService) : base("deploy", "outputs current manifest json to console")
 	{
 		_beamoService = beamoService;
 	}

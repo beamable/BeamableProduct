@@ -87,6 +87,7 @@ public class App
 		Services.AddSingleton<ConfigService>();
 		Services.AddSingleton<BeamoService>();
 		Services.AddSingleton<CliEnvironment>();
+		Services.AddSingleton<BeamoLocalService>();
 
 		// add commands
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();
@@ -98,6 +99,12 @@ public class App
 		Services.AddCommand<BeamoManifestsCommand, BeamoManifestsArgs, BeamoCommand>();
 		Services.AddCommand<BeamoDeployCommand, BeamoDeployArgs, BeamoCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
+		
+		Services.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
+		Services.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
 
 		// customize
 		configurator?.Invoke(Services);

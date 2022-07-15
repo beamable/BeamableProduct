@@ -119,3 +119,4 @@ client/Assets/Beamable/Resources/config-defaults.txt
 client/Assets/Editor.meta
 client/Assets/Plugins/Editor.meta
 client/Assets/Editor/BeamableLoginDev/login_data.json
+cli/cli/beamoLocalRuntime.json
