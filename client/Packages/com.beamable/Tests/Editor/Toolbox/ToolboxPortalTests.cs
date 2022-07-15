@@ -25,21 +25,6 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Tests.Toolbox
 {
-	public class FML : MonoBehaviour
-	{
-		//idk 
-		static void ExecuteEvent(Button button)
-		{
-			Button b = button;
-			GameObject g = new GameObject();
-			
-
-			g.AddComponent(typeof(Button));
-			g.GetComponent<Button>().Equals(button);
-
-			//ExecuteEvents.Execute(g.gameObject, new BaseEventData(eventSystem), )
-		}
-	}
     public class ToolboxPortalTests : EditorTest
 	{
 		protected override void Configure(IDependencyBuilder builder)
@@ -48,44 +33,48 @@ namespace Beamable.Editor.Tests.Toolbox
 		}
 
 		// A Test behaves as an ordinary method
-		[Test]
-        public void ToolboxPortalTestsSimplePasses()
+		[UnityTest]
+        public IEnumerator ToolboxPortalTestsSimplePasses()
         {
-			var de = BeamEditorContext.Default;
-			//string url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/dashboard?refresh_token={de.Requester.Token.RefreshToken}";
-			
 			IWebsiteHook websiteHook = Provider.GetService<IWebsiteHook>();
 
 			ToolboxBreadcrumbsVisualElement tbBreadcrumbs = new ToolboxBreadcrumbsVisualElement();
 			tbBreadcrumbs.Refresh(Provider);
 
-			//emit a click on this button
 			var portalButton = tbBreadcrumbs.Q<Button>("openPortalButton");
-			//portalButton.SendEvent(new MouseMoveEvent());
-			//portalButton.SendEvent(new MouseUpEvent());
-			//portalButton.clickable.activators.Clear();
-			//portalButton.clickable.SendEvent();
-			//portalButton.SendEvent(new Clickable(new ContextClickEvent()));
 
-			//Clickable click = portalButton.clickable;
-			//portalButton.HandleEvent(new ContextLeftClickEvent());
-			//portalButton.SendEvent(new ContextLeftClickEvent());
+			var window = portalButton.MountForTest();
 
-			using (var e = new ContextLeftClickEvent() { target = portalButton })
-				portalButton.SendEvent(e);
+			yield return null;
 
-			portalButton.RegisterCallback<MouseUpEvent>((evt) => Debug.Log("TEST"));
+			portalButton.SendTestClick();
+			window.Close();
 
-			//portalButton.clickable.clicked += () => Debug.Log("PWP");
-
-			//portalButton.RegisterCallback<MouseDownEvent>((MouseDownEvent evt) => Debug.Log("test"), TrickleDown.TrickleDown);
-
-			//temp only
-			websiteHook.OpenUrl("trouble in errorist town");
 			Debug.Log(websiteHook.Url);
 
-			//var de = BeamEditorContext.Default;
-			Assert.AreEqual($"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/dashboard?refresh_token={de.Requester.Token.RefreshToken}", websiteHook.Url);
+			var de = BeamEditorContext.Default;
+			string url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/dashboard?refresh_token={de.Requester.Token.RefreshToken}";
+
+			Assert.AreEqual(url, websiteHook.Url);
+		}
+
+		[UnityTest]
+		public IEnumerator ButtonClickTest()
+		{
+			var wasClicked = false;
+
+			var button = new Button();
+			var window = button.MountForTest();
+			button.clickable.clicked += () =>
+			{
+				wasClicked = true;
+			};
+
+			yield return null; // before continuing, we need to wait a frame, so that Unity can trigger the layout code on the test window
+
+			button.SendTestClick();
+			window.Close();
+			Assert.IsTrue(wasClicked);
 		}
 	}
 }
