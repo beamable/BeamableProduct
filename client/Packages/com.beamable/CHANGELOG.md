@@ -20,12 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds `Cid` and `Pid` field to `IBeamableRequester` interface
 - Added `Friends` list accessible through the `BeamContext`
 - Added posibility of disable content serialization exceptions during content download to allow manual repair for corrupted files. 
+- `SetLanguage` function for `IAuthApi`
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 - The Beamable host URL is no longer sourced from `config-defaults.txt`. Instead, it comes from the `BeamableEnvironment` class. 
 - Changed `PackageVersion` to accept "preview" prefix strings instead of requiring a direct match of the string "preview"
+- The `Language` field on the `IPlatformRequester` is no obsolete
+- Beamable no longer sends "Accept-Language" headers
 
 ### Fixed
 - Beamable button in Unity toolbar should be in correct position for production packages
