@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - For now, we don't run any `InitializeServicesAttributes` when validating this.
   - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process.
 - Added microservice archive/unarchive feature.
-- The base docker image used for Microservices will be automatically pulled at startup
+- The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
 
 ### Changed
 - local microservice logs will appear for dotnet watch command

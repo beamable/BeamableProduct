@@ -6,23 +6,20 @@ namespace Beamable.Server.Editor.DockerCommands
 {
 	public class PullImageCommand : DockerCommandReturnable<bool>
 	{
+		private readonly string _imageAndTag;
+
 		public static PullImageCommand PullBeamService() =>
-			new PullImageCommand(DockerfileGenerator.BASE_IMAGE, DockerfileGenerator.BASE_TAG);
+			new PullImageCommand($"{DockerfileGenerator.BASE_IMAGE}:{DockerfileGenerator.BASE_TAG}");
 
-		private readonly string _image;
-		private readonly string _tag;
-
-		public PullImageCommand(string image, string tag)
+		public PullImageCommand(string imageAndTag)
 		{
-			_image = image;
-			_tag = tag;
+			_imageAndTag = imageAndTag;
 			WriteCommandToUnity = false;
 			WriteLogToUnity = false;
 		}
 
 		public override string GetCommandString()
 		{
-			var image = $"{_image}:{_tag}";
 			var platform = MicroserviceConfiguration.Instance.DockerCPUArchitecture;
 
 			var platformStr = "";
@@ -30,7 +27,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			platformStr = $"--platform {platform}";
 			#endif
 
-			return $"{DockerCmd} pull {platformStr} {image}";
+			return $"{DockerCmd} pull {platformStr} {_imageAndTag}";
 		}
 
 		protected override void Resolve()

@@ -31,9 +31,6 @@ namespace Beamable.Server.Editor
 		public static string dockerlocation = "docker";
 #endif
 
-		private const int MENU_TOGGLE_PRIORITY = Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
-
-		public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
 		public const string TEMPLATE_DIRECTORY = "Packages/com.beamable.server/Template";
 		private const string TEMPLATE_MICROSERVICE_DIRECTORY = TEMPLATE_DIRECTORY;
 		private const string DESTINATION_MICROSERVICE_DIRECTORY = "Assets/Beamable/Microservices";
@@ -91,6 +88,7 @@ namespace Beamable.Server.Editor
 				}
 
 				TryToPreloadBaseImage();
+				TryToPreloadMongoImage();
 
 				IsInitialized = true;
 			}
@@ -104,6 +102,25 @@ namespace Beamable.Server.Editor
 			try
 			{
 				await PullImageCommand.PullBeamService().StartAsync();
+			}
+			catch
+			{
+				// it does not matter if this request fails- because it is only a preload operation.
+				// in the event this fails, the image will be downloaded later.
+			}
+		}
+
+		public static async void TryToPreloadMongoImage()
+		{
+			if (Application.isPlaying) return;
+			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			if (registry.StorageDescriptors.Count == 0) return;
+			var image = registry.StorageDescriptors[0]?.ImageName;
+			if (image == null) return;
+
+			try
+			{
+				await (new PullImageCommand(image).StartAsync());
 			}
 			catch
 			{
