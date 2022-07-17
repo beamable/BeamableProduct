@@ -3,6 +3,7 @@ using NewTestingTool.Core.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.ResourceManagement.Util;
 using UnityEngine.UI;
@@ -21,7 +22,7 @@ namespace NewTestingTool.Core
 		private RegisteredTest CurrentRegisteredTest => CurrentTest[_currentOrderIndex];
 		private RegisteredTestMethod CurrentTestedTestMethod => CurrentRegisteredTest.RegisteredMethodTests[_currentCaseIndex - 1];
 
-		private List<List<RegisteredTest>> _allTests = new List<List<RegisteredTest>>();
+		private readonly List<List<RegisteredTest>> _allTests = new List<List<RegisteredTest>>();
 		private int _currentTestIndex, _currentOrderIndex, _currentCaseIndex;
 		private bool _isSetup;
 
@@ -30,10 +31,10 @@ namespace NewTestingTool.Core
 			ChangeButtonsInteractableState(false);
 			Init();
 		}
-		private void Start()
+		private async void Start()
 		{
 			if (automaticallyStart)
-				InvokeNextTest();
+				await InvokeNextTest();
 		}
 		
 		private void Init()
@@ -119,26 +120,23 @@ namespace NewTestingTool.Core
 				registeredTests.Add(new RegisteredTest(order));
 			registeredTests.First(x => x.Order == order).RegisteredMethodTests.Add(registeredMethodTest);
 		}
-
-		/// <summary>
-		/// Allows to mark a test with a specified result. Used in automated tests.
-		/// </summary>
-		/// <param name="result">Result of the test.</param>
-		public void MarkTestResult(TestResult result)
+		private async void MarkTestResult(TestResult result)
 		{
-			ChangeButtonsInteractableState(false);
+			if (result == TestResult.NotSet)
+			{
+				MarkTestResultManually();
+				return;
+			}
 			
+			ChangeButtonsInteractableState(false);
 			CurrentTestedTestMethod.TestResult = result;
 			if (displayLogs)
 				TestableDebug.Log(
 					$"Result=[{TestableDebug.WrapWithColor(result, result == TestResult.Passed ? Color.green : Color.red)}] Method=[{TestableDebug.WrapWithColor(CurrentTestedTestMethod.MethodInfo.Name, Color.yellow)}]");
-					
-			InvokeNextTest();
+
+			await InvokeNextTest();
 		}
-		/// <summary>
-		/// Allows to mark a test with a specified result using UI. Used in manual tests.
-		/// </summary>
-		public void MarkTestResultManually()
+		private void MarkTestResultManually()
 		{
 			void MarkTestAsPassed() => MarkTestResult(TestResult.Passed);
 			void MarkTestAsFailed() => MarkTestResult(TestResult.Failed);
@@ -165,7 +163,7 @@ namespace NewTestingTool.Core
 					registeredTest.Reset();
 		}
 		
-		private void InvokeNextTest()
+		private async Task InvokeNextTest()
 		{
 			while (true)
 			{
@@ -184,7 +182,7 @@ namespace NewTestingTool.Core
 						if (_currentCaseIndex < registeredMethodTests.Count)
 						{
 							_currentCaseIndex++;
-							registeredMethodTests[_currentCaseIndex - 1].InvokeTest(displayLogs, _currentOrderIndex, _currentCaseIndex - 1);
+							await registeredMethodTests[_currentCaseIndex - 1].InvokeTest(displayLogs, _currentOrderIndex, _currentCaseIndex - 1, MarkTestResult);
 						}
 						else
 						{

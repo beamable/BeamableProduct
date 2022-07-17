@@ -4,32 +4,38 @@ using System.Threading.Tasks;
 
 public class ExampleTest : Testable
 {
+	/// <summary>
+	/// TestResult.Passed - Marks automatically a test as passed.
+	/// TestResult.Failed - Marks automatically a test as failed.
+	/// TestResult.NotSet - Requires user manual check if a test is passed or failed using buttons in scene UI (Passed/Failed). Used especially for UI tests.
+	/// </summary>
+
 	[TestStep(1)]
-	private void TestMethodWithoutArguments()
+	private TestResult TestMethodWithoutArguments()
 	{
-		TestController.Instance.MarkTestResult(TestResult.Passed);
+		return TestResult.NotSet;
 	}
 	
 	[TestStep(2, "Hello", "World")]
-	private async Task TestMethodWithArguments(string arg1, string arg2)
+	private async Task<TestResult> TestMethodWithArguments(string arg1, string arg2)
 	{
-		await Task.Delay(1000);
-		TestController.Instance.MarkTestResultManually();
+		await Task.Delay(3000);
+		return TestResult.Passed;
 	}
 	
 	[TestStep(3, 2, 2)]
 	[TestStep(3, 5, 10)]
-	private async Task TestMethodWithArgumentsAndMultipleSteps(int arg1, int arg2)
+	private async Task<TestResult> TestMethodWithArgumentsAndMultipleSteps(int arg1, int arg2)
 	{
 		await Task.Delay(1000);
 		var sum = arg1 + arg2;
-		TestController.Instance.MarkTestResult(TestResult.Failed);
+		return TestResult.NotSet;
 	}
 	
 	[TestStep(4)]
 	[TestStep(4)]
-	private void SuperTest()
+	private TestResult SuperTest()
 	{
-		TestController.Instance.MarkTestResultManually();
+		return TestResult.Failed;
 	}
 }
