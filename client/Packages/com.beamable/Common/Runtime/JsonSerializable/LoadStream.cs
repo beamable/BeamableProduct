@@ -1,12 +1,18 @@
+#if UNITY_2018_1_OR_NEWER || BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#define BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#endif
+
+using Beamable.Common;
 using Beamable.Common.Spew;
-using Beamable.Pooling;
+using Beamable.Common.Pooling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 using UnityEngine;
-
+#endif
 namespace Beamable.Serialization
 {
 	public partial class JsonSerializable
@@ -44,7 +50,7 @@ namespace Beamable.Serialization
 			public bool isLoading { get { return !isSaving; } }
 			public bool HasKey(string key) { return curDict.ContainsKey(key); }
 			public object GetValue(string key) { return curDict[key]; }
-			public void SetValue(string key, object value) { Debug.LogError("Set value called on load"); }
+			public void SetValue(string key, object value) { BeamableLogger.LogError("Set value called on load"); }
 
 			public ListMode Mode { get { return mode; } }
 
@@ -335,7 +341,7 @@ namespace Beamable.Serialization
 					}
 					catch (Exception e)
 					{
-						Debug.LogWarning("DateTime could not deserialize: " + tmp + "  " + e.Message);
+						BeamableLogger.LogWarning("DateTime could not deserialize: " + tmp + "  " + e.Message);
 						return false;
 					}
 
@@ -344,6 +350,7 @@ namespace Beamable.Serialization
 				return false;
 			}
 
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 			public bool Serialize(string key, ref Rect target)
 			{
 				object tmp;
@@ -482,7 +489,7 @@ namespace Beamable.Serialization
 				}
 				return false;
 			}
-
+#endif
 
 			public bool Serialize<T>(string key, ref T value)
 			   where T : class, ISerializable, new()
@@ -520,7 +527,7 @@ namespace Beamable.Serialization
 			{
 				if (value == null)
 				{
-					Debug.LogError("Cannot deserialize into null value when type doesn't conform to new()");
+					BeamableLogger.LogError("Cannot deserialize into null value when type doesn't conform to new()");
 					return false;
 				}
 				return InternalSerialize<T>(key, ref value);
@@ -537,7 +544,7 @@ namespace Beamable.Serialization
 				var list = entry as T;
 				if (list == null && entry != null)
 				{
-					Debug.LogError(string.Format("Could not match data ({0}) to field: {1} != {2}", key, typeof(T), entry.GetType()));
+					BeamableLogger.LogError(string.Format("Could not match data ({0}) to field: {1} != {2}", key, typeof(T), entry.GetType()));
 				}
 				return list;
 			}
@@ -863,7 +870,7 @@ namespace Beamable.Serialization
 				}
 				else
 				{
-					Debug.LogError(string.Format("Could not match data ({0}) to field: {1} != {2}", key, typeof(T), entry.GetType()));
+					BeamableLogger.LogError(string.Format("Could not match data ({0}) to field: {1} != {2}", key, typeof(T), entry.GetType()));
 					return false;
 				}
 			}
@@ -937,7 +944,7 @@ namespace Beamable.Serialization
 				}
 				else
 				{
-					Debug.LogErrorFormat("List derserialization error, type {0} != type {1}", elemType, data.GetType());
+					BeamableLogger.LogErrorFormat("List derserialization error, type {0} != type {1}", elemType, data.GetType());
 					return false;
 				}
 			}
@@ -973,7 +980,7 @@ namespace Beamable.Serialization
 				}
 				catch (MissingMethodException)
 				{
-					Debug.LogErrorFormat("Derserialization error, type {0} has no empty constructor.", type);
+					BeamableLogger.LogErrorFormat("Derserialization error, type {0} has no empty constructor.", type);
 					return null;
 				}
 			}

@@ -1,6 +1,4 @@
 using Beamable.Common;
-using Beamable.Serialization;
-using System;
 using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Chat
@@ -119,65 +117,5 @@ namespace Beamable.Experimental.Api.Chat
 				_onMessageReceived(message);
 			}
 		}
-	}
-
-	[Serializable]
-	public class Message : JsonSerializable.ISerializable
-	{
-		/// <summary>
-		/// The id of the message
-		/// </summary>
-		public string messageId;
-
-		/// <summary>
-		/// The id of the room where the message was sent
-		/// </summary>
-		public string roomId;
-
-		/// <summary>
-		/// The gamertag of the sender
-		/// </summary>
-		public long gamerTag;
-
-		/// <summary>
-		/// The message body. You should use the <see cref="censoredContent"/> to make sure the subject material is safe.
-		/// </summary>
-		public string content;
-
-		/// <summary>
-		/// The message body, similar to <see cref="content"/>. However, this string goes through a profanity filter on Beamable
-		/// to remove unsafe material.
-		/// </summary>
-		public string censoredContent;
-
-		/// <summary>
-		/// The timestamp that this message was created.
-		/// Number of milliseconds since 1970-01-01T00:00:00Z.
-		/// </summary>
-		public long timestampMillis;
-
-		/// <summary>
-		/// The <see cref="MessageType"/> of the message.
-		/// </summary>
-		public MessageType Type
-		{
-			get { return gamerTag == 0 ? MessageType.Admin : MessageType.User; }
-		}
-
-		public void Serialize(JsonSerializable.IStreamSerializer s)
-		{
-			s.Serialize("messageId", ref messageId);
-			s.Serialize("roomId", ref roomId);
-			s.Serialize("gamerTag", ref gamerTag);
-			s.Serialize("content", ref content);
-			s.Serialize("censoredContent", ref censoredContent);
-			s.Serialize("timestampMillis", ref timestampMillis);
-		}
-	}
-
-	public enum MessageType
-	{
-		Admin,
-		User
 	}
 }

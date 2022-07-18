@@ -6,7 +6,7 @@
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
 
-        <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER</DefineConstants>
+        <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES</DefineConstants>
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>Beamable.Common</AssemblyName>
 
