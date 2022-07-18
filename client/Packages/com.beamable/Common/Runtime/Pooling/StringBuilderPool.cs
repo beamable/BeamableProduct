@@ -8,6 +8,7 @@ namespace Beamable.Common.Pooling
 	{
 #if UNITY_WEBGL
       private static StringBuilderPool _instance;
+      private static StringBuilderPool _largePoolInstance;
       public static StringBuilderPool StaticPool
       {
          get
@@ -18,6 +19,18 @@ namespace Beamable.Common.Pooling
             }
 
             return _instance;
+         }
+      }
+	  public static StringBuilderPool LargeStaticPool
+      {
+         get
+         {
+            if (_largePoolInstance == null)
+            {
+               _largePoolInstance = new StringBuilderPool(3, 512);
+            }
+
+            return _largePoolInstance;
          }
       }
 #else
