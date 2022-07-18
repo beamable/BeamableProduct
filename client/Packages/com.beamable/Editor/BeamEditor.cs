@@ -468,6 +468,8 @@ namespace Beamable
 		public Action OnServiceArchived;
 		public Action OnServiceUnarchived;
 
+		private Promise<string> _realmSecretPromise;
+
 		public void Init(string playerCode, IDependencyBuilder builder)
 		{
 			PlayerCode = playerCode;
@@ -926,12 +928,13 @@ namespace Beamable
 		public Promise<string> GetRealmSecret()
 		{
 			// TODO this will only work if the current user is an admin.
-
-			return Requester.Request<CustomerResponse>(Method.GET, "/basic/realms/admin/customer").Map(resp =>
+			if (_realmSecretPromise != null) return _realmSecretPromise;
+			_realmSecretPromise = Requester.Request<CustomerResponse>(Method.GET, "/basic/realms/admin/customer").Map(resp =>
 			{
 				var matchingProject = resp.customer.projects.FirstOrDefault(p => p.name.Equals(CurrentRealm.Pid));
 				return matchingProject?.secret ?? "";
 			});
+			return _realmSecretPromise;
 		}
 
 		public Promise SetGame(RealmView game)

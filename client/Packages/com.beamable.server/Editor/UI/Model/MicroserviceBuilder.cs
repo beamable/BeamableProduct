@@ -1,7 +1,9 @@
+using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -50,11 +52,14 @@ namespace Beamable.Editor.UI.Model
 		private string _buildPath;
 
 		private bool _BuildShouldRunCustomInitializationHooks;
+
+		private Promise<string> _secret;
+
 		public MicroserviceBuilder(bool runCustomHooks = true)
 		{
 			_BuildShouldRunCustomInitializationHooks = runCustomHooks;
 		}
-		
+
 		public void ForwardEventsTo(MicroserviceBuilder oldBuilder)
 		{
 			if (oldBuilder == null) return;
@@ -66,20 +71,31 @@ namespace Beamable.Editor.UI.Model
 		{
 			base.Init(descriptor);
 			_buildPath = ((MicroserviceDescriptor)descriptor).BuildPath;
+			var _ = BeamEditorContext.Default.GetRealmSecret(); // start fetching the secret early, so we don't need to wait for it later.
 			await TryToGetLastImageId();
 		}
 
+
 		protected override async Task<RunImageCommand> PrepareRunCommand()
 		{
+			var descriptor = (MicroserviceDescriptor)Descriptor;
 			var beamable = BeamEditorContext.Default;
 			await beamable.InitializePromise;
+			var sw = new Stopwatch();
 			var secret = await beamable.GetRealmSecret();
 			var cid = beamable.CurrentCustomer.Cid;
+			var pid = beamable.CurrentRealm.Pid;
 			// check to see if the storage descriptor is running.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
 			var connectionStrings = await serviceRegistry.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)Descriptor);
-			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings, isWatch, _BuildShouldRunCustomInitializationHooks);
+			BeamEditorContext.Default.ServiceScope.GetService<MicroservicesDataModel>().AddLogMessage((MicroserviceDescriptor)Descriptor, new LogMessage
+			{
+				Message = $"Finished preparing {descriptor.Name}. Starting now...",
+				Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+				Level = LogLevel.INFO
+			});
+			return new RunServiceCommand(descriptor, cid, pid, secret, connectionStrings, isWatch, _BuildShouldRunCustomInitializationHooks);
 		}
 
 		public async Task<bool> TryToBuild(bool includeDebuggingTools)

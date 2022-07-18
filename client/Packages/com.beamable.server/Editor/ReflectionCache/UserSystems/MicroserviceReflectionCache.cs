@@ -344,8 +344,8 @@ namespace Beamable.Server.Editor
 
 				var nameToImageId = new Dictionary<string, string>();
 				var enabledServices = new List<string>();
-				
-				
+
+
 				var secret = await de.GetRealmSecret();
 
 
@@ -399,14 +399,14 @@ namespace Beamable.Server.Editor
 
 						// Check to see if the storage descriptor is running.
 						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
-						
+
 						// Create a build that will build an image that doesn't run the custom initialization hooks
 						// Let's run it locally.
 						// At the moment we disable running custom hooks for this verification.
 						// This is because we cannot guarantee the user won't do anything in them to break this.
 						// TODO: Change algorithm to always have StorageObjects running locally during verification process.
 						// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
-						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, secret, connectionStrings, false, false);
+						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
 						runServiceCommand.Start();
 
 						async Promise<string> CheckHealthStatus()
@@ -445,15 +445,15 @@ namespace Beamable.Server.Editor
 							await Task.Delay(500, token);
 							timeWaitingForBoot += .5f;
 						} while (timeWaitingForBoot <= 10f && !isHealthy);
-						
+
 						if (!isHealthy)
 						{
 							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-							
+
 							// Stop the container since we don't need to keep the local one alive anymore.
 							await new StopImageCommand(descriptor).StartAsync();
-							
+
 							return;
 						}
 
