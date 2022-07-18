@@ -53,7 +53,7 @@ namespace Beamable.Editor.Microservice.UI
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
 		private MicroserviceContentVisualElement _microserviceContentVisualElement;
 		private LoadingBarElement _loadingBar;
-
+		
 		public MicroservicesDataModel Model => ActiveContext.ServiceScope.GetService<MicroservicesDataModel>();
 
 		private Promise<bool> checkDockerPromise;
@@ -73,7 +73,7 @@ namespace Beamable.Editor.Microservice.UI
 			minSize = new Vector2(550, 200);
 
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
-			await checkDockerPromise;
+				await checkDockerPromise;
 
 			void OnUserChange(EditorUser _) => BuildWithContext();
 			void OnRealmChange(RealmView _) => _microserviceContentVisualElement?.StopAllServices(true, RealmSwitchDialog.TITLE, RealmSwitchDialog.MESSAGE, RealmSwitchDialog.OK);
@@ -91,12 +91,16 @@ namespace Beamable.Editor.Microservice.UI
 
 			ActiveContext.OnServiceUnarchived -= ServiceArchived;
 			ActiveContext.OnServiceUnarchived += ServiceArchived;
+			
+			ActiveContext.OnServiceDeleteProceed -= OnServiceDeleteProceed;
+			ActiveContext.OnServiceDeleteProceed += OnServiceDeleteProceed;
 		}
-
+		
 		private void OnDisable()
 		{
 			if (ActiveContext != null)
 			{
+				ActiveContext.OnServiceDeleteProceed -= OnServiceDeleteProceed;
 				ActiveContext.OnServiceArchived -= ServiceArchived;
 				ActiveContext.OnServiceUnarchived -= ServiceArchived;
 			}
@@ -208,6 +212,12 @@ namespace Beamable.Editor.Microservice.UI
 		private void ServiceArchived()
 		{
 			_microserviceBreadcrumbsVisualElement.RefreshFiltering();
+		}
+		
+		private void OnServiceDeleteProceed()
+		{
+			var root = this.GetRootVisualContainer();
+			root?.SetEnabled(false);
 		}
 	}
 }

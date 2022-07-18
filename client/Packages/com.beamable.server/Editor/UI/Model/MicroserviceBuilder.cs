@@ -49,6 +49,12 @@ namespace Beamable.Editor.UI.Model
 		[SerializeField]
 		private string _buildPath;
 
+		private bool _BuildShouldRunCustomInitializationHooks;
+		public MicroserviceBuilder(bool runCustomHooks = true)
+		{
+			_BuildShouldRunCustomInitializationHooks = runCustomHooks;
+		}
+		
 		public void ForwardEventsTo(MicroserviceBuilder oldBuilder)
 		{
 			if (oldBuilder == null) return;
@@ -73,7 +79,7 @@ namespace Beamable.Editor.UI.Model
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
 			var connectionStrings = await serviceRegistry.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)Descriptor);
-			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings, isWatch);
+			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings, isWatch, _BuildShouldRunCustomInitializationHooks);
 		}
 
 		public async Task<bool> TryToBuild(bool includeDebuggingTools)
@@ -89,9 +95,9 @@ namespace Beamable.Editor.UI.Model
 				await TryToStop(); // for it to stop.
 				await BeamServicesCodeWatcher.StopClientSourceCodeGenerator((MicroserviceDescriptor)Descriptor);
 			}
-			
+
 			var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
-			
+
 			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, availableArchitectures, includeDebuggingTools, isWatch);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);

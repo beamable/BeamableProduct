@@ -21,6 +21,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		InProgress,
 		Failed,
 		Published,
+		Verifying // Checking if the image actually starts up correctly.
 	}
 
 	public class PublishManifestEntryVisualElement : MicroserviceComponent,
@@ -34,6 +35,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{ServicePublishState.Published, "published"},
 				{ServicePublishState.InProgress, "publish-inProgress"},
 				{ServicePublishState.Failed, "publish-failed"},
+				{ServicePublishState.Verifying, "publish-inProgress"},
 			};
 
 		public IEntryModel Model { get; }
@@ -174,6 +176,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 					_stateLabel.text = "PUBLISHING";
 					break;
 				}
+				
+				case ServicePublishState.Verifying:
+				{
+					_stateLabel.text = "VERIFYING";
+					break;
+				}
 
 				default:
 				{
@@ -209,10 +217,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 					return 0;
 				case ServicePublishState.InProgress:
 					return 1;
-				case ServicePublishState.Unpublished:
+				case ServicePublishState.Verifying:
 					return 2;
-				case ServicePublishState.Published:
+				case ServicePublishState.Unpublished:
 					return 3;
+				case ServicePublishState.Published:
+					return 4;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}

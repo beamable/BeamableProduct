@@ -31,6 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Beamable button in Unity toolbar should be in correct position for production packages
+- Content validation callbacks now support invoking private methods in base classes
+- BeamConsole accepts events after RESET command
+
+## [1.2.8]
+### Added
+- SetLanguage function for IAuthApi
+
+### Changed
+- The Language field on the IPlatformRequester is no obsolete
+- Beamable no longer sends "Accept-Language" headers
+
+## [1.2.7]
+### Changed
+- New players will now get a locale and a location stat based on the Unity Application.language field.
 
 ## [1.2.6]
 no changes
