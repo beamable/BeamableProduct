@@ -110,7 +110,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		}
 
-		public static bool HandleLog(IDescriptor descriptor, string label, string data, DateTime fallbackTime=default)
+		public static bool HandleLog(IDescriptor descriptor, string label, string data, DateTime fallbackTime = default)
 		{
 			if (Json.Deserialize(data) is ArrayDict jsonDict)
 			{
