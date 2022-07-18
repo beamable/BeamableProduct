@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.6]
+### Fixed
+- Realm scoped permissions are now respected
+
 ## [0.18.5]
 ### Fixed
 - Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.

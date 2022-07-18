@@ -75,8 +75,14 @@ namespace Beamable.Editor.Login.UI.Components
          if (Model.CurrentUser == null) return;
 
          _emailField.SetValueWithoutNotify(Model.CurrentUser.email);
-         _roleField.SetValueWithoutNotify(Model.CurrentUser.roleString);
-
+         if (Model.CurrentRealm != null)
+         {
+	         _roleField.SetValueWithoutNotify(Model.CurrentUser.GetPermissionsForRealm(Model.CurrentRealm.Pid).Role);
+         }
+         else
+         {
+	         _roleField.SetValueWithoutNotify(Model.CurrentUser.roleString + " (default)");
+         }
       }
 
       private void SetGameView()
