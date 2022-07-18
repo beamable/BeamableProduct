@@ -1,6 +1,5 @@
 ﻿using Beamable.Common;
 using Docker.DotNet.Models;
-using TaskStatus = System.Threading.Tasks.TaskStatus;
 
 namespace cli;
 
@@ -275,15 +274,46 @@ public partial class BeamoLocalService
 	/// <param name="builtLayers">An array of layers, each containing indices into <paramref name="serviceDefinitions"/> for services in that layer.</param>
 	private static void BuildLayeredDependencies(List<BeamoServiceDefinition> serviceDefinitions, out int[][] builtLayers)
 	{
-		// Find the layers of dependency counts
-		var layers = serviceDefinitions
-			.GroupBy(c => c.DependsOnBeamoIds.Length).ToList();
+		// Find the layers with 0 dependencies
+		var currentLayerDefinitions = serviceDefinitions.Where(c => c.DependsOnBeamoIds.Length == 0).ToList();
+		var seen = new HashSet<BeamoServiceDefinition>();
 
-		// Sort the layers by count (smallest number of dependencies first)
-		layers.Sort((g1, g2) => g1.Key.CompareTo(g2.Key));
+		var layers = new List<int[]>();
+		// While we haven't seen everything
+		var allCompletedDependencies = new HashSet<int>();
+		while (!serviceDefinitions.TrueForAll(sd => seen.Contains(sd)))
+		{
+			// Makes a layer out of all the nodes in the current layer --- when we start, this is all the nodes with 0 dependencies.
+			// In further iterations of this loop, it'll contain all service definitions whose dependencies are in previous layers AND haven't been added before. 
+			var currLayer = currentLayerDefinitions.Select(sd => serviceDefinitions.IndexOf(sd)).ToArray();
+			layers.Add(currLayer);
+
+			// Updates the set of seen service definitions so we know when to break out of this loop
+			seen.UnionWith(currentLayerDefinitions);
+
+			// Updates the list of all completed dependencies so that we can search for nodes in the next layer.
+			allCompletedDependencies.UnionWith(layers.SelectMany(ints => ints));
+
+			// Go through all the service definitions and find the next layer of service definitions based on all the completed dependencies.
+			currentLayerDefinitions.Clear();
+			foreach (var sd in serviceDefinitions)
+			{
+				// Check that all the dependencies are in previous layers
+				var isInNextLayer = sd.DependsOnBeamoIds.ToList().TrueForAll(depBeamoId =>
+				{
+					var dependencyIdx = serviceDefinitions.FindIndex(sd2 => sd2.BeamoId == depBeamoId);
+					return allCompletedDependencies.Contains(dependencyIdx);
+				});
+
+
+				// If they are, and we haven't expanded them already, we can have them in the next layer.  
+				if (isInNextLayer && !seen.Contains(sd))
+					currentLayerDefinitions.Add(sd);
+			}
+		}
 
 		// Build them into a list of indices into the unsorted list of containers (the parameter list)
-		builtLayers = layers.Select(g => g.Select(c => serviceDefinitions.IndexOf(c)).ToArray()).ToArray();
+		builtLayers = layers.ToArray();
 	}
 }
 

@@ -456,7 +456,6 @@ public partial class BeamoLocalService
 		return builtImage.ID;
 	}
 
-
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
@@ -511,11 +510,14 @@ public partial class BeamoLocalService
 		return tarball;
 	}
 
+	/// <summary>
+	/// Deletes all containers and images related to the given <paramref name="beamoId"/>.
+	/// TODO: Track down every other service that depends on this one and shut them down before hand.
+	/// </summary>
 	public async Task CleanUpDocker(string beamoId)
 	{
 		var serviceDefinition = BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
-		if (serviceDefinition != null)
-			await CleanUpDocker(serviceDefinition);
+		if (serviceDefinition != null) await CleanUpDocker(serviceDefinition);
 	}
 
 	/// <summary>
