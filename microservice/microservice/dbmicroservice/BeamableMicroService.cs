@@ -625,6 +625,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
                .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
+               .AddSingleton<IMicroserviceChatApi, MicroserviceChatApi>()
                .AddSingleton<ReflectionCache>(_ => _reflectionCache)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
