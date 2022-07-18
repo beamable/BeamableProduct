@@ -23,7 +23,7 @@ namespace Beamable.Editor.Content
 			var de = BeamEditorContext.Default;
 			Model.ContentIO = de.ContentIO;
 
-			Model.UserCanPublish = de.CurrentUser?.CanPushContent ?? false;
+			Model.UserCanPublish = de.Permissions.CanPushContent;
 			de.OnUserChange -= HandleOnUserChanged;
 			de.OnUserChange += HandleOnUserChanged;
 
@@ -194,7 +194,7 @@ namespace Beamable.Editor.Content
 
 		private void HandleOnUserChanged(EditorUser user)
 		{
-			Model.UserCanPublish = user?.CanPushContent ?? false;
+			Model.UserCanPublish = BeamEditorContext.Default.Permissions.CanPushContent;
 		}
 
 		public Promise<ContentPublishSet> CreatePublishSet(bool newNamespace = false)
