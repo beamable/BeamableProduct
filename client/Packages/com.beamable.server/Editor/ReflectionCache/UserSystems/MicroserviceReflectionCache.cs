@@ -419,7 +419,7 @@ namespace Beamable.Server.Editor
 
 							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
 							var res = await de.ServiceScope.GetService<IHttpRequester>()
-							                        .ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+													.ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
 							return res;
 						}
 

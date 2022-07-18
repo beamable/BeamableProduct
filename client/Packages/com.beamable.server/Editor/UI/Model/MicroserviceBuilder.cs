@@ -71,7 +71,6 @@ namespace Beamable.Editor.UI.Model
 		{
 			base.Init(descriptor);
 			_buildPath = ((MicroserviceDescriptor)descriptor).BuildPath;
-			var _ = BeamEditorContext.Default.GetRealmSecret(); // start fetching the secret early, so we don't need to wait for it later.
 			await TryToGetLastImageId();
 		}
 
@@ -81,8 +80,9 @@ namespace Beamable.Editor.UI.Model
 			var descriptor = (MicroserviceDescriptor)Descriptor;
 			var beamable = BeamEditorContext.Default;
 			await beamable.InitializePromise;
-			var sw = new Stopwatch();
-			var secret = await beamable.GetRealmSecret();
+			var secret =
+				beamable.RealmSecret.GetOrThrow(
+					() => new Exception("Cannot run a microservice without a realm secret."));
 			var cid = beamable.CurrentCustomer.Cid;
 			var pid = beamable.CurrentRealm.Pid;
 			// check to see if the storage descriptor is running.
