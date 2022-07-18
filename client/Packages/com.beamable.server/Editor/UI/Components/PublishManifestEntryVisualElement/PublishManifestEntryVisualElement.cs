@@ -176,7 +176,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					_stateLabel.text = "PUBLISHING";
 					break;
 				}
-				
+
 				case ServicePublishState.Verifying:
 				{
 					_stateLabel.text = "VERIFYING";

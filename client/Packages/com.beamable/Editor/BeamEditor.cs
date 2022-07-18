@@ -456,6 +456,13 @@ namespace Beamable
 		public RealmView ProductionRealm;
 		public EditorUser CurrentUser;
 
+		/// <summary>
+		/// The permissions for the <see cref="CurrentUser"/> in the <see cref="CurrentRealm"/>.
+		/// If either the user or realm are null, the <see cref="Permissions"/> will be at the lowest level.
+		/// </summary>
+		public UserPermissions Permissions =>
+			CurrentUser?.GetPermissionsForRealm(CurrentRealm?.Pid) ?? new UserPermissions(null);
+
 		public bool HasToken => Requester.Token != null;
 		public bool HasCustomer => CurrentCustomer != null && !string.IsNullOrEmpty(CurrentCustomer.Cid);
 		public bool HasRealm => CurrentRealm != null && !string.IsNullOrEmpty(CurrentRealm.Pid);
