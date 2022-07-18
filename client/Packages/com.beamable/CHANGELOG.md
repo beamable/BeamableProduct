@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content items sort option by `Recently updated` in Content Manager.
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
 - Added "experimental" package status support to the `PackageVersion` utility
-- Adds `Cid` and `Pid` field to `IBeamableRequester` interface
-- Added `Friends` list accessible through the `BeamContext`
+- `Cid` and `Pid` field to `IBeamableRequester` interface
+- `Friends` list accessible through the `BeamContext`
+- User's realm permission overrides apply in editor
 - `SetLanguage` function for `IAuthApi`
 
 ### Changed
