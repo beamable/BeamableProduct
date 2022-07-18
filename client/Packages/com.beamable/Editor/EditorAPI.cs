@@ -80,6 +80,8 @@ namespace Beamable.Editor
       public RealmView Realm { get; private set; }
       public RealmView ProductionRealm { get; private set; }
 
+      public UserPermissions Permissions => User?.GetPermissionsForRealm(Realm.Pid) ?? new UserPermissions(null);
+
       public EditorUser User;
       public AccessToken Token => _requester.Token;
 
@@ -90,7 +92,7 @@ namespace Beamable.Editor
 
       private Promise<EditorAPI> Initialize()
       {
-         if (!Application.isPlaying) 
+         if (!Application.isPlaying)
          {
             var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
             switch (promiseHandlerConfig)
@@ -99,10 +101,10 @@ namespace Beamable.Editor
                {
                   if(!PromiseBase.HasUncaughtErrorHandler)
                      PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
-                        
+
                   break;
                }
-               case CoreConfiguration.EventHandlerConfig.Replace:                        
+               case CoreConfiguration.EventHandlerConfig.Replace:
                case CoreConfiguration.EventHandlerConfig.Add:
                {
                   PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
