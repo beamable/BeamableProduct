@@ -74,7 +74,7 @@ namespace Beamable.Editor.Tests.Common
 		public static long InvokeFishCount = 0;
 		public void Tuna()
 		{
-			InvokeTunaCount ++;
+			InvokeTunaCount++;
 		}
 
 		private void Fish()

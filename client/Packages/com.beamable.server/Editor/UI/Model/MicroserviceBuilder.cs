@@ -54,7 +54,7 @@ namespace Beamable.Editor.UI.Model
 		{
 			_BuildShouldRunCustomInitializationHooks = runCustomHooks;
 		}
-		
+
 		public void ForwardEventsTo(MicroserviceBuilder oldBuilder)
 		{
 			if (oldBuilder == null) return;

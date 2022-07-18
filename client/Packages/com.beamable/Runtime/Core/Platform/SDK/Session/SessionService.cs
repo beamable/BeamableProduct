@@ -28,7 +28,7 @@ namespace Beamable.Api.Sessions
 		/// By default, the Application.systemLanguage will be used to infer the locale, but you can override this.
 		/// </param>
 		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
-		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale=null);
+		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale = null);
 
 		/// <summary>
 		/// Get the current <see cref="Session"/> of a player by their gamertag.
@@ -82,9 +82,9 @@ namespace Beamable.Api.Sessions
 		public float TimeSinceLastSessionStart => Time.realtimeSinceStartup - SessionStartedAt;
 
 		public SessionService(IBeamableRequester requester,
-		                      IDependencyProvider provider,
-		                      SessionParameterProvider parameterProvider,
-		                      SessionDeviceOptions deviceOptions)
+							  IDependencyProvider provider,
+							  SessionParameterProvider parameterProvider,
+							  SessionDeviceOptions deviceOptions)
 		{
 			_requester = requester;
 			// _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
@@ -145,7 +145,7 @@ namespace Beamable.Api.Sessions
 
 		private ArrayDict GenerateSessionLanguageContextParams(SessionLanguageContext sessionLanguageContext)
 		{
-			return new ArrayDict {{"code", sessionLanguageContext.code}, {"ctx", sessionLanguageContext.ctx}};
+			return new ArrayDict { { "code", sessionLanguageContext.code }, { "ctx", sessionLanguageContext.ctx } };
 		}
 
 		private Promise<ArrayDict> GenerateCustomParams(ArrayDict deviceParams, User user)
@@ -169,16 +169,16 @@ namespace Beamable.Api.Sessions
 		/// <param name="advertisingId"></param>
 		/// <param name="locale"></param>
 		/// <returns></returns>
-		public async Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale=null)
+		public async Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale = null)
 		{
 			SessionStartedAt = Time.realtimeSinceStartup;
 			locale = locale ?? await GenerateCustomLocale();
 
-			var args = new SessionStartRequestArgs {advertisingId = advertisingId, locale = locale};
+			var args = new SessionStartRequestArgs { advertisingId = advertisingId, locale = locale };
 			var deviceParams = GenerateDeviceParams(args);
 			var promise = GenerateCustomParams(deviceParams, user);
 
-			var languageContext = new SessionLanguageContext {code = locale, ctx = LanguageContext.ISO639.ToString()};
+			var languageContext = new SessionLanguageContext { code = locale, ctx = LanguageContext.ISO639.ToString() };
 			var serializedLanguageContext = GenerateSessionLanguageContextParams(languageContext);
 
 			return await promise.FlatMap(customParams =>

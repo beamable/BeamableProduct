@@ -1,5 +1,5 @@
 #if !BEAMABLE_DEVELOPER
-		#define NOT_BEAMABLE_DEVELOPER
+#define NOT_BEAMABLE_DEVELOPER
 #endif
 
 using Beamable.Common;
