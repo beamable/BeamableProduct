@@ -344,8 +344,8 @@ namespace Beamable.Server.Editor
 
 				var nameToImageId = new Dictionary<string, string>();
 				var enabledServices = new List<string>();
-				
-				
+
+
 				var secret = await de.GetRealmSecret();
 
 
@@ -399,7 +399,7 @@ namespace Beamable.Server.Editor
 
 						// Check to see if the storage descriptor is running.
 						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
-						
+
 						// Create a build that will build an image that doesn't run the custom initialization hooks
 						// Let's run it locally.
 						// At the moment we disable running custom hooks for this verification.
@@ -419,7 +419,7 @@ namespace Beamable.Server.Editor
 
 							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
 							var res = await de.ServiceScope.GetService<IHttpRequester>()
-							                        .ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+													.ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
 							return res;
 						}
 
@@ -445,15 +445,15 @@ namespace Beamable.Server.Editor
 							await Task.Delay(500, token);
 							timeWaitingForBoot += .5f;
 						} while (timeWaitingForBoot <= 10f && !isHealthy);
-						
+
 						if (!isHealthy)
 						{
 							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-							
+
 							// Stop the container since we don't need to keep the local one alive anymore.
 							await new StopImageCommand(descriptor).StartAsync();
-							
+
 							return;
 						}
 
