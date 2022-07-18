@@ -172,11 +172,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_DISABLE_RUN_CUSTOM_HOOK = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
 
 		public RunServiceCommand(MicroserviceDescriptor service,
-		                         string cid,
-		                         string secret,
-		                         Dictionary<string, string> env,
-		                         bool watch = true,
-		                         bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
+								 string cid,
+								 string secret,
+								 Dictionary<string, string> env,
+								 bool watch = true,
+								 bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
 			_watch = watch;

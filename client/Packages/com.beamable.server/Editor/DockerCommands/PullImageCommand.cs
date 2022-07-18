@@ -23,9 +23,9 @@ namespace Beamable.Server.Editor.DockerCommands
 			var platform = MicroserviceConfiguration.Instance.DockerCPUArchitecture;
 
 			var platformStr = "";
-			#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
 			platformStr = $"--platform {platform}";
-			#endif
+#endif
 
 			return $"{DockerCmd} pull {platformStr} {_imageAndTag}";
 		}
