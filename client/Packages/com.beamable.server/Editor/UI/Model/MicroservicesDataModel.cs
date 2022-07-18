@@ -292,8 +292,6 @@ namespace Beamable.Editor.UI.Model
 
 		protected async Promise RefreshState()
 		{
-			localServices.Clear();
-			localStorages.Clear();
 			remoteServices.Clear();
 			remoteStorages.Clear();
 			RefreshLocal();
