@@ -18,10 +18,10 @@ namespace Beamable.Server.Editor.CodeGen
 
 #if BEAMABLE_DEVELOPER
       public const string BASE_IMAGE = "beamservice"; // Use a locally built image.
-      public string BASE_TAG = "latest"; // Use a locally built image.
+      public static string BASE_TAG => "latest"; // Use a locally built image.
 #else
 		public const string BASE_IMAGE = "beamableinc/beamservice"; // use the public online image.
-		public string BASE_TAG = BeamableEnvironment.BeamServiceTag;
+		public static string BASE_TAG => BeamableEnvironment.BeamServiceTag;
 #endif
 
 		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
