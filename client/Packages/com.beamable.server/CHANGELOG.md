@@ -4,10 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
 ### Added
 - User can specify Microservices build CPU architecture. 
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
+- Microservices have their initialization validated before publishing. 
+  - This is mostly a sanity check to catch some errors we can't catch in the Unity Editor.
+  - For now, we don't run any `InitializeServicesAttributes` when validating this.
+  - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process. 
+  
 - Added microservice archive/unarchive feature.
 
 ### Changed
@@ -28,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Failed promises no longer log exception info after an exception handler is registered on the same execution cycle.
 - "Connection is closed" log exception no longer prints incorrectly.
 - Requests no longer attempt to send while authorization process is happening.
+
 
 ## [1.2.4]
 ### Added
