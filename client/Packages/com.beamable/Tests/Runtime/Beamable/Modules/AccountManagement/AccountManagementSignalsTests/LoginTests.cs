@@ -85,7 +85,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 		public IEnumerator WhenExistingAccount_SignalsSwitch()
 		{
 			var token = new TokenResponse();
-			var nextUser = new User();
+			var nextUser = new User {id = _engineUser.id + 1}; // the id needs to be different for the switch to get broadcast.
 			_engine.MockAuthService.IsEmailAvailableDelegate = email => Promise<bool>.Successful(false);
 			_engine.MockAuthService.LoginDelegate = (email, password, merge) => Promise<TokenResponse>.Successful(token);
 			_engine.MockAuthService.GetUserDelegate = t => Promise<User>.Successful(nextUser);

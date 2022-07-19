@@ -1,5 +1,6 @@
 ﻿using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
 using Beamable.Platform.SDK.Auth;
@@ -561,18 +562,46 @@ namespace Beamable.AccountManagement
 
 		private void OfferSwitch(User user)
 		{
-			Broadcast(user, s => s.UserSwitchAvailable);
+			API.Instance.Then(api =>
+			{
+				if (api.User.id == user.id)
+				{
+					api.UpdateUserData(user);
+				}
+				else
+				{
+					Broadcast(user, s => s.UserSwitchAvailable);
+				}
+			});
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, string email, string password)
 		{
-			return de.AuthService.Login(email, password, false)
+			return de.AuthService.Login(email, password)
+			         .RecoverWith(ex =>
+			         {
+				         if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+				             string.Equals("UnableToMergeError", platEx.Error.error))
+				         {
+					         return de.AuthService.Login(email, password, false);
+				         }
+				         return Promise<TokenResponse>.Failed(ex);
+			         })
 					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, AuthThirdParty thirdParty, string accessToken)
 		{
-			return de.AuthService.LoginThirdParty(thirdParty, accessToken, false)
+			return de.AuthService.LoginThirdParty(thirdParty, accessToken)
+			         .RecoverWith(ex =>
+			         {
+				         if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+				             string.Equals("UnableToMergeError", platEx.Error.error))
+				         {
+					         return de.AuthService.LoginThirdParty(thirdParty, accessToken, false);
+				         }
+				         return Promise<TokenResponse>.Failed(ex);
+			         })
 					 .FlatMap(token => SetPendingUser(de, token));
 		}
 

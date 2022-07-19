@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved `JsonSerializable` to Beamable.Common assembly
 - Moved some parts of the `ChatService` to Beamable.Common assembly
 - Changed namespace of `Beamable.Pooling.ClassPool` to `Beamable.Common.Pooling.ClassPool`
+- Account Management Flow will merge gamertags when existing login credential is detected, instead of always creating a new gamertag. This allows you to keep your gamertag on the realm. 
 
 ### Fixed
 - Beamable button in Unity toolbar should be in correct position for production packages
