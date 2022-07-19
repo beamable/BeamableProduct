@@ -84,7 +84,9 @@ namespace Beamable.Editor.Microservice.UI
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
 
+			await Model.FinishedLoading;
 			SetForContent();
+
 
 			ActiveContext.OnServiceArchived -= ServiceArchived;
 			ActiveContext.OnServiceArchived += ServiceArchived;

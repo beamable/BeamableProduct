@@ -153,6 +153,7 @@ RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 EXPOSE {HEALTH_PORT}
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+RUN dotnet restore .
 {GetEntryPoint()}
 ";
 			return text;

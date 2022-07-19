@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
+- Microservices use a Nuget cache for faster development builds
+- Microservices cache their `dotnet restore` output in the Docker cache for faster development builds
+- Microservices share a realm secret request for faster development builds
 
 ### Fixed
 - Microservice related actions can run while Unity is a background process.

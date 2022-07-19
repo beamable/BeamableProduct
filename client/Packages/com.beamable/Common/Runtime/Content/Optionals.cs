@@ -51,16 +51,28 @@ namespace Beamable.Common.Content
 			HasValue = true;
 		}
 
+		/// <summary>
+		/// Erase the value of the Optional, and mark the instance such that the result from the <see cref="Optional.HasValue"/> property be false.
+		/// </summary>
+		public virtual void Clear()
+		{
+			HasValue = false;
+			Value = default;
+		}
+
 		public override Type GetOptionalType()
 		{
 			return typeof(T);
 		}
 
-		public T GetOrThrow()
+		public T GetOrThrow() => GetOrThrow(null);
+
+		public T GetOrThrow(Func<Exception> exFactory)
 		{
-			if (!HasValue) throw new ArgumentException("Optional value does not exist, but it was forced.");
+			if (!HasValue) throw exFactory?.Invoke() ?? new ArgumentException("Optional value does not exist, but it was forced.");
 			return Value;
 		}
+
 		public T GetOrElse(T otherwise) => GetOrElse(() => otherwise);
 
 		public T GetOrElse(Func<T> otherwise)
