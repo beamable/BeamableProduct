@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Server;
 using NUnit.Framework;
@@ -8,65 +7,65 @@ using NUnit.Framework;
 
 namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTests
 {
-   [TestFixture]
-   public class AddListenerTests
-   {
-      [Test]
-      [Timeout(2 * 60 * 1000)]
-      public async Task MultiThreadedAccess()
-      {
-         var context = new SocketRequesterContext(() =>
-            throw new NotImplementedException("This test should never access the socket"));
+	[TestFixture]
+	public class AddListenerTests : CommonTest
+	{
+		[Test]
+		[Timeout(2 * 60 * 1000)]
+		public async Task MultiThreadedAccess()
+		{
+			var context = new SocketRequesterContext(() =>
+				throw new NotImplementedException("This test should never access the socket"));
 
-         const int threadCount = 500;
-         const int cycleCount = 50000;
+			const int threadCount = 500;
+			const int cycleCount = 50000;
 
-         const string uri = "uri";
-         Func<string, object> dumbParser = (raw) => 1;
+			const string uri = "uri";
+			Func<string, object> dumbParser = (raw) => 1;
 
-         Exception failure = null;
+			Exception failure = null;
 
-         Task<bool> Launch(int threadNumber)
-         {
-            var thread = Task.Run(async () =>
-            {
-               try
-               {
+			Task<bool> Launch(int threadNumber)
+			{
+				var thread = Task.Run(async () =>
+				{
+					try
+					{
 
-                  for (var i = 0; i < cycleCount; i++)
-                  {
-                     var id = (threadNumber * cycleCount) + i;
-                     var req = new WebsocketRequest {id = id};
-                     context.AddListener(req, uri, dumbParser);
-                     await Task.Yield();
-                  }
+						for (var i = 0; i < cycleCount; i++)
+						{
+							var id = (threadNumber * cycleCount) + i;
+							var req = new WebsocketRequest { id = id };
+							context.AddListener(req, uri, dumbParser);
+							await Task.Yield();
+						}
 
-                  return true;
-               }
-               catch (Exception ex)
-               {
-                  failure = ex;
-                  return false;
-               }
-            });
-            return thread;
-         }
+						return true;
+					}
+					catch (Exception ex)
+					{
+						failure = ex;
+						return false;
+					}
+				});
+				return thread;
+			}
 
-         var threads = new List<Task<bool>>();
-         for (var i = 0; i < threadCount; i++)
-         {
-            threads.Add(Launch(i));
-         }
+			var threads = new List<Task<bool>>();
+			for (var i = 0; i < threadCount; i++)
+			{
+				threads.Add(Launch(i));
+			}
 
-         // wait for all threads to terminate...
+			// wait for all threads to terminate...
 
-         await Task.WhenAll(threads);
+			await Task.WhenAll(threads);
 
-         if (failure != null)
-         {
-            Assert.Fail("Failed thread. " + failure.Message + " " + failure.StackTrace);
-         }
+			if (failure != null)
+			{
+				Assert.Fail("Failed thread. " + failure.Message + " " + failure.StackTrace);
+			}
 
-      }
-   }
+		}
+	}
 }
