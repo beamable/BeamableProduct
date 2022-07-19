@@ -60,8 +60,11 @@ public class ErrorTests : CommonTest
 
 		var _ = SubMethod();
 
-		await Task.Delay(100); // wait for the uncaught promises...
-		var logs = GetLogs().ToList();
+		while (!GetBadLogs().Any())
+		{
+			await Task.Delay(10); // wait for the uncaught promises...
+		}
+		var logs = GetBadLogs().ToList();
 		Assert.IsNotEmpty(logs.Select(l => l.RenderMessage()));
 	}
 }
