@@ -21,14 +21,12 @@ namespace microserviceTests;
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
 public class TimeoutWithTeardown: PropertyAttribute, IWrapTestMethod
 {
-	private const int InfiniteTimeout = Int32.MaxValue;
 	private readonly int _timeout;
 
 	public TimeoutWithTeardown(int timeout)
 		: base(timeout)
 	{
-		//if a debugger is attached => disable timeout by setting an infinite one
-		_timeout = Debugger.IsAttached ? InfiniteTimeout : timeout;
+		_timeout = timeout;
 	}
 
 	public TestCommand Wrap(TestCommand command)
