@@ -4,16 +4,38 @@ using Beamable.Server;
 using microserviceTests.microservice.Util;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
+using NUnit.Framework.Internal.Commands;
 using Serilog.Events;
 using Serilog.Sinks.TestCorrelator;
-using Swan;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
 namespace microserviceTests;
+
+/// <summary>
+/// Applies a timeout in milliseconds to a test.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+public class TimeoutWithTeardown: PropertyAttribute, IWrapTestMethod
+{
+	private const int InfiniteTimeout = Int32.MaxValue;
+	private readonly int _timeout;
+
+	public TimeoutWithTeardown(int timeout)
+		: base(timeout)
+	{
+		//if a debugger is attached => disable timeout by setting an infinite one
+		_timeout = Debugger.IsAttached ? InfiniteTimeout : timeout;
+	}
+
+	public TestCommand Wrap(TestCommand command)
+	{
+		return new TimeoutCommand(command, _timeout);
+	}
+}
 
 public class CommonTest
 {

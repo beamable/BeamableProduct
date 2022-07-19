@@ -12,6 +12,7 @@ public class ErrorTests : CommonTest
 {
 
 	[Test]
+	[NonParallelizable]
 	public async Task CaughtPromiseDoesNotLog()
 	{
 
@@ -44,6 +45,7 @@ public class ErrorTests : CommonTest
 
 
 	[Test]
+	[NonParallelizable]
 	public async Task UncaughtPromiseDoesLog()
 	{
 		allowErrorLogs = true;
@@ -58,7 +60,7 @@ public class ErrorTests : CommonTest
 
 		var _ = SubMethod();
 
-		await Task.Delay(10); // wait for the uncaught promises...
+		await Task.Delay(100); // wait for the uncaught promises...
 		var logs = GetLogs().ToList();
 		Assert.IsNotEmpty(logs.Select(l => l.RenderMessage()));
 	}

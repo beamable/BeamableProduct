@@ -1224,7 +1224,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
-        [Timeout(120000)]
+        [TimeoutWithTeardown(120000)]
         public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
         {
 

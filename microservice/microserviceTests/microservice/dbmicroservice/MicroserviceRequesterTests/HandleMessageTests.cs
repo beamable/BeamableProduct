@@ -11,7 +11,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 	{
 
 		[Test]
-		[Timeout(4 * 60 * 1000)]
+		[TimeoutWithTeardown(4 * 60 * 1000)]
 		public async Task EventSubscriptionMultiThreadedAccess()
 		{
 			var context = new SocketRequesterContext(() =>

@@ -11,7 +11,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 	public class AddListenerTests : CommonTest
 	{
 		[Test]
-		[Timeout(2 * 60 * 1000)]
+		[TimeoutWithTeardown(2 * 60 * 1000)]
 		public async Task MultiThreadedAccess()
 		{
 			var context = new SocketRequesterContext(() =>
