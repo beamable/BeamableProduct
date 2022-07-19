@@ -172,18 +172,19 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_DISABLE_RUN_CUSTOM_HOOK = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
 
 		public RunServiceCommand(MicroserviceDescriptor service,
-								 string cid,
-								 string secret,
-								 Dictionary<string, string> env,
-								 bool watch = true,
-								 bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
+		                         string cid,
+		                         string pid,
+		                         string secret,
+		                         Dictionary<string, string> env,
+		                         bool watch = true,
+		                         bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
 			_watch = watch;
 			Environment = new Dictionary<string, string>()
 			{
 				[ENV_CID] = cid,
-				[ENV_PID] = ConfigDatabase.GetString("pid"),
+				[ENV_PID] = pid,
 				[ENV_SECRET] = secret,
 				[ENV_HOST] = BeamableEnvironment.SocketUrl,
 				[ENV_LOG_LEVEL] = "Debug",
@@ -211,6 +212,11 @@ namespace Beamable.Server.Editor.DockerCommands
 					};
 					BindMounts.Add(mount);
 				}
+
+				NamedVolumes = new Dictionary<string, string>
+				{
+					[service.NugetVolume] = "/root/.nuget/packages", // save the nuget data between builds
+				};
 			}
 
 			if (env != null)
@@ -379,6 +385,5 @@ namespace Beamable.Server.Editor.DockerCommands
 				});
 			});
 		}
-
 	}
 }

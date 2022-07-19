@@ -87,6 +87,7 @@ namespace Beamable.Server.Editor
 					return;
 				}
 
+				
 				TryToPreloadBaseImage();
 				TryToPreloadMongoImage();
 

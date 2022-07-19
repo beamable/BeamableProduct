@@ -406,7 +406,7 @@ namespace Beamable.Server.Editor
 						// This is because we cannot guarantee the user won't do anything in them to break this.
 						// TODO: Change algorithm to always have StorageObjects running locally during verification process.
 						// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
-						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, secret, connectionStrings, false, false);
+						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
 						runServiceCommand.Start();
 
 						async Promise<string> CheckHealthStatus()
