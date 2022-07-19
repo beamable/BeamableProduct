@@ -76,7 +76,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 		}
 		else
 		{
-			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest.ServiceDefinitions, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
+			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 			_localBeamo.SaveBeamoLocalRuntime();
 
 			if (!args.AsJson)

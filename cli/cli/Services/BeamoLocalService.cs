@@ -5,6 +5,7 @@ using Docker.DotNet.Models;
 using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json;
 using Spectre.Console;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -75,7 +76,15 @@ public partial class BeamoLocalService
 		}
 		else
 		{
-			BeamoManifest = new BeamoLocalManifest() { ServiceDefinitions = new List<BeamoServiceDefinition>(8), LayeredDependencyGraph = null };
+			BeamoManifest = new BeamoLocalManifest()
+			{
+				ServiceDefinitions = new List<BeamoServiceDefinition>(8),
+				HttpMicroserviceLocalProtocols = new Dictionary<string, HttpMicroserviceLocalProtocol>(4),
+				HttpMicroserviceRemoteProtocols = new Dictionary<string, HttpMicroserviceRemoteProtocol>(4),
+				EmbeddedMongoDbLocalProtocols = new Dictionary<string, EmbeddedMongoDbLocalProtocol>(4),
+				EmbeddedMongoDbRemoteProtocols = new Dictionary<string, EmbeddedMongoDbRemoteProtocol>(4),
+				LayeredDependencyGraph = null
+			};
 			SaveBeamoLocalManifest();
 		}
 
@@ -187,8 +196,8 @@ public partial class BeamoLocalService
 	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
 	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
 	/// <returns>The created service definition.</returns>
-	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, string projectPath, string dockerfilePath, string baseImage,
-		string[] beamoIdDependencies, Func<BeamoServiceDefinition, TLocal, Task> localConstructor, Func<BeamoServiceDefinition, TRemote, Task> remoteConstructor, CancellationToken cancellationToken)
+	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
+		Func<BeamoServiceDefinition, TLocal, Task> localConstructor, Func<BeamoServiceDefinition, TRemote, Task> remoteConstructor, CancellationToken cancellationToken)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new()
 	{
 		// Verify that we aren't creating a non-unique beamo id.
@@ -201,13 +210,7 @@ public partial class BeamoLocalService
 
 		var serviceDefinition = new BeamoServiceDefinition()
 		{
-			BeamoId = beamoId,
-			Protocol = type,
-			BaseImage = baseImage,
-			DockerBuildContextPath = projectPath,
-			RelativeDockerfilePath = dockerfilePath,
-			DependsOnBeamoIds = beamoIdDependencies,
-			ImageId = string.Empty,
+			BeamoId = beamoId, Protocol = type, DependsOnBeamoIds = beamoIdDependencies, ImageId = string.Empty,
 		};
 
 		// Register the services before initializing protocols so that the protocol initialization can know about the service. 
@@ -226,9 +229,23 @@ public partial class BeamoLocalService
 
 		// Wait for the protocols to run and assign them
 		await Task.WhenAll(localConstructorTask, remoteConstructorTask).WaitAsync(cancellationToken);
-		serviceDefinition.LocalProtocol = local;
-		serviceDefinition.RemoteProtocol = remote;
-
+		switch (type)
+		{
+			case BeamoProtocolType.HttpMicroservice:
+			{
+				BeamoManifest.HttpMicroserviceLocalProtocols.Add(beamoId, local as HttpMicroserviceLocalProtocol);
+				BeamoManifest.HttpMicroserviceRemoteProtocols.Add(beamoId, remote as HttpMicroserviceRemoteProtocol);
+				break;
+			}
+			case BeamoProtocolType.EmbeddedMongoDb:
+			{
+				BeamoManifest.EmbeddedMongoDbLocalProtocols.Add(beamoId, local as EmbeddedMongoDbLocalProtocol);
+				BeamoManifest.EmbeddedMongoDbRemoteProtocols.Add(beamoId, remote as EmbeddedMongoDbRemoteProtocol);
+				break;
+			}
+			default:
+				throw new ArgumentOutOfRangeException(nameof(type), type, null);
+		}
 
 		return serviceDefinition;
 	}
@@ -246,7 +263,25 @@ public partial class BeamoLocalService
 		var foundContainer = containerIdx != -1;
 
 		if (foundContainer)
-			await localProtocolModifier(BeamoManifest.ServiceDefinitions[containerIdx], BeamoManifest.ServiceDefinitions[containerIdx].LocalProtocol as TLocal).WaitAsync(cancellationToken);
+		{
+			var sd = BeamoManifest.ServiceDefinitions[containerIdx];
+			var type = sd.Protocol;
+			switch (type)
+			{
+				case BeamoProtocolType.HttpMicroservice:
+				{
+					await localProtocolModifier(sd, BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId] as TLocal).WaitAsync(cancellationToken);
+					break;
+				}
+				case BeamoProtocolType.EmbeddedMongoDb:
+				{
+					await localProtocolModifier(sd, BeamoManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId] as TLocal).WaitAsync(cancellationToken);
+					break;
+				}
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
 
 		return foundContainer;
 	}
@@ -264,28 +299,36 @@ public partial class BeamoLocalService
 		var foundContainer = containerIdx != -1;
 
 		if (foundContainer)
-			await remoteProtocolModifier(BeamoManifest.ServiceDefinitions[containerIdx], BeamoManifest.ServiceDefinitions[containerIdx].RemoteProtocol as TRemote).WaitAsync(cancellationToken);
+		{
+			var sd = BeamoManifest.ServiceDefinitions[containerIdx];
+			var type = sd.Protocol;
+			switch (type)
+			{
+				case BeamoProtocolType.HttpMicroservice:
+				{
+					await remoteProtocolModifier(sd, BeamoManifest.HttpMicroserviceRemoteProtocols[sd.BeamoId] as TRemote).WaitAsync(cancellationToken);
+					break;
+				}
+				case BeamoProtocolType.EmbeddedMongoDb:
+				{
+					await remoteProtocolModifier(sd, BeamoManifest.EmbeddedMongoDbRemoteProtocols[sd.BeamoId] as TRemote).WaitAsync(cancellationToken);
+					break;
+				}
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
 
 		return foundContainer;
 	}
-
-	/// <summary>
-	/// Resets the protocol data for the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> to the default settings. 
-	/// </summary>
-	public async Task<bool> ResetServiceToDefaultValues(string beamoId)
-	{
-		var localUpdated = await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_HttpMicroservice, CancellationToken.None);
-		var remoteUpdated = await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_HttpMicroservice, CancellationToken.None);
-		return localUpdated && remoteUpdated;
-	}
-
 
 	/// <summary>
 	/// Uses the given image (name or id) to create/replace the container with the given name and configurations.
 	/// Returns whether or not the container successfully started. It DOES NOT guarantee the app inside the container is running correctly. 
 	/// </summary>
 	public async Task<bool> CreateAndRunContainer(string image, string containerName,
-		DockerHealthConfig healthConfig,
+		string healthConfig,
+		bool autoRemoveWhenStopped,
 		List<DockerPortBinding> portBindings,
 		List<DockerVolume> volumes,
 		List<DockerBindMount> bindMounts,
@@ -301,7 +344,7 @@ public partial class BeamoLocalService
 			return await RunContainer(containerName);
 		}
 
-		_ = await CreateContainer(image, containerName, healthConfig, portBindings, volumes, bindMounts, environmentVars);
+		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
 		var didRun = await RunContainer(containerName);
 		_ = await _client.Containers.InspectContainerAsync(containerName);
 		return didRun;
@@ -324,7 +367,8 @@ public partial class BeamoLocalService
 	/// <param name="bindMounts">Any external directories you want to make available to the container.</param>
 	/// <param name="environmentVars">All Environment Variables you'll be running the container with.</param>
 	public async Task<string> CreateContainer(string image, string containerName,
-		DockerHealthConfig healthConfig,
+		string healthcheckCmd,
+		bool autoRemoveWhenStopped,
 		List<DockerPortBinding> portBindings,
 		List<DockerVolume> volumes,
 		List<DockerBindMount> bindMounts,
@@ -345,19 +389,8 @@ public partial class BeamoLocalService
 
 		// Build container health check
 		{
-			var reqTimeout = healthConfig.HealthRequestTimeout;
-			var waitRetryMax = healthConfig.MaximumSecondsBetweenRetries;
-			var tries = healthConfig.NumberOfRetries;
-
-			var port = healthConfig.InContainerPort;
-			var endpoint = healthConfig.InContainerEndpoint;
-
-			var pipeCmd = healthConfig.StopContainerWhenUnhealthy ? "kill" : "exit";
-
-			var cmdStr = $"wget -O- -q --timeout={reqTimeout} --waitretry={waitRetryMax} --tries={tries} http://localhost:{port}/{endpoint} || {pipeCmd} 1";
-			createParams.Healthcheck = new HealthConfig() { Test = new List<string>() { cmdStr } };
-
-			hostConfig.AutoRemove = healthConfig.AutoRemoveContainerWhenStopped;
+			createParams.Healthcheck = new HealthConfig() { Test = new List<string>() { healthcheckCmd } };
+			hostConfig.AutoRemove = autoRemoveWhenStopped;
 		}
 
 		// Build env vars
@@ -408,17 +441,34 @@ public partial class BeamoLocalService
 	/// <see cref="BeamoServiceDefinition.DockerBuildContextPath"/> and <see cref="BeamoServiceDefinition.RelativeDockerfilePath"/>.  
 	/// </summary>
 	/// <returns>The image id that was created/pulled.</returns>
-	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<JSONMessage> messageHandler)
+	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler)
 	{
-		var shouldPull = !string.IsNullOrEmpty(serviceDefinition.BaseImage);
-
-		if (shouldPull)
-			serviceDefinition.ImageId = await PullAndCreateImage(serviceDefinition.BaseImage, messageHandler);
-		else
-			serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId,
-				serviceDefinition.DockerBuildContextPath,
-				serviceDefinition.RelativeDockerfilePath,
-				messageHandler);
+		switch (serviceDefinition.Protocol)
+		{
+			case BeamoProtocolType.EmbeddedMongoDb:
+			{
+				var localProtocol = BeamoManifest.EmbeddedMongoDbLocalProtocols[serviceDefinition.BeamoId];
+				serviceDefinition.ImageId = await PullAndCreateImage(localProtocol.BaseImage, progress =>
+				{
+					messageHandler?.Invoke(serviceDefinition.BeamoId, progress);
+				});
+				break;
+			}
+			case BeamoProtocolType.HttpMicroservice:
+			{
+				var localProtocol = BeamoManifest.HttpMicroserviceLocalProtocols[serviceDefinition.BeamoId];
+				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId,
+					localProtocol.DockerBuildContextPath,
+					localProtocol.RelativeDockerfilePath,
+					progress =>
+					{
+						messageHandler?.Invoke(serviceDefinition.BeamoId, progress);
+					});
+				break;
+			}
+			default:
+				throw new ArgumentOutOfRangeException(nameof(serviceDefinition.Protocol));
+		}
 
 		return serviceDefinition.ImageId;
 	}
@@ -427,18 +477,65 @@ public partial class BeamoLocalService
 	/// Builds an image with the local docker engine using the given <paramref name="dockerBuildContextPath"/>, <paramref name="imageName"/> and dockerfile (<paramref name="dockerfilePathInBuildContext"/>).
 	/// It inspects the created image and returns it's ID.
 	/// </summary>
-	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<JSONMessage> progressUpdateHandler,
+	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest")
 	{
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
 		{
 			var tag = $"{imageName}:{containerImageTag}";
+			var progress = 0f;
 			await _client.Images.BuildImageFromDockerfileAsync(
 				new ImageBuildParameters { Tags = new[] { tag }, Dockerfile = dockerfilePathInBuildContext, Labels = new Dictionary<string, string>() { { "beamoId", imageName } } },
 				stream,
 				null,
 				new Dictionary<string, string>(),
-				new Progress<JSONMessage>(message => progressUpdateHandler?.Invoke(message)));
+				new Progress<JSONMessage>(message =>
+				{
+					/* Potentially relevant stream messages formats (in order of appearance):
+					 *
+					 * {"stream":"\n"}
+					 * {"stream":"Step 14/14 : LABEL beamoId=test1"}
+					 * {"stream":" ---> Running in 286bb8db47b8\n"}
+					 * {"stream":"Removing intermediate container 286bb8db47b8\n"}
+					 * {"stream":" ---> 08705e552527\n"}
+					 * {"aux":{"ID":"sha256:08705e552527b5b7d5dce08777c134338d8d642878670d79ff2d8ec393f75852"}}
+					 * {"stream":"Successfully built 08705e552527\n"}
+					 * {"stream":"Successfully tagged test1:latest\n"}
+					 */
+					
+					// If you need to make changes to this and aren't super familiar with regex --- go here and learn it:
+					// https://regex101.com/r/gpX8Ix/1
+					var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
+					
+					var messageStream = message.Stream;
+					
+					if (!string.IsNullOrEmpty(messageStream))
+					{
+						if (regex.IsMatch(messageStream))
+						{
+							// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
+							var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
+							var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
+
+							var currStep = float.Parse(currentStepStr);
+							// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
+							var totalStep = float.Parse(totalStepStr) + 1;
+
+							// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
+							// IDK why this happens, but... it does...
+							var currProgress = currStep / totalStep;
+							progress = progress < currProgress ? currProgress : progress;
+						}
+						
+						// We set this to one here when we receive this stream message as it's the final one
+						if (messageStream.StartsWith("Successfully tagged"))
+							progress = 1;
+						
+						// Update the progress handler
+						progressUpdateHandler?.Invoke(progress);
+					}
+					
+				}));
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);
 			return builtImage.ID;
@@ -449,9 +546,97 @@ public partial class BeamoLocalService
 	/// Pulls the image with the given <paramref name="imageName"/>:<paramref name="imageTag"/> into the local docker engine from remote docker repositories.
 	/// It inspects the pulled image and returns its id, after the pull is done.
 	/// </summary>
-	public async Task<string> PullAndCreateImage(string publicImageName, Action<JSONMessage> progressUpdateHandler)
+	public async Task<string> PullAndCreateImage(string publicImageName, Action<float> progressUpdateHandler)
 	{
-		await _client.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = publicImageName, }, null, new Progress<JSONMessage>(progressUpdateHandler));
+		// Since we get progress updates in a multi-threaded way, this needs to be a concurrent dictionary
+		var progressDict = new ConcurrentDictionary<string, (float downloadProgress, float extractProgress)>();
+		await _client.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = publicImageName, },
+			null,
+			new Progress<JSONMessage>(message =>
+			{
+				/*
+				 * A parser for this JSONMessage format that outputs a single "complete percentage" value every time a new message is received.
+				 * There's some setup required for this:
+				 * 1) whenever receive a new message, see if id is already in dictionary --- if not, add it with 0 percentages.
+				 * 2) Check if the "status" is Downloading/Extracting and increment the percentage accordingly
+				 * 3) Calculate the total percentage as the average of the 2 percentages.
+				 * 4) Invoke the handler
+				 * 
+				 * Reference of each type of message:
+				 * {"status":"Pulling from library/mongo","id":"latest"}
+				 * {"status":"Pulling fs layer","progressDetail":{},"id":"20cec14c8f9e"}
+				 * {"status":"Waiting","progressDetail":{},"id":"38c3018eb09a"}
+				 * {"status":"Downloading","progressDetail":{"current":1834,"total":1834},"progress":"[==================================================>]  1.834kB/1.834kB","id":"97ef66a8492a"}
+				 * {"status":"Verifying Checksum","progressDetail":{},"id":"97ef66a8492a"}
+				 * {"status":"Download complete","progressDetail":{},"id":"97ef66a8492a"}
+				 * {"status":"Extracting","progressDetail":{"current":11501568,"total":28572632},"progress":"[====================>                              ]   11.5MB/28.57MB","id":"d7bfe07ed847"}
+				 * {"status":"Pull complete","progressDetail":{},"id":"d7bfe07ed847"}
+				 * {"status":"Digest: sha256:82302b06360729842acd27ab8a91c90e244f17e464fcfd366b7427af652c5559"}
+				 * {"status":"Status: Downloaded newer image for mongo:latest"}
+				 */
+
+				var id = message.ID;
+				var status = message.Status;
+
+				// Skip messages with no ids or the pulling messages... We skip the pulling messages as one of them has an id that shouldn't be in the dictionary and the rest are redundant
+				if (string.IsNullOrEmpty(id) || status.StartsWith("Pulling from"))
+					return;
+
+				// Ensures we are tracking the progress of this id
+				progressDict.TryAdd(id, (0f, 0f));
+
+				// {"status":"Downloading","progressDetail":{"current":208640380,"total":210625220},"progress":"[=================================================> ]  208.6MB/210.6MB","id":"be887b845d3f"}
+				if (status == "Downloading")
+				{
+					var current = message.Progress.Current;
+					var total = message.Progress.Total;
+					(_, float extractProgress) = progressDict[id];
+
+					// We make sure that we complete the progress only when we receive the "Download complete" status update by faking it
+					var newProgress = (float)current / total;
+					if (Math.Abs(newProgress - 1) < float.Epsilon)
+						newProgress -= float.Epsilon;
+
+					progressDict[id] = (newProgress, extractProgress);
+				}
+
+				// We force the status to be 1 when we get the download complete message for any given id.
+				// {"status":"Download complete","progressDetail":{},"id":"be887b845d3f"}
+				else if (status == "Download complete")
+				{
+					(_, float extractProgress) = progressDict[id];
+					progressDict[id] = (1, extractProgress);
+				}
+				// {"status":"Extracting","progressDetail":{"current":210625220,"total":210625220},"progress":"[==================================================>]  210.6MB/210.6MB","id":"be887b845d3f"}
+				else if (status == "Extracting")
+				{
+					var current = message.Progress.Current;
+					var total = message.Progress.Total;
+					(float downloadProgress, _) = progressDict[id];
+
+					// We make sure that we complete the progress only when we receive the "Pull complete" status update by faking it
+					var newProgress = (float)current / total;
+					if (Math.Abs(newProgress - 1) < float.Epsilon)
+						newProgress -= float.Epsilon;
+
+					progressDict[id] = (downloadProgress, newProgress);
+				}
+				// {"status":"Pull complete","progressDetail":{},"id":"e5543880b183"}
+				else if (status == "Pull complete")
+				{
+					progressDict[id] = (1, 1);
+				}
+
+				var progressAvg = 0f;
+				foreach ((_, (float downloadProgress, float extractProgress)) in progressDict)
+				{
+					progressAvg += (downloadProgress + extractProgress) / 2f;
+				}
+
+				progressAvg /= progressDict.Count;
+
+				progressUpdateHandler?.Invoke(progressAvg);
+			}));
 		var builtImage = await _client.Images.InspectImageAsync(publicImageName);
 		return builtImage.ID;
 	}
@@ -538,7 +723,29 @@ public partial class BeamoLocalService
 		var hasImage = !string.IsNullOrEmpty(serviceDefinition.ImageId);
 		if (hasImage)
 		{
-			await DeleteImage(beamoId);
+			switch (serviceDefinition.Protocol)
+			{
+				case BeamoProtocolType.HttpMicroservice:
+				{
+					// For HttpMicroservices we delete using the tag to guarantee 
+					await DeleteImage(beamoId);
+					break;
+				}
+				case BeamoProtocolType.EmbeddedMongoDb:
+				{
+					// We only delete the image if no other running container are using it
+					var otherRunningMongoInstances = BeamoRuntime.ExistingLocalServiceInstances
+						.Any(si => BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == si.BeamoId).Protocol == BeamoProtocolType.EmbeddedMongoDb);
+
+					if (!otherRunningMongoInstances)
+						await DeleteImage(serviceDefinition.ImageId);
+
+					break;
+				}
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+
 			serviceDefinition.ImageId = "";
 		}
 	}
@@ -560,6 +767,12 @@ public class BeamoLocalManifest
 	// TODO : Need to change this to work without polymorphism if we want to send this "as is" to server --- but... the more I think about this, the more I think we shouldn't...
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
+	public Dictionary<string, HttpMicroserviceLocalProtocol> HttpMicroserviceLocalProtocols;
+	public Dictionary<string, HttpMicroserviceRemoteProtocol> HttpMicroserviceRemoteProtocols;
+
+	public Dictionary<string, EmbeddedMongoDbLocalProtocol> EmbeddedMongoDbLocalProtocols;
+	public Dictionary<string, EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
+
 	/// <summary>
 	/// Built out of the <see cref="ServiceDefinitions"/>, each sub-array contains all the image dependencies for that particular layer. 
 	/// </summary>
@@ -569,33 +782,18 @@ public class BeamoLocalManifest
 public class BeamoServiceDefinition
 {
 	public string BeamoId;
+
+	/// <summary>
+	/// The protocol this service respects.
+	/// </summary>
+	public BeamoProtocolType Protocol;
+
 	public string[] DependsOnBeamoIds;
-
-	/// <summary>
-	/// This is for local and development things
-	/// </summary>
-	public string DockerBuildContextPath;
-
-	/// <summary>
-	/// This is for local and development things
-	/// </summary>
-	public string RelativeDockerfilePath;
-
-	/// <summary>
-	/// If this is set, we pull this image from the public docker registry instead of building locally.
-	/// </summary>
-	public string BaseImage;
 
 	/// <summary>
 	/// This is what we need for deployment.
 	/// </summary>
 	public string ImageId;
-
-
-	// I want this out of here 😫
-	public BeamoProtocolType Protocol;
-	public IBeamoLocalProtocol LocalProtocol;
-	public IBeamoRemoteProtocol RemoteProtocol;
 
 	public struct IdEquality : IEqualityComparer<BeamoServiceDefinition>
 	{

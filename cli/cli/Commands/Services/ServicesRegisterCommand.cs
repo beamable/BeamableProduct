@@ -12,8 +12,12 @@ public class ServicesRegisterCommandArgs : LoginCommandArgs
 
 	public string[] ServiceDependencies;
 
+	// HttpMicroservice args
 	public string DockerBuildContext;
 	public string DockerfileRelativePath;
+	
+	// Embedded Mongo args
+	public string BaseImage;
 }
 
 public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
@@ -44,6 +48,12 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 				(args, i) => args.DockerBuildContext = i);
 			AddOption(new Option<string>("--dockerfile", "The relative file path, from the given build-context, to a valid Dockerfile inside that context."),
 				(args, i) => args.DockerfileRelativePath = i);
+		}
+
+		// For EmbeddedMongo Protocol
+		{
+			AddOption(new Option<string>("--base-image", () => null, "Name and tag of the base image to use for the local mongo db instance."),
+				(args, i) => args.BaseImage = i);
 		}
 	}
 
@@ -128,6 +138,13 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 			}
 			case BeamoProtocolType.EmbeddedMongoDb:
 			{
+				// Handle base image
+				{
+					if (string.IsNullOrEmpty(args.BaseImage))
+						args.BaseImage = AnsiConsole.Prompt(new TextPrompt<string>("Enter the base image name of a [lightskyblue1]Mongo Db[/] image:").DefaultValue("mongo:latest"));
+
+					await _localBeamo.AddDefinition_EmbeddedMongoDb(args.BeamoId, args.BaseImage, args.ServiceDependencies, CancellationToken.None);
+				}
 				break;
 			}
 			default:

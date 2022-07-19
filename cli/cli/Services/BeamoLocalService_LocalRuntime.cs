@@ -16,14 +16,28 @@ public partial class BeamoLocalService
 	/// </summary>
 	/// <param name="serviceDefinitions">The list of all service definitions we care about synchronizing.</param>
 	/// <param name="existingServiceInstances">The list it should update with the running <see cref="BeamoServiceInstance"/>.</param>
-	public async Task SynchronizeInstanceStatusWithDocker(List<BeamoServiceDefinition> serviceDefinitions, List<BeamoServiceInstance> existingServiceInstances)
+	public async Task SynchronizeInstanceStatusWithDocker(BeamoLocalManifest manifest, List<BeamoServiceInstance> existingServiceInstances)
 	{
+		var serviceDefinitions = manifest.ServiceDefinitions;
 		// Make sure we know about all images that match our beamo ids and make sure all image ids that we know about are still there. 
 		foreach (var sd in serviceDefinitions)
 		{
 			try
 			{
-				var inspectResponse = await _client.Images.InspectImageAsync(sd.BeamoId);
+				string imageToInspect;
+				switch (sd.Protocol)
+				{
+					case BeamoProtocolType.EmbeddedMongoDb:
+						imageToInspect = manifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId].BaseImage;
+						break;
+					case BeamoProtocolType.HttpMicroservice:
+						imageToInspect = sd.BeamoId;
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+
+				var inspectResponse = await _client.Images.InspectImageAsync(imageToInspect);
 				sd.ImageId = inspectResponse.ID;
 			}
 			catch
@@ -183,8 +197,14 @@ public partial class BeamoLocalService
 	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
 	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
 	/// </summary>
-	public async Task DeployToLocalClient(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string> onServiceDeployCompleted = null, Action<JSONMessage> handler = null)
+	public async Task DeployToLocalClient(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string, float> buildPullImageProgress = null,
+		Action<string> onServiceDeployCompleted = null)
 	{
+		// TODO: Unify progress tracking here
+		// TODO: 1) add progress handler to Create and Run Container. Two-step progress (increment when created returns, increment when run returns)
+		// TODO: 2) keep track of a dictionary of build progress values for each beamo id and create/run progress values for each beamo id
+		// TODO: 3) combine these two values as a weighted avg and every update we get invoke the Action<string, float> with the total avg considering the entire progress.
+		
 		deployBeamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
 
 		// Get all services that must be deployed
@@ -207,7 +227,7 @@ public partial class BeamoLocalService
 		// Builds all images for all services that are defined.
 		{
 			var prepareImages = new List<Task>();
-			prepareImages.AddRange(localManifest.ServiceDefinitions.Select(c => PrepareBeamoServiceImage(c, handler)));
+			prepareImages.AddRange(localManifest.ServiceDefinitions.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress)));
 			await Task.WhenAll(prepareImages);
 		}
 
@@ -225,19 +245,18 @@ public partial class BeamoLocalService
 			if (builtLayer.TryGetValue(BeamoProtocolType.HttpMicroservice, out var microserviceContainers))
 				runContainerTasks.AddRange(microserviceContainers.Select(async sd =>
 				{
-					await RunLocalHttpMicroservice(sd);
+					await RunLocalHttpMicroservice(sd, localManifest.HttpMicroserviceLocalProtocols[sd.BeamoId]);
 					onServiceDeployCompleted?.Invoke(sd.BeamoId);
 				}));
 
 
 			// Kick off all the run container tasks for the Embedded MongoDatabases in this layer
 			if (builtLayer.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
-			{
-				foreach (var microStorageContainer in microStorageContainers)
+				runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
 				{
-					// TODO Prepare Image to Run
-				}
-			}
+					await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
+					onServiceDeployCompleted?.Invoke(sd.BeamoId);
+				}));
 
 			// Wait for all container tasks in this layer to finish before starting the next one.
 			await Task.WhenAll(runContainerTasks);

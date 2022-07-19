@@ -33,21 +33,6 @@ public class ServicesCommand : AppCommand<ServicesCommandArgs>
 
 	public override async Task Handle(ServicesCommandArgs args)
 	{
-		// var asd = await _containerManagement.PullAndCreateImage("mongo:latest", message =>
-		// {
-		// 	AnsiConsole.WriteLine(JsonConvert.SerializeObject(message));
-		// });
-		//
-		// await _containerManagement.CreateAndRunContainer(asd,
-		// 	$"{lastRegistered.BeamoId}_container",
-		// 	new List<DockerPortBinding> { new() { LocalPort = "27017", InContainerPort = "27017" } },
-		// 	new List<DockerVolume> { new() { VolumeName = $"{lastRegistered.BeamoId}_data", InContainerPath = "/data/db" }, new() { VolumeName = $"{lastRegistered.BeamoId}_files", InContainerPath = "/beamable" } },
-		// 	new List<DockerBindMount>(),
-		// 	new List<DockerEnvironmentVariable>
-		// 	{
-		// 		new() { VariableName = "MONGO_INITDB_ROOT_USERNAME", Value = "beamable" }, new() { VariableName = "MONGO_INITDB_ROOT_PASSWORD", Value = "beamable" }
-		// 	});
-		//
-		// AnsiConsole.WriteLine(asd);
+		
 	}
 }

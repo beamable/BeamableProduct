@@ -11,27 +11,24 @@ public partial class BeamoLocalService
 		return await AddServiceDefinition<HttpMicroserviceLocalProtocol, HttpMicroserviceRemoteProtocol>(
 			beamId,
 			BeamoProtocolType.HttpMicroservice,
-			projectPath,
-			dockerfilePath,
-			"",
 			dependencyBeamIds,
-			PrepareDefaultLocalProtocol_HttpMicroservice,
+			async (definition, protocol) =>
+			{
+				await PrepareDefaultLocalProtocol_HttpMicroservice(definition, protocol);
+				protocol.DockerBuildContextPath = projectPath;
+				protocol.RelativeDockerfilePath = dockerfilePath;
+			},
 			PrepareDefaultRemoteProtocol_HttpMicroservice,
 			cancellationToken);
 	}
 
-	public async Task<bool> ResetHttpMicroserviceLocalProtocol(string beamoId, CancellationToken cancellationToken) =>
+	public async Task<bool> ResetLocalProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
 		await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_HttpMicroservice, cancellationToken);
 
-	public async Task<bool> ResetHttpMicroserviceRemoteProtocol(string beamoId, CancellationToken cancellationToken) =>
+	public async Task<bool> ResetRemoteProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
 		await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_HttpMicroservice, cancellationToken);
 
-	public async Task BuildHttpMicroservice(BeamoServiceDefinition cont, Action<JSONMessage> buildProgress)
-	{
-		await BuildAndCreateImage(cont.BeamoId, cont.DockerBuildContextPath, cont.RelativeDockerfilePath, buildProgress);
-	}
-
-	public async Task RunLocalHttpMicroservice(BeamoServiceDefinition serviceDefinition)
+	public async Task RunLocalHttpMicroservice(BeamoServiceDefinition serviceDefinition, HttpMicroserviceLocalProtocol localProtocol)
 	{
 		const string ENV_CID = "CID";
 		const string ENV_PID = "PID";
@@ -44,8 +41,6 @@ public partial class BeamoLocalService
 		var imageId = serviceDefinition.ImageId;
 		var containerName = $"{serviceDefinition.BeamoId}_httpMicroservice";
 
-		var localProtocol = serviceDefinition.LocalProtocol as HttpMicroserviceLocalProtocol;
-
 		var portBindings = new List<DockerPortBinding>();
 		portBindings.AddRange(localProtocol.CustomPortBindings);
 
@@ -53,7 +48,7 @@ public partial class BeamoLocalService
 		volumes.AddRange(localProtocol.CustomVolumes);
 
 		var bindMounts = new List<DockerBindMount>();
-		
+
 		var shouldPrepareWatch = !string.IsNullOrEmpty(localProtocol.BindSrcForHotReloading.LocalPath);
 		if (shouldPrepareWatch)
 			bindMounts.Add(localProtocol.BindSrcForHotReloading);
@@ -72,18 +67,15 @@ public partial class BeamoLocalService
 		};
 		environmentVariables.AddRange(localProtocol.CustomEnvironmentVariables);
 
-		var healthConfig = new DockerHealthConfig()
-		{
-			StopContainerWhenUnhealthy = true,
-			AutoRemoveContainerWhenStopped = true, 
-			InContainerEndpoint = localProtocol.HealthCheckEndpoint,
-			InContainerPort = localProtocol.HealthCheckInternalPort,
-			NumberOfRetries = 5,
-			HealthRequestTimeout = 1,
-			MaximumSecondsBetweenRetries = 3,
-		};
+		var reqTimeout = 1;
+		var waitRetryMax = 3;
+		var tries = 5;
+		var port = localProtocol.HealthCheckInternalPort;
+		var endpoint = localProtocol.HealthCheckEndpoint;
+		var pipeCmd = "kill";
+		var cmdStr = $"wget -O- -q --timeout={reqTimeout} --waitretry={waitRetryMax} --tries={tries} http://localhost:{port}/{endpoint} || {pipeCmd} 1";
 
-		await CreateAndRunContainer(imageId, containerName, healthConfig, portBindings, volumes, bindMounts, environmentVariables);
+		await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts, environmentVariables);
 	}
 
 
@@ -104,10 +96,10 @@ public partial class BeamoLocalService
 		local.CID = _ctx.Cid;
 		local.PID = _ctx.Pid;
 		local.RealmSecret = secret;
-		local.WebSocketHost =  $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
+		local.WebSocketHost = $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
 		local.Prefix = Environment.MachineName;
 		local.LogLevel = _ctx.LogLevel.ToString();
-		
+
 		local.HealthCheckEndpoint = "health";
 		local.HealthCheckInternalPort = "6565";
 
@@ -115,6 +107,16 @@ public partial class BeamoLocalService
 		local.CustomVolumes = new List<DockerVolume>();
 		local.CustomBindMounts = new List<DockerBindMount>();
 		local.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
+	}
+
+	/// <summary>
+	/// Resets the protocol data for the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> to the default settings. 
+	/// </summary>
+	public async Task<bool> ResetToDefaultValues_HttpMicroservice(string beamoId)
+	{
+		var localUpdated = await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_HttpMicroservice, CancellationToken.None);
+		var remoteUpdated = await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_HttpMicroservice, CancellationToken.None);
+		return localUpdated && remoteUpdated;
 	}
 }
 
@@ -128,6 +130,17 @@ public class HttpMicroserviceRemoteProtocol : IBeamoRemoteProtocol
 
 public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 {
+	/// <summary>
+	/// This is for local and development things
+	/// </summary>
+	public string DockerBuildContextPath;
+
+	/// <summary>
+	/// This is for local and development things
+	/// </summary>
+	public string RelativeDockerfilePath;
+
+
 	public string CID;
 	public string PID;
 

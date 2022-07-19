@@ -30,7 +30,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 
 	public override async Task Handle(ServicesResetCommandArgs args)
 	{
-		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest.ServiceDefinitions, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
+		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 		await _localBeamo.StartListeningToDocker();
 
 		if (args.BeamoIdsToReset == null)
@@ -67,7 +67,20 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 				var actualTasks = args.BeamoIdsToReset.Select(async id =>
 				{
 					await _localBeamo.CleanUpDocker(id);
-					await _localBeamo.ResetServiceToDefaultValues(id);
+
+					var protocol = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == id).Protocol;
+					switch (protocol)
+					{
+						case BeamoProtocolType.HttpMicroservice: 
+							await _localBeamo.ResetToDefaultValues_HttpMicroservice(id);
+							break;
+						case BeamoProtocolType.EmbeddedMongoDb:
+							await _localBeamo.ResetToDefaultValues_EmbeddedMongoDb(id);
+							break;
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
+					
 					var progressTask = progressTasks.First(pt => pt.Description.Contains(id));
 					progressTask.Increment(progressTask.MaxValue);
 				});
