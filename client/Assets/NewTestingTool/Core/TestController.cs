@@ -20,8 +20,8 @@ namespace NewTestingTool.Core
 		[SerializeField] private Button passedButton; 
 		[SerializeField] private Button failedButton;
 
-		private event Action OnTestPrepared;
-		private event Action OnTestFinished;
+		private event Action OnTestReadyToInvoke;
+		private event Action OnNextTestRequested;
 
 		private List<RegisteredTest> CurrentTest => _allTests[_currentTestIndex];
 		private RegisteredTest CurrentRegisteredTest => CurrentTest[_currentOrderIndex];
@@ -39,10 +39,10 @@ namespace NewTestingTool.Core
 			ChangeButtonsInteractableState(false);
 			Init();
 			
-			OnTestPrepared -= HandleTestPrepared;
-			OnTestPrepared += HandleTestPrepared;
-			OnTestFinished -= HandleTestFinished;
-			OnTestFinished += HandleTestFinished;
+			OnTestReadyToInvoke -= HandleTestReadyToInvoke;
+			OnTestReadyToInvoke += HandleTestReadyToInvoke;
+			OnNextTestRequested -= HandleNextTestRequested;
+			OnNextTestRequested += HandleNextTestRequested;
 		}
 		private void Start()
 		{
@@ -192,7 +192,7 @@ namespace NewTestingTool.Core
 						if (_currentCaseIndex < CurrentRegisteredTest.RegisteredMethodTests.Count)
 						{
 							_currentCaseIndex++;
-							OnTestPrepared?.Invoke();
+							OnTestReadyToInvoke?.Invoke();
 							yield break;
 						}
 
@@ -217,7 +217,7 @@ namespace NewTestingTool.Core
 			failedButton.interactable  = isEnabled;
 		}
 
-		private async void HandleTestPrepared()
+		private async void HandleTestReadyToInvoke()
 		{
 			var result = await CurrentTestMethod.InvokeTest(displayLogs, _currentOrderIndex, _currentCaseIndex - 1);
 			MarkTestResult(result);
@@ -228,9 +228,9 @@ namespace NewTestingTool.Core
 				return;
 			}
 			
-			OnTestFinished?.Invoke();
+			OnNextTestRequested?.Invoke();
 		}
-		private void HandleTestFinished() => StartCoroutine(InvokeNextTest());
+		private void HandleNextTestRequested() => StartCoroutine(InvokeNextTest());
 	}
 	
 	public enum TestResult
