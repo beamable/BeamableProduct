@@ -61,6 +61,7 @@ public class App
 		Services.AddSingleton<AccessTokenOption>();
 		Services.AddSingleton<HeaderOption>();
 		Services.AddSingleton<BodyPathOption>();
+		Services.AddSingleton<CustomerScopedOption>();
 		Services.AddSingleton<RefreshTokenOption>();
 		Services.AddSingleton<LogOption>();
 		Services.AddSingleton(provider =>
@@ -92,6 +93,9 @@ public class App
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();
 		Services.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Services.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
+		Services.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
+		Services.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
+		Services.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();

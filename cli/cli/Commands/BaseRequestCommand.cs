@@ -7,27 +7,24 @@ namespace cli;
 public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 {
 	protected abstract Method Method { get; }
-	private readonly IBeamableRequester _requester;
+	private readonly CliRequester _requester;
 
-	protected BaseRequestCommand(IBeamableRequester requester, string name, string description) : base(name, description)
+	protected BaseRequestCommand(CliRequester requester, string name, string description) : base(name, description)
 	{
 		_requester = requester;
 	}
+
 	public override void Configure()
 	{
 		var uri = new Argument<string>(nameof(BaseRequestArgs.uri));
 		AddArgument(uri, (args, i) => args.uri = i);
 		AddOption(new HeaderOption(), (args, i) => args.customHeaders.AddRange(i));
 		AddOption(new BodyPathOption(), (args, i) => args.bodyPath = i);
+		AddOption(new CustomerScopedOption(), (args, i) => args.customerScoped = i);
 	}
 
 	public override async Task Handle(BaseRequestArgs args)
 	{
-		foreach (string customHeader in args.customHeaders)
-		{
-			Console.WriteLine($"HEADER: {customHeader}");
-		}
-
 		string body = null;
 		if (!string.IsNullOrWhiteSpace(args.bodyPath))
 		{
@@ -40,12 +37,12 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 
 			body = await File.ReadAllTextAsync(args.bodyPath);
 		}
+
 		var response = await AnsiConsole.Status()
 		                                .Spinner(Spinner.Known.Default)
 		                                .StartAsync("Sending Request...", async _ =>
-
-			                                            await  _requester.Request(Method, args.uri, body,true,
-				                                            s => s)
+			                                            await _requester.CustomRequest(Method, args.uri, body, true,
+				                                            s => s, args.customerScoped, args.customHeaders)
 		                                );
 		Console.WriteLine(response);
 	}
@@ -53,7 +50,8 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 
 public class BaseRequestArgs : CommandArgs
 {
+	public List<string> customHeaders = new();
 	public string uri;
-	public List<string> customHeaders = new List<string>();
 	public string bodyPath;
+	public bool customerScoped = false;
 }
