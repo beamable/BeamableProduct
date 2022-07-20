@@ -1,6 +1,5 @@
-﻿using System;
+﻿using NewTestingTool.Helpers;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -19,24 +18,17 @@ namespace NewTestingTool.Core.Models
 			MethodInfo = methodInfo;
 			Arguments = arguments;
 		}
-		public async Task InvokeTest(bool displayLogs, int orderIndex, int caseIndex, Action<TestResult> finishedTest)
+		public async Task<TestResult> InvokeTest(bool displayLogs, int orderIndex, int caseIndex)
 		{
 			if (displayLogs)
-				TestableDebug.Log($"Invoking test: Testable=[{Testable.GetType().Name}] Order=[{orderIndex+1}] Case=[{caseIndex+1}] Method=[{MethodInfo.Name}]");
+				TestableDebug.Log($"Invoking test: Testable=[{Testable.GetType().Name}] Order=[{orderIndex+1}] Case=[{caseIndex+1}] Method=[{TestableDebug.WrapWithColor(MethodInfo.Name, Color.yellow)}]");
 
-			var result = IsAsyncMethod(MethodInfo)
+			TestResult = TestHelper.IsAsyncMethod(MethodInfo)
 				? await (Task<TestResult>)MethodInfo.Invoke(Testable, Arguments)
 				: (TestResult)MethodInfo.Invoke(Testable, Arguments);
-
-			finishedTest?.Invoke(result);
+			
+			return TestResult;
 		}
 		public void Reset() => TestResult = TestResult.NotSet;
-		
-		private static bool IsAsyncMethod(MethodInfo methodInfo)
-		{
-			var attType = typeof(AsyncStateMachineAttribute);
-			var attrib = (AsyncStateMachineAttribute)methodInfo.GetCustomAttribute(attType);
-			return attrib != null;
-		}
 	}
 }

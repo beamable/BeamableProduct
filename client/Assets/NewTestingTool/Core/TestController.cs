@@ -1,9 +1,10 @@
 using NewTestingTool.Attributes;
 using NewTestingTool.Core.Models;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.ResourceManagement.Util;
 using UnityEngine.UI;
@@ -14,13 +15,17 @@ namespace NewTestingTool.Core
 	{
 		[SerializeField] private bool automaticallyStart = true;
 		[SerializeField] private bool displayLogs = true;
+		[SerializeField] private bool stopOnFirstFailed;
 
 		[SerializeField] private Button passedButton; 
-		[SerializeField] private Button failedButton; 
+		[SerializeField] private Button failedButton;
+
+		private event Action OnTestPrepared;
+		private event Action OnTestFinished;
 
 		private List<RegisteredTest> CurrentTest => _allTests[_currentTestIndex];
 		private RegisteredTest CurrentRegisteredTest => CurrentTest[_currentOrderIndex];
-		private RegisteredTestMethod CurrentTestedTestMethod => CurrentRegisteredTest.RegisteredMethodTests[_currentCaseIndex - 1];
+		private RegisteredTestMethod CurrentTestMethod => CurrentRegisteredTest.RegisteredMethodTests[_currentCaseIndex - 1];
 
 		private readonly List<List<RegisteredTest>> _allTests = new List<List<RegisteredTest>>();
 		private int _currentTestIndex, _currentOrderIndex, _currentCaseIndex;
@@ -28,13 +33,28 @@ namespace NewTestingTool.Core
 
 		private void Awake()
 		{
+			if (!Application.isPlaying)
+				return;
+			
 			ChangeButtonsInteractableState(false);
 			Init();
+			
+			OnTestPrepared -= HandleTestPrepared;
+			OnTestPrepared += HandleTestPrepared;
+			OnTestFinished -= HandleTestFinished;
+			OnTestFinished += HandleTestFinished;
 		}
-		private async void Start()
+		private void Start()
 		{
-			if (automaticallyStart)
-				await InvokeNextTest();
+			if (!automaticallyStart || !Application.isPlaying)
+				return;
+
+			if (!_isSetup)
+			{
+				TestableDebug.LogError("\"TestController\" is not properly setup!");
+				return;
+			}
+			StartCoroutine(InvokeNextTest());
 		}
 		
 		private void Init()
@@ -120,7 +140,7 @@ namespace NewTestingTool.Core
 				registeredTests.Add(new RegisteredTest(order));
 			registeredTests.First(x => x.Order == order).RegisteredMethodTests.Add(registeredMethodTest);
 		}
-		private async void MarkTestResult(TestResult result)
+		private void MarkTestResult(TestResult result)
 		{
 			if (result == TestResult.NotSet)
 			{
@@ -129,12 +149,10 @@ namespace NewTestingTool.Core
 			}
 			
 			ChangeButtonsInteractableState(false);
-			CurrentTestedTestMethod.TestResult = result;
+			CurrentTestMethod.TestResult = result;
 			if (displayLogs)
 				TestableDebug.Log(
-					$"Result=[{TestableDebug.WrapWithColor(result, result == TestResult.Passed ? Color.green : Color.red)}] Method=[{TestableDebug.WrapWithColor(CurrentTestedTestMethod.MethodInfo.Name, Color.yellow)}]");
-
-			await InvokeNextTest();
+					$"Result=[{TestableDebug.WrapWithColor(result, result == TestResult.Passed ? Color.green : Color.red)}] Method=[{TestableDebug.WrapWithColor(CurrentTestMethod.MethodInfo.Name, Color.yellow)}]");
 		}
 		private void MarkTestResultManually()
 		{
@@ -163,46 +181,34 @@ namespace NewTestingTool.Core
 					registeredTest.Reset();
 		}
 		
-		private async Task InvokeNextTest()
+		private IEnumerator InvokeNextTest()
 		{
 			while (true)
 			{
-				if (!_isSetup)
-				{
-					TestableDebug.LogError("\"TestController\" is not properly setup!");
-					return;
-				}
-
 				if (_currentTestIndex < _allTests.Count)
 				{
-					var registeredTests = _allTests[_currentTestIndex];
-					if (_currentOrderIndex < registeredTests.Count)
+					if (_currentOrderIndex < CurrentTest.Count)
 					{
-						var registeredMethodTests = _allTests[_currentTestIndex][_currentOrderIndex].RegisteredMethodTests;
-						if (_currentCaseIndex < registeredMethodTests.Count)
+						if (_currentCaseIndex < CurrentRegisteredTest.RegisteredMethodTests.Count)
 						{
 							_currentCaseIndex++;
-							await registeredMethodTests[_currentCaseIndex - 1].InvokeTest(displayLogs, _currentOrderIndex, _currentCaseIndex - 1, MarkTestResult);
+							OnTestPrepared?.Invoke();
+							yield break;
 						}
-						else
-						{
-							_currentOrderIndex++;
-							_currentCaseIndex = 0;
-							continue;
-						}
-					}
-					else
-					{
-						_currentTestIndex++;
-						_currentOrderIndex = 0;
+
+						_currentOrderIndex++;
 						_currentCaseIndex = 0;
 						continue;
 					}
-				}
-				else
-					TestableDebug.Log("ALL TESTS COMPLETED");
 
-				break;
+					_currentTestIndex++;
+					_currentOrderIndex = 0;
+					_currentCaseIndex = 0;
+					continue;
+				}
+				
+				TestableDebug.Log("All tests finished");
+				yield break;
 			}
 		}
 		private void ChangeButtonsInteractableState(bool isEnabled)
@@ -210,8 +216,23 @@ namespace NewTestingTool.Core
 			passedButton.interactable  = isEnabled;
 			failedButton.interactable  = isEnabled;
 		}
-	}
 
+		private async void HandleTestPrepared()
+		{
+			var result = await CurrentTestMethod.InvokeTest(displayLogs, _currentOrderIndex, _currentCaseIndex - 1);
+			MarkTestResult(result);
+
+			if (stopOnFirstFailed && result == TestResult.Failed)
+			{
+				TestableDebug.Log($"Testing tool stopped due to failed test.");
+				return;
+			}
+			
+			OnTestFinished?.Invoke();
+		}
+		private void HandleTestFinished() => StartCoroutine(InvokeNextTest());
+	}
+	
 	public enum TestResult
 	{
 		NotSet,
