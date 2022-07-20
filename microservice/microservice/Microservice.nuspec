@@ -22,16 +22,10 @@
             <dependency id="System.CommandLine" version="2.0.0-beta3.22114.1" />
             <dependency id="System.ServiceModel.Primitives" version="4.8.1" />
             <dependency id="MongoDB.Driver" version="2.15.1" />
-            <dependency id="Microsoft.Build.Utilities.Core" version="17.1.0" />
         </dependencies>
 
     </metadata>
     <files>
-        <file src="bin\Release\net6.0\build\*.props" target="build"/>
-        <file src="bin\Release\net6.0\build\*.txt" target="farts"/>
-<!--        <file src="bin\Release\net6.0\buildMultiTargeting\*.props" target="buildMultiTargeting\"/>-->
-<!--        <file src="bin\Release\net6.0\buildMultiTargeting\*.targets" target="buildMultiTargeting\"/>-->
-        <file src="bin\Release\net6.0\Beamable.Build.Tasks.dll" target="tasks\net6.0"/>
         <file src="bin\Release\net6.0\Beamable.*.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\BeamableMicroserviceBase.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\UnityEngine.dll" target="lib\net6.0" />

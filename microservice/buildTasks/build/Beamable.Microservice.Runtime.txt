@@ -1,6 +1,0 @@
-<Project>
-    <UsingTask TaskName="microservice.MsBuildTasks.GenerateClient" AssemblyFile="$(BeamableBuildTasksAssemblyFile)"/>
-    <Target Name="HomeRolledStuff">
-        <GenerateClient/>
-    </Target>
-</Project>
