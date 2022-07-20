@@ -30,7 +30,7 @@ public class CliRequester : IBeamableRequester
 		{
 			foreach (string customHeader in customHeaders)
 			{
-				var headers = customHeader.Split(':');
+				var headers = customHeader.Split('=');
 				if (headers.Length == 2)
 				{
 					request.Headers.Add(headers[0], headers[1]);
