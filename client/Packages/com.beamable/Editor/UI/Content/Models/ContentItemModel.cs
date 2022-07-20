@@ -232,6 +232,7 @@ namespace Beamable.Editor.Content.Models
 							.ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
 
 		public long LastChanged { get; private set; }
+		public bool IsCorrupted => ContentException != null;
 		public ContentCorruptedException ContentException { get; private set; }
 
 		private LocalContentManifestEntry _localData;

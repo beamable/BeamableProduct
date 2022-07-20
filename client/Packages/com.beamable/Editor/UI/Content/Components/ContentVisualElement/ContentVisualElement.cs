@@ -116,7 +116,7 @@ namespace Beamable.Editor.Content.Components
 			_nameTextField.value = ContentItemDescriptor.Name;
 			_pathLabel.text = ContentItemDescriptor.ContentType.ShortName;
 			_tagListVisualElement.TagDescriptors = ContentItemDescriptor.GetAllTags().ToList();
-			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged + (ContentItemDescriptor.ContentException != null ? " (corrupted)" : string.Empty);
+			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged + (ContentItemDescriptor.IsCorrupted ? " (corrupted)" : string.Empty);
 			// _tagListVisualElement.ContentItemDescriptor = _contentItemDescriptor;
 			_tagListVisualElement.Refresh();
 
