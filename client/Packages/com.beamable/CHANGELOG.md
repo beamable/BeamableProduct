@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Cid` and `Pid` field to `IBeamableRequester` interface
 - `Friends` list accessible through the `BeamContext`
 - User's realm permission overrides apply in editor
+- Added posibility of disable content serialization exceptions during content download to allow manual repair for corrupted files. 
 
 
 ### Changed

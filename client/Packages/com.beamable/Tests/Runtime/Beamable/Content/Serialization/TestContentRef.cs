@@ -21,6 +21,8 @@ namespace Beamable.Tests.Content.Serialization.Support
 		public string ManifestID { get; }
 		public long LastChanged { get; set; }
 
+		public ContentCorruptedException ContentException { get; set; }
+
 		public void SetIdAndVersion(string id, string version)
 		{
 			Id = id;
