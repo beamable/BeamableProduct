@@ -30,7 +30,7 @@ namespace Beamable.Server.Editor
 			catch (Exception ex)
 			{
 				BeamEditorContext.Default.ServiceScope.GetService<MicroservicesDataModel>()
-				                 .AddLogException(descriptor, ex);
+								 .AddLogException(descriptor, ex);
 				Debug.LogException(ex);
 			}
 		}
