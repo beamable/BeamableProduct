@@ -1,10 +1,7 @@
-﻿using System.CommandLine;
+﻿namespace cli;
 
-namespace cli;
-
-public class HeaderOption : ConfigurableOption
+public class HeaderOption : ConfigurableOptionList
 {
-	public HeaderOption() : 
-		base(Constants.CONFIG_HEADER, "Custom header")
-	{ }
+	public HeaderOption() :
+		base(Constants.CONFIG_HEADER, "Custom header") { }
 }

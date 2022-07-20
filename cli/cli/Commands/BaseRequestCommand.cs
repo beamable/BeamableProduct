@@ -17,7 +17,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 	{
 		var uri = new Argument<string>(nameof(BaseRequestArgs.uri));
 		AddArgument(uri, (args, i) => args.uri = i);
-		AddOption(new HeaderOption(), (args, i) => args.customHeaders.Add(i));
+		AddOption(new HeaderOption(), (args, i) => args.customHeaders.AddRange(i));
 		AddOption(new BodyPathOption(), (args, i) => args.bodyPath = i);
 	}
 
