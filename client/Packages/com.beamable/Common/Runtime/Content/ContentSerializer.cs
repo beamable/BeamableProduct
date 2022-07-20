@@ -660,7 +660,7 @@ namespace Beamable.Common.Content
 							}
 							else
 							{
-								instance.IsCorrupted = true;
+								instance.ContentException = new ContentCorruptedException(e.Message);
 								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{type.Name}] exception=[{e.Message}]");
 							}
 						}

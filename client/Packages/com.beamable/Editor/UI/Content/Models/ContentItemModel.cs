@@ -232,7 +232,7 @@ namespace Beamable.Editor.Content.Models
 							.ToString("HH:mm, MM/dd/yyyy", CultureInfo.GetCultureInfo("en-US"));
 
 		public long LastChanged { get; private set; }
-		public bool IsCorrupted { get; private set; }
+		public ContentCorruptedException ContentException { get; private set; }
 
 		private LocalContentManifestEntry _localData;
 		private IContentObject _localContent;
@@ -251,7 +251,7 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			_serverLastChanged = content.LastChanged;
 			LastChanged = _serverLastChanged;
-			IsCorrupted = content.IsCorrupted;
+			ContentException = content.ContentException;
 			_localContent = content;
 			_allTags = CollectAllTags();
 
@@ -271,7 +271,7 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			_serverLastChanged = entry.LastChanged;
 			LastChanged = _serverLastChanged;
-			IsCorrupted = entry.IsCorrupted;
+			ContentException = entry.ContentException;
 			_allTags = CollectAllTags();
 
 			SetupLocalEventListeners();
@@ -321,7 +321,7 @@ namespace Beamable.Editor.Content.Models
 			LocalStatus = HostStatus.AVAILABLE;
 			_serverLastChanged = content.LastChanged;
 			LastChanged = _serverLastChanged;
-			IsCorrupted = content.IsCorrupted;
+			ContentException = content.ContentException;
 			
 			SetupLocalEventListeners();
 		}
@@ -339,7 +339,7 @@ namespace Beamable.Editor.Content.Models
 			_allTags = CollectAllTags();
 			_serverLastChanged = entry.LastChanged;
 			LastChanged = _serverLastChanged;
-			IsCorrupted = entry.IsCorrupted;
+			ContentException = entry.ContentException;
 
 			OnEnriched?.Invoke(this);
 		}
@@ -363,7 +363,7 @@ namespace Beamable.Editor.Content.Models
 			_allTags = CollectAllTags();
 			_serverLastChanged = 0;
 			LastChanged = 0;
-			IsCorrupted = false;
+			ContentException = null;
 			OnEnriched?.Invoke(this);
 		}
 

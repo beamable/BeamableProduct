@@ -216,7 +216,7 @@ namespace Beamable.Editor.Content
 			// Remove corrupted flags
 			for (var i = 0; i < publishSet.ToModify.Count; i++)
 			{
-				publishSet.ToModify[i].IsCorrupted = false;
+				publishSet.ToModify[i].ContentException = null;
 			}
 
 			return Promise.ExecuteSerially(promiseGenerators).FlatMap(__ =>

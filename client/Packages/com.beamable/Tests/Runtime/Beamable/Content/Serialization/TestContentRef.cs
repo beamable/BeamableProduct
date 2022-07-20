@@ -20,7 +20,8 @@ namespace Beamable.Tests.Content.Serialization.Support
 		public string[] Tags { get; set; }
 		public string ManifestID { get; }
 		public long LastChanged { get; set; }
-		public bool IsCorrupted { get; set; }
+
+		public ContentCorruptedException ContentException { get; set; }
 
 		public void SetIdAndVersion(string id, string version)
 		{

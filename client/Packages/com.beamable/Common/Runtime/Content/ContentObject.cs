@@ -220,7 +220,7 @@ namespace Beamable.Common.Content
 
 		public string Created { get; private set; }
 		public long LastChanged { get; set; }
-		public bool IsCorrupted { get; set; }
+		public ContentCorruptedException ContentException { get; set; }
 
 		/// <summary>
 		/// Set the &id and &version
