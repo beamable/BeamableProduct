@@ -70,13 +70,13 @@ public class CommonTest
 		// reset exit code to 0
 		Environment.ExitCode = 0;
 
-		Console.WriteLine($"Starting Test - [{TestContext.CurrentContext.Test.Name}]");
+		Console.WriteLine($"Starting Test - [{TestContext.CurrentContext.Test.MethodName}]");
 	}
 
 	[TearDown]
 	public void TeardownTest()
 	{
-		Console.WriteLine($"Finishing Test - [{TestContext.CurrentContext.Test.Name}]");
+		Console.WriteLine($"Finishing Test - [{TestContext.CurrentContext.Test.MethodName}]");
 
 		// there should be no error logs, unless the test has been configured to allow them.
 		var logFailure = !allowErrorLogs && GetBadLogs().Any();
@@ -91,7 +91,7 @@ public class CommonTest
 
 		if (testFailure)
 		{
-			Console.WriteLine($"Dumping logs for [{TestContext.CurrentContext.Test.Name}]");
+			Console.WriteLine($"Dumping logs for [{TestContext.CurrentContext.Test.MethodName}]");
 			foreach (var log in GetLogs().ToList())
 			{
 				Console.WriteLine(log.RenderMessage());
