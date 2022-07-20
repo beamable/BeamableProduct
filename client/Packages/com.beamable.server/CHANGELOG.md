@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Microservice related actions can run while Unity is a background process.
+- Local Microservices no longer say "could not find servicename:latest"
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
