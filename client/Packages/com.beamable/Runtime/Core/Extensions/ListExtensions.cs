@@ -10,6 +10,7 @@ namespace Beamable.Extensions
 		// IList Extension Methods
 		////////////////////////////////////////////////////////////
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static T SelectRandom<T>(this IList<T> list)
 		{
 			if (list.Count == 0)
@@ -23,6 +24,7 @@ namespace Beamable.Extensions
 
 		public interface IWeightedListItem { uint Weight { get; } }
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static T SelectRandomWeighted<T>(this IList<T> list) where T : IWeightedListItem
 		{
 			if (list.Count == 0)
@@ -52,6 +54,7 @@ namespace Beamable.Extensions
 			return default(T);
 		}
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static void Shuffle<T>(this IList<T> list)
 		{
 			int n = list.Count;
@@ -65,6 +68,7 @@ namespace Beamable.Extensions
 			}
 		}
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static bool Overlaps<T>(this IList<T> list, IList<T> other)
 		{
 			for (int i = 0; i < list.Count; ++i)
@@ -80,6 +84,7 @@ namespace Beamable.Extensions
 
 		// jukebox random system; pass it a src array, and it will create/manage the
 		// list, shuffle it, restock it, etc, for you.
+		[Obsolete("Unsupported Beamable Feature")]
 		public static T Jukebox<T>(this List<T> list, T[] src)
 		{
 			if (src == null || src.Length == 0)
@@ -109,6 +114,7 @@ namespace Beamable.Extensions
 			return ret;
 		}
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static void AddSorted<T>(this List<T> @this, T item) where T : IComparable<T>
 		{
 			if (@this.Count == 0)
@@ -134,6 +140,7 @@ namespace Beamable.Extensions
 			@this.Insert(~index, item);
 		}
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static bool RemoveSorted<T>(this List<T> @this, T item) where T : IComparable<T>
 		{
 			if (@this.Count == 0)
@@ -147,11 +154,13 @@ namespace Beamable.Extensions
 			return true;
 		}
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static T UnsafeLast<T>(this List<T> list)
 		{
 			return list[list.Count - 1];
 		}
 
+		[Obsolete("Unsupported Beamable Feature")]
 		public static bool IsEmpty<T>(this List<T> list)
 		{
 			return list.Count == 0;

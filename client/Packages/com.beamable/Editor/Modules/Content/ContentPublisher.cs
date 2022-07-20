@@ -78,7 +78,8 @@ namespace Beamable.Editor.Content
 				Checksum = _io.Checksum(content),
 				Id = content.Id,
 				Content = content,
-				Tags = content.Tags
+				Tags = content.Tags,
+				LastChanged = content.LastChanged
 			};
 
 			return definition;
@@ -139,7 +140,8 @@ namespace Beamable.Editor.Content
 					Uri = entry.uri,
 					Version = entry.version,
 					Visibility = entry.visibility,
-					Type = "content"
+					Type = "content",
+					LastChanged = entry.lastChanged
 				};
 				var key = reference.Key;
 
@@ -209,6 +211,12 @@ namespace Beamable.Editor.Content
 				var batch = publishSet.ToDelete.GetRange(i, Math.Min(batchSize, publishSet.ToDelete.Count - i));
 				batch.ForEach(RemoveReference);
 				progressPromises.Add(Promise<int>.Successful(batch.Count).Then(_ => CallProgressCallback()));
+			}
+			
+			// Remove corrupted flags
+			for (var i = 0; i < publishSet.ToModify.Count; i++)
+			{
+				publishSet.ToModify[i].ContentException = null;
 			}
 
 			return Promise.ExecuteSerially(promiseGenerators).FlatMap(__ =>

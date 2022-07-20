@@ -38,7 +38,7 @@ namespace Beamable.Editor.Toolbox.Components
 			}
 		}
 
-		public ToolboxModel Model { get; set; }
+		public IToolboxViewService Model { get; set; }
 
 		public ToolboxAnnouncementListVisualElement() : base(nameof(ToolboxAnnouncementListVisualElement))
 		{
@@ -50,6 +50,8 @@ namespace Beamable.Editor.Toolbox.Components
 			base.Refresh();
 
 			_mainContainer = Root.Q<VisualElement>("main");
+
+			Model = Provider.GetService<IToolboxViewService>();
 
 			SetAnnouncements(Model.Announcements);
 			Model.OnAnnouncementsChanged += SetAnnouncements;

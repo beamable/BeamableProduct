@@ -71,8 +71,8 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
 		public bool ColorLogs = true;
 
-		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
-		public bool EnableDockerBuildkit = false;
+		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. It is also required to deploy Microservices from an ARM based computer, like a mac computer with an M1 silicon chipset. ")]
+		public bool DisableDockerBuildkit = false;
 
 		[Tooltip("It will enable checking if docker desktop is running before you can start microservices.")]
 		public bool DockerDesktopCheckInMicroservicesWindow = true;
@@ -109,9 +109,11 @@ namespace Beamable.Server.Editor
 #endif
 			}
 		}
+
 #pragma warning disable CS0219
 		public string WindowsDockerCommand = DOCKER_LOCATION;
 		public string UnixDockerCommand = "/usr/local/bin/docker";
+		public string DockerCPUArchitecture = "linux/amd64";
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
 		public string WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
@@ -339,6 +341,7 @@ namespace Beamable.Server.Editor
 		public string StorageName;
 		public string StorageType;
 		public bool Enabled;
+		public bool Archived;
 		public string TemplateId;
 
 		[Tooltip("When running locally, what port will the data be available on?")]
@@ -376,6 +379,7 @@ namespace Beamable.Server.Editor
 		public string ServiceName;
 		[Tooltip("If the service should be running on the cloud, in the current realm.")]
 		public bool Enabled;
+		public bool Archived;
 		public string TemplateId;
 
 		[Tooltip("When the container is built, inject the following string into the built docker file.")]

@@ -84,9 +84,10 @@ namespace Beamable.Editor.UI.Components
 
 			BussConfiguration.OptionalInstance.DoIfExists(config =>
 			{
-				if (config.GlobalStyleSheet != null)
+				foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
 				{
-					StyleSheets.Add(config.GlobalStyleSheet);
+					if (styleSheet != null)
+						StyleSheets.Add(styleSheet);
 				}
 			});
 

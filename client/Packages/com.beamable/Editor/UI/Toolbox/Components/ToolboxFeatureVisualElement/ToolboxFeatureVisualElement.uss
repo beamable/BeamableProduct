@@ -17,6 +17,10 @@
     margin-left: 10px;
 }
 
+ToolboxFeatureVisualElement {
+    max-height: 160px;
+}
+
 ToolboxFeatureVisualElement.invisible{
     opacity: 0;
 }

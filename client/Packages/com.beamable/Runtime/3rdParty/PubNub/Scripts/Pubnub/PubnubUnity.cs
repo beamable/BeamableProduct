@@ -1,5 +1,7 @@
 //Build Date: Jul 29, 2016
 //ver3.7.2/Unity5
+
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,6 +22,7 @@ namespace PubNubMessaging.Core
 {
 	public class PubnubUnity
 	{
+		private readonly IDependencyProvider _provider;
 
 		#region "Events"
 
@@ -86,6 +89,9 @@ namespace PubNubMessaging.Core
 		#endregion
 
 		#region "Properties"
+
+		public Subscription Subscription => _provider.GetService<Subscription>();
+		public StoredRequestState StoredRequestState => _provider.GetService<StoredRequestState>();
 
 		public string PublishKey
 		{
@@ -441,18 +447,21 @@ namespace PubNubMessaging.Core
 
 		#region "Constructors and Destructor"
 
-		public PubnubUnity(string publishKey, string subscribeKey, string secretKey, string cipherKey, bool sslOn, GameObject gob)
+		public PubnubUnity(IDependencyProvider provider, string publishKey, string subscribeKey, string secretKey, string cipherKey, bool sslOn, GameObject gob)
 		{
+			_provider = provider;
 			this.Init(publishKey, subscribeKey, secretKey, cipherKey, sslOn, gob);
 		}
 
-		public PubnubUnity(string publishKey, string subscribeKey, string secretKey, GameObject gob)
+		public PubnubUnity(IDependencyProvider provider, string publishKey, string subscribeKey, string secretKey, GameObject gob)
 		{
+			_provider = provider;
 			this.Init(publishKey, subscribeKey, secretKey, "", false, gob);
 		}
 
-		public PubnubUnity(string publishKey, string subscribeKey, GameObject gob)
+		public PubnubUnity(IDependencyProvider provider, string publishKey, string subscribeKey, GameObject gob)
 		{
+			_provider = provider;
 			this.Init(publishKey, subscribeKey, "", "", false, gob);
 		}
 
@@ -833,7 +842,7 @@ namespace PubNubMessaging.Core
 					List<ChannelEntity> channelEntities;
 					if (Helpers.CheckAndAddExistingUserState<T>(channel, channelGroup,
 						deserializeUserState, userCallback, errorCallback, errorLevel, false,
-						out userState, out channelEntities
+						out userState, out channelEntities, _provider
 					))
 					{
 						SharedSetUserState<T>(channel, channelGroup,
@@ -851,7 +860,7 @@ namespace PubNubMessaging.Core
 			List<ChannelEntity> channelEntities;
 			if (Helpers.CheckAndAddExistingUserState<T>(channel, channelGroup,
 				new Dictionary<string, object> { { keyValuePair.Key, keyValuePair.Value } }, userCallback,
-				errorCallback, errorLevel, true, out userState, out channelEntities
+				errorCallback, errorLevel, true, out userState, out channelEntities, _provider
 			))
 			{
 
@@ -1105,17 +1114,17 @@ namespace PubNubMessaging.Core
 			StopHeartbeat<T>();
 			StopPresenceHeartbeat<T>();
 			ResetInternetCheckSettings();
-			RequestState<T> reqState = StoredRequestState.Instance.GetStoredRequestState(CurrentRequestType.Subscribe) as RequestState<T>;
+			RequestState<T> reqState = StoredRequestState.GetStoredRequestState(CurrentRequestType.Subscribe) as RequestState<T>;
 			if (reqState == null)
 			{
 				if (typeof(T).Equals(typeof(object)))
 				{
-					RequestState<string> reqStateStr = StoredRequestState.Instance.GetStoredRequestState(CurrentRequestType.Subscribe) as RequestState<string>;
+					RequestState<string> reqStateStr = StoredRequestState.GetStoredRequestState(CurrentRequestType.Subscribe) as RequestState<string>;
 					coroutine.BounceRequest<string>(CurrentRequestType.Subscribe, reqStateStr, true);
 				}
 				else if (typeof(T).Equals(typeof(string)))
 				{
-					RequestState<object> reqStateObj = StoredRequestState.Instance.GetStoredRequestState(CurrentRequestType.Subscribe) as RequestState<object>;
+					RequestState<object> reqStateObj = StoredRequestState.GetStoredRequestState(CurrentRequestType.Subscribe) as RequestState<object>;
 					coroutine.BounceRequest<object>(CurrentRequestType.Subscribe, reqStateObj, true);
 				}
 			}
@@ -1139,7 +1148,7 @@ namespace PubNubMessaging.Core
 			StopHeartbeat();
 			StopPresenceHeartbeat();
 			ResetInternetCheckSettings();
-			Subscription.Instance.CleanUp();
+			Subscription.CleanUp();
 			LoggingMethod.WriteToLog(string.Format("DateTime {0}, EndPendingRequests: Subscription cleanup complete.", DateTime.Now.ToString()), LoggingMethod.LevelInfo);
 		}
 
@@ -1181,13 +1190,13 @@ namespace PubNubMessaging.Core
 
 			SessionUUID = newUUID;
 
-			if (Subscription.Instance.HasChannelsOrChannelGroups)
+			if (Subscription.HasChannelsOrChannelGroups)
 			{
-				string request = BuildRequests.BuildMultiChannelLeaveRequest(Helpers.GetNamesFromChannelEntities(Subscription.Instance.AllChannels, false),
-					Helpers.GetNamesFromChannelEntities(Subscription.Instance.AllChannelGroups, true), oldUUID,
-					this.ssl, this.Origin, authenticationKey, this.subscribeKey);
+				string request = BuildRequests.BuildMultiChannelLeaveRequest(Helpers.GetNamesFromChannelEntities(Subscription.AllChannels, false),
+					Helpers.GetNamesFromChannelEntities(Subscription.AllChannelGroups, true), oldUUID,
+					this.ssl, this.Origin, authenticationKey, this.subscribeKey, _provider);
 
-				RequestState<T> requestState = BuildRequests.BuildRequestState<T>(Subscription.Instance.AllSubscribedChannelsAndChannelGroups,
+				RequestState<T> requestState = BuildRequests.BuildRequestState<T>(Subscription.AllSubscribedChannelsAndChannelGroups,
 					ResponseType.Leave, false, 0, false, 0, null);
 
 				UrlProcessRequest<T>(request, requestState);
@@ -1235,14 +1244,14 @@ namespace PubNubMessaging.Core
 		{
 			try
 			{
-				if (Subscription.Instance.AllNonPresenceChannelsOrChannelGroups.Count > 0)
+				if (Subscription.AllNonPresenceChannelsOrChannelGroups.Count > 0)
 				{
 					isPresenceHearbeatRunning = true;
-					string channelsJsonState = Subscription.Instance.CompiledUserState;
+					string channelsJsonState = Subscription.CompiledUserState;
 
 					string requestUrl = BuildRequests.BuildPresenceHeartbeatRequest(
-						Helpers.GetNamesFromChannelEntities(Subscription.Instance.AllNonPresenceChannelsOrChannelGroups, false),
-						Helpers.GetNamesFromChannelEntities(Subscription.Instance.AllNonPresenceChannelsOrChannelGroups, true),
+						Helpers.GetNamesFromChannelEntities(Subscription.AllNonPresenceChannelsOrChannelGroups, false),
+						Helpers.GetNamesFromChannelEntities(Subscription.AllNonPresenceChannelsOrChannelGroups, true),
 						channelsJsonState, this.SessionUUID,
 						this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
@@ -1251,7 +1260,7 @@ namespace PubNubMessaging.Core
 					//for heartbeat and presence heartbeat treat reconnect as pause
 					RequestState<T> requestState = BuildRequests.BuildRequestState<T>(pubnubRequestState.ChannelEntities, ResponseType.PresenceHeartbeat,
 						pause, pubnubRequestState.ID, false, 0, null);
-					StoredRequestState.Instance.SetRequestState(CurrentRequestType.PresenceHeartbeat, requestState);
+					StoredRequestState.SetRequestState(CurrentRequestType.PresenceHeartbeat, requestState);
 					coroutine.Run<T>(requestUrl, requestState, HeartbeatTimeout, pauseTime);
 					LoggingMethod.WriteToLog(string.Format("DateTime {0}, StartPresenceHeartbeat: PresenceHeartbeat running for {1}", DateTime.Now.ToString(), pubnubRequestState.ID), LoggingMethod.LevelInfo);
 
@@ -1290,7 +1299,7 @@ namespace PubNubMessaging.Core
 				//for heartbeat and presence heartbeat treat reconnect as pause
 				RequestState<T> requestState = BuildRequests.BuildRequestState<T>(pubnubRequestState.ChannelEntities,
 					ResponseType.Heartbeat, pause, pubnubRequestState.ID, false, 0, null);
-				StoredRequestState.Instance.SetRequestState(CurrentRequestType.Heartbeat, requestState);
+				StoredRequestState.SetRequestState(CurrentRequestType.Heartbeat, requestState);
 				coroutine.Run<T>(requestUrl, requestState, HeartbeatTimeout, pauseTime);
 				LoggingMethod.WriteToLog(string.Format("DateTime {0}, StartHeartbeat: Heartbeat running for {1}", DateTime.Now.ToString(), pubnubRequestState.ID), LoggingMethod.LevelInfo);
 
@@ -1514,7 +1523,7 @@ namespace PubNubMessaging.Core
 			{
 				case ResponseType.SubscribeV2:
 				case ResponseType.PresenceV2:
-					Helpers.ProcessResponseCallbacksV2<T>(ref resultSubscribeEnvelope, requestState, this.cipherKey, JsonPluggableLibrary);
+					Helpers.ProcessResponseCallbacksV2<T>(ref resultSubscribeEnvelope, requestState, this.cipherKey, JsonPluggableLibrary, _provider);
 					if ((resultSubscribeEnvelope != null) && (resultSubscribeEnvelope.TimetokenMeta != null))
 					{
 						ParseReceiedTimetoken<T>(requestState, resultSubscribeEnvelope.TimetokenMeta.Timetoken);
@@ -1573,7 +1582,7 @@ namespace PubNubMessaging.Core
 
 		protected void MultiplexExceptionHandler<T>(ResponseType type, bool reconnectMaxTried, bool reconnect)
 		{
-			List<ChannelEntity> channelEntities = Subscription.Instance.AllSubscribedChannelsAndChannelGroups;
+			List<ChannelEntity> channelEntities = Subscription.AllSubscribedChannelsAndChannelGroups;
 			LoggingMethod.WriteToLog(string.Format("DateTime {0}, MultiplexExceptionHandler: responsetype={1}", DateTime.Now.ToString(), type.ToString()), LoggingMethod.LevelInfo);
 			string channelGroups = Helpers.GetNamesFromChannelEntities(channelEntities, true);
 			string channels = Helpers.GetNamesFromChannelEntities(channelEntities, false);
@@ -1586,7 +1595,7 @@ namespace PubNubMessaging.Core
 
 				MultiChannelUnsubscribeInit<T>(ResponseType.Unsubscribe, channels, channelGroups, null, null, null, null);
 
-				Helpers.CheckSubscribedChannelsAndSendCallbacks<T>(Subscription.Instance.AllSubscribedChannelsAndChannelGroups,
+				Helpers.CheckSubscribedChannelsAndSendCallbacks<T>(Subscription.AllSubscribedChannelsAndChannelGroups,
 					type, NetworkCheckMaxRetries, PubnubErrorLevel);
 				//retriesExceeded = false;
 			}
@@ -1704,7 +1713,7 @@ namespace PubNubMessaging.Core
 					RunPresenceHeartbeat<T>(false, PresenceHeartbeatInterval, pubnubRequestStateHB);
 				}
 
-				StoredRequestState.Instance.SetRequestState(CurrentRequestType.Subscribe, pubnubRequestState);
+				StoredRequestState.SetRequestState(CurrentRequestType.Subscribe, pubnubRequestState);
 				coroutine.SubCoroutineComplete += CoroutineCompleteHandler<T>;
 				coroutine.Run<T>(requestUri, pubnubRequestState, SubscribeTimeout, requestDelayTime);
 				if (requestDelayTime > 0)
@@ -1714,7 +1723,7 @@ namespace PubNubMessaging.Core
 			}
 			else
 			{
-				StoredRequestState.Instance.SetRequestState(CurrentRequestType.NonSubscribe, pubnubRequestState);
+				StoredRequestState.SetRequestState(CurrentRequestType.NonSubscribe, pubnubRequestState);
 				coroutine.NonSubCoroutineComplete += CoroutineCompleteHandler<T>;
 				coroutine.Run<T>(requestUri, pubnubRequestState, NonSubscribeTimeout, 0);
 			}
@@ -1770,7 +1779,7 @@ namespace PubNubMessaging.Core
 			{
 				string channelToBeRemoved = ce.ChannelID.ChannelOrChannelGroupName;
 				PubnubChannelCallback<T> channelCallback = ce.ChannelParams.Callbacks as PubnubChannelCallback<T>;
-				if (Subscription.Instance.Delete(ce))
+				if (Subscription.Delete(ce))
 				{
 					string jsonString = string.Format("{0} Unsubscribed from {1}", (ce.ChannelID.IsPresenceChannel) ? "Presence" : "", channelToBeRemoved.Replace(Utility.PresenceChannelSuffix, ""));
 					List<object> result = Helpers.CreateJsonResponse(jsonString, channelToBeRemoved.Replace(Utility.PresenceChannelSuffix, ""), JsonPluggableLibrary);
@@ -1792,13 +1801,13 @@ namespace PubNubMessaging.Core
 
 		void ContinueToSubscribeRestOfChannels<T>(ResponseType type, Action<T> userCallback, Action<T> connectCallback, Action<PubnubClientError> errorCallback)
 		{
-			List<ChannelEntity> subscribedChannels = Subscription.Instance.AllSubscribedChannelsAndChannelGroups;
+			List<ChannelEntity> subscribedChannels = Subscription.AllSubscribedChannelsAndChannelGroups;
 
 			if (subscribedChannels != null && subscribedChannels.Count > 0)
 			{
 				ResetInternetCheckSettings();
 				//Modify the value for type ResponseType. Presence or Subscrie is ok, but sending the close value would make sense
-				if (Subscription.Instance.HasPresenceChannels)
+				if (Subscription.HasPresenceChannels)
 				{
 					type = ResponseType.PresenceV2;
 				}
@@ -1829,11 +1838,11 @@ namespace PubNubMessaging.Core
 		{
 			string[] rawChannels = channel.Split(',');
 			string[] rawChannelGroups = channelGroups.Split(',');
-			List<ChannelEntity> subscribedChannels = Subscription.Instance.AllSubscribedChannelsAndChannelGroups;
+			List<ChannelEntity> subscribedChannels = Subscription.AllSubscribedChannelsAndChannelGroups;
 
 			List<ChannelEntity> newChannelEntities;
 			Helpers.RemoveDuplicatesCheckAlreadySubscribedAndGetChannels<T>(respType, userCallback, connectCallback,
-				errorCallback, null, disconnectCallback, rawChannels, rawChannelGroups, PubnubErrorLevel, true, out newChannelEntities);
+				errorCallback, null, disconnectCallback, rawChannels, rawChannelGroups, PubnubErrorLevel, true, out newChannelEntities, _provider);
 
 			if (newChannelEntities.Count > 0)
 			{
@@ -1843,7 +1852,7 @@ namespace PubNubMessaging.Core
 				if (respType == ResponseType.Unsubscribe)
 				{
 					string request = BuildRequests.BuildMultiChannelLeaveRequest(channel, channelGroups, this.SessionUUID,
-						this.ssl, this.Origin, authenticationKey, this.subscribeKey);
+						this.ssl, this.Origin, authenticationKey, this.subscribeKey, _provider);
 					RequestState<T> requestState = BuildRequests.BuildRequestState<T>(newChannelEntities, ResponseType.Leave, false, 0, false, 0, null);
 					UrlProcessRequest<T>(request, requestState);
 
@@ -1869,20 +1878,20 @@ namespace PubNubMessaging.Core
 			string[] rawChannels = channel.Split(',');
 			string[] rawChannelGroups = channelGroup.Split(',');
 
-			List<ChannelEntity> subscribedChannels = Subscription.Instance.AllSubscribedChannelsAndChannelGroups;
+			List<ChannelEntity> subscribedChannels = Subscription.AllSubscribedChannelsAndChannelGroups;
 
 			ResetInternetCheckSettings();
 
 			List<ChannelEntity> newChannelEntities;
 			bool channelsOrChannelGroupsAdded = Helpers.RemoveDuplicatesCheckAlreadySubscribedAndGetChannels<T>(respType, userCallback,
 				connectCallback, errorCallback, wildcardPresenceCallback, null, rawChannels, rawChannelGroups,
-				PubnubErrorLevel, false, out newChannelEntities);
+				PubnubErrorLevel, false, out newChannelEntities, _provider);
 
 			if ((channelsOrChannelGroupsAdded) && (internetStatus))
 			{
-				Subscription.Instance.Add(newChannelEntities);
+				Subscription.Add(newChannelEntities);
 
-				Helpers.LogChannelEntitiesDictionary();
+				Helpers.LogChannelEntitiesDictionary(Subscription);
 
 				if (!timetokenToUse.Equals(0))
 				{
@@ -1905,7 +1914,7 @@ namespace PubNubMessaging.Core
 
 		private bool CheckAllChannelsAreUnsubscribed<T>()
 		{
-			if (Subscription.Instance.AllSubscribedChannelsAndChannelGroups.Count <= 0)
+			if (Subscription.AllSubscribedChannelsAndChannelGroups.Count <= 0)
 			{
 				StopHeartbeat<T>();
 				if (isPresenceHearbeatRunning)
@@ -1987,7 +1996,7 @@ namespace PubNubMessaging.Core
 			{
 				return;
 			}
-			List<ChannelEntity> channelEntities = Subscription.Instance.AllSubscribedChannelsAndChannelGroups;
+			List<ChannelEntity> channelEntities = Subscription.AllSubscribedChannelsAndChannelGroups;
 
 			// Begin recursive subscribe
 			try
@@ -1998,7 +2007,7 @@ namespace PubNubMessaging.Core
 					Helpers.GetNamesFromChannelEntities(channelEntities), lastTimetoken), LoggingMethod.LevelInfo);
 
 				// Build URL
-				string channelsJsonState = Subscription.Instance.CompiledUserState;
+				string channelsJsonState = Subscription.CompiledUserState;
 
 				string channels = Helpers.GetNamesFromChannelEntities(channelEntities, false);
 				string channelGroups = Helpers.GetNamesFromChannelEntities(channelEntities, true);

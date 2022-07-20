@@ -1,7 +1,8 @@
 {
     "name": "PubNub",
     "references": [
-        "Beamable.SmallerJSON"
+        "Beamable.SmallerJSON",
+        "Unity.Beamable.Runtime.Common"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

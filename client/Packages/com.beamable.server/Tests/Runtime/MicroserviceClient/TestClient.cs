@@ -1,4 +1,6 @@
 using Beamable.Common;
+using System;
+using UnityEngine;
 
 namespace Beamable.Server.Tests.Runtime
 {
@@ -28,5 +30,12 @@ namespace Beamable.Server.Tests.Runtime
 	{
 		public int a;
 		public int b;
+	}
+
+	[Serializable]
+	public class TestProperties
+	{
+		[field: SerializeField] public int A { get; set; }
+		[field: SerializeField] public string B { get; set; }
 	}
 }

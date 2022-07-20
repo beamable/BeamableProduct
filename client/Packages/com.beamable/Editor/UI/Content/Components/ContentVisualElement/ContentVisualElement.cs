@@ -38,13 +38,15 @@ namespace Beamable.Editor.Content.Components
 			}
 		}
 		private string _statusClassName;
-
+		private string _previousStatusClassName;
 
 		private TextField _nameTextField;
 		private Label _pathLabel;
 		private TagListVisualElement _tagListVisualElement;
+		private Label _lastChanged;
 		private object _tagsLabel;
 		private string _nameBackup;
+		private bool _isContentNameInEditMode;
 
 		public ContentVisualElement() : base(nameof(ContentVisualElement)) { }
 
@@ -66,6 +68,8 @@ namespace Beamable.Editor.Content.Components
 			_statusIcon = Root.Q<VisualElement>("statusIcon");
 			_nameTextField = Root.Q<TextField>("nameTextField");
 			_nameTextField.SetEnabled(false);
+
+			_lastChanged = Root.Q<Label>("lastChanged");
 
 			// Update status icon based on states
 			UpdateStatusIcon();
@@ -96,10 +100,10 @@ namespace Beamable.Editor.Content.Components
 			}
 		}
 
-
 		private void ContentItemDescriptor_OnEnriched(ContentItemDescriptor obj)
 		{
 			Update();
+			UpdateLastChanged();
 		}
 
 		private void ContentItemDescriptor_OnRenameRequested()
@@ -112,6 +116,7 @@ namespace Beamable.Editor.Content.Components
 			_nameTextField.value = ContentItemDescriptor.Name;
 			_pathLabel.text = ContentItemDescriptor.ContentType.ShortName;
 			_tagListVisualElement.TagDescriptors = ContentItemDescriptor.GetAllTags().ToList();
+			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged + (ContentItemDescriptor.IsCorrupted ? " (corrupted)" : string.Empty);
 			// _tagListVisualElement.ContentItemDescriptor = _contentItemDescriptor;
 			_tagListVisualElement.Refresh();
 
@@ -131,6 +136,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			_pathLabel.RemoveFromClassList("pathDeleted");
 
+			_previousStatusClassName = _statusClassName;
 			if (!string.IsNullOrEmpty(_statusClassName))
 			{
 				_statusIcon.RemoveFromClassList(_statusClassName);
@@ -162,6 +168,22 @@ namespace Beamable.Editor.Content.Components
 			_statusIcon.AddToClassList(_statusClassName);
 		}
 
+		private void UpdateLastChanged()
+		{
+			if (string.IsNullOrWhiteSpace(_previousStatusClassName))
+				return;
+
+			if (_statusClassName.Equals("inSync"))
+			{
+				_contentItemDescriptor.RefreshLatestUpdate(true);
+			}
+			else if (!_previousStatusClassName.Equals(_statusClassName) ||
+					 _previousStatusClassName.Equals(_statusClassName) && _statusClassName.Equals("modified"))
+			{
+				_contentItemDescriptor.RefreshLatestUpdate();
+			}
+			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged;
+		}
 
 		/// <summary>
 		/// Focus the user input to allow for free typing to rename
@@ -210,7 +232,9 @@ namespace Beamable.Editor.Content.Components
 
 		private void CommitName()
 		{
-			//if (string.Equals(_nameBackup, _nameTextField.value)) return;
+			if (_isContentNameInEditMode)
+				return;
+			_isContentNameInEditMode = true;
 
 			_nameTextField.SelectRange(0, 0);
 			_nameTextField.SetEnabled(false);
@@ -227,6 +251,7 @@ namespace Beamable.Editor.Content.Components
 			finally
 			{
 				_nameTextField.Blur();
+				_isContentNameInEditMode = false;
 			}
 		}
 

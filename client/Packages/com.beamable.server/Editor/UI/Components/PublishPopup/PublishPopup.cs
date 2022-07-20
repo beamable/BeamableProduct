@@ -124,6 +124,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_scrollContainer.Add(newElement);
 
 				elementNumber++;
+
+
+				if (MicroservicesDataModel.Instance.IsArchived(model.Name))
+				{
+					newElement.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+				}
 			}
 
 			_generalComments = Root.Q<TextField>("largeCommentsArea");
@@ -257,8 +263,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
 			{
-				if (kvp.Value.IsRemoteOnly)
-					continue;
 				var serviceModel = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(kvp.Key);
 
 				if (serviceModel == null)
@@ -309,6 +313,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
+			if (_servicesToPublish.Count == 0) return 0f;
 			return _servicesToPublish.Average(x => x.LoadingBar.Progress);
 		}
 	}

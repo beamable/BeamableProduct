@@ -41,8 +41,37 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.Start<ServiceWithDependency>(new TestArgs());
          Assert.IsTrue(ms.HasInitialized);
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_serviceWithDeps", "NoNulls", 1, 0));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_serviceWithDeps", "NoNulls", 1, 1));
 
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
+      [Test]
+      [NonParallelizable]
+      public async Task HandleUnauthorizedClientCallable()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(MessageMatcher
+                  .WithReqId(1)
+                  .WithStatus(401),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce()
+               );
+         }));
+
+         await ms.Start<ServiceWithDependency>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_serviceWithDeps", "NoNulls", 1, 0));
+         
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());

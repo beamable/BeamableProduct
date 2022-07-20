@@ -9,7 +9,7 @@ namespace Beamable.Editor.UI.Components
 		private static HashSet<string> _usedVariableNames = new HashSet<string>();
 
 		public static PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
-														BussStyleRule styleRule,
+														BussStyleDescription styleRule,
 														VariableDatabase variableDatabase,
 														PropertySourceTracker context,
 														out IBussProperty result,
@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Components
 		/// It can search for end value recursively.
 		/// </summary>
 		private static PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-															   BussStyleRule styleRule,
+															   BussStyleDescription styleRule,
 															   VariableDatabase variableDatabase,
 															   out IBussProperty result,
 															   out VariableDatabase.PropertyReference propertyReference)

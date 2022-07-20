@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
 using Beamable.Editor.UI.Components;
@@ -20,7 +21,7 @@ namespace Beamable.Editor.Login.UI
 	public class LoginWindow : EditorWindow
 	{
 
-		public static async Task CheckLogin(params Type[] dockLocations)
+		public static async Promise CheckLogin(params Type[] dockLocations)
 		{
 			var b = BeamEditorContext.Default;
 			await b.InitializePromise;
@@ -91,6 +92,7 @@ namespace Beamable.Editor.Login.UI
 
 		public static LoginWindow Instance { get; private set; }
 		public static bool IsInstantiated { get { return Instance != null; } }
+		public static bool IsDomainReloaded { get { return Instance != null && Instance.LoginManager?.OnComplete?.IsCompleted == false; } }
 		private VisualElement _windowRoot;
 
 		public LoginManager LoginManager;

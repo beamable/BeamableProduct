@@ -6,7 +6,7 @@ namespace Beamable
 {
 	public class BeamableModule : MonoBehaviour
 	{
-		void Start()
+		void OnEnable()
 		{
 			if (EventSystem.current == null && Application.isPlaying)
 			{

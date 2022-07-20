@@ -12,7 +12,7 @@ namespace Beamable.Common
 				{
 					public const string BUSS_THEME_MANAGER_PATH = BASE_PATH + "/ThemeManager";
 
-					public static readonly Vector2 THEME_MANAGER_WINDOW_SIZE = new Vector2(500, 300);
+					public static readonly Vector2 THEME_MANAGER_WINDOW_SIZE = new Vector2(550, 700);
 
 					public const string DELETE_STYLE_HEADER = "Delete style";
 					public const string DELETE_STYLE_MESSAGE = "Are You sure You want to delete this style?";

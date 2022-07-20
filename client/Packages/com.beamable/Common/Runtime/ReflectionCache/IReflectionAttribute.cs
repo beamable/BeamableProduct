@@ -27,7 +27,9 @@ namespace Beamable.Common.Reflection
 
 		public AttributeValidationResult(Attribute attribute, MemberInfo ownerMember, ReflectionCache.ValidationResultType type, string message)
 		{
-			System.Diagnostics.Debug.Assert(attribute is IReflectionAttribute, $"Attribute must implement the {nameof(IReflectionAttribute)}");
+			if (attribute != null)
+				System.Diagnostics.Debug.Assert(attribute is IReflectionAttribute, $"Attribute must implement the {nameof(IReflectionAttribute)}");
+
 			Pair = new MemberAttribute(ownerMember, attribute);
 			Type = type;
 			Message = message;
@@ -65,18 +67,25 @@ namespace Beamable.Common.Reflection
 
 			foreach (var checkMember in members)
 			{
-				var attribute = checkMember.GetCustomAttribute(attributeOfInterest.AttributeType, false);
-				if (attribute != null)
-				{
-					var cast = (IReflectionAttribute)attribute;
-					var result = cast.IsAllowedOnMember(checkMember);
-
-					validationResults.Add(result);
-				}
-				else
+				var attributes = checkMember.GetCustomAttributes(attributeOfInterest.AttributeType, false);
+				if (attributes.Length == 0)
 				{
 					var result = validateOnMissing?.Invoke(checkMember);
 					if (result.HasValue) validationResults.Add(result.Value);
+				}
+				else
+				{
+					foreach (var attrObj in attributes)
+					{
+						var attribute = (Attribute)attrObj;
+						if (attribute != null)
+						{
+							var cast = (IReflectionAttribute)attribute;
+							var result = cast.IsAllowedOnMember(checkMember);
+
+							validationResults.Add(result);
+						}
+					}
 				}
 			}
 

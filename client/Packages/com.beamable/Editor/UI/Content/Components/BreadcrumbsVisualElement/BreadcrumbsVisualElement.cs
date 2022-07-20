@@ -87,8 +87,8 @@ namespace Beamable.Editor.Content.Components
 			Model_OnSelectedContentTypeBranchChanged(new List<TreeViewItem>());
 			Model.OnSelectedContentTypeBranchChanged += Model_OnSelectedContentTypeBranchChanged;
 			//
-			Model_OnSelectedContentChanged(new List<ContentItemDescriptor>());
-			Model.OnSelectedContentChanged += Model_OnSelectedContentChanged; ;
+			HandleSelectedContentChanged(new List<ContentItemDescriptor>());
+			Model.OnSelectedContentChanged += HandleSelectedContentChanged; ;
 
 			//
 			Model.OnFilterChanged += Model_OnFilterChanged;
@@ -179,7 +179,7 @@ namespace Beamable.Editor.Content.Components
 			RenderTokens();
 		}
 
-		private void Model_OnSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
+		private void HandleSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
 		{
 			// Set the Selected Content
 			_selectedContentItemDescriptor = contentItemDescriptors.FirstOrDefault();

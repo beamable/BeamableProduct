@@ -171,16 +171,11 @@ namespace Beamable.Common.Content
 
 					return Json.Serialize(dict, new StringBuilder());
 			}
-
 		}
-
-
+		
 		protected object DeserializeResult(object preParsedValue, Type type)
 		{
-
-			try
-			{
-				if (typeof(Optional).IsAssignableFrom(type))
+			if (typeof(Optional).IsAssignableFrom(type))
 				{
 					var optional = (Optional)Activator.CreateInstance(type);
 
@@ -328,7 +323,10 @@ namespace Beamable.Common.Content
 						   : Activator.CreateInstance(type);
 						var outputList = (IList)listInstance;
 						if (list.Count > 0 && listElementType == null)
+						{
 							throw new Exception($"Unable to deserialize list element type. {type}");
+						}
+
 						foreach (var elem in list)
 						{
 							var elemValue = DeserializeResult(elem, listElementType);
@@ -336,11 +334,7 @@ namespace Beamable.Common.Content
 						}
 
 						return outputList;
-
-
-
-
-
+					
 					case ArrayDict assetDict when typeof(AssetReference).IsAssignableFrom(type):
 						object guid = "";
 						assetDict.TryGetValue("referenceKey", out guid);
@@ -393,13 +387,8 @@ namespace Beamable.Common.Content
 					default:
 						throw new Exception($"Cannot deserialize type [{type.Name}]");
 				}
-			}
-			catch (Exception)
-			{
-				Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{preParsedValue}]");
-				throw;
-			}
 		}
+		
 		private List<FieldInfoWrapper> GetFieldInfos(Type type)
 		{
 			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
@@ -409,6 +398,10 @@ namespace Beamable.Common.Content
 				if (attr != null && !string.IsNullOrEmpty(attr.SerializedName))
 				{
 					wrapper.SerializedName = attr.SerializedName;
+				}
+				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
+				{
+					wrapper.SerializedName = field.Name.Split('>')[0].Substring(1);
 				}
 				else
 				{
@@ -571,24 +564,24 @@ namespace Beamable.Common.Content
 
 
 		protected abstract TContent CreateInstance<TContent>() where TContent : TContentBase, IContentObject, new();
-		public TContentBase DeserializeByType(string json, Type contentType)
+		public TContentBase DeserializeByType(string json, Type contentType, bool disableExceptions = false)
 		{
 			return (TContentBase)GetType()
 			   .GetMethod(nameof(Deserialize))
 			   .MakeGenericMethod(contentType)
-			   .Invoke(this, new[] { json });
+			   .Invoke(this, new object[] { json, disableExceptions });
 		}
-		public TContent Deserialize<TContent>(string json)
+		public TContent Deserialize<TContent>(string json, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
 
-			return ConvertItem<TContent>(root);
+			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
-		public TContent ConvertItem<TContent>(ArrayDict root)
+		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
@@ -599,13 +592,13 @@ namespace Beamable.Common.Content
 			// the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
 			var typeName = "";
 
-			var type = ContentRegistry.GetTypeFromId(id);
-			if (!ContentRegistry.TryGetName(type, out typeName))
+			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(id);
+			if (!ContentTypeReflectionCache.Instance.TryGetName(type, out typeName))
 			{
-				typeName = ContentRegistry.GetTypeNameFromId(id);
+				typeName = ContentTypeReflectionCache.GetTypeNameFromId(id);
 			}
 
-			var name = ContentRegistry.GetContentNameFromId(id);
+			var name = ContentTypeReflectionCache.GetContentNameFromId(id);
 			id = string.Join(".", typeName, name);
 
 			var version = root["version"];
@@ -650,23 +643,52 @@ namespace Beamable.Common.Content
 				{
 					if (propertyDict.TryGetValue("data", out var dataValue))
 					{
-						var hackResult = DeserializeResult(dataValue, field.FieldType);
-						field.SetValue(instance, hackResult);
-						if (hackResult is ISerializationCallbackReceiver rec && !(hackResult is IIgnoreSerializationCallbacks))
-							rec.OnAfterDeserialize();
+						try
+						{
+							var hackResult = DeserializeResult(dataValue, field.FieldType);
+							field.SetValue(instance, hackResult);
+							if (hackResult is ISerializationCallbackReceiver rec &&
+							    !(hackResult is IIgnoreSerializationCallbacks))
+								rec.OnAfterDeserialize();
+						}
+						catch (Exception e)
+						{
+							if (!disableExceptions)
+							{
+								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{dataValue}]");
+								throw;
+							}
+							else
+							{
+								instance.ContentException = new ContentCorruptedException(e.Message);
+								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{type.Name}] exception=[{e.Message}]");
+							}
+						}
 					}
 
 					if (propertyDict.TryGetValue("$link", out var linkValue) || propertyDict.TryGetValue("link", out linkValue))
 					{
-						if (!typeof(IContentLink).IsAssignableFrom(field.FieldType))
+						bool isContentLink = typeof(IContentLink).IsAssignableFrom(field.FieldType);
+						bool isContentRef = !isContentLink && typeof(IContentRef).IsAssignableFrom(field.FieldType);
+						string fieldId = linkValue.ToString() ?? string.Empty;
+						if (isContentLink)
 						{
-							throw new Exception($"Cannot deserialize a link into a field that isnt a link field=[{field.SerializedName}] type=[{field.FieldType}]");
+							var link = (IContentLink)Activator.CreateInstance(field.FieldType);
+							link.SetId(fieldId);
+							link.OnCreated();
+							field.SetValue(instance, link);
 						}
-
-						var link = (IContentLink)Activator.CreateInstance(field.FieldType);
-						link.SetId(linkValue.ToString());
-						link.OnCreated();
-						field.SetValue(instance, link);
+						else if (isContentRef)
+						{
+							var contentRef = (IContentRef)Activator.CreateInstance(field.FieldType);
+							contentRef.SetId(fieldId);
+							field.SetValue(instance, contentRef);
+						}
+						else
+						{
+							throw new Exception(
+								$"Cannot deserialize a link into a field that isnt a link field=[{field.SerializedName}] type=[{field.FieldType}]");
+						}
 					}
 
 					if (propertyDict.TryGetValue("$links", out var linksValue) ||

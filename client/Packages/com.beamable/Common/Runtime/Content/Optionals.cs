@@ -51,16 +51,28 @@ namespace Beamable.Common.Content
 			HasValue = true;
 		}
 
+		/// <summary>
+		/// Erase the value of the Optional, and mark the instance such that the result from the <see cref="Optional.HasValue"/> property be false.
+		/// </summary>
+		public virtual void Clear()
+		{
+			HasValue = false;
+			Value = default;
+		}
+
 		public override Type GetOptionalType()
 		{
 			return typeof(T);
 		}
 
-		public T GetOrThrow()
+		public T GetOrThrow() => GetOrThrow(null);
+
+		public T GetOrThrow(Func<Exception> exFactory)
 		{
-			if (!HasValue) throw new ArgumentException("Optional value does not exist, but it was forced.");
+			if (!HasValue) throw exFactory?.Invoke() ?? new ArgumentException("Optional value does not exist, but it was forced.");
 			return Value;
 		}
+
 		public T GetOrElse(T otherwise) => GetOrElse(() => otherwise);
 
 		public T GetOrElse(Func<T> otherwise)
@@ -100,7 +112,14 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalBoolean : Optional<bool> { }
+	public class OptionalValue<T> : Optional<T> where T : struct
+	{
+		public static implicit operator T?(OptionalValue<T> option) => option?.HasValue == true ? (T?)option.Value : null;
+	}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalBoolean : OptionalValue<bool> { }
 
 	public static class OptionalBooleanExtensions
 	{
@@ -112,15 +131,15 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalInt : Optional<int> { }
+	public class OptionalInt : OptionalValue<int> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLong : Optional<long> { }
+	public class OptionalLong : OptionalValue<long> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalDouble : Optional<double> { }
+	public class OptionalDouble : OptionalValue<double> { }
 
 	[System.Serializable]
 	[Agnostic]

@@ -136,6 +136,7 @@ namespace Beamable.Common.Dependencies
 		private Dictionary<Type, object> ScopeCache { get; set; } = new Dictionary<Type, object>();
 
 		private bool _destroyed;
+		private bool _isDestroying;
 
 		public bool IsDisposed => _destroyed;
 		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
@@ -220,9 +221,8 @@ namespace Beamable.Common.Dependencies
 		// ReSharper disable Unity.PerformanceAnalysis
 		public async Promise Dispose()
 		{
-			if (_destroyed) return; // don't dispose twice!
-
-			_destroyed = true;
+			if (_isDestroying || _destroyed) return; // don't dispose twice!
+			_isDestroying = true;
 			var disposalPromises = new List<Promise<Unit>>();
 
 			// remove from parent.
@@ -265,11 +265,13 @@ namespace Beamable.Common.Dependencies
 
 			SingletonCache.Clear();
 			ScopeCache.Clear();
+			_destroyed = true;
 		}
 
 		public void Hydrate(IDependencyProviderScope other)
 		{
 			_destroyed = other.IsDisposed;
+			_isDestroying = false;
 			Transients = other.TransientServices.ToDictionary(desc => desc.Interface);
 			Scoped = other.ScopedServices.ToDictionary(desc => desc.Interface);
 			Singletons = other.SingletonServices.ToDictionary(desc => desc.Interface);

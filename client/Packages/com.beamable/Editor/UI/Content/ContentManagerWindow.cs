@@ -1,9 +1,9 @@
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
-using Beamable.Editor.Realms;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
 using System.Collections.Generic;
@@ -61,7 +61,6 @@ namespace Beamable.Editor.Content
 			if (ActiveContext == null) return;
 
 			_actionBarVisualElement?.RefreshPublishDropdownVisibility();
-			_explorerElement?.RefreshManifestButton();
 		}
 
 
@@ -72,7 +71,7 @@ namespace Beamable.Editor.Content
 			ActiveContext.OnRealmChange += HandleRealmChange;
 			ContentIO.OnManifestChanged += OnManifestChanged;
 
-			minSize = new Vector2(560, 300);
+			minSize = new Vector2(600, 300);
 
 			Refresh();
 		}
@@ -86,10 +85,9 @@ namespace Beamable.Editor.Content
 			ContentIO.OnManifestChanged -= OnManifestChanged;
 		}
 
-		private void HandleRealmChange(RealmView realm) => Refresh();
+		private void HandleRealmChange(RealmView realm) => EditorApplication.delayCall += Refresh;
 		private void HandleUserChange(User user) => Refresh();
 		private void OnManifestChanged(string manifestId) => SoftReset();
-
 
 		public void Refresh()
 		{
@@ -104,6 +102,7 @@ namespace Beamable.Editor.Content
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ContentManagerWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement();
 
 			root.Add(_windowRoot);
 

@@ -34,6 +34,7 @@ namespace Beamable.Editor.Tests
 		[TestCase("a124")]
 		[TestCase("tuna-fish")]
 		[TestCase("a01a")]
+		[TestCase("a-b-c")]
 		[TestCase("")]
 		public void ValidAlias(string alias)
 		{
@@ -43,6 +44,15 @@ namespace Beamable.Editor.Tests
 
 		[TestCase("0123")]
 		[TestCase("123")]
+		[TestCase("t- test")]
+		[TestCase("t e s t")]
+		[TestCase("0 1 2 3")]
+		[TestCase("   test")]
+		[TestCase("   test-abc")]
+		[TestCase("   012-abc")]
+		[TestCase("   012-345")]
+		[TestCase("555test")]
+		[TestCase("555test-444-kek")]
 		public void InvalidAlias(string alias)
 		{
 			Assert.Throws<ArgumentException>(() =>

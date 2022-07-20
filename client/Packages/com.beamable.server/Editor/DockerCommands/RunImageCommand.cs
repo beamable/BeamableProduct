@@ -169,21 +169,28 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_LOG_LEVEL = "LOG_LEVEL";
 		public const string ENV_NAME_PREFIX = "NAME_PREFIX";
 		public const string ENV_WATCH_TOKEN = "WATCH_TOKEN";
+		public const string ENV_DISABLE_RUN_CUSTOM_HOOK = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
 
-		public RunServiceCommand(MicroserviceDescriptor service, string cid, string secret,
-		   Dictionary<string, string> env, bool watch = true) : base(service.ImageName, service.ContainerName, service)
+		public RunServiceCommand(MicroserviceDescriptor service,
+		                         string cid,
+		                         string pid,
+		                         string secret,
+		                         Dictionary<string, string> env,
+		                         bool watch = true,
+		                         bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
 			_watch = watch;
 			Environment = new Dictionary<string, string>()
 			{
 				[ENV_CID] = cid,
-				[ENV_PID] = ConfigDatabase.GetString("pid"),
+				[ENV_PID] = pid,
 				[ENV_SECRET] = secret,
 				[ENV_HOST] = BeamableEnvironment.SocketUrl,
 				[ENV_LOG_LEVEL] = "Debug",
 				[ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix,
-				[ENV_WATCH_TOKEN] = "true"
+				[ENV_WATCH_TOKEN] = watch.ToString(),
+				[ENV_DISABLE_RUN_CUSTOM_HOOK] = (!shouldRunCustomHooks).ToString()
 			};
 
 			if (_watch)
@@ -205,6 +212,11 @@ namespace Beamable.Server.Editor.DockerCommands
 					};
 					BindMounts.Add(mount);
 				}
+
+				NamedVolumes = new Dictionary<string, string>
+				{
+					[service.NugetVolume] = "/root/.nuget/packages", // save the nuget data between builds
+				};
 			}
 
 			if (env != null)
@@ -279,7 +291,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			_descriptor = descriptor;
 			ImageName = imageName;
 			ContainerName = containerName;
-
+			UnityLogLabel = null;
 			Environment = env ?? new Dictionary<string, string>();
 			Ports = ports ?? new Dictionary<uint, uint>();
 			NamedVolumes = namedVolumes ?? new Dictionary<string, string>();
@@ -288,7 +300,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -296,7 +308,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 		protected override void HandleStandardErr(string data)
 		{
-			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardErr(data);
 			}
@@ -366,16 +378,12 @@ namespace Beamable.Server.Editor.DockerCommands
 			Task.Run(async () =>
 			{
 				await Task.Delay(500);
-				EditorApplication.delayCall += () =>
+				BeamEditorContext.Default.Dispatcher.Schedule(() =>
 				{
 					var prune = new PruneImageCommand(_descriptor);
-					var _ = prune.StartAsync().Then(__ =>
-					{
-
-					});
-				};
+					var _ = prune.StartAsync().Then(__ => { });
+				});
 			});
 		}
-
 	}
 }

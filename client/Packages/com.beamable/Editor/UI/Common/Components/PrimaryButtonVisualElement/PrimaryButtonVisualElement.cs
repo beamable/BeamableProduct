@@ -27,6 +27,7 @@ namespace Beamable.Editor.UI.Components
 		private List<FormConstraint> _constraints = new List<FormConstraint>();
 
 		private const string CLASS_NAME_REGEX = "^[A-Za-z_][A-Za-z0-9_]*$";
+		private const string ALIAS_AND_MANIFEST_NAME_REGEX = @"(^[0-9]*$)|(^[a-z][a-z0-9\-]*$)";
 
 		public string Text { get; private set; }
 
@@ -263,22 +264,8 @@ namespace Beamable.Editor.UI.Components
 		public static bool IsSlug(string slug)
 		{
 			if (slug == null) return false;
-			return slug.Length > 1 && GenerateSlug(slug).Equals(slug.Trim());
+			return slug.Length > 1 && Regex.IsMatch(slug, ALIAS_AND_MANIFEST_NAME_REGEX);
 		}
-
-		public static string GenerateSlug(string phrase)
-		{
-			string str = phrase.ToLower().Trim();
-			// invalid chars
-			str = Regex.Replace(str, @"^\d+", ""); // remove leading numbers..
-			str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
-			// convert multiple spaces into one space
-			str = Regex.Replace(str, @"\s+", " ").Trim();
-			// cut and trim
-			str = Regex.Replace(str, @"\s", "-").Trim(); // hyphens
-			return str;
-		}
-
 		public static bool IsGameNameValid(string gameName, out string errorMessage)
 		{
 			errorMessage = string.Empty;

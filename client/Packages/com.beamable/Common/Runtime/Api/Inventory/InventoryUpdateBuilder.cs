@@ -15,7 +15,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -35,7 +35,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -54,7 +54,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -74,7 +74,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -248,7 +248,7 @@ namespace Beamable.Common.Api.Inventory
 		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder DeleteItem<TContent>(long itemId) where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return DeleteItem(contentId, itemId);
 		}
 
@@ -297,7 +297,7 @@ namespace Beamable.Common.Api.Inventory
 		public InventoryUpdateBuilder UpdateItem<TContent>(long itemId, Dictionary<string, string> properties)
 			where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return UpdateItem(contentId, itemId, properties);
 		}
 

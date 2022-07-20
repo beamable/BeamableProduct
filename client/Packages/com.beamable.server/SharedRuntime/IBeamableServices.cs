@@ -1,6 +1,7 @@
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Content;
@@ -24,7 +25,7 @@ namespace Beamable.Server
 	///
 	/// #### Related Links
 	/// - See Beamable.Server.Microservice script reference
-	/// 
+	///
 	/// ### Example
 	/// This demonstrates example usage from WITHIN a custom %Beamable %Microservice.
 	///
@@ -49,16 +50,16 @@ namespace Beamable.Server
 	///   var SocialService = Services.Social;
 	///   var StatsService = Services.Stats;
 	///   var TournamentService = Services.Tournament;
-	///   var TrialDataService = Services.TrialData; 
-	/// 
+	///   var TrialDataService = Services.TrialData;
+	///
 	/// }
 	///
 	/// ```
 	///
-	/// 
+	///
 	/// #### Alternative API Links
 	/// - See Beamable.API for the main %Client script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -75,7 +76,7 @@ namespace Beamable.Server
 		IMicroserviceAuthApi Auth { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/calendars-overview">Calendars</a> feature
+		/// %Microservice entry point for the Calendars feature
 		/// </summary>
 		IMicroserviceCalendarsApi Calendars { get; }
 
@@ -143,5 +144,10 @@ namespace Beamable.Server
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/commerce-overview">Commerce</a> feature
 		/// </summary>
 		IMicroserviceCommerceApi Commerce { get; }
+
+		/// <summary>
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/chat-overview">Chat</a> feature
+		/// </summary>
+		IMicroserviceChatApi Chat { get; }
 	}
 }

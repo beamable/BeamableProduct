@@ -164,7 +164,7 @@ namespace Beamable.Common.Player
 
 		public event Action<T> OnDataUpdated;
 
-		public T Value
+		public virtual T Value
 		{
 			get => _data;
 			set
@@ -403,4 +403,22 @@ namespace Beamable.Common.Player
 		}
 	}
 
+	public class ObservableReadonlyList<T> : AbsObservableReadonlyList<T>
+	{
+		private readonly Func<Promise<List<T>>> _refresh;
+
+		public ObservableReadonlyList(Func<Promise<List<T>>> refreshFunction)
+		{
+			_refresh = refreshFunction;
+		}
+
+		protected override async Promise PerformRefresh()
+		{
+			if (_refresh != null)
+			{
+				var list = await _refresh.Invoke();
+				SetData(list);
+			}
+		}
+	}
 }

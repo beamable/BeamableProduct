@@ -15,7 +15,7 @@ namespace Beamable.Api.Notification
 {
 	public interface IPubnubSubscriptionManager
 	{
-		void Initialize(IPlatformService platform);
+		void Initialize(IPlatformService platform, IDependencyProvider provider);
 		void UnsubscribeAll();
 		Promise SubscribeToProvider();
 
@@ -43,6 +43,7 @@ namespace Beamable.Api.Notification
 
 		bool destroyingObject;
 		bool ignoreErrors; // a flag for ignoring certain errors that occur during filter changes;
+		private IPlatformService _platform;
 
 		Pubnub pubnub;
 		readonly Queue<PubNubOp> pendingOps = new Queue<PubNubOp>();
@@ -55,7 +56,7 @@ namespace Beamable.Api.Notification
 
 		public delegate void OnPubNubOperationDelegate();
 
-		private IPlatformService _platform;
+		public Subscription Subscription => _provider.GetService<Subscription>();
 
 		public bool PubnubIsConnected
 		{
@@ -106,8 +107,9 @@ namespace Beamable.Api.Notification
 			}
 		}
 
-		public void Initialize(IPlatformService platform)
+		public void Initialize(IPlatformService platform, IDependencyProvider provider)
 		{
+			_provider = provider;
 			_platform = platform;
 
 			// Pubnub.SetGameObject = this.gameObject;
@@ -176,7 +178,7 @@ namespace Beamable.Api.Notification
 		{
 #if UNITY_EDITOR
          if (!Application.isPlaying)
-         { 
+         {
 	         Debug.Log("Subscribing to Pubnub done after quiting Play Mode, aborting.");
             return;
          }
@@ -188,7 +190,7 @@ namespace Beamable.Api.Notification
 			}
 
 			// Set up the connection
-			pubnub = new Pubnub("", subscriberDetails.subscribeKey, "", "", true, gameObject);
+			pubnub = new Pubnub(_provider, "", subscriberDetails.subscribeKey, "", "", true, gameObject);
 			pubnub.SubscribeTimeout = SubscribeTimeout;
 			pubnub.NonSubscribeTimeout = NonSubscribeTimeout;
 			pubnub.NetworkCheckMaxRetries = MaxRetries;
@@ -205,6 +207,8 @@ namespace Beamable.Api.Notification
 			// We have queued up the operations, kick them off
 			RunNextOperation();
 		}
+
+		private IDependencyProvider _provider;
 
 		public void EnqueueOperation(PubNubOp operation, bool shouldRunNextOp = false)
 		{

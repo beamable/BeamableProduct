@@ -4,10 +4,107 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unrelased]
+
+## [Unreleased]
+### Added
+- User can specify Microservices build CPU architecture. 
+- `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
+- Microservices have their initialization validated before publishing. 
+  - This is mostly a sanity check to catch some errors we can't catch in the Unity Editor.
+  - For now, we don't run any `InitializeServicesAttributes` when validating this.
+  - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process.
+- Added microservice archive/unarchive feature.
+- Basic Chat SDK functions to Microservice
+- The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
+
+### Changed
+- local microservice logs will appear for dotnet watch command
+- Microservices use a Nuget cache for faster development builds
+- Microservices cache their `dotnet restore` output in the Docker cache for faster development builds
+- Microservices share a realm secret request for faster development builds
+
+### Fixed
+- Microservice related actions can run while Unity is a background process.
+
+### Removed
+- Unused legacy code around "Auto Run Local Microservices" menu item
+
+## [1.2.6]
+### Added
+- `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
+
+### Fixed
+- Microservices may be built from either ARM or x86 based computers and uploaded to Beamable.
+
+## [1.2.5]
+### Fixed
+- Failed promises no longer log exception info after an exception handler is registered on the same execution cycle.
+- "Connection is closed" log exception no longer prints incorrectly.
+- Requests no longer attempt to send while authorization process is happening.
+
+
+## [1.2.4]
+### Added
+- Microservices now support private declarations of `Callable` methods.
+- Added log notifying users that Microservices don't currently support overloaded `Callable`. 
+
+### Fixed
+- Microservices now properly log exceptions that happen during its initialization
+- Microservice process commands now use the `BeamableDispatcher` instead of the `EditorApplication.delayCall`. This allows you to background Unity during long running microservice actions.
+- Issue in Microservices re-auth flow that caused high CPU utilization unnecessarily
+
+## [1.2.3]
+### Added
+- `UnityEngine.Debug.LogFormat` now supported when used inside C#MS methods 
+
+### Changed
+- Socket re-authorization flow uses a spinlock mechanism instead of a mutex
+
+### Fixed
+- Socket re-connection waits for the socket to reconnect before yielding the task scheduler
+
+## [1.2.2]
+### Fixed
+- Fixed microservices build issue on Mac with ARM CPU architecture
+
+## [1.2.1]
+### Fixed
+- Microservices now correctly caches connection strings when `GetDatabase` is called on the `IStorageObjectConnectionProvider` service.  
+- Possible duplicate authorization requests.
+- Messages sent during a re-connection event will be re-attempted 10 times before failing.
+
+## [1.2.0]
+### Added
+- Support for GUID based assembly references.
+- `CallableAttribute` for exposing C#MS methods that are meant to be publicly accessible (without authentication required).
+- `ListLeaderboards` method to `IMicroserviceLeaderboardsApi` will return lists of leaderboard ids.
+- `GetPlayerLeaderboards` method to `IMicroserviceLeaderboardsApi` will return leaderboards for a given player.
+- `lbId` field to the `LeaderboardView` response class.
+- `DisableDockerBuildkit` property to the MicroserviceConfiguration. By default, Docker buildkit will now be enabled.
+
 ### Fixed
 - Client code can handle receiving a `ContentObject` response from a `ClientCallable`.
-- Fixed Microstorage Docker nulls on Unity startup.
+- Removed Microstorage related null reference errors on Unity startup.
+- `IMicroserviceNotificationsApi` can now send strings with spaces in them for messages.
+- `IMicroserviceLeaderboardsApi` will now respect `HasValue` flag of `Optional<T>` derived types in all cases.
+- Fixed issue with Publish flow that caused an invalid Manifest data to exist when publishing any services along a service whose source code was no longer in the project
+- Fixed issue that made it possible to start a remote service without its dependencies up and running (only happened in cases where the service was only remote --- ie: the source code for it was not present in the project)   
+
+### Changed
+- Building microservices will always pull the latest version of dependent alpine linux Docker base images.
+- `ClientCallableAttribute` is now only accessible to authenticated users. For a fully public endpoint, use `CallableAttribute` instead.   
+- Microservices will be built specifically for linux/amd64 architecture. For developers with ARM based CPU architectures, enable to the `DockerBuildkit` setting in the Microservice Configuration to publish microservices. 
+- Building a microservice will always stop the microservice and its source generator if they are running. After the build, the source generator will be reset.
+
+### Removed
+- `EnableDockerBuildkit` property from the MicroserviceConfiguration. By default, Docker buildkit will now be enabled. Disable it again with the new `DisableDockerBuildkit` field.
+
+## [1.1.4]
+### Fixed
+- Thrown `MicroserviceExceptions` from `[ClientCallable]` methods will result in an appropriate error response.
+
+## [1.1.3]
+no changes
 
 ## [1.1.2]
 ### Fixed

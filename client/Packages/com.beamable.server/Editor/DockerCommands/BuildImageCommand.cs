@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
+using static Beamable.Common.Constants.Features.Docker;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -16,12 +17,15 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		private const string BUILD_PREF = "{0}BuildAtLeastOnce";
 		private MicroserviceDescriptor _descriptor;
+		private readonly bool _pull;
 		public bool IncludeDebugTools { get; }
 		public string ImageName { get; set; }
 		public string BuildPath { get; set; }
+
 		public Promise<Unit> ReadyForExecution { get; private set; }
 
 		private Exception _constructorEx;
+		private List<string> _availableArchitectures;
 
 		public static bool WasEverBuildLocally(IDescriptor descriptor)
 		{
@@ -33,9 +37,11 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, List<string> availableArchitectures, bool includeDebugTools, bool watch, bool pull = true)
 		{
 			_descriptor = descriptor;
+			_availableArchitectures = availableArchitectures;
+			_pull = pull;
 			IncludeDebugTools = includeDebugTools;
 			ImageName = descriptor.ImageName;
 			BuildPath = descriptor.BuildPath;
@@ -46,22 +52,44 @@ namespace Beamable.Server.Editor.DockerCommands
 			BuildUtils.PrepareBuildContext(descriptor, includeDebugTools, watch);
 		}
 
-
 		protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
 		{
 			base.ModifyStartInfo(processStartInfo);
-			processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] = MicroserviceConfiguration.Instance.EnableDockerBuildkit ? "1" : "0";
+			processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] = MicroserviceConfiguration.Instance.DisableDockerBuildkit ? "0" : "1";
 			processStartInfo.EnvironmentVariables["DOCKER_SCAN_SUGGEST"] = "false";
+		}
+
+		public string GetProcessArchitecture()
+		{
+			if (_availableArchitectures.Contains(MicroserviceConfiguration.Instance.DockerCPUArchitecture))
+			{
+				return MicroserviceConfiguration.Instance.DockerCPUArchitecture;
+			}
+			else
+			{
+				throw new Exception(
+					$"Docker builds for {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture is not supported on your machine.");
+			}
 		}
 
 		public override string GetCommandString()
 		{
-			return $"{DockerCmd} build --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\"";
+			var pullStr = _pull ? "--pull" : "";
+#if BEAMABLE_DEVELOPER
+			pullStr = ""; // we cannot force the pull against the local image.
+#endif
+			var platformStr = "";
+
+#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+			platformStr = $"--platform {GetProcessArchitecture()}";
+#endif
+
+			return $"{DockerCmd} build {pullStr} {platformStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
 		}
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -70,7 +98,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardErr(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardErr(data);
 			}
@@ -79,7 +107,12 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void Resolve()
 		{
-			bool success = string.IsNullOrEmpty(StandardErrorBuffer);
+			bool success = StandardErrorBuffer?.Contains($"naming to docker.io/library/{_descriptor.ImageName} done") ?? true;
+			if (MicroserviceConfiguration.Instance.DisableDockerBuildkit)
+			{
+				success = string.IsNullOrEmpty(StandardErrorBuffer);
+			}
+
 			SetAsBuild(_descriptor, success);
 			if (success)
 			{

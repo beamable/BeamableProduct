@@ -27,6 +27,7 @@ namespace Beamable.Server.Editor
 
 		public string BuildPath => $"./Temp/beam/{Name}";
 		public string ContainerName => $"{Name}_container";
+		public string NugetVolume => $"beamable_microservice_nuget_data"; // TODO: do we need to enter the name here? Does it need to be container specific? I don't think so...
 		public string ImageName => Name.ToLower();
 		public ServiceType ServiceType => ServiceType.MicroService;
 		public bool HasValidationError { get; set; }

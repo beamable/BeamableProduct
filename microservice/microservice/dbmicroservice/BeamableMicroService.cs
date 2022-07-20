@@ -10,10 +10,13 @@ using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Assistant;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.Events;
 using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Inventory;
@@ -40,6 +43,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Api.Notifications;
 using microservice.Common;
@@ -89,6 +93,7 @@ namespace Beamable.Server
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
+      private const int ShutdownMinCycleTimeMilliseconds = 100;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
       private IConnection _connection;
       private readonly IConnectionProvider _connectionProvider;
@@ -128,8 +133,13 @@ namespace Beamable.Server
 
       public bool HasInitialized { get; private set; }
 
+      public ReflectionCache _reflectionCache;
+
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
+      private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
+      private CancellationTokenSource _serviceShutdownTokenSource;
+      private Task _socketDaemen;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -144,6 +154,11 @@ namespace Beamable.Server
       };
 
       private int _connectionAttempt = 0;
+
+      /// <summary>
+      /// We need to guarantee <see cref="ResolveCustomInitializationHook"/> only gets run once when we <see cref="SetupWebsocket"/>.
+      /// </summary>
+      private bool _ranCustomUserInitializationHooks = false;
 
       public BeamableMicroService(IConnectionProvider socketProvider=null, IContentResolver contentResolver=null)
       {
@@ -183,11 +198,33 @@ namespace Beamable.Server
 
          RebuildRouteTable();
 
+         _reflectionCache = new ReflectionCache();
+         var contentTypeReflectionCache = new ContentTypeReflectionCache();
+         _reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
+         _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+         _reflectionCache.SetStorage(new BeamHintGlobalStorage());
+
+         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
+                                                                                  !asm.GetName().Name.StartsWith("nunit.") &&
+                                                                                  !asm.GetName().Name.StartsWith("JetBrains.") &&
+                                                                                  !asm.GetName().Name.StartsWith("Microsoft.") &&
+                                                                                  !asm.GetName().Name.StartsWith("Serilog."))
+            .Select(asm => asm.GetName().Name)
+            .ToList();
+         Log.Debug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
+         _reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
+
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
-         _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
+         _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
          _mongoSerializationService = new MongoSerializationService();
-         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver);
+         _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
+
+         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
+
+         _serviceShutdownTokenSource = new CancellationTokenSource();
+         (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
+
          InitServices();
 
          _serviceInitialized.Then(_ =>
@@ -203,12 +240,16 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         await SetupWebsocket(socket);
+         var setupWebsocketTask = SetupWebsocket(socket);
+         setupWebsocketTask.Wait();
       }
 
       public void RunForever()
       {
-         AppDomain.CurrentDomain.ProcessExit += async (sender, args) => await OnShutdown(sender, args);
+         AppDomain.CurrentDomain.ProcessExit += async (sender, args) =>
+         {
+            await OnShutdown(sender, args);
+         };
 
          CancellationTokenSource cancelSource = new CancellationTokenSource();
          cancelSource.Token.WaitHandle.WaitOne();
@@ -252,8 +293,17 @@ namespace Beamable.Server
             var secondsLeft = millisecondsLeft / 1000;
             Log.Debug("Waiting up to {shutdownTimeLimit} seconds for tasks to complete.", secondsLeft);
             var pendingTasks = _runningTaskTable.Values.ToArray();
+            var startedWaitingAt = sw.ElapsedMilliseconds;
             Task.WaitAll(pendingTasks, TimeSpan.FromMilliseconds(millisecondsLeft));
-
+            /* we need to wait a minimum number of moments in this loop so we don't exhaust the task cycle.
+             What can happen is that all the tasks are DONE, so, the WaitAll completes. However, the task hasn't removed itself from the _runningTaskTable yet,
+             because its continuation hasn't been executed. And then, if that happens, we enter a scenario where this method just loops and loops, and since the Task.WaitAll
+             is always complete, the other continuation takes a long time to get scheduled.
+             */
+            var stoppedWaitingAt = sw.ElapsedMilliseconds;
+            var waitedForMilliseconds = stoppedWaitingAt - startedWaitingAt;
+            var requiredWaitTimeLeft = Math.Max(0, ShutdownMinCycleTimeMilliseconds - waitedForMilliseconds);
+            await Task.Delay(TimeSpan.FromMilliseconds(requiredWaitTimeLeft));
          }
          if (_runningTaskTable.Count > 0)
          {
@@ -265,6 +315,11 @@ namespace Beamable.Server
             Log.Debug("All pending tasks completed.");
          }
 
+         // stop the daemon from trying to re-authenticate
+         _socketRequesterContext.Daemon.KillAuthThread();
+         await _socketDaemen;
+
+         // close the connection itself
          await _connection.Close();
 
          sw.Stop();
@@ -293,7 +348,7 @@ namespace Beamable.Server
       {
          _connection = socket;
 
-         socket.OnDisconnect(async (s, wasClean) => await CloseConnection(s, wasClean));
+         socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
          socket.OnMessage( async (s, message, messageNumber) =>
          {
             try
@@ -308,10 +363,22 @@ namespace Beamable.Server
 
          try
          {
-            await _requester.Authenticate();
+	         _socketRequesterContext.Daemon.WakeAuthThread();
+            await _requester.WaitForAuthorization();
 
-            // Custom Initialization hook for C#MS --- will terminate MS user-code throws
-            await ResolveCustomInitializationHook();
+            // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
+            // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
+            // TODO that will not boot correctly.
+            if (!_args.DisableCustomInitializationHooks)
+            {
+                // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+                // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+                if (!_ranCustomUserInitializationHooks)
+                {
+                    await ResolveCustomInitializationHook();
+                    _ranCustomUserInitializationHooks = true;
+                }
+            }
 
             await ProvideService(QualifiedName);
 
@@ -326,6 +393,8 @@ namespace Beamable.Server
          }
 
       }
+
+
 
       /// <summary>
       /// Handles custom initialization hooks. Makes the following assumptions:
@@ -431,7 +500,7 @@ namespace Beamable.Server
          Log.Debug("starting ws connection");
          void Attempt()
          {
-            Log.Debug("connecting to ws... ");
+            Log.Debug($"connecting to ws ({Host}) ... ");
             var ws = _connectionProvider.Create(Host);
             ws.OnConnect(socket =>
             {
@@ -532,9 +601,10 @@ namespace Beamable.Server
                .AddScoped(MicroserviceType)
                .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
+               .AddSingleton(_socketRequesterContext.Daemon)
                .AddSingleton<IRealmInfo>(_args)
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
-               .AddTransient<IBeamableRequester, MicroserviceRequester>()
+               .AddTransient<IBeamableRequester, MicroserviceRequester>((provider) => new MicroserviceRequester(_args, provider.GetService<RequestContext>(), _socketRequesterContext, true))
                .AddTransient<IUserContext>(provider => provider.GetService<RequestContext>())
                .AddTransient<IMicroserviceAuthApi, ServerAuthApi>()
                .AddTransient<IMicroserviceStatsApi, MicroserviceStatsApi>()
@@ -553,8 +623,10 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
-               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
+               .AddSingleton<IMicroserviceChatApi, MicroserviceChatApi>()
+               .AddSingleton<ReflectionCache>(_ => _reflectionCache)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
                .AddTransient<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
@@ -655,8 +727,7 @@ namespace Beamable.Server
             var parameterProvider = new AdaptiveParameterProvider(ctx);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
             BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(responseJson);
+            await _socketRequesterContext.SendMessageSafely(responseJson);
             // TODO: Kill Scope
          }
          catch (MicroserviceException ex)
@@ -670,27 +741,46 @@ namespace Beamable.Server
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
             BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", ex.GetType().Name, ex.Message,
                ex.Source, failResponseJson, ex.StackTrace);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(failResponseJson);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
          catch (TargetInvocationException ex)
          {
             var inner = ex.InnerException;
-            BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", inner.GetType().Name,
-               inner.Message,
-               inner.Source, inner.StackTrace);
-            var failResponse = new GatewayResponse
+            var failResponse = new GatewayResponse()
             {
                id = ctx.Id,
-               status = 500,
-               body = new ClientResponse
-               {
-                  payload = ""
-               }
             };
-            var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(failResponseJson);
+
+            string failResponseJson;
+
+            if (inner is MicroserviceException msException)
+            {
+               failResponse.status = msException.ResponseStatus;
+               failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
+
+               failResponseJson = JsonConvert.SerializeObject(failResponse);
+               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", msException.GetType().Name, msException.Message,
+                  msException.Source, failResponseJson, msException.StackTrace);
+            }
+            else
+            {
+               failResponse = new GatewayResponse
+               {
+                  id = ctx.Id,
+                  status = 500,
+                  body = new ClientResponse
+                  {
+                     payload = ""
+                  }
+               };
+
+               failResponseJson = JsonConvert.SerializeObject(failResponse);
+               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", inner.GetType().Name,
+                  inner.Message,
+                  inner.Source, inner.StackTrace);
+            }
+
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
          catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
          {
@@ -712,8 +802,7 @@ namespace Beamable.Server
                }
             };
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            var webSocket = await _webSocketPromise;
-            webSocket.SendMessage(failResponseJson);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
       }
 
@@ -744,7 +833,7 @@ namespace Beamable.Server
 
       private IBeamableRequester GenerateRequester(RequestContext ctx)
       {
-         return new MicroserviceRequester(_args, ctx, _socketRequesterContext);
+         return new MicroserviceRequester(_args, ctx, _socketRequesterContext, true);
       }
 
       private IBeamableServices ExtractSdks(IServiceProvider provider)
@@ -766,7 +855,8 @@ namespace Beamable.Server
             Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
             TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
             RealmConfig= provider.GetRequiredService<IMicroserviceRealmConfigService>(),
-            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>()
+            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
+            Chat = provider.GetRequiredService<IMicroserviceChatApi>()
          };
          return services;
       }
@@ -791,7 +881,8 @@ namespace Beamable.Server
             Tournament = new MicroserviceTournamentApi(stats, requester, ctx),
             TrialData = new MicroserviceCloudDataApi(requester, ctx),
             RealmConfig= new RealmConfigService(requester),
-            Commerce = new MicroserviceCommerceApi(requester)
+            Commerce = new MicroserviceCommerceApi(requester),
+            Chat = new MicroserviceChatApi(requester, ctx)
          };
 
          return services;
@@ -815,7 +906,7 @@ namespace Beamable.Server
 
       private async Task CloseConnection(IConnection ws, bool wasClean)
       {
-         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown]", wasClean, IsShuttingDown);
+         Log.Debug("Closing socket connection... clean=[{clean}] isShuttingDown=[{shuttingDown}]", wasClean, IsShuttingDown);
          if (!IsShuttingDown)
          {
             Log.Debug("ws connection dropped...");

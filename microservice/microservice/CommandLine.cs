@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
+using Serilog;
 
 namespace Beamable.Server
 {
@@ -37,9 +38,21 @@ namespace Beamable.Server
 			return rootCommand.Invoke(args);
 		}
 
-		static void Run()
+		static async void Run()
 		{
-			MicroserviceBootstrapper.Start<TMicroService>();
+			try
+			{
+				await MicroserviceBootstrapper.Start<TMicroService>();
+			}
+			catch (Exception ex)
+			{
+				// Just so we don't double log the same exception
+				if (ex is not BeamableMicroserviceException)
+				{
+					Log.Fatal(ex.GetType().Name + " / " + ex.Message);
+					Log.Fatal(ex.StackTrace);
+				}
+			}
 		}
 
 		static void GenerateClient(string outputDirectory)

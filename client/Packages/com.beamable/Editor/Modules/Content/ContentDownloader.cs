@@ -2,10 +2,12 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.Content
 {
@@ -32,22 +34,38 @@ namespace Beamable.Editor.Content
 			var totalOperations = summary.TotalDownloadEntries + 1; // one operation for the mega finalization...
 
 			var completed = 0f;
+
 			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
 			{
+				var type = operation.ContentId.Split('.')[0];
+				var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+				if (!contentTypeReflectionCache.HasContentTypeValidClass(type))
+				{
+					Debug.LogWarning($"No C# class found for type=[{type}]. Skipping download process for this type.");
+					return null;
+				}
+
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
-			 {
-				 var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
+				{
+					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 
-				 var newAsset = serializer.DeserializeByType(response, contentType);
-				 newAsset.Tags = operation.Tags;
+					bool disableExceptions = ContentConfiguration.Instance.DisableContentDownloadExceptions;
+					
+					var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
+					newAsset.Tags = operation.Tags;
 
-				 completed += 1;
-				 progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
+					newAsset.LastChanged = operation.LastChanged == 0
+						? operation.Created == 0 ? 0 : operation.Created
+						: operation.LastChanged;
 
-				 return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
+					completed += 1;
+					progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
 
-			 }));
+					return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
+				}));
 			}).ToList();
+
+			downloadPromiseGenerators.RemoveAll(item => item == null);
 
 			var downloadPromises = new Promise<Unit>();
 			Promise.ExecuteInBatchSequence(10, downloadPromiseGenerators).Map(assetsToBeWritten =>
@@ -129,7 +147,9 @@ namespace Beamable.Editor.Content
 					ContentId = reference.Id,
 					Uri = reference.Uri,
 					Operation = exists ? "MODIFY" : "ADD",
-					Tags = reference.Tags
+					Tags = reference.Tags,
+					Created = reference.Created,
+					LastChanged = reference.LastChanged
 				};
 
 				var list = exists ? _overwrites : _additions;
@@ -162,5 +182,8 @@ namespace Beamable.Editor.Content
 		public string Uri;
 		public string Operation;
 		public string[] Tags;
+		public long Created;
+		public long LastChanged;
+		public bool IsCorrupted;
 	}
 }

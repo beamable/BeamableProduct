@@ -60,17 +60,39 @@ namespace Beamable.Player
 		}
 
 		/// <summary>
-		/// The id of <see cref="ItemContent"/> that this item is an instance of.
+		/// The content id of <see cref="ItemContent"/> that this item is an instance of.
 		/// </summary>
 		public string ContentId;
+
+		/// <summary>
+		/// The item instance id. This id is unique per player, but not across players.
+		/// </summary>
 		public long ItemId;
+
+		/// <summary>
+		/// The epoch timestamp in milliseconds when the item was created.
+		/// </summary>
 		public long CreatedAt;
+
+		/// <summary>
+		/// The epoch timestamp in milliseconds when the item was last modified.
+		/// </summary>
 		public long UpdatedAt;
+
+		/// <summary>
+		/// A set of instance level property data for the item.
+		/// </summary>
 		public SerializableDictionaryStringToString Properties = new SerializableDictionaryStringToString();
 
-		// TODO: do a binding to the content fields.
+		/// <summary>
+		/// A reference to the top level <see cref="ItemContent"/> content.
+		/// If the item is a sub type of the item content, then this can be cast to the accurate type.
+		/// </summary>
 		public ItemContent Content;
 
+		/// <summary>
+		/// An event that will trigger when this item is removed from the player's inventory.
+		/// </summary>
 		public event Action OnDeleted;
 
 		internal void TriggerUpdate(InventoryObject<ItemContent> item)

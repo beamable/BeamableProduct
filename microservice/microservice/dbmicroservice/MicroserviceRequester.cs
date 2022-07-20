@@ -140,7 +140,8 @@ namespace Beamable.Server
 
    public class SocketRequesterContext
    {
-      private readonly Func<Promise<IConnection>> _socketGetter;
+	   public MicroserviceAuthenticationDaemon Daemon { get; set; }
+	   private readonly Func<Promise<IConnection>> _socketGetter;
       public Promise<IConnection> Socket => _socketGetter();
 
       private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
@@ -159,10 +160,9 @@ namespace Beamable.Server
          }
       }
 
-
       public SocketRequesterContext(Func<Promise<IConnection>> socketGetter)
       {
-         _socketGetter = () =>
+	      _socketGetter = () =>
          {
             if (!HasSocketClosed)
             {
@@ -170,6 +170,77 @@ namespace Beamable.Server
             }
             return socketGetter();
          };
+      }
+
+
+      public async Task WaitForAuthorization(TimeSpan timeout=default, string message=null)
+      {
+	      var startTime = DateTime.UtcNow;
+	      if (timeout <= default(TimeSpan))
+	      {
+		      timeout = TimeSpan.FromSeconds(10);
+	      }
+
+	      if (Daemon.AuthorizationCounter <= 0)
+	      {
+		      Log.Verbose($"Waiting for authorization, but auth is already done. message=[{message}]");
+		      return;
+	      }
+
+	      var enteringCount = Daemon.AuthorizationCounter;
+	      while (Daemon.AuthorizationCounter > 0)
+	      {
+		      await Task.Delay(1);
+
+		      var totalWaitedTime = DateTime.UtcNow - startTime;
+		      if (totalWaitedTime > timeout)
+		      {
+			      var exitCount = Daemon.AuthorizationCounter;
+			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
+		      }
+	      }
+	      Log.Verbose($"Leaving wait for send. message=[{message}]");
+      }
+
+      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10)
+      {
+         var failures = new List<Exception>();
+         for (var retry = 0; retry < retryCount; retry++)
+         {
+	         try
+	         {
+		         var connection = await Socket;
+		         if (awaitAuthorization)
+		         {
+			        await WaitForAuthorization( message: message);
+		         }
+
+		         // authorization needs to be complete if this is any message _other_ than auth related
+		         await connection.SendMessage(message);
+		         return;
+	         }
+	         catch (Exception ex)
+	         {
+		         failures.Add(ex);
+		         await Task.Delay(
+			         250); // wait awhile before trying again; so that its likely authorization has finished.
+	         }
+         }
+         // all attempts have failed : (
+         var finalEx = new SocketClosedException(failures);
+         BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", finalEx.GetType().Name,
+            finalEx.Message,
+            finalEx.Source, finalEx.StackTrace);
+
+         for (var i = 0 ; i < failures.Count; i ++)
+         {
+            var failure = failures[i];
+            BeamableSerilogProvider.LogContext.Value.Error("  Failure {i} {type}: {message} - {source} \n {stack}", i, finalEx.GetType().Name,
+               failure.Message,
+               failure.Source, failure.StackTrace);
+         }
+
+         throw finalEx;
       }
 
       public void HandleCloseConnection()
@@ -302,70 +373,24 @@ namespace Beamable.Server
       protected readonly RequestContext _requestContext;
 
       private readonly SocketRequesterContext _socketContext;
-
-      private static Promise<Unit> _authenticationPromise = new Promise<Unit>();
+      private readonly bool _waitForAuthorization;
 
       // TODO how do we handle Timeout errors?
       // TODO what does concurrency look like?
+      public string Cid => _requestContext.Cid;
+      public string Pid => _requestContext.Pid;
 
-      public MicroserviceRequester(IMicroserviceArgs env, RequestContext requestContext, SocketRequesterContext socketContext)
+      public MicroserviceRequester(IMicroserviceArgs env, RequestContext requestContext, SocketRequesterContext socketContext, bool waitForAuthorization)
       {
          _env = env;
          _requestContext = requestContext;
          _socketContext = socketContext;
+         _waitForAuthorization = waitForAuthorization;
       }
 
       public IAccessToken AccessToken { get; }
 
-      private Promise<Unit> Reauthenticate()
-      {
-         if (_authenticationPromise.IsCompleted)
-         {
-            // re-auth...
-            return Authenticate().ToPromise();
-         }
-         else
-         {
-            return _authenticationPromise;
-         }
-      }
-
-      public async Task Authenticate()
-      {
-         var oldPromise = _authenticationPromise;
-
-         _authenticationPromise = new Promise<Unit>();
-
-         string CalculateSignature(string text)
-         {
-            System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
-            byte[] data = Encoding.UTF8.GetBytes(text);
-            byte[] hash = md5.ComputeHash(data);
-            return Convert.ToBase64String(hash);
-         }
-
-         Log.Debug("Authorizing WS connection");
-         var res = await Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-         Log.Debug("Got nonce");
-         var sig = CalculateSignature(_env.Secret + res.nonce);
-         var req = new MicroserviceAuthRequest
-         {
-            cid = _env.CustomerID,
-            pid = _env.ProjectName,
-            signature = sig
-         };
-         var authRes = await Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
-         if (!string.Equals("ok", authRes.result))
-         {
-            Log.Error("Authorization failed. result=[{result}]", authRes.result);
-            throw new Exception("Authorization failed");
-         }
-
-         Log.Debug("Authorization complete");
-
-         _authenticationPromise.CompleteSuccess(PromiseBase.Unit);
-         oldPromise.CompleteSuccess(PromiseBase.Unit);
-      }
+      public Task WaitForAuthorization(TimeSpan timeout = default, string message=null) => _socketContext.WaitForAuthorization(timeout, message);
 
       /// <summary>
       /// Acknowledge a message from the websocket.
@@ -399,13 +424,13 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.Socket.Then(socket => socket.SendMessage(msg)).ToUnit();
+         return _socketContext.SendMessageSafely(msg);
       }
 
-      public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
-         bool useCache = false)
+      public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+	      Func<string, T> parser = null, bool useCache = false)
       {
-         // TODO: What do we do about includeAuthHeader?
+// TODO: What do we do about includeAuthHeader?
          // TODO: What do we do about useCache?
 
          // peel off the first slash of the uri, because socket paths are not relative, they are absolute. // TODO: xxx gross.
@@ -440,8 +465,8 @@ namespace Beamable.Server
             body = body,
             path = uri,
          };
-         
-         
+
+
          if (_requestContext != null &&
              !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
                                                // the initialization process without an Microservice.AssumeUser call being made before.
@@ -466,23 +491,31 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         return _socketContext.Socket.FlatMap(socket =>
-         {
-            Log.Debug("sending request {msg}", msg);
-            socket.SendMessage(msg);
-            return firstAttempt.RecoverWith(ex =>
-            {
-               if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
-               {
-                  // need to wait for authentication to finish...
-                  Log.Debug("Request {id} failed with 403. Will reauth and and retry.", req.id);
-                  //
-                  return Reauthenticate().FlatMap(_ => Request(method, uri, body, includeAuthHeader, parser));
-               }
+         Log.Debug("sending request {msg}", msg);
+         _socketContext.Daemon.BumpRequestCounter();
+         return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
+	         {
+		         return firstAttempt.RecoverWith(ex =>
+			         {
+				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
+				         {
+					         // need to wait for authentication to finish...
+					         Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id,
+						         msg);
 
-               throw ex;
-            });
-         });
+					         _socketContext.Daemon.WakeAuthThread();
+					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
+					         return waitForAuth
+							         .FlatMap(x =>
+								         Request(method, uri, body, includeAuthHeader, parser, useCache))
+						         ;
+				         }
+
+				         _socketContext.Daemon.BumpRequestProcessedCounter();
+				         throw ex;
+			         });
+	         })
+	         .Then(_ => _socketContext.Daemon.BumpRequestProcessedCounter());
       }
 
       /// <summary>

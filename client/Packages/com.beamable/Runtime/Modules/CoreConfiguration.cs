@@ -76,6 +76,9 @@ namespace Beamable
 				 "value in the ContextRetryDelays array will be used forever.")]
 		public double[] ContextRetryDelays = new double[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
 
+		[Tooltip("It allows to globally enable/disable offline cache.")]
+		public bool UseOfflineCache = true;
+
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
@@ -156,6 +159,9 @@ namespace Beamable
 			Assembly[] playerAssemblies = CompilationPipeline.GetAssemblies();
 			AssembliesToSweep.AddRange(playerAssemblies.Select(asm => asm.name).Where(n => !string.IsNullOrEmpty(n)));
 			AssembliesToSweep = AssembliesToSweep.Distinct().ToList();
+#if BEAMABLE_DEVELOPER
+			AssembliesToSweep = AssembliesToSweep.Where(asm => !asm.Contains("Tests")).ToList();
+#endif
 			AssembliesToSweep.Sort();
 #endif
 		}

@@ -20,9 +20,12 @@ namespace Beamable.Api
 	{
 		AccessToken Token { get; set; }
 		string TimeOverride { get; set; }
-		string Cid { get; set; }
-		string Pid { get; set; }
+		new string Cid { get; set; }
+		new string Pid { get; set; }
+
+		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		string Language { get; set; }
+
 		IAuthApi AuthService { set; }
 		void DeleteToken();
 	}
@@ -55,16 +58,20 @@ namespace Beamable.Api
 		public string TimeOverride { get; set; }
 		public IAuthApi AuthService { private get; set; }
 		public string RequestTimeoutMs { get; set; }
-		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService)
+
+		private readonly OfflineCache _offlineCache;
+
+		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
 			_accessTokenStorage = accessTokenStorage;
 			_connectivityService = connectivityService;
+			_offlineCache = offlineCache;
 		}
 
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = new PlatformRequester(Host, _accessTokenStorage, _connectivityService)
+			var requester = new PlatformRequester(Host, _accessTokenStorage, _connectivityService, _offlineCache)
 			{
 				Cid = Cid,
 				Pid = Pid,
@@ -237,9 +244,9 @@ namespace Beamable.Api
 						   _connectivityService?.ReportInternetLoss();
 					   }
 
-					   if (useCache && httpNoInternet && Application.isPlaying)
+					   if (useCache && httpNoInternet && Application.isPlaying && _offlineCache.UseOfflineCache)
 					   {
-						   return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
+						   return _offlineCache.Get<T>(uri, Token, includeAuthHeader);
 					   }
 
 					   switch (error)
@@ -271,15 +278,15 @@ namespace Beamable.Api
 					   //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
 				   }).Then(_response =>
 				   {
-					   if (useCache && Token != null && Application.isPlaying)
+					   if (useCache && Token != null && Application.isPlaying && _offlineCache.UseOfflineCache)
 					   {
-						   OfflineCache.Set<T>(uri, _response, Token, includeAuthHeader);
+						   _offlineCache.Set<T>(uri, _response, Token, includeAuthHeader);
 					   }
 				   });
 			}
-			else if (!internetConnectivity && useCache && Application.isPlaying)
+			else if (!internetConnectivity && useCache && Application.isPlaying && _offlineCache.UseOfflineCache)
 			{
-				return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
+				return _offlineCache.Get<T>(uri, Token, includeAuthHeader);
 			}
 			else
 			{
@@ -337,11 +344,6 @@ namespace Beamable.Api
 			if (TimeOverride != null)
 			{
 				request.SetRequestHeader("X-KS-TIME", TimeOverride);
-			}
-
-			if (Language != null)
-			{
-				request.SetRequestHeader("Accept-Language", Language);
 			}
 
 			if (RequestTimeoutMs != null)

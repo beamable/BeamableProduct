@@ -217,9 +217,9 @@ namespace Beamable.Editor.Content
 
 		public async void Init()
 		{
-
 			var referenceType = FieldValue.GetReferencedBaseType();
-			_typeName = ContentRegistry.TypeToName(referenceType);
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			_typeName = contentTypeReflectionCache.TypeToName(referenceType);
 			var de = BeamEditorContext.Default;
 			await de.InitializePromise;
 
