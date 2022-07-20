@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace microserviceTests;
 
@@ -31,7 +32,15 @@ public class TimeoutWithTeardown: PropertyAttribute, IWrapTestMethod
 
 	public TestCommand Wrap(TestCommand command)
 	{
-		return new TimeoutCommand(command, _timeout);
+		var timeoutCommand = new LoggingTimeoutCommand(command, _timeout);
+		return timeoutCommand;
+	}
+}
+
+public class LoggingTimeoutCommand : TimeoutCommand
+{
+	public LoggingTimeoutCommand(TestCommand innerCommand, int timeout) : base(innerCommand, timeout)
+	{
 	}
 }
 
@@ -39,6 +48,8 @@ public class CommonTest
 {
 	protected ITestCorrelatorContext logContext;
 	protected bool allowErrorLogs;
+
+	private Task timeoutTask;
 
 	[SetUp]
 	public void SetupTest()
@@ -58,11 +69,15 @@ public class CommonTest
 
 		// reset exit code to 0
 		Environment.ExitCode = 0;
+
+		Console.WriteLine($"Starting Test - [{TestContext.CurrentContext.Test.Name}]");
 	}
 
 	[TearDown]
 	public void TeardownTest()
 	{
+		Console.WriteLine($"Finishing Test - [{TestContext.CurrentContext.Test.Name}]");
+
 		// there should be no error logs, unless the test has been configured to allow them.
 		var logFailure = !allowErrorLogs && GetBadLogs().Any();
 		var exitCodeFailure = Environment.ExitCode != 0;
@@ -76,7 +91,7 @@ public class CommonTest
 
 		if (testFailure)
 		{
-			Console.WriteLine("Dumping logs...");
+			Console.WriteLine($"Dumping logs for [{TestContext.CurrentContext.Test.Name}]");
 			foreach (var log in GetLogs().ToList())
 			{
 				Console.WriteLine(log.RenderMessage());
