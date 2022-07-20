@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,7 +49,9 @@ namespace Beamable.Editor.Content
 				{
 					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 
-					var newAsset = serializer.DeserializeByType(response, contentType);
+					bool disableExceptions = ContentConfiguration.Instance.DisableContentDownloadExceptions;
+					
+					var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
 					newAsset.Tags = operation.Tags;
 
 					newAsset.LastChanged = operation.LastChanged == 0
@@ -181,5 +184,6 @@ namespace Beamable.Editor.Content
 		public string[] Tags;
 		public long Created;
 		public long LastChanged;
+		public bool IsCorrupted;
 	}
 }
