@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Microservice related actions can run while Unity is a background process.
+- Microservice clients created by using the default constructor will now keep working after the default `BeamContext` has been reset.
 - Local Microservices no longer say "could not find servicename:latest"
 - Publish flow locks Asset Database so that no re-imports may happen.
 
