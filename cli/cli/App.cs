@@ -2,12 +2,10 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
-using Beamable.Server.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Formatting.Raw;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
@@ -33,12 +31,11 @@ public class App
 	private static void ConfigureLogging()
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
-		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Warning };
-
+		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
+		
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
-			.MinimumLevel.ControlledBy(LogLevel)
-			.WriteTo.Console()
+			.WriteTo.Console(LogLevel.MinimumLevel)
 			.CreateLogger();
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
@@ -59,9 +56,6 @@ public class App
 		Services.AddSingleton<PidOption>();
 		Services.AddSingleton<PlatformOption>();
 		Services.AddSingleton<AccessTokenOption>();
-		Services.AddSingleton<HeaderOption>();
-		Services.AddSingleton<BodyPathOption>();
-		Services.AddSingleton<CustomerScopedOption>();
 		Services.AddSingleton<RefreshTokenOption>();
 		Services.AddSingleton<LogOption>();
 		Services.AddSingleton(provider =>

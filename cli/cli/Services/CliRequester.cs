@@ -38,7 +38,7 @@ public class CliRequester : IBeamableRequester
 			}
 		}
 
-		BeamableLogger.Log($"Calling: {request}");
+		CliSerilogProvider.Instance.Debug($"Calling: {request}");
 
 		if (_ctx.IsDryRun)
 		{
@@ -48,7 +48,7 @@ public class CliRequester : IBeamableRequester
 
 		var result = await client.SendAsync(request);
 
-		BeamableLogger.Log($"RESULT: {result}");
+		CliSerilogProvider.Instance.Debug($"RESULT: {result}");
 
 		T parsed = default(T);
 		if (result.Content != null)

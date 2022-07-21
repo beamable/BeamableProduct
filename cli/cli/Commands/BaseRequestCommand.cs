@@ -1,4 +1,6 @@
+using Beamable.Common;
 using Beamable.Common.Api;
+using cli.Utils;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -31,20 +33,17 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 			var exists = File.Exists(args.bodyPath);
 			if (!exists)
 			{
-				Console.WriteLine($"There is no file with path: {args.bodyPath}");
+				BeamableLogger.LogError($"There is no file with path: {args.bodyPath}");
 				throw new FileNotFoundException();
 			}
 
 			body = await File.ReadAllTextAsync(args.bodyPath);
 		}
 
-		var response = await AnsiConsole.Status()
-		                                .Spinner(Spinner.Known.Default)
-		                                .StartAsync("Sending Request...", async _ =>
-			                                            await _requester.CustomRequest(Method, args.uri, body, true,
-				                                            s => s, args.customerScoped, args.customHeaders)
-		                                );
-		Console.WriteLine(response);
+		var response = await _requester.CustomRequest(Method, args.uri, body, true,
+		                                              s => s, args.customerScoped, args.customHeaders)
+		                               .ShowLoading("Sending Request..");
+		BeamableLogger.Log(response);
 	}
 }
 
