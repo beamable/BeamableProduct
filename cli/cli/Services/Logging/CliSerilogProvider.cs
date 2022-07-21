@@ -48,4 +48,8 @@ public class CliSerilogProvider : BeamableLogProvider
 	{
 		LogContext.Value!.Debug(message, args);
 	}
+	public void Debug(string message)
+	{
+		LogContext.Value!.Debug(message);
+	}
 }

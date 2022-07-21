@@ -133,7 +133,7 @@ public class DefaultAppContext : IAppContext
 		if (string.IsNullOrEmpty(value))
 		{
 			_ = _environment.TryGetFromOption(option, out value);
-			BeamableLogger.Log($"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
+			CliSerilogProvider.Instance.Debug($"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
 		}
 
 		var hasValue = !string.IsNullOrEmpty(value);

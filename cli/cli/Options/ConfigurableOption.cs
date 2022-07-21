@@ -23,3 +23,15 @@ public class ConfigurableOptionFlag : Option<bool>
 		OptionName = optionName;
 	}
 }
+
+public class ConfigurableOptionList : Option<IEnumerable<string>>
+{
+	public string OptionName { get; }
+
+	public ConfigurableOptionList(string optionName, string desc)
+		: base($"--{optionName}", desc)
+	{
+		OptionName = optionName;
+		AllowMultipleArgumentsPerToken = true;
+	}
+}

@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
 using Spectre.Console;
@@ -31,6 +32,6 @@ public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
 
 				await _auth.GetUser()
 			);
-		Console.WriteLine(JsonConvert.SerializeObject(response));
+		BeamableLogger.Log(JsonConvert.SerializeObject(response));
 	}
 }
