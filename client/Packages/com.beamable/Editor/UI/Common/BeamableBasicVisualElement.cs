@@ -20,6 +20,7 @@ namespace Beamable.Editor.UI.Common
 		private readonly bool _createRoot;
 
 		private IDependencyProvider _provider;
+		public BeamEditorContext Context { get { return Provider.GetService<BeamEditorContext>(); } }
 
 		/// <summary>
 		/// A <see cref="IDependencyProvider"/> associated with the context that is executing the UI.

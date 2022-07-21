@@ -34,7 +34,7 @@ namespace Beamable.Editor.Tests.Toolbox
 
 		// A Test behaves as an ordinary method
 		[UnityTest]
-        public IEnumerator ToolboxPortalTestsSimplePasses()
+        public IEnumerator PortalButtonTest()
         {
 			IWebsiteHook websiteHook = Provider.GetService<IWebsiteHook>();
 
@@ -52,7 +52,7 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			Debug.Log(websiteHook.Url);
 
-			var de = BeamEditorContext.Default;
+			var de = Context;
 			string url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/dashboard?refresh_token={de.Requester.Token.RefreshToken}";
 
 			Assert.AreEqual(url, websiteHook.Url);

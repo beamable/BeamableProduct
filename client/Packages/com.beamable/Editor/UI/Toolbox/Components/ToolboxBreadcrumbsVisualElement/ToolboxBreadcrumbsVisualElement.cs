@@ -75,7 +75,7 @@ namespace Beamable.Editor.Toolbox.Components
 		{
 			get
 			{
-				var de = BeamEditorContext.Default;
+				var de = Context;
 				var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/dashboard?refresh_token={de.Requester.Token.RefreshToken}";
 				return Promise<string>.Successful(url);
 			}
