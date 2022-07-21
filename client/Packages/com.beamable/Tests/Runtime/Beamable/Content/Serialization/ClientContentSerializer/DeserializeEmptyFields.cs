@@ -56,7 +56,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.IsNull(o.code);
 		}
-		
+
 		[Test]
 		public void DeserializingWrongObjectValueDoesntBreak()
 		{
@@ -74,18 +74,18 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			var s = new TestSerializer();
 			var o = s.Deserialize<ExtendedSimpleContent>(json, true);
-			
+
 			Assert.AreEqual(4, o.number);
 			Assert.Pass($"[nothing] file is corrupted. Repair content before publish.");
 		}
-		
+
 #pragma warning disable CS0649
 
 		class SimpleContent : TestContentObject
 		{
 			public int number;
 		}
-		
+
 		class ExtendedSimpleContent : SimpleContent
 		{
 			public int tst1;
