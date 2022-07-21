@@ -50,10 +50,23 @@ public class CommonTest
 	protected bool allowErrorLogs;
 
 	private Task timeoutTask;
+	public static Stopwatch globalTime = new Stopwatch();
+	private Stopwatch localTime = new Stopwatch();
+
+	static CommonTest()
+	{
+		globalTime.Start();
+	}
+
+	private string GetTime(Stopwatch sw)
+	{
+		return TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds).ToString();
+	}
 
 	[SetUp]
 	public void SetupTest()
 	{
+		localTime.Restart();
 		// set content static variables...
 		ContentApi.Instance = new Promise<IContentApi>();
 		BeamableMicroService._contentService = null;
@@ -70,14 +83,14 @@ public class CommonTest
 		// reset exit code to 0
 		Environment.ExitCode = 0;
 
-		Console.WriteLine($"Starting Test - [{TestContext.CurrentContext.Test.MethodName}]");
+		Console.WriteLine($"[{GetTime(globalTime)}] - Starting Test - [{TestContext.CurrentContext.Test.MethodName}]");
 	}
 
 	[TearDown]
 	public void TeardownTest()
 	{
-		Console.WriteLine($"Finishing Test - [{TestContext.CurrentContext.Test.MethodName}]");
-
+		Console.WriteLine($"[{GetTime(globalTime)}] - Finishing Test - [{TestContext.CurrentContext.Test.MethodName}] ({GetTime(localTime)})");
+		localTime.Stop();
 		// there should be no error logs, unless the test has been configured to allow them.
 		var logFailure = !allowErrorLogs && GetBadLogs().Any();
 		var exitCodeFailure = Environment.ExitCode != 0;
