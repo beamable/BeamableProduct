@@ -40,7 +40,8 @@ namespace Beamable.Server
             NamePrefix = args.NamePrefix,
             SdkVersionBaseBuild = args.SdkVersionBaseBuild,
             SdkVersionExecution = args.SdkVersionExecution,
-            WatchToken = args.WatchToken
+            WatchToken = args.WatchToken,
+            DisableCustomInitializationHooks = args.DisableCustomInitializationHooks
          };
       }
    }
@@ -54,7 +55,7 @@ namespace Beamable.Server
       public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
       public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
       public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN") ?? "") == "true";
-      public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS") ?? "") == "true";
+      public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
    }
 }

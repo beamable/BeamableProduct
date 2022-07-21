@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- User can specify Microservices build CPU architecture. 
+- User can specify Microservices build and deploy CPU architecture. 
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
 - Microservices have their initialization validated before publishing. 
   - This is mostly a sanity check to catch some errors we can't catch in the Unity Editor.
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic Chat SDK functions to Microservice
 - The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
 - Client Generator logs go to the Microservice Window
+- Send Microservice CPU architecture to Beamable Cloud
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
+
 
 ## [1.2.6]
 ### Added

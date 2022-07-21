@@ -6,8 +6,10 @@
 		{
 			public static partial class Docker
 			{
-				public const string DEFAULT_DOCKER_BUILD_ARCHITECTURE = "linux/amd64";
-				public const string SUPPORTED_DEPLOY_ARCHITECTURE = "linux/amd64";
+				public const string CPU_LINUX_ARM_64 = "linux/arm64";
+				public const string CPU_LINUX_AMD_64 = "linux/amd64";
+
+				public static readonly string[] CPU_SUPPORTED = new string[] {CPU_LINUX_ARM_64, CPU_LINUX_AMD_64};
 			}
 		}
 	}

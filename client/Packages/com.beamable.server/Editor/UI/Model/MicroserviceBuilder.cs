@@ -157,10 +157,11 @@ namespace Beamable.Editor.UI.Model
 		}
 		public async Task TryToGetLastImageId()
 		{
-			var getChecksum = new GetImageIdCommand(Descriptor);
+			var getChecksum = new GetImageDetailsCommand(Descriptor);
 			try
 			{
-				LastBuildImageId = await getChecksum.StartAsync();
+				var details = await getChecksum.StartAsync();
+				LastBuildImageId = details.imageId;
 			}
 			catch (Exception e)
 			{
