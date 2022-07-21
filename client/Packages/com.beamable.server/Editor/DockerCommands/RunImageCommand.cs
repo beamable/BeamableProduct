@@ -375,14 +375,10 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 
 			if (_descriptor == null) return;
-			Task.Run(async () =>
+			BeamEditorContext.Default.Dispatcher.Schedule(() =>
 			{
-				await Task.Delay(500);
-				BeamEditorContext.Default.Dispatcher.Schedule(() =>
-				{
-					var prune = new PruneImageCommand(_descriptor);
-					var _ = prune.StartAsync().Then(__ => { });
-				});
+				var prune = new PruneImageCommand(_descriptor);
+				var _ = prune.StartAsync().Then(__ => { });
 			});
 		}
 	}
