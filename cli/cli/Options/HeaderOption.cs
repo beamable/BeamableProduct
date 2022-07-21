@@ -3,5 +3,6 @@
 public class HeaderOption : ConfigurableOptionList
 {
 	public HeaderOption() :
-		base(Constants.CONFIG_HEADER, "Custom header") { }
+		base(Constants.CONFIG_HEADER, "Custom header")
+	{ }
 }

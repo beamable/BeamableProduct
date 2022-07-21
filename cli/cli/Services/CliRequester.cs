@@ -20,7 +20,7 @@ public class CliRequester : IBeamableRequester
 	}
 
 	public async Promise<T> CustomRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
-	                                      Func<string, T> parser = null, bool customerScoped = false, IEnumerable<string> customHeaders = null)
+										  Func<string, T> parser = null, bool customerScoped = false, IEnumerable<string> customHeaders = null)
 	{
 		BeamableLogger.Log($"{method} call: {uri}");
 

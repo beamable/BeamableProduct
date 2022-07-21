@@ -74,7 +74,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref double? target);
 			bool Serialize(string key, ref string target);
 			bool Serialize(string key, ref StringBuilder target);
-			#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 			bool Serialize(string key, ref DateTime target);
 			bool Serialize(string key, ref Rect target);
 			bool Serialize(string key, ref Vector2 target);
@@ -83,7 +83,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref Color target);
 			bool Serialize(string key, ref Quaternion target);
 			bool Serialize(string key, ref Gradient target);
-			#endif
+#endif
 			bool Serialize<T>(string key, ref T value) where T : class, ISerializable, new();
 			bool SerializeInline<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeList<TList>(string key, ref TList value) where TList : IList, new();

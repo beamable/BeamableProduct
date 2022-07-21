@@ -578,30 +578,30 @@ namespace Beamable.AccountManagement
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, string email, string password)
 		{
 			return de.AuthService.Login(email, password)
-			         .RecoverWith(ex =>
-			         {
-				         if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
-				             string.Equals("UnableToMergeError", platEx.Error.error))
-				         {
-					         return de.AuthService.Login(email, password, false);
-				         }
-				         return Promise<TokenResponse>.Failed(ex);
-			         })
+					 .RecoverWith(ex =>
+					 {
+						 if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+							 string.Equals("UnableToMergeError", platEx.Error.error))
+						 {
+							 return de.AuthService.Login(email, password, false);
+						 }
+						 return Promise<TokenResponse>.Failed(ex);
+					 })
 					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, AuthThirdParty thirdParty, string accessToken)
 		{
 			return de.AuthService.LoginThirdParty(thirdParty, accessToken)
-			         .RecoverWith(ex =>
-			         {
-				         if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
-				             string.Equals("UnableToMergeError", platEx.Error.error))
-				         {
-					         return de.AuthService.LoginThirdParty(thirdParty, accessToken, false);
-				         }
-				         return Promise<TokenResponse>.Failed(ex);
-			         })
+					 .RecoverWith(ex =>
+					 {
+						 if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+							 string.Equals("UnableToMergeError", platEx.Error.error))
+						 {
+							 return de.AuthService.LoginThirdParty(thirdParty, accessToken, false);
+						 }
+						 return Promise<TokenResponse>.Failed(ex);
+					 })
 					 .FlatMap(token => SetPendingUser(de, token));
 		}
 

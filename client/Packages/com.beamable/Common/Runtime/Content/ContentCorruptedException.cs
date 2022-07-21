@@ -6,7 +6,7 @@ namespace Beamable.Common.Content
 	{
 		public ContentCorruptedException(string message) : base(message)
 		{
-			
+
 		}
 	}
 }

@@ -50,7 +50,7 @@ namespace Beamable.Editor.Content
 					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 
 					bool disableExceptions = ContentConfiguration.Instance.DisableContentDownloadExceptions;
-					
+
 					var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
 					newAsset.Tags = operation.Tags;
 
