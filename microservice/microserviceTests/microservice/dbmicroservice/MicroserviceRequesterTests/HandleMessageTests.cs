@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Server;
 using NUnit.Framework;
+using Serilog;
 
 namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTests
 {

@@ -109,6 +109,7 @@ public class CommonTest
 			{
 				Console.WriteLine(log.RenderMessage());
 			}
+			Console.WriteLine("End of log stream");
 		}
 
 		allowErrorLogs = false;
