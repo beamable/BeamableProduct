@@ -48,23 +48,31 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 			var response = await AnsiConsole.Status()
 				.Spinner(Spinner.Known.Default)
 				.StartAsync("Sending Request...", async ctx =>
-					await _remoteBeamo.GetStatus()
+					(await _remoteBeamo.GetCurrentManifest(), await _remoteBeamo.GetStatus())
 				);
+
+			(var manifest, var status) = response;
+
+			// Update the local manifest given the remote one.
+			await _localBeamo.SyncLocalManifestWithRemote(manifest, _localBeamo.BeamoManifest);
+			_localBeamo.SaveBeamoLocalManifest();
 
 			if (!args.AsJson)
 			{
 				var table = new Table();
 				var beamoIdColumn = new TableColumn(new Markup("Beam-O Id", columnNameStyle));
 				var imageNameColumn = new TableColumn(new Markup("Image Id", columnNameStyle));
-				var tryEnableOnRemoteDeployColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
-				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(tryEnableOnRemoteDeployColumn);
+				var shouldBeRunningColumn = new TableColumn(new Markup("Should be Running", columnNameStyle));
+				var isRunningColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
+				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn).AddColumn(isRunningColumn);
 
-				foreach (var responseService in response.services)
+				foreach (var responseService in manifest.manifest)
 				{
 					var beamoId = new Markup(responseService.serviceName);
-					var imageId = new Markup(responseService.imageId.Split('/')[1]);
-					var remoteStatus = new Markup(responseService.running ? "[green]On[/]" : "[red]Off[/]");
-					table.AddRow(new TableRow(new[] { beamoId, imageId, remoteStatus }));
+					var imageId = new Markup(responseService.imageId);
+					var remoteTargetStatus = new Markup(responseService.enabled ? "[green]Should be Enabled[/]" : "[red]Should be Disabled[/]");
+					var remoteStatus = new Markup(status.services.First(s => s.serviceName == responseService.serviceName).running ? "[green]On[/]" : "[red]Off[/]");
+					table.AddRow(new TableRow(new[] { beamoId, imageId, remoteTargetStatus, remoteStatus }));
 				}
 
 				AnsiConsole.Write(table);
@@ -83,27 +91,26 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 			{
 				var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
 				var runningServiceInstances = _localBeamo.BeamoRuntime.ExistingLocalServiceInstances;
-				var beamoIdsToTryEnableOnRemoteDeploy = _localBeamo.BeamoRuntime.BeamoIdsToTryEnableOnRemoteDeploy;
 
 				var table = new Table();
 				// Beam-O Id (Markup) | Image Id (markup) | Should Be Enabled on Deployed | Containers (borderless 2 column table with all containers -- markup | emoji (for status)) 
 				var beamoIdColumn = new TableColumn(new Markup("Beam-O Id", columnNameStyle));
 				var imageNameColumn = new TableColumn(new Markup("Image Id", columnNameStyle));
-				var tryEnableOnRemoteDeployColumn = new TableColumn(new Markup("Try Enable On Remote Deploy", columnNameStyle));
-				var containersColumn = new TableColumn(new Markup("Existing Containers", columnNameStyle));
-				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(tryEnableOnRemoteDeployColumn).AddColumn(containersColumn);
-				foreach (var serviceDefinition in serviceDefinitions)
-				{
-					var beamoId = serviceDefinition.BeamoId;
-					var imageId = serviceDefinition.ImageId;
-					var tryEnableOnDeploy = beamoIdsToTryEnableOnRemoteDeploy.Contains(beamoId);
-					var existingServiceInstances = runningServiceInstances.Where(si => si.BeamoId == beamoId).ToList();
+				var containersColumn = new TableColumn(new Markup("Local Running Containers", columnNameStyle));
 
-					var beamoIdMarkup = new Markup($"[green]{beamoId}[/]");
-					var imageIdMarkup = new Markup($"{imageId}");
-					var shouldBeEnabledOnDeployMarkup = new Markup(tryEnableOnDeploy ? "[green]Enabled[/]" : "[red]Disabled[/]");
+				var shouldEnableOnRemoteDeployColumn = new TableColumn(new Markup("Should Enable On Remote Deploy", columnNameStyle));
+				var canBeBuiltLocally = new TableColumn(new Markup("Can be Built Locally", columnNameStyle));
+
+				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(containersColumn).AddColumn(shouldEnableOnRemoteDeployColumn).AddColumn(canBeBuiltLocally);
+				foreach (var sd in serviceDefinitions)
+				{
+					var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
+					var imageIdMarkup = new Markup($"{sd.ImageId}");
+					var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
+					var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
 
 					IRenderable containersRenderable;
+					var existingServiceInstances = runningServiceInstances.Where(si => si.BeamoId == sd.BeamoId).ToList();
 					if (existingServiceInstances.Count == 0)
 					{
 						containersRenderable = new Markup("[yellow]-------------------[/]");
@@ -128,7 +135,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 						containersRenderable = containersTable;
 					}
 
-					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, shouldBeEnabledOnDeployMarkup, containersRenderable }));
+					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 				}
 
 				AnsiConsole.Write(table);

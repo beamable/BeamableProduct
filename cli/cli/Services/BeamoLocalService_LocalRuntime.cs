@@ -42,7 +42,9 @@ public partial class BeamoLocalService
 			}
 			catch
 			{
-				sd.ImageId = "";
+				// We only clear image ids if we know we can rebuild them.
+				if (VerifyCanBeBuiltLocally(sd))
+					sd.ImageId = "";
 			}
 		}
 
@@ -193,6 +195,26 @@ public partial class BeamoLocalService
 		return si != null && si.IsRunning;
 	}
 
+	public bool VerifyCanBeBuiltLocally(BeamoServiceDefinition beamoServiceDefinition) => VerifyCanBeBuiltLocally(BeamoManifest, beamoServiceDefinition);
+
+	public static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, string beamoId)
+	{
+		var toCheck = manifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId);
+		return VerifyCanBeBuiltLocally(manifest, toCheck);
+	}
+
+	private static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
+	{
+		IBeamoLocalProtocol protocol = toCheck.Protocol switch
+		{
+			BeamoProtocolType.HttpMicroservice => manifest.HttpMicroserviceLocalProtocols[toCheck.BeamoId],
+			BeamoProtocolType.EmbeddedMongoDb => manifest.EmbeddedMongoDbLocalProtocols[toCheck.BeamoId],
+			_ => throw new ArgumentOutOfRangeException()
+		};
+
+		return protocol.VerifyCanBeBuiltLocally();
+	}
+
 	/// <summary>
 	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
 	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
@@ -204,11 +226,14 @@ public partial class BeamoLocalService
 		// TODO: 1) add progress handler to Create and Run Container. Two-step progress (increment when created returns, increment when run returns)
 		// TODO: 2) keep track of a dictionary of build progress values for each beamo id and create/run progress values for each beamo id
 		// TODO: 3) combine these two values as a weighted avg and every update we get invoke the Action<string, float> with the total avg considering the entire progress.
-		
+
 		deployBeamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
 
-		// Get all services that must be deployed
-		var serviceDefinitionsToDeploy = deployBeamoIds.Select(reqId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == reqId)).ToList();
+		// Get all services that must be deployed (and that are not just known remotely --- as in, have their local protocols correctly configured).
+		var serviceDefinitionsToDeploy = deployBeamoIds
+			.Select(reqId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == reqId))
+			.Where(VerifyCanBeBuiltLocally)
+			.ToList();
 
 		// Guarantee they each don't have cyclical dependencies.
 		{
@@ -224,12 +249,10 @@ public partial class BeamoLocalService
 		}
 
 
-		// Builds all images for all services that are defined.
-		{
-			var prepareImages = new List<Task>();
-			prepareImages.AddRange(localManifest.ServiceDefinitions.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress)));
-			await Task.WhenAll(prepareImages);
-		}
+		// Builds all images for all services that are defined and can be built locally.
+		var prepareImages = new List<Task>(localManifest.ServiceDefinitions.Where(VerifyCanBeBuiltLocally)
+			.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress)));
+		await Task.WhenAll(prepareImages);
 
 
 		// Build dependency layers split by protocol type.
@@ -343,11 +366,6 @@ public class BeamoLocalRuntime
 	/// Running means: the container is up AND the docker health check is responsive. 
 	/// </summary>
 	public List<BeamoServiceInstance> ExistingLocalServiceInstances;
-
-	/// <summary>
-	/// List of beam ids that the 
-	/// </summary>
-	public List<string> BeamoIdsToTryEnableOnRemoteDeploy;
 }
 
 public class BeamoServiceInstance : IEquatable<BeamoServiceInstance>

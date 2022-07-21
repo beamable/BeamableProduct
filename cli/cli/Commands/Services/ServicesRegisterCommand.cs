@@ -132,7 +132,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 					}
 				}
 
-				await _localBeamo.AddHttpMicroserviceDefinition(args.BeamoId, args.DockerBuildContext, args.DockerfileRelativePath, args.ServiceDependencies, CancellationToken.None);
+				await _localBeamo.AddDefinition_HttpMicroservice(args.BeamoId, args.DockerBuildContext, args.DockerfileRelativePath, args.ServiceDependencies, CancellationToken.None);
 				// TODO: if type specific parameters happened update the definition
 				break;
 			}

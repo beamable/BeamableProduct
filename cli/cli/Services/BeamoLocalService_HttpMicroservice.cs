@@ -5,7 +5,7 @@ namespace cli;
 
 public partial class BeamoLocalService
 {
-	public async Task<BeamoServiceDefinition> AddHttpMicroserviceDefinition(string beamId, string projectPath, string dockerfilePath, string[] dependencyBeamIds, CancellationToken cancellationToken)
+	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId, string projectPath, string dockerfilePath, string[] dependencyBeamIds, CancellationToken cancellationToken)
 	{
 		dependencyBeamIds ??= Array.Empty<string>();
 		return await AddServiceDefinition<HttpMicroserviceLocalProtocol, HttpMicroserviceRemoteProtocol>(
@@ -168,6 +168,20 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public List<DockerBindMount> CustomBindMounts;
 	public List<DockerVolume> CustomVolumes;
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
+	public bool VerifyCanBeBuiltLocally()
+	{
+		var hasPaths = !string.IsNullOrEmpty(DockerBuildContextPath) && !string.IsNullOrEmpty(RelativeDockerfilePath);
+		if (hasPaths)
+		{
+			if (!Directory.Exists(DockerBuildContextPath))
+				throw new Exception($"DockerBuildContext doesn't exist: [{DockerBuildContextPath}]");
+
+			var dockerfilePath = Path.Combine(DockerBuildContextPath, RelativeDockerfilePath);
+			if (!File.Exists(dockerfilePath))
+				throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
+		}
+		return hasPaths;
+	}
 }
 
 // TODO: DOCKer COMPOSE INTO VISION DOC????

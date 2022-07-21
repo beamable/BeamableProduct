@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Spectre.Console;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -96,7 +97,7 @@ public partial class BeamoLocalService
 		}
 		else
 		{
-			BeamoRuntime = new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8), BeamoIdsToTryEnableOnRemoteDeploy = new List<string>(8) };
+			BeamoRuntime = new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) };
 			SaveBeamoLocalRuntime();
 		}
 
@@ -121,6 +122,7 @@ public partial class BeamoLocalService
 			return str;
 		});
 	}
+
 
 	/// <summary>
 	/// Persists the current state of <see cref="BeamoManifest"/> out to disk. TODO: Make this persistence part agnostic of where this is running so we can use it in Unity as well, maybe?
@@ -196,7 +198,9 @@ public partial class BeamoLocalService
 	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
 	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
 	/// <returns>The created service definition.</returns>
-	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
+	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId,
+		BeamoProtocolType type,
+		string[] beamoIdDependencies,
 		Func<BeamoServiceDefinition, TLocal, Task> localConstructor, Func<BeamoServiceDefinition, TRemote, Task> remoteConstructor, CancellationToken cancellationToken)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new()
 	{
@@ -210,7 +214,11 @@ public partial class BeamoLocalService
 
 		var serviceDefinition = new BeamoServiceDefinition()
 		{
-			BeamoId = beamoId, Protocol = type, DependsOnBeamoIds = beamoIdDependencies, ImageId = string.Empty,
+			BeamoId = beamoId,
+			Protocol = type,
+			DependsOnBeamoIds = beamoIdDependencies,
+			ImageId = string.Empty,
+			ShouldBeEnabledOnRemote = false,
 		};
 
 		// Register the services before initializing protocols so that the protocol initialization can know about the service. 
@@ -502,13 +510,13 @@ public partial class BeamoLocalService
 					 * {"stream":"Successfully built 08705e552527\n"}
 					 * {"stream":"Successfully tagged test1:latest\n"}
 					 */
-					
+
 					// If you need to make changes to this and aren't super familiar with regex --- go here and learn it:
 					// https://regex101.com/r/gpX8Ix/1
 					var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
-					
+
 					var messageStream = message.Stream;
-					
+
 					if (!string.IsNullOrEmpty(messageStream))
 					{
 						if (regex.IsMatch(messageStream))
@@ -526,15 +534,14 @@ public partial class BeamoLocalService
 							var currProgress = currStep / totalStep;
 							progress = progress < currProgress ? currProgress : progress;
 						}
-						
+
 						// We set this to one here when we receive this stream message as it's the final one
 						if (messageStream.StartsWith("Successfully tagged"))
 							progress = 1;
-						
+
 						// Update the progress handler
 						progressUpdateHandler?.Invoke(progress);
 					}
-					
 				}));
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);
@@ -723,12 +730,35 @@ public partial class BeamoLocalService
 		var hasImage = !string.IsNullOrEmpty(serviceDefinition.ImageId);
 		if (hasImage)
 		{
+			// Check if this image is configured to be built locally
+			var canBeBuiltLocally = VerifyCanBeBuiltLocally(serviceDefinition);
+			
+			// Handle deletion based on the protocol
 			switch (serviceDefinition.Protocol)
 			{
 				case BeamoProtocolType.HttpMicroservice:
 				{
 					// For HttpMicroservices we delete using the tag to guarantee 
-					await DeleteImage(beamoId);
+					try
+					{
+						await DeleteImage(beamoId.ToLower());
+					}
+					catch (Exception e)
+					{
+						// We can ignore "no such image" exceptions if we can't be built locally and we don't have a matching image.
+						// In all other cases, exceptions here are problematic and should be investigated.
+						if (!canBeBuiltLocally)
+						{
+							//Docker API responded with status code=NotFound, response={"message":"No such image: newmicroservice:latest"}
+							if (!e.Message.Contains("No such image"))
+								throw;
+						}
+						else
+						{
+							throw;
+						}
+					}
+
 					break;
 				}
 				case BeamoProtocolType.EmbeddedMongoDb:
@@ -746,7 +776,11 @@ public partial class BeamoLocalService
 					throw new ArgumentOutOfRangeException();
 			}
 
-			serviceDefinition.ImageId = "";
+			// Only delete the image id if we are set up to build the image locally.
+			// If we aren't, it means this is a service that was deployed at some point and we no longer have the resources to modify it.
+			// As such, we should keep the image id that is registered with it. See SyncLocalManifestWithRemote.
+			if (canBeBuiltLocally)
+				serviceDefinition.ImageId = "";
 		}
 	}
 
@@ -781,6 +815,9 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	/// <summary>
+	/// The id that this service will be know, both locally and remotely.
+	/// </summary>
 	public string BeamoId;
 
 	/// <summary>
@@ -788,12 +825,20 @@ public class BeamoServiceDefinition
 	/// </summary>
 	public BeamoProtocolType Protocol;
 
+	/// <summary>
+	/// List of <see cref="BeamoId"/>s that this service depends on.
+	/// </summary>
 	public string[] DependsOnBeamoIds;
 
 	/// <summary>
 	/// This is what we need for deployment.
 	/// </summary>
 	public string ImageId;
+
+	/// <summary>
+	/// Whether or not this service should be enabled when we deploy remotely.  
+	/// </summary>
+	public bool ShouldBeEnabledOnRemote;
 
 	public struct IdEquality : IEqualityComparer<BeamoServiceDefinition>
 	{
@@ -838,44 +883,6 @@ public class BeamoServiceDefinition
 	}
 }
 
-public struct DockerHealthConfig
-{
-	/// <summary>
-	/// Whether or not the container should be thrown away after being stopped.
-	/// </summary>
-	public bool AutoRemoveContainerWhenStopped;
-
-	/// <summary>
-	/// Whether or not the container should be kept running after a failure. 
-	/// </summary>
-	public bool StopContainerWhenUnhealthy;
-
-	/// <summary>
-	/// The maximum number of attempts before we'll accept that the healthcheck failed.
-	/// </summary>
-	public int NumberOfRetries;
-
-	/// <summary>
-	/// The number of seconds to wait between each retries (starts at 1, for each retry increases by 1 up to this value).
-	/// </summary>
-	public int MaximumSecondsBetweenRetries;
-
-	/// <summary>
-	/// The timeout for each individual attempt in seconds. 
-	/// </summary>
-	public int HealthRequestTimeout;
-
-	/// <summary>
-	/// Port for the HealthCheckConfig.
-	/// </summary>
-	public string InContainerPort;
-
-	/// <summary>
-	/// Route without preceding or trailing forward slashes. 
-	/// </summary>
-	public string InContainerEndpoint;
-}
-
 public struct DockerPortBinding
 {
 	public string LocalPort;
@@ -912,6 +919,7 @@ public enum BeamoProtocolType
 
 public interface IBeamoLocalProtocol
 {
+	public bool VerifyCanBeBuiltLocally();
 }
 
 public interface IBeamoRemoteProtocol

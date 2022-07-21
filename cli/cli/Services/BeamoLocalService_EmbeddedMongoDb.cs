@@ -5,6 +5,7 @@ public partial class BeamoLocalService
 	public async Task<BeamoServiceDefinition> AddDefinition_EmbeddedMongoDb(string beamId, string baseImage, string[] dependencyBeamIds, CancellationToken cancellationToken)
 	{
 		dependencyBeamIds ??= Array.Empty<string>();
+		baseImage ??= "mongo:latest";
 		return await AddServiceDefinition<EmbeddedMongoDbLocalProtocol, EmbeddedMongoDbRemoteProtocol>(
 			beamId,
 			BeamoProtocolType.EmbeddedMongoDb,
@@ -12,13 +13,13 @@ public partial class BeamoLocalService
 			async (definition, protocol) =>
 			{
 				await PrepareDefaultLocalProtocol_EmbeddedMongoDb(definition, protocol);
-				if(!string.IsNullOrEmpty(baseImage))
+				if (!string.IsNullOrEmpty(baseImage))
 					protocol.BaseImage = baseImage;
 			},
 			PrepareDefaultRemoteProtocol_EmbeddedMongoDb,
 			cancellationToken);
 	}
-	
+
 	public async Task RunLocalEmbeddedMongoDb(BeamoServiceDefinition serviceDefinition, EmbeddedMongoDbLocalProtocol localProtocol)
 	{
 		const string ENV_MONGO_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
@@ -48,7 +49,7 @@ public partial class BeamoLocalService
 		var cmdStr = $"--interval=5s --timeout=3s CMD /etc/init.d/mongodb status || exit 1";
 		await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts, environmentVariables);
 	}
-	
+
 	private async Task PrepareDefaultRemoteProtocol_EmbeddedMongoDb(BeamoServiceDefinition owner, EmbeddedMongoDbRemoteProtocol remote)
 	{
 		await Task.CompletedTask;
@@ -57,7 +58,7 @@ public partial class BeamoLocalService
 	private async Task PrepareDefaultLocalProtocol_EmbeddedMongoDb(BeamoServiceDefinition owner, EmbeddedMongoDbLocalProtocol local)
 	{
 		local.BaseImage = "mongo:latest";
-		
+
 		local.RootUsername = "beamable";
 		local.RootPassword = "beamable";
 
@@ -65,7 +66,7 @@ public partial class BeamoLocalService
 
 		local.DataVolumeInContainerPath = "/data/db";
 		local.FilesVolumeInContainerPath = "/beamable";
-		
+
 		await Task.CompletedTask;
 	}
 
@@ -91,6 +92,14 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
+
+	public bool VerifyCanBeBuiltLocally()
+	{
+		if (!BaseImage.Contains("mongo:"))
+			throw new Exception($"Base Image [{BaseImage}] must be a version of mongo.");
+
+		return !string.IsNullOrEmpty(BaseImage);
+	}
 }
 
 public class EmbeddedMongoDbRemoteProtocol : IBeamoRemoteProtocol
