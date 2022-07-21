@@ -1,6 +1,5 @@
 using Beamable.Common.Dependencies;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine.TestTools;
 using Beamable.Common.Api.Realms;
 using Beamable.Api;
@@ -34,19 +33,11 @@ namespace Beamable.Editor.Tests
 			Configure(builder);
 
 			Context = BeamEditorContext.Instantiate("test", builder);
-			
-			/*Context.CurrentCustomer = new CustomerView()
-			{
-				Cid = "000",
-				Alias = "test-alias",
-				DisplayName = "test-displayName",
-				Projects = new List<RealmView>()
-			};*/
 
 			Context.CurrentCustomer = new CustomerView();
 			Context.ProductionRealm = new RealmView();
 			Context.CurrentRealm = new RealmView();
-			Context.Requester.Token = new AccessToken(new AccessTokenStorage(), "cid", "pid", "token", "refreshToken", 420);
+			Context.Requester.Token = new AccessToken(new AccessTokenStorage(), "000", "111", "token", "refreshToken", 420);
 
 			yield return Context.InitializePromise.ToYielder();
 		}
