@@ -41,8 +41,8 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 		}
 
 		var response = await _requester.CustomRequest(Method, args.uri, body, true,
-		                                              s => s, args.customerScoped, args.customHeaders)
-		                               .ShowLoading("Sending Request..");
+													  s => s, args.customerScoped, args.customHeaders)
+									   .ShowLoading("Sending Request..");
 		BeamableLogger.Log(response);
 	}
 }

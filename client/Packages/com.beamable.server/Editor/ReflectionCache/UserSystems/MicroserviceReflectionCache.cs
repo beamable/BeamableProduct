@@ -318,9 +318,9 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
 			public async Task Deploy(ManifestModel model,
-			                         CancellationToken token,
-			                         Action<IDescriptor> onServiceDeployed = null,
-			                         Action<LogMessage> logger = null)
+									 CancellationToken token,
+									 Action<IDescriptor> onServiceDeployed = null,
+									 Action<LogMessage> logger = null)
 			{
 				try
 				{

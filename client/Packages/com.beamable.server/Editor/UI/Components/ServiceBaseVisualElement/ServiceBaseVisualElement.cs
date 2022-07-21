@@ -332,8 +332,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public virtual void ChangeStartButtonState(bool isOn,
-		                                   string enabledTooltip = null,
-		                                   string disabledTooltip = null
+										   string enabledTooltip = null,
+										   string disabledTooltip = null
 			)
 		{
 			var isAuthorized = Context.IsAuthenticated && Context.RealmSecret.HasValue;
@@ -342,7 +342,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_startButton.tooltip = Tooltips.Microservice.PLAY_NOT_LOGGED_IN;
 				_startButton.SetEnabled(false);
 
-			} else if (!isOn)
+			}
+			else if (!isOn)
 			{
 				_startButton.tooltip = disabledTooltip ?? Tooltips.Microservice.PLAY_DISABLED_GENERAL;
 				_startButton.SetEnabled(false);

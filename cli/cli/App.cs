@@ -32,7 +32,7 @@ public class App
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
-		
+
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
 			.WriteTo.Console(LogLevel.MinimumLevel)
