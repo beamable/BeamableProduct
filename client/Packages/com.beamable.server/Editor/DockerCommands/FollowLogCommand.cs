@@ -1,5 +1,8 @@
 using Beamable.Editor;
+using Beamable.Editor.UI.Model;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -7,19 +10,74 @@ namespace Beamable.Server.Editor.DockerCommands
 	public class FollowLogCommand : DockerCommand
 	{
 		private readonly IDescriptor _descriptor;
+		private List<Func<string, bool>> _standardOutFilters = new List<Func<string,bool>>();
+		private List<Func<string, bool>> _standardErrFilters = new List<Func<string,bool>>();
+		private Func<LogMessage, LogMessage> _standardOutProcessors = m => m;
+		private Func<LogMessage, LogMessage>  _standardErrProcessors = m => m;
+
 		public string ContainerName { get; }
 
-		public FollowLogCommand(IDescriptor descriptor)
+		public FollowLogCommand(IDescriptor descriptor) : this(descriptor, descriptor.ContainerName)
+		{
+
+		}
+
+		public FollowLogCommand(IDescriptor descriptor, string containerName)
 		{
 			_descriptor = descriptor;
-			ContainerName = descriptor.ContainerName;
+			ContainerName = containerName;
 			UnityLogLabel = null;
+		}
+
+		public FollowLogCommand AddStandardOutFilter(Func<string, bool> predicate)
+		{
+			_standardOutFilters.Add(predicate);
+			return this;
+		}
+		public FollowLogCommand AddStandardErrFilter(Func<string, bool> predicate)
+		{
+			_standardErrFilters.Add(predicate);
+			return this;
+		}
+
+		public FollowLogCommand MapStandardOut(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardOutProcessors;
+			_standardOutProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public FollowLogCommand MapStandardErr(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardErrProcessors;
+
+			_standardErrProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public FollowLogCommand AddGlobalFilter(Func<string, bool> predicate)
+		{
+			AddStandardErrFilter(predicate);
+			AddStandardOutFilter(predicate);
+			return this;
+		}
+
+		public FollowLogCommand MapGlobal(Func<LogMessage, LogMessage> processor)
+		{
+			MapStandardErr(processor);
+			MapStandardOut(processor);
+			return this;
 		}
 
 		protected override void HandleStandardOut(string data)
 		{
+			if (_standardOutFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
+
 			CheckFallbackTime(ref data, out var fallbackTime);
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, fallbackTime))
+			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, fallbackTime, _standardOutProcessors))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -27,10 +85,16 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardErr(string data)
 		{
+			if (_standardErrFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
+
+
 			// the logs will always start with a timestamp, we just don't know how long it will be.
 
 			CheckFallbackTime(ref data, out var fallbackTime);
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, fallbackTime))
+			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, fallbackTime, _standardErrProcessors))
 			{
 				base.HandleStandardErr(data);
 			}

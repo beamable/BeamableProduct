@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added microservice archive/unarchive feature.
 - Basic Chat SDK functions to Microservice
 - The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
+- Client Generator logs go to the Microservice Window
 
 ### Changed
 - local microservice logs will appear for dotnet watch command

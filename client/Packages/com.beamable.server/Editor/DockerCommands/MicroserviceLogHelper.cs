@@ -110,7 +110,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		}
 
-		public static bool HandleLog(IDescriptor descriptor, string label, string data, DateTime fallbackTime = default)
+		public static bool HandleLog(IDescriptor descriptor, string label, string data, DateTime fallbackTime = default, Func<LogMessage, LogMessage> logProcessor=null)
 		{
 			if (Json.Deserialize(data) is ArrayDict jsonDict)
 			{
@@ -202,6 +202,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					Level = logLevelValue,
 					Timestamp = LogMessage.GetTimeDisplay(time)
 				};
+				logMessage = logProcessor?.Invoke(logMessage) ?? logMessage;
 				BeamEditorContext.Default.Dispatcher.Schedule(() => MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage));
 
 				if (MicroserviceConfiguration.Instance.ForwardContainerLogsToUnityConsole)
@@ -230,6 +231,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					Level = LogLevel.INFO,
 					Timestamp = LogMessage.GetTimeDisplay(fallbackTime)
 				};
+				logMessage = logProcessor?.Invoke(logMessage) ?? logMessage;
 				if (string.IsNullOrEmpty(logMessage.Message))
 				{
 					return false;
@@ -244,7 +246,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 
-		public static bool HandleLog(MicroserviceDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
+		public static bool HandleLog(IDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
 		{
 			var logMessage = new LogMessage
 			{
