@@ -1,30 +1,18 @@
 using Beamable.Common;
 using Beamable.Server;
-using Core.Server.Common;
-using microserviceTests.microservice.Util;
 using NUnit.Framework;
-using Serilog;
-using Serilog.Events;
-using Serilog.Formatting.Raw;
-using Serilog.Sinks.TestCorrelator;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace microserviceTests.PromiseTests;
 
 [TestFixture]
-public class ErrorTests
+public class ErrorTests : CommonTest
 {
 
-	[SetUp]
-	public void Setup()
-	{
-		LoggingUtil.InitTestCorrelator();
-	}
-
 	[Test]
+	[NonParallelizable]
 	public async Task CaughtPromiseDoesNotLog()
 	{
 
@@ -52,16 +40,15 @@ public class ErrorTests
 			caughtException = ex;
 		}
 
-		var logs = TestCorrelator.GetLogEventsFromCurrentContext().ToList();
-		Assert.IsEmpty(logs.Select(l => l.RenderMessage()));
 		Assert.AreEqual(caughtException, exception);
 	}
 
 
 	[Test]
+	[NonParallelizable]
 	public async Task UncaughtPromiseDoesLog()
 	{
-
+		allowErrorLogs = true;
 		MicroserviceBootstrapper.ConfigureUnhandledError();
 		var exception = new Exception("test failure");
 #pragma warning disable CS1998
@@ -73,8 +60,11 @@ public class ErrorTests
 
 		var _ = SubMethod();
 
-		await Task.Delay(10); // wait for the uncaught promises...
-		var logs = TestCorrelator.GetLogEventsFromCurrentContext().ToList();
+		while (!GetBadLogs().Any())
+		{
+			await Task.Delay(10); // wait for the uncaught promises...
+		}
+		var logs = GetBadLogs().ToList();
 		Assert.IsNotEmpty(logs.Select(l => l.RenderMessage()));
 	}
 }

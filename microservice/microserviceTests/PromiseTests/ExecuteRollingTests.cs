@@ -11,7 +11,7 @@ namespace microserviceTests.PromiseTests
    public class ExecuteRollingTests
    {
       [Test]
-      [Timeout(8 * 1000)]
+      [TimeoutWithTeardown(8 * 1000)]
       public async Task AllSucceed()
       {
          const int promiseCount = 100000;
