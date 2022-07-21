@@ -172,12 +172,12 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_DISABLE_RUN_CUSTOM_HOOK = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
 
 		public RunServiceCommand(MicroserviceDescriptor service,
-		                         string cid,
-		                         string pid,
-		                         string secret,
-		                         Dictionary<string, string> env,
-		                         bool watch = true,
-		                         bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
+								 string cid,
+								 string pid,
+								 string secret,
+								 Dictionary<string, string> env,
+								 bool watch = true,
+								 bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
 			_watch = watch;
@@ -375,14 +375,10 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 
 			if (_descriptor == null) return;
-			Task.Run(async () =>
+			BeamEditorContext.Default.Dispatcher.Schedule(() =>
 			{
-				await Task.Delay(500);
-				BeamEditorContext.Default.Dispatcher.Schedule(() =>
-				{
-					var prune = new PruneImageCommand(_descriptor);
-					var _ = prune.StartAsync().Then(__ => { });
-				});
+				var prune = new PruneImageCommand(_descriptor);
+				var _ = prune.StartAsync().Then(__ => { });
 			});
 		}
 	}

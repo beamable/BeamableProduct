@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added microservice archive/unarchive feature.
 - Basic Chat SDK functions to Microservice
 - The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
+- Client Generator logs go to the Microservice Window
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
@@ -26,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Microservice related actions can run while Unity is a background process.
 - Microservice clients created by using the default constructor will now keep working after the default `BeamContext` has been reset.
+- Local Microservices no longer say "could not find servicename:latest"
+- Publish flow locks Asset Database so that no re-imports may happen.
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
