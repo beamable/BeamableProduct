@@ -374,7 +374,7 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		public static MicroserviceDescriptor GetGeneratorDescriptor(MicroserviceDescriptor service)
+		public static MicroserviceDescriptor GetGeneratorDescriptor(IDescriptor service)
 		{
 			return new MicroserviceDescriptor
 			{
@@ -384,7 +384,7 @@ namespace Beamable.Server.Editor
 			};
 		}
 
-		public static async Promise StopClientSourceCodeGenerator(MicroserviceDescriptor service)
+		public static async Promise StopClientSourceCodeGenerator(IDescriptor service)
 		{
 			var generatorDesc = GetGeneratorDescriptor(service);
 			var command = new StopImageReturnableCommand(generatorDesc);
@@ -404,38 +404,79 @@ namespace Beamable.Server.Editor
 
 			var check = new CheckImageReturnableCommand(generatorDesc);
 
+
 			check.StartAsync().Then(isRunning =>
 			{
 				if (isRunning && !force)
 				{
-					var codeGenCheck = new CheckImageCodeGenErrorCommand(generatorDesc);
-
-					codeGenCheck.StartAsync().Then(hasCodeError =>
-					{
-						if (hasCodeError)
-						{
-							RebuildAndRegenerate(generatorDesc);
-						}
-					});
+					FollowGeneratorLogs(service, generatorDesc);
 				}
 				else
-					RebuildAndRegenerate(generatorDesc);
+					RebuildAndRegenerate(service, generatorDesc);
 
 			});
 		}
 
-		private static void RebuildAndRegenerate(MicroserviceDescriptor generatorDesc)
+		private static void FollowGeneratorLogs(MicroserviceDescriptor service, MicroserviceDescriptor generatorDesc)
+		{
+			bool TryGetErrorCode(string message, out int errCode)
+			{
+				errCode = 0;
+				var errorMatchStr = "error CS";
+				if (message == null) return false;
+				var index = message.IndexOf(errorMatchStr, StringComparison.InvariantCulture);
+				if (index <= -1) return false; // only care about errors...
+
+				var numbers = message.Substring(index + errorMatchStr.Length, 4);
+				if (!int.TryParse(numbers, out errCode))
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			var follow = new FollowLogCommand(service, generatorDesc.ContainerName);
+			follow.AddGlobalFilter(message =>
+			{
+				if (message?.Contains(Constants.Features.Services.Logs.GENERATED_CLIENT_PREFIX) ?? false) return true;
+				return TryGetErrorCode(message, out _);
+			});
+			follow.MapGlobal(log =>
+			{
+				if (log.Message.Contains(Constants.Features.Services.Logs.GENERATED_CLIENT_PREFIX))
+				{
+					log.Level = LogLevel.INFO;
+					return log;
+				}
+
+				var parts = log.Message.Split(' ');
+				var otherParts = parts.Skip(1).ToArray();
+				log.Message = "Failed to generated client code\n" + Path.GetFileName(parts[0]) + " " + string.Join(" ", otherParts);
+				log.Level = LogLevel.ERROR;
+				return log;
+			});
+			follow.Start();
+		}
+
+		private static void RebuildAndRegenerate(MicroserviceDescriptor service, MicroserviceDescriptor generatorDesc)
 		{
 			// definately stop the image, even if there was doubt it was running. Because if we do a "build", any existing image will ABSOLUTELY be ruined by the overcopy.
 			new StopImageReturnableCommand(generatorDesc).StartAsync().Then(__ =>
 			{
-				var buildCommand = new BuildImageCommand(generatorDesc, false, true);
-				buildCommand.StartAsync().Then(_ =>
+				var getArchitecturesCommand = new GetBuildOutputArchitectureCommand();
+				getArchitecturesCommand.StartAsync().Then(arch =>
 				{
-					var clientCommand = new RunClientGenerationCommand(generatorDesc);
-					clientCommand.Start();
-					// TODO: add some sort of "cleanup" operation
-					// TODO: consider add info hint when the generator image is running
+					var buildCommand = new BuildImageCommand(generatorDesc, arch, false, true);
+					buildCommand.StartAsync().Then(_ =>
+					{
+						var clientCommand = new RunClientGenerationCommand(generatorDesc);
+						clientCommand.Start();
+						FollowGeneratorLogs(service, generatorDesc);
+
+						// TODO: add some sort of "cleanup" operation
+						// TODO: consider add info hint when the generator image is running
+					});
 				});
 			});
 		}

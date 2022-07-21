@@ -17,16 +17,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content items sort option by `Recently updated` in Content Manager.
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
 - Added "experimental" package status support to the `PackageVersion` utility
-- Adds `Cid` and `Pid` field to `IBeamableRequester` interface
+- `Cid` and `Pid` field to `IBeamableRequester` interface
+- `Friends` list accessible through the `BeamContext`
+- User's realm permission overrides apply in editor
+- Added posibility of disable content serialization exceptions during content download to allow manual repair for corrupted files. 
+
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
 - List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
 - The Beamable host URL is no longer sourced from `config-defaults.txt`. Instead, it comes from the `BeamableEnvironment` class. 
 - Changed `PackageVersion` to accept "preview" prefix strings instead of requiring a direct match of the string "preview"
+- Moved `JsonSerializable` to Beamable.Common assembly
+- Moved some parts of the `ChatService` to Beamable.Common assembly
+- Changed namespace of `Beamable.Pooling.ClassPool` to `Beamable.Common.Pooling.ClassPool`
+- Account Management Flow will merge gamertags when existing login credential is detected, instead of always creating a new gamertag. This allows you to keep your gamertag on the realm. 
 
 ### Fixed
 - Beamable button in Unity toolbar should be in correct position for production packages
+- Content validation callbacks now support invoking private methods in base classes
+- BeamConsole accepts events after RESET command
+
+## [1.2.8]
+### Added
+- SetLanguage function for IAuthApi
+
+### Changed
+- The Language field on the IPlatformRequester is no obsolete
+- Beamable no longer sends "Accept-Language" headers
+
+## [1.2.7]
+### Changed
+- New players will now get a locale and a location stat based on the Unity Application.language field.
+
+## [1.2.6]
+no changes
+
+## [1.2.5]
+### Fixed
 - CurrencyHUD no longer throws null reference error when associated currency content has no addressable icon. 
 
 ## [1.2.4]

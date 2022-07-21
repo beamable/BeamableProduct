@@ -1,20 +1,83 @@
+using Beamable.Editor;
+using Beamable.Editor.UI.Model;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class FollowLogCommand : DockerCommand
 	{
 		private readonly IDescriptor _descriptor;
+		private List<Func<string, bool>> _standardOutFilters = new List<Func<string,bool>>();
+		private List<Func<string, bool>> _standardErrFilters = new List<Func<string,bool>>();
+		private Func<LogMessage, LogMessage> _standardOutProcessors = m => m;
+		private Func<LogMessage, LogMessage>  _standardErrProcessors = m => m;
+
 		public string ContainerName { get; }
 
+		public FollowLogCommand(IDescriptor descriptor) : this(descriptor, descriptor.ContainerName)
+		{
 
-		public FollowLogCommand(IDescriptor descriptor)
+		}
+
+		public FollowLogCommand(IDescriptor descriptor, string containerName)
 		{
 			_descriptor = descriptor;
-			ContainerName = descriptor.ContainerName;
+			ContainerName = containerName;
+			UnityLogLabel = null;
+		}
+
+		public FollowLogCommand AddStandardOutFilter(Func<string, bool> predicate)
+		{
+			_standardOutFilters.Add(predicate);
+			return this;
+		}
+		public FollowLogCommand AddStandardErrFilter(Func<string, bool> predicate)
+		{
+			_standardErrFilters.Add(predicate);
+			return this;
+		}
+
+		public FollowLogCommand MapStandardOut(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardOutProcessors;
+			_standardOutProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public FollowLogCommand MapStandardErr(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardErrProcessors;
+
+			_standardErrProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public FollowLogCommand AddGlobalFilter(Func<string, bool> predicate)
+		{
+			AddStandardErrFilter(predicate);
+			AddStandardOutFilter(predicate);
+			return this;
+		}
+
+		public FollowLogCommand MapGlobal(Func<LogMessage, LogMessage> processor)
+		{
+			MapStandardErr(processor);
+			MapStandardOut(processor);
+			return this;
 		}
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_standardOutFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
+
+			CheckFallbackTime(ref data, out var fallbackTime);
+			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, fallbackTime, _standardOutProcessors))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -22,15 +85,62 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardErr(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_standardErrFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
+
+
+			// the logs will always start with a timestamp, we just don't know how long it will be.
+
+			CheckFallbackTime(ref data, out var fallbackTime);
+			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, fallbackTime, _standardErrProcessors))
 			{
 				base.HandleStandardErr(data);
 			}
 		}
 
+		private void CheckFallbackTime(ref string data, out DateTime fallbackTime)
+		{
+			fallbackTime = default;
+			if (data != null)
+			{
+				var firstSpace = data.IndexOf(' ');
+				if (firstSpace > 0)
+				{
+					var timestampStr = data.Substring(0, firstSpace);
+					if (DateTime.TryParse(timestampStr, out fallbackTime))
+					{
+						data = data.Substring(firstSpace + 1); // consume the space.
+					}
+				}
+			}
+		}
+
 		public override string GetCommandString()
 		{
-			return $"{DockerCmd} logs {ContainerName} -f --since 0m";
+			/*
+			 * The logs command is meant to retrieve logs from a container that was started during a different compilation pass.
+			 * For example, start a microservice, then edit some client code, then go back to unity, then cause some service logs...
+			 * You'd expect to see those logs.
+			 *
+			 * That works!
+			 *
+			 * But here is an issue, because of hot-reload, if you edit the microservice code itself...
+			 * then Unity will do a recompile, and this follow command _won't_ run until Unity has finished compiling.
+			 * Unity is slow, and the dotnet watch command is much faster, so the logs that represent the microservice
+			 * recompiling will have finished by the time Unity runs this command.
+			 *
+			 * Which means, if we use a "--since 0m" flag (like we did in 1.2.6 and before), we'll MISS the important
+			 * logs saying the service is alive. It is alive, it'll just look sort of STUCK, because there are missing logs :/
+			 * Non deterministic missing logs are the worst kind.
+			 *
+			 *
+			 * So to fix that, we can use a "--since Nm" where N is some "reasonable" amount of time that a compile should take.
+			 * This will give us duplicate logs, so the logging window needs to be smart enough not to re-render duplicated logs.
+			 * We can achieve that by using the timestamp on the log itself. Don't render _old_ logs.
+			 */
+			return $"{DockerCmd} logs {ContainerName} -f -t --since 2m"; // a compile longer than 2m... sad.
 		}
 	}
 }

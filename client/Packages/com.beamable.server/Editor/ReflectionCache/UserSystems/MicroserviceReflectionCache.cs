@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor;
@@ -22,6 +23,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Docker;
 using static Beamable.Common.Constants.Features.Services;
 using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 using LogMessage = Beamable.Editor.UI.Model.LogMessage;
@@ -89,6 +91,7 @@ namespace Beamable.Server.Editor
 				_storageToBuilder.Clear();
 
 				Descriptors.Clear();
+				StorageDescriptors.Clear();
 				AllDescriptors.Clear();
 			}
 
@@ -211,6 +214,9 @@ namespace Beamable.Server.Editor
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx")) continue;
 
+						if (!File.Exists(serviceAttribute.GetSourcePath()))
+							continue;
+
 						// Create descriptor
 						var hasWarning = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Warning;
 						var hasError = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Error;
@@ -280,6 +286,9 @@ namespace Beamable.Server.Editor
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.StorageName.ToLower().Equals("xxxx")) continue;
 
+						if (!File.Exists(serviceAttribute.SourcePath))
+							continue;
+
 						// Create descriptor
 						var hasWarning = storageObjectValResults.Type == ReflectionCache.ValidationResultType.Warning;
 						var hasError = storageObjectValResults.Type == ReflectionCache.ValidationResultType.Error;
@@ -308,7 +317,23 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
+			public async Task Deploy(ManifestModel model,
+									 CancellationToken token,
+									 Action<IDescriptor> onServiceDeployed = null,
+									 Action<LogMessage> logger = null)
+			{
+				try
+				{
+					AssetDatabase.StartAssetEditing();
+					await DeployInternal(model, token, onServiceDeployed, logger);
+				}
+				finally
+				{
+					AssetDatabase.StopAssetEditing();
+				}
+			}
+
+			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -336,6 +361,18 @@ namespace Beamable.Server.Editor
 				var nameToImageId = new Dictionary<string, string>();
 				var enabledServices = new List<string>();
 
+
+				var secret = await de.GetRealmSecret();
+
+
+				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
+
+				if (!MicroserviceConfiguration.Instance.DockerCPUArchitecture.Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
+				{
+					OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture.");
+					return;
+				}
+
 				foreach (var descriptor in Descriptors)
 				{
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
@@ -351,21 +388,102 @@ namespace Beamable.Server.Editor
 					await forceStop.StartAsync(); // force the image to stop.
 					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
 
+					// Build the image
 					try
 					{
-						var buildCommand = new BuildImageCommand(descriptor,
-															 includeDebugTools: false,
-															 watch: false,
-															 pull: true);
+						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
+																 includeDebugTools: false,
+																 watch: false,
+																 pull: true);
+
 						await buildCommand.StartAsync();
+
 					}
 					catch (Exception e)
 					{
-						OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
+						OnDeployFailed?.Invoke(model, $"Deploy failed due to {descriptor.Name} failing to build: {e}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 						return;
 					}
+
+					// Try to start the image and talk to it's healthcheck endpoint.
+					try
+					{
+						// We are now verifying the image we just built
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
+
+						// Check to see if the storage descriptor is running.
+						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
+
+						// Create a build that will build an image that doesn't run the custom initialization hooks
+						// Let's run it locally.
+						// At the moment we disable running custom hooks for this verification.
+						// This is because we cannot guarantee the user won't do anything in them to break this.
+						// TODO: Change algorithm to always have StorageObjects running locally during verification process.
+						// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
+						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
+						runServiceCommand.Start();
+
+						async Promise<string> CheckHealthStatus()
+						{
+							var comm = new DockerPortCommand(descriptor, Constants.Features.Services.HEALTH_PORT);
+							var dockerPortResult = await comm.StartAsync();
+
+							if (!dockerPortResult.ContainerExists)
+								return "false";
+
+							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
+							var res = await de.ServiceScope.GetService<IHttpRequester>()
+													.ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+							return res;
+						}
+
+						// Wait until the container has completely booted up and it's Start function has finished.
+						var timeWaitingForBoot = 0f;
+						var isHealthy = false;
+						do
+						{
+							try
+							{
+								var healthStatus = await CheckHealthStatus();
+								if (healthStatus.Contains("true"))
+									isHealthy = true;
+
+								if (healthStatus.Contains("false"))
+									isHealthy = false;
+							}
+							catch
+							{
+								isHealthy = false;
+							}
+
+							await Task.Delay(500, token);
+							timeWaitingForBoot += .5f;
+						} while (timeWaitingForBoot <= 10f && !isHealthy);
+
+						if (!isHealthy)
+						{
+							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
+							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+							// Stop the container since we don't need to keep the local one alive anymore.
+							await new StopImageCommand(descriptor).StartAsync();
+
+							return;
+						}
+
+						// Stop the container since we don't need to keep the local one alive anymore.
+						await new StopImageCommand(descriptor).StartAsync();
+					}
+					catch (Exception e)
+					{
+						OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+						return;
+					}
+
 
 					if (token.IsCancellationRequested)
 					{
@@ -473,6 +591,7 @@ namespace Beamable.Server.Editor
 						serviceName = sa.Name,
 						templateId = sa.TemplateId,
 						enabled = sa.Enabled,
+						archived = sa.Archived,
 						comments = sa.Comment,
 						imageId = kvp.Value,
 						dependencies = sa.Dependencies
@@ -488,6 +607,7 @@ namespace Beamable.Server.Editor
 				{
 					var sa = model.Services[uploadServiceReference.serviceName];
 					uploadServiceReference.enabled = sa.Enabled;
+					uploadServiceReference.archived = sa.Archived;
 				}
 
 				// 4- Make sure we only have each service once on the list.
@@ -510,6 +630,7 @@ namespace Beamable.Server.Editor
 						storageType = kvp.Value.Type,
 						templateId = kvp.Value.TemplateId,
 						enabled = kvp.Value.Enabled,
+						archived = kvp.Value.Archived
 					};
 				}).ToList();
 
@@ -613,6 +734,7 @@ namespace Beamable.Server.Editor
 							Comment = "",
 							Name = name,
 							Enabled = configEntry?.Enabled ?? true,
+							Archived = configEntry?.Archived ?? false,
 							TemplateId = configEntry?.TemplateId ?? "small",
 							Dependencies = serviceDependencies
 						};
@@ -638,6 +760,7 @@ namespace Beamable.Server.Editor
 							Name = name,
 							Type = configEntry?.StorageType ?? "mongov1",
 							Enabled = configEntry?.Enabled ?? true,
+							Archived = configEntry?.Archived ?? false,
 							TemplateId = configEntry?.TemplateId ?? "small",
 						};
 					}).ToList();

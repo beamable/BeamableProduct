@@ -29,9 +29,9 @@ namespace microserviceTests.microservice
    [StorageObject("simple")]
    public class SimpleStorageObject : MongoStorageObject
    {
-      
+
    }
-   
+
    [Microservice("simple", UseLegacySerialization = true)]
    public class SimpleMicroservice : Microservice
    {
@@ -77,6 +77,15 @@ namespace microserviceTests.microservice
       }
 
       [ClientCallable]
+      public async Task<string> DelayThenGetEmail(int ms, long dbid)
+      {
+	      await Task.Delay(ms);
+	      var getUser = Services.Auth.GetUser(dbid);
+	      var output = await getUser;
+	      return output.email;
+      }
+
+      [ClientCallable]
       public async Promise<int> PromiseTestMethod()
       {
          return await Promise<int>.Successful(1);
@@ -111,7 +120,7 @@ namespace microserviceTests.microservice
       [ClientCallable]
       public string MethodWithExceptionThrow(string msg)
       {
-         throw new MicroserviceException(401, "UnauthorizedUser", "test");
+          throw new MicroserviceException(401, "UnauthorizedUser", "test");
       }
 
       // TODO: Add a test for an empty arg array, or a null
@@ -186,6 +195,12 @@ namespace microserviceTests.microservice
       {
          var res = await Services.Leaderboards.GetPlayerLeaderboards(dbid);
          return res.lbs.Count;
+      }
+
+      [ClientCallable]
+      public async Task RemovePlayerEntry(string leaderboardId, long dbid)
+      {
+	      await Services.Leaderboards.RemovePlayerEntry(leaderboardId, dbid);
       }
 
       [ClientCallable]

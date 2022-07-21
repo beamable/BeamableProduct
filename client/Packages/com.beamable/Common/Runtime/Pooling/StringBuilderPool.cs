@@ -8,6 +8,7 @@ namespace Beamable.Common.Pooling
 	{
 #if UNITY_WEBGL
       private static StringBuilderPool _instance;
+      private static StringBuilderPool _largePoolInstance;
       public static StringBuilderPool StaticPool
       {
          get
@@ -20,8 +21,23 @@ namespace Beamable.Common.Pooling
             return _instance;
          }
       }
+	  public static StringBuilderPool LargeStaticPool
+      {
+         get
+         {
+            if (_largePoolInstance == null)
+            {
+               _largePoolInstance = new StringBuilderPool(3, 512);
+            }
+
+            return _largePoolInstance;
+         }
+      }
 #else
 		private static System.Threading.ThreadLocal<StringBuilderPool> safeStaticPoolLocal = new System.Threading.ThreadLocal<StringBuilderPool>();
+
+		private static System.Threading.ThreadLocal<StringBuilderPool> kLargeStaticPool =
+			new System.Threading.ThreadLocal<StringBuilderPool>();
 
 		public static StringBuilderPool StaticPool
 		{
@@ -33,6 +49,19 @@ namespace Beamable.Common.Pooling
 				}
 
 				return safeStaticPoolLocal.Value;
+			}
+		}
+
+		public static StringBuilderPool LargeStaticPool
+		{
+			get
+			{
+				if (kLargeStaticPool.Value == null)
+				{
+					kLargeStaticPool.Value = new StringBuilderPool(3, 512);
+				}
+
+				return kLargeStaticPool.Value;
 			}
 		}
 #endif
