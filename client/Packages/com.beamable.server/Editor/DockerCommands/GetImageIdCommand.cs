@@ -17,7 +17,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 		public override string GetCommandString()
 		{
-			var formatString = "--format='{{.Id}}" + SEPARATOR + "{{.Architecture}}'"; // string interpolation with {{}} is more confusing than string concat.
+			var formatString = "--format='{{.Id}}" + SEPARATOR + "{{.Architecture}}'" + SEPARATOR + "{{.Os}}"; // string interpolation with {{}} is more confusing than string concat.
 			return $"{DockerCmd} inspect {formatString} {ImageName}";
 		}
 
@@ -29,10 +29,11 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				// parse the id and the arch. There are two parts, separated
 				var parts = StandardOutBuffer.Split(SEPARATOR);
-				if (parts.Length != 2) throw new MicroserviceImageInfoException($"failed to parse. Incorrect number of base components.",StandardErrorBuffer);
+				if (parts.Length != 3) throw new MicroserviceImageInfoException($"failed to parse. Incorrect number of base components.",StandardErrorBuffer);
 
 				results.cpuArch = parts[1]; // the arch will be in the form of, "amd64", which we can take as is.
 				var longId = parts[0]; // the id will be in the form of sha256:5f5739675ebc83134ab93353a14aeb2bed6283d93f7944f094dfb3168ff8ed42
+				results.os = parts[2]; // the os will be in the form of "linux:, which we can take as is.
 
 				// we need to strip out the sha256 image id part, but it may not always be sha256...
 				// and shorten it to the short "5f5739675ebc" variant.
@@ -51,6 +52,9 @@ namespace Beamable.Server.Editor.DockerCommands
 		public bool imageExists;
 		public string imageId;
 		public string cpuArch;
+		public string os;
+
+		public string Platform => $"{os}/{cpuArch}";
 	}
 
 	public class MicroserviceImageInfoException : Exception

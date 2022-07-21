@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- User can specify Microservices build CPU architecture. 
+- User can specify Microservices build and deploy CPU architecture. 
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
 - Microservices have their initialization validated before publishing. 
   - This is mostly a sanity check to catch some errors we can't catch in the Unity Editor.

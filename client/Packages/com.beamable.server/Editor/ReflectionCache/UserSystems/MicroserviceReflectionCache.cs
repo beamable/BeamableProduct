@@ -355,7 +355,8 @@ namespace Beamable.Server.Editor
 				await de.InitializePromise;
 
 				var client = de.GetMicroserviceManager();
-				var existingManifest = await client.GetCurrentManifest();				var secret = await de.GetRealmSecret();
+				var existingManifest = await client.GetCurrentManifest();
+				var secret = await de.GetRealmSecret();
 				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 
 				var nameToImageDetails = new Dictionary<string, ImageDetails>();
@@ -363,14 +364,6 @@ namespace Beamable.Server.Editor
 
 
 				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
-
-#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
-				if (!MicroserviceConfiguration.Instance.DockerCPUArchitecture.Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
-				{
-					OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture.");
-					return;
-				}
-#endif
 
 				foreach (var descriptor in Descriptors)
 				{
@@ -393,7 +386,8 @@ namespace Beamable.Server.Editor
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
 						                                         includeDebugTools: false,
 						                                         watch: false,
-						                                         pull: true);
+						                                         pull: true,
+						                                         cpuContext: CPUArchitectureContext.DEPLOY);
 
 						await buildCommand.StartAsync();
 
@@ -508,6 +502,13 @@ namespace Beamable.Server.Editor
 					if (string.IsNullOrEmpty(imageId))
 					{
 						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+						return;
+					}
+					// the architecture needs to be one of the supported beamable architectures...
+					if (!CPU_SUPPORTED.Contains(imageDetails.Platform))
+					{
+						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
