@@ -317,7 +317,23 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
+			public async Task Deploy(ManifestModel model,
+									 CancellationToken token,
+									 Action<IDescriptor> onServiceDeployed = null,
+									 Action<LogMessage> logger = null)
+			{
+				try
+				{
+					AssetDatabase.StartAssetEditing();
+					await DeployInternal(model, token, onServiceDeployed, logger);
+				}
+				finally
+				{
+					AssetDatabase.StopAssetEditing();
+				}
+			}
+
+			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
