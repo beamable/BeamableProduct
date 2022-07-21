@@ -257,7 +257,7 @@ namespace Beamable.Editor.UI.Model
 		public bool ContainsModel(string serviceName) => AllLocalServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 
 		public bool IsArchived(string serviceName) =>
-			AllLocalServices.First(s => s.Descriptor.Name.Equals(serviceName)).IsArchived;
+			AllLocalServices.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName))?.IsArchived ?? false;
 
 		public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
 		   GetModel<T>(descriptor.Name);
