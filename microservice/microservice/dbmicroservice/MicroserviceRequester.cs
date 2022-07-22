@@ -13,7 +13,6 @@ using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
-using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Server
@@ -146,7 +145,7 @@ namespace Beamable.Server
       public Promise<IConnection> Socket => _socketGetter();
 
       private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
-      private ConcurrentDictionary<string, List<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, List<IPlatformSubscription>>();
+      private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
       private long _lastRequestId = 0;
 
       // default is false, set 1 for true.
@@ -265,14 +264,10 @@ namespace Beamable.Server
          };
          subscription.OnEvent += callback;
 
-         _subscriptions.TryAdd(eventName, new List<IPlatformSubscription>());
+         _subscriptions.TryAdd(eventName, new SynchronizedCollection<IPlatformSubscription>());
 
          var subscriptionList = _subscriptions[eventName];
-         lock (subscriptionList)
-         {
-	         subscriptionList.Add(subscription);
-         }
-
+         subscriptionList.Add(subscription);
          var unsub = new Action(() =>
          {
             subscriptionList.Remove(subscription);
@@ -282,28 +277,9 @@ namespace Beamable.Server
          return subscription;
       }
 
-      private bool TryGetEventSubscriptions(string eventName, out IReadOnlyList<IPlatformSubscription> subscriptions)
+      private bool TryGetEventSubscriptions(string eventName, out SynchronizedCollection<IPlatformSubscription> subscriptions)
       {
-	      subscriptions = new List<IPlatformSubscription>();
-	      if (!_subscriptions.TryGetValue(eventName, out var subscriptionsList))
-	      {
-		      return false;
-	      }
-
-	      var count = 0;
-	      lock (subscriptionsList)
-	      {
-		      count = subscriptionsList.Count;
-	      }
-
-	      var arr = new IPlatformSubscription[count];
-	      for (var i = 0; i < count; i++)
-	      {
-		      arr[i] = subscriptionsList[i];
-	      }
-
-	      subscriptions = new List<IPlatformSubscription>(arr);
-	      return true;
+         return _subscriptions.TryGetValue(eventName, out subscriptions);
       }
 
       public bool IsPlatformMessage(RequestContext ctx)
