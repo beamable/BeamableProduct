@@ -264,7 +264,7 @@ public partial class BeamoLocalService
 	/// <param name="cancellationToken">A token that we pass to the given task. Can be used to cancel the task, if needed.</param>
 	/// <typeparam name="TLocal">The <see cref="IBeamoLocalProtocol"/> that the service definition with the given <paramref name="beamoId"/> is expected to contain.</typeparam>
 	/// <returns>Whether or not the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> was found.</returns>
-	private async Task<bool> TryUpdateLocalProtocol<TLocal>(string beamoId, Func<BeamoServiceDefinition, TLocal, Task> localProtocolModifier, CancellationToken cancellationToken)
+	public async Task<bool> TryUpdateLocalProtocol<TLocal>(string beamoId, Func<BeamoServiceDefinition, TLocal, Task> localProtocolModifier, CancellationToken cancellationToken)
 		where TLocal : class, IBeamoLocalProtocol
 	{
 		var containerIdx = BeamoManifest.ServiceDefinitions.FindIndex(container => container.BeamoId == beamoId);
@@ -300,7 +300,7 @@ public partial class BeamoLocalService
 	/// <param name="cancellationToken">A token that we pass to the given task. Can be used to cancel the task, if needed.</param>
 	/// <typeparam name="TRemote">The <see cref="IBeamoRemoteProtocol"/> that the service definition with the given <paramref name="beamoId"/> is expected to contain.</typeparam>
 	/// <returns>Whether or not the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> was found.</returns>
-	private async Task<bool> TryUpdateRemoteProtocol<TRemote>(string beamoId, Func<BeamoServiceDefinition, TRemote, Task> remoteProtocolModifier, CancellationToken cancellationToken)
+	public async Task<bool> TryUpdateRemoteProtocol<TRemote>(string beamoId, Func<BeamoServiceDefinition, TRemote, Task> remoteProtocolModifier, CancellationToken cancellationToken)
 		where TRemote : class, IBeamoRemoteProtocol
 	{
 		var containerIdx = BeamoManifest.ServiceDefinitions.FindIndex(container => container.BeamoId == beamoId);

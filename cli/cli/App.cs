@@ -103,6 +103,7 @@ public class App
 		Services.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
 		Services.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
 

@@ -161,13 +161,14 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public string HealthCheckInternalPort;
 
 	public DockerBindMount BindSrcForHotReloading;
-	public string HotReloadSupportedEndpoint;
 	public string HotReloadEnabledEndpoint;
-
+	public string HotReloadEnabledPort;
+	
 	public List<DockerPortBinding> CustomPortBindings;
 	public List<DockerBindMount> CustomBindMounts;
 	public List<DockerVolume> CustomVolumes;
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
+
 	public bool VerifyCanBeBuiltLocally()
 	{
 		var hasPaths = !string.IsNullOrEmpty(DockerBuildContextPath) && !string.IsNullOrEmpty(RelativeDockerfilePath);
