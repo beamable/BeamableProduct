@@ -63,9 +63,43 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public string UnityLogLabel = "Docker";
 
+		protected string StandardOutBuffer { get; private set; }
+
+		protected string StandardErrorBuffer { get; private set; }
+
+		public Action<string> OnStandardOut;
+		public Action<string> OnStandardErr;
+
+
 		public abstract string GetCommandString();
 
 		protected virtual void HandleOnExit() { }
+
+		private void ProcessStandardOut(string data)
+		{
+			if (!string.IsNullOrEmpty(data))
+			{
+				StandardOutBuffer += data;
+			}
+			HandleStandardOut(data);
+			if (data != null)
+			{
+				OnStandardOut?.Invoke(data);
+			}
+		}
+
+		private void ProcessStandardErr(string data)
+		{
+			if (!string.IsNullOrEmpty(data))
+			{
+				StandardErrorBuffer += data;
+			}
+			HandleStandardErr(data);
+			if (data != null)
+			{
+				OnStandardErr?.Invoke(data);
+			}
+		}
 
 		protected virtual void HandleStandardOut(string data)
 		{
@@ -216,7 +250,7 @@ namespace Beamable.Server.Editor.DockerCommands
 							{
 								try
 								{
-									HandleStandardOut(args.Data);
+									ProcessStandardOut(args.Data);
 								}
 								catch (Exception ex)
 								{
@@ -230,7 +264,7 @@ namespace Beamable.Server.Editor.DockerCommands
 							{
 								try
 								{
-									HandleStandardErr(args.Data);
+									ProcessStandardErr(args.Data);
 								}
 								catch (Exception ex)
 								{
