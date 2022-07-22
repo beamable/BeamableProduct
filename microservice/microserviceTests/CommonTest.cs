@@ -127,8 +127,7 @@ public class CommonTest
 	[TearDown]
 	public void TeardownTest()
 	{
-		Console.WriteLine($"[{GetTime(globalTime)}] - Finishing Test - [{TestContext.CurrentContext.Test.MethodName}] ({GetTime(localTime)})");
-		localTime.Stop();
+
 		// there should be no error logs, unless the test has been configured to allow them.
 		var logFailure = !allowErrorLogs && GetBadLogs().Any();
 		var exitCodeFailure = Environment.ExitCode != 0;
@@ -140,6 +139,8 @@ public class CommonTest
 		testFailure |= logFailure; // or perhaps because there are un-accounted for logs
 		testFailure |= exitCodeFailure; // or the exit code wasn't right.
 
+		Console.WriteLine($"[{GetTime(globalTime)}] - Finishing Test - {TestContext.CurrentContext.Result.Outcome.Status} [{TestContext.CurrentContext.Test.MethodName}] ({GetTime(localTime)})");
+		localTime.Stop();
 		if (testFailure)
 		{
 			Console.WriteLine($"Dumping logs for [{TestContext.CurrentContext.Test.MethodName}]");

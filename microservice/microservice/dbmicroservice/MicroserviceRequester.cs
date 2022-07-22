@@ -13,6 +13,7 @@ using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Server
@@ -145,7 +146,7 @@ namespace Beamable.Server
       public Promise<IConnection> Socket => _socketGetter();
 
       private ConcurrentDictionary<long, IWebsocketResponseListener> _pendingMessages = new ConcurrentDictionary<long, IWebsocketResponseListener>();
-      private ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, SynchronizedCollection<IPlatformSubscription>>();
+      private ConcurrentDictionary<string, List<IPlatformSubscription>> _subscriptions = new ConcurrentDictionary<string, List<IPlatformSubscription>>();
       private long _lastRequestId = 0;
 
       // default is false, set 1 for true.
@@ -190,14 +191,13 @@ namespace Beamable.Server
 	      var enteringCount = Daemon.AuthorizationCounter;
 	      while (Daemon.AuthorizationCounter > 0)
 	      {
-		      await Task.Delay(1);
-
 		      var totalWaitedTime = DateTime.UtcNow - startTime;
 		      if (totalWaitedTime > timeout)
 		      {
 			      var exitCount = Daemon.AuthorizationCounter;
 			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
+		      await Task.Delay(1);
 	      }
 	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }
@@ -265,10 +265,14 @@ namespace Beamable.Server
          };
          subscription.OnEvent += callback;
 
-         _subscriptions.TryAdd(eventName, new SynchronizedCollection<IPlatformSubscription>());
+         _subscriptions.TryAdd(eventName, new List<IPlatformSubscription>());
 
          var subscriptionList = _subscriptions[eventName];
-         subscriptionList.Add(subscription);
+         lock (subscriptionList)
+         {
+	         subscriptionList.Add(subscription);
+         }
+
          var unsub = new Action(() =>
          {
             subscriptionList.Remove(subscription);
@@ -278,9 +282,28 @@ namespace Beamable.Server
          return subscription;
       }
 
-      private bool TryGetEventSubscriptions(string eventName, out SynchronizedCollection<IPlatformSubscription> subscriptions)
+      private bool TryGetEventSubscriptions(string eventName, out IReadOnlyList<IPlatformSubscription> subscriptions)
       {
-         return _subscriptions.TryGetValue(eventName, out subscriptions);
+	      subscriptions = new List<IPlatformSubscription>();
+	      if (!_subscriptions.TryGetValue(eventName, out var subscriptionsList))
+	      {
+		      return false;
+	      }
+
+	      var count = 0;
+	      lock (subscriptionsList)
+	      {
+		      count = subscriptionsList.Count;
+	      }
+
+	      var arr = new IPlatformSubscription[count];
+	      for (var i = 0; i < count; i++)
+	      {
+		      arr[i] = subscriptionsList[i];
+	      }
+
+	      subscriptions = new List<IPlatformSubscription>(arr);
+	      return true;
       }
 
       public bool IsPlatformMessage(RequestContext ctx)
