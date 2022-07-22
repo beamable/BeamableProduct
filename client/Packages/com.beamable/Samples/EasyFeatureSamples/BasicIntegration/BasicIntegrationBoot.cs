@@ -1,9 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using Beamable.EasyFeatures;
 using Beamable.EasyFeatures.BasicLeaderboard;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace EasyFeaturesIntegrationExamples.BasicIntegration
 {

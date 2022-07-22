@@ -33,7 +33,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 			_scores = entriesList.Select(e => e.Score).ToList();
 
 			_totalRankCount = entriesList.Count;
-			
+
 			_currentPlayerRank = currentPlayerRank;
 		}
 
