@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.Serialization;
 
 namespace Beamable.EasyFeatures.BasicLeaderboard
@@ -17,7 +18,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 	[BeamContextSystem]
 	public class BasicLeaderboardFeatureControl : MonoBehaviour, IBeamableFeatureControl
 	{
-		[RegisterBeamableDependencies()]
+		[RegisterBeamableDependencies(Order = Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicLeaderboardPlayerSystem,
@@ -95,6 +96,17 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 			var leaderboardPlayerSystem = ctx.ServiceProvider.GetService<BasicLeaderboardPlayerSystem>();
 			await leaderboardPlayerSystem.FetchLeaderboardData(leaderboardRef, 0, EntriesAmount);
 			await LeaderboardViewGroup.EnrichWithPlayerCodes();
+		}
+
+		/// <summary>
+		/// Utility to change what the Leaderboard's Back button does when it's clicked.
+		/// </summary>
+		/// <param name="onBackButtonClicked">The new action the back button should have.</param>
+		public virtual void ReconfigureBackButton(UnityAction onBackButtonClicked)
+		{
+			var basicLeaderboardView = LeaderboardViewGroup.ManagedViews.OfType<BasicLeaderboardView>().First();
+			basicLeaderboardView.BackButtonAction.RemoveAllListeners();
+			basicLeaderboardView.BackButtonAction.AddListener(onBackButtonClicked);
 		}
 	}
 }

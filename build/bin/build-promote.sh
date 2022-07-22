@@ -18,6 +18,10 @@ echo "Building CLI build"
 docker-compose --no-ansi -f docker/cli/docker-compose.yml up --build --exit-code-from cli
 docker-compose --no-ansi -f docker/cli/docker-compose.yml down # TODO: Ensure that this down command executes
 
+echo "Building Microservice Nuget build"
+docker-compose --no-ansi -f docker/nuget.microservice/docker-compose.yml up --build --exit-code-from nuget_microservice
+docker-compose --no-ansi -f docker/nuget.microservice/docker-compose.yml down # TODO: Ensure that this down command executes
+
 export BEAMSERVICE_TAG=${ENVIRONMENT}_${VERSION:-0.0.0}
 export LOCAL_REPO_TAG=beamservice:${BEAMSERVICE_TAG}
 
