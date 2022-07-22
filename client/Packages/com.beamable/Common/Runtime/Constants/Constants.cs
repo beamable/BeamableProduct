@@ -22,6 +22,11 @@
 			public const string UNITY__VSP__UID = "UNITY__VSP__UID";
 		}
 
+		public static class EditorPrefKeys
+		{
+			public const string ALLOWED_SAMPLES_REGISTER_FUNCTIONS = "ALLOWED_SAMPLES_REGISTER_FUNCTIONS";
+		}
+
 		public static class Directories
 		{
 			public const string BEAMABLE_ASSETS = "Assets/Beamable";
@@ -85,6 +90,7 @@
 					public const string PORTAL = "Portal";
 					public const string TOOLBOX = "Toolbox";
 					public const string ENVIRONMENT = "Beamable Environment";
+					public const string SAMPLE_UTILITY = "Sample Utilities";
 					public const string BEAMABLE_ASSISTANT = BEAMABLE + " Assistant";
 					public const string BUSS = BEAMABLE + " Styles";
 					public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
@@ -105,6 +111,7 @@
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Microservices";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_POOLING = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Pooling";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_ENV = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Change Environment";
+					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_SAMPLE = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Sample Utility";
 
 					//Menu Items: Window (#ifdef BEAMABLE_DEVELOPER)
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BEAMABLE_DEVELOPER_SAMPLES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Samples";

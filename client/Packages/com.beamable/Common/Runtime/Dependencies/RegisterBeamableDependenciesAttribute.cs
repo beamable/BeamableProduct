@@ -4,6 +4,8 @@ using Beamable.Common.Reflection;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace Beamable.Common.Dependencies
 {
@@ -40,11 +42,13 @@ namespace Beamable.Common.Dependencies
 		/// Defines the order in which the functions with <see cref="RegisterBeamableDependenciesAttribute"/> will run.
 		/// </summary>
 		public int Order { get; set; }
+		public string DeclarationPath { get; }
 
-		public RegisterBeamableDependenciesAttribute(int order = 0, RegistrationOrigin origin = RegistrationOrigin.RUNTIME)
+		public RegisterBeamableDependenciesAttribute(int order = 0, RegistrationOrigin origin = RegistrationOrigin.RUNTIME, [CallerFilePath] string declarationPath = "")
 		{
 			Origin = origin;
 			Order = order;
+			DeclarationPath = declarationPath;
 		}
 
 		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
