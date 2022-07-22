@@ -1,9 +1,16 @@
-using Beamable.Pooling;
+#if UNITY_2018_1_OR_NEWER || BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#define BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#endif
+
+using Beamable.Common;
+using Beamable.Common.Pooling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 using UnityEngine;
+#endif
 
 namespace Beamable.Serialization
 {
@@ -67,6 +74,8 @@ namespace Beamable.Serialization
 			public bool Serialize(string key, ref string target) { return false; }
 			public bool Serialize(string key, ref StringBuilder target) { return false; }
 			public bool Serialize(string key, ref DateTime target) { return false; }
+
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 			public bool Serialize(string key, ref Rect target) { return false; }
 			public bool Serialize(string key, ref Vector2 target) { return false; }
 			public bool Serialize(string key, ref Vector3 target) { return false; }
@@ -74,6 +83,7 @@ namespace Beamable.Serialization
 			public bool Serialize(string key, ref Color target) { return false; }
 			public bool Serialize(string key, ref Quaternion target) { return false; }
 			public bool Serialize(string key, ref Gradient target) { return false; }
+#endif
 			public bool SerializeArray<T>(string key, ref T[] value) { return false; }
 
 			public void DeleteChildMost(JsonSerializable.ISerializable obj)
@@ -157,7 +167,7 @@ namespace Beamable.Serialization
 #if UNITY_EDITOR
                         if (!found)
                         {
-                            Debug.LogWarning("Id not found in delete: " + key + "[" + id + "]");
+                            BeamableLogger.LogWarning("Id not found in delete: " + key + "[" + id + "]");
                         }
 #endif
 
@@ -270,7 +280,7 @@ namespace Beamable.Serialization
 				else
 				{
 #if UNITY_EDITOR
-                    Debug.LogError("Could not match data to field " + value + " != " + curDict[key].GetType());
+                    BeamableLogger.LogError("Could not match data to field " + value + " != " + curDict[key].GetType());
 #endif
 					return false;
 				}
@@ -331,7 +341,7 @@ namespace Beamable.Serialization
 #if UNITY_EDITOR
                         if (!found)
                         {
-                            Debug.LogWarning("Id not found in delete: " + key + "[" + id + "]");
+	                        BeamableLogger.LogWarning("Id not found in delete: " + key + "[" + id + "]");
                         }
 #endif
 					}

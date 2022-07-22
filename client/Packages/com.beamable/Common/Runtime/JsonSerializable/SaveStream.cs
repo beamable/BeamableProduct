@@ -1,9 +1,16 @@
-using Beamable.Pooling;
+#if UNITY_2018_1_OR_NEWER || BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#define BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#endif
+
+using Beamable.Common;
+using Beamable.Common.Pooling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 using UnityEngine;
+#endif
 
 namespace Beamable.Serialization
 {
@@ -105,6 +112,7 @@ namespace Beamable.Serialization
 				curDict[key] = data;
 				return true;
 			}
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 			public bool Serialize(string key, ref Rect target)
 			{
 				float[] data = new float[4];
@@ -190,7 +198,7 @@ namespace Beamable.Serialization
 				curDict[key] = data;
 				return true;
 			}
-
+#endif
 
 			public bool SerializeDictionary<T>(string key, ref Dictionary<string, T> target)
 			{
@@ -266,7 +274,7 @@ namespace Beamable.Serialization
 				}
 				else
 				{
-					Debug.LogError("Cannot serialize LinkedList<T> of non JsonSerializable types");
+					BeamableLogger.LogError("Cannot serialize LinkedList<T> of non JsonSerializable types");
 					return false;
 				}
 			}
