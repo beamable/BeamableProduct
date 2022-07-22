@@ -21,7 +21,7 @@ namespace microserviceTests.PromiseTests
             {
                task = Task.Run<int>(async () =>
                {
-                  await Task.Yield();
+                  await Task.Delay(1);
                   return x + 1;
                });
                return task.ToPromise();
@@ -47,7 +47,7 @@ namespace microserviceTests.PromiseTests
          {
             tasks.Add(Task.Run(async () =>
             {
-               await Task.Yield();
+               await Task.Delay(1);;
                lock (promise)
                {
                   curr = curr.Map(x => x + 1);
@@ -79,7 +79,7 @@ namespace microserviceTests.PromiseTests
                var index = i + offset; // avoid closure change
                tasks.Add(Task.Run(async () =>
                {
-                  await Task.Yield();
+                  await Task.Delay(1);;
                   promise.Then(value =>
                   {
                      if (!history.TryAdd(index, value))
@@ -94,7 +94,7 @@ namespace microserviceTests.PromiseTests
          AttachALotOfThens(0);
          var completionTask = Task.Run(async () =>
          {
-            await Task.Yield();
+            await Task.Delay(1);;
             promise.CompleteSuccess(3);
          });
          AttachALotOfThens(halfTaskCount);
@@ -121,7 +121,7 @@ namespace microserviceTests.PromiseTests
                var index = i + offset; // avoid closure change
                tasks.Add(Task.Run(async () =>
                {
-                  await Task.Yield();
+                  await Task.Delay(1);;
                   promise.Error(ex =>
                   {
                      if (!history.TryAdd(index, ex))
@@ -136,7 +136,7 @@ namespace microserviceTests.PromiseTests
          AttachALotOfErrors(0);
          var completionTask = Task.Run(async () =>
          {
-            await Task.Yield();
+            await Task.Delay(1);;
             promise.CompleteError(new Exception());
          });
          AttachALotOfErrors(halfTaskCount);
@@ -163,12 +163,12 @@ namespace microserviceTests.PromiseTests
                var index = i + offset; // avoid closure change
                tasks.Add(Task.Run(async () =>
                {
-                  await Task.Yield();
+                  await Task.Delay(1);;
                   await promise.FlatMap(value =>
                   {
                      return Task.Run(async () =>
                      {
-                        await Task.Yield();
+                        await Task.Delay(1);;
                         return value + 1;
                      }).ToPromise();
                   }).Then(value =>
@@ -185,7 +185,7 @@ namespace microserviceTests.PromiseTests
          AttachALotOfFlatMaps(0);
          var completionTask = Task.Run(async () =>
          {
-            await Task.Yield();
+            await Task.Delay(1);;
             promise.CompleteSuccess(3);
          });
          AttachALotOfFlatMaps(halfTaskCount);
@@ -212,7 +212,7 @@ namespace microserviceTests.PromiseTests
                var index = i + offset; // avoid closure change
                tasks.Add(Task.Run(async () =>
                {
-                  await Task.Yield();
+                  await Task.Delay(1);;
                   promise.Map(value => value + 1).Then(value =>
                   {
                      if (!history.TryAdd(index, value))
@@ -227,7 +227,7 @@ namespace microserviceTests.PromiseTests
          AttachALotOfMaps(0);
          var completionTask = Task.Run(async () =>
          {
-            await Task.Yield();
+            await Task.Delay(1);;
             promise.CompleteSuccess(3);
          });
          AttachALotOfMaps(halfTaskCount);

@@ -4,6 +4,7 @@ using Beamable.Server;
 using microserviceTests.microservice.Util;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
+using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Commands;
 using Serilog.Events;
 using Serilog.Sinks.TestCorrelator;
@@ -12,6 +13,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace microserviceTests;
@@ -41,6 +44,41 @@ public class LoggingTimeoutCommand : TimeoutCommand
 {
 	public LoggingTimeoutCommand(TestCommand innerCommand, int timeout) : base(innerCommand, timeout)
 	{
+	}
+}
+
+/// <summary>
+/// Workaround for https://github.com/nunit/nunit/issues/3283.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Assembly)]
+public sealed class PreventExecutionContextLeaksAttribute : Attribute, IWrapSetUpTearDown
+{
+	public TestCommand Wrap(TestCommand command) => new ExecuteInIsolatedExecutionContextCommand(command);
+
+	private sealed class ExecuteInIsolatedExecutionContextCommand : DelegatingTestCommand
+	{
+		public ExecuteInIsolatedExecutionContextCommand(TestCommand innerCommand) : base(innerCommand)
+		{
+		}
+
+		[DebuggerNonUserCode]
+		public override TestResult Execute(TestExecutionContext context)
+		{
+			using (var copy = ExecutionContext.Capture().CreateCopy())
+			{
+				var returnValue = new StrongBox<TestResult>();
+				ExecutionContext.Run(copy, Execute, state: (context, returnValue));
+				return returnValue.Value;
+			}
+		}
+
+		[DebuggerNonUserCode]
+		private void Execute(object state)
+		{
+			var (context, returnValue) = ((TestExecutionContext, StrongBox<TestResult>))state;
+
+			returnValue.Value = innerCommand.Execute(context);
+		}
 	}
 }
 
@@ -89,8 +127,7 @@ public class CommonTest
 	[TearDown]
 	public void TeardownTest()
 	{
-		Console.WriteLine($"[{GetTime(globalTime)}] - Finishing Test - [{TestContext.CurrentContext.Test.MethodName}] ({GetTime(localTime)})");
-		localTime.Stop();
+
 		// there should be no error logs, unless the test has been configured to allow them.
 		var logFailure = !allowErrorLogs && GetBadLogs().Any();
 		var exitCodeFailure = Environment.ExitCode != 0;
@@ -102,6 +139,8 @@ public class CommonTest
 		testFailure |= logFailure; // or perhaps because there are un-accounted for logs
 		testFailure |= exitCodeFailure; // or the exit code wasn't right.
 
+		Console.WriteLine($"[{GetTime(globalTime)}] - Finishing Test - {TestContext.CurrentContext.Result.Outcome.Status} [{TestContext.CurrentContext.Test.MethodName}] ({GetTime(localTime)})");
+		localTime.Stop();
 		if (testFailure)
 		{
 			Console.WriteLine($"Dumping logs for [{TestContext.CurrentContext.Test.MethodName}]");
@@ -109,6 +148,7 @@ public class CommonTest
 			{
 				Console.WriteLine(log.RenderMessage());
 			}
+			Console.WriteLine("End of log stream");
 		}
 
 		allowErrorLogs = false;

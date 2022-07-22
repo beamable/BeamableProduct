@@ -11,14 +11,14 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 	public class AddListenerTests : CommonTest
 	{
 		[Test]
-		[TimeoutWithTeardown(2 * 60 * 1000)]
+		[TimeoutWithTeardown(3 * 60 * 1000)]
 		public async Task MultiThreadedAccess()
 		{
 			var context = new SocketRequesterContext(() =>
 				throw new NotImplementedException("This test should never access the socket"));
 
 			const int threadCount = 500;
-			const int cycleCount = 50000;
+			const int cycleCount = 5000;
 
 			const string uri = "uri";
 			Func<string, object> dumbParser = (raw) => 1;
