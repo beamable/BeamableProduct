@@ -563,7 +563,8 @@ namespace Beamable
 
 		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
 		{
-			var res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+			AliasResolve res = await GetAliasResolve(aliasOrCid);
+
 			var alias = res.Alias.GetOrElse("");
 			var cid = res.Cid.GetOrThrow();
 
@@ -616,7 +617,7 @@ namespace Beamable
 				if (pid == null)
 				{
 					var realms = await realmService.GetRealms(games.First());
-					realm = realms.First();
+					realm = realms.First(rv => !rv.Archived);
 				}
 				else
 					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
@@ -748,6 +749,40 @@ namespace Beamable
 				}
 				else throw;
 			}
+		}
+
+		private async Promise<AliasResolve> GetAliasResolve(string aliasOrCid)
+		{
+			var requester = ServiceScope.GetService<PlatformRequester>();
+			AliasResolve res = null;
+
+			if (!string.IsNullOrEmpty(requester.Pid)) // check is cached realm archived
+			{
+				try
+				{
+					res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+				}
+				catch (Exception ex)
+				{
+					if (ex is RequesterException err && err.Status == 400)
+					{
+						requester.Pid = string.Empty;
+						CurrentRealm = null;
+
+						res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+					}
+					else
+					{
+						throw ex;
+					}
+				};
+			}
+			else
+			{
+				res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+			}
+
+			return res;
 		}
 
 		public void Logout()
