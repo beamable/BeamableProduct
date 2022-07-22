@@ -12,7 +12,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public static PullImageCommand PullBeamService(CPUArchitectureContext cpu) =>
 			new PullImageCommand($"{DockerfileGenerator.BASE_IMAGE}:{DockerfileGenerator.BASE_TAG}", cpu);
 
-		public PullImageCommand(string imageAndTag, CPUArchitectureContext cpu=CPUArchitectureContext.DEFAULT)
+		public PullImageCommand(string imageAndTag, CPUArchitectureContext cpu = CPUArchitectureContext.DEFAULT)
 		{
 			_imageAndTag = imageAndTag;
 			_cpu = cpu;

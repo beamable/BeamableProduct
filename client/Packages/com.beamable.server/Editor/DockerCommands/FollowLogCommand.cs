@@ -10,10 +10,10 @@ namespace Beamable.Server.Editor.DockerCommands
 	public class FollowLogCommand : DockerCommand
 	{
 		private readonly IDescriptor _descriptor;
-		private List<Func<string, bool>> _standardOutFilters = new List<Func<string,bool>>();
-		private List<Func<string, bool>> _standardErrFilters = new List<Func<string,bool>>();
+		private List<Func<string, bool>> _standardOutFilters = new List<Func<string, bool>>();
+		private List<Func<string, bool>> _standardErrFilters = new List<Func<string, bool>>();
 		private Func<LogMessage, LogMessage> _standardOutProcessors = m => m;
-		private Func<LogMessage, LogMessage>  _standardErrProcessors = m => m;
+		private Func<LogMessage, LogMessage> _standardErrProcessors = m => m;
 
 		public string ContainerName { get; }
 

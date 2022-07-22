@@ -13,7 +13,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		/// <param name="descriptor">The descriptor to clean. Images built for this descriptor will be removed</param>
 		/// <param name="all">if true, all found images matching the descriptor will be removed</param>
 		/// <param name="secondsOld">the number of seconds old the image needs to be to be deleted</param>
-		public PruneImageCommand(IDescriptor descriptor, bool all = true, int secondsOld=120)
+		public PruneImageCommand(IDescriptor descriptor, bool all = true, int secondsOld = 120)
 		{
 			_descriptor = descriptor;
 			_all = all;

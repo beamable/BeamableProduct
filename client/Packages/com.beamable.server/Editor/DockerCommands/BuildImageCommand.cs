@@ -39,7 +39,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, List<string> availableArchitectures, bool includeDebugTools, bool watch, bool pull = true, CPUArchitectureContext cpuContext=CPUArchitectureContext.LOCAL)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, List<string> availableArchitectures, bool includeDebugTools, bool watch, bool pull = true, CPUArchitectureContext cpuContext = CPUArchitectureContext.LOCAL)
 		{
 			_descriptor = descriptor;
 			_availableArchitectures = availableArchitectures;
