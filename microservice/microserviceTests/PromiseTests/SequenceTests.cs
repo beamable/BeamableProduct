@@ -26,7 +26,7 @@ namespace microserviceTests.PromiseTests
             var index = i;
             var task = Task.Run( async () =>
             {
-               await Task.Yield();
+               await Task.Delay(0);
 
                var promise = promises[index];
                promise.CompleteSuccess(index);

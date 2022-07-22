@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Server;
 using NUnit.Framework;
+using Serilog;
 
 namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTests
 {
@@ -11,7 +12,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 	{
 
 		[Test]
-		[TimeoutWithTeardown(4 * 60 * 1000)]
+		[TimeoutWithTeardown(5 * 60 * 1000)]
 		public async Task EventSubscriptionMultiThreadedAccess()
 		{
 			var context = new SocketRequesterContext(() =>
