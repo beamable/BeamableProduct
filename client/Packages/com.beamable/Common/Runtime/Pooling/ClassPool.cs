@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.Pooling
+namespace Beamable.Common.Pooling
 {
 	/*
 	Simple pool to hold classes. Use:

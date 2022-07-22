@@ -190,14 +190,13 @@ namespace Beamable.Server
 	      var enteringCount = Daemon.AuthorizationCounter;
 	      while (Daemon.AuthorizationCounter > 0)
 	      {
-		      await Task.Delay(1);
-
 		      var totalWaitedTime = DateTime.UtcNow - startTime;
 		      if (totalWaitedTime > timeout)
 		      {
 			      var exitCount = Daemon.AuthorizationCounter;
 			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
+		      await Task.Delay(1);
 	      }
 	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }

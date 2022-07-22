@@ -1,3 +1,4 @@
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 
@@ -65,22 +66,30 @@ namespace Beamable.Common.Api.Social
 			);
 		}
 
-		// TODO: This needs to be fixed before it can be called.
-		// public Promise<EmptyResponse> SendFriendRequest(long gamerTag)
-		// {
-		//    return Requester.Request<EmptyResponse>(
-		//       Method.POST,
-		//       "/basic/social/friends/invite",
-		//       new GamertagRequest { gt = gamerTag }
-		//    );
-		// }
+		public Promise<EmptyResponse> SendFriendRequest(long gamerTag)
+		{
+			return Requester.Request<EmptyResponse>(
+		      Method.POST,
+		      "/basic/social/friends/invite",
+		      new GamerTagRequest { gamerTag = gamerTag }
+		   );
+		}
 
-		public Promise<EmptyResponse> CancelFriendRequest(long playerId)
+		public Promise<EmptyResponse> AcceptFriendRequest(long gamerTag)
+		{
+			return Requester.Request<EmptyResponse>(
+				Method.POST,
+				"/basic/social/friends/make",
+				new GamerTagRequest { gamerTag = gamerTag }
+			);
+		}
+		
+		public Promise<EmptyResponse> CancelFriendRequest(long gamerTag)
 		{
 			return Requester.Request<EmptyResponse>(
 			   Method.DELETE,
 			   "/basic/social/friends/invite",
-			   new PlayerIdRequest { playerId = playerId.ToString() }
+			   new GamerTagRequest { gamerTag = gamerTag }
 			);
 		}
 
@@ -108,6 +117,12 @@ namespace Beamable.Common.Api.Social
 	{
 		public string playerId;
 	}
+	
+	[Serializable]
+	public class GamerTagRequest
+	{
+		public long gamerTag;
+	}
 
 	[Serializable]
 	public class ImportFriendsRequest
@@ -121,6 +136,11 @@ namespace Beamable.Common.Api.Social
 	public class SocialList
 	{
 		/// <summary>
+		/// The owner of this social list.
+		/// </summary>
+		public long PlayerId;
+		
+		/// <summary>
 		/// A list of the player's <see cref="Friend"/>s.
 		/// </summary>
 		public List<Friend> friends;
@@ -130,6 +150,11 @@ namespace Beamable.Common.Api.Social
 		/// </summary>
 		public List<Player> blocked;
 
+		/// <summary>
+		/// A list of all pending invites, both <see cref="FriendInviteDirection.Incoming"/> and <see cref="FriendInviteDirection.Outgoing"/>.
+		/// </summary>
+		public List<FriendInvite> invites;
+		
 		/// <summary>
 		/// Check if a given gamertag is in the <see cref="blocked"/> list.
 		/// </summary>
@@ -149,6 +174,7 @@ namespace Beamable.Common.Api.Social
 		{
 			return friends.Find(f => f.playerId == dbid.ToString()) != null;
 		}
+		
 	}
 
 	[Serializable]
@@ -194,6 +220,52 @@ namespace Beamable.Common.Api.Social
 		/// </summary>
 		public bool isBlocked;
 	}
+
+	[Serializable]
+	public class FriendInvite
+	{
+		/// <summary>
+		/// The player that is inviting the authenticated player, when <see cref="Direction"/> is <see cref="FriendInviteDirection.Incoming"/>.
+		/// The player that was invited by the authenticated player, when <see cref="Direction"/> is <see cref="FriendInviteDirection.Outgoing"/>.
+		/// </summary>
+		public long playerId;
+		
+		/// <summary>
+		/// <see cref="FriendInviteDirection.Incoming"/> means the authenticated player is being invited. 
+		/// <see cref="FriendInviteDirection.Outgoing"/> means the authenticated player is being invited.
+		/// </summary>
+		public string direction;
+
+		public FriendInviteDirection Direction => (FriendInviteDirection)Enum.Parse(typeof(FriendInviteDirection), direction, ignoreCase: true);
+	}
+
+	
+	/// <summary>
+	/// Type that you can subscribe to receive 
+	/// </summary>
+	public class FriendRequestUpdateNotification
+	{
+		/// <summary>
+		/// One of the following values:
+		/// <list type="bullet">
+		/// <item><b>friend<b> => A friend request related to the subscribed player was accepted.</item>
+		/// <item><b>cancel-friend-request<b> => A friend request related to the subscribed player was cancelled or declined.</item>
+		/// </list>
+		/// </summary>
+		public string etype;
+		
+		/// <summary>
+		/// The player that made the friend request.
+		/// </summary>
+		public long player;
+		
+		/// <summary>
+		/// The player that received the friend request.
+		/// </summary>
+		public long friend;
+	}
+	
+	public enum FriendInviteDirection { Incoming, Outgoing }
 
 	public enum SocialThirdParty
 	{

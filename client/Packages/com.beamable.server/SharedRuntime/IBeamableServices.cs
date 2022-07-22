@@ -1,6 +1,7 @@
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Content;
@@ -143,5 +144,10 @@ namespace Beamable.Server
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/commerce-overview">Commerce</a> feature
 		/// </summary>
 		IMicroserviceCommerceApi Commerce { get; }
+
+		/// <summary>
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/chat-overview">Chat</a> feature
+		/// </summary>
+		IMicroserviceChatApi Chat { get; }
 	}
 }

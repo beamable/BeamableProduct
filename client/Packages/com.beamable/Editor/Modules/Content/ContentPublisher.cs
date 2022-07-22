@@ -213,6 +213,12 @@ namespace Beamable.Editor.Content
 				progressPromises.Add(Promise<int>.Successful(batch.Count).Then(_ => CallProgressCallback()));
 			}
 
+			// Remove corrupted flags
+			for (var i = 0; i < publishSet.ToModify.Count; i++)
+			{
+				publishSet.ToModify[i].ContentException = null;
+			}
+
 			return Promise.ExecuteSerially(promiseGenerators).FlatMap(__ =>
 			   Promise.Sequence(progressPromises).Map(_ => workingReferenceSet));
 		}

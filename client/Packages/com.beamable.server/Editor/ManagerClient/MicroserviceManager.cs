@@ -110,6 +110,7 @@ namespace Beamable.Server.Editor.ManagerClient
 		public bool enabled;
 		public bool archived;
 		public string imageId;
+		public string imageCpuArch;
 		public string templateId;
 		public string comments;
 		public List<ServiceDependency> dependencies;

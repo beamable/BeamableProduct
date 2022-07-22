@@ -45,6 +45,9 @@ namespace Beamable.Content
 		[Tooltip("Re-bake content on each build. This option is available only on Standalone build target.")]
 		public bool BakeContentOnBuild = true;
 
+		[Tooltip("This options is used for disable content download exceptions to allow manual repairs.")]
+		public bool DisableContentDownloadExceptions = false;
+
 		public ContentParameterProvider ParameterProvider
 		{
 			get

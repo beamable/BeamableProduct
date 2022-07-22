@@ -1,7 +1,9 @@
+using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -49,6 +51,15 @@ namespace Beamable.Editor.UI.Model
 		[SerializeField]
 		private string _buildPath;
 
+		private bool _BuildShouldRunCustomInitializationHooks;
+
+		private Promise<string> _secret;
+
+		public MicroserviceBuilder(bool runCustomHooks = true)
+		{
+			_BuildShouldRunCustomInitializationHooks = runCustomHooks;
+		}
+
 		public void ForwardEventsTo(MicroserviceBuilder oldBuilder)
 		{
 			if (oldBuilder == null) return;
@@ -63,17 +74,28 @@ namespace Beamable.Editor.UI.Model
 			await TryToGetLastImageId();
 		}
 
+
 		protected override async Task<RunImageCommand> PrepareRunCommand()
 		{
+			var descriptor = (MicroserviceDescriptor)Descriptor;
 			var beamable = BeamEditorContext.Default;
 			await beamable.InitializePromise;
-			var secret = await beamable.GetRealmSecret();
+			var secret =
+				beamable.RealmSecret.GetOrThrow(
+					() => new Exception("Cannot run a microservice without a realm secret."));
 			var cid = beamable.CurrentCustomer.Cid;
+			var pid = beamable.CurrentRealm.Pid;
 			// check to see if the storage descriptor is running.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
 			var connectionStrings = await serviceRegistry.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)Descriptor);
-			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings, isWatch);
+			BeamEditorContext.Default.ServiceScope.GetService<MicroservicesDataModel>().AddLogMessage((MicroserviceDescriptor)Descriptor, new LogMessage
+			{
+				Message = $"Finished preparing {descriptor.Name}. Starting now...",
+				Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+				Level = LogLevel.INFO
+			});
+			return new RunServiceCommand(descriptor, cid, pid, secret, connectionStrings, isWatch, _BuildShouldRunCustomInitializationHooks);
 		}
 
 		public async Task<bool> TryToBuild(bool includeDebuggingTools)
@@ -89,9 +111,9 @@ namespace Beamable.Editor.UI.Model
 				await TryToStop(); // for it to stop.
 				await BeamServicesCodeWatcher.StopClientSourceCodeGenerator((MicroserviceDescriptor)Descriptor);
 			}
-			
+
 			var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
-			
+
 			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, availableArchitectures, includeDebuggingTools, isWatch);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
@@ -135,10 +157,11 @@ namespace Beamable.Editor.UI.Model
 		}
 		public async Task TryToGetLastImageId()
 		{
-			var getChecksum = new GetImageIdCommand(Descriptor);
+			var getChecksum = new GetImageDetailsCommand(Descriptor);
 			try
 			{
-				LastBuildImageId = await getChecksum.StartAsync();
+				var details = await getChecksum.StartAsync();
+				LastBuildImageId = details.imageId;
 			}
 			catch (Exception e)
 			{

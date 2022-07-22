@@ -1,3 +1,7 @@
+#if UNITY_2018_1_OR_NEWER || BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#define BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
+#endif
+
 //
 // @2021 Beamable
 // Creator : Jason Booth
@@ -30,13 +34,16 @@
 // List<T> supports merge operations, give the T has a field called id used to identify which
 // objects are new or changed in the list.
 
-using Beamable.Pooling;
+using Beamable.Common;
+using Beamable.Common.Pooling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 using UnityEngine;
-using UnityEngine.Profiling;
+#endif
 
 namespace Beamable.Serialization
 {
@@ -67,6 +74,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref double? target);
 			bool Serialize(string key, ref string target);
 			bool Serialize(string key, ref StringBuilder target);
+#if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 			bool Serialize(string key, ref DateTime target);
 			bool Serialize(string key, ref Rect target);
 			bool Serialize(string key, ref Vector2 target);
@@ -75,6 +83,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref Color target);
 			bool Serialize(string key, ref Quaternion target);
 			bool Serialize(string key, ref Gradient target);
+#endif
 			bool Serialize<T>(string key, ref T value) where T : class, ISerializable, new();
 			bool SerializeInline<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeList<TList>(string key, ref TList value) where TList : IList, new();
@@ -195,7 +204,7 @@ namespace Beamable.Serialization
 			var data = SmallerJSON.Json.Deserialize(json) as IDictionary<string, object>;
 			if (data == null)
 			{
-				Debug.LogError($"Could not deserialize json into type {typeof(T).FullName}: {json}");
+				BeamableLogger.LogError($"Could not deserialize json into type {typeof(T).FullName}: {json}");
 				return default;
 			}
 			else
@@ -212,28 +221,18 @@ namespace Beamable.Serialization
 
 		public static void Delete(ISerializable obj, IDictionary<string, object> data)
 		{
-			try
-			{
-				Profiler.BeginSample("JsonSerializable::Delete");
-				DeleteStream stream = DeleteStream.Spawn();
-				stream.Init(data);
-				obj.Serialize(stream);
-				stream.Recycle();
-			}
-			finally
-			{
-				Profiler.EndSample();
-			}
+			DeleteStream stream = DeleteStream.Spawn();
+			stream.Init(data);
+			obj.Serialize(stream);
+			stream.Recycle();
 		}
 
 		public static Dictionary<string, object> Serialize(ISerializable obj)
 		{
-			Profiler.BeginSample("JsonSerializable::Serialize");
 			Dictionary<string, object> dict = new Dictionary<string, object>();
 			SaveStream ss = SaveStream.Spawn();
 			ss.Init(dict);
 			obj.Serialize(ss);
-			Profiler.EndSample();
 			ss.Recycle();
 			return dict;
 		}
@@ -292,7 +291,7 @@ namespace Beamable.Serialization
 						}
 						catch (Exception e)
 						{
-							Debug.LogError("Could not parse enum : " + key + " " + asString + "\n" + e.Message);
+							BeamableLogger.LogError("Could not parse enum : " + key + " " + asString + "\n" + e.Message);
 						}
 					}
 					else

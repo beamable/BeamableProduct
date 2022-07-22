@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Beamable.Editor.UI.Model
 {
 	[System.Serializable]
-	public class LogMessageStore
+	public class LogMessageStore : ISerializationCallbackReceiver
 	{
 		public List<LogMessage> Messages = new List<LogMessage>();
 		public List<LogMessage> FilteredMessages = new List<LogMessage>();
@@ -16,6 +16,10 @@ namespace Beamable.Editor.UI.Model
 		public bool HasScrolled;
 		public bool IsTailingLog = true;
 		public string Filter = string.Empty;
+
+		public DateTime LatestReceivedLogTime { get; private set; }
+		[SerializeField]
+		private long _highestLogTimeTicks; // this field is meant to be used for serialization help
 
 		public long DebugCount;
 		public long InfoCount;
@@ -33,6 +37,15 @@ namespace Beamable.Editor.UI.Model
 		public event Action OnSelectedMessageChanged;
 		public void AddMessage(LogMessage message)
 		{
+			if (DateTime.TryParse(message.Timestamp, out var messageTime))
+			{
+				if (messageTime.Ticks < LatestReceivedLogTime.Ticks)
+				{
+					return; //we've already processed logs from this time
+				}
+				LatestReceivedLogTime = messageTime;
+			}
+
 			IncrementCount(message);
 			Messages.Add(message);
 			if (DoesMessagePassFilter(message))
@@ -42,7 +55,6 @@ namespace Beamable.Editor.UI.Model
 
 			OnMessagesUpdated?.Invoke();
 		}
-
 
 		public void ToggleViewDebugEnabled() => SetViewDebugEnabled(!ViewDebugEnabled);
 		public void SetViewDebugEnabled(bool enabled)
@@ -119,6 +131,7 @@ namespace Beamable.Editor.UI.Model
 
 		public void Clear()
 		{
+			LatestReceivedLogTime = DateTime.Now;
 			InfoCount = 0;
 			DebugCount = 0;
 			WarningCount = 0;
@@ -160,6 +173,16 @@ namespace Beamable.Editor.UI.Model
 					FatalCount++;
 					break;
 			}
+		}
+
+		public void OnBeforeSerialize()
+		{
+			_highestLogTimeTicks = LatestReceivedLogTime.Ticks;
+		}
+
+		public void OnAfterDeserialize()
+		{
+			LatestReceivedLogTime = default(DateTime).AddTicks(_highestLogTimeTicks);
 		}
 	}
 

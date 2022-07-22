@@ -16,6 +16,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.Events;
 using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Inventory;
@@ -188,7 +189,7 @@ namespace Beamable.Server
          }
 
          _args = args.Copy();
-         Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
+         Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
 
 
 
@@ -365,14 +366,19 @@ namespace Beamable.Server
 	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization();
 
-            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
-            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-            if (!_ranCustomUserInitializationHooks)
+            // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
+            // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
+            // TODO that will not boot correctly.
+            if (!_args.DisableCustomInitializationHooks)
             {
-               await ResolveCustomInitializationHook();
-               _ranCustomUserInitializationHooks = true;
+                // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+                // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+                if (!_ranCustomUserInitializationHooks)
+                {
+                    await ResolveCustomInitializationHook();
+                    _ranCustomUserInitializationHooks = true;
+                }
             }
-
 
             await ProvideService(QualifiedName);
 
@@ -494,7 +500,7 @@ namespace Beamable.Server
          Log.Debug("starting ws connection");
          void Attempt()
          {
-            Log.Debug("connecting to ws... ");
+            Log.Debug($"connecting to ws ({Host}) ... ");
             var ws = _connectionProvider.Create(Host);
             ws.OnConnect(socket =>
             {
@@ -619,6 +625,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
                .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
+               .AddSingleton<IMicroserviceChatApi, MicroserviceChatApi>()
                .AddSingleton<ReflectionCache>(_ => _reflectionCache)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
@@ -848,7 +855,8 @@ namespace Beamable.Server
             Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
             TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
             RealmConfig= provider.GetRequiredService<IMicroserviceRealmConfigService>(),
-            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>()
+            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
+            Chat = provider.GetRequiredService<IMicroserviceChatApi>()
          };
          return services;
       }
@@ -873,7 +881,8 @@ namespace Beamable.Server
             Tournament = new MicroserviceTournamentApi(stats, requester, ctx),
             TrialData = new MicroserviceCloudDataApi(requester, ctx),
             RealmConfig= new RealmConfigService(requester),
-            Commerce = new MicroserviceCommerceApi(requester)
+            Commerce = new MicroserviceCommerceApi(requester),
+            Chat = new MicroserviceChatApi(requester, ctx)
          };
 
          return services;
