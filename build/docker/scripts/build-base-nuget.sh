@@ -21,5 +21,5 @@ then
     echo "Not running due to dry run."
     exit $?
 else
-    dotnet nuget push ./nupkg/Beamable.Microservice.Runtime.${VERSION_PREFIX}-${SUFFIX}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push ./bin/Release/Beamable.Microservice.Runtime.${VERSION_PREFIX}-${SUFFIX}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 fi
