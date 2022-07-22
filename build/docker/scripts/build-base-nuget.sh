@@ -9,8 +9,6 @@ export SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
 echo $SUFFIX
 if [ -z "$SUFFIX" ]
 then 
-    echo "OH NO2"
-
     dotnet pack -c Release --include-source --include-symbols /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 else
     dotnet pack -c Release --include-source --include-symbols  --version-suffix=${SUFFIX-""} /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
