@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 
 namespace cli;
@@ -27,7 +28,7 @@ public class FakeService : IFakeService
 
 	public async Task<int> AddAsync(int a, int b)
 	{
-		Console.WriteLine("Async! " + _ctx.IsDryRun + " / " + _ctx.Cid);
+		BeamableLogger.Log("Async! " + _ctx.IsDryRun + " / " + _ctx.Cid);
 		await _requester.Request<EmptyResponse>(Method.GET, "/basic/add");
 		await Task.Delay(100);
 		return a + b;

@@ -7,20 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- User can specify Microservices build CPU architecture. 
+- User can specify Microservices build and deploy CPU architecture. 
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
 - Microservices have their initialization validated before publishing. 
   - This is mostly a sanity check to catch some errors we can't catch in the Unity Editor.
   - For now, we don't run any `InitializeServicesAttributes` when validating this.
-  - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process. 
-  
+  - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process.
 - Added microservice archive/unarchive feature.
+- Basic Chat SDK functions to Microservice
+- The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
+- Client Generator logs go to the Microservice Window
+- Send Microservice CPU architecture to Beamable Cloud
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
+- Microservices use a Nuget cache for faster development builds
+- Microservices cache their `dotnet restore` output in the Docker cache for faster development builds
+- Microservices share a realm secret request for faster development builds
 
 ### Fixed
 - Microservice related actions can run while Unity is a background process.
+- Microservice clients created by using the default constructor will now keep working after the default `BeamContext` has been reset.
+- Local Microservices no longer say "could not find servicename:latest"
+- Publish flow locks Asset Database so that no re-imports may happen.
+
+### Removed
+- Unused legacy code around "Auto Run Local Microservices" menu item
+
 
 ## [1.2.6]
 ### Added

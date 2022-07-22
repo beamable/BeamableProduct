@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Common
 		/// <summary>
 		/// A <see cref="IDependencyProvider"/> associated with the context that is executing the UI.
 		/// By default, this will be the default context's dependency scope. However, you can use the <see cref="Refresh(IDependencyProvider)"/>
-		/// method to override the <see cref="Provider"/> property for a branch of the UI Hierarchy. 
+		/// method to override the <see cref="Provider"/> property for a branch of the UI Hierarchy.
 		/// </summary>
 		public IDependencyProvider Provider
 		{
@@ -39,6 +39,8 @@ namespace Beamable.Editor.UI.Common
 				return beamParent.Provider; // our parent is another thing that could have a provider, so defer to that.
 			}
 		}
+
+		public BeamEditorContext Context => Provider.GetService<BeamEditorContext>();
 
 		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{

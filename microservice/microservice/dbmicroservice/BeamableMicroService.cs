@@ -16,6 +16,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.Events;
 using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Inventory;
@@ -188,7 +189,7 @@ namespace Beamable.Server
          }
 
          _args = args.Copy();
-         Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
+         Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
 
 
 
@@ -624,6 +625,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
                .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
+               .AddSingleton<IMicroserviceChatApi, MicroserviceChatApi>()
                .AddSingleton<ReflectionCache>(_ => _reflectionCache)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
@@ -853,7 +855,8 @@ namespace Beamable.Server
             Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
             TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
             RealmConfig= provider.GetRequiredService<IMicroserviceRealmConfigService>(),
-            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>()
+            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
+            Chat = provider.GetRequiredService<IMicroserviceChatApi>()
          };
          return services;
       }
@@ -878,7 +881,8 @@ namespace Beamable.Server
             Tournament = new MicroserviceTournamentApi(stats, requester, ctx),
             TrialData = new MicroserviceCloudDataApi(requester, ctx),
             RealmConfig= new RealmConfigService(requester),
-            Commerce = new MicroserviceCommerceApi(requester)
+            Commerce = new MicroserviceCommerceApi(requester),
+            Chat = new MicroserviceChatApi(requester, ctx)
          };
 
          return services;

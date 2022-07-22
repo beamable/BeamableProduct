@@ -46,7 +46,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					ContainerExists = true,
 					LocalFullAddress = $"{addr}:{port}",
-					LocalPort = port 
+					LocalPort = port
 				});
 			}
 
