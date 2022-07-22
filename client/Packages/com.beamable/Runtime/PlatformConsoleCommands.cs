@@ -545,7 +545,7 @@ namespace Beamable.Api
 			if (BeamContext.All.All(context => context.PlayerId != result))
 			{
 				return $"Cannot find BeamContext with PlayerId: {result}, \n" +
-				       $"valid values are: {string.Join(',',BeamContext.All.Select(context => context.PlayerId).ToArray())}";
+				       $"valid values are: {string.Join(',',BeamContext.All.Select(context => context.PlayerId.ToString()).ToArray())}";
 			}
 
 			ConsoleContextId = result;
