@@ -2,6 +2,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.ConsoleCommands;
 using Beamable.Signals;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -38,7 +39,7 @@ namespace Beamable.AccountManagement
 					});
 				});
 			});
-			return "";
+			return string.Empty;
 		}
 	}
 }

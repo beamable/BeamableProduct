@@ -10,11 +10,14 @@ using Beamable.Common.Api.Groups;
 using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
+using Beamable.Console;
 using Beamable.ConsoleCommands;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -22,20 +25,12 @@ using UnityEngine.Scripting;
 namespace Beamable.Api
 {
 	[BeamableConsoleCommandProvider]
-	public class PlatformConsoleCommands
+	public class PlatformConsoleCommands : ConsoleContextBaseClass
 	{
-		private readonly IDependencyProvider _provider;
-
-		private BeamableConsole Console => _provider.GetService<BeamableConsole>();
-		private CoroutineService CoroutineService => _provider.GetService<CoroutineService>();
-		private IPlatformService PlatformService => _provider.GetService<IPlatformService>();
-		private StatsService StatsService => _provider.GetService<StatsService>();
-
-		[Preserve]
-		public PlatformConsoleCommands(IDependencyProvider provider)
-		{
-			_provider = provider;
-		}
+		private BeamableConsole Console => ActiveContext.ServiceProvider.GetService<BeamableConsole>();
+		private CoroutineService CoroutineService => ActiveContext.ServiceProvider.GetService<CoroutineService>();
+		private IPlatformService PlatformService => ActiveContext.ServiceProvider.GetService<IPlatformService>();
+		private StatsService StatsService => ActiveContext.ServiceProvider.GetService<StatsService>();
 
 		[BeamableConsoleCommand("IDFA", "print advertising identifier", "IDFA")]
 		private string PrintAdvertisingIdentifier(string[] args)
@@ -94,7 +89,7 @@ namespace Beamable.Api
 				message = args[2];
 			}
 			var customData = new Dictionary<string, string> { { "evt", "test" }, { "foo", "123" } };
-			var notification = _provider.GetService<INotificationService>();
+			var notification = ActiveContext.ServiceProvider.GetService<INotificationService>();
 
 			string channel = "test";
 
@@ -155,7 +150,7 @@ namespace Beamable.Api
 		[BeamableConsoleCommand("SUBSCRIBER_DETAILS", "Query subscriber details", "SUBSCRIBER_DETAILS")]
 		public string SubscriberDetails(string[] args)
 		{
-			_provider.GetService<IPubnubNotificationService>().GetSubscriberDetails().Then(rsp =>
+			ActiveContext.ServiceProvider.GetService<IPubnubNotificationService>().GetSubscriberDetails().Then(rsp =>
 			{
 				Console.Log(
 					rsp.authenticationKey + " " +
@@ -187,7 +182,7 @@ namespace Beamable.Api
 				return "Requires dbid";
 			}
 			var dbid = long.Parse(args[0]);
-			_provider.GetService<ISessionService>().GetHeartbeat(dbid)
+			ActiveContext.ServiceProvider.GetService<ISessionService>().GetHeartbeat(dbid)
 				.Then(rsp => { Console.Log(rsp.ToString()); })
 				.Error(err => { Console.Log(String.Format("Error:", err)); });
 
@@ -206,8 +201,8 @@ namespace Beamable.Api
 			}
 			var email = args[0];
 			var password = args[1];
-			var ctx = _provider.GetService<BeamContext>();
-			var auth = _provider.GetService<IAuthService>();
+			var ctx = ActiveContext;
+			var auth = ActiveContext.ServiceProvider.GetService<IAuthService>();
 			auth.Login(email, password)
 				.RecoverWith(ex =>
 				{
@@ -242,7 +237,7 @@ namespace Beamable.Api
 				return "Requires category";
 			}
 
-			var mail = _provider.GetService<MailService>();
+			var mail = ActiveContext.ServiceProvider.GetService<MailService>();
 			mail.GetMail(args[0]).Then(rsp =>
 			{
 				for (int i = 0; i < rsp.result.Count; i++)
@@ -267,8 +262,8 @@ namespace Beamable.Api
 		[BeamableConsoleCommand("MAIL_SEND", "Send a message via the mail system.", "MAIL_SEND <receiver> <body>")]
 		string SendMail(params string[] args)
 		{
-			var mail = _provider.GetService<MailService>();
-			var userId = _provider.GetService<IPlatformService>().UserId;
+			var mail = ActiveContext.ServiceProvider.GetService<MailService>();
+			var userId = ActiveContext.ServiceProvider.GetService<IPlatformService>().UserId;
 			if (args.Length < 2)
 			{
 				return "Requires receiver and body";
@@ -313,7 +308,7 @@ namespace Beamable.Api
 
 			MailUpdateRequest updates = new MailUpdateRequest();
 			updates.Add(long.Parse(mailId), state, acceptAttachments, "");
-			_provider.GetService<MailService>().Update(updates).Then(rsp =>
+			ActiveContext.ServiceProvider.GetService<MailService>().Update(updates).Then(rsp =>
 			{
 				Console.Log(JsonUtility.ToJson(rsp));
 			}).Error(err =>
@@ -335,7 +330,7 @@ namespace Beamable.Api
 			}
 			var email = args[0];
 			var password = args[1];
-			var auth = _provider.GetService<IAuthService>();
+			var auth = ActiveContext.ServiceProvider.GetService<IAuthService>();
 			auth.RegisterDBCredentials(email, password)
 				.Then(rsp => { Console.Log(String.Format("Successfully registered user {0}", email)); })
 				.Error(err => { Console.Log(err.ToString()); });
@@ -346,13 +341,13 @@ namespace Beamable.Api
 		[BeamableConsoleCommand("TOKEN", "Show current access token", "TOKEN")]
 		private string ShowToken(params string[] args)
 		{
-			return _provider.GetService<BeamContext>().AccessToken.Token;
+			return ActiveContext.ServiceProvider.GetService<BeamContext>().AccessToken.Token;
 		}
 
 		[BeamableConsoleCommand("EXPIRE_TOKEN", "Expires the current access token to trigger the refresh flow", "EXPIRE_TOKEN")]
 		public string ExpireAccessToken(params string[] args)
 		{
-			var platform = _provider.GetService<BeamContext>();
+			var platform = ActiveContext.ServiceProvider.GetService<BeamContext>();
 			platform.AccessToken.ExpireAccessToken();
 			var _ = Beam.ResetToScene(args.Length == 1 ? args[0] : null);
 			return "Access Token is now expired. Restarting.";
@@ -361,7 +356,7 @@ namespace Beamable.Api
 		[BeamableConsoleCommand("CORRUPT_TOKEN", "Corrupts the current access token to trigger the refresh flow", "CORRUPT_TOKEN")]
 		public string CorruptAccessToken(params string[] args)
 		{
-			var platform = _provider.GetService<BeamContext>();
+			var platform = ActiveContext.ServiceProvider.GetService<BeamContext>();
 			platform.AccessToken.CorruptAccessToken();
 			return "Access Token has been corrupted.";
 		}
@@ -371,7 +366,7 @@ namespace Beamable.Api
 		{
 			var evt = new SampleCustomEvent("lorem ipsum dolar set amet", "T-T-T-Test the base!");
 
-			var analytics = _provider.GetService<AnalyticsTracker>();
+			var analytics = ActiveContext.ServiceProvider.GetService<AnalyticsTracker>();
 			analytics.TrackEvent(evt);
 			for (var i = 0; i < 1000; ++i)
 			{
@@ -388,7 +383,7 @@ namespace Beamable.Api
 				return "Requires: <listing> <sku>";
 			}
 
-			_provider.GetService<IBeamablePurchaser>().StartPurchase(args[0], args[1])
+			ActiveContext.ServiceProvider.GetService<IBeamablePurchaser>().StartPurchase(args[0], args[1])
 					 .Then((txn) => { Console.Log("Purchase Complete: " + txn.Txid); })
 					 .Error((err) => { Console.Log("Purchase Failed: " + err.ToString()); });
 
@@ -414,7 +409,7 @@ namespace Beamable.Api
 		string GetGroupUser(params string[] args)
 		{
 			long gamerTag;
-			var groups = _provider.GetService<GroupsService>();
+			var groups = ActiveContext.ServiceProvider.GetService<GroupsService>();
 			if (args.Length < 1)
 			{
 				gamerTag = PlatformService.User.id;
@@ -433,7 +428,7 @@ namespace Beamable.Api
 		string GroupLeave(params string[] args)
 		{
 			long gamerTag = PlatformService.UserId;
-			var groups = _provider.GetService<GroupsService>();
+			var groups = ActiveContext.ServiceProvider.GetService<GroupsService>();
 			groups.GetUser(gamerTag)
 				.FlatMap<GroupMembershipResponse>(userRsp =>
 				{
@@ -516,5 +511,51 @@ namespace Beamable.Api
 			}
 		}
 
+		[BeamableConsoleCommand("list_contexts", "list active beam context", "list_contexts")]
+		string ListContexts(string[] args)
+		{
+			StringBuilder builder = new StringBuilder();
+			foreach (BeamContext beamContext in BeamContext.All)
+			{
+				builder.Append(beamContext.PlayerId);
+				builder.Append(string.IsNullOrEmpty(beamContext.PlayerCode) ? "\n" : $"with player code: {beamContext.PlayerCode}\n");
+			}
+			return builder.ToString();
+		}
+
+		[BeamableConsoleCommand("set_console_context", "set active beam console context", "set_console_context <id_or_player_code>")]
+		string SetActiveContext(string[] args)
+		{
+			if (args.Length == 0)
+			{
+				return "Requires context id as parameter";
+			}
+
+			if (!long.TryParse(args[0], out var result))
+			{
+				var contextWithPlayerCode = BeamContext.All.FirstOrDefault(context => context.PlayerCode == args[0]);
+				if(contextWithPlayerCode != null)
+				{
+					ConsoleContextId = contextWithPlayerCode.PlayerId;
+					return $"Console BeamContext successfully set to {contextWithPlayerCode.PlayerId}";
+				}
+				return $"{args[0]} is not a valid Beam Context identifier";
+			}
+
+			if (BeamContext.All.All(context => context.PlayerId != result))
+			{
+				return $"Cannot find BeamContext with PlayerId: {result}, \n" +
+				       $"valid values are: {string.Join(',',BeamContext.All.Select(context => context.PlayerId).ToArray())}";
+			}
+
+			ConsoleContextId = result;
+			return $"Console BeamContext successfully set to {result}";
+		}
+
+		[BeamableConsoleCommand("get_console_context", "get active beam console context", "get_console_context")]
+		string GetActiveContext(string[] args)
+		{
+			return ConsoleContextId.ToString();
+		}
 	}
 }

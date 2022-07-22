@@ -163,6 +163,7 @@ namespace Beamable.Console
 
 			ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...
 
+			ConsoleContextBaseClass.ConsoleContextId = BeamContext.Default.PlayerId;
 			console.OnLog += Log;
 			console.OnExecute += ExecuteCommand;
 			console.OnCommandRegistered += RegisterCommand;
