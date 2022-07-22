@@ -18,7 +18,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 				throw new NotImplementedException("This test should never access the socket"));
 
 			const int threadCount = 500;
-			const int cycleCount = 50000;
+			const int cycleCount = 5000;
 
 			const string uri = "uri";
 			Func<string, object> dumbParser = (raw) => 1;
@@ -37,7 +37,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 							var id = (threadNumber * cycleCount) + i;
 							var req = new WebsocketRequest { id = id };
 							context.AddListener(req, uri, dumbParser);
-							await Task.Delay(1);;
+							await Task.Yield();
 						}
 
 						return true;
