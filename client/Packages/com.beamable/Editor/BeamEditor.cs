@@ -766,7 +766,6 @@ namespace Beamable
 				{
 					if (ex is RequesterException err && err.Status == 400)
 					{
-						requester.Cid = string.Empty;
 						requester.Pid = string.Empty;
 						CurrentRealm = null;
 					
