@@ -1,3 +1,4 @@
+using Beamable.Common;
 using System;
 using System.CommandLine;
 using System.IO;
@@ -78,6 +79,7 @@ namespace Beamable.Server
 				Directory.CreateDirectory(outputDirectory);
 			}
 			generator.GenerateCSharpCode(filePath);
+			Console.WriteLine(Constants.Features.Services.Logs.GENERATED_CLIENT_PREFIX);
 		}
 	}
 }

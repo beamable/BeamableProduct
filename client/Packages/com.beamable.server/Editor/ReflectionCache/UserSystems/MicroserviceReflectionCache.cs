@@ -317,7 +317,23 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
+			public async Task Deploy(ManifestModel model,
+									 CancellationToken token,
+									 Action<IDescriptor> onServiceDeployed = null,
+									 Action<LogMessage> logger = null)
+			{
+				try
+				{
+					AssetDatabase.StartAssetEditing();
+					await DeployInternal(model, token, onServiceDeployed, logger);
+				}
+				finally
+				{
+					AssetDatabase.StopAssetEditing();
+				}
+			}
+
+			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -340,22 +356,14 @@ namespace Beamable.Server.Editor
 
 				var client = de.GetMicroserviceManager();
 				var existingManifest = await client.GetCurrentManifest();
+				var secret = await de.GetRealmSecret();
 				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 
-				var nameToImageId = new Dictionary<string, string>();
+				var nameToImageDetails = new Dictionary<string, ImageDetails>();
 				var enabledServices = new List<string>();
 
 
-				var secret = await de.GetRealmSecret();
-
-
 				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
-
-				if (!MicroserviceConfiguration.Instance.DockerCPUArchitecture.Contains(SUPPORTED_DEPLOY_ARCHITECTURE))
-				{
-					OnDeployFailed?.Invoke(model, $"Deploy failed due to not supported Beamable Portal {MicroserviceConfiguration.Instance.DockerCPUArchitecture} architecture.");
-					return;
-				}
 
 				foreach (var descriptor in Descriptors)
 				{
@@ -378,7 +386,8 @@ namespace Beamable.Server.Editor
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
 																 includeDebugTools: false,
 																 watch: false,
-																 pull: true);
+																 pull: true,
+																 cpuContext: CPUArchitectureContext.DEPLOY);
 
 						await buildCommand.StartAsync();
 
@@ -488,15 +497,23 @@ namespace Beamable.Server.Editor
 						Message = $"Getting Id service=[{descriptor.Name}]"
 					});
 
-					var imageId = await uploader.GetImageId(descriptor);
+					var imageDetails = await uploader.GetImageId(descriptor);
+					var imageId = imageDetails.imageId;
 					if (string.IsNullOrEmpty(imageId))
 					{
-						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
+						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+						return;
+					}
+					// the architecture needs to be one of the supported beamable architectures...
+					if (!CPU_SUPPORTED.Contains(imageDetails.Platform))
+					{
+						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
 
-					nameToImageId.Add(descriptor.Name, imageId);
+					nameToImageDetails.Add(descriptor.Name, imageDetails);
 
 					if (existingServiceToState.TryGetValue(descriptor.Name, out var existingReference))
 					{
@@ -567,7 +584,7 @@ namespace Beamable.Server.Editor
 
 				// Manifest Building:
 				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them).
-				var localServiceReferences = nameToImageId.Select(kvp =>
+				var localServiceReferences = nameToImageDetails.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];
 					return new ServiceReference()
@@ -577,7 +594,8 @@ namespace Beamable.Server.Editor
 						enabled = sa.Enabled,
 						archived = sa.Archived,
 						comments = sa.Comment,
-						imageId = kvp.Value,
+						imageId = kvp.Value.imageId,
+						imageCpuArch = kvp.Value.cpuArch,
 						dependencies = sa.Dependencies
 					};
 				});
@@ -591,6 +609,7 @@ namespace Beamable.Server.Editor
 				{
 					var sa = model.Services[uploadServiceReference.serviceName];
 					uploadServiceReference.enabled = sa.Enabled;
+					uploadServiceReference.templateId = sa.TemplateId;
 					uploadServiceReference.archived = sa.Archived;
 				}
 

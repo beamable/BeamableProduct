@@ -323,7 +323,7 @@ namespace Beamable.Editor.Content.Models
 			_serverLastChanged = content.LastChanged;
 			LastChanged = _serverLastChanged;
 			ContentException = content.ContentException;
-			
+
 			SetupLocalEventListeners();
 		}
 
