@@ -102,7 +102,10 @@ namespace Beamable.Server.Editor
 
 			try
 			{
-				await PullImageCommand.PullBeamService().StartAsync();
+				var local = PullImageCommand.PullBeamService(CPUArchitectureContext.LOCAL).StartAsync();
+				var remote = PullImageCommand.PullBeamService(CPUArchitectureContext.DEPLOY).StartAsync();
+				await local;
+				await remote;
 			}
 			catch
 			{
