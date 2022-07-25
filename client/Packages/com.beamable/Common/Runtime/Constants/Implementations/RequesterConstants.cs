@@ -61,8 +61,6 @@ namespace Beamable.Common
 			/// </summary>
 			public const string HEADER_APPLICATION_VERSION = "X-KS-GAME-VERSION";
 
-			public const string USER_AGENT_UNITY = "Unity";
-			public const string USER_AGENT_UNITY_EDITOR = "UnityEditor";
 		}
 	}
 }
