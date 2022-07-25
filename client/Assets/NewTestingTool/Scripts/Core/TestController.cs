@@ -9,6 +9,8 @@ using UnityEngine.ResourceManagement.Util;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+using static NewTestingTool.Constants.TestConstants;
+
 namespace Beamable.NewTestingTool.Core
 {
 	public class TestController : ComponentSingleton<TestController>
@@ -47,18 +49,12 @@ namespace Beamable.NewTestingTool.Core
 		{
 			if (!automaticallyStart || !Application.isPlaying)
 				return;
-
-			// if (!_isSetup)
-			// {
-			// 	TestableDebug.LogError("\"TestController\" is not properly setup!");
-			// 	return;
-			// }
 			StartCoroutine(InvokeNextTest());
 		}
 
 		private List<RegisteredTest> LoadTestData()
 		{
-			var scriptable = Resources.Load<TestConfiguration>("TEST-SO");
+			var scriptable = Resources.Load<TestConfiguration>(CONFIGURATION_FILE_NAME);
 			if (scriptable == null)
 			{
 				Debug.LogError("Cannot load test scriptable object!");
