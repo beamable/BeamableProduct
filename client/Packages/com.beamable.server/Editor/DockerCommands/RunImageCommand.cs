@@ -170,6 +170,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_NAME_PREFIX = "NAME_PREFIX";
 		public const string ENV_WATCH_TOKEN = "WATCH_TOKEN";
 		public const string ENV_DISABLE_RUN_CUSTOM_HOOK = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
+		public const string ENV_DISABLE_EMOJI = "DOTNET_WATCH_SUPPRESS_EMOJIS";
 
 		public RunServiceCommand(MicroserviceDescriptor service,
 								 string cid,
@@ -190,7 +191,8 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_LOG_LEVEL] = "Debug",
 				[ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix,
 				[ENV_WATCH_TOKEN] = watch.ToString(),
-				[ENV_DISABLE_RUN_CUSTOM_HOOK] = (!shouldRunCustomHooks).ToString()
+				[ENV_DISABLE_RUN_CUSTOM_HOOK] = (!shouldRunCustomHooks).ToString(),
+				[ENV_DISABLE_EMOJI] = "1"
 			};
 
 			if (_watch)
