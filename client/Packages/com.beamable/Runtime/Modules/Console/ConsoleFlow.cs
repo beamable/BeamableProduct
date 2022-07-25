@@ -35,6 +35,7 @@ namespace Beamable.Console
 		private TextAutoCompleter _textAutoCompleter;
 		private ConsoleHistory _consoleHistory;
 		private string consoleText;
+		private string _playerCode;
 
 #if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
         private bool _isMobileKeyboardOpened = false;
@@ -98,6 +99,12 @@ namespace Beamable.Console
 			InitializeConsole();
 		}
 
+		public void ChangePlayerContext(string newPlayerCode)
+		{
+			_playerCode = newPlayerCode;
+			InitializeConsole();
+		}
+
 		private void Awake()
 		{
 			HideConsole();
@@ -157,13 +164,12 @@ namespace Beamable.Console
 			_textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);
 			_consoleHistory = new ConsoleHistory();
 
-			var ctx = BeamContext.InParent(this);
+			var ctx = BeamContext.ForPlayer(_playerCode);
 			await ctx.OnReady;
 			var console = ctx.ServiceProvider.GetService<BeamableConsole>();
 
 			ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...
 
-			ConsoleContextBaseClass.ConsoleContextId = BeamContext.Default.PlayerId;
 			console.OnLog += Log;
 			console.OnExecute += ExecuteCommand;
 			console.OnCommandRegistered += RegisterCommand;

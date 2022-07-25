@@ -1,6 +1,8 @@
-﻿using Beamable.Console;
+﻿using Beamable.Common.Dependencies;
+using Beamable.Console;
 using Beamable.ConsoleCommands;
 using Beamable.Content;
+using BeamableReflection;
 using System;
 using System.Linq;
 using System.Text;
@@ -8,9 +10,17 @@ using System.Text;
 namespace Beamable.Modules.Content
 {
 	[BeamableConsoleCommandProvider]
-	public class ContentCommands : ConsoleContextBaseClass
+	public class ContentCommands
 	{
-		private ContentService ContentService => ActiveContext.ServiceProvider.GetService<ContentService>();
+		private readonly IDependencyProvider _provider;
+		private ContentService ContentService => _provider.GetService<ContentService>();
+		
+		
+		[Preserve]
+		public ContentCommands(IDependencyProvider provider)
+		{
+			_provider = provider;
+		}
 
 		[BeamableConsoleCommand("GET_CONTENT", "Get specific content", "GET_CONTENT <contentId>")]
 		public string GetContent(string[] args)
