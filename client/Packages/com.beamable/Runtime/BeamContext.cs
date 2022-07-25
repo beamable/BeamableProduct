@@ -393,6 +393,7 @@ namespace Beamable
 			builder.AddSingleton<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
+					_environment.SdkVersion,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>(),
 					provider.GetService<OfflineCache>()
