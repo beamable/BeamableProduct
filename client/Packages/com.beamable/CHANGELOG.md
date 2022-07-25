@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content validation callbacks now support invoking private methods in base classes
 - BeamConsole accepts events after RESET command
 - Too many `EventSystem` components on startup
-- Fixed Beamable login error for archived realms
+- Fixed Beamable login error for archived & not existing realms
 
 ## [1.2.8]
 ### Added
