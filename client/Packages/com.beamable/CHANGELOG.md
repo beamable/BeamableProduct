@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable button in Unity toolbar should be in correct position for production packages
 - Content validation callbacks now support invoking private methods in base classes
 - BeamConsole accepts events after RESET command
+- Too many `EventSystem` components on startup
 - Fixed Beamable login error for archived realms
 
 ## [1.2.8]
