@@ -64,11 +64,15 @@ namespace Beamable
 		{
 			DependencyBuilder = new DependencyBuilder();
 			DependencyBuilder.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
-			DependencyBuilder.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
-																											 provider.GetService<AccessTokenStorage>(),
-																											 null,
-																											 provider.GetService<OfflineCache>())
-			{ RequestTimeoutMs = $"{30 * 1000}" }
+			DependencyBuilder.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(
+				                                                   BeamableEnvironment.ApiUrl,
+				                                                   provider.GetService<EnvironmentData>().SdkVersion,
+				                                                   provider.GetService<AccessTokenStorage>(),
+				                                                   null,
+				                                                   provider.GetService<OfflineCache>())
+			                                                   {
+				                                                   RequestTimeoutMs = $"{30 * 1000}"
+			                                                   }
 			);
 			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
 			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
@@ -597,6 +601,16 @@ namespace Beamable
 			try
 			{
 				realm = await realmService.GetRealm();
+
+				if (realm == null && CurrentRealm != null) // reset current realm if last realm don't exist on serverside 
+				{
+					var currentRealmFromServer = await realmService.GetRealms().Map(all => { return all.Find(v => v.Pid == CurrentRealm.Pid); });
+
+					if (currentRealmFromServer == null)
+					{
+						CurrentRealm = null;
+					}
+				}
 			}
 			catch (Exception ex)
 			{
