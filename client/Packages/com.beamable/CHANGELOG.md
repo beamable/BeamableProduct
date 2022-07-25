@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added posibility of disable content serialization exceptions during content download to allow manual repair for corrupted files. 
 - Added to `ISocialApi` methods to make/accept/decline friend requests via `gamertag`s.
 - Added Party SDK as a `PlayerParty` object inside `BeamContext` to manage parties
+- Adds application version headers to all requests sent to Beamable
 
 ### Changed
 - Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
