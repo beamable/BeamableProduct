@@ -141,9 +141,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (!api.IsAuthenticated)
 				return;
 
-			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-													 _microserviceModel.IsRunning ? STOP : Tooltips.Microservice.PLAY_MICROSERVICE);
-			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
+			ChangeStartButtonState(!_microserviceModel.IsBuilding);
+		}
+
+		public override void ChangeStartButtonState(bool isOn, string enabledTooltip = null, string disabledTooltip = null)
+		{
+			enabledTooltip = enabledTooltip ?? GetBuildButtonString(_microserviceModel.IncludeDebugTools,
+																	_microserviceModel.IsRunning ? STOP : Tooltips.Microservice.PLAY_MICROSERVICE);
+			base.ChangeStartButtonState(isOn, enabledTooltip, disabledTooltip);
 		}
 	}
 }

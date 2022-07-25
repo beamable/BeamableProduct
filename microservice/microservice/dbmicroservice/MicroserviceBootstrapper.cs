@@ -47,7 +47,7 @@ namespace Beamable.Server
             {
 	            async Task DelayedCheck()
 	            {
-		            await Task.Yield();
+		            await Task.Delay(1);;
 		            if (promise?.HadAnyErrbacks ?? true) return;
 
 		            BeamableLogger.LogError("Uncaught promise error. {promiseType} {message} {stack}", promise.GetType(), exception.Message, exception.StackTrace);

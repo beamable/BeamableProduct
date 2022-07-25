@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
@@ -14,25 +13,21 @@ using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Serilog.Events;
+using System.Linq;
 using ClientRequest = Beamable.Microservice.Tests.Socket.ClientRequest;
 
 namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTests
 {
     [TestFixture]
-    public class StartTests
+    public class StartTests : CommonTest
     {
-        [SetUp]
-        [TearDown]
-        public void ResetContentInstance()
-        {
-            ContentApi.Instance = new Promise<IContentApi>();
-        }
 
         [Test]
         [NonParallelizable]
         public async Task InitializeAndShutdown()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
@@ -52,7 +47,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleSimpleTraffic()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
@@ -82,8 +77,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleScopedRoute_FailsWithoutPropertyScope()
         {
-            LoggingUtil.Init();
-            TestSocket testSocket = null;
+	        TestSocket testSocket = null;
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
@@ -102,8 +96,13 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "AdminOnly", 1, 1));
 
+
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
+
+
+            allowErrorLogs = true;
+            AssertMissingScopeError();
             Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
@@ -111,7 +110,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleScopedRoute_PassesWithAdminScope()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
@@ -140,7 +139,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleScopedRoute_PassesWithProperScopes()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
@@ -169,7 +168,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleSimple_Inventory()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             const int testCount = 3000;
             var contentResolver = new TestContentResolver(async uri =>
@@ -314,7 +313,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleSimple_AdminCreateLeaderboard(JObject leaderboardTemplateContent, JObject expectedRequestBody)
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             const int testCount = 1;
 
@@ -381,7 +380,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleSimple_FailGetUserViaAccessToken()
         {
-            LoggingUtil.Init();
+	        // Assert.Fail("right away");
+            // LoggingUtil.InitTestCorrelator();
+            allowErrorLogs = true;
             TestSocket testSocket = null;
             const int testCount = 3000;
             var contentResolver = new TestContentResolver(async uri => "{}");
@@ -412,6 +413,14 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             await Task.WhenAll(tasks);
             await Task.Delay(10);
+
+            var notImplementedLogs = GetLogs()
+	            .Where(l => l.Level == LogEventLevel.Error)
+	            .Select(l => l.RenderMessage())
+	            .Where(l => l.Contains("This version of GetUser is not supported in the Microservice environment"))
+	            .ToList();
+            Assert.AreEqual(testCount, notImplementedLogs.Count);
+
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
             //Assert.IsTrue(testSocket.AllMocksCalled());
@@ -422,7 +431,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleLazyContentLoad_EventArrivesWhileContentIsRefreshing()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var eventProvided = false;
             var providerDelay = 1;
@@ -525,7 +534,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleLazyContentLoad_EventUpdateComesLater()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var eventProvided = false;
             var providerDelay = 1;
@@ -614,7 +623,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleLazyContentLoad_EventInitializesFirst()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var eventProvided = false;
             var providerDelay = 25; // the basic service starts much later...
@@ -700,7 +709,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleLazyContentLoad()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver(async uri =>
             {
@@ -737,7 +746,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleConnectionClose_Cleanly()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var connectionIndex = 0;
@@ -790,7 +799,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleConnectionDrop()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var connectionIndex = 0;
@@ -842,7 +851,6 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleConnectionDrop_WhileMessageInFlight()
         {
-            LoggingUtil.Init();
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var connectionIndex = 0;
@@ -859,9 +867,19 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                 {
                     socket
                     .WithName("second")
-                    .AddStandardMessageHandlers(4)
+                    .AddAuthMessageHandlersWithDelay(1000, 1000, 4, 1)
+                    .AddProviderMessageHandlers(5)
                     .AddMessageHandler(
-                       MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<int>(n => n == 500),
+	                    MessageMatcher
+		                    .WithRouteContains("basic/accounts")
+		                    .WithBody<dynamic>(d => d.gamerTag == 123),
+	                    MessageResponder.SuccessWithDelay(25, new User
+	                    {
+		                    email = "fakeEmail"
+	                    }),
+	                    MessageFrequency.OnlyOnce())
+                    .AddMessageHandler(
+                       MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "fakeEmail"),
                        MessageResponder.NoResponse(),
                        MessageFrequency.OnlyOnce()
                     );
@@ -873,14 +891,14 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
 
-            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "Delay", 1, 1, 500));
+            testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "DelayThenGetEmail", 1, 1, 500, 123));
 
             // simulate connection drop.
             Assert.IsTrue(testSocket.AllMocksCalled());
             testSocket.Fault();
 
             // wait longer than the message's delay..
-            await Task.Delay(550);
+            await Task.Delay(1550);
 
             // simulate shutdown event...
             await ms.OnShutdown(this, null);
@@ -892,7 +910,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleOutboundTrafficToPlatform()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var dbid = 123;
@@ -938,7 +956,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task Handle_AckAnEvent()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
@@ -972,7 +990,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleManyEventsOnStartup()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             const int eventCount = 100;
             const int basicProviderDelay = 500;
@@ -1062,7 +1080,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleShutdown_WithDanglingRequest()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var dbid = 123;
@@ -1110,7 +1128,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleShutdown_BlockNewRequest()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var dbid = 123;
@@ -1160,7 +1178,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleAuthDrop()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var dbid = 123;
@@ -1199,16 +1217,17 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 1, dbid));
 
+            await Task.Delay(1000); // the auth cycle will take some time to figure itself out, and if we trigger a shutdown too soon, the request id of the shutdown will get bungled with the re-auth flow.
             await ms.OnShutdown(this, null);
             Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
         [Test]
         [NonParallelizable]
-        [Timeout(120000)]
+        [TimeoutWithTeardown(120000)]
         public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
         {
-            LoggingUtil.Init();
+
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var dbid = 123;
@@ -1217,9 +1236,19 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var authDelay = 100;
             const int failureCount = 2000;
             var sent = false;
+            var noncePromise = new Promise();
+            TestSocketResponseGeneratorAsync nonceSuccess = async res =>
+            {
+	            await noncePromise;
+	            return res.Succeed(new MicroserviceNonceResponse { nonce = "testnonce" });
+            };
+            int successCount = 0;
+            int authFailCount = 0;
+
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
+
                 socket
                 .WithName("first")
                 .AddStandardMessageHandlers()
@@ -1227,31 +1256,41 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageMatcher
                       .WithRouteContains("basic/accounts")
                       .WithBody<dynamic>(d => d.gamerTag == dbid),
-                   MessageResponder.AuthFailure(),
-                   MessageFrequency.Exactly(failureCount))
+                   MessageResponder.Custom(res =>
+                   {
+	                   if (noncePromise.IsCompleted)
+	                   {
+		                   Interlocked.Increment(ref successCount);
+		                   return res.Succeed(new User { email = fakeEmail });
+	                   }
+
+	                   Interlocked.Increment(ref authFailCount);
+	                   return res.AuthFailure();
+                   }),
+                   MessageFrequency.AtLeast(1),
+                   "original failure"
+                   )
                 .AddMessageHandler(
                    MessageMatcher.WithRouteContains("nonce"),
-                   MessageResponder.SuccessAfterCondition(() => sent, new MicroserviceNonceResponse { nonce = "testnonce" }),
-                   MessageFrequency.OnlyOnce()
+                   MessageResponder.CustomAsync(nonceSuccess),
+                   MessageFrequency.OnlyOnce(), "re-nonce"
                 )
                 .AddMessageHandler(
                    MessageMatcher.WithRouteContains("auth"),
-                   MessageResponder.SuccessWithDelay(authDelay, new MicroserviceAuthResponse { result = "ok" }),
-                   MessageFrequency.OnlyOnce()
+                   MessageResponder.SuccessWithDelay(authDelay, ()=>
+                   {
+	                   testSocket.IsAuthenticated = true;
+	                   return new MicroserviceAuthResponse { result = "ok" };
+                   }),
+                   MessageFrequency.OnlyOnce(), "re-auth"
                 )
-                .AddMessageHandler(
-                   MessageMatcher
-                      .WithRouteContains("basic/accounts")
-                      .WithBody<dynamic>(d => d.gamerTag == dbid),
-                   MessageResponder.Success(new User { email = fakeEmail }),
-                   MessageFrequency.Exactly(failureCount)) // allow 2 retries...
-
                 .AddMessageHandler(
                    MessageMatcher
                       .WithPositiveReqId()
                       .WithStatus(200).WithPayload<string>(n => n == fakeEmail),
                    MessageResponder.NoResponse(),
-                   MessageFrequency.Exactly(failureCount)
+                   MessageFrequency.Exactly(failureCount),
+                   "success-after-failure"
                 )
                 ;
 
@@ -1264,20 +1303,23 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var tasks = new List<Task>();
             for (var i = 0; i < failureCount; i++)
             {
-                tasks.Add(Task.Run(() =>
+	            var index = i + 1;
+	            tasks.Add(Task.Run(() =>
                 {
-                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", i + 1, 1, dbid));
+                    testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", index, 1, dbid));
                 }));
             }
-
             await Task.Delay(nonceDelay);
-            sent = true;
+            noncePromise.CompleteSuccess();
 
-            await Task.WhenAll(tasks);
-            // testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 0, dbid));
+            var waitingTask = Task.WhenAll(tasks);
+            await waitingTask;
 
+            await Task.Delay(1000);
             await ms.OnShutdown(this, null);
             Assert.IsTrue(testSocket.AllMocksCalled());
+            Assert.IsTrue(authFailCount <= failureCount); // it cannot be the case that we failed more messages for auth failure than we had original requests.
+            Assert.AreEqual(failureCount, successCount); // we need to make sure that the success message came back for each failure, eventually.
         }
 
     }

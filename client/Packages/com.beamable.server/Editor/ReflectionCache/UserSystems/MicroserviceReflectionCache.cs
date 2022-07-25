@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor;
@@ -22,6 +23,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Docker;
 using static Beamable.Common.Constants.Features.Services;
 using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 using LogMessage = Beamable.Editor.UI.Model.LogMessage;
@@ -315,7 +317,23 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
+			public async Task Deploy(ManifestModel model,
+									 CancellationToken token,
+									 Action<IDescriptor> onServiceDeployed = null,
+									 Action<LogMessage> logger = null)
+			{
+				try
+				{
+					AssetDatabase.StartAssetEditing();
+					await DeployInternal(model, token, onServiceDeployed, logger);
+				}
+				finally
+				{
+					AssetDatabase.StopAssetEditing();
+				}
+			}
+
+			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -338,10 +356,14 @@ namespace Beamable.Server.Editor
 
 				var client = de.GetMicroserviceManager();
 				var existingManifest = await client.GetCurrentManifest();
+				var secret = await de.GetRealmSecret();
 				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 
-				var nameToImageId = new Dictionary<string, string>();
+				var nameToImageDetails = new Dictionary<string, ImageDetails>();
 				var enabledServices = new List<string>();
+
+
+				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
 
 				foreach (var descriptor in Descriptors)
 				{
@@ -358,21 +380,103 @@ namespace Beamable.Server.Editor
 					await forceStop.StartAsync(); // force the image to stop.
 					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
 
+					// Build the image
 					try
 					{
-						var buildCommand = new BuildImageCommand(descriptor,
-															 includeDebugTools: false,
-															 watch: false,
-															 pull: true);
+						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
+																 includeDebugTools: false,
+																 watch: false,
+																 pull: true,
+																 cpuContext: CPUArchitectureContext.DEPLOY);
+
 						await buildCommand.StartAsync();
+
 					}
 					catch (Exception e)
 					{
-						OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
+						OnDeployFailed?.Invoke(model, $"Deploy failed due to {descriptor.Name} failing to build: {e}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 						return;
 					}
+
+					// Try to start the image and talk to it's healthcheck endpoint.
+					try
+					{
+						// We are now verifying the image we just built
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
+
+						// Check to see if the storage descriptor is running.
+						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
+
+						// Create a build that will build an image that doesn't run the custom initialization hooks
+						// Let's run it locally.
+						// At the moment we disable running custom hooks for this verification.
+						// This is because we cannot guarantee the user won't do anything in them to break this.
+						// TODO: Change algorithm to always have StorageObjects running locally during verification process.
+						// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
+						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
+						runServiceCommand.Start();
+
+						async Promise<string> CheckHealthStatus()
+						{
+							var comm = new DockerPortCommand(descriptor, Constants.Features.Services.HEALTH_PORT);
+							var dockerPortResult = await comm.StartAsync();
+
+							if (!dockerPortResult.ContainerExists)
+								return "false";
+
+							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
+							var res = await de.ServiceScope.GetService<IHttpRequester>()
+													.ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+							return res;
+						}
+
+						// Wait until the container has completely booted up and it's Start function has finished.
+						var timeWaitingForBoot = 0f;
+						var isHealthy = false;
+						do
+						{
+							try
+							{
+								var healthStatus = await CheckHealthStatus();
+								if (healthStatus.Contains("true"))
+									isHealthy = true;
+
+								if (healthStatus.Contains("false"))
+									isHealthy = false;
+							}
+							catch
+							{
+								isHealthy = false;
+							}
+
+							await Task.Delay(500, token);
+							timeWaitingForBoot += .5f;
+						} while (timeWaitingForBoot <= 10f && !isHealthy);
+
+						if (!isHealthy)
+						{
+							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
+							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+							// Stop the container since we don't need to keep the local one alive anymore.
+							await new StopImageCommand(descriptor).StartAsync();
+
+							return;
+						}
+
+						// Stop the container since we don't need to keep the local one alive anymore.
+						await new StopImageCommand(descriptor).StartAsync();
+					}
+					catch (Exception e)
+					{
+						OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+						return;
+					}
+
 
 					if (token.IsCancellationRequested)
 					{
@@ -393,15 +497,23 @@ namespace Beamable.Server.Editor
 						Message = $"Getting Id service=[{descriptor.Name}]"
 					});
 
-					var imageId = await uploader.GetImageId(descriptor);
+					var imageDetails = await uploader.GetImageId(descriptor);
+					var imageId = imageDetails.imageId;
 					if (string.IsNullOrEmpty(imageId))
 					{
-						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
+						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+						return;
+					}
+					// the architecture needs to be one of the supported beamable architectures...
+					if (!CPU_SUPPORTED.Contains(imageDetails.Platform))
+					{
+						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
 
-					nameToImageId.Add(descriptor.Name, imageId);
+					nameToImageDetails.Add(descriptor.Name, imageDetails);
 
 					if (existingServiceToState.TryGetValue(descriptor.Name, out var existingReference))
 					{
@@ -472,7 +584,7 @@ namespace Beamable.Server.Editor
 
 				// Manifest Building:
 				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them).
-				var localServiceReferences = nameToImageId.Select(kvp =>
+				var localServiceReferences = nameToImageDetails.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];
 					return new ServiceReference()
@@ -482,7 +594,8 @@ namespace Beamable.Server.Editor
 						enabled = sa.Enabled,
 						archived = sa.Archived,
 						comments = sa.Comment,
-						imageId = kvp.Value,
+						imageId = kvp.Value.imageId,
+						imageCpuArch = kvp.Value.cpuArch,
 						dependencies = sa.Dependencies
 					};
 				});
@@ -496,6 +609,7 @@ namespace Beamable.Server.Editor
 				{
 					var sa = model.Services[uploadServiceReference.serviceName];
 					uploadServiceReference.enabled = sa.Enabled;
+					uploadServiceReference.templateId = sa.TemplateId;
 					uploadServiceReference.archived = sa.Archived;
 				}
 

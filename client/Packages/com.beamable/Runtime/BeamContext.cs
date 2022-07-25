@@ -11,6 +11,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -143,6 +144,9 @@ namespace Beamable
 		[SerializeField]
 		private PlayerParty _playerParty;
 
+		[SerializeField]
+		private PlayerFriends _playerFriends;
+
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -187,6 +191,8 @@ namespace Beamable
 		/// Access the <see cref="IBeamableAPI"/> for this player.
 		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
+
+		public PlayerFriends Friends => _playerFriends = _playerFriends ?? _serviceScope.GetService<PlayerFriends>();
 
 		public string TimeOverride
 		{
@@ -427,8 +433,6 @@ namespace Beamable
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
-
-
 		}
 
 
@@ -457,7 +461,7 @@ namespace Beamable
 			try
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 			}
 			catch (NoConnectivityException)
@@ -600,7 +604,6 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName.ToLower();
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();
