@@ -66,7 +66,7 @@ namespace Beamable.Experimental.Api.Parties
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}
-		
+
 		public Promise InviteToParty(string partyId, string playerId)
 		{
 			return _requester.Request<Unit>(
