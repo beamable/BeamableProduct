@@ -1,0 +1,25 @@
+﻿using Beamable.NewTestingTool.Core.Models;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
+namespace Beamable.NewTestingTool.Scripts.Core
+{
+	public class TestConfiguration : ScriptableObject
+	{
+		[SerializeField] private List<RegisteredTestScene> _registeredTestScenes = new List<RegisteredTestScene>();
+
+		public void RegisterTests(RegisteredTestScene registeredTestScene) =>
+			_registeredTestScenes.Add(registeredTestScene);
+
+		public List<RegisteredTest> GetTestData(string sceneName) =>
+			_registeredTestScenes.FirstOrDefault(x => x.SceneName == sceneName)?.RegisteredTests;
+
+		public void Reset()
+		{
+			foreach (var registeredTestScene in _registeredTestScenes)
+				DestroyImmediate(registeredTestScene, true);
+			_registeredTestScenes.Clear();
+		}
+	}
+}

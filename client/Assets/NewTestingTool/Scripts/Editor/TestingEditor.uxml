@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:engine="UnityEngine.Experimental.UIElements"
+    xmlns:testingTool="Beamable.Editor.NewTestingTool.UI.Components"
+    xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+    xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
+   
+    <engine:VisualElement name="window-main">
+        <testingTool:ActionBarVisualElement name="actionBarVisualElement"/>
+        
+        <engine:VisualElement name="testContainer">
+            
+            <testingTool:ColumnListVisualElement name="scenesList" class="columnList"/>
+            <engine:VisualElement name="separator"/>
+            <testingTool:ColumnListVisualElement name="testablesList" class="columnList"/>
+            <engine:VisualElement name="separator"/>
+            <testingTool:ColumnListVisualElement name="rulesList" class="columnList"/>
+            <engine:VisualElement name="separator"/>
+            <engine:VisualElement name="ruleBody"/>
+            
+        </engine:VisualElement>
+        
+        <engine:Button name="findTestsButton" text="Scan tests"/>
+    </engine:VisualElement>
+
+</UXML>

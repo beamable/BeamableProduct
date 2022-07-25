@@ -1,0 +1,25 @@
+#window-main {
+    flex-grow: 1;
+}
+
+#testContainer {
+    flex-grow: 1;
+    flex-direction: row;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+#ruleBody {
+    flex-grow: 3;
+}
+
+#separator {
+    min-width: 1px;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.columnList {
+    min-width: 125px;
+}
