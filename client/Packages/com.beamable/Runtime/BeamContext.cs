@@ -37,6 +37,7 @@ namespace Beamable
 	{
 		PlayerStats Stats { get; }
 		PlayerLobby Lobby { get; }
+		PlayerParty Party { get; }
 	}
 
 	/// <summary>
@@ -139,6 +140,9 @@ namespace Beamable
 		private PlayerStats _playerStats;
 
 		[SerializeField] private PlayerLobby _playerLobby;
+		
+		[SerializeField]
+		private PlayerParty _playerParty;
 
 		[SerializeField]
 		private PlayerFriends _playerFriends;
@@ -162,6 +166,11 @@ namespace Beamable
 		/// Access the <see cref="PlayerLobby"/> for this context.
 		/// </summary>
 		public PlayerLobby Lobby => _playerLobby = _playerLobby ?? _serviceScope.GetService<PlayerLobby>();
+
+		/// <summary>
+		/// Access the <see cref="PlayerParty"/> for this context.
+		/// </summary>
+		public PlayerParty Party => _playerParty = _playerParty ?? _serviceScope.GetService<PlayerParty>();
 
 		/// <summary>
 		/// <para>
@@ -453,7 +462,7 @@ namespace Beamable
 			try
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 			}
 			catch (NoConnectivityException)
@@ -596,7 +605,6 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName.ToLower();
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();

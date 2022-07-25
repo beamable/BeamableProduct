@@ -460,6 +460,13 @@ namespace Beamable
 		public RealmView ProductionRealm;
 		public EditorUser CurrentUser;
 
+		/// <summary>
+		/// The permissions for the <see cref="CurrentUser"/> in the <see cref="CurrentRealm"/>.
+		/// If either the user or realm are null, the <see cref="Permissions"/> will be at the lowest level.
+		/// </summary>
+		public UserPermissions Permissions =>
+			CurrentUser?.GetPermissionsForRealm(CurrentRealm?.Pid) ?? new UserPermissions(null);
+
 		public bool HasToken => Requester.Token != null;
 		public bool HasCustomer => CurrentCustomer != null && !string.IsNullOrEmpty(CurrentCustomer.Cid);
 		public bool HasRealm => CurrentRealm != null && !string.IsNullOrEmpty(CurrentRealm.Pid);
@@ -468,8 +475,11 @@ namespace Beamable
 		public event Action<CustomerView> OnCustomerChange;
 		public event Action<EditorUser> OnUserChange;
 
+		public Action OnServiceDeleteProceed;
 		public Action OnServiceArchived;
 		public Action OnServiceUnarchived;
+
+		public OptionalString RealmSecret { get; private set; } = new OptionalString();
 
 		public void Init(string playerCode, IDependencyBuilder builder)
 		{
@@ -515,6 +525,9 @@ namespace Beamable
 			requester.Host = BeamableEnvironment.ApiUrl;
 			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
+			// pre-initialize the dispatcher to dodge having to make the dependency scope handling multi-threaded inserts
+			ServiceScope.GetService<BeamableDispatcher>();
+
 			async Promise Initialize()
 			{
 				// Attempts to login with recovery.
@@ -544,6 +557,8 @@ namespace Beamable
 #pragma warning restore CS4014
 						await Promise.Success;
 					}
+
+					await ResetRealmSecret();
 				}
 			}
 
@@ -552,7 +567,8 @@ namespace Beamable
 
 		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
 		{
-			var res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+			AliasResolve res = await GetAliasResolve(aliasOrCid);
+
 			var alias = res.Alias.GetOrElse("");
 			var cid = res.Cid.GetOrThrow();
 
@@ -605,7 +621,7 @@ namespace Beamable
 				if (pid == null)
 				{
 					var realms = await realmService.GetRealms(games.First());
-					realm = realms.First();
+					realm = realms.First(rv => !rv.Archived);
 				}
 				else
 					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
@@ -737,6 +753,40 @@ namespace Beamable
 				}
 				else throw;
 			}
+		}
+
+		private async Promise<AliasResolve> GetAliasResolve(string aliasOrCid)
+		{
+			var requester = ServiceScope.GetService<PlatformRequester>();
+			AliasResolve res = null;
+
+			if (!string.IsNullOrEmpty(requester.Pid)) // check is cached realm archived
+			{
+				try
+				{
+					res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+				}
+				catch (Exception ex)
+				{
+					if (ex is RequesterException err && err.Status == 400)
+					{
+						requester.Pid = string.Empty;
+						CurrentRealm = null;
+
+						res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+					}
+					else
+					{
+						throw ex;
+					}
+				};
+			}
+			else
+			{
+				res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+			}
+
+			return res;
 		}
 
 		public void Logout()
@@ -926,7 +976,6 @@ namespace Beamable
 		public Promise<string> GetRealmSecret()
 		{
 			// TODO this will only work if the current user is an admin.
-
 			return Requester.Request<CustomerResponse>(Method.GET, "/basic/realms/admin/customer").Map(resp =>
 			{
 				var matchingProject = resp.customer.projects.FirstOrDefault(p => p.name.Equals(CurrentRealm.Pid));
@@ -954,6 +1003,22 @@ namespace Beamable
 		{
 			return SwitchRealm(realm.FindRoot(), realm?.Pid);
 		}
+
+		public async Promise<OptionalString> ResetRealmSecret()
+		{
+			try
+			{
+				var secret = await GetRealmSecret();
+				RealmSecret.SetValue(secret);
+			}
+			catch
+			{
+				// this is expected to fail if the user doesn't have permission to get the realm secret.
+				RealmSecret.Clear();
+			}
+			return RealmSecret;
+		}
+
 
 		public async Promise SwitchRealm(RealmView game, string pid)
 		{
@@ -984,6 +1049,7 @@ namespace Beamable
 				CurrentRealm = realm;
 				await SaveRealmInConfig();
 				await ServiceScope.GetService<ContentIO>().FetchManifest();
+				await ResetRealmSecret();
 				OnRealmChange?.Invoke(realm);
 				ProductionRealm = game;
 				return;
@@ -992,9 +1058,9 @@ namespace Beamable
 			{
 				await ServiceScope.GetService<ContentIO>().FetchManifest();
 			}
-
 			ProductionRealm = game;
 			await SaveRealmInConfig();
+			await ResetRealmSecret();
 		}
 
 		private async Promise SaveRealmInConfig()
