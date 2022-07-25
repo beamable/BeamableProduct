@@ -1,0 +1,79 @@
+﻿using Beamable.Common;
+using Beamable.Common.Api;
+
+namespace Beamable.Experimental.Api.Parties
+{
+	public class PartyService : IPartyApi
+	{
+		private readonly IBeamableRequester _requester;
+		private readonly IUserContext _userContext;
+
+		public PartyService(IBeamableRequester requester, IUserContext userContext)
+		{
+			_requester = requester;
+			_userContext = userContext;
+		}
+
+		public Promise<Party> CreateParty(PartyRestriction restriction)
+		{
+			return _requester.Request<Party>(
+				Method.POST,
+				"/parties",
+				new CreatePartyRequest(
+					restriction.ToString(),
+					_userContext.UserId.ToString())
+			);
+		}
+
+		public Promise<Party> JoinParty(string partyId)
+		{
+			return _requester.Request<Party>(
+				Method.PUT,
+				$"/parties/{partyId}"
+			);
+		}
+
+		public Promise<Party> GetParty(string partyId)
+		{
+			return _requester.Request<Party>(
+				Method.GET,
+				$"/parties/{partyId}"
+			);
+		}
+
+		public Promise LeaveParty(string partyId)
+		{
+			return _requester.Request<Unit>(
+				Method.DELETE,
+				$"/parties/{partyId}"
+			).ToPromise();
+		}
+
+		public Promise KickPlayer(string partyId, string playerId)
+		{
+			return _requester.Request<Unit>(
+				Method.DELETE,
+				$"/parties/{partyId}",
+				new PlayerRequest(playerId)
+			).ToPromise();
+		}
+
+		public Promise PromoteToLeader(string partyId, string playerId)
+		{
+			return _requester.Request<Unit>(
+				Method.PUT,
+				$"/parties/{partyId}/promote",
+				new PlayerRequest(playerId)
+			).ToPromise();
+		}
+		
+		public Promise InviteToParty(string partyId, string playerId)
+		{
+			return _requester.Request<Unit>(
+				Method.POST,
+				$"/parties/{partyId}/invite",
+				new PlayerRequest(playerId)
+			).ToPromise();
+		}
+	}
+}
