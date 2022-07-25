@@ -597,6 +597,16 @@ namespace Beamable
 			try
 			{
 				realm = await realmService.GetRealm();
+
+				if (realm == null && CurrentRealm != null) // reset current realm if last realm don't exist on serverside 
+				{
+					var currentRealmFromServer = await realmService.GetRealms().Map(all => { return all.Find(v => v.Pid == CurrentRealm.Pid); });
+
+					if (currentRealmFromServer == null)
+					{
+						CurrentRealm = null;
+					}
+				}
 			}
 			catch (Exception ex)
 			{
