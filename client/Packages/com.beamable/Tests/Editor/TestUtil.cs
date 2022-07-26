@@ -51,7 +51,7 @@ static class TestUtil
 	/// <param name="button"></param>
 	public static void SendTestClick(this Button button)
 	{
-#if UNITY_2019
+#if UNITY_2019 || UNITY_2020
 		using (var evt = MouseDownEvent.GetPooled(button.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
 		{
 			button.SendEvent(evt);
