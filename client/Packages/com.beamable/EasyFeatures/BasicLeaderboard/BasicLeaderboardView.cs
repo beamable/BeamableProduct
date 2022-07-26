@@ -61,7 +61,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 				RankEntries.LoadingIndicator.Toggle(false);
 				return;
 			}
-			
+
 			Debug.Log($"Player Id: {currentContext.PlayerId} => Rank: {system.PlayerRank} / Score: {system.PlayerScore} ");
 
 			if (BackButton != null)

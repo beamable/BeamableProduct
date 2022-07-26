@@ -26,15 +26,15 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 			// This means you can swap the implementation of an underlying system and other views/systems will start talking to yours by default.
 			// This line effectively says:
 			builder.SetupUnderlyingSystemSingleton<
-				
+
 				// Setup an instance of this type inside a BeamContext and return it whenever...
 				SearchableLeaderboardPlayerSystem,
-				
+
 				// ...someone asks that BeamContext for any of these types.
 				BasicLeaderboardPlayerSystem,
 				BasicLeaderboardView.ILeaderboardDeps>();
 		}
-		
+
 		public GameObject LeaderboardPrefab;
 		private BasicLeaderboardFeatureControl _leaderboardInstance;
 
@@ -64,11 +64,12 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 	public class SearchableLeaderboardPlayerSystem : BasicLeaderboardPlayerSystem
 	{
 		public string CurrentAliasFilter = "";
-		
-		public SearchableLeaderboardPlayerSystem(LeaderboardService leaderboardService, IUserContext ctx) : 
-			base(leaderboardService, ctx) { }
 
-		public override IEnumerable<BasicLeaderboardView.BasicLeaderboardViewEntry> Entries => 
+		public SearchableLeaderboardPlayerSystem(LeaderboardService leaderboardService, IUserContext ctx) :
+			base(leaderboardService, ctx)
+		{ }
+
+		public override IEnumerable<BasicLeaderboardView.BasicLeaderboardViewEntry> Entries =>
 			base.Entries.Where(e => string.IsNullOrEmpty(CurrentAliasFilter) || e.Alias.Contains(CurrentAliasFilter));
 	}
 }
