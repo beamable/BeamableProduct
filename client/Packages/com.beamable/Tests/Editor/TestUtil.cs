@@ -15,14 +15,8 @@ using UnityEngine.Events;
 using UnityEditor.Events;
 using UnityEditor.EventSystems;
 using UnityEditor;
-
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-#endif
 static class TestUtil
 {
 	public class TestEditorWindow : EditorWindow
@@ -57,6 +51,7 @@ static class TestUtil
 	/// <param name="button"></param>
 	public static void SendTestClick(this Button button)
 	{
+#if UNITY_2019
 		using (var evt = MouseDownEvent.GetPooled(button.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
 		{
 			button.SendEvent(evt);
@@ -65,5 +60,9 @@ static class TestUtil
 		{
 			button.SendEvent(evt);
 		}
+#elif UNITY_2021_1_OR_NEWER
+		using (var evt = new NavigationSubmitEvent() { target = button })
+			button.SendEvent(evt);
+#endif
 	}
 }
