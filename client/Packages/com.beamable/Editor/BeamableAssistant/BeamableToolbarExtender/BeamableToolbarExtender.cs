@@ -232,11 +232,12 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= versionControlWidth; // Colab/PlasticSCM button
 #endif
 
+
 #if UNITY_2019_4_OR_NEWER // Handling of preview packages
 			if (_hasPreviewPackages || _packageListRequest.IsCompleted)
 			{
 				// Parse package list only if we haven't detected that there are preview packages.
-				var foundPreviewPackages = _packageListRequest.Result.Any(package =>
+				var foundPreviewPackages = _packageListRequest.Result!=null && _packageListRequest.Result.Any(package =>
 				{
 					// referencing https://docs.unity3d.com/Manual/upm-lifecycle.html
 					if (package.registry == null) return false; // no registry implies a local package, which won't trigger.
