@@ -384,10 +384,10 @@ namespace Beamable.Server.Editor
 					try
 					{
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
-						                                         includeDebugTools: false,
-						                                         watch: false,
-						                                         pull: true,
-						                                         cpuContext: CPUArchitectureContext.DEPLOY);
+																 includeDebugTools: false,
+																 watch: false,
+																 pull: true,
+																 cpuContext: CPUArchitectureContext.DEPLOY);
 
 						await buildCommand.StartAsync();
 

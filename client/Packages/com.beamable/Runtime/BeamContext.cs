@@ -37,6 +37,7 @@ namespace Beamable
 	{
 		PlayerStats Stats { get; }
 		PlayerLobby Lobby { get; }
+		PlayerParty Party { get; }
 	}
 
 	/// <summary>
@@ -141,6 +142,9 @@ namespace Beamable
 		[SerializeField] private PlayerLobby _playerLobby;
 
 		[SerializeField]
+		private PlayerParty _playerParty;
+
+		[SerializeField]
 		private PlayerFriends _playerFriends;
 
 		public PlayerAnnouncements Announcements =>
@@ -162,6 +166,11 @@ namespace Beamable
 		/// Access the <see cref="PlayerLobby"/> for this context.
 		/// </summary>
 		public PlayerLobby Lobby => _playerLobby = _playerLobby ?? _serviceScope.GetService<PlayerLobby>();
+
+		/// <summary>
+		/// Access the <see cref="PlayerParty"/> for this context.
+		/// </summary>
+		public PlayerParty Party => _playerParty = _playerParty ?? _serviceScope.GetService<PlayerParty>();
 
 		/// <summary>
 		/// <para>
@@ -384,6 +393,7 @@ namespace Beamable
 			builder.AddSingleton<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
+					_environment.SdkVersion,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>(),
 					provider.GetService<OfflineCache>()

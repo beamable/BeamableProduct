@@ -69,9 +69,9 @@ namespace Beamable.Common.Api.Social
 		public Promise<EmptyResponse> SendFriendRequest(long gamerTag)
 		{
 			return Requester.Request<EmptyResponse>(
-		      Method.POST,
-		      "/basic/social/friends/invite",
-		      new GamerTagRequest { gamerTag = gamerTag }
+			  Method.POST,
+			  "/basic/social/friends/invite",
+			  new GamerTagRequest { gamerTag = gamerTag }
 		   );
 		}
 
@@ -83,7 +83,7 @@ namespace Beamable.Common.Api.Social
 				new GamerTagRequest { gamerTag = gamerTag }
 			);
 		}
-		
+
 		public Promise<EmptyResponse> CancelFriendRequest(long gamerTag)
 		{
 			return Requester.Request<EmptyResponse>(
@@ -117,7 +117,7 @@ namespace Beamable.Common.Api.Social
 	{
 		public string playerId;
 	}
-	
+
 	[Serializable]
 	public class GamerTagRequest
 	{
@@ -139,7 +139,7 @@ namespace Beamable.Common.Api.Social
 		/// The owner of this social list.
 		/// </summary>
 		public long PlayerId;
-		
+
 		/// <summary>
 		/// A list of the player's <see cref="Friend"/>s.
 		/// </summary>
@@ -154,7 +154,7 @@ namespace Beamable.Common.Api.Social
 		/// A list of all pending invites, both <see cref="FriendInviteDirection.Incoming"/> and <see cref="FriendInviteDirection.Outgoing"/>.
 		/// </summary>
 		public List<FriendInvite> invites;
-		
+
 		/// <summary>
 		/// Check if a given gamertag is in the <see cref="blocked"/> list.
 		/// </summary>
@@ -174,7 +174,7 @@ namespace Beamable.Common.Api.Social
 		{
 			return friends.Find(f => f.playerId == dbid.ToString()) != null;
 		}
-		
+
 	}
 
 	[Serializable]
@@ -229,7 +229,7 @@ namespace Beamable.Common.Api.Social
 		/// The player that was invited by the authenticated player, when <see cref="Direction"/> is <see cref="FriendInviteDirection.Outgoing"/>.
 		/// </summary>
 		public long playerId;
-		
+
 		/// <summary>
 		/// <see cref="FriendInviteDirection.Incoming"/> means the authenticated player is being invited. 
 		/// <see cref="FriendInviteDirection.Outgoing"/> means the authenticated player is being invited.
@@ -239,7 +239,7 @@ namespace Beamable.Common.Api.Social
 		public FriendInviteDirection Direction => (FriendInviteDirection)Enum.Parse(typeof(FriendInviteDirection), direction, ignoreCase: true);
 	}
 
-	
+
 	/// <summary>
 	/// Type that you can subscribe to receive 
 	/// </summary>
@@ -253,18 +253,18 @@ namespace Beamable.Common.Api.Social
 		/// </list>
 		/// </summary>
 		public string etype;
-		
+
 		/// <summary>
 		/// The player that made the friend request.
 		/// </summary>
 		public long player;
-		
+
 		/// <summary>
 		/// The player that received the friend request.
 		/// </summary>
 		public long friend;
 	}
-	
+
 	public enum FriendInviteDirection { Incoming, Outgoing }
 
 	public enum SocialThirdParty
