@@ -231,7 +231,7 @@ namespace Beamable.Common.Api.Social
 		public long playerId;
 
 		/// <summary>
-		/// <see cref="FriendInviteDirection.Incoming"/> means the authenticated player is being invited. 
+		/// <see cref="FriendInviteDirection.Incoming"/> means the authenticated player is being invited.
 		/// <see cref="FriendInviteDirection.Outgoing"/> means the authenticated player is being invited.
 		/// </summary>
 		public string direction;
@@ -241,15 +241,21 @@ namespace Beamable.Common.Api.Social
 
 
 	/// <summary>
-	/// Type that you can subscribe to receive 
+	/// Type that you can subscribe to receive
 	/// </summary>
 	public class FriendRequestUpdateNotification
 	{
 		/// <summary>
+		/// Use the <see cref="EventType"/> property for type safe access.
 		/// One of the following values:
 		/// <list type="bullet">
 		/// <item><b>friend<b> => A friend request related to the subscribed player was accepted.</item>
 		/// <item><b>cancel-friend-request<b> => A friend request related to the subscribed player was cancelled or declined.</item>
+		/// <item><b>unfriend<b> => ?? </item>
+		/// <item><b>block<b> => ?? </item>
+		/// <item><b>unblock<b> => ?? </item>
+		/// <item><b>mute<b> => ?? </item>
+		/// <item><b>unmute<b> => ?? </item>
 		/// </list>
 		/// </summary>
 		public string etype;
@@ -263,9 +269,41 @@ namespace Beamable.Common.Api.Social
 		/// The player that received the friend request.
 		/// </summary>
 		public long friend;
+
+		/// <summary>
+		/// The type of event being broadcast
+		/// </summary>
+		public FriendEventType EventType => GetEventType(etype);
+
+		/// <summary>
+		/// Get the event type for some <see cref="etype"/>
+		/// </summary>
+		/// <param name="eType"></param>
+		/// <returns></returns>
+		/// <exception cref="Exception">An exception if the event type is unknown</exception>
+		public static FriendEventType GetEventType(string eType)
+		{
+			switch (eType?.ToLower() ?? null)
+			{
+				case "block": return FriendEventType.Block;
+				case "unblock": return FriendEventType.Unblock;
+				case "friend": return FriendEventType.Friend;
+				case "unfriend": return FriendEventType.Unfriend;
+				case "mute": return FriendEventType.Mute;
+				case "unmute": return FriendEventType.Unmute;
+				case "cancel-friend-request": return FriendEventType.CancelFriendRequest;
+				default:
+					throw new Exception($"Unknown friend event type. etype=[{eType}]");
+			}
+		}
 	}
 
 	public enum FriendInviteDirection { Incoming, Outgoing }
+
+	public enum FriendEventType
+	{
+		Friend, Unfriend, Block, Unblock, Mute, Unmute, CancelFriendRequest
+	}
 
 	public enum SocialThirdParty
 	{
