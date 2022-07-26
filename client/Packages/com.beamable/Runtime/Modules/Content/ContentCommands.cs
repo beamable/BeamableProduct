@@ -14,8 +14,8 @@ namespace Beamable.Modules.Content
 	{
 		private readonly IDependencyProvider _provider;
 		private ContentService ContentService => _provider.GetService<ContentService>();
-		
-		
+
+
 		[Preserve]
 		public ContentCommands(IDependencyProvider provider)
 		{
@@ -29,7 +29,7 @@ namespace Beamable.Modules.Content
 			{
 				return "You need to provide a <contentId>.";
 			}
-			
+
 			var contentID = args[0];
 			var result = string.Empty;
 
