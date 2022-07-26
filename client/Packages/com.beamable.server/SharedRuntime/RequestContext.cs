@@ -1,6 +1,8 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Beamable.Server
@@ -12,7 +14,7 @@ namespace Beamable.Server
 	///
 	/// #### Related Links
 	/// - See Beamable.Server.Microservice script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -37,6 +39,8 @@ namespace Beamable.Server
 		public string Method { get; }
 		public string Body { get; }
 		public HashSet<string> Scopes { get; }
+
+		public RequestHeaders Headers { get; }
 
 		public bool HasScopes(IEnumerable<string> scopes) => HasScopes(scopes.ToArray());
 		public bool HasScopes(params string[] scopes)
@@ -68,12 +72,12 @@ namespace Beamable.Server
 		public bool IsEvent => Path?.StartsWith("event/") ?? false;
 
 		/// <summary>
-		/// Informs us whether or not this request context is pointing to any valid user (userId >= 0). If it isn't, customer must call <see cref="Microservice.AssumeUser"/> in 
+		/// Informs us whether or not this request context is pointing to any valid user (userId >= 0). If it isn't, customer must call <see cref="Microservice.AssumeUser"/> in
 		/// custom Microservice's code before making requests that access player-specific data.
 		/// </summary>
 		public bool IsInvalidUser => _userId < 0;
 
-		public RequestContext(string cid, string pid, long id, int status, long userId, string path, string method, string body, HashSet<string> scopes = null)
+		public RequestContext(string cid, string pid, long id, int status, long userId, string path, string method, string body, HashSet<string> scopes = null, IDictionary<string, string> headers=null)
 		{
 			Cid = cid;
 			Pid = pid;
@@ -85,6 +89,7 @@ namespace Beamable.Server
 			Body = body;
 			Scopes = scopes ?? new HashSet<string>();
 			Scopes.RemoveWhere(string.IsNullOrEmpty);
+			Headers = new RequestHeaders(headers);
 		}
 
 		public RequestContext(string cid, string pid)
@@ -98,7 +103,71 @@ namespace Beamable.Server
 			Status = 0;
 			Body = "";
 			Scopes = new HashSet<string>();
+			Headers = new RequestHeaders();
 		}
 
+	}
+
+	public class RequestHeaders : ReadOnlyDictionary<string, string>
+	{
+		public RequestHeaders(IDictionary<string, string> dictionary=null) : base(dictionary ?? new Dictionary<string, string>())
+		{
+
+		}
+
+		/// <summary>
+		/// Try to read the X-KS-BEAM-SDK-VERSION header from the request.
+		/// The method will return false if the header was not present on the request.
+		/// If the method returns true, then the <see cref="beamableVersion"/> variable will be set to the sdk version that initiated this request
+		/// </summary>
+		/// <param name="beamableVersion">The variable that will be populated with the header information</param>
+		/// <returns>true if the header was found</returns>
+		public bool TryGetBeamableSdkVersion(out string beamableVersion)
+		{
+			beamableVersion = null;
+			return TryGetValue(Constants.Requester.HEADER_BEAMABLE_VERSION, out beamableVersion);
+		}
+
+		/// <summary>
+		/// Try to read the X-KS-GAME-VERSION header from the request.
+		/// The method will return false if the header was not present on the request.
+		/// If the method returns true, then the <see cref="clientVersion"/> variable will be set to the game version that initiated this request.
+		/// The game version is usually set in Unity by using the Application.version field
+		/// </summary>
+		/// <param name="clientVersion">The variable that will be populated with the header information</param>
+		/// <returns>true if the header was found</returns>
+		public bool TryGetClientGameVersion(out string clientVersion)
+		{
+			clientVersion = null;
+			return TryGetValue(Constants.Requester.HEADER_APPLICATION_VERSION, out clientVersion);
+		}
+
+		/// <summary>
+		/// Try to read the X-KS-USER-AGENT header from the request.
+		/// The method will return false if the header was not present on the request.
+		/// If the method returns true, then the <see cref="clientType"/> variable will be set to the type of client that initiated the request.
+		/// Usually, this will be "Unity", or "Portal", or null.
+		/// </summary>
+		/// <param name="clientType">The variable that will be populated with the header information</param>
+		/// <returns>true if the header was found</returns>
+		public bool TryGetClientType(out string clientType)
+		{
+			clientType = null;
+			return TryGetValue(Constants.Requester.HEADER_ENGINE_TYPE, out clientType);
+		}
+
+		/// <summary>
+		/// Try to read the X-KS-USER-AGENT-VERSION header from the request.
+		/// The method will return false if the header was not present on the request.
+		/// If the method returns true, then the <see cref="clientEngineVersion"/> variable will be set to the version of the client type.
+		/// This version number is specific to the value returned from the <see cref="TryGetClientType"/> method.
+		/// </summary>
+		/// <param name="clientEngineVersion">The variable that will be populated with the header information</param>
+		/// <returns>true if the header was found</returns>
+		public bool TryGetClientEngineVersion(out string clientEngineVersion)
+		{
+			clientEngineVersion = null;
+			return TryGetValue(Constants.Requester.HEADER_UNITY_VERSION, out clientEngineVersion);
+		}
 	}
 }

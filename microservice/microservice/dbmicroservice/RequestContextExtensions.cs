@@ -16,6 +16,7 @@ namespace Beamable.Server
          string body = ""; //is there an advantage to keeping it a JsonElement?
          long userID = 0;
          int status = 0;
+         var headers = new Dictionary<string, string>();
          HashSet<string> scopes = new HashSet<string>();
 
          if (string.IsNullOrEmpty(msg))
@@ -58,6 +59,12 @@ namespace Beamable.Server
                   var scopeList = temp.EnumerateArray().Select(elem => elem.GetString()).ToList();
                   scopes = new HashSet<string>(scopeList);
                }
+
+               if (document.RootElement.TryGetProperty("headers", out temp) && temp.ValueKind == JsonValueKind.Object)
+               {
+	               headers = temp.Deserialize<Dictionary<string, string>>();
+               }
+
             }
          }
          catch (Exception e)
@@ -66,7 +73,7 @@ namespace Beamable.Server
             throw;
          }
 
-         context = new RequestContext(args.CustomerID, args.ProjectName, id, status, userID, path, methodName, body, scopes);
+         context = new RequestContext(args.CustomerID, args.ProjectName, id, status, userID, path, methodName, body, scopes, headers);
          return true;
       }
    }
