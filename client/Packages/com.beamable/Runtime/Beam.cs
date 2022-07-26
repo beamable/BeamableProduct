@@ -41,6 +41,7 @@ using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Lobbies;
 using Beamable.Experimental.Api.Matchmaking;
+using Beamable.Experimental.Api.Parties;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using Beamable.Player;
@@ -159,6 +160,10 @@ namespace Beamable
 				// the lobby service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),
 				provider.GetService<IUserContext>()));
+			DependencyBuilder.AddScoped<IPartyApi>(provider => new PartyService(
+                // the party service needs a special instance of the beamable api requester
+               provider.GetService<IBeamableApiRequester>(),
+               provider.GetService<IUserContext>()));
 			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
 				// the presence service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),
@@ -195,11 +200,11 @@ namespace Beamable
 																   // the matchmaking service needs a special instance of the beamable api requester
 																   provider.GetService<IBeamableApiRequester>())
 			);
-			DependencyBuilder.AddSingleton<ISocialApi>(provider => 
-				                                           new SocialService(
-					                                           provider.GetService<IUserContext>(), 
-					                                           provider.GetService<IBeamableRequester>()
-					                                           ));
+			DependencyBuilder.AddSingleton<ISocialApi>(provider =>
+														   new SocialService(
+															   provider.GetService<IUserContext>(),
+															   provider.GetService<IBeamableRequester>()
+															   ));
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
@@ -216,6 +221,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
+			DependencyBuilder.AddScoped<PlayerParty>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
 			DependencyBuilder.AddScoped<PlayerFriends>();
 

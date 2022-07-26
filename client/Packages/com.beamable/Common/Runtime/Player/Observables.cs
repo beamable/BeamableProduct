@@ -430,7 +430,7 @@ namespace Beamable.Common.Player
 			if (_refresh != null)
 			{
 				var list = await _refresh.Invoke();
-				SetData(list);				
+				SetData(list);
 			}
 		}
 	}
