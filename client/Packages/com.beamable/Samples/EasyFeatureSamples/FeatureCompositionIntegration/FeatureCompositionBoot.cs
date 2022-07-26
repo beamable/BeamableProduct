@@ -18,10 +18,10 @@ namespace EasyFeaturesIntegrationExamples.FeatureCompositionIntegration
 				// Gets the Player3D Asset Leaderboard View in the scene and add it to the Leaderboard prefab's BeamableViewGroup.
 				var playerAssetLeaderboardView = FindObjectOfType<Player3DAssetLeaderboardView>();
 				leaderboardFeatureControl.LeaderboardViewGroup.ManagedViews.Add(playerAssetLeaderboardView);
-				
+
 				// Show the leaderboard
 				leaderboardFeatureControl.gameObject.SetActive(true);
-				
+
 				// Setup the back button
 				leaderboardFeatureControl.ReconfigureBackButton(() => SceneManager.LoadScene("FeatureCompositionSample"));
 				leaderboardFeatureControl.Run();

@@ -69,13 +69,13 @@ namespace Beamable.Player
 			await Refresh();
 			_onPlayerJoined?.Invoke(playerId);
 		}
-		
+
 		private async void PlayerLeft(object playerId)
 		{
 			await Refresh();
 			_onPlayerLeft?.Invoke(playerId);
 		}
-		
+
 		private Promise<List<string>> RefreshMembersList() => Promise<List<string>>.Successful(_state.members);
 
 		protected override async Promise PerformRefresh()
@@ -96,7 +96,7 @@ namespace Beamable.Player
 			private set => Value = value;
 		}
 
-		
+
 		/// <summary>
 		/// Checks if the player is in a party.
 		/// </summary>
@@ -105,15 +105,15 @@ namespace Beamable.Player
 		/// <inheritdoc cref="Party.id"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
 		public string Id => SafeAccess(State?.id);
-		
+
 		/// <inheritdoc cref="Party.Restriction"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
 		public PartyRestriction Restriction => SafeAccess(State.Restriction);
-		
+
 		/// <inheritdoc cref="Party.leader"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
 		public string Leader => SafeAccess(State?.leader);
-		
+
 		/// <inheritdoc cref="Party.members"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
 		public ObservableReadonlyList<string> Members { get; private set; }
@@ -129,7 +129,8 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
-		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null) {
+		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null)
+		{
 			State = await _partyApi.CreateParty(restriction);
 			await Members.Refresh();
 			_onPlayerJoined = onPlayerJoined;
@@ -167,7 +168,7 @@ namespace Beamable.Player
 			{
 				return;
 			}
-			
+
 			await _partyApi.InviteToParty(State.id, playerId);
 		}
 
@@ -181,7 +182,7 @@ namespace Beamable.Player
 
 			await _partyApi.PromoteToLeader(State.id, playerId);
 		}
-		
+
 		public void Dispose()
 		{
 			_state = null;

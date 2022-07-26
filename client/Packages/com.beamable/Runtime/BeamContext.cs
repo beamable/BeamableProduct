@@ -140,7 +140,7 @@ namespace Beamable
 		private PlayerStats _playerStats;
 
 		[SerializeField] private PlayerLobby _playerLobby;
-		
+
 		[SerializeField]
 		private PlayerParty _playerParty;
 

@@ -32,8 +32,8 @@ namespace Beamable.Api
 		private CoroutineService CoroutineService => _provider.GetService<CoroutineService>();
 		private IPlatformService PlatformService => _provider.GetService<IPlatformService>();
 		private StatsService StatsService => _provider.GetService<StatsService>();
-		
-		
+
+
 		[Preserve]
 		public PlatformConsoleCommands(IDependencyProvider provider)
 		{
@@ -542,7 +542,7 @@ namespace Beamable.Api
 			if (!long.TryParse(args[0], out var result))
 			{
 				var contextWithPlayerCode = BeamContext.All.FirstOrDefault(context => context.PlayerCode == args[0]);
-				if(contextWithPlayerCode != null)
+				if (contextWithPlayerCode != null)
 				{
 					ConsoleFlow.Instance.ChangePlayerContext(contextWithPlayerCode.PlayerCode);
 					return $"Console BeamContext successfully set to {contextWithPlayerCode.PlayerCode}";
@@ -553,7 +553,7 @@ namespace Beamable.Api
 			if (BeamContext.All.All(context => context.PlayerId != result))
 			{
 				return $"Cannot find BeamContext with PlayerId: {result}, \n" +
-				       $"valid values are: {string.Join(",",BeamContext.All.Select(context => context.PlayerId.ToString()).ToArray())}";
+					   $"valid values are: {string.Join(",", BeamContext.All.Select(context => context.PlayerId.ToString()).ToArray())}";
 			}
 			var contextWithPlayerId = BeamContext.All.FirstOrDefault(context => context.PlayerId == result);
 			ConsoleFlow.Instance.ChangePlayerContext(contextWithPlayerId.PlayerCode);
