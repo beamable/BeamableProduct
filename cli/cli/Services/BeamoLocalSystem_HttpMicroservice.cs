@@ -1,9 +1,11 @@
-using Docker.DotNet.Models;
-using Serilog.Events;
+/**
+ * This part of the class defines how we manage Beamo Services that have the protocol: HttpMicroservices.
+ * It handles default values, how to start the container with its data and other utility functions around this protocol. 
+ */
 
 namespace cli;
 
-public partial class BeamoLocalService
+public partial class BeamoLocalSystem
 {
 	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId, string projectPath, string dockerfilePath, string[] dependencyBeamIds, CancellationToken cancellationToken)
 	{
@@ -81,7 +83,7 @@ public partial class BeamoLocalService
 
 	private async Task PrepareDefaultRemoteProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceRemoteProtocol remote)
 	{
-		remote.HealthCheckEndpoint = "admin/health";
+		remote.HealthCheckEndpoint = "health";
 		remote.HealthCheckPort = "6565";
 		remote.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
 
@@ -91,7 +93,7 @@ public partial class BeamoLocalService
 	private async Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
 	{
 		// TODO: Move this out of here and into another service
-		var secret = await GetRealmSecret();
+		var secret = await _beamo.GetRealmSecret();
 
 		local.CID = _ctx.Cid;
 		local.PID = _ctx.Pid;

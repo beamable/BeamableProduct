@@ -13,9 +13,9 @@ public class ServicesResetCommandArgs : LoginCommandArgs
 
 public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 {
-	private readonly BeamoLocalService _localBeamo;
+	private readonly BeamoLocalSystem _localBeamo;
 
-	public ServicesResetCommand(BeamoLocalService localBeamo) :
+	public ServicesResetCommand(BeamoLocalSystem localBeamo) :
 		base("reset",
 			"Resets services to default settings and cleans up docker images (if any exist).")
 	{

@@ -20,9 +20,9 @@ public class ServicesCommand : AppCommand<ServicesCommandArgs>
 	private readonly ConfigCommand _configCommand;
 	private readonly IRealmsApi _realmsApi;
 	private readonly IAliasService _aliasService;
-	private readonly BeamoLocalService _localBeamo;
+	private readonly BeamoLocalSystem _localBeamo;
 
-	public ServicesCommand(IAppContext ctx, BeamoLocalService localBeamo)
+	public ServicesCommand(IAppContext ctx, BeamoLocalSystem localBeamo)
 		: base("services", "Initialize a new beamable project in the current directory.")
 	{
 		_ctx = ctx;

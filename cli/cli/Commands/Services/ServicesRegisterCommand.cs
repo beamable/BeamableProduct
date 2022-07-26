@@ -82,10 +82,10 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		"Any number of arguments in the format 'NAME=VALUE' representing environment variables Beam-O should set on the container it runs in AWS.");
 
 
-	private readonly BeamoLocalService _localBeamo;
+	private readonly BeamoLocalSystem _localBeamo;
 
 
-	public ServicesRegisterCommand(BeamoLocalService localBeamo) :
+	public ServicesRegisterCommand(BeamoLocalSystem localBeamo) :
 		base("register",
 			"Registers a new service into the local manifest.")
 	{
@@ -230,7 +230,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 	public static bool EnsureServiceDependencies(List<string> existingBeamoIds, ref string[] serviceDependencies, string[] existingDeps = null)
 	{
 		existingDeps ??= Array.Empty<string>();
-		
+
 		if (serviceDependencies == null)
 		{
 			var multiSelectionPrompt = new MultiSelectionPrompt<string>()
@@ -238,13 +238,13 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 				.InstructionsText("Select any number of other Beam-O containers as dependencies of this one. We check for cyclical dependencies so don't worry.")
 				.AddChoices(existingBeamoIds)
 				.NotRequired();
-			
+
 			foreach (var serviceDependency in existingDeps)
 				multiSelectionPrompt.Select(serviceDependency);
 
 			serviceDependencies = AnsiConsole.Prompt(multiSelectionPrompt).ToArray();
 		}
-			
+
 
 		if (serviceDependencies.Length > 0 && !serviceDependencies.All(existingBeamoIds.Contains))
 		{
@@ -259,7 +259,8 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 	public static bool EnsureLocalDockerBuildContext(ref HttpSpecificArgs httpArgs, string currentBuildContextPath = null)
 	{
 		if (string.IsNullOrEmpty(httpArgs.LocalDockerBuildContext))
-			httpArgs.LocalDockerBuildContext = AnsiConsole.Prompt(new TextPrompt<string>("Enter the relative path to a valid [lightskyblue1]Docker Build Context[/]:").DefaultValue(currentBuildContextPath));
+			httpArgs.LocalDockerBuildContext =
+				AnsiConsole.Prompt(new TextPrompt<string>("Enter the relative path to a valid [lightskyblue1]Docker Build Context[/]:").DefaultValue(currentBuildContextPath));
 
 		if (!Directory.Exists(httpArgs.LocalDockerBuildContext))
 		{
@@ -274,7 +275,8 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 	{
 		if (string.IsNullOrEmpty(httpArgs.LocalDockerfileRelativePath))
 			httpArgs.LocalDockerfileRelativePath =
-				AnsiConsole.Prompt(new TextPrompt<string>("Enter the [lightskyblue1]Dockerfile[/]'s path (from the given [lightskyblue1]Docker Build Context[/]'s root):").DefaultValue(currentDockerfile));
+				AnsiConsole.Prompt(
+					new TextPrompt<string>("Enter the [lightskyblue1]Dockerfile[/]'s path (from the given [lightskyblue1]Docker Build Context[/]'s root):").DefaultValue(currentDockerfile));
 
 		var dockerfilePath = Path.Combine(httpArgs.LocalDockerBuildContext, httpArgs.LocalDockerfileRelativePath);
 		if (!File.Exists(dockerfilePath))
@@ -301,7 +303,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		{
 			httpArgs.LocalHealthEndpointAndPort = new string[2];
 
-			var defaults = currHealthEndpointAndPort ?? new string[2]{"health", "6565"};
+			var defaults = currHealthEndpointAndPort ?? new string[2] { "health", "6565" };
 			httpArgs.LocalHealthEndpointAndPort[0] = AnsiConsole.Prompt(new TextPrompt<string>("Enter the [lightskyblue1]Healthcheck Endpoint[/]:").DefaultValue(defaults[0]));
 			httpArgs.LocalHealthEndpointAndPort[1] = AnsiConsole.Prompt(new TextPrompt<string>("Enter the [lightskyblue1]Healthcheck Port[/]:").DefaultValue(defaults[1]));
 		}
@@ -315,26 +317,26 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		if (httpArgs.LocalHotReloadingConfig == null)
 		{
 			var defaults = currentHotReloading ?? new[] { "", "", "", "" };
-			httpArgs.LocalHealthEndpointAndPort = new string[4];
-			httpArgs.LocalHealthEndpointAndPort[0] =
+			httpArgs.LocalHotReloadingConfig = new string[4];
+			httpArgs.LocalHotReloadingConfig[0] =
 				AnsiConsole.Prompt(new TextPrompt<string>("(Optional) Enter the [lightskyblue1]\"Hot-Reloading Enabled\" Endpoint[/]:").DefaultValue(defaults[0]));
-			httpArgs.LocalHealthEndpointAndPort[1] =
+			httpArgs.LocalHotReloadingConfig[1] =
 				AnsiConsole.Prompt(new TextPrompt<string>("(Optional) Enter the [lightskyblue1]\"Hot-Reloading Enabled\" Port[/]:").DefaultValue(defaults[1]));
-			httpArgs.LocalHealthEndpointAndPort[2] =
+			httpArgs.LocalHotReloadingConfig[2] =
 				AnsiConsole.Prompt(new TextPrompt<string>("(Optional) Enter the [lightskyblue1]\"Source File Path\"[/] required for hot reloading:").DefaultValue(defaults[2]));
-			httpArgs.LocalHealthEndpointAndPort[3] =
+			httpArgs.LocalHotReloadingConfig[3] =
 				AnsiConsole.Prompt(new TextPrompt<string>("(Optional) Enter the [lightskyblue1]\"In-Container File Path\"[/] the image expects to find the files in:").DefaultValue(defaults[3]));
 		}
 
-		if (httpArgs.LocalHealthEndpointAndPort.Length != 4)
-			throw new ArgumentOutOfRangeException(nameof(httpArgs.LocalHealthEndpointAndPort), "Must pass two arguments. See 'beam services register --help' for more information.");
+		if (httpArgs.LocalHotReloadingConfig.Length != 4)
+			throw new ArgumentOutOfRangeException(nameof(httpArgs.LocalHotReloadingConfig), "Must pass two arguments. See 'beam services register --help' for more information.");
 	}
 
 	public static void EnsureRemoteHealthEndpointAndPort(ref HttpSpecificArgs httpArgs, string[] currHealthEndpointAndPort = null)
 	{
 		if (httpArgs.RemoteHealthEndpointAndPort == null)
 		{
-			var defaults = currHealthEndpointAndPort ?? new string[2]{"health", "6565"};
+			var defaults = currHealthEndpointAndPort ?? new string[2] { "health", "6565" };
 			httpArgs.RemoteHealthEndpointAndPort = new string[2];
 			httpArgs.RemoteHealthEndpointAndPort[0] = AnsiConsole.Prompt(new TextPrompt<string>("Enter the [lightskyblue1]Remote Healthcheck Endpoint[/]:").DefaultValue(defaults[0]));
 			httpArgs.RemoteHealthEndpointAndPort[1] = AnsiConsole.Prompt(new TextPrompt<string>("Enter the [lightskyblue1]Remote Healthcheck Port[/]:").DefaultValue(defaults[1]));

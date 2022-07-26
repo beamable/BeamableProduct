@@ -13,16 +13,18 @@ public class ServicesModifyCommandArgs : LoginCommandArgs
 	public string BeamoId;
 	public string[] ServiceDependencies;
 
+	public bool EnableOnRemoteDeploy;
+
 	// HttpMicroservice args
 	public HttpSpecificArgs HttpSpecificArgs;
 }
 
 public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 {
-	private readonly BeamoLocalService _localBeamo;
 
+	private readonly BeamoLocalSystem _localBeamo;
 
-	public ServicesModifyCommand(BeamoLocalService localBeamo) :
+	public ServicesModifyCommand(BeamoLocalSystem localBeamo) :
 		base("modify",
 			"Modifies a new service into the local manifest.")
 	{
@@ -33,6 +35,7 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 	{
 		AddOption(BEAM_SERVICE_OPTION_ID, (args, i) => args.BeamoId = i);
 		AddOption(BEAM_SERVICE_OPTION_DEPENDENCIES, (args, i) => args.ServiceDependencies = i.Length == 0 ? null : i);
+
 
 		// For HttpProtocol
 		{
@@ -60,6 +63,8 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 		}
 	}
 
+	
+
 	public override async Task Handle(ServicesModifyCommandArgs args)
 	{
 		// Handle Beamo Id Option 
@@ -68,7 +73,7 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 			if (string.IsNullOrEmpty(args.BeamoId))
 				args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:").AddChoices(existingBeamoIds));
 		}
-		
+
 		var serviceDefinition = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == args.BeamoId);
 
 		// Remove ourselves from the list of beamo ids so we can use this list as the choices for the service dependency things

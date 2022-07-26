@@ -14,10 +14,10 @@ public class ServicesListCommandArgs : LoginCommandArgs
 public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 {
 	private readonly IAppContext _ctx;
-	private readonly BeamoLocalService _localBeamo;
+	private readonly BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
 
-	public ServicesListCommand(IAppContext ctx, BeamoLocalService localBeamo, BeamoService remoteRemoteBeamo) :
+	public ServicesListCommand(IAppContext ctx, BeamoLocalSystem localBeamo, BeamoService remoteRemoteBeamo) :
 		base("ps",
 			"Lists the current local or remote service manifest and status (as summary table or json).")
 	{
@@ -105,7 +105,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 				foreach (var sd in serviceDefinitions)
 				{
 					var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
-					var imageIdMarkup = new Markup($"{sd.ImageId}");
+					var imageIdMarkup = new Markup($"{sd.TruncImageId}");
 					var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
 					var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
 

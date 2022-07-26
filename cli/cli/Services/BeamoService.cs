@@ -52,6 +52,24 @@ public class BeamoService {
 			                services = new List<ServiceStatus>()
 		                });
 	}
+
+	/// <summary>
+	/// TODO: Move this somewhere else...
+	/// </summary>
+	public Task<string> GetRealmSecret()
+	{
+		// TODO this will only work if the current user is an admin (developer).
+		return Task.Run(async () =>
+		{
+			var str = await Requester.Request<CustomerResponse>(Method.GET, "/basic/realms/admin/customer").Map(resp =>
+			{
+				var matchingProject = resp.customer.projects.FirstOrDefault(p => p.name.Equals(Requester.Pid));
+				return matchingProject?.secret ?? "";
+			});
+
+			return str;
+		});
+	}
 }
 
 [System.Serializable]

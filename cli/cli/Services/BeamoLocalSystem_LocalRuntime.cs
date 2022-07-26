@@ -1,9 +1,14 @@
-﻿using Beamable.Common;
+﻿/**
+ * This part of the class has a bunch of utility functions to handle managing running containers of Local Beamo Services.
+ * It handles the way we map BeamoServiceDefinitions to BeamoServiceInstances and how those instances map to individual local containers. 
+ */
+
+using Beamable.Common;
 using Docker.DotNet.Models;
 
 namespace cli;
 
-public partial class BeamoLocalService
+public partial class BeamoLocalSystem
 {
 	/// <summary>
 	/// Forces a synchronization between the current Docker Daemon state and the given BeamoServiceInstance lists. It:
@@ -56,8 +61,13 @@ public partial class BeamoLocalService
 		// For all containers that still exist and any new ones
 		foreach (var dockerContainer in allLocalContainers)
 		{
-			// Check to see if it is a container using a BeamoService image --- skip if not.
-			var beamoId = serviceDefinitions.FirstOrDefault(c => c.ImageId == dockerContainer.ImageID)?.BeamoId;
+			// First, try to match the container by name...
+			var beamoId = serviceDefinitions.FirstOrDefault(c => dockerContainer.Names[0].Split('_')[0].EndsWith(c.BeamoId))?.BeamoId;
+
+			// If failed to fine, match it by image id.
+			if (string.IsNullOrEmpty(beamoId))
+				beamoId = serviceDefinitions.FirstOrDefault(c => c.ImageId == dockerContainer.ImageID)?.BeamoId;
+
 			if (string.IsNullOrEmpty(beamoId))
 			{
 				BeamableLogger.LogWarning($"Skipping container [{dockerContainer.ID}] because no ImageId matched this containers Image={dockerContainer.Image} or ImageId={dockerContainer.ImageID}");
@@ -180,7 +190,7 @@ public partial class BeamoLocalService
 	/// <summary>
 	/// Short hand to check if a service is running or not.
 	/// </summary>
-	public bool IsBeamoServiceRunning(string beamoId)
+	public bool IsBeamoServiceRunningLocally(string beamoId)
 	{
 		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId);
 		return si != null && si.IsRunning;
@@ -189,20 +199,29 @@ public partial class BeamoLocalService
 	/// <summary>
 	/// Short hand to check if a specific service's container is running or not.
 	/// </summary>
-	public bool IsBeamoServiceRunning(string beamoId, string containerName)
+	public bool IsBeamoServiceRunningLocally(string beamoId, string containerName)
 	{
 		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId && si.ContainerName == containerName);
 		return si != null && si.IsRunning;
 	}
 
+	/// <summary>
+	/// Checks if we have the data we need to build the given Beam-O service. Returns true if we can; false, otherwise.
+	/// </summary>
 	public bool VerifyCanBeBuiltLocally(BeamoServiceDefinition beamoServiceDefinition) => VerifyCanBeBuiltLocally(BeamoManifest, beamoServiceDefinition);
 
+	/// <summary>
+	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.BeamoServiceDefinition)"/>.
+	/// </summary>
 	public static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, string beamoId)
 	{
 		var toCheck = manifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId);
 		return VerifyCanBeBuiltLocally(manifest, toCheck);
 	}
 
+	/// <summary>
+	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.BeamoServiceDefinition)"/>.
+	/// </summary>
 	private static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
 		IBeamoLocalProtocol protocol = toCheck.Protocol switch
@@ -219,7 +238,7 @@ public partial class BeamoLocalService
 	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
 	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
 	/// </summary>
-	public async Task DeployToLocalClient(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string, float> buildPullImageProgress = null,
+	public async Task DeployToLocal(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string, float> buildPullImageProgress = null,
 		Action<string> onServiceDeployCompleted = null)
 	{
 		// TODO: Unify progress tracking here

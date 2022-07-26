@@ -1,6 +1,12 @@
-﻿namespace cli;
+﻿/**
+ * This part of the class defines how we manage Beamo Services that have the protocol: EmbeddedMongoDb.
+ * It handles default values, how to start the container and other utility functions around this protocol.
+ * TODO: Always run the mongo-express data-explorer tool as part of the local deployment protocol. 
+ */
 
-public partial class BeamoLocalService
+namespace cli;
+
+public partial class BeamoLocalSystem
 {
 	public async Task<BeamoServiceDefinition> AddDefinition_EmbeddedMongoDb(string beamId, string baseImage, string[] dependencyBeamIds, CancellationToken cancellationToken)
 	{

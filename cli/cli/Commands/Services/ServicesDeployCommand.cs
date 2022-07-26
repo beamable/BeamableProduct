@@ -14,10 +14,10 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 {
 	private readonly IAppContext _ctx;
-	private readonly BeamoLocalService _localBeamo;
+	private readonly BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
 
-	public ServicesDeployCommand(IAppContext ctx, BeamoLocalService localBeamo, BeamoService remoteRemoteBeamo) :
+	public ServicesDeployCommand(IAppContext ctx, BeamoLocalSystem localBeamo, BeamoService remoteRemoteBeamo) :
 		base("deploy",
 			"Deploys services, either locally or remotely (to the current realm).")
 	{
@@ -50,7 +50,8 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 		if (args.Remote)
 		{
-			throw new NotImplementedException();
+			var asd = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, "booooo", new Dictionary<string, string>());
+			AnsiConsole.WriteLine(JsonConvert.SerializeObject(asd));
 		}
 		else
 		{
@@ -61,7 +62,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 					var allProgressTasks = args.BeamoIdsToDeploy.Select(id => ctx.AddTask($"Deploying Service {id}")).ToList();
 					try
 					{
-						await _localBeamo.DeployToLocalClient(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy,
+						await _localBeamo.DeployToLocal(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy,
 							(beamoId, progress) =>
 							{
 								var progressTask = allProgressTasks.First(pt => pt.Description.Contains(beamoId));
