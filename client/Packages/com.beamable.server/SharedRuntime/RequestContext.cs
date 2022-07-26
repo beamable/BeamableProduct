@@ -21,11 +21,30 @@ namespace Beamable.Server
 	public class RequestContext : IUserContext
 	{
 		private readonly long _userId;
+
+		/// <summary>
+		/// The customer id that this request originated from
+		/// </summary>
 		public string Cid { get; }
+
+		/// <summary>
+		/// The realm id that this request originated from
+		/// </summary>
 		public string Pid { get; }
+
+		/// <summary>
+		/// The request id. Will be a positive number if the request is user-generated, and negative if the request is an internal Beamable framework message.
+		/// </summary>
 		public long Id { get; }
+
+		/// <summary>
+		/// The HTTP status code of the operation
+		/// </summary>
 		public int Status { get; }
 
+		/// <summary>
+		/// The gamertag of the user that initiated this request. Be aware that this number can be 0 if there was no authorization header on the original request.
+		/// </summary>
 		public long UserId
 		{
 			get
@@ -35,11 +54,29 @@ namespace Beamable.Server
 			}
 		}
 
+		/// <summary>
+		/// The relative url path for the request
+		/// </summary>
 		public string Path { get; }
+
+		/// <summary>
+		/// The HTTP method used to initiate this request, such as "POST", or "GET"
+		/// </summary>
 		public string Method { get; }
+
+		/// <summary>
+		/// The raw body of this request.
+		/// </summary>
 		public string Body { get; }
+
+		/// <summary>
+		/// Permissions associated with the caller of this request.
+		/// </summary>
 		public HashSet<string> Scopes { get; }
 
+		/// <summary>
+		/// HTTP headers associated with this request
+		/// </summary>
 		public RequestHeaders Headers { get; }
 
 		public bool HasScopes(IEnumerable<string> scopes) => HasScopes(scopes.ToArray());
