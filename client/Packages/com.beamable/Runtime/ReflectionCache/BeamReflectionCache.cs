@@ -57,7 +57,7 @@ namespace Beamable.Reflection
 
 			private HashSet<string> _allTypesContainingDependencyFunctions;
 			private HashSet<string> _allSampleTypesContainingDependencyFunctions;
-				
+
 			private IBeamHintGlobalStorage _hintGlobalStorage;
 
 			public Registry()
@@ -118,7 +118,7 @@ namespace Beamable.Reflection
 					return attrA.Order.CompareTo(attrB.Order);
 				});
 				_allTypesContainingDependencyFunctions.UnionWith(_registerBeamableDependencyFunctions.Select(mb => mb.Info.DeclaringType?.Name));
-				
+
 #if UNITY_EDITOR && BEAMABLE_DEVELOPER
 				// In order to keep our samples in project and make the workflow simple enough, we keep track of all the attributes in the Sample folder.
 				// By default, none of them are registered. We have an editor utility that allows us to say "Register only the ones declared in these types".
@@ -132,7 +132,7 @@ namespace Beamable.Reflection
 				}));
 				_allSampleTypesContainingDependencyFunctions.UnionWith(_sampleBeamableDependencyFunctions.Select(mb=>mb.Info.DeclaringType?.Name));
 #endif
-				
+
 			}
 
 			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintGlobalStorage = hintGlobalStorage;
@@ -144,7 +144,7 @@ namespace Beamable.Reflection
 			{
 				IEnumerable<MemberAttribute> toRegister = null;
 
-				
+
 #if UNITY_EDITOR && BEAMABLE_DEVELOPER
 				// In order to keep our samples in project and make the workflow simple enough, we keep track of all the attributes in the Sample folder.
 				// By default, none of them are registered. We have an editor utility that allows us to say "Register only the ones declared in these types".

@@ -161,9 +161,9 @@ namespace Beamable
 				provider.GetService<IBeamableApiRequester>(),
 				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddScoped<IPartyApi>(provider => new PartyService(
-                // the party service needs a special instance of the beamable api requester
-               provider.GetService<IBeamableApiRequester>(),
-               provider.GetService<IUserContext>()));
+			   // the party service needs a special instance of the beamable api requester
+			   provider.GetService<IBeamableApiRequester>(),
+			   provider.GetService<IUserContext>()));
 			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
 				// the presence service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),

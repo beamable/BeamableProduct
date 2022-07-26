@@ -329,12 +329,12 @@ namespace Beamable.Api
 				request.SetRequestHeader(Constants.Requester.HEADER_PID, Pid);
 			}
 
-			#if !BEAMABLE_DISABLE_VERSION_HEADERS
+#if !BEAMABLE_DISABLE_VERSION_HEADERS
 			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, _beamableVersion.ToString());
 			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
 			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
 			request.SetRequestHeader(Constants.Requester.HEADER_ENGINE_TYPE, $"Unity-{Application.platform}");
-			#endif
+#endif
 
 			if (includeAuthHeader)
 			{
