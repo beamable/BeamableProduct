@@ -275,6 +275,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 						// before starting anything, make sure the beam context has initialized, so that the dispatcher can be accessed later.
 						await BeamEditorContext.Default.InitializePromise;
+						await MicroserviceEditor.WaitForInit();
 
 						_process.Start();
 						_started = true;
