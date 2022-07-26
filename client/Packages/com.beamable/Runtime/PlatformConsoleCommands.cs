@@ -553,7 +553,7 @@ namespace Beamable.Api
 			if (BeamContext.All.All(context => context.PlayerId != result))
 			{
 				return $"Cannot find BeamContext with PlayerId: {result}, \n" +
-				       $"valid values are: {string.Join(',',BeamContext.All.Select(context => context.PlayerId.ToString()).ToArray())}";
+				       $"valid values are: {string.Join(",",BeamContext.All.Select(context => context.PlayerId.ToString()).ToArray())}";
 			}
 			var contextWithPlayerId = BeamContext.All.FirstOrDefault(context => context.PlayerId == result);
 			ConsoleFlow.Instance.ChangePlayerContext(contextWithPlayerId.PlayerCode);
