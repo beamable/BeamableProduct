@@ -1,6 +1,10 @@
-﻿using Beamable.Console;
+﻿using Beamable.Common.Dependencies;
+using Beamable.Console;
 using Beamable.ConsoleCommands;
+using Beamable.Content;
+using BeamableReflection;
 using System;
+using System.Linq;
 using System.Text;
 
 namespace Beamable.Modules.Content
@@ -8,6 +12,16 @@ namespace Beamable.Modules.Content
 	[BeamableConsoleCommandProvider]
 	public class ContentCommands
 	{
+		private readonly IDependencyProvider _provider;
+		private ContentService ContentService => _provider.GetService<ContentService>();
+		
+		
+		[Preserve]
+		public ContentCommands(IDependencyProvider provider)
+		{
+			_provider = provider;
+		}
+
 		[BeamableConsoleCommand("GET_CONTENT", "Get specific content", "GET_CONTENT <contentId>")]
 		public string GetContent(string[] args)
 		{
@@ -15,21 +29,18 @@ namespace Beamable.Modules.Content
 			{
 				return "You need to provide a <contentId>.";
 			}
+			
+			var contentID = args[0];
+			var result = string.Empty;
 
-			API.Instance.Then(api =>
+			ContentService.GetContent(contentID).Then(contentObject =>
 			{
-				var contentID = args[0];
-				var result = string.Empty;
-
-				api.ContentService.GetContent(contentID).Then(contentObject =>
-				{
-					result += contentObject == null
-						? $"Content for given id \"{contentID}\" does not exist."
-						: $"{contentObject.ToJson()}\n";
-				});
-
-				ConsoleFlow.Instance.Log(result);
+				result += contentObject == null
+					? $"Content for given id \"{contentID}\" does not exist."
+					: $"{contentObject.ToJson()}\n";
 			});
+
+			ConsoleFlow.Instance.Log(result);
 
 			return string.Empty;
 		}
@@ -43,28 +54,25 @@ namespace Beamable.Modules.Content
 			var startIndex = 0;
 			var result = new StringBuilder();
 
-			API.Instance.Then(api =>
+			namespaceId = ContentService.CurrentDefaultManifestID;
+			SetParameters();
+
+			ContentService.GetManifest(filter, namespaceId).Then(manifest =>
 			{
-				namespaceId = api.ContentService.CurrentDefaultManifestID;
-				SetParameters();
-
-				api.ContentService.GetManifest(filter, namespaceId).Then(manifest =>
+				result.Append("\nContent list of \"{namespaceId}\" namespace:\n\n");
+				if (manifest.entries.Count == 0)
 				{
-					result.Append("\nContent list of \"{namespaceId}\" namespace:\n\n");
-					if (manifest.entries.Count == 0)
-					{
-						result.Append("Content list is empty.");
-					}
+					result.Append("Content list is empty.");
+				}
 
-					var amount = Math.Min(startIndex + elementsLimit, manifest.entries.Count);
-					for (var index = startIndex; index < amount; index++)
-					{
-						var content = manifest.entries[index];
-						result.AppendFormat("{0} [{1}]\n", content.contentId, content.version);
-					}
+				var amount = Math.Min(startIndex + elementsLimit, manifest.entries.Count);
+				for (var index = startIndex; index < amount; index++)
+				{
+					var content = manifest.entries[index];
+					result.AppendFormat("{0} [{1}]\n", content.contentId, content.version);
+				}
 
-					ConsoleFlow.Instance.Log(result.ToString());
-				});
+				ConsoleFlow.Instance.Log(result.ToString());
 			});
 			return string.Empty;
 
@@ -123,11 +131,8 @@ namespace Beamable.Modules.Content
 		[BeamableConsoleCommand("CONTENT_NAMESPACE", "Current content namespace", "CONTENT_NAMESPACE")]
 		public string ContentNamespace(string[] args)
 		{
-			API.Instance.Then(api =>
-			{
-				var currentNamespace = api.ContentService.CurrentDefaultManifestID;
-				ConsoleFlow.Instance.Log(currentNamespace);
-			});
+			var currentNamespace = ContentService.CurrentDefaultManifestID;
+			ConsoleFlow.Instance.Log(currentNamespace);
 			return string.Empty;
 		}
 
@@ -139,19 +144,16 @@ namespace Beamable.Modules.Content
 				return "You need to provide a <namespaceId>";
 			}
 
-			API.Instance.Then(api =>
-			{
-				var newNamespaceId = args[0];
-				var oldNamespaceId = api.ContentService.CurrentDefaultManifestID;
+			var newNamespaceId = args[0];
+			var oldNamespaceId = ContentService.CurrentDefaultManifestID;
 
-				api.ContentService.SwitchDefaultManifestID(newNamespaceId);
+			ContentService.SwitchDefaultManifestID(newNamespaceId);
 
-				var result = oldNamespaceId != api.ContentService.CurrentDefaultManifestID ?
-					$"Namespace switched from \"{oldNamespaceId}\" to \"{newNamespaceId}\"" :
-					$"Can't switch namespace from \"{oldNamespaceId}\" to \"{newNamespaceId}\". Check if given namespace exists.";
+			var result = oldNamespaceId != ContentService.CurrentDefaultManifestID ?
+				$"Namespace switched from \"{oldNamespaceId}\" to \"{newNamespaceId}\"" :
+				$"Can't switch namespace from \"{oldNamespaceId}\" to \"{newNamespaceId}\". Check if given namespace exists.";
 
-				ConsoleFlow.Instance.Log(result);
-			});
+			ConsoleFlow.Instance.Log(result);
 
 			return string.Empty;
 		}
