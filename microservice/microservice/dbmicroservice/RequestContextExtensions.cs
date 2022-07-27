@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Beamable.Common;
+using Newtonsoft.Json;
 
 namespace Beamable.Server
 {
@@ -62,7 +63,7 @@ namespace Beamable.Server
 
                if (document.RootElement.TryGetProperty("headers", out temp) && temp.ValueKind == JsonValueKind.Object)
                {
-	               headers = temp.Deserialize<Dictionary<string, string>>();
+	               headers = JsonConvert.DeserializeObject<Dictionary<string, string>>(temp.GetRawText());
                }
 
             }
