@@ -144,9 +144,6 @@ namespace Beamable
 		[SerializeField]
 		private PlayerParty _playerParty;
 
-		[SerializeField]
-		private PlayerFriends _playerFriends;
-
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -192,7 +189,10 @@ namespace Beamable
 		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
 
-		public PlayerFriends Friends => _playerFriends = _playerFriends ?? _serviceScope.GetService<PlayerFriends>();
+		/// <summary>
+		/// Access the player's friends and blocked enemies.
+		/// </summary>
+		public PlayerSocial Social => _serviceScope.GetService<PlayerSocial>();
 
 		public string TimeOverride
 		{
