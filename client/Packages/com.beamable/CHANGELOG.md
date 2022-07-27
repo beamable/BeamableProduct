@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
 - Added "experimental" package status support to the `PackageVersion` utility
 - `Cid` and `Pid` field to `IBeamableRequester` interface
-- `Friends` list accessible through the `BeamContext`
+- `Social` list accessible through the `BeamContext`
 - User's realm permission overrides apply in editor
 - Added posibility of disable content serialization exceptions during content download to allow manual repair for corrupted files. 
 - Added to `ISocialApi` methods to make/accept/decline friend requests via `gamertag`s.
