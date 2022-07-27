@@ -6,13 +6,14 @@ using System.Reflection;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
 using Serilog;
+using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
 	public static class CommandLine<TMicroService> where TMicroService : Microservice
 	{
 
-		public static int Main(string[] args)
+		public static async Task<int> Main(string[] args)
 		{
 			var rootCommand = new RootCommand
 			{
@@ -36,10 +37,10 @@ namespace Beamable.Server
 			{
 				args = new[] { "run" };
 			}
-			return rootCommand.Invoke(args);
+			return await rootCommand.InvokeAsync(args);
 		}
 
-		static async void Run()
+		static async Task Run()
 		{
 			try
 			{

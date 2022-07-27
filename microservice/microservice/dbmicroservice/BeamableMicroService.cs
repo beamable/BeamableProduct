@@ -240,8 +240,7 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         var setupWebsocketTask = SetupWebsocket(socket);
-         setupWebsocketTask.Wait();
+         await SetupWebsocket(socket);
       }
 
       public void RunForever()
