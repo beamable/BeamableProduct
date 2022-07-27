@@ -144,7 +144,7 @@ namespace Beamable.Editor.UI.Model
 				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
 				{
 					var archiveServicePopup = new ArchiveServicePopupVisualElement();
-					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility($"{ARCHIVE_WINDOW_TEXT} {_serviceDescriptor.Name}", archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility($"{ARCHIVE_WINDOW_HEADER} {_serviceDescriptor.Name}", archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
 					archiveServicePopup.onClose += () => popupWindow.Close();
 					archiveServicePopup.onConfirm += Archive;
 				});
