@@ -1,7 +1,5 @@
-using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -195,14 +193,21 @@ namespace Beamable.Editor.UI.Buss
 		{
 			base.OnDestroy();
 
-			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
+			if (_filterToggle != null)
+			{
+				_filterToggle.OnValueChanged -= OnFilterToggleClicked;
+			}
 
-			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
-			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
-			_navigationWindow.SelectionChanged -= SetScroll;
+			if (_navigationWindow != null)
+			{
+				_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
+				_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
+				_navigationWindow.SelectionChanged -= SetScroll;
+				_navigationWindow.Destroy();
+			}
 
-			_navigationWindow.Destroy();
-			UndoSystem<BussStyleRule>.DeleteAllRecords();
+			// TODO: commented temporarily, causes null exception while opening editor with Theme Manager tab opened
+			//UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
 	}
 }

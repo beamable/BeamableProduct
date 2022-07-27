@@ -172,7 +172,7 @@ namespace Beamable.UI.Buss
 		{
 			var propertyProvider = new SerializableValueObject();
 			propertyProvider.Set(property);
-			return new BussPropertyProvider() {key = key, property = propertyProvider};
+			return new BussPropertyProvider {key = key, property = propertyProvider};
 		}
 
 		public IBussProperty GetProperty()

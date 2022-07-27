@@ -1,6 +1,8 @@
+using Beamable.Common;
 using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -40,14 +42,10 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			OptionalInstance.DoIfExists(callback);
 		}
 
-#if BEAMABLE_DEVELOPER
-		[SerializeField]
-#endif
-		private List<BussStyleSheet> _defaultBeamableStyleSheets = null;
-
 		[SerializeField] private List<BussStyleSheet> _globalStyleSheets = new List<BussStyleSheet>();
 
-		private List<BussElement> _rootBussElements = new List<BussElement>();
+		private readonly List<BussStyleSheet> _defaultBeamableStyleSheets = new List<BussStyleSheet>();
+		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
 		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
 		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
@@ -94,6 +92,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			// This should happen only in editor
 			if (styleSheet == null) return;
 
+			RefreshDefaultStyles();
+
 			if (_defaultBeamableStyleSheets.Contains(styleSheet) || _globalStyleSheets.Contains(styleSheet))
 			{
 				foreach (BussElement bussElement in _rootBussElements)
@@ -108,6 +108,16 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 					OnStyleSheetChanged(bussElement, styleSheet);
 				}
 			}
+		}
+
+		private void RefreshDefaultStyles()
+		{
+			_defaultBeamableStyleSheets.Clear();
+			BussStyleSheet[] bussStyleSheets = Resources
+			                                   .LoadAll<BussStyleSheet>(
+				                                   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
+			                                   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
+			_defaultBeamableStyleSheets.AddRange(bussStyleSheets);
 		}
 
 		private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)

@@ -30,6 +30,11 @@ namespace Beamable.Common
 					public const string COPY_TO = "Copy to";
 					public const string REMOVE = "Remove";
 				}
+
+				public static partial class Paths
+				{
+					public const string FACTORY_STYLES_RESOURCES_PATH = "DefaultStyleSheets";
+				}
 			}
 		}
 	}
