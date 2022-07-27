@@ -1,10 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Components;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
