@@ -232,7 +232,7 @@ namespace Beamable.Common.Api.Social
 
 		/// <summary>
 		/// <see cref="FriendInviteDirection.Incoming"/> means the authenticated player is being invited.
-		/// <see cref="FriendInviteDirection.Outgoing"/> means the authenticated player is being invited.
+		/// <see cref="FriendInviteDirection.Outgoing"/> means the authenticated player sending an invite to another player.
 		/// </summary>
 		public string direction;
 

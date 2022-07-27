@@ -97,7 +97,7 @@ namespace Beamable.Player
 
 		private Promise<List<PlayerFriend>> FriendsListRefresh()
 		{
-			var friends = new List<PlayerFriend>();
+			var friends = new List<PlayerFriend>(_socialList.friends.Count);
 			foreach (var friend in _socialList.friends)
 			{
 				friends.Add(new PlayerFriend(this)
@@ -111,7 +111,7 @@ namespace Beamable.Player
 
 		private Promise<List<BlockedPlayer>> BlockedListRefresh()
 		{
-			var blocked = new List<BlockedPlayer>();
+			var blocked = new List<BlockedPlayer>(_socialList.blocked.Count);
 			foreach (var block in _socialList.blocked)
 			{
 				blocked.Add(new BlockedPlayer(this) {playerId = long.Parse(block.playerId)});
