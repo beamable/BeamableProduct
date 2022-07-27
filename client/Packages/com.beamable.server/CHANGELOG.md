@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
 - Client Generator logs go to the Microservice Window
 - Send Microservice CPU architecture to Beamable Cloud
+- Headers are available on the service `Context` for application version, unity version, game version, and Beamable sdk version
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
