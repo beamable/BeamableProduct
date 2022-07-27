@@ -249,7 +249,7 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			_selectorLabelComponent.Setup(StyleRule, _styleSheet, PrepareCommands());
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet, PrepareCommands(), PrepareReadonlyCommands());
 			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 
@@ -274,6 +274,24 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			commands.Add(new GenericMenuCommand(Features.Buss.MenuItems.REMOVE, RemoveStyleClicked));
+
+			return commands;
+		}
+		
+		private List<GenericMenuCommand> PrepareReadonlyCommands()
+		{
+			List<GenericMenuCommand> commands = new List<GenericMenuCommand>();
+
+			List<BussStyleSheet> writableStyleSheets = new List<BussStyleSheet>(_writableStyleSheets);
+			writableStyleSheets.Remove(_styleSheet);
+
+			foreach (BussStyleSheet targetStyleSheet in writableStyleSheets)
+			{
+				commands.Add(new GenericMenuCommand($"{Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}", () =>
+				{
+					BussStyleSheetUtility.CopySingleStyle(targetStyleSheet, _styleRule);
+				}));
+			}
 
 			return commands;
 		}

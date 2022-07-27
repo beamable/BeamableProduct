@@ -21,22 +21,27 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussStyleSheet _styleSheet;
 		private List<GenericMenuCommand> _commands;
+		private List<GenericMenuCommand> _readonlyCommands;
 
 #if UNITY_2018
 		public BussSelectorLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.2018.uss") { }
 #elif UNITY_2019_1_OR_NEWER
-				public BussSelectorLabelVisualElement() : base(
+		public BussSelectorLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss") { }
 #endif
 
-		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet, List<GenericMenuCommand> commands)
+		public void Setup(BussStyleRule styleRule,
+		                  BussStyleSheet styleSheet,
+		                  List<GenericMenuCommand> commands,
+		                  List<GenericMenuCommand> readonlyCommands)
 		{
 			base.Init();
 
 			_styleRule = styleRule;
 			_styleSheet = styleSheet;
 			_commands = commands;
+			_readonlyCommands = readonlyCommands;
 
 			Refresh();
 		}
@@ -66,6 +71,7 @@ namespace Beamable.Editor.UI.Components
 				{
 					_editableLabel.AddToClassList("interactable");
 				}
+
 				_editableLabel.value = _styleRule.SelectorString;
 				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
 				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);
@@ -73,16 +79,12 @@ namespace Beamable.Editor.UI.Components
 			}
 #endif
 
-			TextElement separator01 = new TextElement();
-			separator01.name = "separator";
-			separator01.text = "|";
+			TextElement separator01 = new TextElement {name = "separator", text = "|"};
 			Root.Add(separator01);
 
 			_styleSheetLabel = new TextElement();
-			if (!_styleSheet.IsReadOnly)
-			{
-				_styleSheetLabel.AddToClassList("interactable");
-			}
+			_styleSheetLabel.AddToClassList("interactable");
+
 			_styleSheetLabel.name = "styleSheetName";
 			_styleSheetLabel.text = $"{_styleSheet.name}";
 			_styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);
@@ -90,13 +92,10 @@ namespace Beamable.Editor.UI.Components
 
 			if (_styleSheet.IsReadOnly)
 			{
-				TextElement separator02 = new TextElement();
-				separator02.name = "separator";
-				separator02.text = "|";
+				TextElement separator02 = new TextElement {name = "separator", text = "|"};
 				Root.Add(separator02);
 
-				TextElement readonlyLabel = new TextElement();
-				readonlyLabel.text = "readonly";
+				TextElement readonlyLabel = new TextElement {text = "readonly"};
 				Root.Add(readonlyLabel);
 			}
 		}
@@ -111,17 +110,23 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnStyleSheetClicked(MouseDownEvent evt)
 		{
-			if (!_styleSheet.IsWritable)
-			{
-				return;
-			}
-
 			GenericMenu context = new GenericMenu();
 
-			foreach (GenericMenuCommand command in _commands)
+			if (_styleSheet.IsWritable)
 			{
-				GUIContent label = new GUIContent(command.Name);
-				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+				foreach (GenericMenuCommand command in _commands)
+				{
+					GUIContent label = new GUIContent(command.Name);
+					context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+				}
+			}
+			else
+			{
+				foreach (GenericMenuCommand command in _readonlyCommands)
+				{
+					GUIContent label = new GUIContent(command.Name);
+					context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+				}
 			}
 
 			context.ShowAsContext();

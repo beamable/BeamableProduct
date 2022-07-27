@@ -1,3 +1,4 @@
+using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
@@ -206,8 +207,7 @@ namespace Beamable.Editor.UI.Buss
 				_navigationWindow.Destroy();
 			}
 
-			// TODO: commented temporarily, causes null exception while opening editor with Theme Manager tab opened
-			//UndoSystem<BussStyleRule>.DeleteAllRecords();
+			UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
 	}
 }
