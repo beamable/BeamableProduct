@@ -144,9 +144,9 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			var result =
+			BussStylePropertyVisualElementUtility.PropertyValueState result =
 				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleDescription, _variableDatabase,
-																	 context, out var property, out var variableSource);
+																	 context, out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
 
 			SetVariableSource(variableSource);
 
@@ -177,7 +177,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetOverridenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result)
 		{
-			var overriden = false;
+			bool overriden = false;
 			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
 			{
 				overriden = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
@@ -330,7 +330,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void CheckIfIsReadOnly()
 		{
-			var isReadOnly = _styleSheet == null ? false : _styleSheet.IsReadOnly;
+			bool isReadOnly = _styleSheet != null && _styleSheet.IsReadOnly;
 
 			_labelComponent.SetEnabled(!isReadOnly);
 			_propertyVisualElement.SetEnabled(!isReadOnly);
