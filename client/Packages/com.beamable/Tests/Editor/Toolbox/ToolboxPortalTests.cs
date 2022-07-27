@@ -8,18 +8,18 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.TestTools;
-using UnityEngine.EventSystems;
-using UnityEngine.Events;
 using UnityEditor.Events;
 using UnityEditor.EventSystems;
-using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace Beamable.Editor.Tests.Toolbox
 {
-    public class ToolboxPortalTests : EditorTest
+	public class ToolboxPortalTests : EditorTest
 	{
 		protected override void Configure(IDependencyBuilder builder)
 		{
@@ -28,8 +28,8 @@ namespace Beamable.Editor.Tests.Toolbox
 
 		// A Test behaves as an ordinary method
 		[UnityTest]
-        public IEnumerator PortalButtonTest()
-        {
+		public IEnumerator PortalButtonTest()
+		{
 			IWebsiteHook websiteHook = Provider.GetService<IWebsiteHook>();
 
 			ToolboxBreadcrumbsVisualElement tbBreadcrumbs = new ToolboxBreadcrumbsVisualElement();

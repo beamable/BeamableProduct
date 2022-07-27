@@ -1,8 +1,8 @@
+using Beamable.Api;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using System.Collections;
 using UnityEngine.TestTools;
-using Beamable.Common.Api.Realms;
-using Beamable.Api;
 
 namespace Beamable.Editor.Tests
 {
