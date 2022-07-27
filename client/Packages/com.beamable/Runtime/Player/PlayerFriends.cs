@@ -64,7 +64,7 @@ namespace Beamable.Player
 			Friends = new PlayerFriendList(FriendsListRefresh);
 			Blocked = new BlockedPlayerList(BlockedListRefresh);
 			SentInvites = new SentFriendInviteList(SentInviteRefresh);
-			ReceivedInvites =new ReceivedFriendInviteList(ReceivedInviteRefresh);
+			ReceivedInvites = new ReceivedFriendInviteList(ReceivedInviteRefresh);
 
 			// lots of events will show up on the social update channel
 			_notificationService.Subscribe<FriendRequestUpdateNotification>(SOCIAL_UPDATE_CHANNEL, OnSocialUpdate);
@@ -114,7 +114,7 @@ namespace Beamable.Player
 			var blocked = new List<BlockedPlayer>(_socialList.blocked.Count);
 			foreach (var block in _socialList.blocked)
 			{
-				blocked.Add(new BlockedPlayer(this) {playerId = long.Parse(block.playerId)});
+				blocked.Add(new BlockedPlayer(this) { playerId = long.Parse(block.playerId) });
 			}
 
 			return Promise<List<BlockedPlayer>>.Successful(blocked);
@@ -126,7 +126,7 @@ namespace Beamable.Player
 			foreach (var invite in _socialList.invites)
 			{
 				if (invite.Direction != FriendInviteDirection.Outgoing) continue;
-				invites.Add(new SentFriendInvite(this) {invitedPlayerId = invite.playerId});
+				invites.Add(new SentFriendInvite(this) { invitedPlayerId = invite.playerId });
 			}
 			return Promise<List<SentFriendInvite>>.Successful(invites);
 		}
@@ -141,7 +141,7 @@ namespace Beamable.Player
 
 				if (!invites.ContainsKey(invite.playerId))
 				{
-					invites.Add(invite.playerId, new ReceivedFriendInvite(this) {invitingPlayerId = invite.playerId});
+					invites.Add(invite.playerId, new ReceivedFriendInvite(this) { invitingPlayerId = invite.playerId });
 				}
 			}
 
@@ -149,7 +149,7 @@ namespace Beamable.Player
 			{
 				if (!invites.TryGetValue(mail.senderGamerTag, out var receivedInvite))
 				{
-					receivedInvite = new ReceivedFriendInvite(this) {invitingPlayerId = mail.senderGamerTag,};
+					receivedInvite = new ReceivedFriendInvite(this) { invitingPlayerId = mail.senderGamerTag, };
 				}
 
 				receivedInvite.mailId = mail.id;
@@ -368,7 +368,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PlayerFriend) obj);
+			return Equals((PlayerFriend)obj);
 		}
 
 		public override int GetHashCode()
@@ -432,7 +432,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((BlockedPlayer) obj);
+			return Equals((BlockedPlayer)obj);
 		}
 
 		public override int GetHashCode()
@@ -477,7 +477,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((SentFriendInvite) obj);
+			return Equals((SentFriendInvite)obj);
 		}
 
 		public override int GetHashCode()
@@ -544,7 +544,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((ReceivedFriendInvite) obj);
+			return Equals((ReceivedFriendInvite)obj);
 		}
 
 		public override int GetHashCode()
