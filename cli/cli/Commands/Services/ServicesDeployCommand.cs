@@ -50,8 +50,52 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 		if (args.Remote)
 		{
-			var asd = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, "booooo", new Dictionary<string, string>());
-			AnsiConsole.WriteLine(JsonConvert.SerializeObject(asd));
+			await AnsiConsole
+				.Progress()
+				.StartAsync(async ctx =>
+				{
+					// These are the services we care about tracking progress for... The storage dependencies get pulled into each of these but I don't think we need to show them for now...
+					// Maybe that's not a good idea, but... we can easily change this if we want.
+					var beamoServiceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions
+						.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice)
+						.Where(_localBeamo.VerifyCanBeBuiltLocally).ToList();
+
+					// Prepare build and test with local deployment tasks
+					var buildAndTestTasks = beamoServiceDefinitions
+						.Select(sd => ctx.AddTask($"Test Local Deployment = {sd.BeamoId}"))
+						.ToList();
+
+					// Prepare uploading container tasks
+					var uploadingContainerTasks = beamoServiceDefinitions
+						.Select(sd => ctx.AddTask($"Uploading {sd.BeamoId}"))
+						.ToList();
+
+					// Upload Manifest Task
+					var uploadManifestTask = ctx.AddTask("Publishing Manifest to Beam-O!");
+
+					_ = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, "booooo", new Dictionary<string, string>(),
+						(beamoId, progress) =>
+						{
+							var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+							progressTask?.Increment((progress * 99) - progressTask.Value);
+						}, beamoId =>
+						{
+							var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+							progressTask?.Increment(1);
+						}, (beamoId, progress) =>
+						{
+							var progressTask = uploadingContainerTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+							progressTask?.Increment((progress * 99) - progressTask.Value);
+						},
+						beamoId =>
+						{
+							var progressTask = uploadingContainerTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+							progressTask?.Increment(1);
+						});
+
+					// Finish the upload manifest task
+					uploadManifestTask.Increment(100);
+				});
 		}
 		else
 		{

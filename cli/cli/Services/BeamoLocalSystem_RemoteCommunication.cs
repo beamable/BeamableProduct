@@ -67,7 +67,8 @@ public partial class BeamoLocalSystem
 		Dictionary<string, string> perServiceComments,
 		Action<string, float> buildPullImageProgress = null,
 		Action<string> onServiceDeployCompleted = null,
-		Action<string> onContainerUploaded = null)
+		Action<string, float> onContainerUploadProgress = null,
+		Action<string> onContainerUploadCompleted = null)
 	{
 		// First Stop all Local Containers that are running
 		await Task.WhenAll(localRuntime.ExistingLocalServiceInstances.Select(async sd => StopContainer(sd.ContainerId)));
@@ -86,14 +87,12 @@ public partial class BeamoLocalSystem
 
 
 		// Upload working containers to docker registry
-		{
-			var beamoIds = localManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
-			var folders = beamoIds.Select(id => $"{id}_folder").ToArray();
+		var beamoIds = localManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
+		var folders = beamoIds.Select(id => $"{id}_folder").ToArray();
 
-			await UploadContainers(beamoIds, folders, "https://dev-microservices.beamable.com/v2/", CancellationToken.None, () => { }, () =>
-			{
-			});
-		}
+		await UploadContainers(beamoIds, folders, "https://dev-microservices.beamable.com/v2/", CancellationToken.None, () => { }, () =>
+		{
+		});
 
 
 		// If all is well with the local deployment, we convert the local manifest into the remote one
