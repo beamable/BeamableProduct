@@ -11,7 +11,10 @@ ArchiveServicePopupVisualElement > TemplateContainer > #mainVisualElement > * {
     margin-left: 26px;
     margin-right: 26px;
 }
-
+#description{
+    white-space: normal;
+    margin-bottom: 10px;
+}
 ArchiveServicePopupVisualElement #buttonsVisualElement {
     flex-direction: row;
     justify-content: flex-end;

@@ -25,18 +25,14 @@ namespace Beamable.Editor.UI.Components
 		public ArchiveServicePopupVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(ArchiveServicePopupVisualElement)}/{nameof(ArchiveServicePopupVisualElement)}")
 		{
-
 		}
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
-			_contentLabelTop = Root.Q<Label>("contentLabelTop");
-			_contentLabelTop.text = ARCHIVE_WINDOW_INFO_TEXT_TOP;
-
-			_contentLabelBottom = Root.Q<Label>("contentLabelBottom");
-			_contentLabelBottom.text = ARCHIVE_WINDOW_INFO_TEXT_BOTTOM;
+			_contentLabelTop = Root.Q("content").Q<Label>();
+			_contentLabelTop.text = ARCHIVE_WINDOW_TEXT;
 
 			_okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
 			_okButton.Button.clickable.clicked += HandleOkButtonClicked;
