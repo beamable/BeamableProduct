@@ -16,7 +16,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 {
 	public class TestingEditorModel
 	{
-		private TestConfiguration TestConfiguration
+		public TestConfiguration TestConfiguration
 		{
 			get
 			{
@@ -26,6 +26,11 @@ namespace Beamable.Editor.NewTestingTool.Models
 			}
 		}
 		private TestConfiguration _testConfiguration;
+		
+		public RegisteredTestScene SelectedRegisteredTestScene { get; set; }
+		public RegisteredTest SelectedRegisteredTest { get; set; }
+		public RegisteredTestRule SelectedRegisteredTestRule { get; set; }
+		public RegisteredTestRuleMethod SelectedRegisteredTestRuleMethod { get; set; }
 		
 		public string GetPathToTestScene(string sceneName) => $"{PATH_TO_TESTS}/{sceneName}/{sceneName}.unity";
 
@@ -68,6 +73,11 @@ namespace Beamable.Editor.NewTestingTool.Models
 				EditorUtility.ClearProgressBar();
 			}
 
+			SelectedRegisteredTestScene = TestConfiguration.RegisteredTestScenes[0];
+			SelectedRegisteredTest = SelectedRegisteredTestScene.RegisteredTests[0];
+			SelectedRegisteredTestRule = SelectedRegisteredTest.RegisteredTestRules[0];
+			SelectedRegisteredTestRuleMethod = SelectedRegisteredTestRule.RegisteredTestRuleMethods[0];
+
 			//EditorSceneManager.OpenScene("Assets/NewTestingTool/Main Menu.unity");
 		}
 		private void SetupTestScene(string sceneName)
@@ -89,7 +99,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 				}
 
 				var registeredTestRules = RegisterTestRules(testable, methodInfos);
-				registeredTests.Add(new RegisteredTest(registeredTestRules));
+				registeredTests.Add(new RegisteredTest(testable.GetType().Name, registeredTestRules));
 			}
 
 			var registeredTestScene =
@@ -159,7 +169,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 				new RegisteredTestRuleMethod(testable, methodInfo, arguments.Skip(1).Select(x => x.Value).ToArray());
 
 			if (registeredTests.All(x => x.Order != order))
-				registeredTests.Add(new RegisteredTestRule(order));
+				registeredTests.Add(new RegisteredTestRule(methodInfo.Name, order));
 			registeredTests.First(x => x.Order == order).RegisteredTestRuleMethods.Add(registeredMethodTest);
 		}
 		private static T LoadScriptableObject<T>(string scriptableObjectName, string path) where T : ScriptableObject

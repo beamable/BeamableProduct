@@ -8,9 +8,9 @@
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="leftContentVisualElement">
 
-            <engine:Button name="startAll" class="boundedButton">
+            <engine:Button name="scan" class="boundedButton">
                 <engine:Image name="startIcon"/>
-                <engine:Label class="buttonText" text="Play All"/>
+                <engine:Label class="buttonText" text="Scan tests"/>
             </engine:Button>
 
             <engine:Button name="dependencies" class="boundedButton">

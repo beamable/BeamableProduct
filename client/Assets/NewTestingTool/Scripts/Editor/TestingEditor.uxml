@@ -11,11 +11,11 @@
         
         <engine:VisualElement name="testContainer">
             
-            <testingTool:ColumnListVisualElement name="scenesList" class="columnList"/>
+            <engine:VisualElement name="scenesList"/>
             <engine:VisualElement name="separator"/>
-            <testingTool:ColumnListVisualElement name="testablesList" class="columnList"/>
+            <engine:VisualElement name="testablesList"/>
             <engine:VisualElement name="separator"/>
-            <testingTool:ColumnListVisualElement name="rulesList" class="columnList"/>
+            <engine:VisualElement name="rulesList"/>
             <engine:VisualElement name="separator"/>
             <engine:VisualElement name="ruleBody"/>
             

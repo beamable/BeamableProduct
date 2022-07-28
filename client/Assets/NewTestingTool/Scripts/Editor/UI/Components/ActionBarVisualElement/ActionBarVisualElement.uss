@@ -140,7 +140,7 @@
     width: 8px;
 }
 
-#startAll {
+#scan {
     width: 72px;
 }
 

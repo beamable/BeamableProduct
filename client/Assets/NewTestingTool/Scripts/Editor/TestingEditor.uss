@@ -7,8 +7,6 @@
     flex-direction: row;
     margin-top: 5px;
     margin-bottom: 5px;
-    margin-left: 5px;
-    margin-right: 5px;
 }
 
 #ruleBody {
@@ -20,6 +18,20 @@
     background-color: rgba(0, 0, 0, 0.25);
 }
 
-.columnList {
-    min-width: 125px;
+#scenesList {
+    min-width: 200px;
+}
+
+#testablesList {
+    min-width: 150px;
+}
+
+#rulesList {
+    min-width: 250px;
+}
+
+ExtendedListView {
+    flex-grow : 1;
+    margin-left: 2px;
+    margin-right: 2px;
 }
