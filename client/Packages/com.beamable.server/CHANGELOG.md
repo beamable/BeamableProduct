@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Client Generator logs go to the Microservice Window
 - Send Microservice CPU architecture to Beamable Cloud
 - Headers are available on the service `Context` for application version, unity version, game version, and Beamable sdk version
+- `DisableAllBeamableEvents` option for the `MicroserviceAttribute`. When enabled, prevents the Microservice from receiving any Beamable events, including content cache invalidations. 
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
