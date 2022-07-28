@@ -281,11 +281,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public List<BindMount> BindMounts { get; protected set; }
 
 		public RunImageCommand(string imageName, string containerName,
-		                       IDescriptor descriptor,
-		                       Dictionary<string, string> env = null,
-		                       Dictionary<uint, uint> ports = null,
-		                       Dictionary<string, string> namedVolumes = null,
-		                       List<BindMount> bindMounts = null)
+							   IDescriptor descriptor,
+							   Dictionary<string, string> env = null,
+							   Dictionary<uint, uint> ports = null,
+							   Dictionary<string, string> namedVolumes = null,
+							   List<BindMount> bindMounts = null)
 		{
 			_descriptor = descriptor;
 			ImageName = imageName;
