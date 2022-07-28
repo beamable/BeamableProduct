@@ -47,14 +47,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		private readonly List<BussStyleSheet> _defaultBeamableStyleSheets = new List<BussStyleSheet>();
 		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
-		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets
-		{
-			get
-			{
-				return _defaultBeamableStyleSheets;
-			}
-		}
-
+		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
 		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
 		public List<BussElement> RootBussElements => _rootBussElements;
 
