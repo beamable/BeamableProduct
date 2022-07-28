@@ -114,7 +114,7 @@ namespace Beamable.Server
 		/// </summary>
 		public bool IsInvalidUser => _userId < 0;
 
-		public RequestContext(string cid, string pid, long id, int status, long userId, string path, string method, string body, HashSet<string> scopes = null, IDictionary<string, string> headers=null)
+		public RequestContext(string cid, string pid, long id, int status, long userId, string path, string method, string body, HashSet<string> scopes = null, IDictionary<string, string> headers = null)
 		{
 			Cid = cid;
 			Pid = pid;
@@ -147,7 +147,7 @@ namespace Beamable.Server
 
 	public class RequestHeaders : ReadOnlyDictionary<string, string>
 	{
-		public RequestHeaders(IDictionary<string, string> dictionary=null) : base(dictionary ?? new Dictionary<string, string>())
+		public RequestHeaders(IDictionary<string, string> dictionary = null) : base(dictionary ?? new Dictionary<string, string>())
 		{
 
 		}
