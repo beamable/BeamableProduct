@@ -21,7 +21,6 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussStyleSheet _styleSheet;
 		private List<GenericMenuCommand> _commands;
-		private List<GenericMenuCommand> _readonlyCommands;
 
 #if UNITY_2018
 		public BussSelectorLabelVisualElement() : base(
@@ -33,15 +32,13 @@ namespace Beamable.Editor.UI.Components
 
 		public void Setup(BussStyleRule styleRule,
 		                  BussStyleSheet styleSheet,
-		                  List<GenericMenuCommand> commands,
-		                  List<GenericMenuCommand> readonlyCommands)
+		                  List<GenericMenuCommand> commands)
 		{
 			base.Init();
 
 			_styleRule = styleRule;
 			_styleSheet = styleSheet;
 			_commands = commands;
-			_readonlyCommands = readonlyCommands;
 
 			Refresh();
 		}
@@ -112,21 +109,10 @@ namespace Beamable.Editor.UI.Components
 		{
 			GenericMenu context = new GenericMenu();
 
-			if (_styleSheet.IsWritable)
+			foreach (GenericMenuCommand command in _commands)
 			{
-				foreach (GenericMenuCommand command in _commands)
-				{
-					GUIContent label = new GUIContent(command.Name);
-					context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
-				}
-			}
-			else
-			{
-				foreach (GenericMenuCommand command in _readonlyCommands)
-				{
-					GUIContent label = new GUIContent(command.Name);
-					context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
-				}
+				GUIContent label = new GUIContent(command.Name);
+				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
 			}
 
 			context.ShowAsContext();

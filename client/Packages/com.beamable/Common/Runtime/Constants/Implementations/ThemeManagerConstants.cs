@@ -28,6 +28,7 @@ namespace Beamable.Common
 				{
 					public const string DUPLICATE = "Duplicate";
 					public const string COPY_TO = "Copy to";
+					public const string COPY_INTO_NEW_STYLE_SHEET = "Copy into new style sheet";
 					public const string REMOVE = "Remove";
 				}
 
