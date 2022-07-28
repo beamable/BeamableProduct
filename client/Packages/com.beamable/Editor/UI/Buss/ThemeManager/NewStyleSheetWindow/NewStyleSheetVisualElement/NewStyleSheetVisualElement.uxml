@@ -9,6 +9,7 @@
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement>
             <beamable:LabeledTextField name="styleSheetName" label="Variable Name"/>
+            <engine:Label name="info" text="Style sheet will be created under Assets/Resources folder"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="buttonStrip">

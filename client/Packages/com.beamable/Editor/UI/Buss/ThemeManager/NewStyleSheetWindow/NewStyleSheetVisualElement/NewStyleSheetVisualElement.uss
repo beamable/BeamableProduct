@@ -50,6 +50,10 @@ Label {
     padding-right: 0px;
 }
 
+Label#info {
+    -unity-text-align: middle-center;
+}
+
 TextField {
     min-height: 20px;
     font-size: 14px;
