@@ -87,6 +87,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<BeamableVsp>();
 			DependencyBuilder.AddSingleton<BeamableDispatcher>();
 
+			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 

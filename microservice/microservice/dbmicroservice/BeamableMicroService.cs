@@ -28,6 +28,7 @@ using Beamable.Server.Api.Tournament;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
+using Beamable.Server.Content;
 using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -219,7 +220,7 @@ namespace Beamable.Server
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
 
-         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
+         _contentService = CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
@@ -240,8 +241,14 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         var setupWebsocketTask = SetupWebsocket(socket);
-         setupWebsocketTask.Wait();
+         await SetupWebsocket(socket);
+      }
+
+      private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
+      {
+	      return _serviceAttribute.DisableAllBeamableEvents
+		      ? new UnreliableContentService(requester, socket, contentResolver, reflectionCache)
+		      : new ContentService(requester, socket, contentResolver, reflectionCache);
       }
 
       public void RunForever()
@@ -931,10 +938,12 @@ namespace Beamable.Server
          {
             Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED);
          }).ToUnit();
-         var eventProvider = _requester.InitializeSubscription().Then(res =>
-         {
-            Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
-         }).ToUnit();
+         var eventProvider = _serviceAttribute.DisableAllBeamableEvents
+	         ? PromiseBase.SuccessfulUnit
+	         : _requester.InitializeSubscription().Then(res =>
+	         {
+		         Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
+	         }).ToUnit();
          return Promise.Sequence(serviceProvider, eventProvider).ToUnit();
       }
 
