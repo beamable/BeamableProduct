@@ -29,9 +29,19 @@ namespace microserviceTests.microservice
    [StorageObject("simple")]
    public class SimpleStorageObject : MongoStorageObject
    {
-      
+
    }
-   
+   [Microservice("simple_no_updates", DisableAllBeamableEvents = true)]
+   public class SimpleMicroserviceWithNoEvents : Microservice
+   {
+	   public static MicroserviceFactory<SimpleMicroserviceWithNoEvents> Factory => () => new SimpleMicroserviceWithNoEvents();
+	   [ClientCallable]
+	   public async Task<string> GetContent(string id)
+	   {
+		   var content = await Services.Content.GetContent(id);
+		   return "Echo: " + content.Id;
+	   }
+   }
    [Microservice("simple", UseLegacySerialization = true)]
    public class SimpleMicroservice : Microservice
    {
@@ -75,7 +85,7 @@ namespace microserviceTests.microservice
          await Task.Delay(ms);
          return ms;
       }
-      
+
       [ClientCallable]
       public async Task<string> DelayThenGetEmail(int ms, long dbid)
       {
@@ -196,7 +206,7 @@ namespace microserviceTests.microservice
          var res = await Services.Leaderboards.GetPlayerLeaderboards(dbid);
          return res.lbs.Count;
       }
-      
+
       [ClientCallable]
       public async Task RemovePlayerEntry(string leaderboardId, long dbid)
       {
