@@ -134,6 +134,16 @@ namespace microserviceTests.microservice
          return x.ItemContent.Id;
       }
 
+      [ClientCallable]
+      public string GetVersionHeaders()
+      {
+	      Context.Headers.TryGetClientGameVersion(out var gameVersion);
+	      Context.Headers.TryGetBeamableSdkVersion(out var sdkVersion);
+	      Context.Headers.TryGetClientEngineVersion(out var engineVersion);
+	      Context.Headers.TryGetClientType(out var clientType);
+	      return $"h{gameVersion}/{sdkVersion}/{engineVersion}/{clientType}";
+      }
+
       [AdminOnlyCallable]
       public async Task LeaderboardCreateTest(string boardId, LeaderboardRef templateBoardRef)
       {

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
 - Client Generator logs go to the Microservice Window
 - Send Microservice CPU architecture to Beamable Cloud
+- Headers are available on the service `Context` for application version, unity version, game version, and Beamable sdk version
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
@@ -31,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservice clients created by using the default constructor will now keep working after the default `BeamContext` has been reset.
 - Local Microservices no longer say "could not find servicename:latest"
 - Publish flow locks Asset Database so that no re-imports may happen.
+- Fixed potential microservice issue that caused C#MSs to hang during initialization.
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
