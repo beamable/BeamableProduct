@@ -833,18 +833,23 @@ namespace Beamable.Microservice.Tests.Socket
                );
             if (addShutdownResponder)
             {
-                socket = socket.AddMessageHandler(
-                   MessageMatcher
-                      .WithRouteContains("gateway/provider")
-                      .WithDelete()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
-                   MessageResponder.Success(new MicroserviceProviderResponse()),
-                   MessageFrequency.OnlyOnce()
-                );
+	            socket = AddProviderShutdownMessageHandler();
             }
 
             return socket;
 
+        }
+
+        public TestSocket AddProviderShutdownMessageHandler()
+        {
+	        return AddMessageHandler(
+		        MessageMatcher
+			        .WithRouteContains("gateway/provider")
+			        .WithDelete()
+			        .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+		        MessageResponder.Success(new MicroserviceProviderResponse()),
+		        MessageFrequency.OnlyOnce()
+	        );
         }
 
         public TestSocket AddMessageHandler(TestSocketMessageMatcher matcher, TestSocketResponseGenerator responder, MessageFrequencyRequirements frequencyRequirements = null, string desc=null, bool? requiresAuth=true)

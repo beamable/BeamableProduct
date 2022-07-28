@@ -21,7 +21,7 @@ namespace Beamable.Editor.UI.SampleUtility
 				RequireLoggedUser = false,
 			};
 		}
-		
+
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_SAMPLE,
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1
@@ -35,37 +35,39 @@ namespace Beamable.Editor.UI.SampleUtility
 		protected override void Build()
 		{
 			this.rootVisualElement.Clear();
-			
+
 			currentlySelectedTypes = new HashSet<string>(
 				EditorPrefs.GetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS, "").Split(';')
 			);
-			
+
 			var registry = BeamEditor.GetReflectionSystem<BeamReflectionCache.Registry>();
 			var listOfPossibleTypes = registry.SampleTypesContainingDependencyFunctions.ToList();
 			listOfPossibleTypes.Add("");
-			
+
 			var popup = new PopupField<string>("RegisterBeamableDependency in Samples", listOfPossibleTypes, currentTypeToAddOrRemove);
 			popup.RegisterValueChangedCallback(evt => currentTypeToAddOrRemove = evt.newValue);
 
 			var addBtn = new Button(() =>
 			{
-				if(string.IsNullOrEmpty(currentTypeToAddOrRemove)) return;
+				if (string.IsNullOrEmpty(currentTypeToAddOrRemove)) return;
 
 				currentlySelectedTypes.Add(currentTypeToAddOrRemove);
 				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS, string.Join(";", currentlySelectedTypes));
-				
+
 				BuildWithContext(ActiveContext);
-			}) {text = "+"};
-			
+			})
+			{ text = "+" };
+
 			var removeBtn = new Button(() =>
 			{
-				if(string.IsNullOrEmpty(currentTypeToAddOrRemove)) return;
+				if (string.IsNullOrEmpty(currentTypeToAddOrRemove)) return;
 
 				currentlySelectedTypes.Remove(currentTypeToAddOrRemove);
 				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS, string.Join(";", currentlySelectedTypes));
-				
+
 				BuildWithContext(ActiveContext);
-			}) {text = "-"};
+			})
+			{ text = "-" };
 
 			var text = new Label($"Selected Types (in Samples) whose RegisterBeamableDependencies Functions will run: {string.Join("\n", currentlySelectedTypes)}");
 

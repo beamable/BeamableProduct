@@ -65,14 +65,14 @@ namespace Beamable
 			DependencyBuilder = new DependencyBuilder();
 			DependencyBuilder.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
 			DependencyBuilder.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(
-				                                                   BeamableEnvironment.ApiUrl,
-				                                                   provider.GetService<EnvironmentData>().SdkVersion,
-				                                                   provider.GetService<AccessTokenStorage>(),
-				                                                   null,
-				                                                   provider.GetService<OfflineCache>())
-			                                                   {
-				                                                   RequestTimeoutMs = $"{30 * 1000}"
-			                                                   }
+																   BeamableEnvironment.ApiUrl,
+																   provider.GetService<EnvironmentData>().SdkVersion,
+																   provider.GetService<AccessTokenStorage>(),
+																   null,
+																   provider.GetService<OfflineCache>())
+			{
+				RequestTimeoutMs = $"{30 * 1000}"
+			}
 			);
 			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
 			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
@@ -87,6 +87,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<BeamableVsp>();
 			DependencyBuilder.AddSingleton<BeamableDispatcher>();
 
+			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 

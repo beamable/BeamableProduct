@@ -10,11 +10,14 @@ using Beamable.Common.Api.Groups;
 using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
+using Beamable.Console;
 using Beamable.ConsoleCommands;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -25,11 +28,11 @@ namespace Beamable.Api
 	public class PlatformConsoleCommands
 	{
 		private readonly IDependencyProvider _provider;
-
 		private BeamableConsole Console => _provider.GetService<BeamableConsole>();
 		private CoroutineService CoroutineService => _provider.GetService<CoroutineService>();
 		private IPlatformService PlatformService => _provider.GetService<IPlatformService>();
 		private StatsService StatsService => _provider.GetService<StatsService>();
+
 
 		[Preserve]
 		public PlatformConsoleCommands(IDependencyProvider provider)
@@ -516,5 +519,51 @@ namespace Beamable.Api
 			}
 		}
 
+		[BeamableConsoleCommand("list_contexts", "list active beam context", "list_contexts")]
+		string ListContexts(string[] args)
+		{
+			StringBuilder builder = new StringBuilder();
+			foreach (BeamContext beamContext in BeamContext.All)
+			{
+				builder.Append(beamContext.PlayerId);
+				builder.Append(string.IsNullOrEmpty(beamContext.PlayerCode) ? "\n" : $" with player code: {beamContext.PlayerCode}\n");
+			}
+			return builder.ToString();
+		}
+
+		[BeamableConsoleCommand("set_console_context", "set active beam console context", "set_console_context <id_or_player_code>")]
+		string SetActiveContext(string[] args)
+		{
+			if (args.Length == 0)
+			{
+				return "Requires context id as parameter";
+			}
+
+			if (!long.TryParse(args[0], out var result))
+			{
+				var contextWithPlayerCode = BeamContext.All.FirstOrDefault(context => context.PlayerCode == args[0]);
+				if (contextWithPlayerCode != null)
+				{
+					ConsoleFlow.Instance.ChangePlayerContext(contextWithPlayerCode.PlayerCode);
+					return $"Console BeamContext successfully set to {contextWithPlayerCode.PlayerCode}";
+				}
+				return $"{args[0]} is not a valid Beam Context identifier";
+			}
+
+			if (BeamContext.All.All(context => context.PlayerId != result))
+			{
+				return $"Cannot find BeamContext with PlayerId: {result}, \n" +
+					   $"valid values are: {string.Join(",", BeamContext.All.Select(context => context.PlayerId.ToString()).ToArray())}";
+			}
+			var contextWithPlayerId = BeamContext.All.FirstOrDefault(context => context.PlayerId == result);
+			ConsoleFlow.Instance.ChangePlayerContext(contextWithPlayerId.PlayerCode);
+			return $"Console BeamContext successfully set to {result}";
+		}
+
+		[BeamableConsoleCommand("get_console_context", "get active beam console context", "get_console_context")]
+		string GetActiveContext(string[] args)
+		{
+			return _provider.GetService<BeamContext>().PlayerId.ToString();
+		}
 	}
 }

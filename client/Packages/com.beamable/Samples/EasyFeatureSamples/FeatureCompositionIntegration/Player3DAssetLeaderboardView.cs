@@ -21,33 +21,33 @@ namespace EasyFeaturesIntegrationExamples.FeatureCompositionIntegration
 		public long RankThresholdForRotation;
 
 		public Coroutine RotatingCoroutine;
-		
+
 		public int GetEnrichOrder() => int.MaxValue;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			// Gets the current BeamContext feeding data to this view.
 			var currentContext = managedPlayers.GetSinglePlayerContext();
-			
+
 			// Gets the service that is feeding data into the BasicLeaderboardView
 			var leaderboardViewDeps = currentContext.ServiceProvider.GetService<BasicLeaderboardView.ILeaderboardDeps>();
 
 			// If that service has no ranks, do nothing.
 			if (leaderboardViewDeps.Ranks.Count == 0)
 				return;
-			
+
 			// Otherwise, get the player rank 
 			var playerRank = leaderboardViewDeps.PlayerRank;
-			
+
 			// Stop rotating if we were already rotating.
-			if(RotatingCoroutine != null) 
+			if (RotatingCoroutine != null)
 				StopCoroutine(RotatingCoroutine);
 
 			// Start rotating the cube if the player rank is higher than the given threshold.
 			var speed = playerRank <= RankThresholdForRotation ? RotateSpeedIfAboveThreshold : 0;
 			RotatingCoroutine = StartCoroutine(Rotate(PlayerAsset, speed));
 
-			
+
 			// This is just a helper coroutine that rotates an arbitrary GO.
 			IEnumerator Rotate(GameObject toRotate, float rotateSpeed)
 			{
@@ -56,7 +56,7 @@ namespace EasyFeaturesIntegrationExamples.FeatureCompositionIntegration
 					toRotate.transform.localEulerAngles += Vector3.up * rotateSpeed;
 					yield return null;
 				}
-			}					
+			}
 		}
 	}
 }

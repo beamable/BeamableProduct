@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -112,6 +113,21 @@ namespace Beamable.Server.Editor
 				// it does not matter if this request fails- because it is only a preload operation.
 				// in the event this fails, the image will be downloaded later.
 			}
+		}
+
+		/// <summary>
+		/// A utility function that will wait for the microservice editor <see cref="IsInitialized"/> flag to be true.
+		/// This method should only be called in a task-friendly environment.
+		/// </summary>
+		public static async Task WaitForInit()
+		{
+			await Task.Run(async () =>
+			{
+				while (!IsInitialized)
+				{
+					await Task.Delay(1);
+				}
+			});
 		}
 
 		public static async void TryToPreloadMongoImage()

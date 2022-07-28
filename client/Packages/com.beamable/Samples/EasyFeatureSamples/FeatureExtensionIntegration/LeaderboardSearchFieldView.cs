@@ -23,15 +23,15 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			OwnerGroup = managedPlayers.Owner;
-			
+
 			var currentContext = managedPlayers.GetSinglePlayerContext();
-			
+
 			// Since this is user code, it's fine to depend on user-declared systems directly like this.
 			var searchableLeaderboard = currentContext.ServiceProvider.GetService<SearchableLeaderboardPlayerSystem>();
-			
+
 			// Sets the filter's text as it is defined in the system
 			Filter.SetTextWithoutNotify(searchableLeaderboard.CurrentAliasFilter);
-			
+
 			// Setup listener to handle changes to the filter input field.
 			Filter.onEndEdit.ReplaceOrAddListener(HandleFilterChanged);
 		}
@@ -42,7 +42,7 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 			var currentContext = OwnerGroup.AllPlayerContexts[0];
 			var searchableLeaderboard = currentContext.ServiceProvider.GetService<SearchableLeaderboardPlayerSystem>();
 			searchableLeaderboard.CurrentAliasFilter = newFilter;
-			
+
 			// Notifies entire BeamableViewGroup to re-fetch it's data so we update the filtered list of entities.
 			await OwnerGroup.Enrich();
 		}

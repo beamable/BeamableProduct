@@ -26,6 +26,7 @@ using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
@@ -147,6 +148,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
 			DependencyBuilder.AddSingleton<ContentService>();
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
+			DependencyBuilder.AddSingleton<IMailApi, MailService>();
 			DependencyBuilder.AddScoped<InventoryService>();
 			DependencyBuilder.AddScoped<StatsService>(provider =>
 														  new StatsService(
@@ -161,9 +163,9 @@ namespace Beamable
 				provider.GetService<IBeamableApiRequester>(),
 				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddScoped<IPartyApi>(provider => new PartyService(
-                // the party service needs a special instance of the beamable api requester
-               provider.GetService<IBeamableApiRequester>(),
-               provider.GetService<IUserContext>()));
+			   // the party service needs a special instance of the beamable api requester
+			   provider.GetService<IBeamableApiRequester>(),
+			   provider.GetService<IUserContext>()));
 			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
 				// the presence service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),
@@ -223,7 +225,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
-			DependencyBuilder.AddScoped<PlayerFriends>();
+			DependencyBuilder.AddScoped<PlayerSocial>();
 
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);

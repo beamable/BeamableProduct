@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
@@ -13,7 +12,6 @@ using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
-using UnityEngine;
 
 namespace Beamable.Server
 {
@@ -25,6 +23,7 @@ namespace Beamable.Server
       public object body;
       public long? from;
       public string[] scopes;
+      public Dictionary<string, string> headers;
    }
 
    public class WebsocketReply
