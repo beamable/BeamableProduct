@@ -22,6 +22,12 @@ namespace Beamable.Editor.UI.Buss
 		{
 			_styleSheet = (BussStyleSheet)target;
 			VisualElement root = new VisualElement();
+			
+			if (!_styleSheet.IsWritable)
+			{
+				return root;
+			}
+
 			_list = new BussStyleListVisualElement {StyleSheets = new[] {_styleSheet}};
 
 #if BEAMABLE_DEVELOPER
