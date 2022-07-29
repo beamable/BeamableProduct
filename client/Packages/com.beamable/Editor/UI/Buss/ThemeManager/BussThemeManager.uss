@@ -49,6 +49,16 @@
     -unity-text-align: middle-right;
 }
 
+#buttonsRow {
+    flex-direction: row;
+    align-self: center;
+    align-items: center;
+}
+
+#spacing {
+    width: 20px;
+}
+
 BussElementHierarchyVisualElement {
     flex-grow: 1;
 }

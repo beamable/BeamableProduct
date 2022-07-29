@@ -314,7 +314,7 @@ namespace Beamable.Editor.UI.Components
 					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
 					if (window != null)
 					{
-						window.Init(_styleRule);
+						window.Init(new List<BussStyleRule> {_styleRule});
 					}
 				}));
 			}

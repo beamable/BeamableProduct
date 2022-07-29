@@ -50,17 +50,16 @@ namespace Beamable.Editor.UI.Buss
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.THEME_MANAGER,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
-
 		public static async void Init() => await GetFullyInitializedWindow();
 
 		protected override void Build()
 		{
 			minSize = THEME_MANAGER_WINDOW_SIZE;
 
-			var root = this.GetRootVisualContainer();
+			VisualElement root = this.GetRootVisualContainer();
 			root.Clear();
 
-			var uiAsset =
+			VisualTreeAsset uiAsset =
 				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uxml");
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
@@ -68,10 +67,9 @@ namespace Beamable.Editor.UI.Buss
 			_windowRoot.TryAddScrollViewAsMainElement();
 			_addStyleButton = null;
 
-			var mainVisualElement = _windowRoot.Q("window-main");
+			VisualElement mainVisualElement = _windowRoot.Q("window-main");
 
-			mainVisualElement.AddStyleSheet(
-				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
+			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
 
 			VisualElement navigationGroup = new VisualElement();
@@ -89,14 +87,15 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.Refresh();
 			_filterToggle.SetWithoutNotify(_filterMode);
 			mainVisualElement.Add(_filterToggle);
-			
+
 			_selectedBussElement = new SelectedBussElementVisualElement();
 			_selectedBussElement.Setup(_navigationWindow);
 			mainVisualElement.Add(_selectedBussElement);
 
 			_stylesGroup = new BussStyleListVisualElement();
 
-			var inlineStyle = new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);
+			InlineStyleCardVisualElement inlineStyle =
+				new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);
 			mainVisualElement.Add(inlineStyle);
 			inlineStyle.Init();
 
@@ -122,6 +121,7 @@ namespace Beamable.Editor.UI.Buss
 			root.Add(_windowRoot);
 
 			RefreshStyleSheets();
+
 			AddSelectorButton(mainVisualElement);
 		}
 
@@ -138,7 +138,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private bool CardFilter(BussStyleSheet styleSheet, BussStyleRule styleRule)
 		{
-			var selected = Selection.activeGameObject;
+			GameObject selected = Selection.activeGameObject;
 			BussElement selectedElement = null;
 			if (selected != null)
 			{
@@ -157,10 +157,20 @@ namespace Beamable.Editor.UI.Buss
 
 		private void AddSelectorButton(VisualElement parent)
 		{
+			VisualElement buttonsRow = new VisualElement {name = "buttonsRow"};
+			parent.Insert(parent.Children().Count() - 1, buttonsRow);
+
 			_addStyleButton = new AddStyleButton();
 			_addStyleButton.Setup(_stylesGroup, _ => RefreshStyleSheets());
 			_addStyleButton.CheckEnableState();
-			parent.Insert(parent.Children().Count() - 1, _addStyleButton);
+			buttonsRow.Add(_addStyleButton);
+
+			VisualElement spacing = new VisualElement {name = "spacing"};
+			buttonsRow.Add(spacing);
+
+			CopyStyleSheetButton copyStyleSheetButton = new CopyStyleSheetButton();
+			copyStyleSheetButton.Setup(_stylesGroup, _ => RefreshStyleSheets());
+			buttonsRow.Add(copyStyleSheetButton);
 		}
 
 		private void SetScroll(GameObject _ = null)

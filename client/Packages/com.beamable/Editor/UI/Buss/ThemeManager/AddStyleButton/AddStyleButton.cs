@@ -40,7 +40,7 @@ namespace Beamable.Editor.UI.Components
 
 			_addStyleButton = new VisualElement { name = "addStyleButton" };
 			_addStyleButton.AddToClassList("button");
-			_addStyleButton.Add(new Label("Add Style"));
+			_addStyleButton.Add(new Label(ADD_STYLE_BUTTON_LABEL));
 
 			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OnClick());
 			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OnClick());
@@ -57,7 +57,7 @@ namespace Beamable.Editor.UI.Components
 
 			_addStyleButton.tooltip = string.Empty;
 
-			var styleSheetCount = _styleList.WritableStyleSheets?.Count() ?? 0;
+			int styleSheetCount = _styleList.WritableStyleSheets?.Count() ?? 0;
 
 			if (styleSheetCount == 0)
 			{
@@ -68,15 +68,12 @@ namespace Beamable.Editor.UI.Components
 			{
 				_addStyleButton.tooltip = String.Empty;
 				_addStyleButton.SetInactive(false);
-
-				if (styleSheetCount == 1) { }
-				else if (styleSheetCount > 1) { }
 			}
 		}
 
 		private void OnClick()
 		{
-			var styleSheetCount = _styleList.WritableStyleSheets.Count();
+			int styleSheetCount = _styleList.WritableStyleSheets.Count();
 
 			if (styleSheetCount == 0)
 			{
@@ -96,7 +93,8 @@ namespace Beamable.Editor.UI.Components
 		private void OpenMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
 		{
 			GenericMenu context = new GenericMenu();
-
+			context.AddItem(new GUIContent(ADD_STYLE_OPTIONS_HEADER), false, () => { });
+			context.AddSeparator(string.Empty);
 			foreach (BussStyleSheet styleSheet in bussStyleSheets)
 			{
 				context.AddItem(new GUIContent(styleSheet.name), false, () =>

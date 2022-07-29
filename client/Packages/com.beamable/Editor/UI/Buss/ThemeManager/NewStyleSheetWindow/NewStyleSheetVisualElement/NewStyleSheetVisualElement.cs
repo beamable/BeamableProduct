@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
 #if UNITY_2018
@@ -22,9 +23,9 @@ namespace Beamable.Editor.UI.Buss
 		
 		private LabeledTextField _styleSheetName;
 		private PrimaryButtonVisualElement _confirmButton;
-		private readonly BussStyleRule _initialRule;
+		private readonly List<BussStyleRule> _initialRule;
 
-		public NewStyleSheetVisualElement(BussStyleRule initialRule) : base(
+		public NewStyleSheetVisualElement(List<BussStyleRule> initialRule) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/NewStyleSheetWindow/{nameof(NewStyleSheetVisualElement)}/{nameof(NewStyleSheetVisualElement)}")
 		{
 			_initialRule = initialRule;
@@ -88,7 +89,7 @@ namespace Beamable.Editor.UI.Buss
 				return;
 			}
 			
-			BussStyleSheetUtility.CreateNewStyleSheetWithInitialRule(_styleSheetName.Value, _initialRule);
+			BussStyleSheetUtility.CreateNewStyleSheetWithInitialRules(_styleSheetName.Value, _initialRule);
 
 			NewStyleSheetWindow.CloseWindow();
 		}

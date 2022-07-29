@@ -22,6 +22,12 @@ namespace Beamable.Common
 
 					public const string NO_BUSS_STYLE_SHEET_AVAILABLE =
 						"There should be created at least one Buss Style Sheet and it should be referenced by Buss Element present at scene";
+
+					public const string ADD_STYLE_BUTTON_LABEL = "Add Style";
+					public const string ADD_STYLE_OPTIONS_HEADER = "Select target stylesheet";
+					
+					public const string DUPLICATE_STYLESHEET_BUTTON_LABEL = "Duplicate factory stylesheet";
+					public const string DUPLICATE_STYLESHEET_OPTIONS_HEADER = "Select source stylesheet";
 				}
 
 				public static partial class MenuItems

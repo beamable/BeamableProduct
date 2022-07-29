@@ -132,10 +132,14 @@ namespace Beamable.UI.Buss
 			targetStyleSheet.TriggerChange();
 		}
 
-		public static void CreateNewStyleSheetWithInitialRule(string fileName, BussStyleRule style)
+		public static void CreateNewStyleSheetWithInitialRules(string fileName, List<BussStyleRule> styles)
 		{
 			BussStyleSheet newStyleSheet = ScriptableObject.CreateInstance<BussStyleSheet>();
-			CopySingleStyle(newStyleSheet, style);
+			
+			foreach (BussStyleRule styleRule in styles)
+			{
+				CopySingleStyle(newStyleSheet, styleRule);	
+			}
 			
 			BussConfiguration.OptionalInstance.Value.AddGlobalStyleSheet(newStyleSheet);
 			
