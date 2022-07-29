@@ -63,12 +63,14 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	public async Task<ServiceManifest> DeployToRemote(BeamoLocalManifest localManifest, BeamoLocalRuntime localRuntime, string comments, 
+	public async Task<ServiceManifest> DeployToRemote(BeamoLocalManifest localManifest, BeamoLocalRuntime localRuntime,
+		string dockerRegistryUrl,
+		string comments, 
 		Dictionary<string, string> perServiceComments,
 		Action<string, float> buildPullImageProgress = null,
 		Action<string> onServiceDeployCompleted = null,
 		Action<string, float> onContainerUploadProgress = null,
-		Action<string> onContainerUploadCompleted = null)
+		Action<string, bool> onContainerUploadCompleted = null)
 	{
 		// First Stop all Local Containers that are running
 		await Task.WhenAll(localRuntime.ExistingLocalServiceInstances.Select(async sd => StopContainer(sd.ContainerId)));
@@ -90,9 +92,7 @@ public partial class BeamoLocalSystem
 		var beamoIds = localManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
 		var folders = beamoIds.Select(id => $"{id}_folder").ToArray();
 
-		await UploadContainers(beamoIds, folders, "https://dev-microservices.beamable.com/v2/", CancellationToken.None, () => { }, () =>
-		{
-		});
+		await UploadContainers(beamoIds, folders, dockerRegistryUrl, CancellationToken.None, onContainerUploadProgress, onContainerUploadCompleted);
 
 
 		// If all is well with the local deployment, we convert the local manifest into the remote one
@@ -212,7 +212,7 @@ public partial class BeamoLocalSystem
 	/// Upload a Docker image that has been expanded into a folder.
 	/// </summary>
 	/// <param name="folder">The filesystem path to the expanded image.</param>
-	public async Task Upload(ContainerUploadData data, string folder, CancellationToken token)
+	public async Task Upload(ContainerUploadData data, string folder, CancellationToken token, Action<string, float> onContainerUploadProgress = null)
 	{
 		token.ThrowIfCancellationRequested();
 		var manifest = DockerManifest.FromBytes(File.ReadAllBytes($"{folder}/manifest.json"));
@@ -225,12 +225,15 @@ public partial class BeamoLocalSystem
 
 		// Upload the config JSON as a blob.
 		data.PartsAmount = manifest.layers.Length + 1;
-		//TODO data._harness.ReportUploadProgress(_descriptor.Name, 0, _partsAmount);
-
 		data.PartsCompleted = 0;
+		onContainerUploadProgress?.Invoke(data.ServiceDefinition.BeamoId, (float)data.PartsCompleted / data.PartsAmount);
+
+		// Upload the file blob --- increase part and notify progress callback
 		var configResult = (await UploadFileBlob(data, $"{folder}/{manifest.config}", token));
 		token.ThrowIfCancellationRequested();
-		//TODO _harness.ReportUploadProgress(_descriptor.Name, ++_partsCompleted, _partsAmount);
+		data.PartsCompleted += 1;
+		onContainerUploadProgress?.Invoke(data.ServiceDefinition.BeamoId, (float)data.PartsCompleted / data.PartsAmount);
+		
 		config["digest"] = configResult.Digest;
 		config["size"] = configResult.Size;
 
@@ -239,7 +242,7 @@ public partial class BeamoLocalSystem
 		for (var i = 0; i < manifest.layers.Length; i++)
 		{
 			var layer = manifest.layers[i];
-			uploadIndexToJob.Add(i, UploadLayer(data, /*TODO*/null, $"{folder}/{layer}", token));
+			uploadIndexToJob.Add(i, UploadLayer(data, onContainerUploadProgress, $"{folder}/{layer}", token));
 		}
 
 		await Task.Run(() => Task.WhenAll(uploadIndexToJob.Values), token);
@@ -259,7 +262,6 @@ public partial class BeamoLocalSystem
 	/// <param name="uploadManifest">Data structure containing image data.</param>
 	private async Task UploadManifestJson(ContainerUploadData data, Dictionary<string, object> uploadManifest, string imageId)
 	{
-		BeamableLogger.LogError($"{data.UploadBaseUri}/manifests/{imageId} - {data.hash}");
 		var manifestJson = Json.Serialize(uploadManifest, new StringBuilder());
 		var uri = new Uri($"{data.UploadBaseUri}/manifests/{imageId}");
 		var content = new StringContent(manifestJson, Encoding.Default, MediaManifest);
@@ -272,14 +274,11 @@ public partial class BeamoLocalSystem
 	/// manifest when complete.
 	/// </summary>
 	/// <param name="layerPath">Filesystem path to the layer archive.</param>
-	private async Task<Dictionary<string, object>> UploadLayer(ContainerUploadData data, Delegate ReportUploadProgress, string layerPath, CancellationToken token)
+	private async Task<Dictionary<string, object>> UploadLayer(ContainerUploadData data, Action<string, float> onContainerUploadProgress, string layerPath, CancellationToken token)
 	{
 		var layerDigest = await UploadFileBlob(data, layerPath, token);
 		Interlocked.Increment(ref data.PartsCompleted);
-
-		// TODO fix this thing to use a type enforced delegate (see ContainerHarness in unity SDK for the signature)
-		ReportUploadProgress?.DynamicInvoke(data.ServiceDefinition.BeamoId, Interlocked.Read(ref data.PartsCompleted), data.PartsAmount);
-
+		onContainerUploadProgress?.Invoke(data.ServiceDefinition.BeamoId, (float)Interlocked.Read(ref data.PartsCompleted) / data.PartsAmount);
 		return new Dictionary<string, object> { { "digest", layerDigest.Digest }, { "size", layerDigest.Size }, { "mediaType", MediaLayer } };
 	}
 
@@ -356,7 +355,6 @@ public partial class BeamoLocalSystem
 	/// <returns></returns>
 	private async Task<bool> CheckBlobExistence(ContainerUploadData data, string digest)
 	{
-		BeamableLogger.LogError($"{data.UploadBaseUri}/blobs/{digest}");
 		var uri = new Uri($"{data.UploadBaseUri}/blobs/{digest}");
 		var request = new HttpRequestMessage(HttpMethod.Head, uri);
 		var response = await data.Client.SendAsync(request);
@@ -451,17 +449,17 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Upload the specified container to the private Docker registry.
 	/// </summary>
-	public async Task UploadContainers(string[] beamoIds, string[] folders, string dockerRegistryUrl, CancellationToken cancellationToken, Action onSuccess, Action onFailure)
+	public async Task UploadContainers(string[] beamoIds, string[] folders, string dockerRegistryUrl, CancellationToken cancellationToken, 
+		Action<string, float> onContainerUploadProgress = null,
+		Action<string, bool> onContainerUploadCompleted = null)
 	{
 		var serviceDefinition = beamoIds.Select(id => BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == id)).ToList();
 
 		// Prepare the data we need to correctly upload the containers.
 		var cid = _ctx.Cid;
 		var realmPid = _ctx.Pid;
-		var gamePid = (await _realmService.GetRealm()).FindRoot().Pid; // TODO: Make this a go and fetch the game pid from this realm pid.
+		var gamePid = (await _realmService.GetRealm()).FindRoot().Pid; // TODO I really think we should move this to _ctx/ConfigService and grab it during init...
 		var accessToken = _ctx.Token.Token;
-
-		BeamableLogger.LogError(gamePid);
 
 		var uploadTasks = serviceDefinition
 			.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice)
@@ -476,13 +474,13 @@ public partial class BeamoLocalSystem
 					tar.ExtractContents(folder);
 
 					var uploader = PrepareContainerUploader(cid, gamePid, realmPid, accessToken, sd.BeamoId, dockerRegistryUrl, sd);
-					await Upload(uploader, folder, cancellationToken);
-					onSuccess?.Invoke();
+					await Upload(uploader, folder, cancellationToken, onContainerUploadProgress);
+					onContainerUploadCompleted?.Invoke(sd.BeamoId, true);
 				}
 				catch (Exception ex)
 				{
+					onContainerUploadCompleted?.Invoke(sd.BeamoId, false);
 					BeamableLogger.LogError(ex);
-					onFailure?.Invoke();
 					throw;
 				}
 				finally

@@ -201,7 +201,6 @@ public partial class BeamoLocalSystem
 					var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
 
 					var messageStream = message.Stream;
-
 					if (!string.IsNullOrEmpty(messageStream))
 					{
 						if (regex.IsMatch(messageStream))
@@ -399,15 +398,13 @@ public partial class BeamoLocalSystem
 
 	/// <summary>
 	/// Deletes all containers and images related to the given <see cref="BeamoServiceDefinition"/>.
-	/// TODO: Track down every other service that depends on this one and shut them down before hand.
 	/// </summary>
 	public async Task CleanUpDocker(BeamoServiceDefinition serviceDefinition)
 	{
 		var beamoId = serviceDefinition.BeamoId;
 
 		// Delete the containers and remote the service instances mappings
-		var existingContainers = BeamoRuntime.ExistingLocalServiceInstances.Where(si => si.BeamoId == beamoId).ToList();
-		await Task.WhenAll(existingContainers.Select(si => DeleteContainer(si.ContainerName)));
+		await Task.WhenAll(DeleteContainers(beamoId));
 
 		BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si => si.BeamoId == beamoId);
 
@@ -474,6 +471,16 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public Task DeleteImage(string imageName) => _client.Images.DeleteImageAsync(imageName, new ImageDeleteParameters() { NoPrune = false, Force = true }, CancellationToken.None);
 
+	/// <summary>
+	/// Deletes all running containers associated with the given <paramref name="beamoId"/>.
+	/// </summary>
+	public async Task DeleteContainers(string beamoId)
+	{
+		// Delete the containers and remote the service instances mappings
+		var existingContainers = BeamoRuntime.ExistingLocalServiceInstances.Where(si => si.BeamoId == beamoId).ToList();
+		await Task.WhenAll(existingContainers.Select(si => DeleteContainer(si.ContainerName)));
+	}
+	
 	/// <summary>
 	/// Deletes a container with the given <paramref name="containerId"/> (or container name).
 	/// </summary>

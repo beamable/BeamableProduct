@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Beamable.Common;
+using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
@@ -9,6 +10,8 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 {
 	public string[] BeamoIdsToDeploy;
 	public bool Remote;
+	public string RemoteComment;
+	public string[] RemoteServiceComments;
 }
 
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
@@ -37,6 +40,13 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 		AddOption(new Option<bool>("--remote", () => false, $"If this option is set, we publish the manifest instead."),
 			(args, i) => args.Remote = i);
+
+		AddOption(new Option<string>("--comment", () => "", $"Requires --remote flag. Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal."),
+			(args, i) => args.RemoteComment = i);
+
+		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Requires --remote flag. Any number of 'BeamoId::Comment' strings. " +
+		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal."),
+			(args, i) => args.RemoteServiceComments = i);
 	}
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
@@ -50,6 +60,36 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 		if (args.Remote)
 		{
+			// Parse and prepare per-service comments dictionary (BeamoId => CommentString) 
+			var perServiceComments = new Dictionary<string, string>();
+			for (var i = 0; i < args.RemoteServiceComments.Length; i++)
+			{
+				var commentArg = args.RemoteServiceComments[i];
+				if (!commentArg.Contains("::"))
+					throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]",
+						$"Given service comment argument [{commentArg}] doesn't respect the 'BeamoId::Comment' format!");
+
+				var splitComment = commentArg.Split("::");
+				var id = splitComment[0];
+				var comment = splitComment[1];
+
+				if (_localBeamo.BeamoManifest.ServiceDefinitions.FindIndex(sd => sd.BeamoId == id) == -1)
+					throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]",
+						$"ID [{id}] in the given service comment argument [{commentArg}] " +
+						$"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!");
+
+				perServiceComments.Add(id, comment);
+			}
+			
+			// Get where we need to upload based on which platform env we are targeting
+			var dockerRegistryUrl = _ctx.Host switch
+			{
+				Constants.PLATFORM_DEV => Constants.DOCKER_REGISTRY_DEV,
+				Constants.PLATFORM_STAGING => Constants.DOCKER_REGISTRY_STAGING,
+				Constants.PLATFORM_PRODUCTION => Constants.DOCKER_REGISTRY_PRODUCTION,
+				_ => throw new ArgumentOutOfRangeException()
+			};
+
 			await AnsiConsole
 				.Progress()
 				.StartAsync(async ctx =>
@@ -73,7 +113,10 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 					// Upload Manifest Task
 					var uploadManifestTask = ctx.AddTask("Publishing Manifest to Beam-O!");
 
-					_ = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, "booooo", new Dictionary<string, string>(),
+
+					_ = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, dockerRegistryUrl,
+						args.RemoteComment ?? string.Empty,
+						perServiceComments,
 						(beamoId, progress) =>
 						{
 							var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
@@ -81,16 +124,20 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 						}, beamoId =>
 						{
 							var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
-							progressTask?.Increment(1);
+							progressTask?.Increment(progressTask.MaxValue - progressTask.Value);
 						}, (beamoId, progress) =>
 						{
 							var progressTask = uploadingContainerTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 							progressTask?.Increment((progress * 99) - progressTask.Value);
 						},
-						beamoId =>
+						(beamoId, successfull) =>
 						{
 							var progressTask = uploadingContainerTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
-							progressTask?.Increment(1);
+							if (progressTask != null)
+							{
+								progressTask.Increment(progressTask.MaxValue - progressTask.Value);
+								progressTask.Description = successfull ? $"Success: {progressTask?.Description}" : $"Failure: {progressTask?.Description}";
+							}
 						});
 
 					// Finish the upload manifest task
