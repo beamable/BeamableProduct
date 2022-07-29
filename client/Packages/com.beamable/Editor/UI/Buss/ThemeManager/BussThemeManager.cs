@@ -28,9 +28,6 @@ namespace Beamable.Editor.UI.Buss
 		private SelectedBussElementVisualElement _selectedBussElement;
 		private VisualElement _windowRoot;
 
-		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
-			new List<BussStyleCardVisualElement>();
-
 		private BeamablePopupWindow _confirmationPopup;
 		private AddStyleButton _addStyleButton;
 		private GameObject _selectedGameObject;
@@ -55,7 +52,6 @@ namespace Beamable.Editor.UI.Buss
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
 
 		public static async void Init() => await GetFullyInitializedWindow();
-		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
 
 		protected override void Build()
 		{
@@ -70,7 +66,6 @@ namespace Beamable.Editor.UI.Buss
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			_windowRoot.name = nameof(_windowRoot);
 			_windowRoot.TryAddScrollViewAsMainElement();
-			_styleCardsVisualElements.Clear();
 			_addStyleButton = null;
 
 			var mainVisualElement = _windowRoot.Q("window-main");
