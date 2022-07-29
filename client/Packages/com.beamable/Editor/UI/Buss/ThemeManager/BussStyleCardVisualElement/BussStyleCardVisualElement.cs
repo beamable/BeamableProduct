@@ -25,6 +25,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _propertiesParent;
 		private VisualElement _colorBlock;
 		private VisualElement _wizardButton;
+		private VisualElement _optionsButton;
 		private VisualElement _undoButton;
 		private VisualElement _cleanAllButton;
 		private VisualElement _addVariableButton;
@@ -65,7 +66,12 @@ namespace Beamable.Editor.UI.Components
 
 			_wizardButton = Root.Q<VisualElement>("wizardButton");
 			if (_wizardButton != null)
+			{
 				_wizardButton.tooltip = Tooltips.Buss.WIZARD_SYSTEM;
+			}
+
+			_optionsButton = Root.Q<VisualElement>("optionsButton");
+			_optionsButton.tooltip = Tooltips.Buss.OPTIONS;
 
 			_undoButton = Root.Q<VisualElement>("undoButton");
 			_undoButton.tooltip = Tooltips.Buss.UNDO;
@@ -99,6 +105,8 @@ namespace Beamable.Editor.UI.Components
 			_addRuleButton.SetEnabled(enabled);
 			_showAllButton.SetEnabled(enabled);
 			_sortButton.SetEnabled(enabled);
+
+			_optionsButton.SetEnabled(true);
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
@@ -134,6 +142,7 @@ namespace Beamable.Editor.UI.Components
 			_addRuleButton?.RegisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.RegisterCallback<MouseDownEvent>(ShowAllButtonClicked);
 			_sortButton?.RegisterCallback<MouseDownEvent>(SortButtonClicked);
+			_optionsButton?.RegisterCallback<MouseDownEvent>(OptionsButtonClicked);
 		}
 
 		private void ClearButtonActions()
@@ -145,29 +154,44 @@ namespace Beamable.Editor.UI.Components
 			_addRuleButton?.UnregisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.UnregisterCallback<MouseDownEvent>(ShowAllButtonClicked);
 			_sortButton?.UnregisterCallback<MouseDownEvent>(SortButtonClicked);
+			_optionsButton?.UnregisterCallback<MouseDownEvent>(OptionsButtonClicked);
+		}
+
+		private void OptionsButtonClicked(MouseDownEvent evt)
+		{
+			GenericMenu context = new GenericMenu();
+
+			foreach (GenericMenuCommand command in PrepareCommands())
+			{
+				GUIContent label = new GUIContent(command.Name);
+				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+			}
+
+			context.ShowAsContext();
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
 		{
-			var keys = new HashSet<string>();
-			foreach (var propertyProvider in StyleRule.Properties)
+			HashSet<string> keys = new HashSet<string>();
+			foreach (BussPropertyProvider propertyProvider in StyleRule.Properties)
 			{
 				keys.Add(propertyProvider.Key);
 			}
 
-			var sorted = BussStyle.Keys.OrderBy(k => k);
-			var context = new GenericMenu();
+			IOrderedEnumerable<string> sorted = BussStyle.Keys.OrderBy(k => k);
+			GenericMenu context = new GenericMenu();
 
 			foreach (string key in sorted)
 			{
 				if (keys.Contains(key)) continue;
-				var baseType = BussStyle.GetBaseType(key);
-				var data = SerializableValueImplementationHelper.Get(baseType);
-				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                     t != typeof(FractionFloatBussProperty));
+				Type baseType = BussStyle.GetBaseType(key);
+				SerializableValueImplementationHelper.ImplementationData data =
+					SerializableValueImplementationHelper.Get(baseType);
+				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
+				                                                   t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
-					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
+					GUIContent label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						StyleRule.Properties.Add(
@@ -346,14 +370,15 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
-				var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider == property);
+				BussStylePropertyVisualElement existingProperty =
+					_properties.FirstOrDefault(p => p.PropertyProvider == property);
 				if (existingProperty != null)
 				{
 					existingProperty.Refresh();
 					continue;
 				}
 
-				var element = new BussStylePropertyVisualElement();
+				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase,
 				              _propertyDatabase.GetTracker(_selectedElement));
 				(property.IsVariable ? _variablesParent : _propertiesParent).Add(element);
@@ -362,19 +387,20 @@ namespace Beamable.Editor.UI.Components
 
 			if (_showAllMode)
 			{
-				var restPropertyKeys =
+				IOrderedEnumerable<string> restPropertyKeys =
 					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s)).OrderBy(k => k);
 
-				foreach (var key in restPropertyKeys)
+				foreach (string key in restPropertyKeys)
 				{
-					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
+					BussStylePropertyVisualElement existingProperty =
+						_properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
 					if (existingProperty != null)
 					{
 						existingProperty.Refresh();
 						continue;
 					}
 
-					var propertyProvider =
+					BussPropertyProvider propertyProvider =
 						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 					BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase,
@@ -402,11 +428,11 @@ namespace Beamable.Editor.UI.Components
 					{
 						if (p1.PropertyIsInStyle)
 						{
-							var properties = _styleRule.Properties;
+							List<BussPropertyProvider> properties = _styleRule.Properties;
 							return properties.IndexOf(p1.PropertyProvider) - properties.IndexOf(p2.PropertyProvider);
 						}
 
-						var keys = BussStyle.Keys.ToArray();
+						string[] keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
 						       Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
@@ -435,7 +461,8 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)
 		{
-			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
+			BussStylePropertyVisualElement property =
+				_properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
 			if (property != null)
 			{
 				property.Refresh();
@@ -445,7 +472,7 @@ namespace Beamable.Editor.UI.Components
 		public void OnBussElementSelected(BussElement element)
 		{
 			_selectedElement = element;
-			var tracker = _propertyDatabase.GetTracker(_selectedElement);
+			PropertySourceTracker tracker = _propertyDatabase.GetTracker(_selectedElement);
 			foreach (BussStylePropertyVisualElement propertyVisualElement in _properties)
 			{
 				propertyVisualElement.SetPropertySourceTracker(tracker);

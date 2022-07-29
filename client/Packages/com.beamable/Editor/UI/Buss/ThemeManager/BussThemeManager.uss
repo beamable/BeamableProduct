@@ -37,12 +37,13 @@
     flex-grow: 1;
 }
 
-#filterToggle {
+#toggle {
     align-self: flex-end;
     margin-right: 10px;
+    margin-bottom: 5px
 }
 
-#filterToggle Label {
+#toggle Label {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     -unity-text-align: middle-right;

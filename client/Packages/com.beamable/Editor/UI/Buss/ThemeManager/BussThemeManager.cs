@@ -23,6 +23,7 @@ namespace Beamable.Editor.UI.Buss
 		private BussStyleListVisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
+		private LabeledCheckboxVisualElement _hideOverridenToggle;
 		private ScrollView _scrollView;
 		private SelectedBussElementVisualElement _selectedBussElement;
 		private VisualElement _windowRoot;
@@ -87,13 +88,13 @@ namespace Beamable.Editor.UI.Buss
 			navigationGroup.Add(_navigationWindow);
 
 			_filterToggle = new LabeledCheckboxVisualElement("Filter by selected element");
-			_filterToggle.name = "filterToggle";
+			_filterToggle.name = "toggle";
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
 			_filterToggle.OnValueChanged += OnFilterToggleClicked;
 			_filterToggle.Refresh();
 			_filterToggle.SetWithoutNotify(_filterMode);
 			mainVisualElement.Add(_filterToggle);
-
+			
 			_selectedBussElement = new SelectedBussElementVisualElement();
 			_selectedBussElement.Setup(_navigationWindow);
 			mainVisualElement.Add(_selectedBussElement);
