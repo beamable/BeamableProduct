@@ -10,6 +10,7 @@ public class LoginCommandArgs : CommandArgs
 {
 	public string username;
 	public string password;
+	public bool saveToEnvironment;
 }
 
 public class LoginCommand : AppCommand<LoginCommandArgs>
@@ -17,20 +18,19 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	private readonly IAppContext _ctx;
 	private readonly ConfigService _configService;
 	private readonly IAuthApi _authApi;
-	private readonly CliRequester _requester;
 
-	public LoginCommand(IAppContext ctx, ConfigService configService, IAuthApi authApi, CliRequester requester) : base("login", "save credentials to file")
+	public LoginCommand(IAppContext ctx, ConfigService configService, IAuthApi authApi) : base("login", "save credentials to file")
 	{
 		_ctx = ctx;
 		_configService = configService;
 		_authApi = authApi;
-		_requester = requester;
 	}
 
 	public override void Configure()
 	{
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
+		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 	}
 
 	public override async Task Handle(LoginCommandArgs args)
@@ -38,7 +38,11 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		var username = GetUserName(args);
 		var password = GetPassword(args);
 		var response = await _authApi.Login(username, password, true, true).ShowLoading("Authorizing...");
-		_configService.FlushConfig();
+		if (args.saveToEnvironment && !string.IsNullOrWhiteSpace(response.refresh_token))
+		{
+			BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
+			Environment.SetEnvironmentVariable(Constants.KEY_ENV_REFRESH_TOKEN, response.refresh_token);
+		}
 
 		args.username = username;
 		args.password = password;
