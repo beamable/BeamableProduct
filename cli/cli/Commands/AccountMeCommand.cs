@@ -1,23 +1,19 @@
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using cli.Utils;
 using Newtonsoft.Json;
-using Spectre.Console;
-using System.Net.Http.Json;
 
 namespace cli;
 
-public class AccountMeCommandArgs : CommandArgs
+public class AccountMeCommandArgs : AuthorizedCommandArgs
 {
 
 }
-public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
+public class AccountMeCommand : AuthorizedCommand<AccountMeCommandArgs>
 {
-	private readonly IAuthApi _auth;
 
-	public AccountMeCommand(IAuthApi auth) : base("me", "temp command to get current account")
-	{
-		_auth = auth;
-	}
+	public AccountMeCommand(IAppContext ctx, IAuthApi authApi) : base(ctx, authApi, "me", "temp command to get current account")
+	{}
 
 	public override void Configure()
 	{
@@ -26,12 +22,8 @@ public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
 
 	public override async Task Handle(AccountMeCommandArgs args)
 	{
-		var response = await AnsiConsole.Status()
-			.Spinner(Spinner.Known.Default)
-			.StartAsync("Sending Request...", async ctx =>
-
-				await _auth.GetUser()
-			);
+		await base.Handle(args);
+		var response = await AuthApi.GetUser().ShowLoading("Sending Request...");
 		BeamableLogger.Log(JsonConvert.SerializeObject(response));
 	}
 }

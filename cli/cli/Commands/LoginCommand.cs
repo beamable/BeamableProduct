@@ -1,5 +1,7 @@
-﻿using Beamable.Common.Api.Auth;
+﻿using Beamable.Common;
+using Beamable.Common.Api.Auth;
 using cli.Utils;
+using Newtonsoft.Json;
 using Spectre.Console;
 
 namespace cli;
@@ -36,13 +38,12 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		var username = GetUserName(args);
 		var password = GetPassword(args);
 		var response = await _authApi.Login(username, password, true, true).ShowLoading("Authorizing...");
-		_configService.SetConfigString(Constants.CONFIG_ACCESS_TOKEN, response.access_token);
-		_configService.SetConfigString(Constants.CONFIG_REFRESH_TOKEN, response.refresh_token);
 		_configService.FlushConfig();
 
 		args.username = username;
 		args.password = password;
 		_ctx.UpdateToken(response);
+		BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 	}
 
 	private string GetUserName(LoginCommandArgs args)
