@@ -17,13 +17,14 @@ public abstract class AuthorizedCommand<T> : AppCommand<T> where T : AuthorizedC
 	{
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
+		AddOption(new RefreshTokenOption(), (args, s) => args.refreshToken = s);
 	}
 
 	public override async Task Handle(T args)
 	{
-		if (!string.IsNullOrWhiteSpace(_ctx.RefreshToken))
+		if (!string.IsNullOrWhiteSpace(args.refreshToken))
 		{
-			var resp = await AuthApi.LoginRefreshToken(_ctx.RefreshToken);
+			var resp = await AuthApi.LoginRefreshToken(args.refreshToken);
 			BeamableLogProvider.Provider.Info($"{resp.access_token}, {resp.refresh_token}");
 			_ctx.UpdateToken(resp);
 			return;
@@ -43,4 +44,5 @@ public abstract class AuthorizedCommand<T> : AppCommand<T> where T : AuthorizedC
 public class AuthorizedCommandArgs : CommandArgs {
 	public string username;
 	public string password;
+	public string refreshToken;
 }
