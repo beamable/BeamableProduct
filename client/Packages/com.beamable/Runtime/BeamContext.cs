@@ -145,7 +145,7 @@ namespace Beamable
 		private PlayerParty _playerParty;
 
 		[SerializeField]
-		private PlayerFriends _playerFriends;
+		private PlayerParty _playerParty;
 
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
@@ -192,7 +192,10 @@ namespace Beamable
 		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
 
-		public PlayerFriends Friends => _playerFriends = _playerFriends ?? _serviceScope.GetService<PlayerFriends>();
+		/// <summary>
+		/// Access the player's friends and blocked enemies.
+		/// </summary>
+		public PlayerSocial Social => _serviceScope.GetService<PlayerSocial>();
 
 		public string TimeOverride
 		{
@@ -393,6 +396,7 @@ namespace Beamable
 			builder.AddSingleton<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
+					_environment.SdkVersion,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>(),
 					provider.GetService<OfflineCache>()
@@ -461,7 +465,7 @@ namespace Beamable
 			try
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 			}
 			catch (NoConnectivityException)
@@ -604,7 +608,6 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName.ToLower();
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();

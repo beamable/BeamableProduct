@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
@@ -13,7 +12,6 @@ using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
-using UnityEngine;
 
 namespace Beamable.Server
 {
@@ -25,6 +23,7 @@ namespace Beamable.Server
       public object body;
       public long? from;
       public string[] scopes;
+      public Dictionary<string, string> headers;
    }
 
    public class WebsocketReply
@@ -190,14 +189,13 @@ namespace Beamable.Server
 	      var enteringCount = Daemon.AuthorizationCounter;
 	      while (Daemon.AuthorizationCounter > 0)
 	      {
-		      await Task.Delay(1);
-
 		      var totalWaitedTime = DateTime.UtcNow - startTime;
 		      if (totalWaitedTime > timeout)
 		      {
 			      var exitCount = Daemon.AuthorizationCounter;
 			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
+		      await Task.Delay(1);
 	      }
 	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }

@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
@@ -24,9 +25,9 @@ namespace Beamable.Editor.UI.Model
 		private MicroserviceReflectionCache.Registry _serviceRegistry;
 
 		public List<MicroserviceModel> localServices = new List<MicroserviceModel>();
-		public List<MicroserviceModel> remoteServices = new List<MicroserviceModel>();
+		public List<RemoteMicroserviceModel> remoteServices = new List<RemoteMicroserviceModel>();
 		public List<MongoStorageModel> localStorages = new List<MongoStorageModel>();
-		public List<MongoStorageModel> remoteStorages = new List<MongoStorageModel>();
+		public List<RemoteMongoStorageModel> remoteStorages = new List<RemoteMongoStorageModel>();
 
 		public IReadOnlyList<IBeamableService> AllLocalServices
 		{
@@ -60,12 +61,19 @@ namespace Beamable.Editor.UI.Model
 		public Action<ServiceManifest> OnServerManifestUpdated;
 		public Action<GetStatusResponse> OnStatusUpdated;
 
+		public Promise FinishedLoading { get; private set; } = new Promise();
+
 		[NonSerialized]
 		public Guid InstanceId = Guid.NewGuid();
 
 		public MicroservicesDataModel(BeamEditorContext ctx)
 		{
 			_ctx = ctx;
+
+			ctx.OnRealmChange += _ =>
+			{
+				var __ = RefreshState(); // update self.
+			};
 		}
 
 		public void RefreshLocal()
@@ -102,10 +110,9 @@ namespace Beamable.Editor.UI.Model
 			localStorages.RemoveAll(model => unseen.Contains(model));
 		}
 
-		public void RefreshServerManifest()
+		public async Promise RefreshServerManifest()
 		{
-			// TODO: Make this return a promise
-			_ctx.GetMicroserviceManager().GetStatus().Then(status =>
+			await _ctx.GetMicroserviceManager().GetStatus().Then(status =>
 			{
 				Status = status;
 				foreach (var serviceStatus in status.services)
@@ -114,7 +121,7 @@ namespace Beamable.Editor.UI.Model
 				}
 				OnStatusUpdated?.Invoke(status);
 			});
-			_ctx.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
+			await _ctx.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
 			{
 				ServerManifest = manifest;
 				foreach (var service in Services)
@@ -167,6 +174,16 @@ namespace Beamable.Editor.UI.Model
 		}
 
 		public void AddLogMessage(IDescriptor descriptor, LogMessage message) => AddLogMessage(descriptor.Name, message);
+
+		public void AddLogException(IDescriptor descriptor, Exception ex)
+		{
+			AddLogMessage(descriptor, new LogMessage
+			{
+				Level = LogLevel.ERROR,
+				Message = $"{ex.GetType().Name} - {ex.Message}\n{ex.StackTrace}",
+				Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+			});
+		}
 
 		public ServiceStatus GetStatus(MicroserviceDescriptor descriptor)
 		{
@@ -240,7 +257,7 @@ namespace Beamable.Editor.UI.Model
 		public bool ContainsModel(string serviceName) => AllLocalServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 
 		public bool IsArchived(string serviceName) =>
-			AllLocalServices.First(s => s.Descriptor.Name.Equals(serviceName)).IsArchived;
+			AllLocalServices.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName))?.IsArchived ?? false;
 
 		public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
 		   GetModel<T>(descriptor.Name);
@@ -258,19 +275,9 @@ namespace Beamable.Editor.UI.Model
 
 		public MongoStorageModel GetStorageModel(IDescriptor descriptor) => GetModel<MongoStorageModel>(descriptor);
 
-		private void OnEnable()
-		{
-			_serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			if (_serviceRegistry != null)
-				_serviceRegistry.OnDeploySuccess += HandleMicroservicesDeploySuccess;
-
-			RefreshLocal();
-			RefreshServerManifest();
-		}
-
 		private void HandleMicroservicesDeploySuccess(ManifestModel oldManifest, int serviceCount)
 		{
-			RefreshServerManifest();
+			var _ = RefreshServerManifest();
 		}
 
 		public void Destroy()
@@ -283,10 +290,17 @@ namespace Beamable.Editor.UI.Model
 
 		}
 
+		protected async Promise RefreshState()
+		{
+			remoteServices.Clear();
+			remoteStorages.Clear();
+			RefreshLocal();
+			await RefreshServerManifest();
+		}
+
 		public void OnAfterLoadState()
 		{
-			RefreshLocal();
-			RefreshServerManifest();
+			RefreshState().Merge(FinishedLoading);
 		}
 	}
 

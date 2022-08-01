@@ -8,8 +8,7 @@
 
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="content">
-            <engine:Label name="contentLabelTop"/>
-			<engine:Label name="contentLabelBottom"/>
+            <engine:Label name="description"/>
         </engine:VisualElement>
 		<beamable:LabeledCheckboxVisualElement flip="true" name="checkbox"/>
         <engine:VisualElement name="buttonsVisualElement">

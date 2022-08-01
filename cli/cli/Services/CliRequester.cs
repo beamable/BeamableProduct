@@ -18,15 +18,27 @@ public class CliRequester : IBeamableRequester
 	{
 		_ctx = ctx;
 	}
-	public async Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
-		bool useCache = false)
+
+	public async Promise<T> CustomRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
+										  Func<string, T> parser = null, bool customerScoped = false, IEnumerable<string> customHeaders = null)
 	{
 		BeamableLogger.Log($"{method} call: {uri}");
 
-		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken);
+		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
 		var request = PrepareRequest(method, _ctx.Host, uri, body);
+		if (customHeaders != null)
+		{
+			foreach (string customHeader in customHeaders)
+			{
+				var headers = customHeader.Split('=');
+				if (headers.Length == 2)
+				{
+					request.Headers.Add(headers[0], headers[1]);
+				}
+			}
+		}
 
-		BeamableLogger.Log($"Calling: {request}");
+		CliSerilogProvider.Instance.Debug($"Calling: {request}");
 
 		if (_ctx.IsDryRun)
 		{
@@ -36,7 +48,7 @@ public class CliRequester : IBeamableRequester
 
 		var result = await client.SendAsync(request);
 
-		BeamableLogger.Log($"RESULT: {result}");
+		CliSerilogProvider.Instance.Debug($"RESULT: {result}");
 
 		T parsed = default(T);
 		if (result.Content != null)
@@ -56,6 +68,12 @@ public class CliRequester : IBeamableRequester
 			}
 		}
 		return parsed;
+	}
+
+	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
+		bool useCache = false)
+	{
+		return CustomRequest(method, uri, body, includeAuthHeader, parser, false);
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string? basePath, string uri, object body = null)
@@ -80,19 +98,12 @@ public class CliRequester : IBeamableRequester
 		return request;
 	}
 
-	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, IAccessToken? token)
+	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, IAccessToken? token, bool customerScoped)
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
 
-		if (!string.IsNullOrEmpty(cid))
-		{
-			client.DefaultRequestHeaders.Add("X-KS-CLIENTID", cid);
-		}
-		if (!string.IsNullOrEmpty(pid))
-		{
-			client.DefaultRequestHeaders.Add("X-KS-PROJECTID", pid);
-		}
+		client.DefaultRequestHeaders.Add("X-DE-SCOPED", customerScoped ? cid : $"{cid}.{pid}");
 
 		if (includeAuthHeader && !string.IsNullOrWhiteSpace(token?.Token))
 		{
