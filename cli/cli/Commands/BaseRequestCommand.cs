@@ -23,7 +23,6 @@ public abstract class BaseRequestCommand : AuthorizedCommand<BaseRequestArgs>
 		AddArgument(uri, (args, i) => args.uri = i);
 		AddOption(new HeaderOption(), (args, i) => args.customHeaders.AddRange(i));
 		AddOption(new BodyPathOption(), (args, i) => args.bodyPath = i);
-		AddOption(new CustomerScopedOption(), (args, i) => args.customerScoped = i);
 	}
 
 	public override async Task Handle(BaseRequestArgs args)
@@ -54,5 +53,4 @@ public class BaseRequestArgs : AuthorizedCommandArgs
 	public List<string> customHeaders = new();
 	public string uri;
 	public string bodyPath;
-	public bool customerScoped = false;
 }

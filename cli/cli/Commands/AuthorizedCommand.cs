@@ -8,7 +8,8 @@ public abstract class AuthorizedCommand<T> : AppCommand<T> where T : AuthorizedC
 {
 	private readonly IAppContext _ctx;
 	protected readonly IAuthApi AuthApi;
-	public AuthorizedCommand(IAppContext ctx, IAuthApi authApi, string name, string description = null) : base(name, description)
+
+	protected AuthorizedCommand(IAppContext ctx, IAuthApi authApi, string name, string description = null) : base(name, description)
 	{
 		_ctx = ctx;
 		AuthApi = authApi;
@@ -17,6 +18,7 @@ public abstract class AuthorizedCommand<T> : AppCommand<T> where T : AuthorizedC
 	{
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
+		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 	}
 
 	public override async Task Handle(T args)
@@ -24,17 +26,16 @@ public abstract class AuthorizedCommand<T> : AppCommand<T> where T : AuthorizedC
 		if (!string.IsNullOrWhiteSpace(_ctx.RefreshToken))
 		{
 			var resp = await AuthApi.LoginRefreshToken(_ctx.RefreshToken);
-			BeamableLogProvider.Provider.Info($"{resp.access_token}, {resp.refresh_token}");
 			_ctx.UpdateToken(resp);
 			return;
 		}
 
 		if (string.IsNullOrWhiteSpace(args.username) || string.IsNullOrWhiteSpace(args.password))
 		{
-			BeamableLogger.LogError("Username or password is empty, skipping login");
+			BeamableLogger.LogError("Refresh token, username and password are empty, skipping login");
 			return;
 		}
-		var response = await AuthApi.Login(args.username, args.password, true, true).ShowLoading("Authorizing...");
+		var response = await AuthApi.Login(args.username, args.password, true, args.customerScoped).ShowLoading("Authorizing...");
 		_ctx.UpdateToken(response);
 	}
 }
@@ -42,4 +43,5 @@ public abstract class AuthorizedCommand<T> : AppCommand<T> where T : AuthorizedC
 public class AuthorizedCommandArgs : CommandArgs {
 	public string username;
 	public string password;
+	public bool customerScoped;
 }
