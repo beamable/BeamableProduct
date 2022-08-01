@@ -189,6 +189,7 @@ namespace Beamable.Editor.UI.Components
 					SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
 				                                                   t != typeof(FractionFloatBussProperty));
+				
 				foreach (Type type in types)
 				{
 					GUIContent label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -276,7 +277,7 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			_selectorLabelComponent.Setup(StyleRule, _styleSheet, PrepareCommands());
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet, PrepareCommands);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 

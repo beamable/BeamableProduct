@@ -68,6 +68,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 
 			EditorUtility.SetDirty(this);
+			
+			RefreshDefaultStyles();
 		}
 #endif
 
