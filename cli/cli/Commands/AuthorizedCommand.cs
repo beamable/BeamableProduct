@@ -21,7 +21,19 @@ public abstract class AuthorizedCommand<T> : AppCommand<T> where T : AuthorizedC
 
 	public override async Task Handle(T args)
 	{
-		BeamableLogProvider.Provider.Info($"{args.username}, {args.password}");
+		if (!string.IsNullOrWhiteSpace(_ctx.RefreshToken))
+		{
+			var resp = await AuthApi.LoginRefreshToken(_ctx.RefreshToken);
+			BeamableLogProvider.Provider.Info($"{resp.access_token}, {resp.refresh_token}");
+			_ctx.UpdateToken(resp);
+			return;
+		}
+
+		if (string.IsNullOrWhiteSpace(args.username) || string.IsNullOrWhiteSpace(args.password))
+		{
+			BeamableLogger.LogError("Username or password is empty, skipping login");
+			return;
+		}
 		var response = await AuthApi.Login(args.username, args.password, true, false).ShowLoading("Authorizing...");
 		_ctx.UpdateToken(response);
 		BeamableLogProvider.Provider.Info($"{response.access_token}, {response.refresh_token}");

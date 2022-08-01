@@ -15,6 +15,7 @@ public interface IAppContext
 	public string Host { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
+	public string RefreshToken { get; }
 
 	/// <summary>
 	/// Control how basic options are found from the console context.
@@ -44,10 +45,12 @@ public class DefaultAppContext : IAppContext
 	private CliToken _token;
 
 	private string _cid, _pid, _host;
+	private string _refreshToken;
 
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
+	public string RefreshToken => _refreshToken;
 
 	public string WorkingDirectory { get; private set; }
 	public LogEventLevel LogLevel { get; private set; }
@@ -99,9 +102,9 @@ public class DefaultAppContext : IAppContext
 		}
 
 		TryGetSetting(out var accessToken, bindingContext, _accessTokenOption);
-		TryGetSetting(out var refreshToken, bindingContext, _refreshTokenOption);
+		TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption);
 
-		_token = new CliToken(accessToken, refreshToken, _cid, _pid);
+		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
 		Set(_cid, _pid, _host);
 	}
 
