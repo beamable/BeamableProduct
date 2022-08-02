@@ -45,13 +45,12 @@ namespace Beamable.EasyFeatures.BasicParty
 			CreateButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
 			// prepare friends list
-			await Context.Friends.OnReady;	// show loading
-			var friendsList = Context.Friends.FriendsList;
-			string[] friends = new string[friendsList.Count + 1];
+			await Context.Social.OnReady;	// show loading
+			var friendsList = Context.Social.Friends;
+			string[] friends = new string[friendsList.Count];
 			for (int i = 0; i < friends.Length; i++)
 			{
-				// friends[i] = friendsList[i].playerId;
-				friends[i] = "1498853117138039";
+				friends[i] = friendsList[i].playerId.ToString();
 			}
 			
 			PartyList.Setup(friends.ToList(), false, OnPlayerInvited, null, null, null);
