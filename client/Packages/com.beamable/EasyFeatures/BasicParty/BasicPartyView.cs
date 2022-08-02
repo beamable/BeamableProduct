@@ -94,13 +94,11 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnCopyIdButtonClicked()
 		{
 			GUIUtility.systemCopyBuffer = Context.Party.Id;
-			// below should be displayed a toast message
-			// FeatureControl.OverlaysController.ShowLabel("Party ID was copied", 3);
+			FeatureControl.OverlaysController.ShowToast("Party ID was copied");
 		}
 
 		private void OnPromoted(string id)
 		{
-			// TODO Add confirm action once Party SDK is ready
 			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to transfer lead to {id}?", () => PromotePlayer(id));
 		}
 

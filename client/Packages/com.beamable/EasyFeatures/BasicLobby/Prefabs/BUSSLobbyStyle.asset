@@ -85,6 +85,16 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":20.0}'
+    - key: shadowColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.2862745225429535,"g":0.19215688109397889,"b":0.125490203499794,"a":0.6000000238418579}}'
+    - key: shadowOffset
+      property:
+        type: Beamable.UI.Buss.Vector2BussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_vector2Value":{"x":0.0,"y":-10.0}}'
     _selector: .card
   - _properties:
     - key: backgroundColor
