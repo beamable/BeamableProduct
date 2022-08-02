@@ -1,6 +1,8 @@
 using Beamable.Common;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Assistant;
+using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI.Components;
@@ -77,7 +79,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.Refresh();
 			SetView();
+
+			Context.OnRealmChange -= RefreshFromRealmChange;
+			Context.OnUserChange -= RefreshFromUserChange;
+			Context.OnRealmChange += RefreshFromRealmChange;
+			Context.OnUserChange += RefreshFromUserChange;
 		}
+
+		private void RefreshFromRealmChange(RealmView _) => Refresh();
+		private void RefreshFromUserChange(EditorUser _) => Refresh();
 
 		private void RefreshView()
 		{
@@ -135,10 +145,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void CheckLoginStatus()
 		{
-			var api = BeamEditorContext.Default;
-
 			foreach (var kvp in _modelToVisual)
-				kvp.Value.ChangeStartButtonState(api.IsAuthenticated, Constants.Tooltips.Microservice.PLAY_MICROSERVICE, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+			{
+				kvp.Value.ChangeStartButtonState(true, Constants.Tooltips.Microservice.PLAY_MICROSERVICE, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+			}
 		}
 
 		private void HandleSelectionChanged(bool _)

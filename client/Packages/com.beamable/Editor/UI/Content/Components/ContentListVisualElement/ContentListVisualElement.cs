@@ -46,6 +46,7 @@ namespace Beamable.Editor.Content.Components
 		private HeaderVisualElement _headerVisualElement;
 		private ExtendedListView _listView;
 		private List<HeaderSizeChange> _headerSizeChanges;
+		private List<ContentVisualElement> _contentVisualElements = new List<ContentVisualElement>();
 		private bool _isKeyboardInputBlocked;
 
 		public ContentListVisualElement() : base(nameof(ContentListVisualElement)) { }
@@ -84,6 +85,7 @@ namespace Beamable.Editor.Content.Components
 
 			var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
 			_listView.AddManipulator(manipulator);
+			_contentVisualElements = new List<ContentVisualElement>();
 
 			_listView.RefreshPolyfill();
 
@@ -123,7 +125,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			_headerSizeChanges = headerFlexSizes;
 			// update all content...
-			foreach (var listElement in _listView.Children())
+			foreach (var listElement in _contentVisualElements)
 			{
 				ApplyColumnSizes(listElement);
 			}
@@ -200,6 +202,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			ContentVisualElement contentVisualElement = new ContentVisualElement();
 
+			_contentVisualElements.Add(contentVisualElement);
 			return contentVisualElement;
 		}
 

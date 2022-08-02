@@ -1,4 +1,6 @@
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.CodeGen;
+using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.IO;
 using UnityEngine;
@@ -24,10 +26,11 @@ namespace Beamable.Server.Editor
 				(new ProgramCodeGenerator(descriptor)).GenerateCSharpCode(programFilePath);
 				(new DockerfileGenerator(descriptor, includeDebugTools, watch)).Generate(dockerfilePath);
 				(new ProjectGenerator(descriptor, dependencies)).Generate(csProjFilePath);
-
 			}
 			catch (Exception ex)
 			{
+				BeamEditorContext.Default.ServiceScope.GetService<MicroservicesDataModel>()
+								 .AddLogException(descriptor, ex);
 				Debug.LogException(ex);
 			}
 		}

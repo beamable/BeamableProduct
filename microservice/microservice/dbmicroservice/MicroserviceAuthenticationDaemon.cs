@@ -98,15 +98,16 @@ public class MicroserviceAuthenticationDaemon
 		// While this thread isn't cancelled...
 		while (!cancellationTokenSource.IsCancellationRequested)
 		{
+			Log.Verbose($"Waiting at Thread ID = {Environment.CurrentManagedThreadId}");
 			// Wait for it to be woken up via the Wait Handle. When it is woken up, it'll run the logic for us to [re]-auth with Beamo and then go back to sleep.
 			AUTH_THREAD_WAIT_HANDLE.WaitOne();
 			if (cancellationTokenSource.IsCancellationRequested)
 			{
-				Log.Verbose($"Authorization Daemon has been cancelled.");
+				Log.Verbose($"Authorization Daemon has been cancelled. At ThreadID = {Environment.CurrentManagedThreadId}");
 				return;
 			}
 
-			Log.Verbose($"Authorization Daemon has been woken.");
+			Log.Verbose($"Authorization Daemon has been woken. At ThreadID = {Environment.CurrentManagedThreadId}");
 
 			// Gets the number of requests that have been made by the service so far...
 			var outgoingReqsCountAtStart = Interlocked.Read(ref _OutgoingRequestCounter);
@@ -119,14 +120,14 @@ public class MicroserviceAuthenticationDaemon
 			try
 			{
 				// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
-				Log.Verbose($"Authorization Daemon checking for pending requests. Requests=[{AuthorizationCounter}]");
+				Log.Verbose($"Authorization Daemon checking for pending requests. At ThreadID = {Environment.CurrentManagedThreadId}, Requests=[{AuthorizationCounter}]");
 				if (AuthorizationCounter > 0)
 				{
 					// Do the authorization back and forth with Beamo
 					await Authenticate();
 
 					// Resets the auth counter back to 0
-					Log.Verbose($"Authorization Daemon clearing pending requests.");
+					Log.Verbose($"Authorization Daemon clearing pending requests. At ThreadID = {Environment.CurrentManagedThreadId}");
 					Interlocked.Exchange(ref AuthorizationCounter, 0);
 				}
 			}
@@ -152,7 +153,7 @@ public class MicroserviceAuthenticationDaemon
 			} while (stillProcessingPotentiallyFailedReqs);
 
 			// This solves an extremely unlikely race condition
-			Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call.");
+			Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call. At ThreadID = {Environment.CurrentManagedThreadId}");
 			Interlocked.Exchange(ref AuthorizationCounter, 0);
 			AUTH_THREAD_WAIT_HANDLE.Reset();
 		}
@@ -168,23 +169,19 @@ public class MicroserviceAuthenticationDaemon
 			return Convert.ToBase64String(hash);
 		}
 
-		Log.Debug("Authorizing WS connection");
+		Log.Debug($"Authorizing WS connection at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-		Log.Debug("Got nonce");
+		Log.Debug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
 		var sig = CalculateSignature(_env.Secret + res.nonce);
-		var req = new MicroserviceAuthRequest
-		{
-			cid = _env.CustomerID,
-			pid = _env.ProjectName,
-			signature = sig
-		};
+		var req = new MicroserviceAuthRequest { cid = _env.CustomerID, pid = _env.ProjectName, signature = sig };
 		var authRes = await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
 		if (!string.Equals("ok", authRes.result))
 		{
 			Log.Error("Authorization failed. result=[{result}]", authRes.result);
 			throw new Exception("Authorization failed");
 		}
-		Log.Debug("Authorization complete");
+
+		Log.Debug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 	}
 
 	/// <summary>
@@ -197,12 +194,11 @@ public class MicroserviceAuthenticationDaemon
 	/// <param name="socketContext"></param>
 	/// <param name="cancellationTokenSource"></param>
 	/// <returns>A task that completes the loop after the given <see cref="cancellationTokenSource"/> has requested a cancel</returns>
-	public static (Task,MicroserviceAuthenticationDaemon)  Start(
+	public static (Task, MicroserviceAuthenticationDaemon) Start(
 		IMicroserviceArgs env, MicroserviceRequester requester,
 		CancellationTokenSource cancellationTokenSource)
 	{
 		var daemon = new MicroserviceAuthenticationDaemon(env, requester);
-		var task = Task.Run(() => daemon.Run(cancellationTokenSource), cancellationTokenSource.Token);
-		return (task, daemon);
+		return (new TaskFactory().StartNew(() => daemon.Run(cancellationTokenSource), cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default), daemon);
 	}
 }

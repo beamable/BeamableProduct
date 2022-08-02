@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -8,6 +9,9 @@ using System.Reflection;
 using UnityEngine;
 using static Beamable.Common.Constants.MenuItems.Assets;
 using Debug = System.Diagnostics.Debug;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Beamable.Reflection
 {
@@ -45,13 +49,23 @@ namespace Beamable.Reflection
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => new List<BaseTypeOfInterest>();
 			public List<AttributeOfInterest> AttributesOfInterest => new List<AttributeOfInterest>() { REGISTER_BEAMABLE_DEPENDENCIES_ATTRIBUTE };
 
+			public IReadOnlyCollection<string> TypesContainingDependencyFunctions => _allTypesContainingDependencyFunctions;
+			public IReadOnlyCollection<string> SampleTypesContainingDependencyFunctions => _allSampleTypesContainingDependencyFunctions;
+
 			private List<MemberAttribute> _registerBeamableDependencyFunctions;
+			private List<MemberAttribute> _sampleBeamableDependencyFunctions;
+
+			private HashSet<string> _allTypesContainingDependencyFunctions;
+			private HashSet<string> _allSampleTypesContainingDependencyFunctions;
 
 			private IBeamHintGlobalStorage _hintGlobalStorage;
 
 			public Registry()
 			{
 				_registerBeamableDependencyFunctions = new List<MemberAttribute>();
+				_sampleBeamableDependencyFunctions = new List<MemberAttribute>();
+				_allTypesContainingDependencyFunctions = new HashSet<string>();
+				_allSampleTypesContainingDependencyFunctions = new HashSet<string>();
 			}
 
 			public void ClearCachedReflectionData()
@@ -60,6 +74,11 @@ namespace Beamable.Reflection
 					_registerBeamableDependencyFunctions.Clear();
 				else
 					_registerBeamableDependencyFunctions = new List<MemberAttribute>();
+
+				if (_allTypesContainingDependencyFunctions != null)
+					_allTypesContainingDependencyFunctions.Clear();
+				else
+					_allTypesContainingDependencyFunctions = new HashSet<string>();
 			}
 
 			public void OnSetupForCacheGeneration()
@@ -98,6 +117,21 @@ namespace Beamable.Reflection
 
 					return attrA.Order.CompareTo(attrB.Order);
 				});
+				_allTypesContainingDependencyFunctions.UnionWith(_registerBeamableDependencyFunctions.Select(mb => mb.Info.DeclaringType?.Name));
+
+#if UNITY_EDITOR && BEAMABLE_DEVELOPER
+				// In order to keep our samples in project and make the workflow simple enough, we keep track of all the attributes in the Sample folder.
+				// By default, none of them are registered. We have an editor utility that allows us to say "Register only the ones declared in these types".
+				// It's not "pretty", but it strikes a nice enough balance of our workflow within UPM and complexity added to the code-base.
+				_sampleBeamableDependencyFunctions.AddRange(_registerBeamableDependencyFunctions.Where(mb =>
+				{
+					var registerBeamableDependenciesAttribute = mb.AttrAs<RegisterBeamableDependenciesAttribute>();
+					var declPath = registerBeamableDependenciesAttribute.DeclarationPath;
+					var isBeamableSample =  declPath.Contains("Packages\\com.beamable") && declPath.Contains("Samples");
+					return isBeamableSample;
+				}));
+				_allSampleTypesContainingDependencyFunctions.UnionWith(_sampleBeamableDependencyFunctions.Select(mb=>mb.Info.DeclaringType?.Name));
+#endif
 
 			}
 
@@ -108,7 +142,32 @@ namespace Beamable.Reflection
 			/// </summary>
 			public void LoadCustomDependencies(IDependencyBuilder builderToConfigure, RegistrationOrigin origin = RegistrationOrigin.RUNTIME)
 			{
-				foreach (var registerBeamableDependencyFunction in _registerBeamableDependencyFunctions)
+				IEnumerable<MemberAttribute> toRegister = null;
+
+
+#if UNITY_EDITOR && BEAMABLE_DEVELOPER
+				// In order to keep our samples in project and make the workflow simple enough, we keep track of all the attributes in the Sample folder.
+				// By default, none of them are registered. We have an editor utility that allows us to say "Register only the ones declared in these types".
+				// It's not "pretty", but it strikes a nice enough balance of our workflow within UPM and complexity added to the code-base.
+				var allowedSampleFunctions = EditorPrefs.GetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS, "");
+				var sampleRegisteredDependencies = _sampleBeamableDependencyFunctions.Where(mb =>
+				{
+					var registerBeamableDependenciesAttribute = mb.AttrAs<RegisterBeamableDependenciesAttribute>();
+					var declPath = registerBeamableDependenciesAttribute.DeclarationPath;
+					var memberName = mb.Info.DeclaringType?.Name;
+					var isCurrentlyIncludedBeamableSample = allowedSampleFunctions.Split(';').Contains(memberName);
+
+					if(!isCurrentlyIncludedBeamableSample)
+						BeamableLogger.Log($"Skipping Register Beamable Dependency in Sample [{mb.Info.DeclaringType?.Name}].\nDeclPath={declPath}\nMemberName={memberName}");
+					
+					return !isCurrentlyIncludedBeamableSample;
+				});
+				
+				toRegister = _registerBeamableDependencyFunctions.Except(sampleRegisteredDependencies);
+#else
+				toRegister = _registerBeamableDependencyFunctions;
+#endif
+				foreach (var registerBeamableDependencyFunction in toRegister)
 				{
 					var matchesOrigin = origin.HasFlag(registerBeamableDependencyFunction
 													   .AttrAs<RegisterBeamableDependenciesAttribute>().Origin);
