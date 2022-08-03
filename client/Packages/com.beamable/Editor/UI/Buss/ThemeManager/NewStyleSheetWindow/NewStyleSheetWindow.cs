@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Buss
 
 			Refresh();
 		}
-		
+
 		protected override NewStyleSheetVisualElement GetVisualElement() => new NewStyleSheetVisualElement(_initialRules);
 	}
 }

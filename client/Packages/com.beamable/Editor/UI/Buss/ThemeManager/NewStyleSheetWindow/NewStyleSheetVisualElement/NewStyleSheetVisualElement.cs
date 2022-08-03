@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Buss
 		// Can start exactly with two dashes ("--") OR with any letter 
 		// Numbers and special characters are not valid
 		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
-		
+
 		private LabeledTextField _styleSheetName;
 		private PrimaryButtonVisualElement _confirmButton;
 		private readonly List<BussStyleRule> _initialRule;
@@ -71,7 +71,7 @@ namespace Beamable.Editor.UI.Buss
 				message = "Variable name can't be empty";
 				return false;
 			}
-			
+
 			if (!Regex.IsMatch(variableName, VARIABLE_NAME_REGEX))
 			{
 				message = "Variable name can contain only letters";
@@ -88,7 +88,7 @@ namespace Beamable.Editor.UI.Buss
 				Debug.LogError("Style sheet name cannot be empty!");
 				return;
 			}
-			
+
 			BussStyleSheetUtility.CreateNewStyleSheetWithInitialRules(_styleSheetName.Value, _initialRule);
 
 			NewStyleSheetWindow.CloseWindow();
