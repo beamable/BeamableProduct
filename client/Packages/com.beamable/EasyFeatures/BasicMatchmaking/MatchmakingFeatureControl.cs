@@ -167,7 +167,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			StartMatchmakingPlayerSystem.OnStateChanged += OnMatchmakingStateChanged;
 		}
 
-		private void OnMatchmakingStateChanged(MatchmakingState currentState)
+		private async void OnMatchmakingStateChanged(MatchmakingState currentState)
 		{
 			switch (currentState)
 			{
@@ -176,6 +176,10 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 					StartMatchmakingPlayerSystem.OnStateChanged -= OnMatchmakingStateChanged;
 					MatchmakingRoomPlayerSystem.RegisterMatch(GameTypes[StartMatchmakingPlayerSystem.SelectedGameTypeIndex],
 						StartMatchmakingPlayerSystem.CurrentMatchmakingHandle.Match);
+
+					await BeamContext.Lobby.GetLobby(
+						StartMatchmakingPlayerSystem.CurrentMatchmakingHandle.Match.matchId);
+					
 					OpenView(View.MatchmakingRoom);
 					break;
 				case MatchmakingState.Timeout:
