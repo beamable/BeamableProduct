@@ -295,9 +295,11 @@ namespace Beamable.Server.Editor
 				AssetDatabase.StartAssetEditing();
 				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 				var microserviceConfiguration = MicroserviceConfiguration.Instance;
-				
-				for (int i = 0 ; i < registry.Descriptors.Count; i++)
+
+				for (int i = 0; i < registry.Descriptors.Count; i++)
+				{
 					ProcessExtensions.KillAllWorkingProcessesForCommand(registry.Descriptors[i].Name);
+				}
 
 				// Gets the list of currently detected code handles.
 				var latestMSHandles = codeWatcher.LatestCodeHandles.Where(h => h.CodeClass == BeamCodeClass.Microservice).ToList();
