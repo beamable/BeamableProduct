@@ -33,8 +33,8 @@ namespace Beamable.Editor.UI.Components
 #endif
 
 		public void Setup(BussStyleRule styleRule,
-		                  BussStyleSheet styleSheet,
-		                  Func<List<GenericMenuCommand>> refreshCommands)
+						  BussStyleSheet styleSheet,
+						  Func<List<GenericMenuCommand>> refreshCommands)
 		{
 			base.Init();
 
@@ -78,7 +78,7 @@ namespace Beamable.Editor.UI.Components
 			}
 #endif
 
-			TextElement separator01 = new TextElement {name = "separator", text = "|"};
+			TextElement separator01 = new TextElement { name = "separator", text = "|" };
 			Root.Add(separator01);
 
 			_styleSheetLabel = new TextElement();
@@ -91,10 +91,10 @@ namespace Beamable.Editor.UI.Components
 
 			if (_styleSheet.IsReadOnly)
 			{
-				TextElement separator02 = new TextElement {name = "separator", text = "|"};
+				TextElement separator02 = new TextElement { name = "separator", text = "|" };
 				Root.Add(separator02);
 
-				TextElement readonlyLabel = new TextElement {text = "readonly"};
+				TextElement readonlyLabel = new TextElement { text = "readonly" };
 				Root.Add(readonlyLabel);
 			}
 		}

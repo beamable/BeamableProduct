@@ -26,7 +26,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			{
 				try
 				{
-					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
+					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -125,9 +125,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			_defaultBeamableStyleSheets.Clear();
 			BussStyleSheet[] bussStyleSheets = Resources
-			                                   .LoadAll<BussStyleSheet>(
-				                                   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
-			                                   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
+											   .LoadAll<BussStyleSheet>(
+												   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
+											   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
 			_defaultBeamableStyleSheets.AddRange(bussStyleSheets);
 		}
 
@@ -206,7 +206,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				if (!_weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
-				    weight.CompareTo(currentWeight) >= 0)
+					weight.CompareTo(currentWeight) >= 0)
 				{
 					element.Style[property.Key] = property.GetProperty();
 					_weights[property.Key] = weight;
@@ -215,16 +215,16 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		}
 
 		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-		                                                   string pseudoClass,
-		                                                   BussStyleDescription descriptor,
-		                                                   SelectorWeight weight)
+														   string pseudoClass,
+														   BussStyleDescription descriptor,
+														   SelectorWeight weight)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				string weightKey = pseudoClass + property.Key;
 				if (!_weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
-				    weight.CompareTo(currentWeight) >= 0)
+					weight.CompareTo(currentWeight) >= 0)
 				{
 					element.Style[pseudoClass, property.Key] = property.GetProperty();
 					_weights[weightKey] = weight;

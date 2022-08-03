@@ -15,7 +15,7 @@ namespace Beamable.UI.Buss
 			BussPropertyProvider propertyProvider;
 			var isKeyValid = BussStyle.IsKeyValid(key) || IsValidVariableName(key);
 			if (isKeyValid && !target.HasProperty(key) &&
-			    BussStyle.GetBaseType(key).IsInstanceOfType(property))
+				BussStyle.GetBaseType(key).IsInstanceOfType(property))
 			{
 				propertyProvider = BussPropertyProvider.Create(key, property.CopyProperty());
 				target.Properties.Add(propertyProvider);
@@ -47,7 +47,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public static void AssignAssetReferencesFromReferenceList(this BussStyleDescription style,
-		                                                          List<Object> assetReferences)
+																  List<Object> assetReferences)
 		{
 			foreach (BussPropertyProvider propertyProvider in style.Properties)
 			{
@@ -55,7 +55,7 @@ namespace Beamable.UI.Buss
 				if (property is BaseAssetProperty assetProperty)
 				{
 					if (assetProperty.AssetSerializationKey >= 0 &&
-					    assetProperty.AssetSerializationKey < assetReferences.Count)
+						assetProperty.AssetSerializationKey < assetReferences.Count)
 					{
 						assetProperty.GenericAsset = assetReferences[assetProperty.AssetSerializationKey];
 					}
@@ -69,7 +69,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public static void PutAssetReferencesInReferenceList(this BussStyleDescription style,
-		                                                     List<Object> assetReferences)
+															 List<Object> assetReferences)
 		{
 			if (style == null || style.Properties == null)
 			{
@@ -135,15 +135,15 @@ namespace Beamable.UI.Buss
 		public static void CreateNewStyleSheetWithInitialRules(string fileName, List<BussStyleRule> styles)
 		{
 			BussStyleSheet newStyleSheet = ScriptableObject.CreateInstance<BussStyleSheet>();
-			
+
 			foreach (BussStyleRule styleRule in styles)
 			{
-				CopySingleStyle(newStyleSheet, styleRule);	
+				CopySingleStyle(newStyleSheet, styleRule);
 			}
-			
+
 			BussConfiguration.OptionalInstance.Value.AddGlobalStyleSheet(newStyleSheet);
-			
-#if UNITY_EDITOR			
+
+#if UNITY_EDITOR
 			AssetDatabase.CreateAsset(newStyleSheet, $"Assets/Resources/{fileName}.asset");
 			AssetDatabase.SaveAssets();
 #endif
