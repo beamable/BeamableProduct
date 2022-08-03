@@ -1,5 +1,4 @@
-﻿using Beamable.UI.Buss;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using PropertyReference = Beamable.UI.Buss.VariableDatabase.PropertyReference;
@@ -26,6 +25,11 @@ namespace Beamable.UI.Buss
 				var config = BussConfiguration.OptionalInstance.Value;
 				if (config != null)
 				{
+					foreach (BussStyleSheet styleSheet in config.DefaultBeamableStyleSheetSheets)
+					{
+						AddStyleSheet(styleSheet);
+					}
+
 					foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
 					{
 						AddStyleSheet(styleSheet);
