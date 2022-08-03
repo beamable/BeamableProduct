@@ -192,6 +192,27 @@ namespace Beamable.Server.Editor.DockerCommands
 		{
 			try
 			{
+				/*
+				Process[] cmdProcesses = Process.GetProcesses();
+				if (cmdProcesses.Length > 0)
+				{
+					for (int i = 0; i < cmdProcesses.Length; i++)
+					{
+						if (!cmdProcesses[i].HasExited)
+						{
+							string commandLine = string.Empty;
+							ProcessCommandLine.Retrieve(cmdProcesses[i], out commandLine);
+
+							if (!string.IsNullOrEmpty(commandLine) && commandLine.Contains($"/C {command}"))
+							{
+								Debug.LogError("KILL : " + cmdProcesses[i].ProcessName + " | " + commandLine);
+								cmdProcesses[i].Kill();
+							}
+						}
+					}
+				}
+				*/
+
 				var _ = MicroserviceConfiguration.Instance; // preload configuration...
 				if (WriteCommandToUnity)
 				{
