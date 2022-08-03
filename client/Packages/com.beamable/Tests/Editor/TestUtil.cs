@@ -65,4 +65,63 @@ static class TestUtil
 			button.SendEvent(evt);
 #endif
 	}
+
+	/// <summary>
+	/// In order to trick a TextField into receiving a keystroke, we need to send both a KeyDown and KeyUp event. This utility method makes that a
+	/// little easier.
+	/// </summary>
+	/// <param name="textField"></param>
+	public static void SendTestKeystroke(this TextField textField, char key)
+	{
+		using (var evt = MouseDownEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
+		{
+			Debug.Log("MouseDown: " + evt);
+			textField.SendEvent(evt);
+		}
+		using (var evt = MouseUpEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
+		{
+			Debug.Log("MouseUp: " + evt);
+			textField.SendEvent(evt);
+		}
+
+		var e = KeyDownEvent.GetPooled(key, KeyCode.S, EventModifiers.None);
+		{
+			Debug.Log("KeyDown: " + e);
+			textField.SendEvent(e);
+		}
+		var a = KeyUpEvent.GetPooled(key, KeyCode.S, EventModifiers.None);
+		{
+			Debug.Log("KeyUp: " + a);
+			textField.SendEvent(a);
+		}
+	}
+
+	public static IEnumerable SendTestKeyStrokeCoroutine(this TextField textField, char key)
+	{
+		using (var evt = MouseDownEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
+		{
+			Debug.Log("MouseDown: " + evt);
+			textField.SendEvent(evt);
+		}
+		yield return null;
+		using (var evt = MouseUpEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
+		{
+			Debug.Log("MouseUp: " + evt);
+			textField.SendEvent(evt);
+		}
+		yield return null;
+
+		using (var evt = KeyDownEvent.GetPooled('A', KeyCode.None, EventModifiers.None))
+		{
+			Debug.Log("KeyDown: " + evt);
+			textField.SendEvent(evt);
+		}
+		yield return null;
+		using (var evt = KeyUpEvent.GetPooled())
+		{
+			Debug.Log("KeyUp: " + evt);
+			textField.SendEvent(evt);
+		}
+		yield return null;
+	}
 }
