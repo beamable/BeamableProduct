@@ -84,7 +84,8 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 			
-			PartyPlayerSystem.Setup(Context.Party.Members.ToList());
+			// replace MaxPlayers parameter Party.MaxPlayers once it's available in the SDK
+			PartyPlayerSystem.Setup(Context.Party.Members.ToList(), CreatePartyPlayerSystem.MaxPlayers);
 			OpenView(View.Party);
 		}
 		

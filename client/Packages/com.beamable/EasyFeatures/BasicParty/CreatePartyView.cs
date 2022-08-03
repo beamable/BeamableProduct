@@ -107,8 +107,13 @@ namespace Beamable.EasyFeatures.BasicParty
 			if (int.TryParse(value, out int maxPlayers))
 			{
 				System.MaxPlayers = maxPlayers;
-				ValidateNextButton();
 			}
+			else
+			{
+				System.MaxPlayers = 0;
+			}
+			
+			ValidateNextButton();
 		}
 
 		private void OnBackButtonClicked()
@@ -123,6 +128,11 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void ReturnToPartyView()
 		{
+			if (!Context.Party.IsInParty)
+			{
+				FeatureControl.OpenJoinView();
+			}
+			
 			FeatureControl.OpenPartyView();
 		}
 

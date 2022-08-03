@@ -72,12 +72,12 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnCancelButtonClicked()
 		{
-			throw new System.NotImplementedException();
+			FeatureControl.OpenCreatePartyView();
 		}
 
 		private void OnBackButtonClicked()
 		{
-			throw new System.NotImplementedException();
+			FeatureControl.OpenCreatePartyView();
 		}
 
 		private async void OnJoinButtonClicked()

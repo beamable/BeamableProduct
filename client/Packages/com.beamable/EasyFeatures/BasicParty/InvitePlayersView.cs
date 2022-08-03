@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -47,13 +48,17 @@ namespace Beamable.EasyFeatures.BasicParty
 			// prepare friends list
 			await Context.Social.OnReady;	// show loading
 			var friendsList = Context.Social.Friends;
-			string[] friends = new string[friendsList.Count];
-			for (int i = 0; i < friends.Length; i++)
+			// string[] friends = new string[friendsList.Count];
+			List<string> friends = new List<string>(friendsList.Count);
+			for (int i = 0; i < friendsList.Count; i++)
 			{
-				friends[i] = friendsList[i].playerId.ToString();
+				if (Context.Party.Members.Any(playerId => playerId.Equals(friendsList[i].playerId.ToString())))
+					continue;
+				
+				friends.Add(friendsList[i].playerId.ToString());
 			}
 			
-			PartyList.Setup(friends.ToList(), false, OnPlayerInvited, null, null, null);
+			PartyList.Setup(friends, false, OnPlayerInvited, null, null, null);
 		}
 
 		private async void OnPlayerInvited(string id)

@@ -20,6 +20,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		[Header("Components")]
 		public TextMeshProUGUI PartyIdText;
+		public TextMeshProUGUI PlayerCountText;
 
 		public PlayersListPresenter PartyList;
 		public GameObject LeadButtonsGroup;
@@ -52,6 +53,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 			
 			PartyIdText.text = Context.Party.Id;
+			SetupPlayerCountText();
 
 			LeadButtonsGroup.SetActive(Context.Party.IsLeader);
 			NonLeadButtonsGroup.SetActive(!Context.Party.IsLeader);
@@ -70,6 +72,8 @@ namespace Beamable.EasyFeatures.BasicParty
 			
 			SetupPartyList();
 		}
+		
+		private void SetupPlayerCountText() => PlayerCountText.text = $"{Context.Party.Members.Count}/{System.MaxPlayers}";
 
 		private void SetupPartyList()
 		{
@@ -79,11 +83,13 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected virtual void OnPlayerJoined(object playerId)
 		{
 			SetupPartyList();
+			SetupPlayerCountText();
 		}
 		
 		protected virtual void OnPlayerLeft(object playerId)
 		{
 			SetupPartyList();
+			SetupPlayerCountText();
 		}
 
 		private void OnAddMember()

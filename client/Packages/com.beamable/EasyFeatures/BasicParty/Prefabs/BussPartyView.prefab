@@ -949,7 +949,7 @@ MonoBehaviour:
   rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
+  meshFrame: 10
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -958,12 +958,12 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    BottomRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
+  shadowOffset: {x: 0, y: -10}
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
@@ -2159,14 +2159,14 @@ MonoBehaviour:
   m_VerticalScrollbar: {fileID: 0}
   m_VerticalScrollbarEventHandler: {fileID: 0}
   m_ScrollSensitivity: 1
-  m_ContentType: 0
+  m_ContentType: 2
   m_InputType: 0
   m_AsteriskChar: 42
-  m_KeyboardType: 0
+  m_KeyboardType: 4
   m_LineType: 0
   m_HideMobileInput: 0
   m_HideSoftKeyboard: 0
-  m_CharacterValidation: 0
+  m_CharacterValidation: 2
   m_RegexValue: 
   m_GlobalPointSize: 14
   m_CharacterLimit: 0
@@ -2942,7 +2942,7 @@ MonoBehaviour:
   rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
+  meshFrame: 10
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -2951,12 +2951,12 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    BottomRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
+  shadowOffset: {x: 0, y: -10}
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
@@ -5829,6 +5829,7 @@ MonoBehaviour:
   FeatureControl: {fileID: 8031874776286076267}
   EnrichOrder: 0
   PartyIdText: {fileID: 2958653358414384034}
+  PlayerCountText: {fileID: 8966086644913588226}
   PartyList: {fileID: 917273496467715652}
   LeadButtonsGroup: {fileID: 3812096431988423751}
   NonLeadButtonsGroup: {fileID: 1106676821870671644}
@@ -6480,7 +6481,7 @@ MonoBehaviour:
   rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
+  meshFrame: 10
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -6489,12 +6490,12 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    BottomRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
+  shadowOffset: {x: 0, y: -10}
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
@@ -7458,8 +7459,8 @@ MonoBehaviour:
   m_fontSize: 36
   m_fontSizeBase: 36
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 36
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_textAlignment: 257
@@ -7469,9 +7470,9 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
+  m_enableWordWrapping: 0
   m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
+  m_overflowMode: 1
   m_firstOverflowCharacterIndex: -1
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
@@ -8042,10 +8043,10 @@ MonoBehaviour:
     serializedVersion: 2
     rgba: 4278190080
   m_fontSize: 36
-  m_fontSizeBase: 14
+  m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 18
+  m_fontSizeMin: 36
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_textAlignment: 8193
@@ -8057,7 +8058,7 @@ MonoBehaviour:
   m_charWidthMaxAdj: 0
   m_enableWordWrapping: 0
   m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
+  m_overflowMode: 1
   m_firstOverflowCharacterIndex: -1
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
@@ -10430,7 +10431,7 @@ MonoBehaviour:
   rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
+  meshFrame: 10
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -10439,12 +10440,12 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    BottomRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
+  shadowOffset: {x: 0, y: -10}
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
@@ -10849,7 +10850,7 @@ MonoBehaviour:
   rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
+  meshFrame: 10
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -10858,12 +10859,12 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    BottomRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
+  shadowOffset: {x: 0, y: -10}
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
@@ -14966,7 +14967,7 @@ MonoBehaviour:
   rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
+  meshFrame: 10
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -14975,12 +14976,12 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    BottomRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopLeftColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
+    TopRightColor: {r: 0.28627452, g: 0.19215688, b: 0.1254902, a: 0.6}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
+  shadowOffset: {x: 0, y: -10}
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0

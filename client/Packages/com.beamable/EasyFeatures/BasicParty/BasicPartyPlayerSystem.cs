@@ -14,9 +14,10 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private List<string> _players;
 		
-		public void Setup(List<string> players)
+		public void Setup(List<string> players, int maxPlayers)
 		{
 			_players = players;
+			MaxPlayers = maxPlayers;
 		}
 		
 		private List<PartySlotPresenter.ViewData> BuildViewData()
