@@ -157,7 +157,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void AddSelectorButton(VisualElement parent)
 		{
-			VisualElement buttonsRow = new VisualElement {name = "buttonsRow"};
+			VisualElement buttonsRow = new VisualElement { name = "buttonsRow" };
 			parent.Insert(parent.Children().Count() - 1, buttonsRow);
 
 			_addStyleButton = new AddStyleButton();
@@ -165,7 +165,7 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton.CheckEnableState();
 			buttonsRow.Add(_addStyleButton);
 
-			VisualElement spacing = new VisualElement {name = "spacing"};
+			VisualElement spacing = new VisualElement { name = "spacing" };
 			buttonsRow.Add(spacing);
 
 			CopyStyleSheetButton copyStyleSheetButton = new CopyStyleSheetButton();

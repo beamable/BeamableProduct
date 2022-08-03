@@ -29,7 +29,7 @@ namespace Beamable.Editor.UI.Components
 		private BussElement _bussElement;
 
 		public InlineStyleCardVisualElement(VariableDatabase variableDatabase,
-		                                    PropertySourceDatabase propertySourceDatabase) : base(
+											PropertySourceDatabase propertySourceDatabase) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/InlineStyleCardVisualElement/InlineStyleCardVisualElement.uss", false)
 		{
 			_variableDatabase = variableDatabase;
@@ -145,7 +145,7 @@ namespace Beamable.Editor.UI.Components
 				Type baseType = BussStyle.GetBaseType(key);
 				SerializableValueImplementationHelper.ImplementationData data = SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                                   t != typeof(FractionFloatBussProperty));
+																   t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -220,7 +220,7 @@ namespace Beamable.Editor.UI.Components
 				var visualElement = new BussStylePropertyVisualElement();
 				visualElement.InlineStyleOwner = _bussElement;
 				visualElement.Setup(null, _bussElement.InlineStyle, propertyProvider, _variableDatabase,
-				                    propertySourceTracker);
+									propertySourceTracker);
 				if (propertyProvider.IsVariable)
 				{
 					_variableContainer.Add(visualElement);

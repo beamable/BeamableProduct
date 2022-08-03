@@ -23,7 +23,8 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleListVisualElement _styleList;
 
 		public CopyStyleSheetButton() :
-			base($"{BUSS_THEME_MANAGER_PATH}/CopyStyleSheetButton/CopyStyleSheetButton.uss") { }
+			base($"{BUSS_THEME_MANAGER_PATH}/CopyStyleSheetButton/CopyStyleSheetButton.uss")
+		{ }
 
 		public void Setup(BussStyleListVisualElement styleList)
 		{
@@ -36,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_copyStyleSheetButton = new VisualElement {name = "copyStyleSheetButton"};
+			_copyStyleSheetButton = new VisualElement { name = "copyStyleSheetButton" };
 			_copyStyleSheetButton.AddToClassList("button");
 			_copyStyleSheetButton.Add(new Label(DUPLICATE_STYLESHEET_BUTTON_LABEL));
 
