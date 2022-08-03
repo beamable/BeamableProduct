@@ -82,6 +82,9 @@ public class App
 		Services.AddSingleton<IAuthApi, AuthApi>();
 		Services.AddSingleton<ConfigService>();
 		Services.AddSingleton<CliEnvironment>();
+		Services.AddSingleton<SwaggerService>();
+		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
+		Services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
 
 		// add commands
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();
@@ -93,6 +96,7 @@ public class App
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
+		Services.AddRootCommand<GenerateSdkCommand, GenerateSdkCommandArgs>();
 
 		// customize
 		configurator?.Invoke(Services);
