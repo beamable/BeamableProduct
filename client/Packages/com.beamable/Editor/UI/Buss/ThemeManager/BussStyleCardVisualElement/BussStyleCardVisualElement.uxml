@@ -9,7 +9,7 @@
         <engine:VisualElement name="cardHeader">
             <engine:VisualElement name="colorBlock"/>
             <engine:VisualElement name="selectorLabelParent"/>
-<!--            <engine:VisualElement name="wizardButton" class="button smallButton wizard"/>-->
+            <engine:VisualElement name="optionsButton" class="button smallButton edit"/>
             <engine:VisualElement name="undoButton" class="button smallButton undo"/>
             <engine:VisualElement name="cleanAllButton" class="button smallButton cleanAll"/>
         </engine:VisualElement>

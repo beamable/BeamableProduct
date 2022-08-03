@@ -40,43 +40,20 @@ namespace Beamable.Editor.UI.Components
 
 			_addStyleButton = new VisualElement { name = "addStyleButton" };
 			_addStyleButton.AddToClassList("button");
-			_addStyleButton.Add(new Label("Add Style"));
+			_addStyleButton.Add(new Label(ADD_STYLE_BUTTON_LABEL));
 
-			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OnClick());
-			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OnClick());
+			_addStyleButton.UnregisterCallback<MouseDownEvent>(OnClick);
+			_addStyleButton.RegisterCallback<MouseDownEvent>(OnClick);
 
-			_addStyleButton.UnregisterCallback<MouseEnterEvent>(_ => CheckEnableState());
-			_addStyleButton.RegisterCallback<MouseEnterEvent>(_ => CheckEnableState());
+			_addStyleButton.UnregisterCallback<MouseEnterEvent>(CheckEnableState);
+			_addStyleButton.RegisterCallback<MouseEnterEvent>(CheckEnableState);
 
 			Root.Add(_addStyleButton);
 		}
 
-		public void CheckEnableState()
+		private void OnClick(MouseDownEvent evt = null)
 		{
-			if (_addStyleButton == null) return;
-
-			_addStyleButton.tooltip = string.Empty;
-
-			var styleSheetCount = _styleList.WritableStyleSheets?.Count() ?? 0;
-
-			if (styleSheetCount == 0)
-			{
-				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
-				_addStyleButton.SetInactive(true);
-			}
-			else
-			{
-				_addStyleButton.tooltip = String.Empty;
-				_addStyleButton.SetInactive(false);
-
-				if (styleSheetCount == 1) { }
-				else if (styleSheetCount > 1) { }
-			}
-		}
-
-		private void OnClick()
-		{
-			var styleSheetCount = _styleList.WritableStyleSheets.Count();
+			int styleSheetCount = _styleList.WritableStyleSheets.Count();
 
 			if (styleSheetCount == 0)
 			{
@@ -93,10 +70,31 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
+		public void CheckEnableState(MouseEnterEvent evt = null)
+		{
+			if (_addStyleButton == null) return;
+
+			_addStyleButton.tooltip = string.Empty;
+
+			int styleSheetCount = _styleList.WritableStyleSheets?.Count() ?? 0;
+
+			if (styleSheetCount == 0)
+			{
+				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
+				_addStyleButton.SetInactive(true);
+			}
+			else
+			{
+				_addStyleButton.tooltip = String.Empty;
+				_addStyleButton.SetInactive(false);
+			}
+		}
+
 		private void OpenMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
 		{
 			GenericMenu context = new GenericMenu();
-
+			context.AddItem(new GUIContent(ADD_STYLE_OPTIONS_HEADER), false, () => { });
+			context.AddSeparator(string.Empty);
 			foreach (BussStyleSheet styleSheet in bussStyleSheets)
 			{
 				context.AddItem(new GUIContent(styleSheet.name), false, () =>

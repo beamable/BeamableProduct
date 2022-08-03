@@ -48,6 +48,7 @@
 				public const string ERASE_ALL_STYLE = "Erase all style";
 				public const string REFRESH = "Refresh";
 				public const string MORE = "More";
+				public const string OPTIONS = "Options";
 			}
 
 			public static partial class Toolbox
