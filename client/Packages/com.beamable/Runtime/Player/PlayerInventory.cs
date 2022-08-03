@@ -312,6 +312,7 @@ namespace Beamable.Player
 			var json = evt.Args[0];
 			var data = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 			var builder = data.Item1;
+			var relevantScopes = builder.BuildScopes();
 			var transaction = data.Item2;
 			try
 			{
@@ -336,7 +337,11 @@ namespace Beamable.Player
 
 				foreach (var itemGroup in _items.Values)
 				{
-					await itemGroup.Refresh();
+					// only bother updating the group if its in the builder.
+					if (relevantScopes.Any(itemGroup.IsScopePartOfGroup))
+					{
+						await itemGroup.Refresh();
+					}
 				}
 				await Currencies.Refresh();
 			}
