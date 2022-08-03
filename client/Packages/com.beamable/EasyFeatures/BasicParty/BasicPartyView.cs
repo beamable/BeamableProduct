@@ -77,7 +77,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void SetupPartyList()
 		{
-			PartyList.Setup(Context.Party.Members.ToList(), Context.Party.IsLeader, OnPlayerAccepted, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
+			PartyList.Setup(Context.Party.Members.ToList(), Context.Party.IsLeader, null, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
 		}
 
 		protected virtual void OnPlayerJoined(object playerId)
@@ -117,11 +117,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			// TODO Add confirm action once Party SDK is ready
 			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to ask {id} to leave the party?", null);
-		}
-
-		private void OnPlayerAccepted(string id)
-		{
-			throw new System.NotImplementedException();
 		}
 
 		private void NextButtonClicked()

@@ -26,7 +26,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public struct ViewData
 		{
 			public string PlayerId;
-			public bool IsReady;
 			public Sprite Avatar;
 		}
 		
@@ -51,6 +50,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			
 			AvatarImage.sprite = item.ViewData.Avatar;
 			PlayerNameText.text = item.ViewData.PlayerId;
+			AcceptButton.gameObject.SetActive(onAcceptButton != null);
 			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptButton(item.ViewData.PlayerId));
 			AskToLeaveButton.onClick.ReplaceOrAddListener(() => onAskToLeaveButton(item.ViewData.PlayerId));
 			PromoteButton.onClick.ReplaceOrAddListener(() => onPromoteButton(item.ViewData.PlayerId));

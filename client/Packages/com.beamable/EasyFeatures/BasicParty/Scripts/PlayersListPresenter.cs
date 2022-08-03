@@ -29,7 +29,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				viewData[i] = new PartySlotPresenter.ViewData
 				{
-					Avatar = AvatarConfiguration.Instance.Default.Sprite, IsReady = false, PlayerId = players[i]
+					Avatar = AvatarConfiguration.Instance.Default.Sprite, PlayerId = players[i]
 				};
 			}
 			
