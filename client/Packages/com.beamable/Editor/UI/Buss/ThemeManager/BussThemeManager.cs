@@ -169,7 +169,7 @@ namespace Beamable.Editor.UI.Buss
 			buttonsRow.Add(spacing);
 
 			CopyStyleSheetButton copyStyleSheetButton = new CopyStyleSheetButton();
-			copyStyleSheetButton.Setup(_stylesGroup, _ => RefreshStyleSheets());
+			copyStyleSheetButton.Setup(_stylesGroup);
 			buttonsRow.Add(copyStyleSheetButton);
 		}
 

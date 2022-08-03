@@ -42,16 +42,35 @@ namespace Beamable.Editor.UI.Components
 			_addStyleButton.AddToClassList("button");
 			_addStyleButton.Add(new Label(ADD_STYLE_BUTTON_LABEL));
 
-			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OnClick());
-			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OnClick());
+			_addStyleButton.UnregisterCallback<MouseDownEvent>(OnClick);
+			_addStyleButton.RegisterCallback<MouseDownEvent>(OnClick);
 
-			_addStyleButton.UnregisterCallback<MouseEnterEvent>(_ => CheckEnableState());
-			_addStyleButton.RegisterCallback<MouseEnterEvent>(_ => CheckEnableState());
+			_addStyleButton.UnregisterCallback<MouseEnterEvent>(CheckEnableState);
+			_addStyleButton.RegisterCallback<MouseEnterEvent>(CheckEnableState);
 
 			Root.Add(_addStyleButton);
 		}
 
-		public void CheckEnableState()
+		private void OnClick(MouseDownEvent evt = null)
+		{
+			int styleSheetCount = _styleList.WritableStyleSheets.Count();
+
+			if (styleSheetCount == 0)
+			{
+				return;
+			}
+
+			if (styleSheetCount == 1)
+			{
+				CreateEmptyStyle(_styleList.WritableStyleSheets.First(), Constants.Features.Buss.NEW_SELECTOR_NAME);
+			}
+			else if (styleSheetCount > 1)
+			{
+				OpenMenu(_styleList.WritableStyleSheets);
+			}
+		}
+
+		public void CheckEnableState(MouseEnterEvent evt = null)
 		{
 			if (_addStyleButton == null) return;
 
@@ -68,25 +87,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				_addStyleButton.tooltip = String.Empty;
 				_addStyleButton.SetInactive(false);
-			}
-		}
-
-		private void OnClick()
-		{
-			int styleSheetCount = _styleList.WritableStyleSheets.Count();
-
-			if (styleSheetCount == 0)
-			{
-				return;
-			}
-
-			if (styleSheetCount == 1)
-			{
-				CreateEmptyStyle(_styleList.WritableStyleSheets.First(), Constants.Features.Buss.NEW_SELECTOR_NAME);
-			}
-			else if (styleSheetCount > 1)
-			{
-				OpenMenu(_styleList.WritableStyleSheets);
 			}
 		}
 

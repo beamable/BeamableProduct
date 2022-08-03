@@ -1,8 +1,6 @@
-﻿using Beamable.Common;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -23,15 +21,13 @@ namespace Beamable.Editor.UI.Components
 	{
 		private VisualElement _copyStyleSheetButton;
 		private BussStyleListVisualElement _styleList;
-		private Action<BussStyleRule> _onSelectorAdded;
 
 		public CopyStyleSheetButton() :
 			base($"{BUSS_THEME_MANAGER_PATH}/CopyStyleSheetButton/CopyStyleSheetButton.uss") { }
 
-		public void Setup(BussStyleListVisualElement styleList, Action<BussStyleRule> onSelectorAdded)
+		public void Setup(BussStyleListVisualElement styleList)
 		{
 			_styleList = styleList;
-			_onSelectorAdded = onSelectorAdded;
 
 			Init();
 		}
@@ -44,15 +40,15 @@ namespace Beamable.Editor.UI.Components
 			_copyStyleSheetButton.AddToClassList("button");
 			_copyStyleSheetButton.Add(new Label(DUPLICATE_STYLESHEET_BUTTON_LABEL));
 
-			_copyStyleSheetButton.UnregisterCallback<MouseDownEvent>(_ => OnClick());
-			_copyStyleSheetButton.RegisterCallback<MouseDownEvent>(_ => OnClick());
+			_copyStyleSheetButton.UnregisterCallback<MouseDownEvent>(OnClick);
+			_copyStyleSheetButton.RegisterCallback<MouseDownEvent>(OnClick);
 
 			_copyStyleSheetButton.SetInactive(false);
 
 			Root.Add(_copyStyleSheetButton);
 		}
 
-		private void OnClick()
+		private void OnClick(MouseDownEvent evt = null)
 		{
 			List<BussStyleSheet> readonlyStyles =
 				_styleList.StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
