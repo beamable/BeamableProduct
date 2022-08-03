@@ -10,6 +10,7 @@ public static class ProcessExtensions
 {
 	public static void KillAllWorkingProcessesForCommand(string commandLine)
 	{
+#if UNITY_EDITOR_WIN
 		Process[] cmdProcesses = Process.GetProcesses();
 		if (cmdProcesses.Length > 0)
 		{
@@ -27,9 +28,12 @@ public static class ProcessExtensions
 				}
 			}
 		}
+		#else
+			// TO IMPLEMENT Win32Native (OpenProcess method error)
+		#endif
 	}
 }
-
+#if UNITY_EDITOR_WIN
 static class ProcessCommandLine
 {
     private static class Win32Native
@@ -250,3 +254,4 @@ static class ProcessCommandLine
         }
     }
 }
+#endif
