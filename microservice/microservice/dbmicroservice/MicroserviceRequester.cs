@@ -524,9 +524,10 @@ namespace Beamable.Server
       /// <returns></returns>
       public Promise<EmptyResponse> InitializeSubscription()
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceEventProviderRequest
          {
-            type = "event"
+            type = "event",
+            evtWhitelist = new []{Constants.Features.Services.CONTENT_UPDATE_EVENT}
          };
          var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
 
