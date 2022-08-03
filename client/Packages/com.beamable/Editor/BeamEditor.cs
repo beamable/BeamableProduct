@@ -337,6 +337,11 @@ namespace Beamable
 				// Initialize toolbar
 				BeamableToolbarExtender.LoadToolbarExtender();
 #endif
+				if (SessionState.GetBool(SESSION_STATE_INSTALL_DEPS, false) && !BeamEditorContext.HasDependencies())
+				{
+					await BeamEditorContext.Default.CreateDependencies();
+					SessionState.EraseBool(SESSION_STATE_INSTALL_DEPS);
+				}
 			}
 
 			InitDefaultContext();
