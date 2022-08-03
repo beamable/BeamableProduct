@@ -1,7 +1,9 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.Experimental.Api.Matchmaking;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.EasyFeatures.BasicMatchmaking
 {
@@ -11,82 +13,47 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		protected SimGameType SelectedGameType;
 		
 		public bool IsVisible { get; set; }
-		public string Name { get; }
-		public int MaxPlayers { get; }
-		public int? CurrentlySelectedPlayerIndex { get; set; }
-		public int CurrentPlayers { get; }
-		public bool IsPlayerAdmin { get; }
-		public bool IsPlayerReady { get; }
-		public bool IsMatchStarting { get; }
+		public int MaxPlayers => SelectedGameType.maxPlayers;
+		public int CurrentPlayers => SlotsData.Count(slot => slot.PlayerId != string.Empty);
+		public bool IsPlayerAdmin => BeamContext.Lobby.Host == BeamContext.PlayerId.ToString();
+		public bool IsPlayerReady => BeamContext.Lobby.GetCurrentPlayer(BeamContext.PlayerId.ToString()).IsReady();
+		public bool IsMatchStarting { get; set; }
 		
 		public List<MatchmakingSlotPresenter.ViewData> SlotsData => BuildViewData();
 		
 		public List<string> PlayerIds = new List<string>();
 		public List<string> PlayerTeams = new List<string>();
+		public List<bool> PlayerReadiness = new List<bool>();
 
 		public MatchmakingRoomPlayerSystem(BeamContext beamContext)
 		{
 			BeamContext = beamContext;
-			CurrentlySelectedPlayerIndex = null;
 		}
 		
 		public bool IsServerReady()
 		{
 			return PlayerIds.Count == SelectedGameType.maxPlayers;
 		}
-
-		public void SetCurrentSelectedPlayer(int slotIndex)
+		
+		public async void SetPlayerReady(bool value)
 		{
-			string playerId = PlayerIds[slotIndex];
-
-			// We don't want to interact with card for self
-			if (playerId == BeamContext.PlayerId.ToString())
-			{
-				return;
-			}
-
-			if (CurrentlySelectedPlayerIndex == slotIndex)
-			{
-				CurrentlySelectedPlayerIndex = null;
-			}
-			else
-			{
-				CurrentlySelectedPlayerIndex = slotIndex;
-			}
+			await BeamContext.Lobby.AddTags(
+				new List<Tag> {new Tag(MatchmakingExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
 		}
 
-		public Promise LeaveMatch()
-		{
-			throw new System.NotImplementedException();
-		}
-
-		public async Promise StartMatch()
+		public virtual async Promise StartMatch()
 		{
 			// TODO: Implement match start here 
 			await Promise.Success.WaitForSeconds(3);
 		}
 		
-		public async Promise KickPlayer()
-		{
-			await Promise.Success.WaitForSeconds(3);
-			
-			if (CurrentlySelectedPlayerIndex == null)
-			{
-				return;
-			}
-
-			// LobbyPlayer lobbyPlayer = BeamContext.Lobby.Players[CurrentlySelectedPlayerIndex.Value];
-			// await BeamContext.Lobby.KickPlayer(lobbyPlayer.playerId);
-			CurrentlySelectedPlayerIndex = null;
-		}
-		
-		public virtual void RegisterMatch(SimGameType simGameType, Match match)
+		public virtual void RegisterMatch(SimGameType simGameType, Match match, List<LobbyPlayer> players)
 		{
 			SelectedGameType = simGameType;
-			BuildClientData(match, ref PlayerIds, ref PlayerTeams);
+			BuildClientData(match, players,ref PlayerIds, ref PlayerReadiness, ref PlayerTeams);
 		}
 
-		public void BuildClientData(Match match, ref List<string> names, ref List<string> teams)
+		public void BuildClientData(Match match, List<LobbyPlayer> players, ref List<string> names, ref List<bool> readiness, ref List<string> teams)
 		{
 			void GuaranteeInitList<T>(ref List<T> toInit)
 			{
@@ -96,14 +63,15 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 			GuaranteeInitList(ref names);
 			GuaranteeInitList(ref teams);
+
 			foreach (Team team in match.teams)
 			{
-				foreach (string player in team.players)
-				{
-					names.Add(player);
-					teams.Add(team.name);
-				}
+				teams.Add(team.name);
+				names.AddRange(team.players);
 			}
+
+			GuaranteeInitList(ref readiness);
+			readiness.AddRange(players.Select(player => player.IsReady()));
 		}
 
 		private List<MatchmakingSlotPresenter.ViewData> BuildViewData()
@@ -118,20 +86,13 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 				{
 					entry.PlayerId = PlayerIds[i];
 					entry.Team = PlayerTeams[i];
-					
-					if (CurrentlySelectedPlayerIndex != null)
-					{
-						entry.IsUnfolded = CurrentlySelectedPlayerIndex == i;
-					}
-					else
-					{
-						entry.IsUnfolded = false;
-					}
+					entry.IsReady = PlayerReadiness[i];
 				}
 				else
 				{
 					entry.PlayerId = string.Empty;
 					entry.Team = string.Empty;
+					entry.IsReady = false;
 				}
 
 				slotsData.Add(entry);

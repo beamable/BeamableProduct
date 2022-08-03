@@ -10,14 +10,11 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 	{
 		public class ViewData : PoolableScrollView.IItem
 		{
-			public float FoldedHeight => 150.0f;
-			public float UnfoldedHeight => 300.0f;
-			
 			public string PlayerId { get; set; }
+			public bool IsReady { get; set; }
 			public string Team { get; set; }
-			public float Height { get; set; }
 			public int Index { get; set; }
-			public bool IsUnfolded { get; set; }
+			public float Height => 150.0f;
 		}
 
 		[Header("Components")]
@@ -25,34 +22,22 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		public GameObject Empty;
 		public TextMeshProUGUI Name;
 		public TextMeshProUGUI Team;
-		public GameObject ButtonsGroup;
-		public Button AdminButton;
-		public Button KickButton;
 
 		public void SetupEmpty()
 		{
 			Empty.SetActive(true);
 			Filled.SetActive(false);
-			ButtonsGroup.SetActive(false);
 		}
 
-		public void SetupFilled(string playerName,
-		                        string team,
-		                        bool isAdmin,
-		                        bool isUnfolded,
-		                        Action onAdminButtonClicked,
-		                        Action onKickButtonClicked)
+		public void SetupFilled(string playerName, string team, bool isReady)
 		{
-			Name.text = playerName;
+			string ready = isReady ? "READY" : "NOT READY";
+			
+			Name.text = $"{playerName} - {ready}";
 			Team.text = team;
 			
-			KickButton.onClick.ReplaceOrAddListener(onKickButtonClicked.Invoke);
-			AdminButton.onClick.ReplaceOrAddListener(onAdminButtonClicked.Invoke);
-
 			Empty.SetActive(false);
 			Filled.SetActive(true);
-			ButtonsGroup.SetActive(isUnfolded);
-			AdminButton.interactable = isAdmin;
 		}
 	}
 }

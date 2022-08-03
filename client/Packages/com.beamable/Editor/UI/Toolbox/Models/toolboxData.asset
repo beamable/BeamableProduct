@@ -95,4 +95,5 @@ MonoBehaviour:
     OrientationSupport: 1
     Tags: 0
     Icon: {fileID: 2800000, guid: 1d8c576d1706445ea82c8614c8267f17, type: 3}
-    Prefab: {fileID: 599543393639402974, guid: ce96ddff71768414dad5f4a78c715f6b, type: 3}
+    Prefab: {fileID: 8471291682312720359, guid: ce96ddff71768414dad5f4a78c715f6b,
+      type: 3}

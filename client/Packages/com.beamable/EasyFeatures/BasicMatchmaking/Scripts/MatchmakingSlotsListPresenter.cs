@@ -15,22 +15,12 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		public PoolableScrollView PoolableScrollView;
 
 		private List<MatchmakingSlotPresenter.ViewData> _slots;
-		private bool _isAdmin;
-		private Action<int> _onAdminButtonClicked;
-		private Action<int> _onKickButtonClicked;
 		private readonly List<MatchmakingSlotPresenter> _spawnedSlots = new List<MatchmakingSlotPresenter>();
 
-		public void Setup(List<MatchmakingSlotPresenter.ViewData> slots,
-		                  bool isAdmin,
-		                  Action<int> onAdminButtonClicked,
-		                  Action<int> onKickButtonClicked)
+		public void Setup(List<MatchmakingSlotPresenter.ViewData> slots)
 		{
 			PoolableScrollView.SetContentProvider(this);
-
 			_slots = slots;
-			_isAdmin = isAdmin;
-			_onAdminButtonClicked = onAdminButtonClicked;
-			_onKickButtonClicked = onKickButtonClicked;
 		}
 
 		public void ClearPooledRankedEntries()
@@ -53,13 +43,12 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 				{
 					PlayerId = data.PlayerId,
 					Team = data.Team,
-					IsUnfolded = data.IsUnfolded,
+					IsReady = data.IsReady,
 					Index = i,
-					Height = data.IsUnfolded ? data.UnfoldedHeight : data.FoldedHeight
 				};
 				items.Add(rankEntryPoolData);
 			}
-
+			
 			PoolableScrollView.SetContent(items);
 		}
 
@@ -75,15 +64,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 			if (poolData.PlayerId != String.Empty) // Temporarily Name is set to playerId
 			{
-				spawned.SetupFilled(poolData.PlayerId, poolData.Team, _isAdmin, poolData.IsUnfolded,
-				                    () =>
-				                    {
-					                    _onAdminButtonClicked.Invoke(poolData.Index);
-				                    },
-				                    () =>
-				                    {
-					                    _onKickButtonClicked.Invoke(poolData.Index);
-				                    });
+				spawned.SetupFilled(poolData.PlayerId, poolData.Team, poolData.IsReady);
 			}
 			else
 			{
@@ -97,7 +78,6 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		{
 			if (rt == null) return;
 
-			// TODO: implement object pooling
 			MatchmakingSlotPresenter slotPresenter = rt.GetComponent<MatchmakingSlotPresenter>();
 			_spawnedSlots.Remove(slotPresenter);
 			Destroy(slotPresenter.gameObject);

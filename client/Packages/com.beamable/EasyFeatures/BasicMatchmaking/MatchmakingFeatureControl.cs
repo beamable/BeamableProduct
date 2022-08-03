@@ -1,10 +1,10 @@
-﻿using Beamable.Api;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Basicmatchmaking;
 using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Matchmaking;
+using Beamable.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -174,12 +174,17 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 				case MatchmakingState.Ready:
 					HideOverlay();
 					StartMatchmakingPlayerSystem.OnStateChanged -= OnMatchmakingStateChanged;
-					MatchmakingRoomPlayerSystem.RegisterMatch(GameTypes[StartMatchmakingPlayerSystem.SelectedGameTypeIndex],
-						StartMatchmakingPlayerSystem.CurrentMatchmakingHandle.Match);
 
-					await BeamContext.Lobby.GetLobby(
-						StartMatchmakingPlayerSystem.CurrentMatchmakingHandle.Match.matchId);
-					
+					SimGameType gameType = GameTypes[StartMatchmakingPlayerSystem.SelectedGameTypeIndex];
+					Match match = StartMatchmakingPlayerSystem.CurrentMatchmakingHandle.Match;
+
+					await BeamContext.Lobby.GetLobby(match.matchId);
+
+					MatchmakingRoomPlayerSystem.RegisterMatch(gameType, match, BeamContext.Lobby.Players);
+
+					BeamContext.Lobby.OnLoadingFinished -= OnLobbyUpdated;
+					BeamContext.Lobby.OnLoadingFinished += OnLobbyUpdated;
+
 					OpenView(View.MatchmakingRoom);
 					break;
 				case MatchmakingState.Timeout:
@@ -193,9 +198,48 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			}
 		}
 
+		private async void OnLobbyUpdated()
+		{
+			if (BeamContext.Lobby.ChangeData.Event == PlayerLobby.LobbyEvent.None)
+			{
+				return;
+			}
+
+			switch (BeamContext.Lobby.ChangeData.Event)
+			{
+				case PlayerLobby.LobbyEvent.LobbyDisbanded:
+					ShowInformWindow("Match was disbanded", () =>
+					{
+						BeamContext.Lobby.OnLoadingFinished -= OnLobbyUpdated;
+						OpenView(View.StartMatchmaking);
+					});
+					break;
+				case PlayerLobby.LobbyEvent.PlayerLeft:
+					ShowInformWindow("Player left", () =>
+					{
+						OpenView(View.StartMatchmaking);
+					});
+					break;
+				case PlayerLobby.LobbyEvent.DataChanged:
+					SimGameType gameType = GameTypes[StartMatchmakingPlayerSystem.SelectedGameTypeIndex];
+					Match match = StartMatchmakingPlayerSystem.CurrentMatchmakingHandle.Match;
+					await BeamContext.Lobby.GetLobby(match.matchId);
+					MatchmakingRoomPlayerSystem.RegisterMatch(gameType, match, BeamContext.Lobby.Players);
+					await ViewGroup.Enrich();
+					break;
+				case PlayerLobby.LobbyEvent.LobbyCreated:
+				case PlayerLobby.LobbyEvent.PlayerJoined:
+				case PlayerLobby.LobbyEvent.PlayerKicked:
+				case PlayerLobby.LobbyEvent.HostPlayerChanged:
+				case PlayerLobby.LobbyEvent.None:
+					break;
+			}
+		}
+
 		#endregion
-		
+
 		#region Inside match callbacks
+
 		public void StartMatchRequestSent()
 		{
 			// if (BeamContext.Lobby != null)
@@ -212,81 +256,12 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			// OnMatchStarted?.Invoke();
 		}
 
-		public void AdminLeaveMatchRequestSent()
-		{
-			async void ConfirmAction()
-			{
-				// if (BeamContext.Lobby != null)
-				// {
-				// 	BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
-				// }
-
-				try
-				{
-					ShowOverlayedLabel("Leaving lobby...");
-					await MatchmakingRoomPlayerSystem.LeaveMatch();
-					MatchLeft();
-				}
-				catch (Exception e)
-				{
-					if (e is PlatformRequesterException pre)
-					{
-						ShowErrorWindow(pre.Error.error);
-					}
-				}
-			}
-
-			ShowConfirmWindow("After leaving match it will be closed because You are an admin. Are You sure?",
-			                  ConfirmAction);
-		}
-
-		public void PlayerLeaveMatchRequestSent()
-		{
-			// if (BeamContext.Lobby != null)
-			// {
-			// 	BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
-			// }
-
-			ShowOverlayedLabel("Leaving match...");
-		}
-
 		public void MatchLeft()
 		{
 			OpenView(View.StartMatchmaking);
 			HideOverlay();
 		}
 
-		public void KickPlayerClicked()
-		{
-			if (MatchmakingRoomPlayerSystem.CurrentlySelectedPlayerIndex == null)
-			{
-				return;
-			}
-
-			async void ConfirmAction()
-			{
-				try
-				{
-					ShowOverlayedLabel("Kicking player...");
-					await MatchmakingRoomPlayerSystem.KickPlayer();
-					HideOverlay();
-				}
-				catch (Exception e)
-				{
-					if (e is PlatformRequesterException pre)
-					{
-						ShowErrorWindow(pre.Error.error);
-					}
-				}
-			}
-
-			ShowConfirmWindow("Are You sure You want to kick this player?", ConfirmAction);
-		}
-		
-		public async void RebuildRequested()
-		{
-			await ViewGroup.Enrich();
-		}
 		#endregion
 	}
 }
