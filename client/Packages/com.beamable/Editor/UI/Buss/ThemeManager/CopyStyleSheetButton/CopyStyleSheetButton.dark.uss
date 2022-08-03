@@ -1,0 +1,23 @@
+﻿#copyStyleSheetButton {
+    background-color: #646464;
+}
+
+#copyStyleSheetButton:hover {
+    background-color: #787878;
+}
+
+#copyStyleSheetButton.inactive {
+    border-color: #676767;
+}
+
+#copyStyleSheetButton.inactive > Label{
+    color: #A0A0A0;
+}
+
+#copyStyleSheetButton.inactive:hover {
+    background-color: #646464;
+}
+
+#copyStyleSheetButton > Label {
+    color: #FFFFFF;
+}

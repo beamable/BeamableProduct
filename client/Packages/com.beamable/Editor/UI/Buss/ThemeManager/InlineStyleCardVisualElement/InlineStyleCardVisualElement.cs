@@ -58,14 +58,14 @@ namespace Beamable.Editor.UI.Components
 				mainContainer.ToggleInClassList("hidden");
 			});
 
-			var variablesHeader = CreateSubheader("Variables", OnAddVariable);
+			VisualElement variablesHeader = CreateSubheader("Variables", OnAddVariable);
 			mainContainer.Add(variablesHeader);
 
 			_variableContainer = new VisualElement();
 			_variableContainer.AddToClassList("propertyContainer");
 			mainContainer.Add(_variableContainer);
 
-			var propertiesHeader = CreateSubheader("Properties", OnAddProperty);
+			VisualElement propertiesHeader = CreateSubheader("Properties", OnAddProperty);
 			mainContainer.Add(propertiesHeader);
 
 			_propertyContainer = new VisualElement();
@@ -99,7 +99,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void SelectionChanged()
 		{
-			var target = Selection.activeGameObject;
+			GameObject target = Selection.activeGameObject;
 			BussElement element = null;
 			if (target != null)
 			{
@@ -112,14 +112,18 @@ namespace Beamable.Editor.UI.Components
 		private void OnAddVariable()
 		{
 			if (_bussElement == null) return;
-			var window = NewVariableWindow.ShowWindow();
-			window?.Init(_bussElement.InlineStyle, (key, property) =>
+
+			NewVariableWindow window = NewVariableWindow.ShowWindow();
+			if (window != null)
 			{
-				if (_bussElement.InlineStyle.TryAddProperty(key, property))
+				window.Init(_bussElement.InlineStyle, (key, property) =>
 				{
-					OnPropertyChange();
-				}
-			});
+					if (_bussElement.InlineStyle.TryAddProperty(key, property))
+					{
+						OnPropertyChange();
+					}
+				});
+			}
 		}
 
 		private void OnAddProperty()
@@ -127,21 +131,21 @@ namespace Beamable.Editor.UI.Components
 			if (_bussElement == null) return;
 
 			var keys = new HashSet<string>();
-			foreach (var propertyProvider in _bussElement.InlineStyle.Properties)
+			foreach (BussPropertyProvider propertyProvider in _bussElement.InlineStyle.Properties)
 			{
 				keys.Add(propertyProvider.Key);
 			}
 
-			var sorted = BussStyle.Keys.OrderBy(k => k);
+			IOrderedEnumerable<string> sorted = BussStyle.Keys.OrderBy(k => k);
 			var context = new GenericMenu();
 
 			foreach (string key in sorted)
 			{
 				if (keys.Contains(key)) continue;
-				var baseType = BussStyle.GetBaseType(key);
-				var data = SerializableValueImplementationHelper.Get(baseType);
-				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-													 t != typeof(FractionFloatBussProperty));
+				Type baseType = BussStyle.GetBaseType(key);
+				SerializableValueImplementationHelper.ImplementationData data = SerializableValueImplementationHelper.Get(baseType);
+				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
+																   t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -186,13 +190,13 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
-			var inlineStyle = _bussElement.InlineStyle;
+			BussStyleDescription inlineStyle = _bussElement.InlineStyle;
 
-			var toSpawn = inlineStyle.Properties.ToList();
+			List<BussPropertyProvider> toSpawn = inlineStyle.Properties.ToList();
 
 			foreach (BussStylePropertyVisualElement visualElement in _variables.Concat(_properties).ToArray())
 			{
-				var propertyProvider = inlineStyle.GetPropertyProvider(visualElement.PropertyProvider.Key);
+				BussPropertyProvider propertyProvider = inlineStyle.GetPropertyProvider(visualElement.PropertyProvider.Key);
 				if (propertyProvider != visualElement.PropertyProvider)
 				{
 					visualElement.RemoveFromHierarchy();
@@ -209,14 +213,14 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			var propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
+			PropertySourceTracker propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
 
 			foreach (BussPropertyProvider propertyProvider in toSpawn)
 			{
-
 				var visualElement = new BussStylePropertyVisualElement();
 				visualElement.InlineStyleOwner = _bussElement;
-				visualElement.Setup(null, _bussElement.InlineStyle, propertyProvider, _variableDatabase, propertySourceTracker);
+				visualElement.Setup(null, _bussElement.InlineStyle, propertyProvider, _variableDatabase,
+									propertySourceTracker);
 				if (propertyProvider.IsVariable)
 				{
 					_variableContainer.Add(visualElement);
@@ -227,6 +231,7 @@ namespace Beamable.Editor.UI.Components
 					_propertyContainer.Add(visualElement);
 					_properties.Add(visualElement);
 				}
+
 				visualElement.PropertyChanged += OnPropertyChange;
 			}
 		}
@@ -238,18 +243,20 @@ namespace Beamable.Editor.UI.Components
 				visualElement.RemoveFromHierarchy();
 				visualElement.Destroy();
 			}
+
 			_variables.Clear();
 			foreach (BussStylePropertyVisualElement visualElement in _properties)
 			{
 				visualElement.RemoveFromHierarchy();
 				visualElement.Destroy();
 			}
+
 			_properties.Clear();
 		}
 
 		private void SpawnProperties()
 		{
-			var propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
+			PropertySourceTracker propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
 
 			foreach (BussPropertyProvider property in _bussElement.InlineStyle.Properties)
 			{
@@ -266,6 +273,7 @@ namespace Beamable.Editor.UI.Components
 					_propertyContainer.Add(visualElement);
 					_properties.Add(visualElement);
 				}
+
 				visualElement.PropertyChanged += OnPropertyChange;
 			}
 		}
