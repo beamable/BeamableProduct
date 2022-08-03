@@ -15,7 +15,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		public bool IsVisible { get; set; }
 		public int MaxPlayers => SelectedGameType.maxPlayers;
 		public int CurrentPlayers => SlotsData.Count(slot => slot.PlayerId != string.Empty);
-		public bool IsPlayerAdmin => BeamContext.Lobby.Host == BeamContext.PlayerId.ToString();
+		public bool IsPlayerAdmin => PlayerIds[0] == BeamContext.PlayerId.ToString();
 		public bool IsPlayerReady => BeamContext.Lobby.GetCurrentPlayer(BeamContext.PlayerId.ToString()).IsReady();
 		public bool IsMatchStarting { get; set; }
 		
@@ -32,7 +32,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		
 		public bool IsServerReady()
 		{
-			return PlayerIds.Count == SelectedGameType.maxPlayers;
+			return MaxPlayers == PlayerReadiness.Count(b => b);
 		}
 		
 		public async void SetPlayerReady(bool value)
