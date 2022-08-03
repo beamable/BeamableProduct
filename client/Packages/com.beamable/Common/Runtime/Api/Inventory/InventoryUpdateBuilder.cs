@@ -313,6 +313,40 @@ namespace Beamable.Common.Api.Inventory
 			return UpdateItem(item.ItemContent.Id, item.Id, item.Properties);
 		}
 
+		/// <summary>
+		/// Get a set of inventory scopes that the updater will affect.
+		/// </summary>
+		/// <returns>A set of scopes that will be changed based on the changes described in the builder</returns>
+		public HashSet<string> BuildScopes()
+		{
+			var scopes = new HashSet<string>();
+			foreach (var item in newItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in updateItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in deleteItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var curr in currencies)
+			{
+				scopes.Add(curr.Key);
+			}
+
+			foreach (var curr in currencyProperties)
+			{
+				scopes.Add(curr.Key);
+			}
+			return scopes;
+		}
+
 		void ISerializationCallbackReceiver.OnBeforeSerialize()
 		{
 			_serializedApplyVipBonus = applyVipBonus == null

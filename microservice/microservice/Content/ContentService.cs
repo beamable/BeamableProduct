@@ -154,7 +154,7 @@ namespace Beamable.Server.Content
 
       public void Init()
       {
-         _socket.Subscribe<ContentManifestEvent>("content.manifest", HandleContentPublish);
+         _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
       }
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)
