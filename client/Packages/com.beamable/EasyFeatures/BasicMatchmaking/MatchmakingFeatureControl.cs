@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Events;
 
 namespace Beamable.EasyFeatures.BasicMatchmaking
 {
@@ -27,6 +28,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 		public BeamableViewGroup ViewGroup;
 		public OverlaysController OverlaysController;
+		public UnityAction OnMatchStart;
 
 		[Header("Components")]
 		public GameObject LoadingIndicator;
@@ -242,26 +244,9 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 
 		public void StartMatchRequestSent()
 		{
-			// if (BeamContext.Lobby != null)
-			// {
-			// 	BeamContext.Lobby.OnUpdated -= OnLobbyUpdated;
-			// }
-
 			ShowOverlayedLabel("Starting match...");
+			OnMatchStart?.Invoke();
 		}
-
-		public void StartMatchResponseReceived()
-		{
-			HideOverlay();
-			// OnMatchStarted?.Invoke();
-		}
-
-		public void MatchLeft()
-		{
-			OpenView(View.StartMatchmaking);
-			HideOverlay();
-		}
-
 		#endregion
 	}
 }

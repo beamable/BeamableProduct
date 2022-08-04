@@ -63,21 +63,18 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		private void OnUpdate(MatchmakingHandle matchmakingHandle)
 		{
 			RegisterMatchmakingHandle(matchmakingHandle);
-			Debug.Log("OnUpdate");
 		}
 
 		private void OnReady(MatchmakingHandle matchmakingHandle)
 		{
 			RegisterMatchmakingHandle(matchmakingHandle);
 			InProgress = false;
-			Debug.Log("OnReady");
 		}
 
 		private void OnTimeout(MatchmakingHandle matchmakingHandle)
 		{
 			RegisterMatchmakingHandle(matchmakingHandle);
 			InProgress = false;
-			Debug.Log("OnTimeout");
 		}
 
 		public async void CancelMatchmaking()

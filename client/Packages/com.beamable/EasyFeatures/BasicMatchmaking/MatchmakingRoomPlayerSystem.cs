@@ -41,12 +41,6 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 				new List<Tag> {new Tag(MatchmakingExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
 		}
 
-		public virtual async Promise StartMatch()
-		{
-			// TODO: Implement match start here 
-			await Promise.Success.WaitForSeconds(3);
-		}
-		
 		public virtual void RegisterMatch(SimGameType simGameType, Match match, List<LobbyPlayer> players)
 		{
 			SelectedGameType = simGameType;

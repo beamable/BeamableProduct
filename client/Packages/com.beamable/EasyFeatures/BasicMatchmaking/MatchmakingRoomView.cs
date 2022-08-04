@@ -20,9 +20,8 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			int CurrentPlayers { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
-			bool IsMatchStarting { get; }
+			bool IsMatchStarting { get; set; }
 			bool IsServerReady();
-			Promise StartMatch();
 			void SetPlayerReady(bool value);
 		}
 		
@@ -39,7 +38,6 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		
 		[Header("Callbacks")]
 		public UnityEvent OnStartMatchRequestSent;
-		public UnityEvent OnStartMatchResponseReceived;
 		
 		public Action<string> OnError;
 		
@@ -118,18 +116,18 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 			System.SetPlayerReady(false);
 		}
 
-		private async void StartButtonClicked()
+		private void StartButtonClicked()
 		{
 			if (!System.IsPlayerAdmin || System.IsMatchStarting)
 			{
 				return;
 			}
 
+			System.IsMatchStarting = true;
+
 			try
 			{
 				OnStartMatchRequestSent?.Invoke();
-				await System.StartMatch();
-				OnStartMatchResponseReceived?.Invoke();
 			}
 			catch (Exception e)
 			{
