@@ -1,5 +1,5 @@
-﻿using Beamable.Common;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
+using Beamable.EasyFeatures.BasicLobby;
 using Beamable.Experimental.Api.Lobbies;
 using Beamable.Experimental.Api.Matchmaking;
 using System.Collections.Generic;
@@ -38,7 +38,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		public async void SetPlayerReady(bool value)
 		{
 			await BeamContext.Lobby.AddTags(
-				new List<Tag> {new Tag(MatchmakingExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
+				new List<Tag> {new Tag(LobbyExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
 		}
 
 		public virtual void RegisterMatch(SimGameType simGameType, Match match, List<LobbyPlayer> players)

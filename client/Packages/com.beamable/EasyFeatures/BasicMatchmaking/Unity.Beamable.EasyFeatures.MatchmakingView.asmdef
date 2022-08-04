@@ -6,7 +6,8 @@
         "Unity.Beamable.Runtime.Common",
         "Unity.Beamable.EasyFeatures.Components",
         "Beamable.Platform",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.Beamable.EasyFeatures.LobbyView"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
