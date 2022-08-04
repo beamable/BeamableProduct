@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservices share a realm secret request for faster development builds
 - Local microservices no longer output emoji characters from their `dotnet watch` command
 - Microservices only receive events for content updates
+- Disabled Microservices no longer get built and published.
 
 ### Fixed
 - Microservice related actions can run while Unity is a background process.
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local Microservices no longer say "could not find servicename:latest"
 - Publish flow locks Asset Database so that no re-imports may happen.
 - Fixed potential microservice issue that caused C#MSs to hang during initialization.
+- Publish screen loading bar should always be full when publish is complete.
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
