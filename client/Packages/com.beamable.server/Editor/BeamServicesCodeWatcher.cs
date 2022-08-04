@@ -381,6 +381,7 @@ namespace Beamable.Server.Editor
 				Name = service.Name + Constants.Features.Services.GENERATOR_SUFFIX,
 				AttributePath = service.AttributePath,
 				Type = service.Type,
+				IsGenerator = true
 			};
 		}
 
