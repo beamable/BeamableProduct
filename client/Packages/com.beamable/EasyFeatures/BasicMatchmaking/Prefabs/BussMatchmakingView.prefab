@@ -392,7 +392,8 @@ MonoBehaviour:
   m_text: START
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1002,20 +1003,6 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 690047301910797483}
         m_MethodName: StartMatchRequestSent
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  OnStartMatchResponseReceived:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 690047301910797483}
-        m_MethodName: StartMatchResponseReceived
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2027,7 +2014,8 @@ MonoBehaviour:
   m_text: 4/8
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2388,7 +2376,8 @@ MonoBehaviour:
   m_text: MATCH
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2733,7 +2722,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 8471291680856858947}
   _children: []
 --- !u!1 &8471291680757401142
 GameObject:
@@ -3018,7 +3007,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
     BottomRightColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
@@ -3067,7 +3056,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 8471291681653979105}
   _children: []
 --- !u!1 &8471291681055286506
 GameObject:
@@ -3275,7 +3264,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
     BottomRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
@@ -3837,7 +3826,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 8471291681653979105}
   _children: []
 --- !u!1 &9044219187202026821
 GameObject:
@@ -3910,11 +3899,11 @@ PrefabInstance:
         type: 3}
       propertyPath: _parent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 560020931288029805}
     - target: {fileID: 6429126717331703146, guid: 382d3ea8ec7bd39488fe933ee8263e4c,
         type: 3}
       propertyPath: mode
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7480293215323804457, guid: 382d3ea8ec7bd39488fe933ee8263e4c,
         type: 3}
@@ -4073,6 +4062,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 382d3ea8ec7bd39488fe933ee8263e4c, type: 3}
+--- !u!114 &560020931288029805 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7960614596834471379, guid: 382d3ea8ec7bd39488fe933ee8263e4c,
+    type: 3}
+  m_PrefabInstance: {fileID: 7619053582174615486}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1041184536447166906 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7480293216659398148, guid: 382d3ea8ec7bd39488fe933ee8263e4c,
@@ -4203,6 +4204,32 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5023444490604091842, guid: 8ded65ffd9dd951488b24da7de6bad0c,
+        type: 3}
+      propertyPath: m_fontSize
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023444490604091842, guid: 8ded65ffd9dd951488b24da7de6bad0c,
+        type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee,
+        type: 2}
+    - target: {fileID: 5023444490604091842, guid: 8ded65ffd9dd951488b24da7de6bad0c,
+        type: 3}
+      propertyPath: m_fontSizeBase
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023444490604091842, guid: 8ded65ffd9dd951488b24da7de6bad0c,
+        type: 3}
+      propertyPath: m_textAlignment
+      value: 257
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023444490604091842, guid: 8ded65ffd9dd951488b24da7de6bad0c,
+        type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     - target: {fileID: 5503732297923162716, guid: 8ded65ffd9dd951488b24da7de6bad0c,
         type: 3}
       propertyPath: m_AnchoredPosition.y
