@@ -3,6 +3,7 @@
 	public static partial class Constants
 	{
 		public const string REALM_PREFERENCE = "BeamableSelectedRealms";
+		public const string SESSION_STATE_INSTALL_DEPS = "BEAM_INSTALL_DEPS";
 		public const string BEAMABLE_MAIN_WEBSITE = "beamable.com";
 		public const string BEAMABLE_DOCS_WEBSITE = "docs.beamable.com";
 		public const string BEAMABLE_ASSET_GROUP = "Beamable Assets";

@@ -127,9 +127,9 @@ namespace Beamable.Editor.UI.Buss
 		{
 			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
 			{
-				bool visible =
+				bool isVisible =
 					Filter?.Invoke(styleCardVisualElement.StyleSheet, styleCardVisualElement.StyleRule) ?? true;
-				styleCardVisualElement.SetHidden(!visible);
+				styleCardVisualElement.SetHidden(!isVisible);
 			}
 		}
 
