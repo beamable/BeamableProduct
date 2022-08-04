@@ -34,7 +34,7 @@ namespace Beamable.Editor.Tests.Toolbox
 
 			yield return null;
 
-			text.SendTestKeystroke('S');
+			text.SendTestKeystroke('a');
 			/*foreach (var item in text.SendTestKeyStrokeCoroutine('S'))
 			{
 				yield return item;
@@ -42,7 +42,7 @@ namespace Beamable.Editor.Tests.Toolbox
 			//text.SendTestKeyStrokeCoroutine('S');
 			window.Close();
 
-			Assert.AreEqual("S", text.value);
+			Assert.AreEqual("a", text.value);
 
 			model.SetQuery(string.Empty);
 		}

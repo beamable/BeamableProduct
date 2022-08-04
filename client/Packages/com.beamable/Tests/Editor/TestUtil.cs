@@ -84,16 +84,25 @@ static class TestUtil
 			textField.SendEvent(evt);
 		}
 
-		var e = KeyDownEvent.GetPooled(key, KeyCode.S, EventModifiers.None);
+		using (var evt = KeyDownEvent.GetPooled('a', KeyCode.A, EventModifiers.None))
 		{
-			Debug.Log("KeyDown: " + e);
-			textField.SendEvent(e);
+			evt.target = textField;
+			Debug.Log("KeyDown: " + evt);
+			textField.SendEvent(evt);
 		}
-		var a = KeyUpEvent.GetPooled(key, KeyCode.S, EventModifiers.None);
+
+		using (var evt = KeyUpEvent.GetPooled('a', KeyCode.A, EventModifiers.None))
 		{
-			Debug.Log("KeyUp: " + a);
-			textField.SendEvent(a);
+			evt.target = textField;
+			Debug.Log("KeyUp: " + evt);
+			textField.SendEvent(evt);
 		}
+
+		/*using (var evt = new CustomKeyDownEvent() { target = textField, key = key })
+		{
+			textField.SendEvent(evt);
+		}*/
+			
 	}
 
 	public static IEnumerable SendTestKeyStrokeCoroutine(this TextField textField, char key)
