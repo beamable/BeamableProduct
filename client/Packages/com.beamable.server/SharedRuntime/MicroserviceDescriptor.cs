@@ -25,7 +25,7 @@ namespace Beamable.Server.Editor
 		public string SourcePath => Path.GetDirectoryName(AttributePath);
 		public string HidePath => $"./Assets/~/beamservicehide/{Name}";
 
-		public string BuildPath => $"./Temp/beam/{(IsGenerator ? "generators/" : "")}{Name}";
+		public string BuildPath => $"./Temp/beam/{(IsGenerator ? "generators/" : String.Empty)}{Name}";
 		public string ContainerName => $"{Name}_container";
 		public string NugetVolume => $"beamable_microservice_nuget_data"; // TODO: do we need to enter the name here? Does it need to be container specific? I don't think so...
 		public string ImageName => Name.ToLower();
