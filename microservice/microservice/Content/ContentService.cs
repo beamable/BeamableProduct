@@ -87,6 +87,24 @@ namespace Beamable.Server.Content
       }
    }
 
+   public class UnreliableContentService : ContentService
+   {
+	   public UnreliableContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache) : base(requester, socket, contentResolver, reflectionCache)
+	   {
+	   }
+
+	   public override Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
+	   {
+		   BeamableLogger.LogWarning("The content=[{contentId}] may be unreliable. When the Microservice's {attributeName} " +
+		                             "is enabled, the Microservice will never receive content updates. " +
+		                             "This means that you may resolve content, but after the first time you do so, " +
+		                             "the content will never ever change until the Microservice instance stops and restarts. " +
+		                             "It is highly recommend that you do not use the Content service at all when the configuration is set.",
+			   contentId, nameof(MicroserviceAttribute.DisableAllBeamableEvents));
+		   return base.GetContent(contentId, contentType, manifestID);
+	   }
+   }
+
    public class ContentService : IMicroserviceContentApi
    {
       private readonly MicroserviceRequester _requester;
@@ -136,7 +154,7 @@ namespace Beamable.Server.Content
 
       public void Init()
       {
-         _socket.Subscribe<ContentManifestEvent>("content.manifest", HandleContentPublish);
+         _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
       }
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)
@@ -220,7 +238,7 @@ namespace Beamable.Server.Content
          return Resolve(reference);
       }
 
-      public Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
+      public virtual Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
       {
          return WaitForManifest().FlatMap(_ =>
          {

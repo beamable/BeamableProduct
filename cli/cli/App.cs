@@ -32,12 +32,11 @@ public class App
 	private static void ConfigureLogging()
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
-		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Warning };
+		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
-			.MinimumLevel.ControlledBy(LogLevel)
-			.WriteTo.Console()
+			.WriteTo.Console(LogLevel.MinimumLevel)
 			.CreateLogger();
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
@@ -93,6 +92,10 @@ public class App
 		// add commands
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();
 		Services.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
+		Services.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
+		Services.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
+		Services.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
+		Services.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();

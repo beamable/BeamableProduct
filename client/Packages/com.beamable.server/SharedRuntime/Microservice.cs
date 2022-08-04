@@ -116,7 +116,7 @@ namespace Beamable.Server
 
 			var newCtx = new RequestContext(
 			   Context.Cid, Context.Pid, Context.Id, Context.Status, userId, Context.Path, Context.Method, Context.Body,
-			   Context.Scopes);
+			   Context.Scopes, Context.Headers);
 			var provider = _scopeGenerator(newCtx);
 
 			var requester = provider.GetService<IBeamableRequester>();

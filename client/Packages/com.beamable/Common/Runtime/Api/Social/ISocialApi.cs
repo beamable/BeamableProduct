@@ -39,6 +39,26 @@ namespace Beamable.Common.Api.Social
 		Promise<FriendStatus> UnblockPlayer(long gamerTag);
 
 		/// <summary>
+		/// Cancel a pending <see cref="FriendInvite"/> from the given <paramref name="gamerTag"/> associated with the authenticated player.
+		/// If the <paramref name="gamerTag"/> player is online, they will receive a <see cref="FriendRequestUpdateNotification"/> on the "SOCIAL.UPDATE" channel.  
+		/// </summary>
+		Promise<EmptyResponse> CancelFriendRequest(long gamerTag);
+
+		/// <summary>
+		/// Sends out a friend request to the given <paramref name="gamerTag"/> and notifies them.
+		/// If the given <paramref name="gamerTag"/> is already a friend or has a pending invite, this endpoint will still notify them, but the invite will not be duplicated. 
+		/// If the given <paramref name="gamerTag"/> does not exist or is invalid, will fail the promise with an "AccountNotFound" error.
+		/// </summary>
+		Promise<EmptyResponse> SendFriendRequest(long gamerTag);
+
+		/// <summary>
+		/// Accepts an <see cref="FriendInviteDirection.Incoming"/> friend invite from the given <paramref name="gamerTag"/>.
+		/// If the involved players are online, they will receive a <see cref="FriendRequestUpdateNotification"/> on the "SOCIAL.UPDATE" channel.  
+		/// If the given <paramref name="gamerTag"/> has not invited me, will fail the promise with a "NoInviteError" error. 
+		/// </summary>
+		Promise<EmptyResponse> AcceptFriendRequest(long gamerTag);
+
+		/// <summary>
 		/// Remove a player from the current player's <see cref="SocialList.friends"/> list.
 		/// </summary>
 		/// <param name="gamerTag">The gamertag of the player to remove.</param>

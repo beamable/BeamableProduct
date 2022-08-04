@@ -37,7 +37,7 @@ namespace microserviceTests.PromiseTests
                var index = i;
                var task = Task.Run(async () =>
                {
-                  await Task.Yield();
+                  await Task.Delay(1);;
                   promise.CompleteSuccess(
                      index); // it isn't garunteed which task will get here first, but only one should.
                });
@@ -86,7 +86,7 @@ namespace microserviceTests.PromiseTests
                var index = i;
                var task = Task.Run(async () =>
                {
-                  await Task.Yield();
+                  await Task.Delay(1);;
                   promise.CompleteError(
                      new Exception()); // it isn't garunteed which task will get here first, but only one should.
                });

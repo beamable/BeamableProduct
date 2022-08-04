@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Newtonsoft.Json;
 
 namespace cli;
@@ -23,8 +24,8 @@ public class ConfigCommand : AppCommand<ConfigCommandArgs>
 
 	public override Task Handle(ConfigCommandArgs args)
 	{
-		Console.WriteLine(_configService.ConfigFilePath);
-		Console.WriteLine(_configService.PrettyPrint());
+		BeamableLogger.Log(_configService.ConfigFilePath);
+		BeamableLogger.Log(_configService.PrettyPrint());
 		return Task.CompletedTask;
 	}
 }

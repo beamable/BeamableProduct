@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Serilog;
+using System.Collections.Generic;
 
 namespace Beamable.Server;
 
@@ -20,50 +21,51 @@ public class MicroserviceAuthenticationDaemon
 	/// <summary>
 	/// The <see cref="EventWaitHandle"/> we use to wake this thread up from its slumber so we can authenticate the C#MS with the Beamo service.
 	/// </summary>
-	public static readonly EventWaitHandle AUTH_THREAD_WAIT_HANDLE = new ManualResetEvent(false);
-	
+	public readonly EventWaitHandle AUTH_THREAD_WAIT_HANDLE = new ManualResetEvent(false);
+
 	/// <summary>
 	/// The total number of outgoing requests that actually go out through <see cref="MicroserviceRequester.Request{T}"/>.
 	/// </summary>
-	private static ulong _OutgoingRequestCounter = 0;
+	private ulong _OutgoingRequestCounter = 0;
 
 	/// <summary>
 	/// The total number of outgoing requests that went out through <see cref="MicroserviceRequester.Request{T}"/> and whose promise handlers (for error or success) have run.
 	/// </summary>
-	private static ulong _OutgoingRequestProcessedCounter = 0;
-	
+	private ulong _OutgoingRequestProcessedCounter = 0;
+
 	/// <summary>
 	/// Bumps the <see cref="_OutgoingRequestCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void BumpRequestCounter() => Interlocked.Increment(ref _OutgoingRequestCounter);
+	public void BumpRequestCounter() => Interlocked.Increment(ref _OutgoingRequestCounter);
 
 	/// <summary>
 	/// Bumps the <see cref="_OutgoingRequestProcessedCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void BumpRequestProcessedCounter() => Interlocked.Increment(ref _OutgoingRequestProcessedCounter);
+	public void BumpRequestProcessedCounter() => Interlocked.Increment(ref _OutgoingRequestProcessedCounter);
 
 	/// <summary>
 	/// Increments the given <see cref="authCounter"/> and notifies the <see cref="AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up.
-	/// The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="Authenticate"/> task. 
+	/// The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="Authenticate"/> task.
 	/// </summary>
 	/// <param name="authCounter"><see cref="SocketRequesterContext.AuthorizationCounter"/> is what you should pass here.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void WakeAuthThread(ref int authCounter)
+	public void WakeAuthThread()
 	{
-		Interlocked.Increment(ref authCounter);
+		Interlocked.Increment(ref AuthorizationCounter);
+		Log.Debug($"Authorization Daemon is being requested. Requests=[{AuthorizationCounter}]");
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
-	
+
 	/// <summary>
 	/// Cancels the token and notifies the <see cref="AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up and catches fire 🔥.
 	/// </summary>
 	/// <param name="cancellation"><see cref="BeamableMicroService._serviceShutdownTokenSource"/> is what you should pass here.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void KillAuthThread(CancellationTokenSource cancellation)
+	public void KillAuthThread()
 	{
-		cancellation.Cancel();
+		_tokenSource.Cancel();
 		AUTH_THREAD_WAIT_HANDLE.Set();
 	}
 
@@ -71,50 +73,62 @@ public class MicroserviceAuthenticationDaemon
 	/// The environment data that we need to make the <see cref="Authenticate"/> request.
 	/// </summary>
 	private readonly IMicroserviceArgs _env;
-	
+
 	/// <summary>
 	/// The requester instance so that we can make the <see cref="Authenticate"/> request.
 	/// </summary>
 	private readonly MicroserviceRequester _requester;
-	
-	/// <summary>
-	/// The <see cref="SocketRequesterContext"/> so we can keep track of the <see cref="SocketRequesterContext.AuthorizationCounter"/>.
-	/// </summary>
-	private readonly SocketRequesterContext _socketContext;
 
-	private MicroserviceAuthenticationDaemon(IMicroserviceArgs env, MicroserviceRequester requester, SocketRequesterContext socketContext)
+	/// <summary>
+	/// Tracks the number of requests that failed due to <see cref="UnauthenticatedException"/>.
+	/// </summary>
+	public int AuthorizationCounter = 0; // https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
+
+	private CancellationTokenSource _tokenSource;
+
+	private MicroserviceAuthenticationDaemon(IMicroserviceArgs env, MicroserviceRequester requester)
 	{
 		_env = env;
 		_requester = requester;
-		_socketContext = socketContext;
 	}
 
 	private async Task Run(CancellationTokenSource cancellationTokenSource)
 	{
+		_tokenSource = cancellationTokenSource;
 		// While this thread isn't cancelled...
 		while (!cancellationTokenSource.IsCancellationRequested)
 		{
-			// Wait for it to be woken up via the Wait Handle. When it is woken up, it'll run the logic for us to [re]-auth with Beamo and then go back to sleep. 
+			Log.Verbose($"Waiting at Thread ID = {Environment.CurrentManagedThreadId}");
+			// Wait for it to be woken up via the Wait Handle. When it is woken up, it'll run the logic for us to [re]-auth with Beamo and then go back to sleep.
 			AUTH_THREAD_WAIT_HANDLE.WaitOne();
+			if (cancellationTokenSource.IsCancellationRequested)
+			{
+				Log.Verbose($"Authorization Daemon has been cancelled. At ThreadID = {Environment.CurrentManagedThreadId}");
+				return;
+			}
+
+			Log.Verbose($"Authorization Daemon has been woken. At ThreadID = {Environment.CurrentManagedThreadId}");
 
 			// Gets the number of requests that have been made by the service so far...
 			var outgoingReqsCountAtStart = Interlocked.Read(ref _OutgoingRequestCounter);
-			
+
 			// Gets the number of requests that have been made by the service AND that have had their promise handlers run (for errors or success)
 			var outgoingReqsProcessedAtStart = Interlocked.Read(ref _OutgoingRequestProcessedCounter);
 
-			// Declare a variable that'll hold the total number of requests that have been made by the service AFTER we run authenticate. 
+			// Declare a variable that'll hold the total number of requests that have been made by the service AFTER we run authenticate.
 			ulong outgoingReqsCountAtEnd;
 			try
 			{
 				// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
-				if (_socketContext.AuthorizationCounter > 0)
+				Log.Verbose($"Authorization Daemon checking for pending requests. At ThreadID = {Environment.CurrentManagedThreadId}, Requests=[{AuthorizationCounter}]");
+				if (AuthorizationCounter > 0)
 				{
 					// Do the authorization back and forth with Beamo
 					await Authenticate();
-					
+
 					// Resets the auth counter back to 0
-					Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
+					Log.Verbose($"Authorization Daemon clearing pending requests. At ThreadID = {Environment.CurrentManagedThreadId}");
+					Interlocked.Exchange(ref AuthorizationCounter, 0);
 				}
 			}
 			catch (Exception ex)
@@ -139,7 +153,8 @@ public class MicroserviceAuthenticationDaemon
 			} while (stillProcessingPotentiallyFailedReqs);
 
 			// This solves an extremely unlikely race condition
-			Interlocked.Exchange(ref _socketContext.AuthorizationCounter, 0);
+			Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call. At ThreadID = {Environment.CurrentManagedThreadId}");
+			Interlocked.Exchange(ref AuthorizationCounter, 0);
 			AUTH_THREAD_WAIT_HANDLE.Reset();
 		}
 	}
@@ -154,16 +169,11 @@ public class MicroserviceAuthenticationDaemon
 			return Convert.ToBase64String(hash);
 		}
 
-		Log.Debug("Authorizing WS connection");
+		Log.Debug($"Authorizing WS connection at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 		var res = await _requester.Request<MicroserviceNonceResponse>(Method.GET, "gateway/nonce");
-		Log.Debug("Got nonce");
+		Log.Debug($"Got nonce ThreadID at = {Thread.CurrentThread.ManagedThreadId}");
 		var sig = CalculateSignature(_env.Secret + res.nonce);
-		var req = new MicroserviceAuthRequest
-		{
-			cid = _env.CustomerID,
-			pid = _env.ProjectName,
-			signature = sig
-		};
+		var req = new MicroserviceAuthRequest { cid = _env.CustomerID, pid = _env.ProjectName, signature = sig };
 		var authRes = await _requester.Request<MicroserviceAuthResponse>(Method.POST, "gateway/auth", req);
 		if (!string.Equals("ok", authRes.result))
 		{
@@ -171,7 +181,7 @@ public class MicroserviceAuthenticationDaemon
 			throw new Exception("Authorization failed");
 		}
 
-		Log.Debug("Authorization complete");
+		Log.Debug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 	}
 
 	/// <summary>
@@ -184,11 +194,11 @@ public class MicroserviceAuthenticationDaemon
 	/// <param name="socketContext"></param>
 	/// <param name="cancellationTokenSource"></param>
 	/// <returns>A task that completes the loop after the given <see cref="cancellationTokenSource"/> has requested a cancel</returns>
-	public static Task Start(
-		IMicroserviceArgs env, MicroserviceRequester requester, SocketRequesterContext socketContext,
+	public static (Task, MicroserviceAuthenticationDaemon) Start(
+		IMicroserviceArgs env, MicroserviceRequester requester,
 		CancellationTokenSource cancellationTokenSource)
 	{
-		var daemon = new MicroserviceAuthenticationDaemon(env, requester, socketContext);
-		return Task.Run(() => daemon.Run(cancellationTokenSource), cancellationTokenSource.Token);
+		var daemon = new MicroserviceAuthenticationDaemon(env, requester);
+		return (new TaskFactory().StartNew(() => daemon.Run(cancellationTokenSource), cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default), daemon);
 	}
 }

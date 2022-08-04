@@ -19,6 +19,7 @@ public static class Constants
 	public const string CONFIG_PLATFORM = "host";
 	public const string CONFIG_ACCESS_TOKEN = "access_token";
 	public const string CONFIG_REFRESH_TOKEN = "refresh_token";
+	public const string CONFIG_HEADER = "header";
 
 
 	/// <summary>

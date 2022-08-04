@@ -1,15 +1,15 @@
 using Beamable.Common;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
+using static Beamable.Common.Constants.Features.Docker;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -19,12 +19,15 @@ namespace Beamable.Server.Editor.DockerCommands
 		private const string BUILD_PREF = "{0}BuildAtLeastOnce";
 		private MicroserviceDescriptor _descriptor;
 		private readonly bool _pull;
+		private readonly CPUArchitectureContext _cpuContext;
 		public bool IncludeDebugTools { get; }
 		public string ImageName { get; set; }
 		public string BuildPath { get; set; }
+
 		public Promise<Unit> ReadyForExecution { get; private set; }
 
 		private Exception _constructorEx;
+		private List<string> _availableArchitectures;
 
 		public static bool WasEverBuildLocally(IDescriptor descriptor)
 		{
@@ -36,10 +39,12 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, bool pull = true)
+		public BuildImageCommand(MicroserviceDescriptor descriptor, List<string> availableArchitectures, bool includeDebugTools, bool watch, bool pull = true, CPUArchitectureContext cpuContext = CPUArchitectureContext.LOCAL)
 		{
 			_descriptor = descriptor;
+			_availableArchitectures = availableArchitectures;
 			_pull = pull;
+			_cpuContext = cpuContext;
 			IncludeDebugTools = includeDebugTools;
 			ImageName = descriptor.ImageName;
 			BuildPath = descriptor.BuildPath;
@@ -50,7 +55,6 @@ namespace Beamable.Server.Editor.DockerCommands
 			BuildUtils.PrepareBuildContext(descriptor, includeDebugTools, watch);
 		}
 
-
 		protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
 		{
 			base.ModifyStartInfo(processStartInfo);
@@ -58,22 +62,24 @@ namespace Beamable.Server.Editor.DockerCommands
 			processStartInfo.EnvironmentVariables["DOCKER_SCAN_SUGGEST"] = "false";
 		}
 
-		private string GetProcessArchitecture()
+		public string GetProcessArchitecture()
 		{
-			string platformStr = string.Empty;
-			// Mac with M1+ processor returns the keyword "Apple", which we can use to detect if the architecture is arm64 instead of amd64, as is the case with Intel processors
-			if (CultureInfo.InvariantCulture.CompareInfo.IndexOf(SystemInfo.processorType, "Apple", CompareOptions.IgnoreCase) >= 0 ||
-				RuntimeInformation.OSArchitecture == Architecture.Arm ||
-				RuntimeInformation.OSArchitecture == Architecture.Arm64)
+			var preferred = MicroserviceConfiguration.Instance.GetCPUArchitecture(_cpuContext);
+			if (string.IsNullOrEmpty(preferred)) return preferred;
+
+			// the system needs to be able to build this architecture...
+			if (!_availableArchitectures.Contains(preferred))
 			{
-				platformStr = Environment.Is64BitProcess ? "--platform linux/arm64" : "--platform linux/arm/v7";
+				// otherwise, get rid of the preference, and use the system's default.
+				var warning =
+					$@"Your machine cannot build docker images to {preferred}. The available builders are {string.Join(",", CPU_SUPPORTED)}. Defaulting to host architecture...
+You can install more builders manually by using `docker buildx create --name beamable-builder --driver docker-container --platform linux/arm64,linux/arm/v8,linux/amd64`,
+and then setting the beamable-builder as the default docker builder.";
+				MicroserviceLogHelper.HandleLog(_descriptor, LogLevel.WARNING, warning, Color.white, false, null);
+				preferred = null;
 			}
-			else if (RuntimeInformation.OSArchitecture == Architecture.X64 ||
-					 RuntimeInformation.OSArchitecture == Architecture.X86)
-			{
-				platformStr = "--platform linux/amd64";
-			}
-			return platformStr;
+
+			return preferred;
 		}
 
 		public override string GetCommandString()
@@ -82,10 +88,13 @@ namespace Beamable.Server.Editor.DockerCommands
 #if BEAMABLE_DEVELOPER
 			pullStr = ""; // we cannot force the pull against the local image.
 #endif
+			var platformStr = "";
 
-			var platformStr = GetProcessArchitecture();
-#if BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
-			platformStr = "";
+#if !BEAMABLE_DISABLE_AMD_MICROSERVICE_BUILDS
+			var arch = GetProcessArchitecture();
+			platformStr = string.IsNullOrEmpty(arch)
+				? ""
+				: $"--platform {arch}";
 #endif
 
 			return $"{DockerCmd} build {pullStr} {platformStr} --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\" ";
@@ -93,7 +102,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -102,7 +111,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardErr(string data)
 		{
-			if (!MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
 			{
 				base.HandleStandardErr(data);
 			}
