@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using cli.Services;
+using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -143,13 +144,13 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 			if (string.IsNullOrEmpty(args.BeamoId))
 				args.BeamoId = AnsiConsole.Prompt(new TextPrompt<string>("Enter an unique identifier for this [lightskyblue1]Beam-O Container[/]:"));
 
-			if (!_localBeamo.ValidateBeamoServiceId_ValidCharacters(args.BeamoId))
+			if (!BeamoLocalSystem.ValidateBeamoServiceId_ValidCharacters(args.BeamoId))
 			{
 				AnsiConsole.MarkupLine($"[red]\nBeam-O Ids can only contain alphanumeric and underscore characters.[/]");
 				return;
 			}
 
-			if (!_localBeamo.ValidateBeamoServiceId_DoesntExists(args.BeamoId))
+			if (!BeamoLocalSystem.ValidateBeamoServiceId_DoesntExists(args.BeamoId, _localBeamo.BeamoManifest.ServiceDefinitions))
 			{
 				AnsiConsole.MarkupLine(
 					$"[red]\nBeam-O Ids must be unique per-project. Here are the ones already taken: {string.Join(", ", existingBeamoIds)}[/]");
@@ -346,10 +347,16 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 			throw new ArgumentOutOfRangeException(nameof(httpArgs.RemoteHealthEndpointAndPort), "Must pass two arguments. See 'beam services register --help' for more information.");
 	}
 
-	public static Func<BeamoServiceDefinition, HttpMicroserviceLocalProtocol, Task> UpdateHttpLocalProtocolFromArgs(HttpSpecificArgs httpArgs)
+	public static LocalProtocolModifier<HttpMicroserviceLocalProtocol> UpdateHttpLocalProtocolFromArgs(HttpSpecificArgs httpArgs)
 	{
 		return (_, localProtocol) =>
 		{
+			if (httpArgs.LocalDockerBuildContext != null)
+				localProtocol.DockerBuildContextPath = httpArgs.LocalDockerBuildContext;
+
+			if (httpArgs.LocalDockerfileRelativePath != null)
+				localProtocol.RelativeDockerfilePath = httpArgs.LocalDockerfileRelativePath;
+
 			if (httpArgs.LocalLogLevel != null)
 				localProtocol.LogLevel = httpArgs.LocalLogLevel.Value.ToString();
 
@@ -383,7 +390,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		};
 	}
 
-	public static Func<BeamoServiceDefinition, HttpMicroserviceRemoteProtocol, Task> UpdateHttpRemoteProtocolFromArgs(HttpSpecificArgs httpArgs)
+	public static RemoteProtocolModifier<HttpMicroserviceRemoteProtocol> UpdateHttpRemoteProtocolFromArgs(HttpSpecificArgs httpArgs)
 	{
 		return (_, remoteProtocol) =>
 		{

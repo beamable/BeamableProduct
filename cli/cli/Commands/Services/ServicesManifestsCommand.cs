@@ -1,13 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using cli.Services;
+using Newtonsoft.Json;
 using Spectre.Console;
 
 namespace cli;
 
-public class BeamoManifestsCommand : AppCommand<BeamoManifestsArgs>
+public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
 {
 	private readonly BeamoService _beamoService;
 	
-	public BeamoManifestsCommand(BeamoService beamoService) : base("manifests", "outputs manifests json to console")
+	public ServicesManifestsCommand(BeamoService beamoService) : base("manifests", "outputs manifests json to console")
 	{
 		_beamoService = beamoService;
 	}
@@ -17,7 +18,7 @@ public class BeamoManifestsCommand : AppCommand<BeamoManifestsArgs>
 		AddOption(new SkipOption(), (args, i) => args.skip = i);
 	}
 
-	public override async Task Handle(BeamoManifestsArgs args)
+	public override async Task Handle(ServicesManifestsArgs args)
 	{
 		var response = await AnsiConsole.Status()
 		                                .Spinner(Spinner.Known.Default)
@@ -30,7 +31,7 @@ public class BeamoManifestsCommand : AppCommand<BeamoManifestsArgs>
 	}
 }
 
-public class BeamoManifestsArgs : CommandArgs
+public class ServicesManifestsArgs : CommandArgs
 {
 	public int limit = 0;
 	public int skip = 0;

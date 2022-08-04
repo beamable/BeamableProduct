@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using cli.Services;
+using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
 using Spectre.Console.Rendering;

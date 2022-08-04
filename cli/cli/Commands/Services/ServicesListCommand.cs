@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using cli.Services;
+using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
@@ -37,6 +38,10 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 
 	public override async Task Handle(ServicesListCommandArgs args)
 	{
+		// //await _remoteBeamo.GetMetricsUrl("test", "cpu");
+		// var templates = await _remoteBeamo.Promote(_ctx.Pid);
+		// Console.WriteLine($"{string.Join("", JsonConvert.SerializeObject(templates))}");
+		
 		var titleText = !args.Remote ? "Local Services Status" : "Remote Services Status";
 		AnsiConsole.MarkupLine($"[lightskyblue1]{titleText}[/]");
 
@@ -54,7 +59,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 			(var manifest, var status) = response;
 
 			// Update the local manifest given the remote one.
-			await _localBeamo.SyncLocalManifestWithRemote(manifest, _localBeamo.BeamoManifest);
+			await _localBeamo.SyncLocalManifestWithRemote(manifest);
 			_localBeamo.SaveBeamoLocalManifest();
 
 			if (!args.AsJson)
@@ -79,7 +84,10 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 			}
 			else
 			{
-				AnsiConsole.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+				AnsiConsole.MarkupLine($"[green]Current Manifest[/]");
+				AnsiConsole.WriteLine(JsonConvert.SerializeObject(response.Item1, Formatting.Indented));
+				AnsiConsole.MarkupLine($"[green]Current Status[/]");
+				AnsiConsole.WriteLine(JsonConvert.SerializeObject(response.Item2, Formatting.Indented));
 			}
 		}
 		else

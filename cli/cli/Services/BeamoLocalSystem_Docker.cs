@@ -11,7 +11,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace cli;
+namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
@@ -328,7 +328,14 @@ public partial class BeamoLocalSystem
 
 				progressUpdateHandler?.Invoke(progressAvg);
 			}));
+		
+		// Find the image that was downloaded
 		var builtImage = await _client.Images.InspectImageAsync(publicImageName);
+		
+		// Notify that the image is available locally
+		progressUpdateHandler?.Invoke(1f);
+		
+		// Return the image id.
 		return builtImage.ID;
 	}
 
@@ -450,7 +457,28 @@ public partial class BeamoLocalSystem
 						.Any(si => BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == si.BeamoId).Protocol == BeamoProtocolType.EmbeddedMongoDb);
 
 					if (!otherRunningMongoInstances)
-						await DeleteImage(serviceDefinition.ImageId);
+					{
+						// For StorageObjects we delete using the image id of the mongo image  
+						try
+						{
+							await DeleteImage(serviceDefinition.ImageId);
+						}
+						catch (Exception e)
+						{
+							// We can ignore "reference does not exist" exceptions if we ever get them. These happen if/when the image has already been deleted by a previous pass of through this code. 
+							// This happens when you have multiple EmbeddedMongo services that were running and stop them via the Docker for Windows UI or some external case.
+							// Basically, this means that, for each registered mongo service, we'll try to delete the same mongo image and get the following error:
+							// Docker API responded with status code=NotFound, response={"message":"reference does not exist"}
+							// As such, we can essentially ignore this.
+							// TODO: A more robust algorithm for this is to make sure that we don't have repeating image ids tied to BeamoIds when running this stop loop.
+							if (!e.Message.Contains("reference does not exist") && 
+							    
+							    // Because we run this in-parallel, we can also get this error:
+							    // Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
+							    !e.Message.Contains("unrecognized image ID"))
+								throw;
+						}
+					}
 
 					break;
 				}
@@ -506,4 +534,6 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task<Stream> SaveImage(BeamoServiceDefinition serviceDefinition) =>
 		await _client.Images.SaveImageAsync(serviceDefinition.ImageId, CancellationToken.None);
+
+	
 }

@@ -3,10 +3,19 @@
  * It handles default values, how to start the container with its data and other utility functions around this protocol. 
  */
 
-namespace cli;
+namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	/// <summary>
+	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
+	/// </summary>
+	/// <param name="beamId">The service's unique id.</param>
+	/// <param name="projectPath">A valid Docker Build Context that'll be the built service.</param>
+	/// <param name="dockerfilePath">A path inside the given Docker Build Context (<paramref name="projectPath"/>) that'll be used to run the build.</param>
+	/// <param name="dependencyBeamIds">Other existing services that this depends on. Any dependency is guaranteed to be running by the time this service attempts to start up.</param>
+	/// <param name="cancellationToken">A cancellation token to stop the registration.</param>
+	/// <returns>A valid <see cref="BeamoServiceDefinition"/> with the default values of the protocol.</returns>
 	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId, string projectPath, string dockerfilePath, string[] dependencyBeamIds, CancellationToken cancellationToken)
 	{
 		dependencyBeamIds ??= Array.Empty<string>();
@@ -24,12 +33,9 @@ public partial class BeamoLocalSystem
 			cancellationToken);
 	}
 
-	public async Task<bool> ResetLocalProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
-		await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_HttpMicroservice, cancellationToken);
-
-	public async Task<bool> ResetRemoteProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
-		await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_HttpMicroservice, cancellationToken);
-
+	/// <summary>
+	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.HttpMicroservice"/> protocol.
+	/// </summary>
 	public async Task RunLocalHttpMicroservice(BeamoServiceDefinition serviceDefinition, HttpMicroserviceLocalProtocol localProtocol)
 	{
 		const string ENV_CID = "CID";
@@ -69,6 +75,8 @@ public partial class BeamoLocalSystem
 		};
 		environmentVariables.AddRange(localProtocol.CustomEnvironmentVariables);
 
+		// Configures docker's own health check command to target our application's configured health check endpoint.
+		// It'll try these amount of times with a linear backoff (it's docker's default). If it ever fails, it'll terminate the application.
 		var reqTimeout = 1;
 		var waitRetryMax = 3;
 		var tries = 5;
@@ -77,22 +85,42 @@ public partial class BeamoLocalSystem
 		var pipeCmd = "kill";
 		var cmdStr = $"wget -O- -q --timeout={reqTimeout} --waitretry={waitRetryMax} --tries={tries} http://localhost:{port}/{endpoint} || {pipeCmd} 1";
 
+		// Creates and runs the container. This container will auto destroy when it stops.
+		// TODO: Make the auto destruction optional to help CS identify issues in the wild.
 		await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts, environmentVariables);
 	}
 
-
-	private async Task PrepareDefaultRemoteProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceRemoteProtocol remote)
+	/// <summary>
+	/// Resets the protocol data for the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> to the default settings. 
+	/// </summary>
+	public async Task<bool> ResetToDefaultValues_HttpMicroservice(string beamoId)
 	{
-		remote.HealthCheckEndpoint = "health";
-		remote.HealthCheckPort = "6565";
-		remote.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
-
-		await Task.CompletedTask;
+		var localUpdated = await ResetLocalProtocol_HttpMicroservice(beamoId, CancellationToken.None);
+		var remoteUpdated = await ResetRemoteProtocol_HttpMicroservice(beamoId, CancellationToken.None);
+		return localUpdated && remoteUpdated;
 	}
 
+	/// <summary>
+	/// Short-hand to restore the <see cref="HttpMicroserviceLocalProtocol"/> of a given <paramref name="beamoId"/> to default parameters. Returns false if the update fails or if the given <paramref name="beamoId"/>'s service is
+	/// not set to the <see cref="BeamoProtocolType.HttpMicroservice"/>. 
+	/// </summary>
+	public async Task<bool> ResetLocalProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
+		await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_HttpMicroservice, cancellationToken);
+
+	/// <summary>
+	/// Short-hand to restore the <see cref="HttpMicroserviceRemoteProtocol"/> of a given <paramref name="beamoId"/> to default parameters. Returns false if the update fails or if the given <paramref name="beamoId"/>'s service is
+	/// not set to the <see cref="BeamoProtocolType.HttpMicroservice"/>. 
+	/// </summary>
+	public async Task<bool> ResetRemoteProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
+		await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_HttpMicroservice, cancellationToken);
+
+	/// <summary>
+	/// Implementation of <see cref="LocalProtocolModifier{TLocal}"/> that applies the default values of the <see cref="HttpMicroserviceLocalProtocol"/>.
+	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateLocalProtocol{TLocal}"/> to understand how this gets called. 
+	/// </summary>
 	private async Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
 	{
-		// TODO: Move this out of here and into another service
+		// TODO: Move this out of here and into another service then get the cached value here.
 		var secret = await _beamo.GetRealmSecret();
 
 		local.CID = _ctx.Cid;
@@ -112,13 +140,16 @@ public partial class BeamoLocalSystem
 	}
 
 	/// <summary>
-	/// Resets the protocol data for the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> to the default settings. 
+	/// Implementation of <see cref="RemoteProtocolModifier{TRemote}"/> that applies the default values of the <see cref="HttpMicroserviceRemoteProtocol"/>.
+	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateRemoteProtocol{TRemote}"/> to understand how this gets called. 
 	/// </summary>
-	public async Task<bool> ResetToDefaultValues_HttpMicroservice(string beamoId)
+	private async Task PrepareDefaultRemoteProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceRemoteProtocol remote)
 	{
-		var localUpdated = await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_HttpMicroservice, CancellationToken.None);
-		var remoteUpdated = await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_HttpMicroservice, CancellationToken.None);
-		return localUpdated && remoteUpdated;
+		remote.HealthCheckEndpoint = "health";
+		remote.HealthCheckPort = "6565";
+		remote.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
+
+		await Task.CompletedTask;
 	}
 }
 
@@ -165,7 +196,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public DockerBindMount BindSrcForHotReloading;
 	public string HotReloadEnabledEndpoint;
 	public string HotReloadEnabledPort;
-	
+
 	public List<DockerPortBinding> CustomPortBindings;
 	public List<DockerBindMount> CustomBindMounts;
 	public List<DockerVolume> CustomVolumes;
@@ -183,8 +214,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 			if (!File.Exists(dockerfilePath))
 				throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
 		}
+
 		return hasPaths;
 	}
 }
-
-// TODO: DOCKer COMPOSE INTO VISION DOC????

@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
@@ -94,19 +95,22 @@ public class App
 		Services.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
-		Services.AddRootCommand<BeamoCommand, BeamoCommandArgs>();
-		Services.AddCommand<BeamoCurrentManifestCommand, BeamoManifestArgs, BeamoCommand>();
-		Services.AddCommand<BeamoManifestsCommand, BeamoManifestsArgs, BeamoCommand>();
-		Services.AddCommand<BeamoDeployCommand, BeamoDeployArgs, BeamoCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
 
 		Services.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
+		Services.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
 		Services.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 
 		// customize
 		configurator?.Invoke(Services);

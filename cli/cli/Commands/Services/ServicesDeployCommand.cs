@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using cli.Services;
 using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -10,6 +11,7 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 {
 	public string[] BeamoIdsToDeploy;
 	public bool Remote;
+	public string FromJsonFile;
 	public string RemoteComment;
 	public string[] RemoteServiceComments;
 }
@@ -41,11 +43,17 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 		AddOption(new Option<bool>("--remote", () => false, $"If this option is set, we publish the manifest instead."),
 			(args, i) => args.Remote = i);
 
+		AddOption(new Option<string>("--from-file", () => null, $"If this option is set to a valid path to a ServiceManifest JSON, deploys that instead. Only works if --remote flag is set."),
+			(args, i) => args.FromJsonFile = i);
+
 		AddOption(new Option<string>("--comment", () => "", $"Requires --remote flag. Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal."),
 			(args, i) => args.RemoteComment = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Requires --remote flag. Any number of 'BeamoId::Comment' strings. " +
-		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal."),
+		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal.")
+			{
+				AllowMultipleArgumentsPerToken = true
+			},
 			(args, i) => args.RemoteServiceComments = i);
 	}
 
@@ -60,6 +68,35 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 		if (args.Remote)
 		{
+			if (!string.IsNullOrEmpty(args.FromJsonFile))
+			{
+				ServiceManifest manifest;
+
+				try
+				{
+					manifest = JsonConvert.DeserializeObject<ServiceManifest>(await File.ReadAllTextAsync(args.FromJsonFile));
+				}
+				catch (Exception e)
+				{
+					AnsiConsole.MarkupLine($"[red]A problem occurred while deserializing the given file. Please ensure the file exists and is a valid ServiceManifest.[/]");
+					AnsiConsole.WriteException(e);
+					return;
+				}
+
+				try
+				{
+					await _remoteBeamo.Deploy(manifest);
+				}
+				catch (Exception e)
+				{
+					AnsiConsole.MarkupLine($"[red]A problem occurred while deploying the given file.[/]");
+					AnsiConsole.WriteException(e);
+					return;
+				}
+
+				return;
+			}
+
 			// Parse and prepare per-service comments dictionary (BeamoId => CommentString) 
 			var perServiceComments = new Dictionary<string, string>();
 			for (var i = 0; i < args.RemoteServiceComments.Length; i++)
@@ -80,7 +117,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 				perServiceComments.Add(id, comment);
 			}
-			
+
 			// Get where we need to upload based on which platform env we are targeting
 			var dockerRegistryUrl = _ctx.Host switch
 			{
@@ -150,7 +187,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 				.Progress()
 				.StartAsync(async ctx =>
 				{
-					var allProgressTasks = args.BeamoIdsToDeploy.Select(id => ctx.AddTask($"Deploying Service {id}")).ToList();
+					var allProgressTasks = args.BeamoIdsToDeploy.Where(id => _localBeamo.VerifyCanBeBuiltLocally(id)).Select(id => ctx.AddTask($"Deploying Service {id}")).ToList();
 					try
 					{
 						await _localBeamo.DeployToLocal(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy,

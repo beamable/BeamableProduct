@@ -1,18 +1,10 @@
-﻿using Beamable.Common;
-using Beamable.Common.Api;
-using Beamable.Common.Api.Realms;
+﻿using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json;
-using Spectre.Console;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
 
-namespace cli;
+namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
@@ -56,7 +48,7 @@ public partial class BeamoLocalSystem
 	/// The realm service so we can grab the production realm's PID from whichever realm we are in.
 	/// We do this so that Beam-O shares Docker images across realms to save space.
 	/// </summary>
-	private IRealmsApi _realmService;
+	private IRealmsApi _realmApi;
 
 	/// <summary>
 	/// An instance of the docker client so that it can communicate with Docker for Windows and Docker for Mac ---- really, it should talk to any docker daemon.
@@ -72,37 +64,12 @@ public partial class BeamoLocalSystem
 	/// <see cref="StartListeningToDocker"/> and <see cref="StopListeningToDocker"/>.
 	/// </summary>
 	private readonly CancellationTokenSource _dockerListeningThreadCancel;
-
-	/**
-	 * TODO: Make sense of this and move it into C#MS Vision Doc
-	 *
-	 * - Route at C#MS
-  - Route that returns "where to find each microfront for that C#MS"
-  - Server side rendered front-end or not?
-    - public async Task<string> CallToSomewhere();
-  - External Data
-
-
-- Javascript SPA:
-  - How does portal know how to talk to the microfront-end in localhost?
-  - in Unity, prepare project files
-  - BeamoProtocol stuff, zip stuff up and upload to beamo or to a local Microfront-end admin service
-  - Beamo does magic with cloudfront and s3 to set the SPA up.
-    - How does auth work with cloudfront to make sure the request coming in is auth'ed by dev-people only?
-    - Game stuff public api sites?
-  - Portal gets from beamo where the micro-frontends for that realm/customer combo are and serves them.
-
-- Server-Side-Rendering Approach:
-  - How do we do this without locking ourselves into a single Server-side rendering framework?
-  - Can we cloudfront a client callable so we cache the responses worlwide?
-
-
-	 */
-	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi service, BeamoService beamo)
+	
+	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo)
 	{
 		_ctx = ctx;
 		_beamo = beamo;
-		_realmService = service;
+		_realmApi = realmsApi;
 
 		// We use a 60 second timeout because the Docker Daemon is VERY slow... If you ever see an "The operation was cancelled" message that happens inconsistently,
 		// try changing this value before going down the rabbit hole. 
@@ -123,11 +90,10 @@ public partial class BeamoLocalSystem
 			BeamoManifest = new BeamoLocalManifest()
 			{
 				ServiceDefinitions = new List<BeamoServiceDefinition>(8),
-				HttpMicroserviceLocalProtocols = new Dictionary<string, HttpMicroserviceLocalProtocol>(4),
-				HttpMicroserviceRemoteProtocols = new Dictionary<string, HttpMicroserviceRemoteProtocol>(4),
-				EmbeddedMongoDbLocalProtocols = new Dictionary<string, EmbeddedMongoDbLocalProtocol>(4),
-				EmbeddedMongoDbRemoteProtocols = new Dictionary<string, EmbeddedMongoDbRemoteProtocol>(4),
-				LayeredDependencyGraph = null
+				HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>(),
+				HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
+				EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(),
+				EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 			};
 			SaveBeamoLocalManifest();
 		}
@@ -160,17 +126,14 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Checks to see if the service id matches the <see cref="BeamoServiceIdRegex"/>. 
 	/// </summary>
-	public bool ValidateBeamoServiceId_ValidCharacters(string beamoServiceId) =>
+	public static bool ValidateBeamoServiceId_ValidCharacters(string beamoServiceId) =>
 		BeamoServiceIdRegex.IsMatch(beamoServiceId);
 
 	/// <summary>
 	/// Checks if the given BeamO Service Id is already known in the current <see cref="BeamoManifest"/>.
 	/// </summary>
-	public bool ValidateBeamoServiceId_DoesntExists(string beamoServiceId) =>
-		!BeamoManifest.ServiceDefinitions.Contains(new BeamoServiceDefinition() { BeamoId = beamoServiceId }, new BeamoServiceDefinition.IdEquality());
-
-	public bool IsServiceRegistered(string beamoServiceId) =>
-		BeamoManifest.ServiceDefinitions.Contains(new BeamoServiceDefinition() { BeamoId = beamoServiceId }, new BeamoServiceDefinition.IdEquality());
+	public static bool ValidateBeamoServiceId_DoesntExists(string beamoServiceId, List<BeamoServiceDefinition> serviceDefinitions) =>
+		!serviceDefinitions.Contains(new BeamoServiceDefinition() { BeamoId = beamoServiceId }, new BeamoServiceDefinition.IdEquality());
 
 	/// <summary>
 	/// Verifies, by expanding the dependency DAG from root, we don't see root again until we have walked through all dependencies. 
@@ -222,17 +185,23 @@ public partial class BeamoLocalSystem
 	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
 	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
 	/// <returns>The created service definition.</returns>
-	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId,
-		BeamoProtocolType type,
-		string[] beamoIdDependencies,
-		Func<BeamoServiceDefinition, TLocal, Task> localConstructor, Func<BeamoServiceDefinition, TRemote, Task> remoteConstructor, CancellationToken cancellationToken)
+	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
+		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken)
+		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new() =>
+		await AddServiceDefinition(BeamoManifest, beamoId, type, beamoIdDependencies, localConstructor, remoteConstructor, cancellationToken);
+
+	/// <summary>
+	/// <inheritdoc cref="AddServiceDefinition{TLocal,TRemote}(string,cli.Services.BeamoProtocolType,string[],cli.Services.LocalProtocolModifier{TLocal},cli.Services.RemoteProtocolModifier{TRemote},System.Threading.CancellationToken)"/>
+	/// </summary>
+	private static async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(BeamoLocalManifest beamoLocalManifest, string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
+		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new()
 	{
 		// Verify that we aren't creating a non-unique beamo id.
-		if (!ValidateBeamoServiceId_DoesntExists(beamoId))
+		if (!ValidateBeamoServiceId_DoesntExists(beamoId, beamoLocalManifest.ServiceDefinitions))
 			throw new ArgumentOutOfRangeException(nameof(beamoId), $"Attempting to register a service definition that's already registered [BeamoId={beamoId}]. This is not allowed.");
 
-		// Verify that we aren't creating a non-unique beamo id.
+		// Verify that we aren't creating a non-unique beamo id. TODO: Change Comment
 		if (!ValidateBeamoServiceId_ValidCharacters(beamoId))
 			throw new ArgumentOutOfRangeException(nameof(beamoId), $"Attempting to register a service with an invalid [BeamoId={beamoId}]. Only alphanumeric and underscore are allowed.");
 
@@ -246,10 +215,10 @@ public partial class BeamoLocalSystem
 		};
 
 		// Register the services before initializing protocols so that the protocol initialization can know about the service. 
-		BeamoManifest.ServiceDefinitions.Add(serviceDefinition);
+		beamoLocalManifest.ServiceDefinitions.Add(serviceDefinition);
 
 		// Verify that we aren't creating cyclical dependencies
-		if (!ValidateBeamoService_NoCyclicalDependencies(serviceDefinition, BeamoManifest.ServiceDefinitions))
+		if (!ValidateBeamoService_NoCyclicalDependencies(serviceDefinition, beamoLocalManifest.ServiceDefinitions))
 			throw new ArgumentOutOfRangeException(nameof(beamoIdDependencies), "Attempting to register a service definition with a cyclical dependency. Please make sure that is not the case.");
 
 		// Set up local and remote protocol with their defaults.
@@ -265,14 +234,14 @@ public partial class BeamoLocalSystem
 		{
 			case BeamoProtocolType.HttpMicroservice:
 			{
-				BeamoManifest.HttpMicroserviceLocalProtocols.Add(beamoId, local as HttpMicroserviceLocalProtocol);
-				BeamoManifest.HttpMicroserviceRemoteProtocols.Add(beamoId, remote as HttpMicroserviceRemoteProtocol);
+				beamoLocalManifest.HttpMicroserviceLocalProtocols.Add(beamoId, local as HttpMicroserviceLocalProtocol);
+				beamoLocalManifest.HttpMicroserviceRemoteProtocols.Add(beamoId, remote as HttpMicroserviceRemoteProtocol);
 				break;
 			}
 			case BeamoProtocolType.EmbeddedMongoDb:
 			{
-				BeamoManifest.EmbeddedMongoDbLocalProtocols.Add(beamoId, local as EmbeddedMongoDbLocalProtocol);
-				BeamoManifest.EmbeddedMongoDbRemoteProtocols.Add(beamoId, remote as EmbeddedMongoDbRemoteProtocol);
+				beamoLocalManifest.EmbeddedMongoDbLocalProtocols.Add(beamoId, local as EmbeddedMongoDbLocalProtocol);
+				beamoLocalManifest.EmbeddedMongoDbRemoteProtocols.Add(beamoId, remote as EmbeddedMongoDbRemoteProtocol);
 				break;
 			}
 			default:
@@ -288,7 +257,7 @@ public partial class BeamoLocalSystem
 	/// <param name="cancellationToken">A token that we pass to the given task. Can be used to cancel the task, if needed.</param>
 	/// <typeparam name="TLocal">The <see cref="IBeamoLocalProtocol"/> that the service definition with the given <paramref name="beamoId"/> is expected to contain.</typeparam>
 	/// <returns>Whether or not the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> was found.</returns>
-	public async Task<bool> TryUpdateLocalProtocol<TLocal>(string beamoId, Func<BeamoServiceDefinition, TLocal, Task> localProtocolModifier, CancellationToken cancellationToken)
+	public async Task<bool> TryUpdateLocalProtocol<TLocal>(string beamoId, LocalProtocolModifier<TLocal> localProtocolModifier, CancellationToken cancellationToken)
 		where TLocal : class, IBeamoLocalProtocol
 	{
 		var containerIdx = BeamoManifest.ServiceDefinitions.FindIndex(container => container.BeamoId == beamoId);
@@ -324,7 +293,7 @@ public partial class BeamoLocalSystem
 	/// <param name="cancellationToken">A token that we pass to the given task. Can be used to cancel the task, if needed.</param>
 	/// <typeparam name="TRemote">The <see cref="IBeamoRemoteProtocol"/> that the service definition with the given <paramref name="beamoId"/> is expected to contain.</typeparam>
 	/// <returns>Whether or not the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> was found.</returns>
-	public async Task<bool> TryUpdateRemoteProtocol<TRemote>(string beamoId, Func<BeamoServiceDefinition, TRemote, Task> remoteProtocolModifier, CancellationToken cancellationToken)
+	public async Task<bool> TryUpdateRemoteProtocol<TRemote>(string beamoId, RemoteProtocolModifier<TRemote> remoteProtocolModifier, CancellationToken cancellationToken)
 		where TRemote : class, IBeamoRemoteProtocol
 	{
 		var containerIdx = BeamoManifest.ServiceDefinitions.FindIndex(container => container.BeamoId == beamoId);
@@ -355,21 +324,65 @@ public partial class BeamoLocalSystem
 	}
 }
 
+
+/// <summary>
+/// A function that takes in the <see cref="BeamoServiceDefinition"/> plus it's associated Local Protocol so that it can make changes to the protocol instance. 
+/// </summary>
+/// <typeparam name="TLocal">The type of <see cref="IBeamoLocalProtocol"/> associated with the expected <see cref="BeamoServiceDefinition.Protocol"/>.</typeparam>
+public delegate Task LocalProtocolModifier<in TLocal>(BeamoServiceDefinition owner, TLocal protocol) where TLocal : IBeamoLocalProtocol;
+
+/// <summary>
+/// A function that takes in the <see cref="BeamoServiceDefinition"/> plus it's associated Remote Protocol so that it can make changes to the protocol instance. 
+/// </summary>
+/// <typeparam name="TLocal">The type of <see cref="IBeamoRemoteProtocol"/> associated with the given <see cref="BeamoServiceDefinition.Protocol"/>.</typeparam>
+public delegate Task RemoteProtocolModifier<in TRemote>(BeamoServiceDefinition owner, TRemote protocol) where TRemote : IBeamoRemoteProtocol;
+
+
+/// <summary>
+/// A "typedef" around a <see cref="string"/> to <see cref="IBeamoLocalProtocol"/> <see cref="Dictionary{TKey,TValue}"/>.
+/// </summary>
+public class BeamoLocalProtocolMap<T> : Dictionary<string, T> where T : IBeamoLocalProtocol
+{
+}
+
+/// <summary>
+/// A "typedef" around a <see cref="string"/> to <see cref="IBeamoRemoteProtocol"/> <see cref="Dictionary{TKey,TValue}"/>.
+/// </summary>
+public class BeamoRemoteProtocolMap<T> : Dictionary<string, T> where T : IBeamoRemoteProtocol
+{
+}
+
+/// <summary>
+/// Our representation of <see cref="BeamoServiceDefinition"/> and the data they need to correctly enforce their defined <see cref="BeamoProtocolType"/> (stored in dictionaries. 
+/// </summary>
 public class BeamoLocalManifest
 {
-	// TODO : Need to change this to work without polymorphism if we want to send this "as is" to server --- but... the more I think about this, the more I think we shouldn't...
+	/// <summary>
+	/// This list contains all the <see cref="BeamoServiceDefinition"/> that the current machine knows about. TODO: At a minimum, this list is kept in sync with already deployed services? 
+	/// </summary>
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
-	public Dictionary<string, HttpMicroserviceLocalProtocol> HttpMicroserviceLocalProtocols;
-	public Dictionary<string, HttpMicroserviceRemoteProtocol> HttpMicroserviceRemoteProtocols;
-
-	public Dictionary<string, EmbeddedMongoDbLocalProtocol> EmbeddedMongoDbLocalProtocols;
-	public Dictionary<string, EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
+	
+	/// <summary>
+	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
+	/// </summary>
+	public BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol> HttpMicroserviceLocalProtocols;
 
 	/// <summary>
-	/// Built out of the <see cref="ServiceDefinitions"/>, each sub-array contains all the image dependencies for that particular layer. 
+	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
-	public int[][] LayeredDependencyGraph;
+	public BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol> HttpMicroserviceRemoteProtocols;
+
+	
+	/// <summary>
+	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
+	/// </summary>
+	public BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol> EmbeddedMongoDbLocalProtocols;
+
+	/// <summary>
+	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
+	/// </summary>
+	public BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
 }
 
 public class BeamoServiceDefinition
@@ -404,6 +417,9 @@ public class BeamoServiceDefinition
 	/// </summary>
 	public bool ShouldBeEnabledOnRemote;
 
+	/// <summary>
+	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.
+	/// </summary>
 	public struct IdEquality : IEqualityComparer<BeamoServiceDefinition>
 	{
 		public bool Equals(BeamoServiceDefinition x, BeamoServiceDefinition y) => x.BeamoId == y.BeamoId;
@@ -411,18 +427,23 @@ public class BeamoServiceDefinition
 		public int GetHashCode(BeamoServiceDefinition obj) => (obj.BeamoId != null ? obj.BeamoId.GetHashCode() : 0);
 	}
 
-	public static void BuildExposedPorts(List<DockerPortBinding> bindings, out Dictionary<string, EmptyStruct> exposedPorts)
-	{
+	/// <summary>
+	/// Converts a list of <see cref="DockerPortBinding"/> to the format expected by the Docker.NET API (<see cref="BeamoLocalSystem._client"/>).
+	/// </summary>
+	public static void BuildExposedPorts(List<DockerPortBinding> bindings, out Dictionary<string, EmptyStruct> exposedPorts) => 
 		exposedPorts = bindings.ToDictionary(b => b.InContainerPort, _ => new EmptyStruct());
-	}
 
-	public static void BuildHostPortBinding(List<DockerPortBinding> bindings, out Dictionary<string, IList<PortBinding>> boundPorts)
-	{
+	/// <summary>
+	/// Converts a list of <see cref="DockerPortBinding"/> to the second format expected by the Docker.NET API (<see cref="BeamoLocalSystem._client"/>).
+	/// </summary>
+	public static void BuildHostPortBinding(List<DockerPortBinding> bindings, out Dictionary<string, IList<PortBinding>> boundPorts) =>
 		boundPorts = bindings
 			.ToDictionary(b => b.InContainerPort,
 				b => (IList<PortBinding>)new List<PortBinding>() { new() { HostPort = b.LocalPort } });
-	}
 
+	/// <summary>
+	/// Converts a list of <see cref="DockerEnvironmentVariable"/> to the format expected by the Docker.NET API (<see cref="BeamoLocalSystem._client"/>).
+	/// </summary>
 	public static void BuildEnvVars(out List<string> envs, params List<DockerEnvironmentVariable>[] envVarMaps)
 	{
 		envs = new List<string>();
@@ -430,12 +451,18 @@ public class BeamoServiceDefinition
 			envs.AddRange(envVars.Select(envVar => $"{envVar.VariableName}={envVar.Value}"));
 	}
 
+	/// <summary>
+	/// Converts a list of <see cref="DockerVolume"/> to the format expected by the Docker.NET API (<see cref="BeamoLocalSystem._client"/>).
+	/// </summary>
 	public static void BuildVolumes(List<DockerVolume> volumes, out List<string> boundVolumes)
 	{
 		boundVolumes = new List<string>(volumes.Count);
 		boundVolumes.AddRange(volumes.Select(v => $"{v.VolumeName}:{v.InContainerPath}"));
 	}
 
+	/// <summary>
+	/// Converts a list of <see cref="DockerBindMount"/> to the format expected by the Docker.NET API (<see cref="BeamoLocalSystem._client"/>).
+	/// </summary>
 	public static void BuildBindMounts(List<DockerBindMount> bindMounts, out List<string> boundMounts)
 	{
 		boundMounts = new List<string>(bindMounts.Count);
@@ -447,31 +474,78 @@ public class BeamoServiceDefinition
 	}
 }
 
+/// <summary>
+/// Data representing a Docker Port Binding.
+/// </summary>
 public struct DockerPortBinding
 {
+	/// <summary>
+	/// The port in localhost.
+	/// </summary>
 	public string LocalPort;
+	
+	/// <summary>
+	/// The port the application inside the container cares about.
+	/// </summary>
 	public string InContainerPort;
 }
 
+/// <summary>
+/// Data representing a Docker Named Volume.
+/// </summary>
 public struct DockerVolume
 {
+	/// <summary>
+	/// The name of the volume.
+	/// </summary>
 	public string VolumeName;
+	
+	/// <summary>
+	/// The path into the container's file system where this named volume will be bound to.
+	/// </summary>
 	public string InContainerPath;
 }
 
+/// <summary>
+/// Data representing a Docker Bind Mount.
+/// </summary>
 public struct DockerBindMount
 {
+	/// <summary>
+	/// Whether the container is allowed to write to the localhost's file system. 
+	/// </summary>
 	public bool IsReadOnly;
+	
+	/// <summary>
+	/// Path in localhost.
+	/// </summary>
 	public string LocalPath;
+	
+	/// <summary>
+	/// Path into the container's file system where the directory in <see cref="LocalPath"/> will be mounted into. 
+	/// </summary>
 	public string InContainerPath;
 }
 
+/// <summary>
+/// Data representing an Environment Variable definition.
+/// </summary>
 public struct DockerEnvironmentVariable
 {
 	public string VariableName;
 	public string Value;
 }
 
+
+/// <summary>
+/// The type of protocol a <see cref="BeamoServiceDefinition.Protocol"/> was created with. Conceptually, a protocol is just a set of algorithms and data that solve the problem of:
+///  - What protocol do I follow to get this service running locally and in Beamo?
+///  - What data does this protocol need to make the service run correctly in each of these places? (<see cref="IBeamoLocalProtocol"/> and <see cref="IBeamoRemoteProtocol"/>)
+///  - How do I cleanup the local running Docker Engine given what I had to do to get the service running? (Some protocols may spawn multiple docker images, for example).
+///
+/// So, while the <see cref="BeamoServiceDefinition"/> deals with the dependencies between the services and whether or not it should be enabled when we deploy remotely to Beamo,
+/// the protocol defines how Beamo (remote or local) will actually get the service to work. 
+/// </summary>
 public enum BeamoProtocolType
 {
 	// Current C#MS stuff (after we remove the WebSocket stuff)

@@ -1,5 +1,6 @@
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
+using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
 using Spectre.Console;

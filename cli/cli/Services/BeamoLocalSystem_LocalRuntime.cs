@@ -6,7 +6,7 @@
 using Beamable.Common;
 using Docker.DotNet.Models;
 
-namespace cli;
+namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
@@ -48,7 +48,7 @@ public partial class BeamoLocalSystem
 			catch
 			{
 				// We only clear image ids if we know we can rebuild them.
-				if (VerifyCanBeBuiltLocally(sd))
+				if (VerifyCanBeBuiltLocally(manifest, sd))
 					sd.ImageId = "";
 			}
 		}
@@ -101,6 +101,8 @@ public partial class BeamoLocalSystem
 				existingInstance.ActivePortBindings = ports;
 			}
 		}
+
+		// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 	}
 
 	/// <summary>
@@ -165,6 +167,7 @@ public partial class BeamoLocalSystem
 				{
 					var beamoServiceInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
 					if (beamoServiceInstance != null) beamoServiceInstance.IsRunning = true;
+					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
 
@@ -172,6 +175,7 @@ public partial class BeamoLocalSystem
 				{
 					var beamoServiceInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
 					if (beamoServiceInstance != null) beamoServiceInstance.IsRunning = false;
+					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
 			}
@@ -211,6 +215,11 @@ public partial class BeamoLocalSystem
 	public bool VerifyCanBeBuiltLocally(BeamoServiceDefinition beamoServiceDefinition) => VerifyCanBeBuiltLocally(BeamoManifest, beamoServiceDefinition);
 
 	/// <summary>
+	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.Services.BeamoServiceDefinition)"/>.
+	/// </summary>
+	public bool VerifyCanBeBuiltLocally(string beamoServiceId) => VerifyCanBeBuiltLocally(BeamoManifest, BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoServiceId));
+
+	/// <summary>
 	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.BeamoServiceDefinition)"/>.
 	/// </summary>
 	public static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, string beamoId)
@@ -241,11 +250,6 @@ public partial class BeamoLocalSystem
 	public async Task DeployToLocal(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string, float> buildPullImageProgress = null,
 		Action<string> onServiceDeployCompleted = null)
 	{
-		// TODO: Unify progress tracking here
-		// TODO: 1) add progress handler to Create and Run Container. Two-step progress (increment when created returns, increment when run returns)
-		// TODO: 2) keep track of a dictionary of build progress values for each beamo id and create/run progress values for each beamo id
-		// TODO: 3) combine these two values as a weighted avg and every update we get invoke the Action<string, float> with the total avg considering the entire progress.
-
 		deployBeamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
 
 		// Get all services that must be deployed (and that are not just known remotely --- as in, have their local protocols correctly configured).
@@ -264,7 +268,7 @@ public partial class BeamoLocalSystem
 
 			var indexOfServiceWithCyclicalDependency = dependencyChecksForServicesToDeploy.ToList().IndexOf(false);
 			if (indexOfServiceWithCyclicalDependency != -1)
-				throw new CliException($"{serviceDefinitionsToDeploy[indexOfServiceWithCyclicalDependency].BeamoId} has cyclical dependencies!");
+				throw new Exception($"{serviceDefinitionsToDeploy[indexOfServiceWithCyclicalDependency].BeamoId} has cyclical dependencies!");
 		}
 
 
@@ -328,8 +332,7 @@ public partial class BeamoLocalSystem
 	}
 
 	/// <summary>
-	/// Topological sorting of the dependency graph. Basically, this returns layers of dependency counts. In acyclic graphs, which the service definitions must be, this
-	/// guarantee's not dependency conflicts.
+	/// Topological sorting of the dependency graph. Basically, this returns layers of dependencies. Generates layers by finding all 0-dependency services and expanding from them.
 	/// </summary>
 	/// <param name="serviceDefinitions">The Directed Acyclic Graph of <see cref="BeamoServiceDefinition"/>s.</param>
 	/// <param name="builtLayers">An array of layers, each containing indices into <paramref name="serviceDefinitions"/> for services in that layer.</param>
@@ -380,10 +383,6 @@ public partial class BeamoLocalSystem
 
 public class BeamoLocalRuntime
 {
-	/// <summary>
-	/// BeamO Service Ids+Container Ids for all currently running BeamO services. Stored in the form: "beamoId₢containerId".
-	/// Running means: the container is up AND the docker health check is responsive. 
-	/// </summary>
 	public List<BeamoServiceInstance> ExistingLocalServiceInstances;
 }
 
