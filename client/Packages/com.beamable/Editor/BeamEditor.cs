@@ -337,6 +337,11 @@ namespace Beamable
 				// Initialize toolbar
 				BeamableToolbarExtender.LoadToolbarExtender();
 #endif
+				if (SessionState.GetBool(SESSION_STATE_INSTALL_DEPS, false) && !BeamEditorContext.HasDependencies())
+				{
+					await BeamEditorContext.Default.CreateDependencies();
+					SessionState.EraseBool(SESSION_STATE_INSTALL_DEPS);
+				}
 			}
 
 			InitDefaultContext();
@@ -810,7 +815,7 @@ namespace Beamable
 			BeamableEnvironment.ReloadEnvironment();
 		}
 
-		public static void WriteConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public static void WriteConfig(string alias, string pid, string host = null, string cid = "")
 		{
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
@@ -827,9 +832,9 @@ namespace Beamable
 				pid = pid,
 				platform = host,
 				socket = host,
-				containerPrefix = containerPrefix
+				containerPrefix = GetCustomContainerPrefix()
 			};
-
+			
 			string path = ConfigDatabase.GetFullPath("config-defaults");
 			var asJson = JsonUtility.ToJson(config, true);
 
@@ -883,19 +888,24 @@ namespace Beamable
 			}
 		}
 
-		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public void SaveConfig(string alias, string pid, string host = null, string cid = "")
 		{
 			if (string.IsNullOrEmpty(host))
 			{
 				host = BeamableEnvironment.ApiUrl;
 			}
-
-			WriteConfig(alias, pid, host, cid, containerPrefix);
+			
+			WriteConfig(alias, pid, host, cid);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
 			requester.Pid = pid;
 			requester.Host = host;
+		}
+
+		private static string GetCustomContainerPrefix()
+		{
+			return ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) ? customPrefix : null;
 		}
 
 		#region Customer & User Creation and Management
@@ -1155,7 +1165,7 @@ namespace Beamable
 		public string socket;
 		public string containerPrefix;
 	}
-
+	
 	[Serializable]
 	public class CustomerResponse
 	{

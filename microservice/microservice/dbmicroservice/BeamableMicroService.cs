@@ -28,6 +28,7 @@ using Beamable.Server.Api.Tournament;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
+using Beamable.Server.Content;
 using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -71,9 +72,16 @@ namespace Beamable.Server
       public string result;
    }
 
-   public class MicroserviceProviderRequest
+   public class MicroserviceServiceProviderRequest
    {
-      public string name, type;
+	   public string type = "basic";
+	   public string name;
+   }
+
+   public class MicroserviceEventProviderRequest
+   {
+	   public string type = "event";
+	   public string[] evtWhitelist;
    }
 
    public class MicroserviceProviderResponse
@@ -219,7 +227,7 @@ namespace Beamable.Server
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
 
-         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
+         _contentService = CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
@@ -241,6 +249,13 @@ namespace Beamable.Server
          var socket = await _webSocketPromise;
 
          await SetupWebsocket(socket);
+      }
+
+      private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
+      {
+	      return _serviceAttribute.DisableAllBeamableEvents
+		      ? new UnreliableContentService(requester, socket, contentResolver, reflectionCache)
+		      : new ContentService(requester, socket, contentResolver, reflectionCache);
       }
 
       public void RunForever()
@@ -921,7 +936,7 @@ namespace Beamable.Server
 
       private Promise<Unit> ProvideService(string name)
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceServiceProviderRequest
          {
             type = "basic",
             name = name
@@ -930,16 +945,18 @@ namespace Beamable.Server
          {
             Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED);
          }).ToUnit();
-         var eventProvider = _requester.InitializeSubscription().Then(res =>
-         {
-            Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
-         }).ToUnit();
+         var eventProvider = _serviceAttribute.DisableAllBeamableEvents
+	         ? PromiseBase.SuccessfulUnit
+	         : _requester.InitializeSubscription().Then(res =>
+	         {
+		         Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
+	         }).ToUnit();
          return Promise.Sequence(serviceProvider, eventProvider).ToUnit();
       }
 
       private Promise<Unit> RemoveService(string name)
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceServiceProviderRequest
          {
             type = "basic",
             name = name

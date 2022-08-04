@@ -32,6 +32,21 @@ namespace microserviceTests.microservice
 
    }
 
+   [Microservice("simple_no_updates", DisableAllBeamableEvents = true)]
+   public class SimpleMicroserviceWithNoEvents : Microservice
+   {
+	   public static MicroserviceFactory<SimpleMicroserviceWithNoEvents> Factory => () => new SimpleMicroserviceWithNoEvents();
+
+
+	   [ClientCallable]
+	   public async Task<string> GetContent(string id)
+	   {
+		   var content = await Services.Content.GetContent(id);
+		   return "Echo: " + content.Id;
+	   }
+
+   }
+
    [Microservice("simple", UseLegacySerialization = true)]
    public class SimpleMicroservice : Microservice
    {

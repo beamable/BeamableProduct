@@ -450,7 +450,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageMatcher
                       .WithRouteContains("gateway/provider")
                       .WithDelete()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.SuccessWithDelay(providerDelay, new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -459,7 +459,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-3)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.SuccessWithDelay(eventDelay, new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -468,7 +468,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-4)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
                        eventProvided = true;
@@ -553,7 +553,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageMatcher
                       .WithRouteContains("gateway/provider")
                       .WithDelete()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.SuccessWithDelay(providerDelay, new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -562,7 +562,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-3)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.SuccessWithDelay(eventDelay, new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -571,7 +571,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-4)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
                        eventProvided = true;
@@ -642,7 +642,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageMatcher
                       .WithRouteContains("gateway/provider")
                       .WithDelete()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.SuccessWithDelay(providerDelay, new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -651,7 +651,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-3)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.SuccessWithDelay(eventDelay, new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -660,7 +660,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-4)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
                        eventProvided = true;
@@ -704,6 +704,58 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
+        [Test]
+        [NonParallelizable]
+        public async Task HandleLazyContentLoad_WithUnreliableFlag()
+        {
+
+	        TestSocket testSocket = null;
+	        var contentResolver = new TestContentResolver(async uri =>
+	        {
+		        return "{\"id\": \"content.abc\", \"version\": \"1\", \"properties\": {}}";
+	        });
+	        var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+	        {
+		        testSocket = socket;
+		        socket
+			        .AddAuthMessageHandlers()
+			        .AddMessageHandler(
+				        MessageMatcher
+					        .WithRouteContains("gateway/provider")
+					        .WithReqId(-3)
+					        .WithPost()
+					        .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
+				        MessageResponder.Success(new MicroserviceProviderResponse()),
+				        MessageFrequency.OnlyOnce()
+			        )
+			        .AddProviderShutdownMessageHandler()
+			        .AddInitialContentMessageHandler(-4, new ContentReference
+			        {
+				        id = "content.abc",
+				        visibility = "public",
+				        uri = "testuri"
+			        })
+			        .AddMessageHandler(
+				        MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "Echo: content.abc"),
+				        MessageResponder.NoResponse(),
+				        MessageFrequency.OnlyOnce()
+			        );
+	        }), contentResolver);
+
+	        await ms.Start<SimpleMicroserviceWithNoEvents>(new TestArgs());
+	        Assert.IsTrue(ms.HasInitialized);
+
+	        testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple_no_updates", nameof(SimpleMicroserviceWithNoEvents.GetContent), 1, 1, "content.abc"));
+
+	        var warningLog = GetLogs().FirstOrDefault(l => l.Level == LogEventLevel.Warning);
+			Assert.IsNotNull(warningLog);
+			Assert.IsTrue(warningLog.RenderMessage().Contains("The content=[\"content.abc\"] may be unreliable"));
+
+
+	        // simulate shutdown event...
+	        await ms.OnShutdown(this, null);
+	        Assert.IsTrue(testSocket.AllMocksCalled());
+        }
 
         [Test]
         [NonParallelizable]
@@ -1008,7 +1060,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageMatcher
                       .WithRouteContains("gateway/provider")
                       .WithDelete()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.Success(new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -1017,7 +1069,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-3)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                    MessageResponder.SuccessWithDelay(basicProviderDelay, new MicroserviceProviderResponse()),
                    MessageFrequency.OnlyOnce()
                 )
@@ -1026,7 +1078,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("gateway/provider")
                       .WithReqId(-4)
                       .WithPost()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
+                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
                        eventProvided = true;
