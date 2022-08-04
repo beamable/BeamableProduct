@@ -254,7 +254,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Checking Account...", IsEmailRegistered(_currentEmail)).Then(registered =>
+			WithLoading("Checking Account...", AccountManagementHelper.IsEmailRegistered(_currentEmail)).Then(registered =>
 			{
 				if (registered)
 				{
@@ -312,7 +312,7 @@ namespace Beamable.AccountManagement
 			{
 				return de.GetDeviceUsers().FlatMap(deviceUsers =>
 				{
-					return IsEmailRegistered(email).FlatMap(registered =>
+					return AccountManagementHelper.IsEmailRegistered(email).FlatMap(registered =>
 					{
 						var currentUserHasEmail = de.User.HasDBCredentials();
 						var storedUser =
@@ -616,23 +616,19 @@ namespace Beamable.AccountManagement
 
 		private Promise<Unit> LoginToNewUser(IBeamableAPI de)
 		{
-			return WithCriticalLoading("New Account...", de.AuthService.CreateUser()
-														   .FlatMap(de.ApplyToken));
+			return WithCriticalLoading("New Account...", AccountManagementHelper.LoginToNewUser(de));
 		}
 
 		private Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
 		{
-			return WithCriticalLoading("Loading...", de.AuthService.RegisterDBCredentials(email, password)
-													   .Then(de.UpdateUserData));
+			return WithCriticalLoading("Loading...", AccountManagementHelper.AttachEmailToCurrentUser(de, email, password));
 		}
 
 		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
-															AuthThirdParty thirdParty,
-															string accessToken)
+		                                                    AuthThirdParty thirdParty,
+		                                                    string accessToken)
 		{
-			return WithCriticalLoading("Loading...",
-									   de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
-										 .Then(de.UpdateUserData));
+			return WithCriticalLoading("Loading...",AccountManagementHelper.AttachThirdPartyToCurrentUser(de,thirdParty,accessToken));
 		}
 
 		private Promise<User> GetExistingAccount(IBeamableAPI de, UserBundle bundle)
@@ -666,12 +662,6 @@ namespace Beamable.AccountManagement
 			Broadcast(arg, s => s.Loading);
 
 			return promise;
-		}
-
-		private Promise<bool> IsEmailRegistered(string email)
-		{
-			return API.Instance.FlatMap(de => de.AuthService.IsEmailAvailable(email)
-												.Map(available => !available));
 		}
 
 		public void DeferBroadcast<TArg>(TArg arg, Func<AccountManagementSignals, DeSignal<TArg>> getter)
