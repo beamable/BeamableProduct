@@ -175,6 +175,7 @@ MonoBehaviour:
   - button
   - primary
   - half
+  - text
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 0}
