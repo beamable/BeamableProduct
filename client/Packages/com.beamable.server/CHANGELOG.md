@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed potential microservice issue that caused C#MSs to hang during initialization.
 - Publish screen loading bar should always be full when publish is complete.
 - The "Play Selected" button in the Microservice window doesn't get stuck in a service is already running.
+- Microservice selection is saved between domain reloads.
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
