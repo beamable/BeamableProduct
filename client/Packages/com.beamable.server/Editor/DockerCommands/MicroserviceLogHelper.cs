@@ -47,6 +47,29 @@ namespace Beamable.Server.Editor.DockerCommands
 			Logs.EVENT_PROVIDER_INITIALIZED
 		};
 
+		/// <summary>
+		/// Given a log message, try and recognize a standard dotnet error code in the form of CS1234
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="errCode"></param>
+		/// <returns>true if an error code was found, false otherwise</returns>
+		public static bool TryGetErrorCode(string message, out int errCode)
+		{
+			errCode = 0;
+			var errorMatchStr = "error CS";
+			if (message == null) return false;
+			var index = message.IndexOf(errorMatchStr, StringComparison.InvariantCulture);
+			if (index <= -1) return false; // only care about errors...
+
+			var numbers = message.Substring(index + errorMatchStr.Length, 4);
+			if (!int.TryParse(numbers, out errCode))
+			{
+				return false;
+			}
+
+			return true;
+		}
+
 		public static bool HandleMongoLog(StorageObjectDescriptor storage, string data,
 			LogLevel defaultLogLevel = LogLevel.INFO, bool forceDisplay = false)
 		{
