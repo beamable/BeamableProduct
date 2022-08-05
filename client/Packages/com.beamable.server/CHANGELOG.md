@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Publish flow locks Asset Database so that no re-imports may happen.
 - Fixed potential microservice issue that caused C#MSs to hang during initialization.
 - Publish screen loading bar should always be full when publish is complete.
+- Fixed Microservices stop at Unity Exit.
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
