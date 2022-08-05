@@ -3,6 +3,7 @@ using Beamable.Common.Leaderboards;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Beamable.Common.Api.Leaderboards
@@ -81,6 +82,9 @@ namespace Beamable.Common.Api.Leaderboards
 
 		public Promise<LeaderBoardView> GetBoard(string boardId, int @from, int max, long? focus = null, long? outlier = null)
 		{
+			void SetRankEntryForCurrentPlayer(LeaderBoardView lbv) 
+				=> lbv.rankgt = lbv.rankings.FirstOrDefault(y => y.gt == UserContext.UserId);
+
 			if (string.IsNullOrEmpty(boardId))
 			{
 				return Promise<LeaderBoardView>.Failed(new Exception("Leaderboard ID cannot be uninitialized."));
@@ -100,7 +104,8 @@ namespace Beamable.Common.Api.Leaderboards
 			return Requester.Request<LeaderBoardV2ViewResponse>(
 			   Method.GET,
 			   $"/object/leaderboards/{encodedBoardId}/view?{query}"
-			).Map(rsp => rsp.lb);
+			).Map(rsp => rsp.lb)
+			 .Then(SetRankEntryForCurrentPlayer);
 		}
 
 		/// <inheritdoc/>
