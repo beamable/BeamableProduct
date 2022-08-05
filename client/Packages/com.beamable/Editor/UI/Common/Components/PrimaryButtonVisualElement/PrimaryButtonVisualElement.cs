@@ -173,7 +173,7 @@ namespace Beamable.Editor.UI.Components
 		public static string AliasErrorHandler(string alias)
 		{
 			if (string.IsNullOrEmpty(alias)) return "Alias is required";
-			if (!IsSlug(alias)) return "Alias must start with a lowercase letter, and must contain all lower case letters, numbers, or dashes";
+			if (!IsSlug(alias)) return "Alias must be lowercase letters, dashes, and numbers only. It cannot start with a dash or a number.";
 			return null;
 		}
 
