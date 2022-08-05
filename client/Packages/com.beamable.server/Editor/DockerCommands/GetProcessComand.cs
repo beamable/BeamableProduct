@@ -17,7 +17,11 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public override string GetCommandString()
 		{
+#if UNITY_EDITOR && !UNITY_EDITOR_WIN
+			return $"ps -p {processId}";
+#else
 			return $"wmic.exe path Win32_Process where handle='{processId}' get Commandline";
+#endif
 		}
 
 		protected override void HandleStandardOut(string data)

@@ -493,34 +493,37 @@ namespace Beamable.Server.Editor
 		private static async Promise CleanupRunningProcesses(List<MicroserviceDescriptor> descriptors)
 		{
 			List<string> descNames = descriptors.Select(ms => ms.Name.ToLower()).ToList();
-
-			await Cleanup("docker");
-			await Cleanup("cmd");
 			
+#if UNITY_EDITOR && !UNITY_EDITOR_WIN
+			await Cleanup("sh");
+#else
+			await Cleanup("cmd");	
+#endif
+			await Cleanup("docker");
+
 			async Promise Cleanup(string name)
 			{
-				Process[] cmdProcesses = Process.GetProcessesByName(name);
+				Process[] allProcesses = Process.GetProcessesByName(name);
 
-				if (cmdProcesses.Length > 0)
+				if (allProcesses.Length > 0)
 				{
-					foreach (var t in cmdProcesses)
+					foreach (var singleProcess in allProcesses)
 					{
-						if (!t.HasExited)
+						if (!singleProcess.HasExited)
 						{
-							var checkProccessCommand = await new GetProcessComand(t.Id).StartAsync();
+							var checkProccessCommand = await new GetProcessComand(singleProcess.Id).StartAsync();
+							
 							if (!string.IsNullOrEmpty(checkProccessCommand))
 							{
-								for (int i = 0; i < descNames.Count; i++)
+								foreach (var singleDescName in descNames)
 								{
-									if (checkProccessCommand.Contains(descNames[i]))
+									if (checkProccessCommand.Contains(singleDescName))
 									{
-										Debug.LogError(
-											$"Killed process [{t.Id}][{t.MainModule.ModuleName}] {checkProccessCommand}");
-										t.Kill();
+										Debug.LogError($"Killed process [{singleProcess.Id}][{singleProcess.MainModule.ModuleName}] {checkProccessCommand}");
+										singleProcess.Kill();
 										break;
 									}
 								}
-
 							}
 						}
 					}
