@@ -62,9 +62,12 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			checkDockerPromise = new CheckDockerCommand().StartAsync().Then(_ =>
 			{
-				_microserviceBreadcrumbsVisualElement?.Refresh();
-				_actionBarVisualElement?.Refresh();
-				_microserviceContentVisualElement?.Refresh();
+				Model.RefreshState().Then(__ =>
+				{
+					_microserviceBreadcrumbsVisualElement?.Refresh();
+					_actionBarVisualElement?.Refresh();
+					_microserviceContentVisualElement?.Refresh();
+				});
 			});
 		}
 
@@ -130,7 +133,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, localServicesAmount);
+			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, Model?.AllServiceCount ?? 0);
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
