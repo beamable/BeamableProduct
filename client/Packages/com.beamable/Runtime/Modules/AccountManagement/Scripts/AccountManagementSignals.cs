@@ -254,7 +254,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Checking Account...", AccountManagementHelper.IsEmailRegistered(_currentEmail)).Then(registered =>
+			WithLoading("Checking Account...", API.Instance.Then(api => api.IsEmailRegistered(_currentEmail).Then(registered =>
 			{
 				if (registered)
 				{
@@ -264,7 +264,7 @@ namespace Beamable.AccountManagement
 				{
 					DeferBroadcast(_currentEmail, s => s.EmailIsAvailable);
 				}
-			});
+			})));
 		}
 
 		public void Login(LoginArguments reference)
@@ -312,7 +312,7 @@ namespace Beamable.AccountManagement
 			{
 				return de.GetDeviceUsers().FlatMap(deviceUsers =>
 				{
-					return AccountManagementHelper.IsEmailRegistered(email).FlatMap(registered =>
+					return de.IsEmailRegistered(email).FlatMap(registered =>
 					{
 						var currentUserHasEmail = de.User.HasDBCredentials();
 						var storedUser =
@@ -616,19 +616,19 @@ namespace Beamable.AccountManagement
 
 		private Promise<Unit> LoginToNewUser(IBeamableAPI de)
 		{
-			return WithCriticalLoading("New Account...", AccountManagementHelper.LoginToNewUser(de));
+			return WithCriticalLoading("New Account...", de.LoginToNewUser());
 		}
 
 		private Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
 		{
-			return WithCriticalLoading("Loading...", AccountManagementHelper.AttachEmailToCurrentUser(de, email, password));
+			return WithCriticalLoading("Loading...", de.AttachEmailToCurrentUser( email, password));
 		}
 
 		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
 		                                                    AuthThirdParty thirdParty,
 		                                                    string accessToken)
 		{
-			return WithCriticalLoading("Loading...",AccountManagementHelper.AttachThirdPartyToCurrentUser(de,thirdParty,accessToken));
+			return WithCriticalLoading("Loading...",de.AttachThirdPartyToCurrentUser(thirdParty,accessToken));
 		}
 
 		private Promise<User> GetExistingAccount(IBeamableAPI de, UserBundle bundle)

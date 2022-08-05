@@ -1,40 +1,40 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api.Auth;
+using Beamable.Common;
 using Beamable.Common.Api.Auth;
 
 namespace Beamable.AccountManagement
 {
 	public static class AccountManagementHelper
 	{
-		public static Promise<bool> IsEmailRegistered(string email)
+		public static Promise<bool> IsEmailRegistered(this IBeamableAPI beamableAPI, string email)
 		{
-			return API.Instance.FlatMap(de => de.AuthService.IsEmailAvailable(email)
-			                                    .Map(available => !available));
+			return beamableAPI.AuthService.IsEmailAvailable(email).Map(available => !available);
 		}
 
-		public static Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
+		public static Promise<User> AttachThirdPartyToCurrentUser(this IBeamableAPI beamableAPI,
 		                                                          AuthThirdParty thirdParty,
 		                                                          string accessToken)
 		{
-			return de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
-			         .Then(de.UpdateUserData);
+			return beamableAPI.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
+			         .Then(beamableAPI.UpdateUserData);
 		}
 
-		public static Promise<User> RemoveThirdPartyFromCurrentUser(IBeamableAPI de,
+		public static Promise<User> RemoveThirdPartyFromCurrentUser(this IBeamableAPI beamableAPI,
 		                                                            AuthThirdParty thirdParty,
 		                                                            string accessToken)
 		{
-			return de.AuthService.RemoveThirdPartyAssociation(thirdParty, accessToken)
-			         .Then(de.UpdateUserData);
+			return beamableAPI.AuthService.RemoveThirdPartyAssociation(thirdParty, accessToken)
+			         .Then(beamableAPI.UpdateUserData);
 		}
 
-		public static Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
+		public static Promise<User> AttachEmailToCurrentUser(this IBeamableAPI beamableAPI, string email, string password)
 		{
-			return de.AuthService.RegisterDBCredentials(email, password).Then(de.UpdateUserData);
+			return beamableAPI.AuthService.RegisterDBCredentials(email, password).Then(beamableAPI.UpdateUserData);
 		}
 
-		public static Promise<Unit> LoginToNewUser(IBeamableAPI de)
+		public static Promise<Unit> LoginToNewUser(this IBeamableAPI beamableAPI)
 		{
-			return de.AuthService.CreateUser().FlatMap(de.ApplyToken);
+			return beamableAPI.AuthService.CreateUser().FlatMap(beamableAPI.ApplyToken);
 		}
 	}
 }
