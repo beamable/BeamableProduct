@@ -834,7 +834,7 @@ namespace Beamable
 				socket = host,
 				containerPrefix = GetCustomContainerPrefix()
 			};
-			
+
 			string path = ConfigDatabase.GetFullPath("config-defaults");
 			var asJson = JsonUtility.ToJson(config, true);
 
@@ -894,7 +894,7 @@ namespace Beamable
 			{
 				host = BeamableEnvironment.ApiUrl;
 			}
-			
+
 			WriteConfig(alias, pid, host, cid);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
@@ -1165,7 +1165,7 @@ namespace Beamable
 		public string socket;
 		public string containerPrefix;
 	}
-	
+
 	[Serializable]
 	public class CustomerResponse
 	{

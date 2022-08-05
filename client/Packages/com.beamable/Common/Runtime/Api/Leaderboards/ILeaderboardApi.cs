@@ -276,7 +276,7 @@ namespace Beamable.Common.Api.Leaderboards
 		/// The user id
 		/// </summary>
 		public long userId;
-		
+
 		/// <summary>
 		/// The leaderboard id
 		/// </summary>
@@ -290,7 +290,7 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <summary>
 		/// The <see cref="RankEntry"/> of the current player
 		/// </summary>
-		public RankEntry rankgt 
+		public RankEntry rankgt
 		{
 			get
 			{
