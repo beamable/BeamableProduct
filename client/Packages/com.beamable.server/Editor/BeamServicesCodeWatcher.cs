@@ -266,6 +266,8 @@ namespace Beamable.Server.Editor
 		[DidReloadScripts]
 		private static void WatchMicroserviceFiles()
 		{
+			EditorApplication.wantsToQuit += WantsToQuit;
+			
 			// If we are not initialized, delay the call until we are.
 			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 			{
@@ -282,9 +284,7 @@ namespace Beamable.Server.Editor
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
 			}
-
-			EditorApplication.quitting += CleanupRunningContainers;
-
+			
 			// Check for the hint regarding local changes that are not deployed to your local docker environment
 			codeWatcher.CheckForLocalChangesNotYetDeployed();
 
@@ -344,33 +344,61 @@ namespace Beamable.Server.Editor
 			return (!alreadyExisted || checksumDiffers);
 		}
 
-		public static void CleanupRunningContainers()
+		public static bool WantsToQuit()
 		{
+			CleanupRunningContainers().Then(val =>
+			{
+				EditorApplication.Exit(0);
+			});
+			
+			return false;
+		}	
+		public static async Promise CleanupRunningContainers()
+		{
+			void DrawProgressBar(string name, float progress)
+			{
+				EditorUtility.DisplayProgressBar("Docker", $"Cleanup Running Containers... [{name}]", progress);
+			}
+			
 			try
 			{
-				// this method should exist in some sort of Docker system. But until we have that...
 				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				foreach (var service in registry.Descriptors)
-				{
-					var generatorDesc = GetGeneratorDescriptor(service);
 
-					var kill = new StopImageCommand(service);
-					var killGenerator = new StopImageCommand(generatorDesc);
-					kill.StartAsync();
-					killGenerator.StartAsync();
-				}
+				int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
+				int killed = 0;
 
-				foreach (var storage in registry.StorageDescriptors)
+				if (allDesc > 0)
 				{
-					var kill = new StopImageCommand(storage);
-					var killTool = new StopImageCommand(storage.LocalToolContainerName);
-					kill.StartAsync();
-					killTool.StartAsync();
+					foreach (var service in registry.Descriptors)
+					{
+						DrawProgressBar(service.Name, (float)killed / allDesc);
+						var generatorDesc = GetGeneratorDescriptor(service);
+
+						var kill = new StopImageCommand(service);
+						var killGenerator = new StopImageCommand(generatorDesc);
+						await kill.Start();
+						await killGenerator.Start();
+						killed++;
+					}
+
+					foreach (var storage in registry.StorageDescriptors)
+					{
+						DrawProgressBar(storage.Name, (float)killed / allDesc);
+						var kill = new StopImageCommand(storage);
+						var killTool = new StopImageCommand(storage.LocalToolContainerName);
+						await kill.Start();
+						await killTool.Start();
+						killed++;
+					}
 				}
 			}
 			catch
 			{
 				Debug.LogError("Failed to clean up running docker containers");
+			}
+			finally
+			{
+				EditorUtility.ClearProgressBar();
 			}
 		}
 
