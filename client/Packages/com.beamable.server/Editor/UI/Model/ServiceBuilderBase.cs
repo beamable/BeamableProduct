@@ -104,9 +104,11 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task TryToRestart()
 		{
-			if (!IsRunning) return;
+			if (IsRunning)
+			{
+				await TryToStop();
+			}
 
-			await TryToStop();
 			await TryToStart();
 		}
 	}
