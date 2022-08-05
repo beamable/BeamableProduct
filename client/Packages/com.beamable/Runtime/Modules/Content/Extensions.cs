@@ -16,7 +16,7 @@ namespace Beamable
 		{
 			return ctx.Content.GetContent<T>(contentRef, manifestId);
 		}
-		
+
 		public static Promise<IContentObject> Resolve(this IContentRef contentRef, string manifestId = null, BeamContext ctx = null)
 		{
 			ctx = ctx ?? BeamContext.Default;
@@ -31,12 +31,12 @@ namespace Beamable
 		}
 
 		[Obsolete("Use Resolve() Instead")]
-		public static Promise<IContentObject> Resolve2(this IContentRef contentRef, string manifestId = null, BeamContext ctx = null) 
+		public static Promise<IContentObject> Resolve2(this IContentRef contentRef, string manifestId = null, BeamContext ctx = null)
 			=> Resolve(contentRef, manifestId, ctx);
 
 		[Obsolete("Use Resolve() Instead")]
 		public static Promise<T> Resolve2<T>(this IContentRef<T> contentRef, string manifestId = null, BeamContext ctx = null)
-			where T : ContentObject, new() 
+			where T : ContentObject, new()
 			=> Resolve(contentRef, manifestId, ctx);
 	}
 }
