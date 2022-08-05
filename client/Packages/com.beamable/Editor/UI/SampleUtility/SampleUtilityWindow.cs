@@ -49,7 +49,7 @@ namespace Beamable.Editor.UI.SampleUtility
 			listOfPossibleTypes.Add("");
 
 			var popup = new PopupField<string>("RegisterBeamableDependency in Samples", listOfPossibleTypes,
-			                                   currentTypeToAddOrRemove);
+											   currentTypeToAddOrRemove);
 			popup.RegisterValueChangedCallback(evt => currentTypeToAddOrRemove = evt.newValue);
 
 			var addBtn = new Button(() =>
@@ -58,10 +58,11 @@ namespace Beamable.Editor.UI.SampleUtility
 
 				currentlySelectedTypes.Add(currentTypeToAddOrRemove);
 				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS,
-				                      string.Join(";", currentlySelectedTypes));
+									  string.Join(";", currentlySelectedTypes));
 
 				BuildWithContext(ActiveContext);
-			}) {text = "+"};
+			})
+			{ text = "+" };
 
 			var removeBtn = new Button(() =>
 			{
@@ -69,10 +70,11 @@ namespace Beamable.Editor.UI.SampleUtility
 
 				currentlySelectedTypes.Remove(currentTypeToAddOrRemove);
 				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS,
-				                      string.Join(";", currentlySelectedTypes));
+									  string.Join(";", currentlySelectedTypes));
 
 				BuildWithContext(ActiveContext);
-			}) {text = "-"};
+			})
+			{ text = "-" };
 
 			var text = new Label(
 				$"Selected Types (in Samples) whose RegisterBeamableDependencies Functions will run: {string.Join("\n", currentlySelectedTypes)}");

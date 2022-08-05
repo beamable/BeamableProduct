@@ -241,7 +241,7 @@ namespace Beamable.Player
 			{
 				item.TriggerDeletion();
 			}
-			 SetData(next);
+			SetData(next);
 		}
 
 	}
