@@ -17,7 +17,8 @@ namespace Beamable.Editor.UI.Components
 		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits> { }
 
 		public CalendarVisualElement() : base(
-			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}") { }
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
+		{ }
 
 		public Action<List<string>> OnValueChanged;
 
