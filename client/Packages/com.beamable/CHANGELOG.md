@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BeamConsole accepts events after RESET command
 - Too many `EventSystem` components on startup
 - Fixed Beamable login error for archived & not existing realms
+- In Events and Listings schedule windows calendar buttons with days earlier than today can't be clicked
 - The `RankEntry` for current player is now mapped correctly in `LeaderBoardView` 
 
 ## [1.2.8]
