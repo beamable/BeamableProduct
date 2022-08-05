@@ -298,9 +298,8 @@ namespace Beamable.Server.Editor
 				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 				var microserviceConfiguration = MicroserviceConfiguration.Instance;
 				
-				CleanupRunningProcesses(registry.Descriptors).Then(_ =>
+				CleanupRunningGeneratorProcesses(registry.Descriptors).Then(_ =>
 				{
-					Debug.LogError("Code generation");
 					// Gets the list of currently detected code handles.
 					var latestMSHandles = codeWatcher.LatestCodeHandles.Where(h => h.CodeClass == BeamCodeClass.Microservice).ToList();
 
@@ -491,7 +490,7 @@ namespace Beamable.Server.Editor
 			});
 		}
 		
-		private static async Promise CleanupRunningProcesses(List<MicroserviceDescriptor> descriptors)
+		private static async Promise CleanupRunningGeneratorProcesses(List<MicroserviceDescriptor> descriptors)
 		{
 			List<string> descNames = descriptors.Select(ms => ms.Name.ToLower()).ToList();
 			
@@ -518,9 +517,8 @@ namespace Beamable.Server.Editor
 							{
 								foreach (var singleDescName in descNames)
 								{
-									if (checkProccessCommand.Contains(singleDescName))
+									if (checkProccessCommand.Contains($"{singleDescName}_generator"))
 									{
-										Debug.LogError($"Killed process [{singleProcess.Id}][{singleProcess.MainModule.ModuleName}] {checkProccessCommand}");
 										singleProcess.Kill();
 										break;
 									}
