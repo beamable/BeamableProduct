@@ -21,7 +21,7 @@ ToolboxFeatureVisualElement {
     max-height: 160px;
 }
 
-ToolboxFeatureVisualElement.invisible{
+ToolboxFeatureVisualElement.toolbox-invisible-element{
     opacity: 0;
 }
 
