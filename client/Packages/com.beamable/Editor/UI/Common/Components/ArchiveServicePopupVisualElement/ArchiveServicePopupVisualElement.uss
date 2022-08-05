@@ -1,15 +1,17 @@
-ArchiveServicePopupVisualElement > TemplateContainer > #mainVisualElement > * {
+ArchiveServicePopupVisualElement > TemplateContainer   {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 50px;
+    padding-top: 15px;
     padding-bottom: 10px;
+}
+ArchiveServicePopupVisualElement,
+ArchiveServicePopupVisualElement > TemplateContainer,
+ArchiveServicePopupVisualElement > TemplateContainer > #mainVisualElement {
+    flex-grow: 1;
 }
 
 #content {
-	flex-grow: 1;
-    margin-left: 26px;
-    margin-right: 26px;
+    margin-left: 20px;
+    margin-right: 20px;
 }
 #description{
     white-space: normal;
@@ -19,6 +21,8 @@ ArchiveServicePopupVisualElement #buttonsVisualElement {
     flex-direction: row;
     justify-content: flex-end;
     flex-shrink: 0;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
 PrimaryButtonVisualElement{
@@ -30,7 +34,13 @@ PrimaryButtonVisualElement Button {
     background-color: #0090FD;
 }
 
+LabeledCheckboxVisualElement {
+    flex-grow: 1;
+}
 LabeledCheckboxVisualElement #checkbox {
-    width: 10px;
-	margin-left: 26px;
+	margin-left: 20px;
+}
+LabeledCheckboxVisualElement #icon {
+    /* There is no label, so hide it, by moving it the center */
+    position: absolute;
 }
