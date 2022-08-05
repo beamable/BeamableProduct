@@ -71,66 +71,30 @@ static class TestUtil
 	/// little easier.
 	/// </summary>
 	/// <param name="textField"></param>
-	public static void SendTestKeystroke(this TextField textField, char key)
+	public static void SendTestKeystroke(this TextField textField, string text)
 	{
-		using (var evt = MouseDownEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
-		{
-			Debug.Log("MouseDown: " + evt);
-			textField.SendEvent(evt);
-		}
-		using (var evt = MouseUpEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
-		{
-			Debug.Log("MouseUp: " + evt);
-			textField.SendEvent(evt);
-		}
 
-		using (var evt = KeyDownEvent.GetPooled('a', KeyCode.A, EventModifiers.None))
+		textField.BeamableFocus();
+		foreach (var letter in text)
 		{
-			evt.target = textField;
-			Debug.Log("KeyDown: " + evt);
-			textField.SendEvent(evt);
-		}
+			var es = Event.KeyboardEvent(letter.ToString());
 
-		using (var evt = KeyUpEvent.GetPooled('a', KeyCode.A, EventModifiers.None))
-		{
-			evt.target = textField;
-			Debug.Log("KeyUp: " + evt);
-			textField.SendEvent(evt);
-		}
+			if (Char.IsUpper(letter))
+			{
+				es.character = Char.ToUpper(es.character);
+			}
+			using (var evt = KeyDownEvent.GetPooled(es))
+			{
+				textField.SendEvent(evt);
+			}
 
-		/*using (var evt = new CustomKeyDownEvent() { target = textField, key = key })
-		{
-			textField.SendEvent(evt);
-		}*/
+			using (var evt = KeyUpEvent.GetPooled(Event.KeyboardEvent(letter.ToString())))
+			{
+				textField.SendEvent(evt);
+			}
+
 			
-	}
+		}
 
-	public static IEnumerable SendTestKeyStrokeCoroutine(this TextField textField, char key)
-	{
-		using (var evt = MouseDownEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
-		{
-			Debug.Log("MouseDown: " + evt);
-			textField.SendEvent(evt);
-		}
-		yield return null;
-		using (var evt = MouseUpEvent.GetPooled(textField.worldBound.position + Vector2.one, 0, 1, Vector2.zero, EventModifiers.None))
-		{
-			Debug.Log("MouseUp: " + evt);
-			textField.SendEvent(evt);
-		}
-		yield return null;
-
-		using (var evt = KeyDownEvent.GetPooled('A', KeyCode.None, EventModifiers.None))
-		{
-			Debug.Log("KeyDown: " + evt);
-			textField.SendEvent(evt);
-		}
-		yield return null;
-		using (var evt = KeyUpEvent.GetPooled())
-		{
-			Debug.Log("KeyUp: " + evt);
-			textField.SendEvent(evt);
-		}
-		yield return null;
 	}
 }
