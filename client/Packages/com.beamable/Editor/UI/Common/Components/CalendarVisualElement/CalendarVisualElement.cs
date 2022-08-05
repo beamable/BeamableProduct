@@ -14,14 +14,10 @@ namespace Beamable.Editor.UI.Components
 {
 	public class CalendarVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits>
-		{
-		}
+		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits> { }
 
 		public CalendarVisualElement() : base(
-			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
-		{
-		}
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}") { }
 
 		public Action<List<string>> OnValueChanged;
 
@@ -124,8 +120,20 @@ namespace Beamable.Editor.UI.Components
 					{
 						string option = FormatDate(year, month, specificDayCounter);
 						toggle.Setup($"{specificDayCounter}", option);
-						toggle.Set(_selectedDays.Contains(option));
-						toggle.OnValueChanged = () => DayToggleClicked(toggle.Selected, toggle.Value);
+
+						// Buttons with dates earlier than today should be inactive
+						DateTime today = DateTime.Today;
+						DateTime optionDate = new DateTime(year, month, specificDayCounter);
+
+						if (DateTime.Compare(optionDate, today) < 0)
+						{
+							toggle.SetInactive();
+						}
+						else
+						{
+							toggle.Set(_selectedDays.Contains(option));
+							toggle.OnValueChanged = () => DayToggleClicked(toggle.Selected, toggle.Value);
+						}
 					}
 				}
 
