@@ -373,8 +373,23 @@ namespace Beamable.Server.Editor
 					{
 						Level = LogLevel.INFO,
 						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-						Message = $"Building service=[{descriptor.Name}]"
+						Message = $"Checking service=[{descriptor.Name}]"
 					});
+
+					// If the service is disabled, then we won't bother uploading it.
+					var entryModel = model.Services[descriptor.Name];
+					if (!entryModel.Enabled)
+					{
+						logger(new LogMessage
+						{
+							Level = LogLevel.INFO,
+							Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+							Message = $"Skipping service=[{descriptor.Name}] because it is disabled."
+						});
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
+						onServiceDeployed?.Invoke(descriptor);
+						continue;
+					}
 
 					var forceStop = new StopImageReturnableCommand(descriptor);
 					await forceStop.StartAsync(); // force the image to stop.
@@ -476,6 +491,7 @@ namespace Beamable.Server.Editor
 
 						return;
 					}
+					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
 
 
 					if (token.IsCancellationRequested)
@@ -540,7 +556,6 @@ namespace Beamable.Server.Editor
 						}
 					}
 
-					var entryModel = model.Services[descriptor.Name];
 					var serviceDependencies = new List<ServiceDependency>();
 					foreach (var storage in descriptor.GetStorageReferences())
 					{
@@ -573,6 +588,30 @@ namespace Beamable.Server.Editor
 														   UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 													   }
 												   }, imageId);
+				}
+
+
+
+				// at this point, all storage objects should at least be marked as complete.
+				foreach (var storage in StorageDescriptors)
+				{
+					logger(new LogMessage
+					{
+						Level = LogLevel.INFO,
+						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+						Message = $"Comitting storage=[{storage.Name}]"
+					});
+					onServiceDeployed?.Invoke(storage);
+					OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
+				}
+
+				// we should mark all remote services as complete as well.
+				var remoteOnlyServices = model.Services.Where(s => !nameToImageDetails.ContainsKey(s.Key)).ToList();
+				foreach (var remoteOnly in remoteOnlyServices)
+				{
+					var desc = new MicroserviceDescriptor { Name = remoteOnly.Key };
+					onServiceDeployed?.Invoke(desc);
+					OnServiceDeployStatusChanged?.Invoke(desc, ServicePublishState.Published);
 				}
 
 				logger(new LogMessage
