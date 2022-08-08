@@ -53,6 +53,9 @@ namespace Beamable.Server.Editor
 	// ReSharper disable once ClassNeverInstantiated.Global
 	public class BeamServicesCodeWatcher : IBeamHintSystem
 	{
+		private const string CLEANUP_CONTAINERS_TIME_PREFS_KEY = "CleanupContainersTime";
+		private const int CLEANUP_CONTAINERS_DEFAULT_MAX_TIME = 30;
+		
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
 
@@ -344,61 +347,82 @@ namespace Beamable.Server.Editor
 			return (!alreadyExisted || checksumDiffers);
 		}
 
-		public static bool WantsToQuit()
+		private static bool WantsToQuit()
 		{
-			CleanupRunningContainers().Then(val =>
+			try
 			{
+				CleanupRunningContainers().Then(val =>
+				{
+					EditorApplication.Exit(0);
+				});
+			}
+			catch
+			{
+				Debug.LogError("Failed to clean up running docker containers");
 				EditorApplication.Exit(0);
-			});
-			
+			}
+
 			return false;
-		}	
-		public static async Promise CleanupRunningContainers()
+		}
+		
+		private static async Promise CleanupRunningContainers()
 		{
 			void DrawProgressBar(string name, float progress)
 			{
 				EditorUtility.DisplayProgressBar("Docker", $"Cleanup Running Containers... [{name}]", progress);
 			}
 			
-			try
+			void UpdateForceCloseTime()
 			{
-				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				EditorPrefs.SetInt(CLEANUP_CONTAINERS_TIME_PREFS_KEY, (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds() + (CLEANUP_CONTAINERS_DEFAULT_MAX_TIME * 1000)));
+			}
 
-				int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
-				int killed = 0;
+			void ForceCloseDelayCheck()
+			{
+				int lastCachedTime = EditorPrefs.GetInt(CLEANUP_CONTAINERS_TIME_PREFS_KEY);
+				int currentTime = (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds());
+				
+				bool forceClose = currentTime > lastCachedTime;
+			
+				if (forceClose)
+					EditorApplication.Exit(0);
+			}
 
-				if (allDesc > 0)
+			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+			int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
+			int killed = 0;
+			
+			if (allDesc > 0)
+			{
+				UpdateForceCloseTime();
+			
+				EditorApplication.update -= ForceCloseDelayCheck;
+				EditorApplication.update += ForceCloseDelayCheck;
+				
+				foreach (MicroserviceDescriptor service in registry.Descriptors)
 				{
-					foreach (var service in registry.Descriptors)
-					{
-						DrawProgressBar(service.Name, (float)killed / allDesc);
-						var generatorDesc = GetGeneratorDescriptor(service);
+					DrawProgressBar(service.Name, (float)killed / allDesc);
+					var generatorDesc = GetGeneratorDescriptor(service);
 
-						var kill = new StopImageCommand(service);
-						var killGenerator = new StopImageCommand(generatorDesc);
-						await kill.Start();
-						await killGenerator.Start();
-						killed++;
-					}
-
-					foreach (var storage in registry.StorageDescriptors)
-					{
-						DrawProgressBar(storage.Name, (float)killed / allDesc);
-						var kill = new StopImageCommand(storage);
-						var killTool = new StopImageCommand(storage.LocalToolContainerName);
-						await kill.Start();
-						await killTool.Start();
-						killed++;
-					}
+					var kill = new StopImageCommand(service);
+					var killGenerator = new StopImageCommand(generatorDesc);
+					await kill.Start();
+					await killGenerator.Start();
+					killed++;
+					UpdateForceCloseTime();
 				}
-			}
-			catch
-			{
-				Debug.LogError("Failed to clean up running docker containers");
-			}
-			finally
-			{
-				EditorUtility.ClearProgressBar();
+
+				foreach (StorageObjectDescriptor storage in registry.StorageDescriptors)
+				{
+					DrawProgressBar(storage.Name, (float)killed / allDesc);
+					var kill = new StopImageCommand(storage);
+					var killTool = new StopImageCommand(storage.LocalToolContainerName);
+					await kill.Start();
+					await killTool.Start();
+					killed++;
+					UpdateForceCloseTime();
+				}
 			}
 		}
 
