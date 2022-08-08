@@ -136,6 +136,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			var rawSourcePath = Path.GetDirectoryName(Path.GetFullPath(_service.AttributePath));
 			var asmName = _service.ConvertToInfo().Name;
 
+			PruneAfterStartup = true;
 			BindMounts = new List<BindMount>
 			{
 				new BindMount {isReadOnly = false, src = clientPath, dst = "/client-output"},
@@ -182,6 +183,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		{
 			_service = service;
 			_watch = watch;
+			PruneAfterStartup = true;
 			Environment = new Dictionary<string, string>()
 			{
 				[ENV_CID] = cid,
@@ -237,6 +239,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					[(uint)config.DebugData.SshPort] = 2222
 				};
 			}
+			MapDotnetCompileErrors();
 		}
 
 	}
@@ -259,9 +262,9 @@ namespace Beamable.Server.Editor.DockerCommands
 				 * On windows, the surrounding quotes aren't required, and in fact, cause it to fail.
 				 */
 
-				var includeOuterQuotes = true;
-#if UNITY_EDITOR_WIN
-				includeOuterQuotes = false;
+				var includeOuterQuotes = false;
+#if BEAMABLE_ENABLE_MOUNT_SINGLE_QUOTE
+				includeOuterQuotes = true;
 #endif
 				var quoteStr = includeOuterQuotes ? "'" : "";
 				var optionStr = $"{(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst={dst}";
@@ -270,9 +273,10 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		private readonly IDescriptor _descriptor;
+		private bool hasReceivedNonNullStandardOut;
 		public string ImageName { get; set; }
 		public string ContainerName { get; set; }
-
+		public bool PruneAfterStartup { get; set; }
 		public Dictionary<string, string> Environment { get; protected set; }
 		public Dictionary<uint, uint> Ports { get; protected set; }
 
@@ -299,15 +303,41 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			HandleAutoPrune(data);
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardOutProcessors))
 			{
 				base.HandleStandardOut(data);
 			}
 			OnStandardOut?.Invoke(data);
 		}
+
+		protected virtual void HandleAutoPrune(string data)
+		{
+			if (hasReceivedNonNullStandardOut) return;
+
+			if (PruneAfterStartup)
+			{
+				if (!MicroserviceConfiguration.Instance.EnableAutoPrune)
+				{
+					return;
+				}
+
+				BeamEditorContext.Default.Dispatcher.Schedule(() =>
+				{
+					var prune = new PruneImageCommand(_descriptor);
+					var _ = prune.StartAsync().Then(__ => { });
+				});
+			}
+
+			if (!string.IsNullOrEmpty(data))
+			{
+				hasReceivedNonNullStandardOut = true;
+			}
+		}
+
 		protected override void HandleStandardErr(string data)
 		{
-			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardErrProcessors))
 			{
 				base.HandleStandardErr(data);
 			}
@@ -364,21 +394,5 @@ namespace Beamable.Server.Editor.DockerCommands
 			return command;
 		}
 
-
-		public override void Start()
-		{
-			base.Start();
-			if (!MicroserviceConfiguration.Instance.EnableAutoPrune)
-			{
-				return;
-			}
-
-			if (_descriptor == null) return;
-			BeamEditorContext.Default.Dispatcher.Schedule(() =>
-			{
-				var prune = new PruneImageCommand(_descriptor);
-				var _ = prune.StartAsync().Then(__ => { });
-			});
-		}
 	}
 }

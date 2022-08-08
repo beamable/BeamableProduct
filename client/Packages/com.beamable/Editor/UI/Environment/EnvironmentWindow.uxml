@@ -9,27 +9,30 @@
     <engine:VisualElement name="window-main">
         <engine:Label name="title" text="These are the connection strings that Beamable will use to connect to various services. You can change them manually, or use the preset buttons. Press the Apply button to save the settings and reload the Unity Editor." class="titleText"/>
 
-        <engine:Label name="env" text="Environment" class="labelText"/>
-        <engine:TextField name="env" class="input"/>
+        <engine:ScrollView>
 
-        <engine:Label name="api" text="API" class="labelText"/>
-        <engine:TextField name="api" class="input"/>
+            <engine:Label name="env" text="Environment" class="labelText"/>
+            <engine:TextField name="env" class="input"/>
 
-        <engine:Label name="portalApi" text="Portal" class="labelText"/>
-        <engine:TextField name="portalApi" class="input"/>
+            <engine:Label name="api" text="API" class="labelText"/>
+            <engine:TextField name="api" class="input"/>
 
-        <engine:Label name="mongoExpress" text="Mongo Express" class="labelText"/>
-        <engine:TextField name="mongoExpress" class="input"/>
+            <engine:Label name="portalApi" text="Portal" class="labelText"/>
+            <engine:TextField name="portalApi" class="input"/>
 
-        <engine:Label name="dockerReg" text="Docker Registry" class="labelText"/>
-        <engine:TextField name="dockerReg" class="input"/>
+            <engine:Label name="mongoExpress" text="Mongo Express" class="labelText"/>
+            <engine:TextField name="mongoExpress" class="input"/>
 
-        <engine:Label name="isUnityVsp" text="Is Unity VSP" class="labelText"/>
-        <engine:Toggle name="isUnityVsp"/>
+            <engine:Label name="dockerReg" text="Docker Registry" class="labelText"/>
+            <engine:TextField name="dockerReg" class="input"/>
 
-        <engine:Label name="sdkVersion" text="Version" class="labelText"/>
-        <engine:TextField name="sdkVersion" class="input"/>
+            <engine:Label name="isUnityVsp" text="Is Unity VSP" class="labelText"/>
+            <engine:Toggle name="isUnityVsp"/>
 
+            <engine:Label name="sdkVersion" text="Version" class="labelText"/>
+            <engine:TextField name="sdkVersion" class="input"/>
+
+        </engine:ScrollView>
         <engine:Label name="env-presets-label" text="Environment Presets" class="labelText"/>
         <engine:VisualElement name="env-presets">
             <beamable:GenericButtonVisualElement name="dev" text="Dev"/>
