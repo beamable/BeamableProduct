@@ -37,7 +37,7 @@ namespace Beamable.Editor.Microservice.UI
 				RequireLoggedUser = true,
 			};
 
-			CustomDelayClause = () => !MicroserviceEditor.IsInitialized;
+			CustomDelayClause = () => !MicroserviceEditor.IsInitialized && BeamEditorContext.Default.InitializePromise.IsCompleted;
 		}
 
 		[MenuItem(
@@ -62,15 +62,18 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			checkDockerPromise = new CheckDockerCommand().StartAsync().Then(_ =>
 			{
-				_microserviceBreadcrumbsVisualElement?.Refresh();
-				_actionBarVisualElement?.Refresh();
-				_microserviceContentVisualElement?.Refresh();
+				Model.RefreshState().Then(__ =>
+				{
+					_microserviceBreadcrumbsVisualElement?.Refresh();
+					_actionBarVisualElement?.Refresh();
+					_microserviceContentVisualElement?.Refresh();
+				});
 			});
 		}
 
 		protected override async void Build()
 		{
-			minSize = new Vector2(550, 200);
+			minSize = new Vector2(380, 200);
 
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;
@@ -130,7 +133,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, localServicesAmount);
+			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, Model?.AllServiceCount ?? 0);
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();

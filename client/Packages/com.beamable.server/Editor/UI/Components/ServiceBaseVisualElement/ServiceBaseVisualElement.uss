@@ -47,11 +47,9 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
 }
 #logHeader > .rightArea {
-    margin-left: 10px;
     margin-right: 10px;
 }
 #logHeader > LabeledCheckboxVisualElement{
-    margin-right: 10px;
     margin-left: 2px;
 }
 #logHeader > LabeledCheckboxVisualElement #icon {
@@ -112,6 +110,7 @@ MicroserviceVisualElement #logHeader > .rightArea {
     align-self: center;
     margin-left: 10px;
     margin-right: 5px;
+    flex-shrink: 0;
 }
 
 .separator {
