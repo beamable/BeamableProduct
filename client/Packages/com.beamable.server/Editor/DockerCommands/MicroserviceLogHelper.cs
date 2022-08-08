@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -56,12 +57,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public static bool TryGetErrorCode(string message, out int errCode)
 		{
 			errCode = 0;
-			var errorMatchStr = "error CS";
-			if (message == null) return false;
-			var index = message.IndexOf(errorMatchStr, StringComparison.InvariantCulture);
+			if (string.IsNullOrEmpty(message)) return false;
+			var index = message.IndexOf(DOTNET_COMPILE_ERROR_SYMBOL, StringComparison.InvariantCulture);
 			if (index <= -1) return false; // only care about errors...
 
-			var numbers = message.Substring(index + errorMatchStr.Length, 4);
+			var numbers = message.Substring(index + DOTNET_COMPILE_ERROR_SYMBOL.Length, 4);
 			if (!int.TryParse(numbers, out errCode))
 			{
 				return false;
