@@ -17,7 +17,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 		public override string GetCommandString()
 		{
-			var formatString = "--format='{{.Id}}" + SEPARATOR + "{{.Architecture}}'" + SEPARATOR + "{{.Os}}"; // string interpolation with {{}} is more confusing than string concat.
+			var formatString = "--format='{{.Id}}" + SEPARATOR + "{{.Architecture}}" + SEPARATOR + "{{.Os}}"; // string interpolation with {{}} is more confusing than string concat.
 			return $"{DockerCmd} inspect {formatString} {ImageName}";
 		}
 
