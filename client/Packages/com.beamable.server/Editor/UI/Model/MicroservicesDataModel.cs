@@ -166,9 +166,9 @@ namespace Beamable.Editor.UI.Model
 
 					var model = RemoteMicroserviceModel.CreateNew(descriptor, this);
 					model.Dependencies = singleManifest.dependencies
-					                                   .Select(d => remoteStorages.FirstOrDefault(s => s.Name.Equals(d.id)))
-					                                   .Cast<MongoStorageModel>()
-					                                   .ToList();
+													   .Select(d => remoteStorages.FirstOrDefault(s => s.Name.Equals(d.id)))
+													   .Cast<MongoStorageModel>()
+													   .ToList();
 					remoteServices.Add(model);
 				}
 
