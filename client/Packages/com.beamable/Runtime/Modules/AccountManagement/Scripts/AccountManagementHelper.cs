@@ -12,19 +12,19 @@ namespace Beamable.AccountManagement
 		}
 
 		public static Promise<User> AttachThirdPartyToCurrentUser(this IBeamableAPI beamableAPI,
-		                                                          AuthThirdParty thirdParty,
-		                                                          string accessToken)
+																  AuthThirdParty thirdParty,
+																  string accessToken)
 		{
 			return beamableAPI.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
-			         .Then(beamableAPI.UpdateUserData);
+					 .Then(beamableAPI.UpdateUserData);
 		}
 
 		public static Promise<User> RemoveThirdPartyFromCurrentUser(this IBeamableAPI beamableAPI,
-		                                                            AuthThirdParty thirdParty,
-		                                                            string accessToken)
+																	AuthThirdParty thirdParty,
+																	string accessToken)
 		{
 			return beamableAPI.AuthService.RemoveThirdPartyAssociation(thirdParty, accessToken)
-			         .Then(beamableAPI.UpdateUserData);
+					 .Then(beamableAPI.UpdateUserData);
 		}
 
 		public static Promise<User> AttachEmailToCurrentUser(this IBeamableAPI beamableAPI, string email, string password)
