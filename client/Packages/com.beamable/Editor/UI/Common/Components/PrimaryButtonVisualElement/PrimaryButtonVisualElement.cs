@@ -269,14 +269,14 @@ namespace Beamable.Editor.UI.Components
 			bool isMatch = Regex.IsMatch(alias, ALIAS_REGEX);
 			return alias.Length > 1 && isMatch;
 		}
-		
+
 		public static bool IsSlug(string slug)
 		{
 			if (slug == null) return false;
 			bool isMatch = Regex.IsMatch(slug, MANIFEST_NAME_REGEX);
 			return slug.Length > 1 && isMatch;
 		}
-		
+
 		public static bool IsGameNameValid(string gameName, out string errorMessage)
 		{
 			errorMessage = string.Empty;
