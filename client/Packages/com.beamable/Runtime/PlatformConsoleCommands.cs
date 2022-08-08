@@ -544,10 +544,14 @@ namespace Beamable.Api
 				var contextWithPlayerCode = BeamContext.All.FirstOrDefault(context => context.PlayerCode == args[0]);
 				if (contextWithPlayerCode != null)
 				{
-					ConsoleFlow.Instance.ChangePlayerContext(contextWithPlayerCode.PlayerCode);
-					return $"Console BeamContext successfully set to {contextWithPlayerCode.PlayerCode}";
+					ConsoleFlow.Instance.ChangePlayerContext(contextWithPlayerCode?.PlayerCode ?? "");
+					return $"Console BeamContext successfully set to existing playerCode=[{contextWithPlayerCode.PlayerCode}]";
 				}
-				return $"{args[0]} is not a valid Beam Context identifier";
+				else
+				{
+					ConsoleFlow.Instance.ChangePlayerContext(args[0]);
+					return $"Console BeamContext successfully set to new playerCode=[{args[0]}]";
+				}
 			}
 
 			if (BeamContext.All.All(context => context.PlayerId != result))
