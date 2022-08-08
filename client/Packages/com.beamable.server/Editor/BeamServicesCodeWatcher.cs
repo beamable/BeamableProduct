@@ -351,8 +351,7 @@ namespace Beamable.Server.Editor
 		{
 			try
 			{
-				CleanupRunningContainers().Then(val =>
-				{
+				CleanupRunningContainers().Then(val => {
 					EditorApplication.Exit(0);
 				});
 			}
@@ -400,7 +399,7 @@ namespace Beamable.Server.Editor
 				EditorApplication.update -= ForceCloseDelayCheck;
 				EditorApplication.update += ForceCloseDelayCheck;
 				
-				foreach (MicroserviceDescriptor service in registry.Descriptors)
+				foreach (var service in registry.Descriptors)
 				{
 					DrawProgressBar(service.Name, (float)killed / allDesc);
 					var generatorDesc = GetGeneratorDescriptor(service);
@@ -413,7 +412,7 @@ namespace Beamable.Server.Editor
 					UpdateForceCloseTime();
 				}
 
-				foreach (StorageObjectDescriptor storage in registry.StorageDescriptors)
+				foreach (var storage in registry.StorageDescriptors)
 				{
 					DrawProgressBar(storage.Name, (float)killed / allDesc);
 					var kill = new StopImageCommand(storage);
