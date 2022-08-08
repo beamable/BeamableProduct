@@ -71,7 +71,7 @@ namespace Beamable.Common.Content
 
 		public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 		{
-			// Gather all validation results ensuring the ContentTypeAttribute exists and Validation 
+			// Gather all validation results ensuring the ContentTypeAttribute exists and Validation
 			var contentTypeAttributePairs = new List<MemberAttribute>();
 			{
 				var warningMessage = "This type is not deserializable by Beamable and you will not be able to create content of this type directly via the Content Manager!";
@@ -80,6 +80,9 @@ namespace Beamable.Common.Content
 																							null, info, ReflectionCache.ValidationResultType.Warning, warningMessage));
 
 				validationResults.SplitValidationResults(out var valid, out var warnings, out var errors);
+
+				// manually remove the ContentObject from the warnings set.
+				warnings.RemoveAll(r => r.Pair.Info == typeof(ContentObject));
 
 #if UNITY_EDITOR
 				// Warning level validations that happen for the content type attribute.
@@ -102,7 +105,7 @@ namespace Beamable.Common.Content
 				contentTypeAttributePairs.AddRange(valid.Select(a => a.Pair));
 			}
 
-			// Gather all validation results ensuring the ContentTypeAttribute exists and Validation 
+			// Gather all validation results ensuring the ContentTypeAttribute exists and Validation
 			var formerContentTypeAttributePairs = new List<MemberAttribute>();
 			{
 				var validationResults = cachedSubTypes.GetAndValidateAttributeExistence(CONTENT_TYPE_FORMERLY_SERIALIZED_AS_ATTRIBUTE,
@@ -156,7 +159,7 @@ namespace Beamable.Common.Content
 
 				var validContentTypes = valid.Select(v => v.Pair.Info as Type).ToList();
 
-				// Cache data 😃                   
+				// Cache data 😃
 				foreach (var type in validContentTypes)
 				{
 					AddContentTypeToDictionaries(type, contentTypeToClassDict, classToContentTypeDict);
