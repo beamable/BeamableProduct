@@ -54,7 +54,7 @@ namespace Beamable.Server.Editor
 	public class BeamServicesCodeWatcher : IBeamHintSystem
 	{
 		private const string CLEANUP_CONTAINERS_TIME_PREFS_KEY = "CleanupContainersTime";
-		private const int CLEANUP_CONTAINERS_DEFAULT_MAX_TIME = 30;
+		private const int CLEANUP_CONTAINERS_TIMEOUT = 30;
 		
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
@@ -374,7 +374,7 @@ namespace Beamable.Server.Editor
 			
 			void UpdateForceCloseTime()
 			{
-				EditorPrefs.SetInt(CLEANUP_CONTAINERS_TIME_PREFS_KEY, (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds() + (CLEANUP_CONTAINERS_DEFAULT_MAX_TIME * 1000)));
+				EditorPrefs.SetInt(CLEANUP_CONTAINERS_TIME_PREFS_KEY, (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds() + (CLEANUP_CONTAINERS_TIMEOUT * 1000)));
 			}
 
 			void ForceCloseDelayCheck()
