@@ -134,7 +134,7 @@ namespace Beamable.Editor.Toolbox.Components
 			for (var i = 0; i < ExtraElementCount; i++)
 			{
 				var widgetElement = new ToolboxFeatureVisualElement();
-				widgetElement.AddToClassList("invisible");
+				widgetElement.AddToClassList("toolbox-invisible-element");
 				widgetElement.Refresh();
 				_extraElements.Add(widgetElement);
 				_gridContainer.Add(widgetElement);
