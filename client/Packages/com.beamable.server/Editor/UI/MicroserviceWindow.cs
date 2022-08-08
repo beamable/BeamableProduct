@@ -37,7 +37,7 @@ namespace Beamable.Editor.Microservice.UI
 				RequireLoggedUser = true,
 			};
 
-			CustomDelayClause = () => !MicroserviceEditor.IsInitialized;
+			CustomDelayClause = () => !MicroserviceEditor.IsInitialized && BeamEditorContext.Default.InitializePromise.IsCompleted;
 		}
 
 		[MenuItem(
