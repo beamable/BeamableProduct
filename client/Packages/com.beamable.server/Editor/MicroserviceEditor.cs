@@ -65,6 +65,7 @@ namespace Beamable.Server.Editor
 				try
 				{
 					BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+					var _ = BeamEditorContext.Default; // access the beam context
 				}
 				catch (InvalidOperationException)
 				{
