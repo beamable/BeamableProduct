@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -46,6 +47,28 @@ namespace Beamable.Server.Editor.DockerCommands
 			Logs.SERVICE_PROVIDER_INITIALIZED,
 			Logs.EVENT_PROVIDER_INITIALIZED
 		};
+
+		/// <summary>
+		/// Given a log message, try and recognize a standard dotnet error code in the form of CS1234
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="errCode"></param>
+		/// <returns>true if an error code was found, false otherwise</returns>
+		public static bool TryGetErrorCode(string message, out int errCode)
+		{
+			errCode = 0;
+			if (string.IsNullOrEmpty(message)) return false;
+			var index = message.IndexOf(DOTNET_COMPILE_ERROR_SYMBOL, StringComparison.InvariantCulture);
+			if (index <= -1) return false; // only care about errors...
+
+			var numbers = message.Substring(index + DOTNET_COMPILE_ERROR_SYMBOL.Length, 4);
+			if (!int.TryParse(numbers, out errCode))
+			{
+				return false;
+			}
+
+			return true;
+		}
 
 		public static bool HandleMongoLog(StorageObjectDescriptor storage, string data,
 			LogLevel defaultLogLevel = LogLevel.INFO, bool forceDisplay = false)

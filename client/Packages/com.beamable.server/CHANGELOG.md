@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Publish screen loading bar should always be full when publish is complete.
 - The "Play Selected" button in the Microservice window doesn't get stuck in a service is already running.
 - Microservice selection is saved between domain reloads.
+- Microservice paths can now contain spaces.
+- Compile errors are reported as error logs
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item

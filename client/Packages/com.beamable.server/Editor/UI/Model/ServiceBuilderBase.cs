@@ -35,6 +35,7 @@ namespace Beamable.Editor.UI.Model
 		{
 			_logProcess?.Kill();
 			_logProcess = new FollowLogCommand(Descriptor);
+			_logProcess.MapDotnetCompileErrors();
 			_logProcess.Start();
 		}
 

@@ -126,7 +126,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				elementNumber++;
 
 
-				if (MicroservicesDataModel.Instance.IsArchived(model.Name))
+				if (model.Archived)
 				{
 					newElement.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
 				}
@@ -271,6 +271,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 					continue;
 				}
 
+				if (serviceModel.IsArchived)
+				{
+					continue;
+				}
+
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
 				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
 				_servicesToPublish.Add(kvp.Value);
@@ -280,7 +285,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void HandleServiceDeployed(IDescriptor descriptor)
 		{
 			EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
-			_servicesToPublish.First(x => x.Model.Name == descriptor.Name).LoadingBar.UpdateProgress(1);
+			_servicesToPublish.FirstOrDefault(x => x.Model.Name == descriptor.Name)?.LoadingBar?.UpdateProgress(1);
 			HandleServiceDeployProgress(descriptor);
 		}
 
