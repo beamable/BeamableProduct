@@ -335,7 +335,7 @@ namespace Beamable.Server.Editor
 
 			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
-				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
+				// if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
 				if (logger == null)
 				{
@@ -362,6 +362,32 @@ namespace Beamable.Server.Editor
 				var nameToImageDetails = new Dictionary<string, ImageDetails>();
 				var enabledServices = new List<string>();
 
+				// if any service's storage dependencies are archived, and the service is also not archived, we are in trouble...
+				foreach (var service in model.Services)
+				{
+					var anyArchivedStorages = service.Value.Dependencies.Any(d =>
+					{
+						if (!model.Storages.TryGetValue(d.id, out var storage))
+						{
+							return true;
+						}
+
+						return storage.Archived;
+					});
+					if (anyArchivedStorages && !service.Value.Archived)
+					{
+						var msg =
+							$"Cannot deploy, because {service.Key} depends on an archived storage. Either unarchive the storage, or archive the service.";
+						logger(new LogMessage
+						{
+							Level = LogLevel.FATAL,
+							Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+							Message = msg
+						});
+						OnDeployFailed?.Invoke(model, msg);
+						return;
+					}
+				}
 
 				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
 
@@ -373,8 +399,36 @@ namespace Beamable.Server.Editor
 					{
 						Level = LogLevel.INFO,
 						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-						Message = $"Building service=[{descriptor.Name}]"
+						Message = $"Checking service=[{descriptor.Name}]"
 					});
+
+					var entryModel = model.Services[descriptor.Name];
+
+					// If the _local_ service is archived, then we don't need to bother doing anything else here...
+					if (entryModel.Archived)
+					{
+						logger(new LogMessage
+						{
+							Level = LogLevel.INFO,
+							Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+							Message = $"Skipping service=[{descriptor.Name}] because it is archived."
+						});
+						continue;
+					}
+
+					// If the service is disabled, then we won't bother uploading it.
+					if (!entryModel.Enabled)
+					{
+						logger(new LogMessage
+						{
+							Level = LogLevel.INFO,
+							Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+							Message = $"Skipping service=[{descriptor.Name}] because it is disabled."
+						});
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
+						onServiceDeployed?.Invoke(descriptor);
+						continue;
+					}
 
 					var forceStop = new StopImageReturnableCommand(descriptor);
 					await forceStop.StartAsync(); // force the image to stop.
@@ -476,6 +530,7 @@ namespace Beamable.Server.Editor
 
 						return;
 					}
+					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
 
 
 					if (token.IsCancellationRequested)
@@ -540,7 +595,6 @@ namespace Beamable.Server.Editor
 						}
 					}
 
-					var entryModel = model.Services[descriptor.Name];
 					var serviceDependencies = new List<ServiceDependency>();
 					foreach (var storage in descriptor.GetStorageReferences())
 					{
@@ -575,6 +629,31 @@ namespace Beamable.Server.Editor
 												   }, imageId);
 				}
 
+
+
+				// at this point, all storage objects should at least be marked as complete.
+				foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
+				{
+					logger(new LogMessage
+					{
+						Level = LogLevel.INFO,
+						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+						Message = $"Comitting storage=[{storage.StorageName}]"
+					});
+					var storageDesc = new StorageObjectDescriptor {Name = storage.StorageName};
+					onServiceDeployed?.Invoke(storageDesc);
+					OnServiceDeployStatusChanged?.Invoke(storageDesc, ServicePublishState.Published);
+				}
+
+				// we should mark all remote services as complete as well.
+				var remoteOnlyServices = model.Services.Where(s => !nameToImageDetails.ContainsKey(s.Key)).ToList();
+				foreach (var remoteOnly in remoteOnlyServices)
+				{
+					var desc = new MicroserviceDescriptor {Name = remoteOnly.Key};
+					onServiceDeployed?.Invoke(desc);
+					OnServiceDeployStatusChanged?.Invoke(desc, ServicePublishState.Published);
+				}
+
 				logger(new LogMessage
 				{
 					Level = LogLevel.INFO,
@@ -598,7 +677,7 @@ namespace Beamable.Server.Editor
 						imageCpuArch = kvp.Value.cpuArch,
 						dependencies = sa.Dependencies
 					};
-				});
+				}).Where(service => !service.archived); // If this is a local-only service, and its archived, best not to send it _at all_.
 
 				// 2- Finds all Known Remote Service (and their last uploaded configuration/image id).
 				var remoteServiceReferences = model.ServerManifest.Select(kvp => kvp.Value);
@@ -723,6 +802,7 @@ namespace Beamable.Server.Editor
 					{
 						var configEntry = MicroserviceConfiguration.Instance.GetEntry(name); //config.FirstOrDefault(s => s.ServiceName == name);
 						var descriptor = Descriptors.FirstOrDefault(d => d.Name == configEntry.ServiceName);
+						var remote = manifest.manifest.FirstOrDefault(s => string.Equals(s.serviceName, name));
 						var serviceDependencies = new List<ServiceDependency>();
 						if (descriptor != null)
 						{
@@ -730,6 +810,11 @@ namespace Beamable.Server.Editor
 							{
 								serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
 							}
+						}
+						else if (remote != null)
+						{
+							// this is a remote service, and we should keep its references intact...
+							serviceDependencies.AddRange(remote.dependencies);
 						}
 
 						return new ManifestEntryModel

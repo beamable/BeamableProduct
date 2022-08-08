@@ -110,11 +110,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 
 			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;
-			int localServicesAmount = localServicesAvailable ? MicroservicesDataModel.Instance.AllLocalServices.Count : 0;
 			int selectedServicesAmount = localServicesAvailable
 				? MicroservicesDataModel.Instance.AllLocalServices.Count(beamService => beamService.IsSelected)
 				: 0;
-			UpdateButtonsState(selectedServicesAmount, localServicesAmount);
+			UpdateButtonsState(selectedServicesAmount, MicroservicesDataModel.Instance?.AllServiceCount ?? 0);
 
 			Context.OnRealmChange += _ => Refresh();
 			Context.OnUserChange += _ => Refresh();
