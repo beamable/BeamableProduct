@@ -34,7 +34,6 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 			else
 			{
-				UnityEngine.Debug.Log("OUT:" + StandardOutBuffer);
 				var fullAddr = StandardOutBuffer.Trim().Split(':');
 
 				var addr = fullAddr[0];
