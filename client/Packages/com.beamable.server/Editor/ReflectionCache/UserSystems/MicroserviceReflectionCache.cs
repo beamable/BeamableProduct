@@ -561,7 +561,7 @@ namespace Beamable.Server.Editor
 						return;
 					}
 					// the architecture needs to be one of the supported beamable architectures...
-					if (!CPU_SUPPORTED.Contains(imageDetails.Platform))
+					if (!CPU_SUPPORTED.Any(imageDetails.Platform.Contains))
 					{
 						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
