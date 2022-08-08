@@ -208,9 +208,9 @@ namespace Beamable.Config
 			Debug.LogWarning($"Cannot call {nameof(DeleteConfigDatabase)} unless in UnityEditor. The config database will not be deleted.");
 			return;
 #else
-
+			const string assetsFolder = "Assets/";
 			var path = GetFullPath(GetConfigFileName());
-			if (path.Length > "Assets/".Length)
+			if (path.Length > assetsFolder.Length)
 			{
 				UnityEditor.FileUtil.DeleteFileOrDirectory(path);
 				UnityEditor.FileUtil.DeleteFileOrDirectory(path + ".meta");
