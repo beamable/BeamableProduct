@@ -427,28 +427,11 @@ namespace Beamable.Server.Editor
 
 		private static void FollowGeneratorLogs(MicroserviceDescriptor service, MicroserviceDescriptor generatorDesc)
 		{
-			bool TryGetErrorCode(string message, out int errCode)
-			{
-				errCode = 0;
-				var errorMatchStr = "error CS";
-				if (message == null) return false;
-				var index = message.IndexOf(errorMatchStr, StringComparison.InvariantCulture);
-				if (index <= -1) return false; // only care about errors...
-
-				var numbers = message.Substring(index + errorMatchStr.Length, 4);
-				if (!int.TryParse(numbers, out errCode))
-				{
-					return false;
-				}
-
-				return true;
-			}
-
 			var follow = new FollowLogCommand(service, generatorDesc.ContainerName);
 			follow.AddGlobalFilter(message =>
 			{
 				if (message?.Contains(Constants.Features.Services.Logs.GENERATED_CLIENT_PREFIX) ?? false) return true;
-				return TryGetErrorCode(message, out _);
+				return MicroserviceLogHelper.TryGetErrorCode(message, out _);
 			});
 			follow.MapGlobal(log =>
 			{
