@@ -1,3 +1,4 @@
+using Beamable.Config;
 using Beamable.Serialization;
 using System.IO;
 using UnityEditor;
@@ -19,7 +20,8 @@ namespace Beamable.Editor.Environment
 		{
 			if (File.Exists(OVERRIDE_PATH))
 			{
-				File.Delete(OVERRIDE_PATH);
+				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH);
+				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH + ".meta");
 				EditorUtility.RequestScriptReload();
 				AssetDatabase.Refresh();
 			}
@@ -34,6 +36,7 @@ namespace Beamable.Editor.Environment
 		{
 			var json = JsonSerializable.ToJson(data);
 			File.WriteAllText(OVERRIDE_PATH, json);
+			ConfigDatabase.DeleteConfigDatabase();
 			EditorUtility.RequestScriptReload();
 			AssetDatabase.Refresh();
 
