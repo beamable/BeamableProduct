@@ -525,8 +525,8 @@ namespace Beamable.Console
 			private bool isFinderLocked = false;
 
 			public TextAutoCompleter(ConsoleFlow consoleFlow,
-			                         ref InputField inputField,
-			                         ref Text textSuggestion)
+									 ref InputField inputField,
+									 ref Text textSuggestion)
 			{
 				_consoleCommandsByName = consoleFlow.ConsoleCommandsByName;
 				_consoleFlow = consoleFlow;
@@ -546,8 +546,8 @@ namespace Beamable.Console
 				if (string.IsNullOrWhiteSpace(input))
 				{
 					_foundCommands = _consoleCommandsByName[_consoleFlow._playerCode].OrderBy(x => x.Key)
-					                                               .Select(x => x.Key)
-					                                               .ToList();
+																   .Select(x => x.Key)
+																   .ToList();
 
 					_currentSuggestedCommand = string.Empty;
 					_textSuggestion.text = string.Empty;
@@ -556,9 +556,9 @@ namespace Beamable.Console
 				{
 					_foundCommands = input.Length < _previousInput.Length || _previousInput.Length == 0
 						? _consoleCommandsByName[_consoleFlow._playerCode].Where(x => x.Key.StartsWith(input))
-						                                                  .OrderBy(x => x.Key)
-						                                                  .Select(x => x.Key)
-						                                                  .ToList()
+																		  .OrderBy(x => x.Key)
+																		  .Select(x => x.Key)
+																		  .ToList()
 						: _foundCommands.Where(x => x.StartsWith(input))
 							.ToList();
 
