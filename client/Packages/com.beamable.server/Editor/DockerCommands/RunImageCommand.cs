@@ -262,9 +262,9 @@ namespace Beamable.Server.Editor.DockerCommands
 				 * On windows, the surrounding quotes aren't required, and in fact, cause it to fail.
 				 */
 
-				var includeOuterQuotes = true;
-#if UNITY_EDITOR_WIN
-				includeOuterQuotes = false;
+				var includeOuterQuotes = false;
+#if BEAMABLE_ENABLE_MOUNT_SINGLE_QUOTE
+				includeOuterQuotes = true;
 #endif
 				var quoteStr = includeOuterQuotes ? "'" : "";
 				var optionStr = $"{(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst={dst}";
