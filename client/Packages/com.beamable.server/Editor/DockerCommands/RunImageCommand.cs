@@ -304,7 +304,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		protected override void HandleStandardOut(string data)
 		{
 			HandleAutoPrune(data);
-			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor:_standardOutProcessors))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardOutProcessors))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -337,7 +337,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardErr(string data)
 		{
-			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor:_standardErrProcessors))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardErrProcessors))
 			{
 				base.HandleStandardErr(data);
 			}

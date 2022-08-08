@@ -41,7 +41,8 @@ namespace Beamable.Editor.UI.Components
 
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_checkbox.Refresh();
-			_checkbox.SetText(DELETE_ALL_FILES_TEXT);			_checkbox.Q<Label>().RegisterCallback<MouseDownEvent>(evt => _checkbox.SetWithoutNotify(!_checkbox.Value));
+			_checkbox.SetText(DELETE_ALL_FILES_TEXT);
+			_checkbox.Q<Label>().RegisterCallback<MouseDownEvent>(evt => _checkbox.SetWithoutNotify(!_checkbox.Value));
 
 			if (!ShowDeleteOption)
 			{

@@ -621,14 +621,14 @@ namespace Beamable.AccountManagement
 
 		private Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
 		{
-			return WithCriticalLoading("Loading...", de.AttachEmailToCurrentUser( email, password));
+			return WithCriticalLoading("Loading...", de.AttachEmailToCurrentUser(email, password));
 		}
 
 		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
-		                                                    AuthThirdParty thirdParty,
-		                                                    string accessToken)
+															AuthThirdParty thirdParty,
+															string accessToken)
 		{
-			return WithCriticalLoading("Loading...",de.AttachThirdPartyToCurrentUser(thirdParty,accessToken));
+			return WithCriticalLoading("Loading...", de.AttachThirdPartyToCurrentUser(thirdParty, accessToken));
 		}
 
 		private Promise<User> GetExistingAccount(IBeamableAPI de, UserBundle bundle)
