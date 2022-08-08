@@ -97,6 +97,7 @@ namespace Beamable.Server.Editor.UI.Components
 		string Comment { get; set; }
 		bool Enabled { get; set; }
 		string TemplateId { get; set; }
+		bool Archived { get; set; }
 	}
 
 	public class ManifestEntryModel : IEntryModel

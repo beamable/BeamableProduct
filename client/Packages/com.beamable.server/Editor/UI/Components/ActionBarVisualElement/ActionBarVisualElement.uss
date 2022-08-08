@@ -16,7 +16,6 @@
     padding-left: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
-    min-width: 120px;
 }
 
 .boundedButton {
@@ -130,7 +129,7 @@
     align-self: center;
     height: 28px;
     width: 28px;
-    
+
 }
 
 #infoIcon{

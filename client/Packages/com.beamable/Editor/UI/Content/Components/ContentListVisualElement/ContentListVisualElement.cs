@@ -149,10 +149,11 @@ namespace Beamable.Editor.Content.Components
 			listElement.Q("tagListVisualElement").style.flexGrow = (GetHeaderSizeChanges()[2].Flex);
 			listElement.Q("lastChanged").style.flexGrow = (GetHeaderSizeChanges()[3].Flex);
 
-			listElement.Q("nameTextField").style.minWidth = (_headerSizeChanges[0].MinWidth);
-			listElement.Q("pathLabel").style.minWidth = (_headerSizeChanges[1].MinWidth);
-			listElement.Q("tagListVisualElement").style.minWidth = (_headerSizeChanges[2].MinWidth);
-			listElement.Q("lastChanged").style.minWidth = (_headerSizeChanges[3].MinWidth);
+
+			listElement.Q("nameTextField").style.minWidth = (_headerSizeChanges[0].SafeMinWidth);
+			listElement.Q("pathLabel").style.minWidth = (_headerSizeChanges[1].SafeMinWidth);
+			listElement.Q("tagListVisualElement").style.minWidth = (_headerSizeChanges[2].SafeMinWidth);
+			listElement.Q("lastChanged").style.minWidth = (_headerSizeChanges[3].SafeMinWidth);
 		}
 
 		private void Model_OnFilteredContentChanged()

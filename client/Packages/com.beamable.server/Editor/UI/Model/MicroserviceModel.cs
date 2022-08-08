@@ -64,7 +64,7 @@ namespace Beamable.Editor.UI.Model
 		}
 
 		public MicroserviceConfigurationEntry Config => MicroserviceConfiguration.Instance.GetEntry(Descriptor.Name);
-		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>(); // TODO: This is whacky.
+		public List<MongoStorageModel> Dependencies { get; set; } = new List<MongoStorageModel>(); // TODO: This is whacky.
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
 		public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
 		public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
@@ -218,6 +218,11 @@ namespace Beamable.Editor.UI.Model
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
 			}
 
+			AddArchiveSupport(evt);
+		}
+
+		protected void AddArchiveSupport(ContextualMenuPopulateEvent evt)
+		{
 			evt.menu.AppendSeparator();
 			if (Config.Archived)
 			{
@@ -228,7 +233,8 @@ namespace Beamable.Editor.UI.Model
 				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
 				{
 					var archiveServicePopup = new ArchiveServicePopupVisualElement();
-					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility($"{ARCHIVE_WINDOW_HEADER} {_serviceDescriptor.Name}", archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.ShowDeleteOption = !string.IsNullOrEmpty(this.Descriptor.AttributePath);
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility($"{ARCHIVE_WINDOW_HEADER} {Descriptor.Name}", archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
 					archiveServicePopup.onClose += () => popupWindow.Close();
 					archiveServicePopup.onConfirm += Archive;
 				});

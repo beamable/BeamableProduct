@@ -34,6 +34,8 @@ namespace Beamable.ConsoleCommands
 
 		private List<Type> _commandProviderTypes = new List<Type>();
 
+		private bool loadedCommands = false;
+
 		[Obsolete("This field will be deleted.")]
 		public static bool AsyncCommandInProcess
 		{
@@ -83,6 +85,8 @@ namespace Beamable.ConsoleCommands
 
 		public void LoadCommands()
 		{
+			if (loadedCommands) return;
+			loadedCommands = true;
 			var emptyTypeArray = new Type[] { };
 			var emptyObjectArray = new object[] { };
 
@@ -123,9 +127,9 @@ namespace Beamable.ConsoleCommands
 						}
 						OnCommandRegistered?.Invoke(attribute, callback);
 					}
-					catch (ArgumentException)
+					catch (ArgumentException ex)
 					{
-						Debug.LogError($"Command failed to register due to argument exception. Perhaps the command has already been registered. command=[{string.Join(",", attribute.Names)}]");
+						Debug.LogError($"Command failed to register due to argument exception. Perhaps the command has already been registered. command=[{string.Join(",", attribute.Names)}] ex=[${ex.Message}]");
 					}
 				}
 			}

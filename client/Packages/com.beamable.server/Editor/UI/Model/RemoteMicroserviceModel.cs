@@ -44,6 +44,7 @@ namespace Beamable.Editor.UI.Model
 					OnSortChanged?.Invoke();
 				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
 			}
+			AddArchiveSupport(evt);
 		}
 	}
 }
