@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MenuManager: {fileID: 1855707605096264864}
-  Data:
+  InventoryConfig:
     Groups: []
-    ItemPreviewPrefab: {fileID: 0}
+    ItemPreviewPrefab: {fileID: 4057779143720993516, guid: 5e01421c531e24cdc90b41b04cd49ef5,
+      type: 3}
 --- !u!1 &7340792050690760074
 GameObject:
   m_ObjectHideFlags: 0
