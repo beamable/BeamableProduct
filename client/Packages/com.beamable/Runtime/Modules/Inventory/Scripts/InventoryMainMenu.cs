@@ -39,7 +39,7 @@ namespace Beamable.Inventory.Scripts
 			}
 		}
 #endif
-		
+
 
 		// Update is called once per frame
 		void Update()
@@ -49,7 +49,7 @@ namespace Beamable.Inventory.Scripts
 
 		void RefreshGroups()
 		{
-			for (var i = GroupContainer.childCount -1; i >= 0; i--)
+			for (var i = GroupContainer.childCount - 1; i >= 0; i--)
 			{
 				Destroy(GroupContainer.GetChild(i).gameObject);
 			}
