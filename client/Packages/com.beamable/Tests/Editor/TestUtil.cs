@@ -79,10 +79,7 @@ static class TestUtil
 		{
 			var es = Event.KeyboardEvent(letter.ToString());
 
-			if (Char.IsUpper(letter))
-			{
-				es.character = Char.ToUpper(es.character);
-			}
+			es.character = letter;
 			using (var evt = KeyDownEvent.GetPooled(es))
 			{
 				textField.SendEvent(evt);
