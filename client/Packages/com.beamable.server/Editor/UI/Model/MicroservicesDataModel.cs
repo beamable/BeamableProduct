@@ -32,6 +32,10 @@ namespace Beamable.Editor.UI.Model
 		public int AllServiceCount =>
 			localServices.Count + remoteServices.Count + localStorages.Count + remoteStorages.Count;
 
+		public int AllUnarchivedServiceCount =>
+			localServices.Count(model => !model.IsArchived) + localStorages.Count(model => !model.IsArchived) +
+			remoteServices.Count(model => !model.IsArchived) + remoteStorages.Count(model => !model.IsArchived);
+
 		public IReadOnlyList<IBeamableService> AllLocalServices
 		{
 			get
