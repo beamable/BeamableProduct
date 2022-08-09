@@ -116,8 +116,8 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you build Microservices, they can be built to an AMD or ARM cpu architecture. By default, locally, Beamable will use whatever the default for your machine is. Allowed values are \"linux/arm64\" or \"linux/amd64\"")]
 		public OptionalString LocalMicroserviceCPUArchitecturePreference = new OptionalString();
 
-		[Tooltip("When you deploy Microservices, they can be built to an AMD or ARM cpu architecture. By default, Beamable prefers ARM, because that is more efficient in deployed environments. However, you can override this if you like. Allowed values are \"linux/arm64\" or \"linux/amd64\"")]
-		public OptionalString RemoteMicroserviceCPUArchitecturePreference = new OptionalString(Features.Docker.CPU_LINUX_ARM_64);
+		[Tooltip("When you deploy Microservices, they can be built to an AMD or ARM cpu architecture. By default, Beamable will build and deploy images similar to the host architecture. However, if you want to hardcode a specific architecture over all your development machines, you can. Allowed values are \"linux/arm64\" or \"linux/amd64\"")]
+		public OptionalString RemoteMicroserviceCPUArchitecturePreference = new OptionalString();
 
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
 		public string WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
@@ -255,16 +255,6 @@ namespace Beamable.Server.Editor
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
-
-				BeamEditor.DelayedInitializationCall(SaveConfig, true);
-				async void SaveConfig()
-				{
-					// using delayCall to avoid Unity warning about sending messages from OnValidate()
-					var api = BeamEditorContext.Default;
-					await api.InitializePromise;
-					if (api.IsAuthenticated)
-						api.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
-				}
 			}
 
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)

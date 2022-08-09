@@ -244,6 +244,7 @@ namespace Beamable.Common.Api.Inventory
 					.FlatMap(service => service.GetContent<TContent>(new ItemRef(kvp.Key)))
 					.Map(content =>
 					{
+
 						return kvp.Value
 							.Select(item => new InventoryObject<TContent>
 							{
@@ -251,7 +252,8 @@ namespace Beamable.Common.Api.Inventory
 								Properties = item.properties,
 								ItemContent = content,
 								CreatedAt = item.createdAt,
-								UpdatedAt = item.updatedAt
+								UpdatedAt = item.updatedAt,
+								UniqueCode = (((item.id.GetHashCode() << 5) + item.id.GetHashCode()) ^ content.Id.GetHashCode())
 							}).ToList();
 					});
 			}).ToList()).Map(itemGroups =>
