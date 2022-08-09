@@ -21,7 +21,7 @@ namespace Beamable.Editor.Tests.Toolbox
 		}
 
 		[UnityTest]
-		public IEnumerator TextboxUppercaseTest()
+		public IEnumerator TextboxKeystrokeTest()
 		{
 			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
 
