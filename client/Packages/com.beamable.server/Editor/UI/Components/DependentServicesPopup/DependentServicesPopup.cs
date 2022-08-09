@@ -57,6 +57,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			SetStorageObjectsContainer();
 			SetMicroservicesContainer();
+			SetArchivedContainer();
 		}
 		private void SetStorageObjectsContainer()
 		{
@@ -93,6 +94,32 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_emptyRowFillEntry.SetEmptyEntries();
 			_microservicesContainer.Add(_emptyRowFillEntry);
 		}
+
+		public void SetArchivedContainer()
+		{
+			foreach (var microserviceModel in MicroservicesDataModel.Instance.Services)
+			{
+				var dependentServices = GetDependentServices(microserviceModel).ToList();
+
+				if (dependentServices.Count > 0)
+				{
+					foreach (var service in dependentServices)
+					{
+						if (service.IsArchived)
+						{
+							if (!StorageObjectEntries.ContainsKey(service))
+							{
+								var newElement = new DependentServicesStorageObjectEntryVisualElement { Model = service };
+								newElement.Refresh();
+								_storageObjectsContainer.Add(newElement);
+								StorageObjectEntries.Add(service, newElement);
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		public void SetServiceDependencies()
 		{
 			var storageObjectAssemblyDefinitionsAssets = GetAllStorageObjectAssemblyDefinitionAssets();
@@ -103,7 +130,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				foreach (var dependentService in service.Value.DependentServices)
 				{
-					if (!dependentService.IsServiceRelation || dependentService.MongoStorageModel.IsArchived)
+					if (!dependentService.IsServiceRelation)
 						continue;
 					microservice.Dependencies.Add(dependentService.MongoStorageModel);
 				}
@@ -173,7 +200,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			foreach (var storageObject in MicroservicesDataModel.Instance.Storages)
 			{
 				var assemblyDefinition = AssemblyDefinitionHelper.ConvertToAsset(storageObject.Descriptor);
-				if (assemblyDefinition == null || storageObject.IsArchived)
+				if (assemblyDefinition == null)
 					continue;
 				storageObjectAssemblyDefinitionsAssets.Add(storageObject, assemblyDefinition);
 			}
