@@ -15,56 +15,9 @@ namespace Beamable.Editor.Tests.Toolbox
 {
     public class ToolboxTextboxTests : EditorTest
     {
-		[UnityTest]
-		public IEnumerator TextboxMixcaseTest()
+		protected override void Configure(IDependencyBuilder builder)
 		{
-			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
-
-			ToolboxActionBarVisualElement tbActionBar = new ToolboxActionBarVisualElement();
-			tbActionBar.Refresh(Provider);
-
-			var search = tbActionBar.Q<SearchBarVisualElement>();
-			TextField text = search.Q<TextField>();
-
-			Debug.Log(text.value);
-			var window = text.MountForTest();
-
-			yield return null;
-
-			text.SendTestKeystroke("TeStiNG");
-
-			window.Close();
-
-			Debug.Log(text.value);
-			Assert.AreEqual("TeStiNG", text.value);
-
-			model.SetQuery(string.Empty);
-		}
-
-		[UnityTest]
-		public IEnumerator TextboxLowercaseTest()
-		{
-			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
-
-			ToolboxActionBarVisualElement tbActionBar = new ToolboxActionBarVisualElement();
-			tbActionBar.Refresh(Provider);
-
-			var search = tbActionBar.Q<SearchBarVisualElement>();
-			TextField text = search.Q<TextField>();
-
-			Debug.Log(text.value);
-			var window = text.MountForTest();
-
-			yield return null;
-
-			text.SendTestKeystroke("testing");
-
-			window.Close();
-
-			Debug.Log(text.value);
-			Assert.AreEqual("testing", text.value);
-
-			model.SetQuery(string.Empty);
+			builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
 		}
 
 		[UnityTest]
@@ -78,17 +31,16 @@ namespace Beamable.Editor.Tests.Toolbox
 			var search = tbActionBar.Q<SearchBarVisualElement>();
 			TextField text = search.Q<TextField>();
 
-			Debug.Log(text.value);
 			var window = text.MountForTest();
 
 			yield return null;
 
-			text.SendTestKeystroke("TESTING");
+			text.SendTestKeystroke("TESTing");
 
 			window.Close();
 
 			Debug.Log(text.value);
-			Assert.AreEqual("TESTING", text.value);
+			Assert.AreEqual("TESTing", text.value);
 
 			model.SetQuery(string.Empty);
 		}
