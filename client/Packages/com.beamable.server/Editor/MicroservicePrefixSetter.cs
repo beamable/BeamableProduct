@@ -21,9 +21,9 @@ namespace Beamable.Server.Editor
 			{
 				return;
 			}
-			
+
 			if (DockerCommand.DockerNotInstalled) return;
-			
+
 			try
 			{
 				var microserviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
