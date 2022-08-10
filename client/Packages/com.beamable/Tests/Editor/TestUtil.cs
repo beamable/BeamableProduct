@@ -89,9 +89,8 @@ static class TestUtil
 			{
 				textField.SendEvent(evt);
 			}
-
-			
 		}
 
+		textField.Blur();
 	}
 }

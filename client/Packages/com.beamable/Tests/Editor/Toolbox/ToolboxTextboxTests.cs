@@ -31,16 +31,16 @@ namespace Beamable.Editor.Tests.Toolbox
 			var search = tbActionBar.Q<SearchBarVisualElement>();
 			TextField text = search.Q<TextField>();
 
-			var window = text.MountForTest();
+			var window = tbActionBar.MountForTest();
 
 			yield return null;
-
 			text.SendTestKeystroke("TESTing");
 
+			yield return new WaitForSecondsRealtime(.5f);
 			window.Close();
 
 			Debug.Log(text.value);
-			Assert.AreEqual("TESTing", text.value);
+			Assert.AreEqual("TESTing", model.Query.ToString());
 
 			model.SetQuery(string.Empty);
 		}
