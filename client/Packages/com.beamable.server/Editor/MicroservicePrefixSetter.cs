@@ -17,8 +17,13 @@ namespace Beamable.Server.Editor
 
 		private static async void LogPlayModeState(PlayModeStateChange state)
 		{
+			if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.ExitingPlayMode)
+			{
+				return;
+			}
+			
 			if (DockerCommand.DockerNotInstalled) return;
-
+			
 			try
 			{
 				var microserviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
