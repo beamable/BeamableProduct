@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "microserviceTests", "micros
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server.common", "..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj", "{5A3B42BD-623E-47FC-8468-732B96471529}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.tooling.common", "beamable.tooling.common\beamable.tooling.common.csproj", "{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}"
+EndProject
 
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,5 +46,9 @@ Global
 		{5A3B42BD-623E-47FC-8468-732B96471529}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A3B42BD-623E-47FC-8468-732B96471529}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A3B42BD-623E-47FC-8468-732B96471529}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

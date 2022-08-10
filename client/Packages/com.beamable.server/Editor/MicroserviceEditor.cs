@@ -1,12 +1,20 @@
-using Beamable.Config;
+#if !BEAMABLE_DEVELOPER
+#define NOT_BEAMABLE_DEVELOPER
+#endif
+
+using Beamable.Common;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 using static Beamable.Common.Constants.MenuItems.Windows;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor
 {
@@ -24,12 +32,6 @@ namespace Beamable.Server.Editor
 		public static string dockerlocation = "docker";
 #endif
 
-		private const string MENU_TOGGLE_AUTORUN =
-			Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/Auto Run Local Microservices";
-
-		private const int MENU_TOGGLE_PRIORITY = Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
-
-		public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
 		public const string TEMPLATE_DIRECTORY = "Packages/com.beamable.server/Template";
 		private const string TEMPLATE_MICROSERVICE_DIRECTORY = TEMPLATE_DIRECTORY;
 		private const string DESTINATION_MICROSERVICE_DIRECTORY = "Assets/Beamable/Microservices";
@@ -63,6 +65,7 @@ namespace Beamable.Server.Editor
 				try
 				{
 					BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+					var _ = BeamEditorContext.Default; // access the beam context
 				}
 				catch (InvalidOperationException)
 				{
@@ -87,38 +90,70 @@ namespace Beamable.Server.Editor
 				}
 
 
-				var enabled = false;
-				if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN))
-					enabled = ConfigDatabase.GetBool(CONFIG_AUTO_RUN, false);
-				else
-					enabled = EditorPrefs.GetBool(CONFIG_AUTO_RUN, false);
-
-				setAutoRun(enabled);
+				TryToPreloadBaseImage();
+				TryToPreloadMongoImage();
 
 				IsInitialized = true;
 			}
 		}
 
-		private static void setAutoRun(bool value)
+		[Conditional("NOT_BEAMABLE_DEVELOPER")] // if we are a beamable developer, the image needs to be locally built anyway.
+		public static async void TryToPreloadBaseImage()
 		{
-			Menu.SetChecked(MENU_TOGGLE_AUTORUN, value);
-			if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN)) ConfigDatabase.SetBool(CONFIG_AUTO_RUN, value);
+			if (Application.isPlaying) return;
 
-			EditorPrefs.SetBool(CONFIG_AUTO_RUN, value);
+			try
+			{
+				var local = PullImageCommand.PullBeamService(CPUArchitectureContext.LOCAL).StartAsync();
+				var remote = PullImageCommand.PullBeamService(CPUArchitectureContext.DEPLOY).StartAsync();
+				await local;
+				await remote;
+			}
+			catch
+			{
+				// it does not matter if this request fails- because it is only a preload operation.
+				// in the event this fails, the image will be downloaded later.
+			}
 		}
 
-		[MenuItem(MENU_TOGGLE_AUTORUN, priority = MENU_TOGGLE_PRIORITY)]
-		public static void AutoRunLocalMicroservicesToggle()
+		/// <summary>
+		/// A utility function that will wait for the microservice editor <see cref="IsInitialized"/> flag to be true.
+		/// This method should only be called in a task-friendly environment.
+		/// </summary>
+		public static async Task WaitForInit()
 		{
-			var enabled = EditorPrefs.GetBool(CONFIG_AUTO_RUN, false);
-			setAutoRun(!enabled);
+			await Task.Run(async () =>
+			{
+				while (!IsInitialized)
+				{
+					await Task.Delay(1);
+				}
+			});
+		}
+
+		public static async void TryToPreloadMongoImage()
+		{
+			if (Application.isPlaying) return;
+			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			if (registry.StorageDescriptors.Count == 0) return;
+			var image = registry.StorageDescriptors[0]?.ImageName;
+			if (image == null) return;
+
+			try
+			{
+				await (new PullImageCommand(image).StartAsync());
+			}
+			catch
+			{
+				// it does not matter if this request fails- because it is only a preload operation.
+				// in the event this fails, the image will be downloaded later.
+			}
 		}
 
 		public static void CreateNewMicroservice(string microserviceName, List<ServiceModelBase> additionalReferences = null)
 		{
 			CreateNewServiceFile(ServiceType.MicroService, microserviceName, additionalReferences);
 		}
-
 
 		public static void CreateNewServiceFile(ServiceType serviceType, string serviceName, List<ServiceModelBase> additionalReferences = null)
 		{
@@ -199,7 +234,7 @@ namespace Beamable.Server.Editor
 				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null &&
 					additionalReferences.Count != 0)
 				{
-					// TODO TD000001 Code for adding dependencies to microservice require additional Assets refresh 
+					// TODO TD000001 Code for adding dependencies to microservice require additional Assets refresh
 					AssetDatabase.StopAssetEditing();
 					AssetDatabase.Refresh();
 					AssetDatabase.StartAssetEditing();
@@ -220,6 +255,52 @@ namespace Beamable.Server.Editor
 							}
 						}
 					}
+				}
+			}
+			finally
+			{
+				AssetDatabase.StopAssetEditing();
+			}
+
+			AssetDatabase.Refresh();
+		}
+
+		public static void DeleteServiceFiles(IDescriptor descriptor)
+		{
+			AssetDatabase.StartAssetEditing();
+
+			try
+			{
+				if (string.IsNullOrWhiteSpace(descriptor.Name))
+				{
+					return;
+				}
+
+				var rootPath = Directory.GetParent(Application.dataPath).FullName;
+
+				foreach (var serviceCreateInfo in _serviceCreateInfos)
+				{
+					var relativeDestPath = Path.Combine(serviceCreateInfo.Value.DestinationDirectoryPath, descriptor.Name);
+					var absoluteDestPath = Path.Combine(rootPath, relativeDestPath);
+
+					if (Directory.Exists(absoluteDestPath))
+					{
+						FileUtil.DeleteFileOrDirectory(absoluteDestPath);
+					}
+				}
+
+				if (descriptor is MicroserviceDescriptor desc)
+				{
+					FileUtil.DeleteFileOrDirectory(desc.SourcePath);
+					FileUtil.DeleteFileOrDirectory(Path.ChangeExtension(desc.SourcePath, "meta"));
+					FileUtil.DeleteFileOrDirectory(desc.HidePath);
+					FileUtil.DeleteFileOrDirectory(desc.BuildPath);
+				}
+				else if (descriptor is StorageObjectDescriptor storageDesc)
+				{
+					string directoryPath = Path.GetDirectoryName(storageDesc.AttributePath);
+					FileUtil.DeleteFileOrDirectory(Path.ChangeExtension(storageDesc.AttributePath, "meta"));
+					FileUtil.DeleteFileOrDirectory(directoryPath);
 				}
 			}
 			finally

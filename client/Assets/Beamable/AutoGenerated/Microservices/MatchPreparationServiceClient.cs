@@ -112,7 +112,7 @@ namespace Beamable.Server.Clients
     }
     
     [BeamContextSystemAttribute()]
-    internal static class ExtensionsForMatchPreparationServiceClient
+    public static class ExtensionsForMatchPreparationServiceClient
     {
         
         [Beamable.Common.Dependencies.RegisterBeamableDependenciesAttribute()]

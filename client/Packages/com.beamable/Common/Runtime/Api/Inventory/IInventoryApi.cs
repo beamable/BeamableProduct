@@ -298,6 +298,11 @@ namespace Beamable.Common.Api.Inventory
 		/// The timestamp of when the last modification to item occured.
 		/// </summary>
 		public long UpdatedAt;
+
+		/// <summary>
+		/// The code is a unique hashing code that combines the Content Id and the Item Id
+		/// </summary>
+		public int UniqueCode;
 	}
 
 	/// <summary>

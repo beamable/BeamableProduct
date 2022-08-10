@@ -4,6 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [1.3.0]
+### Added
+- User can specify Microservices build and deploy CPU architecture. 
+- `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
+- Microservices have their initialization validated before publishing. 
+- Microservice archive/unarchive feature.
+- Basic Chat SDK functions to Microservice
+- The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
+- Client Generator logs go to the Microservice Window
+- Send Microservice CPU architecture to Beamable Cloud
+- Headers are available on the service `Context` for application version, unity version, game version, and Beamable sdk version
+
+### Changed
+- local microservice logs will appear for dotnet watch command
+- Microservices use a Nuget cache for faster development builds
+- Microservices cache their `dotnet restore` output in the Docker cache for faster development builds
+- Microservices share a realm secret request for faster development builds
+- Local microservices no longer output emoji characters from their `dotnet watch` command
+- Microservices only receive events for content updates
+- Disabled Microservices no longer get built and published.
+
+### Fixed
+- Microservice related actions can run while Unity is a background process.
+- Microservice clients created by using the default constructor will now keep working after the default `BeamContext` has been reset.
+- Local Microservices no longer say "could not find servicename:latest"
+- Publish flow locks Asset Database so that no re-imports may happen.
+- Publish screen loading bar should always be full when publish is complete.
+- Fixed problems with unexited OS processes and high memory consumption for Docker during switch between EditMode and PlayMode.
+- The "Play Selected" button in the Microservice window doesn't get stuck in a service is already running.
+- Microservice selection is saved between domain reloads.
+- Microservice paths can now contain spaces.
+- Compile errors are reported as error logs
+
+### Removed
+- Unused legacy code around "Auto Run Local Microservices" menu item
+
+## [1.2.10]
+### Added
+- `DisableAllBeamableEvents` option for the `MicroserviceAttribute`. When enabled, prevents the Microservice from receiving any Beamable events, including content cache invalidations.
+
+## [1.2.9]
+### Fixed
+- Potential microservice issue that caused C#MSs to hang during initialization.
+
+## [1.2.8]
+no changes
+
+## [1.2.7]
+no changes
+
 ## [1.2.6]
 ### Added
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
@@ -17,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Connection is closed" log exception no longer prints incorrectly.
 - Requests no longer attempt to send while authorization process is happening.
 
+
 ## [1.2.4]
 ### Added
 - Microservices now support private declarations of `Callable` methods.
@@ -24,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Microservices now properly log exceptions that happen during its initialization
+- Microservice process commands now use the `BeamableDispatcher` instead of the `EditorApplication.delayCall`. This allows you to background Unity during long running microservice actions.
 - Issue in Microservices re-auth flow that caused high CPU utilization unnecessarily
 
 ## [1.2.3]

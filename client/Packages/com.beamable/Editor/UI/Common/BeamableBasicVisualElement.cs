@@ -19,7 +19,27 @@ namespace Beamable.Editor.UI.Common
 		protected string UssPath { get; }
 		private readonly bool _createRoot;
 
-		public IDependencyProvider provider;
+		private IDependencyProvider _provider;
+
+		/// <summary>
+		/// A <see cref="IDependencyProvider"/> associated with the context that is executing the UI.
+		/// By default, this will be the default context's dependency scope. However, you can use the <see cref="Refresh(IDependencyProvider)"/>
+		/// method to override the <see cref="Provider"/> property for a branch of the UI Hierarchy.
+		/// </summary>
+		public IDependencyProvider Provider
+		{
+			get
+			{
+				if (_provider != null) return _provider; // we have a configured provider, use that.
+				if (!(parent is BeamableBasicVisualElement beamParent))
+				{
+					return BeamEditorContext.Default.ServiceScope; // we don't have a parent, and since we didn't have a provider, use the default.
+				}
+				return beamParent.Provider; // our parent is another thing that could have a provider, so defer to that.
+			}
+		}
+
+		public BeamEditorContext Context => Provider.GetService<BeamEditorContext>();
 
 		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{
@@ -27,9 +47,6 @@ namespace Beamable.Editor.UI.Common
 
 			UssPath = ussPath;
 			_createRoot = createRoot;
-
-			provider = BeamEditorContext.Default.ServiceScope;
-
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
 				OnDetach();
@@ -38,8 +55,7 @@ namespace Beamable.Editor.UI.Common
 
 		public void Refresh(IDependencyProvider provider)
 		{
-			this.provider = provider;
-
+			_provider = provider;
 			Refresh();
 		}
 

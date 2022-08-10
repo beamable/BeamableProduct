@@ -248,7 +248,7 @@ namespace Beamable.Common.Api.Inventory
 		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder DeleteItem<TContent>(long itemId) where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return DeleteItem(contentId, itemId);
 		}
 
@@ -297,7 +297,7 @@ namespace Beamable.Common.Api.Inventory
 		public InventoryUpdateBuilder UpdateItem<TContent>(long itemId, Dictionary<string, string> properties)
 			where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return UpdateItem(contentId, itemId, properties);
 		}
 
@@ -311,6 +311,40 @@ namespace Beamable.Common.Api.Inventory
 			where TContent : ItemContent, new()
 		{
 			return UpdateItem(item.ItemContent.Id, item.Id, item.Properties);
+		}
+
+		/// <summary>
+		/// Get a set of inventory scopes that the updater will affect.
+		/// </summary>
+		/// <returns>A set of scopes that will be changed based on the changes described in the builder</returns>
+		public HashSet<string> BuildScopes()
+		{
+			var scopes = new HashSet<string>();
+			foreach (var item in newItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in updateItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in deleteItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var curr in currencies)
+			{
+				scopes.Add(curr.Key);
+			}
+
+			foreach (var curr in currencyProperties)
+			{
+				scopes.Add(curr.Key);
+			}
+			return scopes;
 		}
 
 		void ISerializationCallbackReceiver.OnBeforeSerialize()

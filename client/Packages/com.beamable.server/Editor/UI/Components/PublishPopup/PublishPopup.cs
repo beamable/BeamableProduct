@@ -124,6 +124,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_scrollContainer.Add(newElement);
 
 				elementNumber++;
+
+
+				if (model.Archived)
+				{
+					newElement.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+				}
 			}
 
 			_generalComments = Root.Q<TextField>("largeCommentsArea");
@@ -265,6 +271,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 					continue;
 				}
 
+				if (serviceModel.IsArchived)
+				{
+					continue;
+				}
+
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
 				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
 				_servicesToPublish.Add(kvp.Value);
@@ -274,7 +285,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void HandleServiceDeployed(IDescriptor descriptor)
 		{
 			EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
-			_servicesToPublish.First(x => x.Model.Name == descriptor.Name).LoadingBar.UpdateProgress(1);
+			_servicesToPublish.FirstOrDefault(x => x.Model.Name == descriptor.Name)?.LoadingBar?.UpdateProgress(1);
 			HandleServiceDeployProgress(descriptor);
 		}
 
@@ -307,6 +318,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
+			if (_servicesToPublish.Count == 0) return 0f;
 			return _servicesToPublish.Average(x => x.LoadingBar.Progress);
 		}
 	}

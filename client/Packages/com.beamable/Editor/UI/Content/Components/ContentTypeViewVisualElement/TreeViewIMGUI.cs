@@ -9,6 +9,9 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+#if UNITY_2022_1_OR_NEWER
+using TreeView = UnityEditor.IMGUI.Controls.TreeView;
+#endif
 
 namespace Beamable.Editor.Content.Components
 {

@@ -159,7 +159,7 @@ namespace Beamable.Common.Content.Validation
 					// add obvious prefix
 					if (AllowedTypes.Length == 1)
 					{
-						if (ContentRegistry.TryGetName(AllowedTypes[0], out string prefix))
+						if (ContentTypeReflectionCache.Instance.TryGetName(AllowedTypes[0], out string prefix))
 						{
 							object value = field.GetValue();
 							if (value is List<string> list)
