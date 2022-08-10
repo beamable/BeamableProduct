@@ -561,7 +561,7 @@ namespace Beamable.Server.Editor
 						return;
 					}
 					// the architecture needs to be one of the supported beamable architectures...
-					if (!CPU_SUPPORTED.Contains(imageDetails.Platform))
+					if (!CPU_SUPPORTED.Any(imageDetails.Platform.Contains))
 					{
 						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
@@ -640,7 +640,7 @@ namespace Beamable.Server.Editor
 						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 						Message = $"Comitting storage=[{storage.StorageName}]"
 					});
-					var storageDesc = new StorageObjectDescriptor {Name = storage.StorageName};
+					var storageDesc = new StorageObjectDescriptor { Name = storage.StorageName };
 					onServiceDeployed?.Invoke(storageDesc);
 					OnServiceDeployStatusChanged?.Invoke(storageDesc, ServicePublishState.Published);
 				}
@@ -649,7 +649,7 @@ namespace Beamable.Server.Editor
 				var remoteOnlyServices = model.Services.Where(s => !nameToImageDetails.ContainsKey(s.Key)).ToList();
 				foreach (var remoteOnly in remoteOnlyServices)
 				{
-					var desc = new MicroserviceDescriptor {Name = remoteOnly.Key};
+					var desc = new MicroserviceDescriptor { Name = remoteOnly.Key };
 					onServiceDeployed?.Invoke(desc);
 					OnServiceDeployStatusChanged?.Invoke(desc, ServicePublishState.Published);
 				}
