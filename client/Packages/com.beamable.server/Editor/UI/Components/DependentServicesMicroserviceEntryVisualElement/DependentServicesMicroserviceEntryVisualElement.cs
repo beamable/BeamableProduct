@@ -55,7 +55,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var newElement = new DependentServicesCheckboxVisualElement(isRelation) { MongoStorageModel = storageObjectModel };
 				newElement.OnServiceRelationChanged += TriggerServiceRelationChanged;
 				newElement.Refresh();
-				newElement.SetEnabled(!storageObjectModel.IsArchived || !Model.IsArchived);
+				if (storageObjectModel.IsArchived || Model.IsArchived)
+					newElement.SetEnabled(false);
 				_dependencyCheckboxes.Add(newElement);
 				DependentServices.Add(newElement);
 			}
