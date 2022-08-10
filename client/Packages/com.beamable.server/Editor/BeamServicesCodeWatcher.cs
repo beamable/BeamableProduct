@@ -292,11 +292,11 @@ namespace Beamable.Server.Editor
 			// Handle the client code generation for C#MSs.
 			try
 			{
-				
+
 				AssetDatabase.StartAssetEditing();
 				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 				var microserviceConfiguration = MicroserviceConfiguration.Instance;
-				
+
 				CleanupRunningGeneratorProcesses(registry.Descriptors).Then(_ =>
 				{
 					// Gets the list of currently detected code handles.
@@ -327,9 +327,9 @@ namespace Beamable.Server.Editor
 
 					// Update the serialized ServiceCodeHandles so that the next time we go through this code we can accurately detect the changes to C#MSs and other services.
 					microserviceConfiguration.ServiceCodeHandlesOnLastDomainReload = codeWatcher.LatestCodeHandles;
-					
+
 				});
-				
+
 			}
 			finally
 			{
@@ -471,15 +471,15 @@ namespace Beamable.Server.Editor
 				});
 			});
 		}
-		
+
 		private static async Promise CleanupRunningGeneratorProcesses(List<MicroserviceDescriptor> descriptors)
 		{
 			List<string> descNames = descriptors.Select(ms => ms.Name.ToLower()).ToList();
-			
+
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
 			await Cleanup("sh");
 #else
-			await Cleanup("cmd");	
+			await Cleanup("cmd");
 #endif
 			await Cleanup("docker");
 
@@ -494,7 +494,7 @@ namespace Beamable.Server.Editor
 						if (!singleProcess.HasExited)
 						{
 							var checkProccessCommand = await new GetProcessComand(singleProcess.Id).StartAsync();
-							
+
 							if (!string.IsNullOrEmpty(checkProccessCommand))
 							{
 								foreach (var singleDescName in descNames)
