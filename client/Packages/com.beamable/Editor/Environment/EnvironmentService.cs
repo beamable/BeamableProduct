@@ -22,6 +22,7 @@ namespace Beamable.Editor.Environment
 			{
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH);
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH + ".meta");
+				ConfigDatabase.DeleteConfigDatabase();
 				EditorUtility.RequestScriptReload();
 				AssetDatabase.Refresh();
 			}

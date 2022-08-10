@@ -29,7 +29,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void UpdateVisualElements()
 		{
-			StorageObjectName.text = Model.Name;
+			StorageObjectName.text = Model.Name + (Model.IsArchived ? " (Archived)" : string.Empty);
 			StorageObjectName.AddTextWrapStyle();
 		}
 	}
