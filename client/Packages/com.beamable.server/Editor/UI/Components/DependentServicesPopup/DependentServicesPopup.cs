@@ -192,7 +192,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 
 			return false;
-
 		}
 		
 		private Dictionary<MongoStorageModel, AssemblyDefinitionAsset> GetAllStorageObjectAssemblyDefinitionAssets()

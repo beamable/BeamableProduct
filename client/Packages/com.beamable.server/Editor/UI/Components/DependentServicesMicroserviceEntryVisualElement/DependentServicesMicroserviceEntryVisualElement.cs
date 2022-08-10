@@ -18,8 +18,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public Action<MongoStorageModel, bool> OnServiceRelationChanged;
 		public MicroserviceModel Model { get; set; }
 		public List<DependentServicesCheckboxVisualElement> DependentServices { get; private set; }
-		
-		
 		public Label MicroserviceName { get; private set; }
 		private VisualElement _dependencyCheckboxes;
 		private readonly IEnumerable<MongoStorageModel> _dependentServices;
