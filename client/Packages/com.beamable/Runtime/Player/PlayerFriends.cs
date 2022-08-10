@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Social;
@@ -291,6 +292,20 @@ namespace Beamable.Player
 		public async Promise CancelInvite(long playerId)
 		{
 			await _socialApi.CancelFriendRequest(playerId);
+			await Refresh();
+		}
+
+		/// <summary>
+		/// Import friends from a third party.
+		/// At the moment, only Facebook friends are supported.
+		/// </summary>
+		/// <param name="thirdPartyAuthToken">
+		/// An access token issued from the third party that can be sent to Beamable so that the Beamable Cloud can perform the friend import.
+		/// </param>
+		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
+		public async Promise ImportThirdPartyFriends(string thirdPartyAuthToken)
+		{
+			await _socialApi.ImportFriends(SocialThirdParty.Facebook, thirdPartyAuthToken);
 			await Refresh();
 		}
 
