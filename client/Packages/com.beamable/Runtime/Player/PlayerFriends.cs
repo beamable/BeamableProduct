@@ -296,14 +296,13 @@ namespace Beamable.Player
 		}
 
 		/// <summary>
-		/// Import friends from a third party.
-		/// At the moment, only Facebook friends are supported.
+		/// Import friends from Facebook.
 		/// </summary>
 		/// <param name="thirdPartyAuthToken">
-		/// An access token issued from the third party that can be sent to Beamable so that the Beamable Cloud can perform the friend import.
+		/// An access token issued from Facebook that can be sent to Beamable so that the Beamable Cloud can perform the friend import.
 		/// </param>
 		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
-		public async Promise ImportThirdPartyFriends(string thirdPartyAuthToken)
+		public async Promise ImportFacebookFriends(string thirdPartyAuthToken)
 		{
 			await _socialApi.ImportFriends(SocialThirdParty.Facebook, thirdPartyAuthToken);
 			await Refresh();
