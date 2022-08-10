@@ -37,6 +37,7 @@ namespace Beamable.Server
 	public class MicroserviceClient
 	{
 		protected IBeamableRequester _requester;
+
 		protected MicroserviceClient(IBeamableRequester requester = null)
 		{
 			_requester = requester;
@@ -49,11 +50,8 @@ namespace Beamable.Server
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{
-			if (_requester == null)
-			{
-				_requester = await API.Instance.Map(b => b.Requester);
-			}
-			return await MicroserviceClientHelper.Request<T>(_requester, serviceName, endpoint, serializedFields);
+			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
+			return await MicroserviceClientHelper.Request<T>(requester, serviceName, endpoint, serializedFields);
 		}
 
 		protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);

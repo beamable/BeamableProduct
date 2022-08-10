@@ -24,6 +24,8 @@
 				public const string PLAY_STORAGE = "Run the Storage";
 				public const string MORE = "More";
 				public const string PLAY_NOT_LOGGED_IN = "You must be logged in to start the service";
+				public const string PLAY_DISABLED_GENERAL = "Cannot Run the Service";
+				public const string STOP_SERVICE_GENERAL = "Stop";
 
 				public const string DESELECT = "Deselect";
 				public const string SELECT = "Select";
@@ -46,6 +48,7 @@
 				public const string ERASE_ALL_STYLE = "Erase all style";
 				public const string REFRESH = "Refresh";
 				public const string MORE = "More";
+				public const string OPTIONS = "Options";
 			}
 
 			public static partial class Toolbox

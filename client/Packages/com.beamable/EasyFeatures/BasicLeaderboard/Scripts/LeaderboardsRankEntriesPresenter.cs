@@ -22,7 +22,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 		private IReadOnlyList<double> _scores;
 		private int _totalRankCount;
 
-		public void Enrich(IEnumerable<BasicLeaderboardView.BasicLeaderboardViewEntry> entries)
+		public void Enrich(IEnumerable<BasicLeaderboardView.BasicLeaderboardViewEntry> entries, long currentPlayerRank)
 		{
 			PoolableScrollView.SetContentProvider(this);
 
@@ -33,6 +33,8 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 			_scores = entriesList.Select(e => e.Score).ToList();
 
 			_totalRankCount = entriesList.Count;
+
+			_currentPlayerRank = currentPlayerRank;
 		}
 
 		public void Enrich(IReadOnlyList<string> aliases, IReadOnlyList<Sprite> avatars, IReadOnlyList<long> ranks, IReadOnlyList<double> scores, long currentPlayerRank)

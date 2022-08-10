@@ -80,12 +80,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1621207373365585745}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: -765806418, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -98,6 +99,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!114 &7615580237199166905
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -107,7 +109,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1621207373365585745}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: -1200242548, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: 31a19414c41e5ae4aae2af33fee712f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_ShowMaskGraphic: 0
@@ -187,8 +189,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd532cacf5144be882aba60b505f32f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MainRepresentation: {fileID: 1621207373365585745}
-  BackUpRepresentation: {fileID: 1621207373675038052}
+  PrimaryRepresentation: {fileID: 1621207373365585745}
+  SecondaryRepresentation: {fileID: 1621207373675038052}
 --- !u!1 &1621207373675038052
 GameObject:
   m_ObjectHideFlags: 0
@@ -249,6 +251,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []

@@ -1,4 +1,5 @@
 ﻿using Beamable.UI.Scripts;
+using System;
 using UnityEngine;
 
 namespace Beamable.Inventory.Scripts
@@ -24,6 +25,22 @@ namespace Beamable.Inventory.Scripts
 
 		}
 
+#if UNITY_EDITOR
+		private void OnValidate()
+		{
+			if (GroupContainer == null || Data.ItemPreviewPrefab == null) return;
+			if (Data.ItemPreviewPrefab.transform.IsChildOf(GroupContainer))
+			{
+				string assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath("5e01421c531e24cdc90b41b04cd49ef5");
+				Debug.LogError($"You should not use child of a {nameof(InventoryMainMenu)} " +
+				               $"{nameof(GroupContainer)} as a {nameof(Data.ItemPreviewPrefab)}. " +
+				               $"Try using `InventoryObjectUI.prefab` from Beamable package at path: {assetPath}");
+				
+			}
+		}
+#endif
+
+
 		// Update is called once per frame
 		void Update()
 		{
@@ -32,7 +49,7 @@ namespace Beamable.Inventory.Scripts
 
 		void RefreshGroups()
 		{
-			for (var i = 0; i < GroupContainer.childCount; i++)
+			for (var i = GroupContainer.childCount - 1; i >= 0; i--)
 			{
 				Destroy(GroupContainer.GetChild(i).gameObject);
 			}

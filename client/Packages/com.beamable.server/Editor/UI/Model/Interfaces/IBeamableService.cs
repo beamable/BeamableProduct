@@ -20,6 +20,7 @@ namespace Beamable.Editor.UI.Model
 		ServiceType ServiceType { get; }
 		IDescriptor Descriptor { get; }
 		string Name { get; }
+		bool IsArchived { get; }
 
 		Action OnLogsDetached { get; set; }
 		Action OnLogsAttached { get; set; }

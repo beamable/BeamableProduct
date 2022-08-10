@@ -109,7 +109,7 @@ namespace Beamable.Common.Content
 		{
 			if (string.IsNullOrEmpty(Id))
 				return typeof(TContent);
-			return ContentRegistry.GetTypeFromId(Id);
+			return ContentTypeReflectionCache.Instance.GetTypeFromId(Id);
 		}
 
 		public override Type GetReferencedBaseType()
@@ -202,7 +202,7 @@ namespace Beamable.Common.Content
 		{
 			if (string.IsNullOrEmpty(_id))
 				return _contentType;
-			return ContentRegistry.GetTypeFromId(_id);
+			return ContentTypeReflectionCache.Instance.GetTypeFromId(_id);
 		}
 
 		public override Type GetReferencedBaseType()

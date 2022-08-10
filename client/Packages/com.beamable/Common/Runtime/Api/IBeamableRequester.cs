@@ -38,6 +38,16 @@ namespace Beamable.Common.Api
 		IAccessToken AccessToken { get; }
 
 		/// <summary>
+		/// The customer id associated with this requester
+		/// </summary>
+		string Cid { get; }
+
+		/// <summary>
+		/// The project id associated with this requester
+		/// </summary>
+		string Pid { get; }
+
+		/// <summary>
 		/// Make an authorized request to the Beamable API.
 		/// </summary>
 		/// <param name="method">One of the common HTTP methods represented through the <see cref="Method"/> enum</param>

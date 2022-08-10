@@ -58,6 +58,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public event Action OnInfoButtonClicked;
 
+		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
+
 		public override void Refresh()
 		{
 			base.Refresh();
@@ -100,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_publish.tooltip = Tooltips.Microservice.PUBLISH;
 			if (!NoErrorsValidator.LastCompilationSucceded)
 				_publish.tooltip = cannotPublishText;
-			_publish.SetEnabled(!(DockerCommand.DockerNotInstalled));
+			_publish.SetEnabled(!DockerCommand.DockerNotInstalled && HasPublishPermissions);
 
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
@@ -108,11 +110,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 
 			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;
-			int localServicesAmount = localServicesAvailable ? MicroservicesDataModel.Instance.AllLocalServices.Count : 0;
 			int selectedServicesAmount = localServicesAvailable
 				? MicroservicesDataModel.Instance.AllLocalServices.Count(beamService => beamService.IsSelected)
 				: 0;
-			UpdateButtonsState(selectedServicesAmount, localServicesAmount);
+			UpdateButtonsState(selectedServicesAmount, MicroservicesDataModel.Instance?.AllUnarchivedServiceCount ?? 0);
+
+			Context.OnRealmChange += _ => Refresh();
+			Context.OnUserChange += _ => Refresh();
 		}
 
 		public void UpdateButtonsState(int selectedServicesAmount, int servicesAmount)
@@ -120,7 +124,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			bool anyModelSelected = selectedServicesAmount > 0;
 			UpdateTextButtonTexts(selectedServicesAmount == servicesAmount);
 			_startAll.SetEnabled(anyModelSelected);
-			_publish.SetEnabled(servicesAmount > 0);
+			_publish.SetEnabled(servicesAmount > 0 && HasPublishPermissions);
 		}
 
 		private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)

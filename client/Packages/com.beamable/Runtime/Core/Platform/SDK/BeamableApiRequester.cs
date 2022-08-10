@@ -25,6 +25,8 @@ namespace Core.Platform.SDK
 		public IAccessToken AccessToken => Token;
 		public string TimeOverride { get; set; }
 		public string Language { get; set; }
+		public string Cid => Token.Cid;
+		public string Pid => Token.Pid;
 
 		private bool _disposed;
 

@@ -44,9 +44,9 @@ namespace Beamable.Server.Editor.Uploader
 			onProgress?.Invoke(progress, amount, total);
 		}
 
-		public async Task<string> GetImageId(MicroserviceDescriptor descriptor)
+		public async Task<ImageDetails> GetImageId(MicroserviceDescriptor descriptor)
 		{
-			var command = new GetImageIdCommand(descriptor);
+			var command = new GetImageDetailsCommand(descriptor);
 			var imageId = await command.StartAsync();
 
 			return imageId;
@@ -56,7 +56,7 @@ namespace Beamable.Server.Editor.Uploader
 		{
 			if (imageId == null)
 			{
-				imageId = await GetImageId(descriptor);
+				imageId = (await GetImageId(descriptor)).imageId;
 			}
 
 			var saveImageCommand = new SaveImageCommand(descriptor, imageId, outputPath);
@@ -79,7 +79,7 @@ namespace Beamable.Server.Editor.Uploader
 			{
 				if (imageId == null)
 				{
-					imageId = await GetImageId(descriptor);
+					imageId = (await GetImageId(descriptor)).imageId;
 				}
 				await SaveImage(descriptor, filename, imageId);
 				using (var file = File.OpenRead(filename))

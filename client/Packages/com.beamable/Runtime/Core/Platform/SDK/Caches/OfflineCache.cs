@@ -13,15 +13,19 @@ namespace Beamable.Api.Caches
 {
 	public class OfflineCache
 	{
-		private OfflineCache()
+		public bool UseOfflineCache { get; }
+
+		public OfflineCache(bool useOfflineCache = true)
 		{
+			UseOfflineCache = useOfflineCache;
+			// Flush cache that wasn't created with this version of the game.
+			FlushInvalidCache();
 		}
 
 		private const string _offlineCacheRoot = "beamable";
 		private const string _offlineCacheDir = "cache";
 		private const string _offlineCacheExtension = ".json";
 
-		private static OfflineCache _instance = new OfflineCache();
 		private Dictionary<string, object> _offlineCacheData = new Dictionary<string, object>();
 
 		private readonly static string _cid = Config.ConfigDatabase.GetString("cid");
@@ -29,7 +33,7 @@ namespace Beamable.Api.Caches
 		private readonly static string _offlineCacheRootDir = Path.Combine(Application.persistentDataPath, _offlineCacheRoot, _offlineCacheDir, _cid, _pid, Application.version);
 		private readonly MD5 _md5 = MD5.Create();
 
-		private static string GetKey(string key, IAccessToken token, bool includeAuthHeader)
+		private string GetKey(string key, IAccessToken token, bool includeAuthHeader)
 		{
 			if (includeAuthHeader)
 			{
@@ -41,43 +45,42 @@ namespace Beamable.Api.Caches
 			}
 		}
 
-		public static Promise<T> Get<T>(string key, IAccessToken token, bool includeAuthHeader)
+		public Promise<T> Get<T>(string key, IAccessToken token, bool includeAuthHeader)
 		{
-			return _instance.Read<T>(_instance.GetHash(GetKey(key, token, includeAuthHeader)), $"url=[{key}], token=[{token.Token}]");
+			return Read<T>(GetHash(GetKey(key, token, includeAuthHeader)), $"url=[{key}], token=[{token.Token}]");
 			// .RecoverFromNoConnectivity(ex => throw new NoConnectivityException($"url=[{key}], token=[{token.Token}]\n{ex.Message}"));
 		}
 
-		public static void Set<T>(string key, T data, IAccessToken token, bool includeAuthHeader)
+		public void Set<T>(string key, T data, IAccessToken token, bool includeAuthHeader)
 		{
-			_instance.Update(_instance.GetHash(GetKey(key, token, includeAuthHeader)), data);
+			Update(GetHash(GetKey(key, token, includeAuthHeader)), data);
 		}
 
-		public static void Merge<TKey, TValue>(string key, IAccessToken token, Dictionary<long, Dictionary<TKey, TValue>> data)
+		public void Merge<TKey, TValue>(string key, IAccessToken token, Dictionary<long, Dictionary<TKey, TValue>> data)
 		{
-			_instance.Merge(key + token?.RefreshToken, data);
+			Merge(key + token?.RefreshToken, data);
 		}
 
-		public static bool Exists(string key, IAccessToken token, bool includeAuthHeader)
+		public bool Exists(string key, IAccessToken token, bool includeAuthHeader)
 		{
-			string actualKey = _instance.GetHash(GetKey(key, token, includeAuthHeader));
-			bool existsInCache =
-				_instance._offlineCacheData.ContainsKey(actualKey);
-			bool existsOnDisk = File.Exists(_instance.GetFullPathForKey(actualKey));
+			string actualKey = GetHash(GetKey(key, token, includeAuthHeader));
+			bool existsInCache = _offlineCacheData.ContainsKey(actualKey);
+			bool existsOnDisk = File.Exists(GetFullPathForKey(actualKey));
 
 			return existsInCache || existsOnDisk;
 		}
 
-		public static Promise<Dictionary<long, Dictionary<TKey, TValue>>> RecoverDictionary<TKey, TValue>(Exception ex, string key,
+		public Promise<Dictionary<long, Dictionary<TKey, TValue>>> RecoverDictionary<TKey, TValue>(Exception ex, string key,
 			IAccessToken token,
 			List<long> gamerTags)
 		{
-			return _instance.HandleDictionaryCase<TKey, TValue>(ex, key + token?.RefreshToken, gamerTags);
+			return HandleDictionaryCase<TKey, TValue>(ex, key + token?.RefreshToken, gamerTags);
 		}
 
 
-		public static void FlushInvalidCache()
+		public void FlushInvalidCache()
 		{
-			_instance.DeleteCache();
+			DeleteCache();
 		}
 
 		private void DeleteCache()

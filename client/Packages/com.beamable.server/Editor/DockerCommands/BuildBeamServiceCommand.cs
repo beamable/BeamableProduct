@@ -27,6 +27,7 @@ namespace Beamable.Server.Editor.DockerCommands
       {
          base.ModifyStartInfo(processStartInfo);
          processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] = MicroserviceConfiguration.Instance.DisableDockerBuildkit ? "0" : "1";
+         processStartInfo.EnvironmentVariables["BEAMABLE_MICROSERVICE_ARCH"] = MicroserviceConfiguration.Instance.GetCPUArchitecture(CPUArchitectureContext.LOCAL);
       }
 
       public override string GetCommandString()

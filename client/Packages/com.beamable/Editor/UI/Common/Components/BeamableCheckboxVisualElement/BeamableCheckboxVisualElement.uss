@@ -15,6 +15,10 @@ Button#checkboxButton{
     border-radius: 4px;
 }
 
+BeamableCheckboxVisualElement {
+    flex-shrink: 0;
+}
+
 #onNotifier {
     background-color:#0091FF;
     align-self: center;

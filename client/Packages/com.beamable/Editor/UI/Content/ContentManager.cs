@@ -23,7 +23,7 @@ namespace Beamable.Editor.Content
 			var de = BeamEditorContext.Default;
 			Model.ContentIO = de.ContentIO;
 
-			Model.UserCanPublish = de.CurrentUser?.CanPushContent ?? false;
+			Model.UserCanPublish = de.Permissions.CanPushContent;
 			de.OnUserChange -= HandleOnUserChanged;
 			de.OnUserChange += HandleOnUserChanged;
 
@@ -41,7 +41,8 @@ namespace Beamable.Editor.Content
 				RefreshServer();
 			};
 
-			Model.SetContentTypes(ContentRegistry.GetAll().ToList());
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			Model.SetContentTypes(contentTypeReflectionCache.GetAll().ToList());
 
 			ValidateContent(null, null); // start a validation in the background.
 
@@ -79,6 +80,7 @@ namespace Beamable.Editor.Content
 			var itemName = GET_NAME_FOR_NEW_CONTENT_FILE_BY_TYPE(itemType);
 			ContentObject content = ScriptableObject.CreateInstance(itemType) as ContentObject;
 			content.SetContentName(itemName);
+			content.LastChanged = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
 			Model.CreateItem(content);
 			return content;
@@ -192,7 +194,7 @@ namespace Beamable.Editor.Content
 
 		private void HandleOnUserChanged(EditorUser user)
 		{
-			Model.UserCanPublish = user?.CanPushContent ?? false;
+			Model.UserCanPublish = BeamEditorContext.Default.Permissions.CanPushContent;
 		}
 
 		public Promise<ContentPublishSet> CreatePublishSet(bool newNamespace = false)

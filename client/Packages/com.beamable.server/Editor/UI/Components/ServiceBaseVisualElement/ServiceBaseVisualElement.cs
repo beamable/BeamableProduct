@@ -331,10 +331,31 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mainParent.EnableInClassList("folded", Model.IsCollapsed);
 		}
 
-		public void ChangeStartButtonState(bool isOn, string enabledTooltip = "", string disabledTooltip = "")
+		public virtual void ChangeStartButtonState(bool isOn,
+										   string enabledTooltip = null,
+										   string disabledTooltip = null
+			)
 		{
-			_startButton.SetEnabled(isOn);
-			_startButton.tooltip = isOn ? enabledTooltip : disabledTooltip;
+			var isAuthorized = Context.IsAuthenticated && Context.RealmSecret.HasValue;
+			if (!isAuthorized)
+			{
+				_startButton.tooltip = Tooltips.Microservice.PLAY_NOT_LOGGED_IN;
+				_startButton.SetEnabled(false);
+
+			}
+			else if (!isOn)
+			{
+				_startButton.tooltip = disabledTooltip ?? Tooltips.Microservice.PLAY_DISABLED_GENERAL;
+				_startButton.SetEnabled(false);
+			}
+			else
+			{
+				_startButton.tooltip = enabledTooltip ?? (
+						Model.IsRunning
+							? Tooltips.Microservice.STOP_SERVICE_GENERAL
+							: Tooltips.Microservice.PLAY_MICROSERVICE);
+				_startButton.SetEnabled(true);
+			}
 		}
 	}
 }

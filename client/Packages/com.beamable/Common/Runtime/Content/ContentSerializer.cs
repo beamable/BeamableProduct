@@ -171,235 +171,224 @@ namespace Beamable.Common.Content
 
 					return Json.Serialize(dict, new StringBuilder());
 			}
-
 		}
-
 
 		protected object DeserializeResult(object preParsedValue, Type type)
 		{
-
-			try
+			if (typeof(Optional).IsAssignableFrom(type))
 			{
-				if (typeof(Optional).IsAssignableFrom(type))
+				var optional = (Optional)Activator.CreateInstance(type);
+
+				if (preParsedValue == null)
 				{
-					var optional = (Optional)Activator.CreateInstance(type);
-
-					if (preParsedValue == null)
-					{
-						optional.HasValue = false;
-					}
-					else
-					{
-						var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
-						optional.SetValue(value);
-					}
-
-					return optional;
+					optional.HasValue = false;
+				}
+				else
+				{
+					var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
+					optional.SetValue(value);
 				}
 
-				//if (typeof(IContentLink).IsAssignableFrom())
+				return optional;
+			}
+
+			//if (typeof(IContentLink).IsAssignableFrom())
 
 
-				var json = Json.Serialize(preParsedValue, new StringBuilder());
+			var json = Json.Serialize(preParsedValue, new StringBuilder());
 
-				if (typeof(Unit).IsAssignableFrom(type))
+			if (typeof(Unit).IsAssignableFrom(type))
+			{
+				return PromiseBase.Unit;
+			}
+
+			bool TryGetElementType(IList list, Type baseType, out Type elementType)
+			{
+
+				var hasMatchingType = baseType.GenericTypeArguments.Length == 1;
+				if (hasMatchingType)
 				{
-					return PromiseBase.Unit;
+					elementType = baseType.GenericTypeArguments[0];
+					return true;
 				}
 
-				bool TryGetElementType(IList list, Type baseType, out Type elementType)
+				var hasBaseType = baseType.BaseType != typeof(Object);
+				if (hasBaseType)
 				{
-
-					var hasMatchingType = baseType.GenericTypeArguments.Length == 1;
-					if (hasMatchingType)
-					{
-						elementType = baseType.GenericTypeArguments[0];
-						return true;
-					}
-
-					var hasBaseType = baseType.BaseType != typeof(Object);
-					if (hasBaseType)
-					{
-						return TryGetElementType(list, baseType.BaseType, out elementType);
-					}
-
-					if (list.Count > 0)
-					{
-						var elemType = list[0].GetType();
-						elementType = elemType;
-						return true;
-					}
-					else
-					{
-						elementType = null;
-						return true;
-					}
+					return TryGetElementType(list, baseType.BaseType, out elementType);
 				}
 
-				IContentRef contentRef;
-				IContentLink contentLink;
-				switch (preParsedValue)
+				if (list.Count > 0)
 				{
-					case null:
-						return null;
-
-					/* REFERENCE TYPES */
-					case ArrayDict linkDict when typeof(IContentLink).IsAssignableFrom(type):
-						contentLink = (IContentLink)Activator.CreateInstance(type);
-						object linkId = "";
-						linkDict.TryGetValue("id", out linkId);
-						contentLink.SetId(linkId?.ToString() ?? "");
-						contentLink.OnCreated();
-						return contentLink;
-					case ArrayDict referenceDict when typeof(IContentRef).IsAssignableFrom(type):
-						contentRef = (IContentRef)Activator.CreateInstance(type);
-						object id = "";
-						referenceDict.TryGetValue("id", out id);
-						contentRef.SetId(id?.ToString() ?? "");
-						return contentRef;
-					case string linkString when typeof(IContentLink).IsAssignableFrom(type):
-						contentLink = (IContentLink)Activator.CreateInstance(type);
-						contentLink.SetId(linkString ?? "");
-						contentLink.OnCreated();
-						return contentLink;
-					case string refString when typeof(IContentRef).IsAssignableFrom(type):
-						contentRef = (IContentRef)Activator.CreateInstance(type);
-						contentRef.SetId(refString ?? "");
-						return contentRef;
-
-					/* PRIMITIVES TYPES */
-					case string enumValue when typeof(Enum).IsAssignableFrom(type):
-						return Enum.Parse(type, enumValue);
-					case string _:
-						return preParsedValue;
-					case float _:
-						return Convert.ChangeType(float.Parse(json, CultureInfo.InvariantCulture), type);
-					case long _:
-						return Convert.ChangeType(long.Parse(json, CultureInfo.InvariantCulture), type);
-					case double _:
-						return Convert.ChangeType(double.Parse(json, CultureInfo.InvariantCulture), type);
-					case bool _:
-						return Convert.ChangeType(bool.Parse(json), type);
-					case int _:
-						if (type == typeof(Char))
-							return (char)int.Parse(json, CultureInfo.InvariantCulture);
-						return Convert.ChangeType(int.Parse(json, CultureInfo.InvariantCulture), type);
-
-
-					case ArrayDict dictionary when typeof(IDictionaryWithValue).IsAssignableFrom(type):
-
-						IList GetList(string fieldName, Type t, object ins)
-						{
-							if (t == typeof(object)) return null;
-							var field = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-							if (field == null)
-							{
-								return GetList(fieldName, t.BaseType, ins);
-							}
-							return (IList)field.GetValue(ins);
-						}
-
-						var dictInst = (IDictionaryWithValue)Activator.CreateInstance(type);
-
-						foreach (var kvp in dictionary)
-						{
-							var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType);
-							dictInst.Add(kvp.Key, convertedValue);
-						}
-
-						return dictInst;
-					case IList list when type.IsArray:
-						var output = (IList)Activator.CreateInstance(type, new object[] { list.Count });
-						var fieldType = type.GetElementType();
-						for (var index = 0; index < list.Count; index++)
-						{
-							output[index] = DeserializeResult(list[index], fieldType);
-						}
-
-						return output;
-
-					case IList list when TryGetElementType(list, type, out var listElementType):
-
-						var countConstructor = type.GetConstructor(new[] { typeof(int) });
-						var hasCountConstructor = countConstructor != null;
-
-						var listInstance = hasCountConstructor
-						   ? Activator.CreateInstance(type, list.Count)
-						   : Activator.CreateInstance(type);
-						var outputList = (IList)listInstance;
-						if (list.Count > 0 && listElementType == null)
-							throw new Exception($"Unable to deserialize list element type. {type}");
-						foreach (var elem in list)
-						{
-							var elemValue = DeserializeResult(elem, listElementType);
-							outputList.Add(elemValue);
-						}
-
-						return outputList;
-
-
-
-
-
-					case ArrayDict assetDict when typeof(AssetReference).IsAssignableFrom(type):
-						object guid = "";
-						assetDict.TryGetValue("referenceKey", out guid);
-						var assetRef = (AssetReference)Activator.CreateInstance(type, guid);
-						if (assetDict.TryGetValue("subObjectName", out var subKey))
-						{
-							assetRef.SubObjectName = subKey.ToString();
-						}
-
-						return assetRef;
-
-
-					case ArrayDict dict:
-
-						var fields = GetFieldInfos(type);
-						var instance = Activator.CreateInstance(type);
-						foreach (var field in fields)
-						{
-							object fieldValue = null;
-							if (dict.TryGetValue(field.SerializedName, out var property))
-							{
-								fieldValue = DeserializeResult(property, field.FieldType);
-							}
-							else
-							{
-								// check for the formerly serialized options...
-								var foundFormerly = false;
-								for (var i = 0; i < field.FormerlySerializedAs.Length; i++)
-								{
-									if (dict.TryGetValue(field.FormerlySerializedAs[i], out property))
-									{
-										// we found the field!!!
-										foundFormerly = true;
-										fieldValue = DeserializeResult(property, field.FieldType);
-										break;
-									}
-								}
-
-								if (!foundFormerly)
-								{
-									fieldValue = DeserializeResult(null, field.FieldType);
-								}
-							}
-
-							field.SetValue(instance, fieldValue);
-
-						}
-
-						return instance;
-					default:
-						throw new Exception($"Cannot deserialize type [{type.Name}]");
+					var elemType = list[0].GetType();
+					elementType = elemType;
+					return true;
+				}
+				else
+				{
+					elementType = null;
+					return true;
 				}
 			}
-			catch (Exception)
+
+			IContentRef contentRef;
+			IContentLink contentLink;
+			switch (preParsedValue)
 			{
-				Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{preParsedValue}]");
-				throw;
+				case null:
+					return null;
+
+				/* REFERENCE TYPES */
+				case ArrayDict linkDict when typeof(IContentLink).IsAssignableFrom(type):
+					contentLink = (IContentLink)Activator.CreateInstance(type);
+					object linkId = "";
+					linkDict.TryGetValue("id", out linkId);
+					contentLink.SetId(linkId?.ToString() ?? "");
+					contentLink.OnCreated();
+					return contentLink;
+				case ArrayDict referenceDict when typeof(IContentRef).IsAssignableFrom(type):
+					contentRef = (IContentRef)Activator.CreateInstance(type);
+					object id = "";
+					referenceDict.TryGetValue("id", out id);
+					contentRef.SetId(id?.ToString() ?? "");
+					return contentRef;
+				case string linkString when typeof(IContentLink).IsAssignableFrom(type):
+					contentLink = (IContentLink)Activator.CreateInstance(type);
+					contentLink.SetId(linkString ?? "");
+					contentLink.OnCreated();
+					return contentLink;
+				case string refString when typeof(IContentRef).IsAssignableFrom(type):
+					contentRef = (IContentRef)Activator.CreateInstance(type);
+					contentRef.SetId(refString ?? "");
+					return contentRef;
+
+				/* PRIMITIVES TYPES */
+				case string enumValue when typeof(Enum).IsAssignableFrom(type):
+					return Enum.Parse(type, enumValue);
+				case string _:
+					return preParsedValue;
+				case float _:
+					return Convert.ChangeType(float.Parse(json, CultureInfo.InvariantCulture), type);
+				case long _:
+					return Convert.ChangeType(long.Parse(json, CultureInfo.InvariantCulture), type);
+				case double _:
+					return Convert.ChangeType(double.Parse(json, CultureInfo.InvariantCulture), type);
+				case bool _:
+					return Convert.ChangeType(bool.Parse(json), type);
+				case int _:
+					if (type == typeof(Char))
+						return (char)int.Parse(json, CultureInfo.InvariantCulture);
+					return Convert.ChangeType(int.Parse(json, CultureInfo.InvariantCulture), type);
+
+
+				case ArrayDict dictionary when typeof(IDictionaryWithValue).IsAssignableFrom(type):
+
+					IList GetList(string fieldName, Type t, object ins)
+					{
+						if (t == typeof(object)) return null;
+						var field = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+						if (field == null)
+						{
+							return GetList(fieldName, t.BaseType, ins);
+						}
+						return (IList)field.GetValue(ins);
+					}
+
+					var dictInst = (IDictionaryWithValue)Activator.CreateInstance(type);
+
+					foreach (var kvp in dictionary)
+					{
+						var convertedValue = DeserializeResult(kvp.Value, dictInst.ValueType);
+						dictInst.Add(kvp.Key, convertedValue);
+					}
+
+					return dictInst;
+				case IList list when type.IsArray:
+					var output = (IList)Activator.CreateInstance(type, new object[] { list.Count });
+					var fieldType = type.GetElementType();
+					for (var index = 0; index < list.Count; index++)
+					{
+						output[index] = DeserializeResult(list[index], fieldType);
+					}
+
+					return output;
+
+				case IList list when TryGetElementType(list, type, out var listElementType):
+
+					var countConstructor = type.GetConstructor(new[] { typeof(int) });
+					var hasCountConstructor = countConstructor != null;
+
+					var listInstance = hasCountConstructor
+					   ? Activator.CreateInstance(type, list.Count)
+					   : Activator.CreateInstance(type);
+					var outputList = (IList)listInstance;
+					if (list.Count > 0 && listElementType == null)
+					{
+						throw new Exception($"Unable to deserialize list element type. {type}");
+					}
+
+					foreach (var elem in list)
+					{
+						var elemValue = DeserializeResult(elem, listElementType);
+						outputList.Add(elemValue);
+					}
+
+					return outputList;
+
+				case ArrayDict assetDict when typeof(AssetReference).IsAssignableFrom(type):
+					object guid = "";
+					assetDict.TryGetValue("referenceKey", out guid);
+					var assetRef = (AssetReference)Activator.CreateInstance(type, guid);
+					if (assetDict.TryGetValue("subObjectName", out var subKey))
+					{
+						assetRef.SubObjectName = subKey.ToString();
+					}
+
+					return assetRef;
+
+
+				case ArrayDict dict:
+
+					var fields = GetFieldInfos(type);
+					var instance = Activator.CreateInstance(type);
+					foreach (var field in fields)
+					{
+						object fieldValue = null;
+						if (dict.TryGetValue(field.SerializedName, out var property))
+						{
+							fieldValue = DeserializeResult(property, field.FieldType);
+						}
+						else
+						{
+							// check for the formerly serialized options...
+							var foundFormerly = false;
+							for (var i = 0; i < field.FormerlySerializedAs.Length; i++)
+							{
+								if (dict.TryGetValue(field.FormerlySerializedAs[i], out property))
+								{
+									// we found the field!!!
+									foundFormerly = true;
+									fieldValue = DeserializeResult(property, field.FieldType);
+									break;
+								}
+							}
+
+							if (!foundFormerly)
+							{
+								fieldValue = DeserializeResult(null, field.FieldType);
+							}
+						}
+
+						field.SetValue(instance, fieldValue);
+
+					}
+
+					return instance;
+				default:
+					throw new Exception($"Cannot deserialize type [{type.Name}]");
 			}
 		}
+
 		private List<FieldInfoWrapper> GetFieldInfos(Type type)
 		{
 			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
@@ -409,6 +398,10 @@ namespace Beamable.Common.Content
 				if (attr != null && !string.IsNullOrEmpty(attr.SerializedName))
 				{
 					wrapper.SerializedName = attr.SerializedName;
+				}
+				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
+				{
+					wrapper.SerializedName = field.Name.Split('>')[0].Substring(1);
 				}
 				else
 				{
@@ -571,24 +564,24 @@ namespace Beamable.Common.Content
 
 
 		protected abstract TContent CreateInstance<TContent>() where TContent : TContentBase, IContentObject, new();
-		public TContentBase DeserializeByType(string json, Type contentType)
+		public TContentBase DeserializeByType(string json, Type contentType, bool disableExceptions = false)
 		{
 			return (TContentBase)GetType()
 			   .GetMethod(nameof(Deserialize))
 			   .MakeGenericMethod(contentType)
-			   .Invoke(this, new[] { json });
+			   .Invoke(this, new object[] { json, disableExceptions });
 		}
-		public TContent Deserialize<TContent>(string json)
+		public TContent Deserialize<TContent>(string json, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 			if (root == null) throw new ContentDeserializationException(json);
 
-			return ConvertItem<TContent>(root);
+			return ConvertItem<TContent>(root, disableExceptions);
 		}
 
-		public TContent ConvertItem<TContent>(ArrayDict root)
+		public TContent ConvertItem<TContent>(ArrayDict root, bool disableExceptions = false)
 		   where TContent : TContentBase, IContentObject, new()
 		{
 			var instance = CreateInstance<TContent>();
@@ -599,13 +592,13 @@ namespace Beamable.Common.Content
 			// the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
 			var typeName = "";
 
-			var type = ContentRegistry.GetTypeFromId(id);
-			if (!ContentRegistry.TryGetName(type, out typeName))
+			var type = ContentTypeReflectionCache.Instance.GetTypeFromId(id);
+			if (!ContentTypeReflectionCache.Instance.TryGetName(type, out typeName))
 			{
-				typeName = ContentRegistry.GetTypeNameFromId(id);
+				typeName = ContentTypeReflectionCache.GetTypeNameFromId(id);
 			}
 
-			var name = ContentRegistry.GetContentNameFromId(id);
+			var name = ContentTypeReflectionCache.GetContentNameFromId(id);
 			id = string.Join(".", typeName, name);
 
 			var version = root["version"];
@@ -650,10 +643,27 @@ namespace Beamable.Common.Content
 				{
 					if (propertyDict.TryGetValue("data", out var dataValue))
 					{
-						var hackResult = DeserializeResult(dataValue, field.FieldType);
-						field.SetValue(instance, hackResult);
-						if (hackResult is ISerializationCallbackReceiver rec && !(hackResult is IIgnoreSerializationCallbacks))
-							rec.OnAfterDeserialize();
+						try
+						{
+							var hackResult = DeserializeResult(dataValue, field.FieldType);
+							field.SetValue(instance, hackResult);
+							if (hackResult is ISerializationCallbackReceiver rec &&
+								!(hackResult is IIgnoreSerializationCallbacks))
+								rec.OnAfterDeserialize();
+						}
+						catch (Exception e)
+						{
+							if (!disableExceptions)
+							{
+								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{dataValue}]");
+								throw;
+							}
+							else
+							{
+								instance.ContentException = new ContentCorruptedException(e.Message);
+								Debug.LogError($"[{name}] file is corrupted. Repair content before publish. Failed to deserialize field. type=[{type.Name}] exception=[{e.Message}]");
+							}
+						}
 					}
 
 					if (propertyDict.TryGetValue("$link", out var linkValue) || propertyDict.TryGetValue("link", out linkValue))

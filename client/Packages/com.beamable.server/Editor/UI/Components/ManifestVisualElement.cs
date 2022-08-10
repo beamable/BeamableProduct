@@ -97,6 +97,7 @@ namespace Beamable.Server.Editor.UI.Components
 		string Comment { get; set; }
 		bool Enabled { get; set; }
 		string TemplateId { get; set; }
+		bool Archived { get; set; }
 	}
 
 	public class ManifestEntryModel : IEntryModel
@@ -109,8 +110,14 @@ namespace Beamable.Server.Editor.UI.Components
 
 		public bool Enabled
 		{
-			get => _enabled;
+			get => _enabled && !_archived;
 			set => SetEnabled(value);
+		}
+
+		public bool Archived
+		{
+			get => _archived;
+			set => SetArchived(value);
 		}
 
 		public string TemplateId
@@ -134,6 +141,15 @@ namespace Beamable.Server.Editor.UI.Components
 			_enabled = enabled;
 			var service = MicroserviceConfiguration.Instance.GetEntry(Name);
 			service.Enabled = enabled;
+		}
+
+		private bool _archived;
+
+		private void SetArchived(bool archived)
+		{
+			_archived = archived;
+			var service = MicroserviceConfiguration.Instance.GetEntry(Name);
+			service.Archived = _archived;
 		}
 
 		public List<ServiceDependency> Dependencies;
@@ -147,8 +163,14 @@ namespace Beamable.Server.Editor.UI.Components
 
 		public bool Enabled
 		{
-			get => _enabled;
+			get => _enabled && !_archived;
 			set => SetEnabled(value);
+		}
+
+		public bool Archived
+		{
+			get => _archived;
+			set => SetArchived(value);
 		}
 
 		public string TemplateId
@@ -172,6 +194,14 @@ namespace Beamable.Server.Editor.UI.Components
 			_enabled = enabled;
 			var service = MicroserviceConfiguration.Instance.GetStorageEntry(Name);
 			service.Enabled = enabled;
+		}
+
+		private bool _archived;
+		private void SetArchived(bool archived)
+		{
+			_archived = archived;
+			var service = MicroserviceConfiguration.Instance.GetStorageEntry(Name);
+			service.Archived = _archived;
 		}
 	}
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using microservice.Common;
 using static Beamable.Common.Constants.Features.Content;
@@ -86,6 +87,24 @@ namespace Beamable.Server.Content
       }
    }
 
+   public class UnreliableContentService : ContentService
+   {
+	   public UnreliableContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache) : base(requester, socket, contentResolver, reflectionCache)
+	   {
+	   }
+
+	   public override Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
+	   {
+		   BeamableLogger.LogWarning("The content=[{contentId}] may be unreliable. When the Microservice's {attributeName} " +
+		                             "is enabled, the Microservice will never receive content updates. " +
+		                             "This means that you may resolve content, but after the first time you do so, " +
+		                             "the content will never ever change until the Microservice instance stops and restarts. " +
+		                             "It is highly recommend that you do not use the Content service at all when the configuration is set.",
+			   contentId, nameof(MicroserviceAttribute.DisableAllBeamableEvents));
+		   return base.GetContent(contentId, contentType, manifestID);
+	   }
+   }
+
    public class ContentService : IMicroserviceContentApi
    {
       private readonly MicroserviceRequester _requester;
@@ -99,19 +118,21 @@ namespace Beamable.Server.Content
 
       private readonly Cache<ContentCacheKey, IContentObject> _contentCache;
       private readonly object _manifestLock = new object();
+      private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
 
-      public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver)
+      public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
       {
          _contentCache = new Cache<ContentCacheKey, IContentObject>(CacheResolver);
          _requester = requester;
          _socket = socket;
          _contentResolver = contentResolver;
+         _contentTypeReflectionCache = reflectionCache.GetFirstSystemOfType<ContentTypeReflectionCache>();
       }
 
       private async Task<IContentObject> CacheResolver(ContentCacheKey key)
       {
          var json = await _contentResolver.RequestContent(key.Uri);
-         var referencedType = ContentRegistry.GetTypeFromId(key.Id);
+         var referencedType = _contentTypeReflectionCache.GetTypeFromId(key.Id);
          var content = _serializer.DeserializeByType(json, referencedType);
          return content;
       }
@@ -133,7 +154,7 @@ namespace Beamable.Server.Content
 
       public void Init()
       {
-         _socket.Subscribe<ContentManifestEvent>("content.manifest", HandleContentPublish);
+         _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
       }
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)
@@ -217,7 +238,7 @@ namespace Beamable.Server.Content
          return Resolve(reference);
       }
 
-      public Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
+      public virtual Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
       {
          return WaitForManifest().FlatMap(_ =>
          {
@@ -232,13 +253,13 @@ namespace Beamable.Server.Content
 
       public Promise<IContentObject> GetContent(string contentId, string manifestID = "")
       {
-         var referencedType = ContentRegistry.GetTypeFromId(contentId);
+         var referencedType = _contentTypeReflectionCache.GetTypeFromId(contentId);
          return GetContent(contentId, referencedType);
       }
 
       public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
       {
-         var referencedType = ContentRegistry.GetTypeFromId(reference.GetId());
+         var referencedType = _contentTypeReflectionCache.GetTypeFromId(reference.GetId());
          return GetContent(reference.GetId(), referencedType);
       }
 

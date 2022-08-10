@@ -46,8 +46,8 @@ namespace Beamable.Server.Generator
 		public const string PARAMETER_STRING = "Parameter";
 		public const string CLIENT_NAMESPACE = "Beamable.Server.Clients";
 
-		private string ExtensionClassToFind => $"internal class {TargetExtensionClassName}";
-		private string ExtensionClassToReplace => $"internal static class {TargetExtensionClassName}";
+		private string ExtensionClassToFind => $"public class {TargetExtensionClassName}";
+		private string ExtensionClassToReplace => $"public static class {TargetExtensionClassName}";
 
 		public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
 			$"MicroserviceParameters{descriptor.Name}Client";
@@ -98,7 +98,7 @@ namespace Beamable.Server.Generator
 
 			extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);
 			extensionClass.IsClass = true;
-			extensionClass.TypeAttributes = TypeAttributes.NotPublic;
+			extensionClass.TypeAttributes = TypeAttributes.Public;
 			extensionClass.CustomAttributes = new CodeAttributeDeclarationCollection
 			{
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(BeamContextSystemAttribute)))

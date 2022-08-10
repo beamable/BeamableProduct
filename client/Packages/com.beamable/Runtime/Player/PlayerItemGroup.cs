@@ -9,6 +9,7 @@ using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Beamable.Player
 {
@@ -80,6 +81,11 @@ namespace Beamable.Player
 		public long UpdatedAt;
 
 		/// <summary>
+		/// A hash of the <see cref="ContentId"/> and the <see cref="ItemId"/> that can be used for fast identity checking.
+		/// </summary>
+		public int UniqueCode;
+
+		/// <summary>
 		/// A set of instance level property data for the item.
 		/// </summary>
 		public SerializableDictionaryStringToString Properties = new SerializableDictionaryStringToString();
@@ -95,11 +101,22 @@ namespace Beamable.Player
 		/// </summary>
 		public event Action OnDeleted;
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static int CombineHashCodes(int h1, int h2)
+		{
+			return (((h1 << 5) + h1) ^ h2);
+		}
+
 		internal void TriggerUpdate(InventoryObject<ItemContent> item)
 		{
 			CreatedAt = item.CreatedAt;
 			UpdatedAt = item.UpdatedAt;
-			Properties = new SerializableDictionaryStringToString(item.Properties);
+			UniqueCode = item.UniqueCode;
+			Properties.Clear();
+			foreach (var kvp in item.Properties)
+			{
+				Properties[kvp.Key] = kvp.Value;
+			}
 			Content = item.ItemContent;
 			TriggerUpdate();
 		}
@@ -108,10 +125,16 @@ namespace Beamable.Player
 
 		public override int GetBroadcastChecksum()
 		{
-			// TODO: XXX: There must be a better way to implement this nonsense.
-			var propertiesBroadcastCode = Properties.Select(x => $"{x.Key}:{x.Value}").ToList();
-			propertiesBroadcastCode.Sort();
-			return $"{ContentId}-{ItemId}-{CreatedAt}-{UpdatedAt}-{string.Join(",", propertiesBroadcastCode)}".GetHashCode();
+			var hash = 0;
+			foreach (var kvp in Properties)
+			{
+				hash = CombineHashCodes(hash, kvp.Key.GetHashCode());
+				hash = CombineHashCodes(hash, kvp.Value.GetHashCode());
+			}
+
+			hash = CombineHashCodes(hash, UpdatedAt.GetHashCode());
+			// we don't need to care about the content id, item id, or created at, because logically, they should never change.
+			return hash;
 		}
 
 		internal void TriggerDeletion()
@@ -147,17 +170,52 @@ namespace Beamable.Player
 			var _ = Refresh();
 		}
 
+		/// <summary>
+		/// The inventory group contains some set of items based on the <see cref="ItemRef"/> that was given to the constructor.
+		/// Use this method to check if some scope is part of the group. A scope that is more specific than the group scope, belongs
+		/// to the group.
+		/// For example, if the group scope is "items.X", then the following scopes BELONG
+		/// - "items.X"
+		/// - "items.X.Y",
+		/// - "items.X.Y.Z"
+		/// And the following scopes DO NOT BELONG
+		/// - "items.Y"
+		/// - "items"
+		/// - "items.XY"
+		/// </summary>
+		/// <param name="scope"></param>
+		/// <returns></returns>
+		public bool IsScopePartOfGroup(string scope)
+		{
+			if (string.IsNullOrEmpty(scope)) return false;
+
+			var isPrefix = scope.StartsWith(_rootRef.Id);
+			if (!isPrefix) return false; // the given scope needs to be at least be a prefix-match
+
+			var hasMore = scope.Length > _rootRef.Id.Length;
+			if (!hasMore) return true; // and if its exactly equal, thats fine
+
+			var nextIsDot = scope[_rootRef.Id.Length + 1] == '.';
+			return nextIsDot; // but if it has more characters, than the next character MUST be a new sub type
+		}
+
+
 		protected override async Promise PerformRefresh()
 		{
 			await _platformService.OnReady;
 			var data = await _inventoryService.GetItems(_rootRef);
 
-			var next = new List<PlayerItem>();
+			var next = new List<PlayerItem>(data.Count);
 			var seen = new HashSet<PlayerItem>();
+
+			var map = new Dictionary<int, PlayerItem>(data.Count);
+			foreach (var item in this)
+			{
+				map[item.UniqueCode] = item;
+			}
 			foreach (var kvp in data)
 			{
-				var existing = this.FirstOrDefault(c => c.ContentId == kvp.ItemContent.Id && c.ItemId == kvp.Id);
-				if (existing != null)
+				if (map.TryGetValue(kvp.UniqueCode, out var existing))
 				{
 					next.Add(existing);
 					existing.TriggerUpdate(kvp);
@@ -167,6 +225,7 @@ namespace Beamable.Player
 				{
 					next.Add(new PlayerItem
 					{
+						UniqueCode = kvp.UniqueCode,
 						Content = kvp.ItemContent,
 						ContentId = kvp.ItemContent.Id,
 						CreatedAt = kvp.CreatedAt,

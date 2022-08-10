@@ -2,6 +2,7 @@ using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -34,7 +35,7 @@ namespace Beamable.Server.Editor.CodeGen
 			mainmethod.Name = "Main";
 			mainmethod.Parameters.Add(
 				new CodeParameterDeclarationExpression(typeof(string[]), "args"));
-			mainmethod.ReturnType = new CodeTypeReference(typeof(int));
+			mainmethod.ReturnType = new CodeTypeReference(typeof(Task<int>));
 
 			var baseType = new CodeTypeReference("global::Beamable.Server.CommandLine", new CodeTypeReference(descriptor.Type));
 			//var commandLineType = new CodeTypeReferenceExpression("global::Beamable.Server.CommandLine");

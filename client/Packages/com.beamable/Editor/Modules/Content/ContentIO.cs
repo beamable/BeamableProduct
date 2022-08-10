@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
+using Beamable.Common.Runtime;
 using Beamable.Content;
 using Beamable.Editor.Content.UI;
 using Beamable.Serialization;
@@ -176,6 +177,7 @@ namespace Beamable.Editor.Content
 	{
 		public ContentManager ContentManager => _contentManager ?? (_contentManager = new ContentManager());
 		private ContentManager _contentManager;
+		private ContentTypeReflectionCache _contentTypeReflectionCache;
 
 		private readonly IBeamableRequester _requester;
 		private Promise<Manifest> _manifestPromise;
@@ -201,6 +203,7 @@ namespace Beamable.Editor.Content
 
 			OnContentCreated += Internal_HandleContentCreated;
 			OnContentDeleted += Internal_HandleContentDeleted;
+			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 		}
 
 		[RuntimeInitializeOnLoadMethod]
@@ -459,7 +462,7 @@ namespace Beamable.Editor.Content
 			var assetGuids = BeamableAssetDatabase.FindAssets<TContent>(
 				new[] { Directories.DATA_DIR }
 			);
-			var contentType = ContentRegistry.TypeToName(typeof(TContent));
+			var contentType = _contentTypeReflectionCache.TypeToName(typeof(TContent));
 
 			foreach (var guid in assetGuids)
 			{
@@ -524,13 +527,13 @@ namespace Beamable.Editor.Content
 				return localManifest;
 			}
 
-			foreach (var contentType in ContentRegistry.GetContentTypes()) // TODO check hierarchy types.
+			foreach (var contentType in _contentTypeReflectionCache.GetContentTypes()) // TODO check hierarchy types.
 			{
 				var assetGuids = BeamableAssetDatabase.FindAssets(
 					contentType,
 					new[] { Directories.DATA_DIR }
 				);
-				var typeName = ContentRegistry.TypeToName(contentType);
+				var typeName = _contentTypeReflectionCache.TypeToName(contentType);
 
 				foreach (var assetGuid in assetGuids)
 				{
@@ -564,12 +567,12 @@ namespace Beamable.Editor.Content
 
 		public IEnumerable<Type> GetContentTypes()
 		{
-			return ContentRegistry.GetContentTypes();
+			return _contentTypeReflectionCache.GetContentTypes();
 		}
 
 		public IEnumerable<string> GetContentClassIds()
 		{
-			return ContentRegistry.GetContentClassIds();
+			return _contentTypeReflectionCache.GetContentClassIds();
 		}
 
 		public ContentObject LoadContent(LocalContentManifestEntry manifestEntry)
@@ -636,7 +639,7 @@ namespace Beamable.Editor.Content
 
 		public string GetAssetPathByType(Type contentType, IContentObject content)
 		{
-			foreach (var nextContentType in ContentRegistry.GetContentTypes()) // TODO check heirarchy types.
+			foreach (var nextContentType in _contentTypeReflectionCache.GetContentTypes()) // TODO check heirarchy types.
 			{
 				var assetGuids = BeamableAssetDatabase.FindAssets(
 					nextContentType,

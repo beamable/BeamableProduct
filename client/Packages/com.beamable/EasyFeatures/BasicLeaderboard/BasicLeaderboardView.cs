@@ -53,6 +53,15 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 		{
 			var currentContext = managedPlayers.GetSinglePlayerContext();
 			var system = currentContext.ServiceProvider.GetService<ILeaderboardDeps>();
+
+			// If there are no players in this leaderboard yet --- simply finish loading.
+			if (system.Ranks.Count == 0)
+			{
+				CurrentUserRankEntry.LoadingIndicator.Toggle(false);
+				RankEntries.LoadingIndicator.Toggle(false);
+				return;
+			}
+
 			Debug.Log($"Player Id: {currentContext.PlayerId} => Rank: {system.PlayerRank} / Score: {system.PlayerScore} ");
 
 			if (BackButton != null)
@@ -72,7 +81,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 				CurrentUserRankEntry.LoadingIndicator.Toggle(true);
 				RankEntries.ClearPooledRankedEntries();
 
-				RankEntries.Enrich(system.Entries);
+				RankEntries.Enrich(system.Entries, system.PlayerRank);
 				RankEntries.RebuildPooledRankEntries();
 
 				CurrentUserRankEntry.Enrich(system.PlayerAlias, system.PlayerAvatar, system.PlayerRank, system.PlayerScore, system.PlayerRank);

@@ -16,6 +16,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.Events;
 using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Inventory;
@@ -27,6 +28,7 @@ using Beamable.Server.Api.Tournament;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
+using Beamable.Server.Content;
 using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -70,9 +72,17 @@ namespace Beamable.Server
       public string result;
    }
 
-   public class MicroserviceProviderRequest
+   public class MicroserviceServiceProviderRequest
    {
-      public string name, type;
+	   public string type = "basic";
+	   public string name;
+   }
+
+   public class MicroserviceEventProviderRequest
+   {
+	   public string type = "event";
+	   public string[] evtWhitelist;
+	   public string name; // We can remove this field after the platform no longer needs it. Maybe mid August 2022?
    }
 
    public class MicroserviceProviderResponse
@@ -132,6 +142,8 @@ namespace Beamable.Server
 
       public bool HasInitialized { get; private set; }
 
+      public ReflectionCache _reflectionCache;
+
       private IMicroserviceArgs _args;
       private MongoSerializationService _mongoSerializationService;
       private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
@@ -186,7 +198,7 @@ namespace Beamable.Server
          }
 
          _args = args.Copy();
-         Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
+         Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
 
 
 
@@ -195,12 +207,28 @@ namespace Beamable.Server
 
          RebuildRouteTable();
 
+         _reflectionCache = new ReflectionCache();
+         var contentTypeReflectionCache = new ContentTypeReflectionCache();
+         _reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
+         _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+         _reflectionCache.SetStorage(new BeamHintGlobalStorage());
+
+         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
+                                                                                  !asm.GetName().Name.StartsWith("nunit.") &&
+                                                                                  !asm.GetName().Name.StartsWith("JetBrains.") &&
+                                                                                  !asm.GetName().Name.StartsWith("Microsoft.") &&
+                                                                                  !asm.GetName().Name.StartsWith("Serilog."))
+            .Select(asm => asm.GetName().Name)
+            .ToList();
+         Log.Debug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
+         _reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
+
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
 
-         _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver);
+         _contentService = CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
@@ -221,8 +249,14 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         var setupWebsocketTask = SetupWebsocket(socket);
-         setupWebsocketTask.Wait();
+         await SetupWebsocket(socket);
+      }
+
+      private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
+      {
+	      return _serviceAttribute.DisableAllBeamableEvents
+		      ? new UnreliableContentService(requester, socket, contentResolver, reflectionCache)
+		      : new ContentService(requester, socket, contentResolver, reflectionCache);
       }
 
       public void RunForever()
@@ -347,14 +381,19 @@ namespace Beamable.Server
 	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization();
 
-            // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
-            // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
-            if (!_ranCustomUserInitializationHooks)
+            // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
+            // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
+            // TODO that will not boot correctly.
+            if (!_args.DisableCustomInitializationHooks)
             {
-               await ResolveCustomInitializationHook();
-               _ranCustomUserInitializationHooks = true;
+                // Custom Initialization hook for C#MS --- will terminate MS user-code throws.
+                // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
+                if (!_ranCustomUserInitializationHooks)
+                {
+                    await ResolveCustomInitializationHook();
+                    _ranCustomUserInitializationHooks = true;
+                }
             }
-
 
             await ProvideService(QualifiedName);
 
@@ -476,7 +515,7 @@ namespace Beamable.Server
          Log.Debug("starting ws connection");
          void Attempt()
          {
-            Log.Debug("connecting to ws... ");
+            Log.Debug($"connecting to ws ({Host}) ... ");
             var ws = _connectionProvider.Create(Host);
             ws.OnConnect(socket =>
             {
@@ -601,6 +640,8 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
                .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
+               .AddSingleton<IMicroserviceChatApi, MicroserviceChatApi>()
+               .AddSingleton<ReflectionCache>(_ => _reflectionCache)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
                .AddTransient<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
@@ -829,7 +870,8 @@ namespace Beamable.Server
             Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
             TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
             RealmConfig= provider.GetRequiredService<IMicroserviceRealmConfigService>(),
-            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>()
+            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
+            Chat = provider.GetRequiredService<IMicroserviceChatApi>()
          };
          return services;
       }
@@ -854,7 +896,8 @@ namespace Beamable.Server
             Tournament = new MicroserviceTournamentApi(stats, requester, ctx),
             TrialData = new MicroserviceCloudDataApi(requester, ctx),
             RealmConfig= new RealmConfigService(requester),
-            Commerce = new MicroserviceCommerceApi(requester)
+            Commerce = new MicroserviceCommerceApi(requester),
+            Chat = new MicroserviceChatApi(requester, ctx)
          };
 
          return services;
@@ -894,7 +937,7 @@ namespace Beamable.Server
 
       private Promise<Unit> ProvideService(string name)
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceServiceProviderRequest
          {
             type = "basic",
             name = name
@@ -903,16 +946,18 @@ namespace Beamable.Server
          {
             Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED);
          }).ToUnit();
-         var eventProvider = _requester.InitializeSubscription().Then(res =>
-         {
-            Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
-         }).ToUnit();
+         var eventProvider = _serviceAttribute.DisableAllBeamableEvents
+	         ? PromiseBase.SuccessfulUnit
+	         : _requester.InitializeSubscription().Then(res =>
+	         {
+		         Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
+	         }).ToUnit();
          return Promise.Sequence(serviceProvider, eventProvider).ToUnit();
       }
 
       private Promise<Unit> RemoveService(string name)
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceServiceProviderRequest
          {
             type = "basic",
             name = name

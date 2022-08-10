@@ -1,32 +1,23 @@
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
-using Beamable.Server.Content;
-using microserviceTests.microservice.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using System.Linq;
 using UnityEngine;
 
 namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTests
 {
    [TestFixture]
-   public class MethodSerializationTests
+   public class MethodSerializationTests : CommonTest
    {
-      [SetUp]
-      [TearDown]
-      public void ResetContentInstance()
-      {
-         ContentApi.Instance = new Promise<IContentApi>();
-      }
 
-      [Test]
+	   [Test]
       [NonParallelizable]
       public async Task Call_Array_Null()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -57,7 +48,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_Array_Empty()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -87,7 +78,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_Array_WithParams()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -117,7 +108,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MultipleArrays_BothNull()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -147,7 +138,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MultipleArrays_FirstNull()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -177,7 +168,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MultipleArrays_SecondNull()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -207,7 +198,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MultipleArrays()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -237,7 +228,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_PromiseMethod()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -267,7 +258,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_TypelessPromiseMethod()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -296,7 +287,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MethodWithJSON_AsParameter()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
 
          var req = new
@@ -341,7 +332,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MethodWithRegularString_AsParameter()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
 
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
@@ -372,7 +363,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task XYZ()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
 
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
@@ -405,7 +396,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MethodWithVector2Int_AsParameter()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
 
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
@@ -436,7 +427,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       [NonParallelizable]
       public async Task Call_MethodWithException()
       {
-         LoggingUtil.Init();
+
          TestSocket testSocket = null;
 
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
@@ -459,6 +450,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
+         allowErrorLogs = true;
+         Assert.AreEqual(1, GetBadLogs().Count());
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
    }

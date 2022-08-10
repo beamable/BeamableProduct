@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -104,7 +105,7 @@ namespace Beamable.UI.Buss
 		{
 			if (style == null)
 			{
-				BeamableLogger.LogWarning($"Style to copy can't be null");
+				BeamableLogger.LogWarning("Style to copy can't be null");
 				return;
 			}
 
@@ -117,7 +118,7 @@ namespace Beamable.UI.Buss
 
 			targetStyleSheet.Styles.Add(rule);
 #if UNITY_EDITOR
-			UnityEditor.AssetDatabase.SaveAssets();
+			AssetDatabase.SaveAssets();
 #endif
 			targetStyleSheet.TriggerChange();
 		}
@@ -126,9 +127,26 @@ namespace Beamable.UI.Buss
 		{
 			targetStyleSheet.RemoveStyle(style);
 #if UNITY_EDITOR
-			UnityEditor.AssetDatabase.SaveAssets();
+			AssetDatabase.SaveAssets();
 #endif
 			targetStyleSheet.TriggerChange();
+		}
+
+		public static void CreateNewStyleSheetWithInitialRules(string fileName, List<BussStyleRule> styles)
+		{
+			BussStyleSheet newStyleSheet = ScriptableObject.CreateInstance<BussStyleSheet>();
+
+			foreach (BussStyleRule styleRule in styles)
+			{
+				CopySingleStyle(newStyleSheet, styleRule);
+			}
+
+			BussConfiguration.OptionalInstance.Value.AddGlobalStyleSheet(newStyleSheet);
+
+#if UNITY_EDITOR
+			AssetDatabase.CreateAsset(newStyleSheet, $"Assets/Resources/{fileName}.asset");
+			AssetDatabase.SaveAssets();
+#endif
 		}
 	}
 }
