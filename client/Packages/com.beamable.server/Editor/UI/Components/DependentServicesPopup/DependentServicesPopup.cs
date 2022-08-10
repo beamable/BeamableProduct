@@ -67,7 +67,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{
 					continue;
 				}
-				
+
 				var newElement = new DependentServicesStorageObjectEntryVisualElement { Model = storageObjectModel };
 				newElement.Refresh();
 				newElement.SetEnabled(!storageObjectModel.IsArchived);
@@ -82,10 +82,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			foreach (var microserviceModel in MicroservicesDataModel.Instance.Services)
 			{
 				var dependentServices = GetDependentServices(microserviceModel);
-				
+
 				if (microserviceModel.IsArchived && !dependentServices.Any())
 					continue;
-				
+
 				var newElement = new DependentServicesMicroserviceEntryVisualElement(dependentServices, StorageObjectEntries.Keys) { Model = microserviceModel };
 				newElement.Refresh();
 				newElement.OnServiceRelationChanged += (storageObjectModel, isServiceRelation) => HandleServiceRelationChange(microserviceModel, storageObjectModel, isServiceRelation);
@@ -176,15 +176,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 			return serviceDependencies;
 		}
-		
+
 		private bool HasAnyDependentMicroservice(MongoStorageModel storageModel)
 		{
 			var assemblyDefinition = AssemblyDefinitionHelper.ConvertToAsset(storageModel.Descriptor);
-			
+
 			foreach (var microserviceModel in MicroservicesDataModel.Instance.Services)
 			{
 				var microserviceAssemblyDefinition = AssemblyDefinitionHelper.ConvertToInfo(microserviceModel.Descriptor);
-				
+
 				if (microserviceAssemblyDefinition.References.Contains(AssemblyDefinitionHelper.ConvertToInfo(assemblyDefinition).Name))
 				{
 					return true;
@@ -193,7 +193,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			return false;
 		}
-		
+
 		private Dictionary<MongoStorageModel, AssemblyDefinitionAsset> GetAllStorageObjectAssemblyDefinitionAssets()
 		{
 			var storageObjectAssemblyDefinitionsAssets = new Dictionary<MongoStorageModel, AssemblyDefinitionAsset>();

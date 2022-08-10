@@ -45,7 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				MicroserviceName.tooltip = Model.Name;
 			}
-			
+
 			MicroserviceName.text = microserviceName + (Model.IsArchived ? " (Archived)" : string.Empty);
 			DependentServices = new List<DependentServicesCheckboxVisualElement>(_visibleServices.Count());
 
@@ -60,7 +60,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_dependencyCheckboxes.Add(newElement);
 				DependentServices.Add(newElement);
 			}
-			
+
 			this.SetEnabled(!Model.IsArchived);
 		}
 		private void TriggerServiceRelationChanged(MongoStorageModel storageObjectModel, bool isServiceRelation)
