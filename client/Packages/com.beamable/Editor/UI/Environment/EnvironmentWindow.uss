@@ -1,5 +1,6 @@
 #_windowRoot {
     flex-grow: 1;
+    min-height: 500px;
 }
 #window-main {
     flex-direction: column;
@@ -31,7 +32,7 @@
 }
 
 #env-presets-label {
-    margin-top: 30px;
+    margin-top: 15px;
 }
 #env-presets {
     flex-direction: row;
@@ -42,9 +43,13 @@
     margin-top: 20px;
     align-items: stretch;
 }
+ScrollView {
+    flex-grow: 1;
+}
 #actionBtn PrimaryButtonVisualElement {
     flex-grow: 1;
     height: 35px;
+    min-height: 35px;
 }
 #actionBtn #cancel Button {
     width: initial;

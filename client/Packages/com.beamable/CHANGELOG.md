@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0]
 ### Added
 - `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
 - `BeamableDispatcher` for editor scenarios to manage registering callbacks on the Unity Editor thread without needing an editor render frame.
@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved some parts of the `ChatService` to Beamable.Common assembly
 - Changed namespace of `Beamable.Pooling.ClassPool` to `Beamable.Common.Pooling.ClassPool`
 - Account Management Flow will merge gamertags when existing login credential is detected, instead of always creating a new gamertag. This allows you to keep your gamertag on the realm. 
+- Improved performance of `PlayerInventory` sdk
 
 ### Fixed
 - Beamable button in Unity toolbar should be in correct position for production packages
@@ -41,18 +42,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BeamConsole accepts events after RESET command
 - Too many `EventSystem` components on startup
 - Fixed Beamable login error for archived & not existing realms
+- In Events and Listings schedule windows calendar buttons with days earlier than today can't be clicked
+- The `RankEntry` for current player is now mapped correctly in `LeaderBoardView` 
+
+## [1.2.10]
+no changes
+
+## [1.2.9]
+no changes
 
 ## [1.2.8]
 ### Added
-- SetLanguage function for IAuthApi
+- `SetLanguage` function for `IAuthApi`
 
 ### Changed
-- The Language field on the IPlatformRequester is no obsolete
+- The `Language` field on the `IPlatformRequester` is no obsolete
 - Beamable no longer sends "Accept-Language" headers
 
 ## [1.2.7]
 ### Changed
-- New players will now get a locale and a location stat based on the Unity Application.language field.
+- New players will now get a locale and a location stat based on the Unity `Application.language` field.
 
 ## [1.2.6]
 no changes

@@ -22,12 +22,16 @@ namespace Beamable.Editor.UI.SampleUtility
 			};
 		}
 
+#if BEAMABLE_DEVELOPER
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_SAMPLE,
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1
 		)]
+#endif
 		public static async void Init() => await GetFullyInitializedWindow();
-		public static async void Init(BeamEditorWindowInitConfig initParameters) => await GetFullyInitializedWindow(initParameters);
+
+		public static async void Init(BeamEditorWindowInitConfig initParameters) =>
+			await GetFullyInitializedWindow(initParameters);
 
 		private string currentTypeToAddOrRemove = "";
 		private HashSet<string> currentlySelectedTypes = new HashSet<string>();
@@ -44,7 +48,8 @@ namespace Beamable.Editor.UI.SampleUtility
 			var listOfPossibleTypes = registry.SampleTypesContainingDependencyFunctions.ToList();
 			listOfPossibleTypes.Add("");
 
-			var popup = new PopupField<string>("RegisterBeamableDependency in Samples", listOfPossibleTypes, currentTypeToAddOrRemove);
+			var popup = new PopupField<string>("RegisterBeamableDependency in Samples", listOfPossibleTypes,
+											   currentTypeToAddOrRemove);
 			popup.RegisterValueChangedCallback(evt => currentTypeToAddOrRemove = evt.newValue);
 
 			var addBtn = new Button(() =>
@@ -52,7 +57,8 @@ namespace Beamable.Editor.UI.SampleUtility
 				if (string.IsNullOrEmpty(currentTypeToAddOrRemove)) return;
 
 				currentlySelectedTypes.Add(currentTypeToAddOrRemove);
-				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS, string.Join(";", currentlySelectedTypes));
+				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS,
+									  string.Join(";", currentlySelectedTypes));
 
 				BuildWithContext(ActiveContext);
 			})
@@ -63,13 +69,15 @@ namespace Beamable.Editor.UI.SampleUtility
 				if (string.IsNullOrEmpty(currentTypeToAddOrRemove)) return;
 
 				currentlySelectedTypes.Remove(currentTypeToAddOrRemove);
-				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS, string.Join(";", currentlySelectedTypes));
+				EditorPrefs.SetString(Constants.EditorPrefKeys.ALLOWED_SAMPLES_REGISTER_FUNCTIONS,
+									  string.Join(";", currentlySelectedTypes));
 
 				BuildWithContext(ActiveContext);
 			})
 			{ text = "-" };
 
-			var text = new Label($"Selected Types (in Samples) whose RegisterBeamableDependencies Functions will run: {string.Join("\n", currentlySelectedTypes)}");
+			var text = new Label(
+				$"Selected Types (in Samples) whose RegisterBeamableDependencies Functions will run: {string.Join("\n", currentlySelectedTypes)}");
 
 			this.rootVisualElement.Add(popup);
 			this.rootVisualElement.Add(addBtn);

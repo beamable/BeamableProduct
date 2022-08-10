@@ -23,6 +23,8 @@ namespace Beamable.Common
 
 				public const string REMOTE_ONLY = "Remote Only";
 
+				public const string CONTENT_UPDATE_EVENT = "content.manifest";
+
 				public const int HEALTH_PORT = 6565;
 
 				public const string UPLOAD_CONTAINER_MESSAGE = "Uploaded container service=[{0}]";
@@ -45,6 +47,7 @@ namespace Beamable.Common
 					: text;
 
 				public const string GENERATOR_SUFFIX = "_generator";
+				public const string DOTNET_COMPILE_ERROR_SYMBOL = "error CS";
 
 				public static class Logs
 				{
