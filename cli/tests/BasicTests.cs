@@ -30,12 +30,17 @@ public class Tests
 		var status = await Cli.RunAsyncWithParams(builder =>
 		{
 			var mock = new Mock<ISwaggerStreamDownloader>();
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic"))))
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("inventory"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.InventoryBasicOpenApi));
 
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object"))))
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("inventory"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.InventoryObjectOpenApi));
+
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("accounts"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountBasicOpenApi));
+
 			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
+
 		}, "generate");
 		Assert.AreEqual(0, status);
 	}

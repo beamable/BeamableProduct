@@ -12,8 +12,9 @@ public class SwaggerService
 
 	public static readonly string[] BeamableOpenApis = new[]
 	{
-		"basic/inventory/platform/docs",
-		// "object/inventory/platform/docs"
+		// "basic/inventory/platform/docs",
+		"object/inventory/platform/docs",
+		// "basic/accounts/platform/docs",
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, IEnumerable<ISourceGenerator> generators)

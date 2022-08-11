@@ -18,10 +18,7 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 		var files = new List<GeneratedFileDescriptors>();
 
 		var modelString = GenerateModels(context);
-		// return new List<GeneratedFileDescriptors>
-		// {
 		// files.Add(new GeneratedFileDescriptors { FileName = "Models.cs", Content = modelString });
-		// };
 		foreach (var document in context.Documents)
 		{
 			GetTypeNames(document, out var typeName, out var title, out var className);
@@ -33,8 +30,6 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 		}
 
 		return files;
-		//
-		// return "";
 	}
 
 	public string GenerateCsharp(CodeCompileUnit unit)
@@ -111,6 +106,7 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 
 		var root = new CodeNamespace("Beamable.Api.Models");
 		unit.Namespaces.Add(root);
+		root.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
 
 		foreach (var schema in context.OrderedSchemas)
 		{
@@ -217,29 +213,54 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 
 		var root = new CodeNamespace($"Beamable.Api.{title}");
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Api.Models"));
+		root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
+		root.Imports.Add(new CodeNamespaceImport("Beamable.Common.Api"));
 		unit.Namespaces.Add(root);
 
 
 		var type = new CodeTypeDeclaration($"{className}");
 		root.Types.Add(type);
 
-		var requesterField = new CodeMemberField(typeof(IBeamableRequester), "_requester")
+		var requesterField = new CodeMemberField(nameof(IBeamableRequester), "_requester")
 		{
 			Attributes = MemberAttributes.Private
 		};
 		type.Members.Add(requesterField);
 
 		var cons = new CodeConstructor { Attributes = MemberAttributes.Public };
-		cons.Parameters.Add(new CodeParameterDeclarationExpression(typeof(IBeamableRequester), "requester"));
+		cons.Parameters.Add(new CodeParameterDeclarationExpression(nameof(IBeamableRequester), "requester"));
 		cons.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "_requester"), new CodeArgumentReferenceExpression("requester")));
 		type.Members.Add(cons);
 
 		foreach (var path in document.Paths)
 		{
 			var methodName = path.Key.Substring(path.Key.LastIndexOf('/') + 1);
-			methodName = char.ToUpper(methodName[0]) + methodName.Substring(1);
+			if (methodName.Length > 1)
+			{
+				methodName = char.ToUpper(methodName[0]) + methodName.Substring(1);
+			}
+
+			methodName = methodName.Replace("-", "");
 			foreach (var operation in path.Value.Operations)
 			{
+				var httpMethod = Method.GET;
+
+				switch (operation.Key)
+				{
+					case OperationType.Get:
+						httpMethod = Method.GET;
+						break;
+					case OperationType.Delete:
+						httpMethod = Method.DELETE;
+						break;
+					case OperationType.Post:
+						httpMethod = Method.POST;
+						break;
+					case OperationType.Put:
+						httpMethod = Method.PUT;
+						break;
+				}
+
 				if (!operation.Value.Responses.TryGetValue("200", out var response))
 				{
 					continue; // TODO: support application/csv for content
@@ -250,14 +271,99 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 					continue;
 				}
 				var operationName = operation.Key + methodName;
-				var returnType = new CodeTypeReference(typeof(Promise));
-				returnType.TypeArguments.Add(jsonResponse.Schema.Reference.Id);
+				var returnType = new CodeTypeReference(nameof(Promise));
+				var responseType = new CodeTypeReference(jsonResponse.Schema.Reference.Id);
+				returnType.TypeArguments.Add(responseType);
+
 				var method = new CodeMemberMethod
 				{
 					Name = operationName,
 					Attributes = MemberAttributes.Public,
 					ReturnType =returnType
 				};
+
+				var uri = path.Key;
+				bool hasReqBody = false;
+				foreach (var param in operation.Value.Parameters)
+				{
+
+					method.Parameters.Add(new CodeParameterDeclarationExpression
+					{
+						Name = param.Name, Type = GetSchemaTypeName(param.Schema)
+					});
+					// uri = uri.Replace($"{{{param.Name}}}", @"""+");
+				}
+				if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
+				{
+					hasReqBody = true;
+					method.Parameters.Add(new CodeParameterDeclarationExpression
+					{
+						Name = "req", Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
+					});
+				}
+
+
+
+				method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), "url",
+					new CodePrimitiveExpression(uri)));
+				var queryArgs = new List<string>();
+				foreach (var param in operation.Value.Parameters)
+				{
+					switch (param.In)
+					{
+						case ParameterLocation.Path:
+							var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("url"),
+								nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
+								new CodeVariableReferenceExpression(param.Name));
+
+							method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("url"),
+								replace));
+							break;
+						case ParameterLocation.Query:
+							queryArgs.Add(param.Name); // these are variables in the method
+							break;
+					}
+				}
+
+				if (queryArgs.Count > 0)
+				{
+					method.Statements.Add(new CodeCommentStatement("the method takes its inputs as query strings"));
+					var query = "?" + string.Join("&", queryArgs.Select(q => $"{q}={{{q}}}"));
+					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), "query",
+						new CodeSnippetExpression($"$\"{query}\"")));
+					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("url"), new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat), new CodeVariableReferenceExpression("url"), new CodeVariableReferenceExpression("query"))));
+				}
+
+				// encode the url
+				method.Statements.Add(
+					new CodeCommentStatement("the url may need to be encoded if it contains any special characters"));
+				method.Statements.Add(
+					new CodeAssignStatement(new CodeVariableReferenceExpression("url"),
+					new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
+					nameof(IBeamableRequester.EscapeURL), new CodeVariableReferenceExpression("url"))));
+
+
+				// make the request itself.
+				var requestCommand = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
+					nameof(IBeamableRequester.Request));
+				requestCommand.Method.TypeArguments.Add(responseType);
+
+
+				requestCommand.Parameters.Add(new CodeTypeReferenceExpression("Method." + httpMethod));
+				requestCommand.Parameters.Add(new CodeVariableReferenceExpression("url"));
+
+				if (hasReqBody)
+				{
+					requestCommand.Parameters.Add(new CodeVariableReferenceExpression("req"));
+				}
+				// TODO: Some parameters come in correctly as Query
+
+
+				var returnCommand = new CodeMethodReturnStatement(requestCommand);
+				method.Statements.Add(new CodeCommentStatement("make the request and return the result"));
+				method.Statements.Add(returnCommand);
+
+
 				type.Members.Add(method);
 			}
 		}
