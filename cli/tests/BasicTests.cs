@@ -39,6 +39,9 @@ public class Tests
 			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("accounts"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountBasicOpenApi));
 
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("accounts"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountObjectOpenApi));
+
 			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
 
 		}, "generate");

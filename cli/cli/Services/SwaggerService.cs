@@ -1,3 +1,5 @@
+using Beamable.Common;
+using cli.Utils;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 
@@ -12,9 +14,12 @@ public class SwaggerService
 
 	public static readonly string[] BeamableOpenApis = new[]
 	{
-		// "basic/inventory/platform/docs",
+		"basic/inventory/platform/docs",
 		"object/inventory/platform/docs",
-		// "basic/accounts/platform/docs",
+		"basic/accounts/platform/docs",
+		"object/accounts/platform/docs",
+		"object/leaderboards/platform/docs",
+		"basic/leaderboards/platform/docs",
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, IEnumerable<ISourceGenerator> generators)
@@ -56,13 +61,16 @@ public class SwaggerService
 			}
 		}
 
+		// TODO: there may be duplicate schemas when we are getting lots of documents... we can just de-dupe based on name, but technically, that could be wrong if the server has namespaces...
+		list = list.DistinctBy(x => x.Name).ToList();
+
 		return list;
 	}
 
 	public async Task<IEnumerable<OpenApiDocumentResult>> DownloadBeamableApis()
 	{
 		var urls = BeamableOpenApis.Select(api => $"{_context.Host}/{api}");
-		return await DownloadOpenApis(_downloader, urls);
+		return await DownloadOpenApis(_downloader, urls).ToPromise().ShowLoading("fetching swagger docs...");
 	}
 
 	public static async Task<IEnumerable<OpenApiDocumentResult>> DownloadOpenApis(ISwaggerStreamDownloader downloader, IEnumerable<string> openApiUrls)

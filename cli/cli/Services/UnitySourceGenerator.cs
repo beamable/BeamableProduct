@@ -18,7 +18,7 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 		var files = new List<GeneratedFileDescriptors>();
 
 		var modelString = GenerateModels(context);
-		// files.Add(new GeneratedFileDescriptors { FileName = "Models.cs", Content = modelString });
+		files.Add(new GeneratedFileDescriptors { FileName = "Models.cs", Content = modelString });
 		foreach (var document in context.Documents)
 		{
 			GetTypeNames(document, out var typeName, out var title, out var className);
@@ -48,24 +48,42 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 	public const int COUNT_OF_AUTO_GENERATED_MESSAGE_TEXT = 357;
 
 
-	private CodeTypeReference GetTypeName(string name)
+	private CodeTypeReference GetTypeName(string name, string format)
 	{
 		var fieldType = new CodeTypeReference("object");
-		switch (name)
+		switch (name, format)
 		{
-			case "string":
+			case ("string", "uuid"):
+				fieldType = new CodeTypeReference(typeof(Guid));
+				break;
+			case ("string", "byte"):
+				fieldType = new CodeTypeReference(typeof(byte));
+				break;
+			case ("string", _):
 				fieldType = new CodeTypeReference(typeof(string));
 				break;
-			case "boolean":
+			case ("boolean", _):
 				fieldType = new CodeTypeReference(typeof(bool));
 				break;
-			case "integer":
-				// TODO: we need to know WHAT type of number to make this. We'll need to pull this from a config setting, because
-				// we can't just guess that'll it be int or long or double or whatever :/
+			case ("integer", "int16"):
+				fieldType = new CodeTypeReference(typeof(short));
+				break;
+			case ("integer", "int64"):
+				fieldType = new CodeTypeReference(typeof(long));
+				break;
+			case ("integer", "int32"):
+			case ("integer", _):
 				fieldType = new CodeTypeReference(typeof(int));
 				break;
+			case ("number", "float"):
+				fieldType = new CodeTypeReference(typeof(float));
+				break;
+			case ("number", "double"):
+			case ("number", _):
+				fieldType = new CodeTypeReference(typeof(double));
+				break;
 			default:
-				fieldType = new CodeTypeReference(name);
+				fieldType = new CodeTypeReference(typeof(object));
 				break;
 		}
 
@@ -74,18 +92,16 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 
 	private CodeTypeReference GetSchemaTypeName(OpenApiSchema schema)
 	{
-
-
 		var fieldType = new CodeTypeReference("object");
 		switch (schema.Type)
 		{
 			case "array" when schema.Items.Reference == null:
-				fieldType = GetTypeName(schema.Items.Type);
+				fieldType.ArrayElementType = GetTypeName(schema.Items.Type, schema.Items.Format);
+				fieldType.ArrayRank = 1;
 				break;
 			case "array" when schema.Items.Reference != null:
 				fieldType = new CodeTypeReference($"List<{schema.Items.Reference.Id}>");
 				break;
-
 			case "object" when schema.Reference == null && schema.AdditionalPropertiesAllowed:
 				fieldType = new CodeTypeReference(typeof(Dictionary<string, object>));
 				break;
@@ -93,7 +109,7 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 				fieldType = new CodeTypeReference(schema.Reference.Id);
 				break;
 			default:
-				fieldType = GetTypeName(schema.Type);
+				fieldType = GetTypeName(schema.Type, schema.Format);
 				break;
 		}
 
@@ -128,44 +144,10 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 
 			foreach (var prop in schema.Schema.Properties)
 			{
+				if (string.IsNullOrEmpty(prop.Value.Type)) continue;
 				var fieldType = GetSchemaTypeName(prop.Value);
-				// var fieldType = new CodeTypeReference("object");
-				// switch (prop.Value.Type)
-				// {
-				// 	case "array":
-				// 		if (prop.Value == null || prop.Value.Items == null || prop.Value.Items.Reference == null)
-				// 		{
-				//
-				// 		}
-				// 		fieldType = new CodeTypeReference($"List<{prop.Value.Items.Reference.Id}>");
-				// 		break;
-				//
-				// 	case "object" when prop.Value.Reference == null && prop.Value.AdditionalPropertiesAllowed:
-				// 		fieldType = new CodeTypeReference(typeof(Dictionary<string, object>));
-				// 		break;
-				// 	case "object" when prop.Value.Reference != null:
-				// 		fieldType = new CodeTypeReference(prop.Value.Reference.Id);
-				// 		break;
-				// 	case "string":
-				// 		fieldType = new CodeTypeReference(typeof(string));
-				// 		break;
-				// 	case "boolean":
-				// 		fieldType = new CodeTypeReference(typeof(bool));
-				// 		break;
-				// 	case "integer":
-				// 		// TODO: we need to know WHAT type of number to make this. We'll need to pull this from a config setting, because
-				// 		// we can't just guess that'll it be int or long or double or whatever :/
-				// 		fieldType = new CodeTypeReference(typeof(int));
-				// 		break;
-				// 	default:
-				// 		fieldType = new CodeTypeReference(prop.Value.Type);
-				// 		break;
-				// }
-
-
 				var field = new CodeMemberField(fieldType, prop.Key);
 				field.Attributes = MemberAttributes.Public;
-
 				type.Members.Add(field);
 			}
 
@@ -207,6 +189,10 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 
 	public string GenerateService(OpenApiDocument document)
 	{
+		const string varUrl = "gsUrl"; // gs stands for generated-source
+		const string varQuery = "gsQuery";
+		const string varReq = "gsReq";
+
 		var unit = new CodeCompileUnit();
 
 		GetTypeNames(document, out var typeName, out var title, out var className);
@@ -214,7 +200,12 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 		var root = new CodeNamespace($"Beamable.Api.{title}");
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Api.Models"));
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
-		root.Imports.Add(new CodeNamespaceImport("Beamable.Common.Api"));
+		root.Imports.Add(new CodeNamespaceImport("IBeamableRequester = Beamable.Common.Api.IBeamableRequester"));
+		root.Imports.Add(new CodeNamespaceImport("Method = Beamable.Common.Api.Method"));
+
+		// root..Add(new CodeSnippetExpression(using IBeamableRequester = Beamable.Common.Api.IBeamableRequester));
+		// using IBeamableRequester = Beamable.Common.Api.IBeamableRequester;
+		// using Method = Beamable.Common.Api.Method;
 		unit.Namespaces.Add(root);
 
 
@@ -234,13 +225,42 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 
 		foreach (var path in document.Paths)
 		{
-			var methodName = path.Key.Substring(path.Key.LastIndexOf('/') + 1);
+			var skipsLeft = document.Info.Title.Contains("object") ? 4 : 3;
+			var index = 0;
+			for (var i = 0; i < path.Key.Length; i++)
+			{
+				if (path.Key[i] == '/')
+				{
+					skipsLeft--;
+				}
+
+				if (skipsLeft == 0)
+				{
+					index = i + 1;
+					break;
+				}
+			}
+			var methodName = path.Key.Substring(index);
 			if (methodName.Length > 1)
 			{
 				methodName = char.ToUpper(methodName[0]) + methodName.Substring(1);
 			}
 
-			methodName = methodName.Replace("-", "");
+			for (var i = methodName.Length - 2; i >= 0; i--)
+			{
+				if (methodName[i] == '-' || methodName[i] == '/')
+				{
+					if (i + 2 >= methodName.Length)
+					{
+						methodName = methodName[..i] + char.ToUpper(methodName[i + 1]);
+					}
+					else
+					{
+						methodName = methodName[..i] + char.ToUpper(methodName[i+1]) + methodName[(i+2)..];
+					}
+				}
+			}
+
 			foreach (var operation in path.Value.Operations)
 			{
 				var httpMethod = Method.GET;
@@ -298,13 +318,13 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 					hasReqBody = true;
 					method.Parameters.Add(new CodeParameterDeclarationExpression
 					{
-						Name = "req", Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
+						Name = varReq, Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
 					});
 				}
 
 
 
-				method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), "url",
+				method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varUrl,
 					new CodePrimitiveExpression(uri)));
 				var queryArgs = new List<string>();
 				foreach (var param in operation.Value.Parameters)
@@ -312,11 +332,11 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 					switch (param.In)
 					{
 						case ParameterLocation.Path:
-							var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("url"),
+							var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(varUrl),
 								nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
 								new CodeVariableReferenceExpression(param.Name));
 
-							method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("url"),
+							method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
 								replace));
 							break;
 						case ParameterLocation.Query:
@@ -329,18 +349,18 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 				{
 					method.Statements.Add(new CodeCommentStatement("the method takes its inputs as query strings"));
 					var query = "?" + string.Join("&", queryArgs.Select(q => $"{q}={{{q}}}"));
-					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), "query",
+					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varQuery,
 						new CodeSnippetExpression($"$\"{query}\"")));
-					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("url"), new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat), new CodeVariableReferenceExpression("url"), new CodeVariableReferenceExpression("query"))));
+					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl), new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat), new CodeVariableReferenceExpression(varUrl), new CodeVariableReferenceExpression(varQuery))));
 				}
 
 				// encode the url
 				method.Statements.Add(
 					new CodeCommentStatement("the url may need to be encoded if it contains any special characters"));
 				method.Statements.Add(
-					new CodeAssignStatement(new CodeVariableReferenceExpression("url"),
+					new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
 					new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
-					nameof(IBeamableRequester.EscapeURL), new CodeVariableReferenceExpression("url"))));
+					nameof(IBeamableRequester.EscapeURL), new CodeVariableReferenceExpression(varUrl))));
 
 
 				// make the request itself.
@@ -350,11 +370,11 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 
 
 				requestCommand.Parameters.Add(new CodeTypeReferenceExpression("Method." + httpMethod));
-				requestCommand.Parameters.Add(new CodeVariableReferenceExpression("url"));
+				requestCommand.Parameters.Add(new CodeVariableReferenceExpression(varUrl));
 
 				if (hasReqBody)
 				{
-					requestCommand.Parameters.Add(new CodeVariableReferenceExpression("req"));
+					requestCommand.Parameters.Add(new CodeVariableReferenceExpression(varReq));
 				}
 				// TODO: Some parameters come in correctly as Query
 
