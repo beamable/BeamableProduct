@@ -164,7 +164,9 @@ namespace Beamable.Editor.Toolbox.Components
 				content.OnDone += () =>
 				{
 					EditorApplication.delayCall += BeamablePackages.ShowServerWindow;
-					wnd.Close();
+					// recompile scripts after import to make MMV2 window refresh properly
+					EditorApplication.delayCall += UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation;
+					wnd.Close(); 
 				};
 				content.Refresh();
 			});
