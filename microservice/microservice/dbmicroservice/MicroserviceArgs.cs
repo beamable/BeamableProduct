@@ -54,7 +54,7 @@ namespace Beamable.Server
       public string Secret => Environment.GetEnvironmentVariable("SECRET");
       public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
       public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
-      public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN") ?? "") == "true";
+      public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
       public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
    }
