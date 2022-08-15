@@ -13,8 +13,8 @@ using UnityEngine.UIElements;
 
 namespace Beamable.Editor.Tests.Toolbox
 {
-    public class ToolboxTextboxTests : EditorTest
-    {
+	public class ToolboxTextboxTests : EditorTest
+	{
 		protected override void Configure(IDependencyBuilder builder)
 		{
 			builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
