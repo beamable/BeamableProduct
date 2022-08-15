@@ -111,6 +111,7 @@ namespace Beamable.Server
       private MicroserviceRequester _requester;
       private SocketRequesterContext _socketRequesterContext;
       public ServiceMethodCollection ServiceMethods { get; private set; }
+      public MicroserviceAuthenticationDaemon AuthenticationDaemon => _socketRequesterContext?.Daemon;
       private MicroserviceAttribute _serviceAttribute;
 
       // default is false, set 1 for true.
