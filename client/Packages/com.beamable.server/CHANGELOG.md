@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- Microservices reload route table after hot module reload code change. 
+- Microservices reload route table after hot module reload code change.
+- Manually adding a `StorageObject` Assembly Definition as a dependency of a `Microservice`'s Assembly Definition now correctly sets up all the necessary Mongo DLLs for the `StorageObject` to be usable inside the Microservice. However, the recommended way to do this is still to use the Dependency button of the Microservice Manager Window.  
 
 ## [1.3.0]
 ### Added
