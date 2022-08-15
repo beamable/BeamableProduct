@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- `BeamableRequestError` to `RequestException` base type that can be used to catch exception from Microservice requests to Beamable.
+
 ### Fixed
 - Microservices reload route table after hot module reload code change. 
 
