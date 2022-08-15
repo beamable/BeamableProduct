@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - Microservices reload route table after hot module reload code change. 
+- Microservices stop stale containers before rebuilding.
+- Microservices recognize build failure vs success correctly during local development.
+
+### Changed
+- Microservices use the docker `-v` flag to specify bind mounts instead of `--mount`.
 
 ## [1.3.0]
 ### Added
