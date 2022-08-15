@@ -100,6 +100,7 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task<bool> TryToBuild(bool includeDebuggingTools)
 		{
+			await TryToStop();
 			if (IsBuilding) return true;
 
 			IsBuilding = true;
