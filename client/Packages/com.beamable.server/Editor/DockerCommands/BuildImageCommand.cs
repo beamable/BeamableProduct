@@ -53,6 +53,8 @@ namespace Beamable.Server.Editor.DockerCommands
 			// copy the cs files from the source path to the build path
 			// build the Program file, and place it in the temp dir.
 			BuildUtils.PrepareBuildContext(descriptor, includeDebugTools, watch);
+
+			MapDotnetCompileErrors();
 		}
 
 		protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
@@ -102,7 +104,7 @@ and then setting the beamable-builder as the default docker builder.";
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardOutProcessors))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -111,7 +113,7 @@ and then setting the beamable-builder as the default docker builder.";
 
 		protected override void HandleStandardErr(string data)
 		{
-			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (string.IsNullOrEmpty(data) || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardErrProcessors))
 			{
 				base.HandleStandardErr(data);
 			}
@@ -120,12 +122,7 @@ and then setting the beamable-builder as the default docker builder.";
 
 		protected override void Resolve()
 		{
-			bool success = StandardErrorBuffer?.Contains($"naming to docker.io/library/{_descriptor.ImageName} done") ?? true;
-			if (MicroserviceConfiguration.Instance.DisableDockerBuildkit)
-			{
-				success = string.IsNullOrEmpty(StandardErrorBuffer);
-			}
-
+			var success = _exitCode == 0;
 			SetAsBuild(_descriptor, success);
 			if (success)
 			{

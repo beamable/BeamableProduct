@@ -6,20 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Fixed
+- Microservices reload route table after hot module reload code change. 
+- Microservices stop stale containers before rebuilding.
+- Microservices recognize build failure vs success correctly during local development.
+
+### Changed
+- Microservices use the docker `-v` flag to specify bind mounts instead of `--mount`.
+
+## [1.3.0]
 ### Added
 - User can specify Microservices build and deploy CPU architecture. 
 - `RemovePlayerEntry` for leaderboards API which allows to remove given player from the leaderboard
 - Microservices have their initialization validated before publishing. 
-  - This is mostly a sanity check to catch some errors we can't catch in the Unity Editor.
-  - For now, we don't run any `InitializeServicesAttributes` when validating this.
-  - In the future, we may allow users to define which C#MSs should have their hooks run provided they guarantee any external services they talk to during them are up during the publish process.
-- Added microservice archive/unarchive feature.
+- Microservice archive/unarchive feature.
 - Basic Chat SDK functions to Microservice
 - The base docker image used for Microservices and Microstorages will be automatically pulled at startup.
 - Client Generator logs go to the Microservice Window
 - Send Microservice CPU architecture to Beamable Cloud
 - Headers are available on the service `Context` for application version, unity version, game version, and Beamable sdk version
-- `DisableAllBeamableEvents` option for the `MicroserviceAttribute`. When enabled, prevents the Microservice from receiving any Beamable events, including content cache invalidations. 
 
 ### Changed
 - local microservice logs will appear for dotnet watch command
@@ -28,17 +33,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservices share a realm secret request for faster development builds
 - Local microservices no longer output emoji characters from their `dotnet watch` command
 - Microservices only receive events for content updates
+- Disabled Microservices no longer get built and published.
 
 ### Fixed
 - Microservice related actions can run while Unity is a background process.
 - Microservice clients created by using the default constructor will now keep working after the default `BeamContext` has been reset.
 - Local Microservices no longer say "could not find servicename:latest"
 - Publish flow locks Asset Database so that no re-imports may happen.
-- Fixed potential microservice issue that caused C#MSs to hang during initialization.
+- Publish screen loading bar should always be full when publish is complete.
+- Fixed problems with unexited OS processes and high memory consumption for Docker during switch between EditMode and PlayMode.
+- The "Play Selected" button in the Microservice window doesn't get stuck in a service is already running.
+- Microservice selection is saved between domain reloads.
+- Microservice paths can now contain spaces.
+- Compile errors are reported as error logs
 
 ### Removed
 - Unused legacy code around "Auto Run Local Microservices" menu item
 
+## [1.2.10]
+### Added
+- `DisableAllBeamableEvents` option for the `MicroserviceAttribute`. When enabled, prevents the Microservice from receiving any Beamable events, including content cache invalidations.
+
+## [1.2.9]
+### Fixed
+- Potential microservice issue that caused C#MSs to hang during initialization.
+
+## [1.2.8]
+no changes
+
+## [1.2.7]
+no changes
 
 ## [1.2.6]
 ### Added

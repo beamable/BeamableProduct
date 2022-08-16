@@ -3,6 +3,7 @@ using Beamable.Editor.Environment;
 using Beamable.Editor.UI.Components;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Environment;
 namespace Beamable.Editor.UI.Environment
@@ -43,6 +44,8 @@ namespace Beamable.Editor.UI.Environment
 
 		protected override void Build()
 		{
+			position = new Rect(position.x, position.y, 350, 630);
+			minSize = new Vector2(350, 500);
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += _ => BuildWithContext();
 

@@ -2,9 +2,12 @@ using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.UI;
+using Beamable.Editor.UI.Model;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -70,6 +73,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public Action<string> OnStandardOut;
 		public Action<string> OnStandardErr;
 
+		protected List<Func<string, bool>> _standardOutFilters = new List<Func<string, bool>>();
+		protected List<Func<string, bool>> _standardErrFilters = new List<Func<string, bool>>();
+		protected Func<LogMessage, LogMessage> _standardOutProcessors = m => m;
+		protected Func<LogMessage, LogMessage> _standardErrProcessors = m => m;
+
 
 		public abstract string GetCommandString();
 
@@ -77,6 +85,10 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private void ProcessStandardOut(string data)
 		{
+			if (_standardOutFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
 			if (!string.IsNullOrEmpty(data))
 			{
 				StandardOutBuffer += data;
@@ -90,10 +102,15 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private void ProcessStandardErr(string data)
 		{
+			if (_standardErrFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
 			if (!string.IsNullOrEmpty(data))
 			{
 				StandardErrorBuffer += data;
 			}
+
 			HandleStandardErr(data);
 			if (data != null)
 			{
@@ -304,6 +321,59 @@ namespace Beamable.Server.Editor.DockerCommands
 		public static void ClearDockerInstallFlag()
 		{
 			DockerNotInstalled = false;
+		}
+
+		public DockerCommand AddStandardOutFilter(Func<string, bool> predicate)
+		{
+			_standardOutFilters.Add(predicate);
+			return this;
+		}
+		public DockerCommand AddStandardErrFilter(Func<string, bool> predicate)
+		{
+			_standardErrFilters.Add(predicate);
+			return this;
+		}
+
+		public DockerCommand MapStandardOut(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardOutProcessors;
+			_standardOutProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public DockerCommand MapStandardErr(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardErrProcessors;
+
+			_standardErrProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public DockerCommand AddGlobalFilter(Func<string, bool> predicate)
+		{
+			AddStandardErrFilter(predicate);
+			AddStandardOutFilter(predicate);
+			return this;
+		}
+
+		public DockerCommand MapGlobal(Func<LogMessage, LogMessage> processor)
+		{
+			MapStandardErr(processor);
+			MapStandardOut(processor);
+			return this;
+		}
+
+		public DockerCommand MapDotnetCompileErrors()
+		{
+			return MapGlobal((logMessage) =>
+			{
+				if (MicroserviceLogHelper.TryGetErrorCode(logMessage.Message, out var errCode))
+				{
+					logMessage.Level = LogLevel.ERROR;
+					logMessage.Parameters.Add("errorCode", errCode);
+				}
+				return logMessage;
+			});
 		}
 
 		private static Task DockerCheckTask;

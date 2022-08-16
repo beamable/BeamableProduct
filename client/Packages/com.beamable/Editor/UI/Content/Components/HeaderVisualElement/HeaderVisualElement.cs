@@ -15,6 +15,9 @@ namespace Beamable.Editor.Content.Components
 	public struct HeaderSizeChange
 	{
 		public float Flex, MinWidth;
+
+		public float SafeMinWidth => float.IsNaN(MinWidth) ? 0 : MinWidth;
+
 	}
 
 	public class HeaderVisualElement : ContentManagerComponent
