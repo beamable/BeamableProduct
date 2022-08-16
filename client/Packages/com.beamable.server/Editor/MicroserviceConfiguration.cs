@@ -67,7 +67,7 @@ namespace Beamable.Server.Editor
 
 		[Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
 		public bool AutoBuildCommonAssembly = true;
-		
+
 		[Tooltip("When true, Beamable guarantees any Assembly Definition referencing a StorageObject's AsmDef also references the required Mongo DLLs.")]
 		public bool EnsureMongoAssemblyDependencies = true;
 
