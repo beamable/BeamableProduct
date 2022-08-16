@@ -215,7 +215,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public async Promise GetLobbies()
 		{
-			LobbyQueryResponse response = await BeamContext.Lobby.FindLobbies();
+			LobbyQueryResponse response = await BeamContext.Lobby.FindLobbiesOfType(SelectedGameType.Id);
 			RegisterLobbyData(GameTypes[SelectedGameTypeIndex], response.results);
 		}
 

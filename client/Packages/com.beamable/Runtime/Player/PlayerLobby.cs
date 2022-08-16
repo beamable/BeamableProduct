@@ -115,6 +115,12 @@ namespace Beamable.Player
 			return _lobbyApi.FindLobbies();
 		}
 
+		/// <inheritdoc cref="ILobbyApi.FindLobbiesOfType"/>
+		public Promise<LobbyQueryResponse> FindLobbiesOfType(string matchType, int limit = 100, int skip = 0)
+		{
+			return _lobbyApi.FindLobbiesOfType(matchType, limit, skip);
+		}
+
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
 		public async Promise Create(string name,
 		                            LobbyRestriction restriction,

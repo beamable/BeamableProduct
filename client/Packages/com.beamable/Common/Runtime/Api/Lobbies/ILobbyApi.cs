@@ -15,11 +15,11 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <summary>
 		/// Find lobbies of specified game type.
 		/// </summary>
-		/// <param name="skip"></param>
-		/// <param name="limit"></param>
-		/// <param name="matchType"></param>
+		/// <param name="skip">Amount of lobbies skipped in response</param>
+		/// <param name="limit">Amount of lobbies returned in response</param>
+		/// <param name="matchType">Game type id</param>
 		/// <returns>A <see cref="Promise{LobbyQueryResponse}"/> representing a list of public lobbies.</returns>
-		Promise<LobbyQueryResponse> FindLobbiesOfType(int skip, int limit, string matchType);
+		Promise<LobbyQueryResponse> FindLobbiesOfType(string matchType, int limit, int skip);
 
 		/// <summary>
 		/// Create a new <see cref="Lobby"/> with the current player as the host.
