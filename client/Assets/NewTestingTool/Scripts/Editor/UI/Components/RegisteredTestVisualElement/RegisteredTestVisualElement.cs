@@ -1,4 +1,5 @@
 ﻿using Beamable.NewTestingTool.Core.Models;
+using NewTestingTool.Helpers;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.NewTestingTool.UI.Components
@@ -8,9 +9,8 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 		public RegisteredTest RegisteredTest { get; set; }
 		
 		private Label _testableName;
+		private VisualElement _testResult;
 		
-		public new class UxmlFactory : UxmlFactory<RegisteredTestVisualElement, UxmlTraits> { }
-
 		public RegisteredTestVisualElement() : base(nameof(RegisteredTestVisualElement)) { }
 		
 		public override void Refresh()
@@ -18,6 +18,9 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			base.Refresh();
 			_testableName = Root.Q<Label>("testableName");
 			_testableName.text = RegisteredTest.TestClassName;
+			
+			_testResult = Root.Q("testResult");
+			TestHelper.SetTestResult(_testResult, RegisteredTest.TestResult);
 		}
 	}
 }

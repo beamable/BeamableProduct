@@ -26,7 +26,6 @@ namespace Beamable.Editor.NewTestingTool.Models.Lists
 			var registeredTestRule = (RegisteredTestRule)obj;
 			TestingEditorModel.SelectedRegisteredTestRule =
 				TestingEditorModel.SelectedRegisteredTest.RegisteredTestRules.First(x => x == registeredTestRule);
-			OnItemChosen?.Invoke(registeredTestRule);
 		}
 
 		protected override void ListView_OnSelectionChanged(IEnumerable<object> objs)

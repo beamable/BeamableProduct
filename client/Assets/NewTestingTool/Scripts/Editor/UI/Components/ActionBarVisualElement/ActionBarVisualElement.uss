@@ -50,58 +50,11 @@
     align-self: center;
 }
 
-#buildIcon{
-    top: 2px;
-    width: 18px;
-    height: 18px;
-    align-self: center;
-}
 .mainPart {
     width: 70px;
     padding-left: 6px;
     padding-right: 6px;
     padding-top: 2px;
-}
-
-#createNew {
-    width: 85px;
-    padding-left: 0px;
-    padding-right: 0px;
-    padding-top: 0px;
-}
-#dropDownImg {
-    position: absolute;
-    height: 35px;
-    right: 0px;
-    width: 18px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_dark.png")
-}
-
-#createNew.disabledStorage {
-    width: 70px;
-}
-#createNew.disabledStorage #dropDownImg {
-    height: 0px;
-    width: 0px;
-}
-
-#dropDownImg.hidden {
-    position: absolute;
-    right: 10000px;
-}
-
-#createNewIcon{
-    top: 2px;
-    width: 18px;
-    height: 18px;
-    align-self: center;
-}
-
-#publishIcon{
-    top: 2px;
-    width: 18px;
-    height: 18px;
-    align-self: center;
 }
 
 .unboundedButton {
@@ -143,16 +96,3 @@
 #scan {
     width: 72px;
 }
-
-#dependencies {
-    width: 80px;
-}
-
-#dependenciesIcon{
-    top: 2px;
-    width: 18px;
-    height: 18px;
-    align-self: center;
-}
-
-

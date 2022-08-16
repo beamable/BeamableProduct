@@ -18,11 +18,6 @@ namespace Beamable.NewTestingTool.Scripts.Core
 		public List<RegisteredTest> GetTestData(string sceneName) =>
 			_registeredTestScenes.FirstOrDefault(x => x.SceneName == sceneName)?.RegisteredTests;
 
-		public void Reset()
-		{
-			foreach (var registeredTestScene in _registeredTestScenes)
-				DestroyImmediate(registeredTestScene, true);
-			_registeredTestScenes.Clear();
-		}
+		public void Reset() => _registeredTestScenes.Clear();
 	}
 }

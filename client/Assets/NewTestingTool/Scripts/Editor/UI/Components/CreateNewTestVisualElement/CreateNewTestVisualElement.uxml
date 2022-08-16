@@ -1,13 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<engine:UXML
+<UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:engine="UnityEngine.Experimental.UIElements"
+        xmlns:testingTool="Beamable.Editor.NewTestingTool.UI.Components"
+        xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-        <engine:VisualElement name="testResult" class="resultNotSet resultPassed resultFailed"/>
-        <engine:Label name="testableName"/>
+ 
+        <beamable:LabeledTextField name="testNameInput" label="Test name"/>
+        <engine:Button name="cancel" text="Cancel"/>
+        <engine:VisualElement name="createWrapper">
+            <engine:Button name="create" text="Create"/>
+        </engine:VisualElement>
+
     </engine:VisualElement>
 
-</engine:UXML>
+</UXML>

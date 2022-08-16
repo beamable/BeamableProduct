@@ -17,11 +17,8 @@
             <engine:VisualElement name="separator"/>
             <engine:VisualElement name="rulesList"/>
             <engine:VisualElement name="separator"/>
-            <engine:VisualElement name="ruleBody"/>
+            <testingTool:RegisteredTestRuleMethodVisualElement name="ruleMethodBody"/>
             
         </engine:VisualElement>
-        
-        <engine:Button name="findTestsButton" text="Scan tests"/>
     </engine:VisualElement>
-
 </UXML>

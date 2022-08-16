@@ -22,15 +22,20 @@ namespace Beamable.NewTestingTool.Core
 		[SerializeField] private Button passedButton; 
 		[SerializeField] private Button failedButton;
 
+		[SerializeField] private Transform testObjectsParent;
+
 		private event Action OnTestReadyToInvoke;
 		private event Action OnNextTestRequested;
 
+		private TestConfiguration TestConfiguration { get; set; }
 		private RegisteredTest CurrentTest => _registeredTests[_currentTestIndex];
 		private RegisteredTestRule CurrentTestRule => CurrentTest.RegisteredTestRules[_currentOrderIndex];
 		private RegisteredTestRuleMethod CurrentTestRuleMethod => CurrentTestRule.RegisteredTestRuleMethods[_currentCaseIndex - 1];
 
 		private List<RegisteredTest> _registeredTests = new List<RegisteredTest>();
 		private int _currentTestIndex, _currentOrderIndex, _currentCaseIndex;
+
+		private List<GameObject> _testGroups = new List<GameObject>();
 
 		private void Awake()
 		{
@@ -39,6 +44,12 @@ namespace Beamable.NewTestingTool.Core
 			
 			ChangeButtonsInteractableState(false);
 			_registeredTests = LoadTestData();
+
+			foreach (Transform child in testObjectsParent)
+			{
+				child.gameObject.SetActive(false);
+				_testGroups.Add(child.gameObject);
+			}
 
 			OnTestReadyToInvoke -= HandleTestReadyToInvoke;
 			OnTestReadyToInvoke += HandleTestReadyToInvoke;
@@ -54,14 +65,14 @@ namespace Beamable.NewTestingTool.Core
 
 		private List<RegisteredTest> LoadTestData()
 		{
-			var scriptable = Resources.Load<TestConfiguration>(CONFIGURATION_FILE_NAME);
-			if (scriptable == null)
+			TestConfiguration = Resources.Load<TestConfiguration>(CONFIGURATION_FILE_NAME);
+			if (TestConfiguration == null)
 			{
 				Debug.LogError("Cannot load test scriptable object!");
 				Debug.Break();
 				return null;
 			}
-			return scriptable.GetTestData(SceneManager.GetActiveScene().name);
+			return TestConfiguration.GetTestData(SceneManager.GetActiveScene().name);
 		}
 		private void MarkTestResult(TestResult result)
 		{
@@ -72,6 +83,8 @@ namespace Beamable.NewTestingTool.Core
 			}
 			
 			ChangeButtonsInteractableState(false);
+			ResetTestObjects();
+
 			if (displayLogs)
 				TestableDebug.Log($"Result=[{TestableDebug.WrapWithColor(result, result == TestResult.Passed ? Color.green : Color.red)}] Method=[{TestableDebug.WrapWithColor(CurrentTestRuleMethod.MethodInfo.Name, Color.yellow)}]");
 			
@@ -150,6 +163,12 @@ namespace Beamable.NewTestingTool.Core
 			MarkTestResult(result);
 		}
 		private void HandleNextTestRequested() => StartCoroutine(InvokeNextTest());
+
+		private void ResetTestObjects()
+		{
+			foreach (var testGroup in _testGroups)
+				testGroup.SetActive(false);
+		}
 	}
 }
 

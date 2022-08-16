@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace NewTestingTool.Helpers
 {
@@ -60,6 +64,20 @@ namespace NewTestingTool.Helpers
 				originalValues.Add(convertedValue);
 			}
 			return originalValues.ToArray();
+		}
+		
+		private static readonly Dictionary<TestResult, string> TestResultsDict = new Dictionary<TestResult, string>
+		{
+			{ TestResult.NotSet, "resultNotSet" },
+			{ TestResult.Passed, "resultPassed" },
+			{ TestResult.Failed, "resultFailed" },
+		};
+		
+		public static void SetTestResult(VisualElement ve, TestResult result)
+		{
+			foreach (var testResult in TestResultsDict)
+				ve.EnableInClassList(testResult.Value, false);
+			ve.EnableInClassList(TestResultsDict[result], true);
 		}
 	}
 }

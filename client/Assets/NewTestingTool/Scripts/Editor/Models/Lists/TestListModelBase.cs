@@ -9,7 +9,6 @@ namespace Beamable.Editor.NewTestingTool.Models.Lists
 {
 	internal abstract class TestListModelBase<T, T1> where T : BeamableVisualElement, new()
 	{
-		public Action<T1> OnItemChosen;
 		public Action<T1> OnSelectionChanged;
 
 		protected TestingEditorModel TestingEditorModel { get; }

@@ -6,6 +6,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
+        <engine:VisualElement name="testResult" class="resultNotSet resultPassed resultFailed"/>
         <engine:Label name="ruleName"/>
     </engine:VisualElement>
 

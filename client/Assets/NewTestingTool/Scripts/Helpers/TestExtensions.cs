@@ -1,0 +1,28 @@
+﻿using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+using static NewTestingTool.Constants.TestConstants;
+
+namespace NewTestingTool.Extensions
+{
+	public static class TestExtensions
+	{
+		public static T LoadScriptableObject<T>(string fileName, string pathFromResources, string savePath) where T : ScriptableObject
+		{
+			if (!Directory.Exists(PATH_TO_RESOURCES))
+				Directory.CreateDirectory(PATH_TO_RESOURCES);
+			
+			var scriptable = Resources.Load<T>(string.IsNullOrWhiteSpace(pathFromResources) ? fileName : $"{pathFromResources}/{fileName}");
+			if (scriptable == null)
+			{
+				if (!Directory.Exists(savePath))
+					Directory.CreateDirectory(savePath);
+				
+				scriptable = ScriptableObject.CreateInstance<T>();
+				AssetDatabase.CreateAsset(scriptable, $"{savePath}/{fileName}.asset");
+			}
+			return scriptable;
+		}
+	}
+}

@@ -24,7 +24,6 @@ namespace Beamable.Editor.NewTestingTool.Models.Lists
 				return;
 			var registeredTest = (RegisteredTest)obj;
 			TestingEditorModel.SelectedRegisteredTest = TestingEditorModel.SelectedRegisteredTestScene.RegisteredTests.First(x => x == registeredTest);
-			OnItemChosen?.Invoke(registeredTest);
 		}
 		protected override void ListView_OnSelectionChanged(IEnumerable<object> objs)
 		{

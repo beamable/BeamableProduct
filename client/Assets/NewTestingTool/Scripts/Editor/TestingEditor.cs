@@ -1,11 +1,14 @@
 using Beamable.Editor.NewTestingTool.Models;
 using Beamable.Editor.NewTestingTool.Models.Lists;
+using Beamable.Editor.NewTestingTool.UI.Components;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.NewTestingTool.Core.Models;
 using UnityEditor;
 using UnityEngine.UIElements;
 using ActionBarVisualElement = Beamable.Editor.NewTestingTool.UI.Components.ActionBarVisualElement;
+using static NewTestingTool.Constants.TestConstants;
 
 public class TestingEditor : BeamEditorWindow<TestingEditor>
 {
@@ -21,6 +24,9 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 	private TestingEditorModel _testingEditorModel;
 	
 	private VisualElement _windowRoot;
+	private VisualElement _windowMain;
+
+	private RegisteredTestRuleMethodVisualElement _ruleMethodBody;
 	
 	private VisualElement _scenesList;
 	private VisualElement _testablesList;
@@ -35,7 +41,8 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 	private RegisteredTestRuleListModel _registeredTestRuleListModel;
 	
 	private ActionBarVisualElement _actionBarVisualElement;
-	
+	private CreateNewTestVisualElement _createNewTestVisualElement;
+
 	static TestingEditor()
 	{
 		WindowDefaultConfig = new BeamEditorWindowInitConfig()
@@ -68,24 +75,33 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		root.style.flexGrow = 1;
 		root.Add(_windowRoot);
 
+		_windowMain = root.Q("window-main"); 
+
 		_scenesList = root.Q("scenesList");
 		_testablesList = root.Q("testablesList");
 		_rulesList = root.Q("rulesList");
-
-		var btn = root.Q<Button>("findTestsButton");
-		btn.clicked -= HandleScanRequest;
-		btn.clicked += HandleScanRequest;
 		
 		_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
-		_actionBarVisualElement.Init(TestingEditorModel);
+		
+		_actionBarVisualElement.OnScanButtonPressed -= HandleScanButton;
+		_actionBarVisualElement.OnScanButtonPressed += HandleScanButton;
+		
+		_actionBarVisualElement.OnCreateNewTestSceneButtonPressed -= HandleCreateTestSceneButton;
+		_actionBarVisualElement.OnCreateNewTestSceneButtonPressed += HandleCreateTestSceneButton;
+		
+		_actionBarVisualElement.OnDeleteTestSceneButtonPressed -= HandleDeleteTestSceneButton;
+		_actionBarVisualElement.OnDeleteTestSceneButtonPressed += HandleDeleteTestSceneButton;
+		
 		_actionBarVisualElement.Refresh();
 
 		_registeredTestScenesListModel = new RegisteredTestSceneListModel(TestingEditorModel);
 		_registeredTestListModel = new RegisteredTestListModel(TestingEditorModel);
 		_registeredTestRuleListModel = new RegisteredTestRuleListModel(TestingEditorModel);
-		
-		HandleScanRequest();
-		CreateRegisteredTestScenesList();
+
+		_ruleMethodBody = root.Q<RegisteredTestRuleMethodVisualElement>("ruleMethodBody");
+		_ruleMethodBody.Refresh();
+
+		HandleScanButton();
 	}
 	
 	private void CreateRegisteredTestScenesList()
@@ -95,7 +111,7 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		ResetList(_scenesList, ref _scenesListView);
 		
 		_scenesListView = _registeredTestScenesListModel.CreateListView(TestingEditorModel.TestConfiguration.RegisteredTestScenes);
-		_registeredTestScenesListModel.OnItemChosen += CreateRegisteredTestsList;
+		_registeredTestScenesListModel.OnSelectionChanged -= CreateRegisteredTestsList;
 		_registeredTestScenesListModel.OnSelectionChanged += CreateRegisteredTestsList;
 		_scenesList.Add(_scenesListView);
 	}
@@ -103,9 +119,9 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 	{
 		ResetList(_rulesList, ref _rulesListView);
 		ResetList(_testablesList, ref _testablesListView);
-		
+
 		_testablesListView = _registeredTestListModel.CreateListView(registeredTestScene.RegisteredTests);
-		_registeredTestListModel.OnItemChosen += CreateRegisteredTestRulesList;
+		_registeredTestListModel.OnSelectionChanged -= CreateRegisteredTestRulesList;
 		_registeredTestListModel.OnSelectionChanged += CreateRegisteredTestRulesList;
 		_testablesList.Add(_testablesListView);
 	}
@@ -114,15 +130,61 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		ResetList(_rulesList, ref _rulesListView);
 		
 		_rulesListView = _registeredTestRuleListModel.CreateListView(registeredTest.RegisteredTestRules);
-		// _rulesListModel.OnItemChosen += CreateTestablesList;
-		// _rulesListModel.OnSelectionChanged += CreateTestablesList;
+		_registeredTestRuleListModel.OnSelectionChanged -= SetupDetailedInfo;
+		_registeredTestRuleListModel.OnSelectionChanged += SetupDetailedInfo;
 		_rulesList.Add(_rulesListView);
 	}
-	
-	private void HandleScanRequest()
+
+	private void SetupDetailedInfo(RegisteredTestRule registeredTestRule)
+	{
+		_ruleMethodBody.Setup(TestingEditorModel.TestConfiguration, registeredTestRule.RegisteredTestRuleMethods[0]);
+	}
+
+	private void HandleScanButton()
 	{
 		TestingEditorModel.Scan();
 		CreateRegisteredTestScenesList();
+	}
+	private void HandleCreateTestSceneButton()
+	{
+		if (_createNewTestVisualElement != null)
+			return;
+		
+		_createNewTestVisualElement = new CreateNewTestVisualElement();
+		_createNewTestVisualElement.Init(TestingEditorModel.TestConfiguration);
+		
+		_createNewTestVisualElement.OnCreateButtonPressed += testName =>
+		{
+			TestingEditorModel.CreateTestScene(testName);
+			HandleScanButton();
+			_windowMain.Remove(_createNewTestVisualElement);
+			_createNewTestVisualElement = null;
+		};
+		_createNewTestVisualElement.OnCloseButtonPressed += () =>
+		{
+			_windowMain.Remove(_createNewTestVisualElement);
+			_createNewTestVisualElement = null;
+		};
+		
+		_windowMain.Insert(1, _createNewTestVisualElement);
+		_createNewTestVisualElement.Refresh();
+	}
+	private void HandleDeleteTestSceneButton()
+	{
+		if (TestingEditorModel.SelectedRegisteredTestScene == null)
+			return;
+		
+		var isDeleteConfirmed = EditorUtility.DisplayDialog(
+			"Confirm deletion",
+			$"Are you sure you want to delete the Test=[{TestingEditorModel.SelectedRegisteredTestScene.SceneName}]?",
+			"confirm",
+			"cancel");
+
+		if (!isDeleteConfirmed)
+			return;
+
+		TestingEditorModel.DeleteTestScene(TestingEditorModel.SelectedRegisteredTestScene);
+		HandleScanButton();
 	}
 	private void ResetList(VisualElement ve, ref ExtendedListView elv)
 	{
@@ -130,5 +192,7 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 			return;
 		ve.Remove(elv);
 		elv = null;
+
+		_ruleMethodBody.ClearData();
 	}
 }

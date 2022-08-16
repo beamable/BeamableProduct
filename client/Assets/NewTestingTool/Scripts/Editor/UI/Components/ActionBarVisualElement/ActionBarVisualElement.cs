@@ -1,4 +1,4 @@
-﻿using Beamable.Editor.NewTestingTool.Models;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -7,9 +7,13 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 {
 	public class ActionBarVisualElement : TestingToolComponent
 	{
-		public TestingEditorModel TestingEditorModel { get; private set;  }
+		public event Action OnScanButtonPressed;
+		public event Action OnCreateNewTestSceneButtonPressed;
+		public event Action OnDeleteTestSceneButtonPressed;
 
 		private Button _scanButton;
+		private Button _createTestSceneButton;
+		private Button _deleteTestSceneButton;
 		
 		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits> { }
 		public new class UxmlTraits : VisualElement.UxmlTraits
@@ -31,17 +35,25 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 
 		public ActionBarVisualElement() : base(nameof(ActionBarVisualElement)) { }
 
-		public void Init(TestingEditorModel testingEditorModel)
-		{
-			TestingEditorModel = testingEditorModel;
-		}
-		
 		public override void Refresh()
 		{
 			base.Refresh();
 
 			_scanButton = Root.Q<Button>("scan");
-			_scanButton.clickable.clicked += TestingEditorModel.Scan;
+			_scanButton.clickable.clicked -= HandleScanButtonPressed;
+			_scanButton.clickable.clicked += HandleScanButtonPressed;
+			
+			_createTestSceneButton = Root.Q<Button>("createTestScene");
+			_createTestSceneButton.clickable.clicked -= HandleCreateTestSceneButton;
+			_createTestSceneButton.clickable.clicked += HandleCreateTestSceneButton;
+			
+			_deleteTestSceneButton = Root.Q<Button>("deleteTestScene");
+			_deleteTestSceneButton.clickable.clicked -= HandleDeleteTestSceneButton;
+			_deleteTestSceneButton.clickable.clicked += HandleDeleteTestSceneButton;
 		}
+
+		private void HandleScanButtonPressed() => OnScanButtonPressed?.Invoke();
+		private void HandleCreateTestSceneButton() => OnCreateNewTestSceneButtonPressed?.Invoke();
+		private void HandleDeleteTestSceneButton() => OnDeleteTestSceneButtonPressed?.Invoke();
 	}
 }

@@ -7,17 +7,17 @@ namespace NewTestingTool.Core
 	{
 		public static void Log(object message)
 		{
-			Debug.Log($"{TestConstants.TEST_LABEL} {message}");
+			Debug.Log($"{TestConstants.DEBUG_PREFIX} {message}");
 		}
 
 		public static void LogWarning(object message)
 		{
-			Debug.LogWarning($"{TestConstants.TEST_LABEL} {message}");
+			Debug.LogWarning($"{TestConstants.DEBUG_PREFIX} {message}");
 		}
 
 		public static void LogError(object message)
 		{
-			Debug.LogError($"{TestConstants.TEST_LABEL} {message}");
+			Debug.LogError($"{TestConstants.DEBUG_PREFIX} {message}");
 		}
 
 		public static string WrapWithColor(object message, Color color) =>

@@ -12,10 +12,26 @@ namespace Beamable.NewTestingTool.Core.Models
 	[Serializable]
 	public class RegisteredTestRuleMethod
 	{
+		public event Action<TestResult> OnTestResultChanged;
+		
+		public string Title 
+		{
+			get => _testDescriptor.Title;
+			set => _testDescriptor.Title = value;
+		}
+		public string Description 
+		{
+			get => _testDescriptor.Description;
+			set => _testDescriptor.Description = value;
+		}
 		public TestResult TestResult
 		{
 			get => _testResult;
-			set => _testResult = value;
+			set
+			{
+				_testResult = value;
+				OnTestResultChanged?.Invoke(TestResult);
+			}
 		}
 		public Type TestableType
 		{
@@ -37,19 +53,24 @@ namespace Beamable.NewTestingTool.Core.Models
 			}
 		}
 		private MethodInfo _methodInfo;
-		public object[] Arguments => TestHelper.ConvertStringToObject(_arguments);
+		public object[] Arguments => TestHelper.ConvertStringToObject(_argumentsRaw);
+		public string[] ArgumentsRaw => _argumentsRaw;
+		public bool IsTask => TestHelper.IsAsyncMethod(MethodInfo);
 		
 		[SerializeField] private TestResult _testResult;
 		[SerializeField] private string _testableName;
 		[SerializeField] private string _methodName;
-		[SerializeField] private string[] _arguments;
+		[SerializeField] private string[] _argumentsRaw;
 
-		public RegisteredTestRuleMethod(Testable testable, MethodInfo methodInfo, object[] arguments)
+		private TestDescriptor _testDescriptor;
+
+		public RegisteredTestRuleMethod(ref Testable testable, MethodInfo methodInfo, object[] arguments, TestDescriptor testDescriptor)
 		{
 			_testResult = TestResult.NotSet;
 			_testableName = testable.GetType().Name;
 			_methodName = methodInfo.Name;
-			_arguments = TestHelper.ConvertObjectToString(arguments);
+			_argumentsRaw = TestHelper.ConvertObjectToString(arguments);
+			_testDescriptor = testDescriptor;
 		}
 		public async Task<TestResult> InvokeTest(bool displayLogs, int orderIndex, int caseIndex)
 		{
@@ -57,7 +78,7 @@ namespace Beamable.NewTestingTool.Core.Models
 				TestableDebug.Log($"Invoking test: Testable=[{TestableType.Name}] Order=[{orderIndex+1}] Case=[{caseIndex+1}] Method=[{TestableDebug.WrapWithColor(MethodInfo.Name, Color.yellow)}]");
 			
 			var obj = Object.FindObjectOfType(TestableType);
-			TestResult = TestHelper.IsAsyncMethod(MethodInfo)
+			TestResult = IsTask 
 				? await (Task<TestResult>)MethodInfo.Invoke(obj, Arguments)
 				: (TestResult)MethodInfo.Invoke(obj, Arguments);
 			

@@ -10,27 +10,19 @@
 
             <engine:Button name="scan" class="boundedButton">
                 <engine:Image name="startIcon"/>
-                <engine:Label class="buttonText" text="Scan tests"/>
+                <engine:Label class="buttonText" text="Scan"/>
             </engine:Button>
 
-            <engine:Button name="dependencies" class="boundedButton">
-                <engine:Image name="dependenciesIcon"/>
-                <engine:Label class="buttonText" text="Dependencies"/>
+            <engine:Button name="createTestScene" class="boundedButton">
+                <engine:Image name="startIcon"/>
+                <engine:Label class="buttonText" text="Create"/>
             </engine:Button>
 
-            <engine:Button name="createNew" class="boundedButton">
-                <engine:VisualElement class="mainPart">
-                    <engine:Image name="createNewIcon"/>
-                    <engine:Label class="buttonText" text="Create New" />
-                </engine:VisualElement>
-                <engine:Image name="dropDownImg" class="--image-scale-to-fit">
-                </engine:Image>
+            <engine:Button name="deleteTestScene" class="boundedButton">
+                <engine:Image name="startIcon"/>
+                <engine:Label class="buttonText" text="Delete"/>
             </engine:Button>
-
-            <engine:Button name="publish" class="boundedButton">
-                <engine:Image name="publishIcon"/>
-                <engine:Label class="buttonText" text="Publish"/>
-            </engine:Button>
+            
         </engine:VisualElement>
 
 
