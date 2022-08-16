@@ -165,6 +165,11 @@ namespace Beamable.Server.Editor
 
 		public void CheckForMissingMongoDependenciesOnMicroservices()
 		{
+			// Make sure this feature is not disabled.
+			var config = MicroserviceConfiguration.Instance;
+			if (!config.EnsureMongoAssemblyDependencies) 
+				return;
+
 			// Get the reflection cache
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 
