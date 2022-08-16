@@ -226,5 +226,9 @@ namespace Beamable.Common.Api.Leaderboards
 			});
 		}
 
+		public Promise<EmptyResponse> FreezeLeaderboard(string boardId)
+		{
+			return Requester.Request<EmptyResponse>(Method.PUT, $"/object/leaderboards/{boardId}/freeze");
+		}
 	}
 }
