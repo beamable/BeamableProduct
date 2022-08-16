@@ -65,6 +65,7 @@ namespace Beamable.Server.Editor
 				try
 				{
 					BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+					var _ = BeamEditorContext.Default; // access the beam context
 				}
 				catch (InvalidOperationException)
 				{
@@ -291,12 +292,14 @@ namespace Beamable.Server.Editor
 				if (descriptor is MicroserviceDescriptor desc)
 				{
 					FileUtil.DeleteFileOrDirectory(desc.SourcePath);
+					FileUtil.DeleteFileOrDirectory(Path.ChangeExtension(desc.SourcePath, "meta"));
 					FileUtil.DeleteFileOrDirectory(desc.HidePath);
 					FileUtil.DeleteFileOrDirectory(desc.BuildPath);
 				}
 				else if (descriptor is StorageObjectDescriptor storageDesc)
 				{
 					string directoryPath = Path.GetDirectoryName(storageDesc.AttributePath);
+					FileUtil.DeleteFileOrDirectory(Path.ChangeExtension(storageDesc.AttributePath, "meta"));
 					FileUtil.DeleteFileOrDirectory(directoryPath);
 				}
 			}

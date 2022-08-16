@@ -1,0 +1,25 @@
+name: Sync Wiki
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  syncDocs:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sync-docs-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Push Wiki Changes
+        uses: Andrew-Chen-Wang/github-wiki-action@v3
+        env:
+          # Make sure you have that / at the end. We use rsync 
+          # WIKI_DIR's default is wiki/
+          WIKI_DIR: wiki/
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_MAIL: bot@beamable.com
+          GH_NAME: beamable
