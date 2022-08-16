@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+### Added
+- A leaderboard can now be frozen using `Services.Leaderboards.FreezeLeaderboard` method to prevent additional scores to be submitted.
+
 ### Fixed
 - Microservices reload route table after hot module reload code change. 
 - Microservices stop stale containers before rebuilding.
