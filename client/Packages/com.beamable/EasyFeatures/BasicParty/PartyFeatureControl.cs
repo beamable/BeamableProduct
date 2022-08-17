@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -23,10 +24,10 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected BeamContext Context;
 		protected BasicPartyPlayerSystem PartyPlayerSystem;
 		protected CreatePartyPlayerSystem CreatePartyPlayerSystem;
-		protected InvitePlayersPlayerSystem InvitePlayersPlayerSystem;
 		protected JoinPartyPlayerSystem JoinPartyPlayerSystem;
 
-		private View _currentView = View.Create;
+		private IBeamableView _currentView;
+		private readonly Dictionary<View, IBeamableView> views = new Dictionary<View, IBeamableView>();
 
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups
 		{
@@ -38,7 +39,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, BasicPartyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<CreatePartyPlayerSystem, CreatePartyView.IDependencies>();
-			builder.SetupUnderlyingSystemSingleton<InvitePlayersPlayerSystem, InvitePlayersView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<JoinPartyPlayerSystem, JoinPartyView.IDependencies>();
 		}
 
@@ -71,10 +71,39 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			PartyPlayerSystem = Context.ServiceProvider.GetService<BasicPartyPlayerSystem>();
 			CreatePartyPlayerSystem = Context.ServiceProvider.GetService<CreatePartyPlayerSystem>();
-			InvitePlayersPlayerSystem = Context.ServiceProvider.GetService<InvitePlayersPlayerSystem>();
 			JoinPartyPlayerSystem = Context.ServiceProvider.GetService<JoinPartyPlayerSystem>();
+
+			foreach (var view in PartyViewGroup.ManagedViews)
+			{
+				views.Add(TypeToViewEnum(view.GetType()), view);
+			}
+
+			OpenView(View.Create);
+		}
+
+		private View TypeToViewEnum(Type type)
+		{
+			if (type == typeof(CreatePartyView))
+			{
+				return View.Create;
+			}
 			
-			OpenView(_currentView);
+			if (type == typeof(InvitePlayersView))
+			{
+				return View.Invite;
+			}
+			
+			if (type == typeof(BasicPartyView))
+			{
+				return View.Party;
+			}
+			
+			if (type == typeof(JoinPartyView))
+			{
+				return View.Join;
+			}
+
+			throw new ArgumentException("View enum does not support provided type.");
 		}
 
 		public void OpenPartyView()
@@ -107,17 +136,15 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private async void OpenView(View view)
 		{
-			_currentView = view;
-			UpdateVisibility();
+			if (_currentView != null)
+			{
+				_currentView.IsVisible = false;	
+			}
+			
+			_currentView = views[view];
+			_currentView.IsVisible = true;
+			
 			await PartyViewGroup.Enrich();
-		}
-
-		private void UpdateVisibility()
-		{
-			PartyPlayerSystem.IsVisible = _currentView == View.Party;
-			CreatePartyPlayerSystem.IsVisible = _currentView == View.Create;
-			InvitePlayersPlayerSystem.IsVisible = _currentView == View.Invite;
-			JoinPartyPlayerSystem.IsVisible = _currentView == View.Join;
 		}
 	}
 }

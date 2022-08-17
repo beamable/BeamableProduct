@@ -8,11 +8,6 @@ namespace Beamable.EasyFeatures.BasicParty
 {
 	public class InvitePlayersView : MonoBehaviour, ISyncBeamableView
 	{
-		public interface IDependencies : IBeamableViewDeps
-		{
-			bool IsVisible { get; set; }
-		}
-
 		public PartyFeatureControl FeatureControl;
 		public int EnrichOrder;
 
@@ -23,17 +18,20 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button CreateButton;
 
 		protected BeamContext Context;
-		protected IDependencies System;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
+		
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			Context = managedPlayers.GetSinglePlayerContext();
-			System = Context.ServiceProvider.GetService<IDependencies>();
 			
-			gameObject.SetActive(System.IsVisible);
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}

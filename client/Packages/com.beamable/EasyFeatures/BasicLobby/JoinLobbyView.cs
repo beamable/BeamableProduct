@@ -66,6 +66,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		protected IDependencies System;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
+		
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public async void EnrichWithContext(BeamContextGroup managedPlayers)

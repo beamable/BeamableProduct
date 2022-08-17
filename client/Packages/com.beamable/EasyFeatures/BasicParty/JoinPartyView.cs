@@ -11,7 +11,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public interface IDependencies : IBeamableViewDeps
 		{
 			string PartyId { get; set; }
-			bool IsVisible { get; set; }
 			bool ValidateJoinButton();
 		}
 
@@ -27,6 +26,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected BeamContext Context;
 		protected IDependencies System;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
+		
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -34,8 +39,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			Context = managedPlayers.GetSinglePlayerContext();
 			System = Context.ServiceProvider.GetService<IDependencies>();
 			
-			gameObject.SetActive(System.IsVisible);
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}

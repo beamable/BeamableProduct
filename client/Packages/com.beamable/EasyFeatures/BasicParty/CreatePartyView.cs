@@ -15,7 +15,6 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			bool IsVisible { get; set; }
 			int MaxPlayers { get; set; }
 			PartyRestriction PartyRestriction { get; set; }
 			bool ValidateConfirmButton(int maxPlayers);
@@ -46,6 +45,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		public UnityEvent OnCreatePartyResponseReceived;
 		public UnityEvent CancelButtonClicked;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
+		
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -53,8 +58,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			Context = managedPlayers.GetSinglePlayerContext();
 			System = Context.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(System.IsVisible);
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}
