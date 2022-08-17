@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - iOS builds will no longer overwrite the Beamable user language preference.
+- Correctly exposed `GetCurrentProject` method in `IAuthApi` to retrieve CID, PID and the project name. This functionality was already exposed in the `AuthService` class; we just moved it to the interface level to make it easier to access via `BeamContext.Api`.
 
 ## [1.3.0]
 ### Added
