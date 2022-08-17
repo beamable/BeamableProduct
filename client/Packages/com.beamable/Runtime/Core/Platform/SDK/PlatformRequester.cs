@@ -360,6 +360,8 @@ namespace Beamable.Api
 				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
 			}
 
+			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
+
 			return request;
 		}
 
@@ -434,7 +436,7 @@ namespace Beamable.Api
 		public PlatformError Error { get; }
 		public UnityWebRequest Request { get; }
 		public PlatformRequesterException(PlatformError error, UnityWebRequest request, string responsePayload)
-		: base("HTTP Error", request.method, request.url, request.responseCode, responsePayload)
+		: base(Constants.Requester.ERROR_PREFIX_UNITY_SDK, request.method, request.url, request.responseCode, responsePayload)
 		{
 			Error = error;
 			Request = request;
