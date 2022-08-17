@@ -56,6 +56,15 @@ namespace Beamable.Server.Editor.CodeGen
             </ItemGroup>";
 		}
 
+		string GetCustomFragmentString()
+		{
+			if (Descriptor.TryGetCustomProjectFragment(out var fragment))
+			{
+				return fragment;
+			}
+
+			return "";
+		}
 		public string GetString()
 		{
 			// <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
@@ -72,8 +81,8 @@ namespace Beamable.Server.Editor.CodeGen
                <DocumentationFile>serviceDocs.xml</DocumentationFile>
             </PropertyGroup>
 
+{GetCustomFragmentString()}
             <ItemGroup>
-               <PackageReference Include=""Newtonsoft.Json"" Version=""12.0.3"" />
                <Reference Include=""BeamableMicroserviceBase"">
                   <HintPath>/app/BeamableMicroserviceBase.dll</HintPath>
 <SpecificVersion>False</SpecificVersion>
