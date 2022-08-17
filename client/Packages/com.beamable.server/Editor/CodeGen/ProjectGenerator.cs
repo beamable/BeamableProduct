@@ -56,6 +56,19 @@ namespace Beamable.Server.Editor.CodeGen
             </ItemGroup>";
 		}
 
+		string GetNugetDependenciesString()
+		{
+			if (Descriptor.TryGetCustomNugetFragment(out var fragment))
+			{
+				return fragment;
+			}
+
+			return $@"
+			<ItemGroup>
+               <PackageReference Include=""Newtonsoft.Json"" Version=""12.0.3"" />
+			</ItemGroup>
+";
+		}
 		public string GetString()
 		{
 			// <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
@@ -72,8 +85,8 @@ namespace Beamable.Server.Editor.CodeGen
                <DocumentationFile>serviceDocs.xml</DocumentationFile>
             </PropertyGroup>
 
+{GetNugetDependenciesString()}
             <ItemGroup>
-               <PackageReference Include=""Newtonsoft.Json"" Version=""12.0.3"" />
                <Reference Include=""BeamableMicroserviceBase"">
                   <HintPath>/app/BeamableMicroserviceBase.dll</HintPath>
 <SpecificVersion>False</SpecificVersion>
