@@ -296,7 +296,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
-			_publishManifestElements[descriptor.Name]?.UpdateStatus(state);
+			if (!_publishManifestElements.TryGetValue(descriptor.Name, out var element))
+			{
+				return;
+			}
+
+			element?.UpdateStatus(state);
 			SortServices();
 			switch (state)
 			{
