@@ -1,3 +1,4 @@
+using Beamable.Common.Shop;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,6 +49,12 @@ namespace Beamable.Common.Content
 		public override void SetValue(object value)
 		{
 			Value = (T)value;
+			HasValue = true;
+		}
+
+		public void Set(T value)
+		{
+			Value = value;
 			HasValue = true;
 		}
 
@@ -139,7 +146,68 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	public class OptionalFloat : OptionalValue<float> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalByte : OptionalValue<byte> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalShort : OptionalValue<short> { }
+
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalGuid : OptionalValue<Guid> { }
+
+	[System.Serializable]
+	[Agnostic]
 	public class OptionalDouble : OptionalValue<double> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalList<T> : Optional<List<T>> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArray<T> : Optional<T[]> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalIntArray : OptionalArray<int> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalStringArray : OptionalArray<string> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalFloatArray : OptionalArray<float> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDoubleArray : OptionalArray<double> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalShortArray : OptionalArray<short> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalLongArray : OptionalArray<long> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalUuidArray : OptionalArray<Guid> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalByteArray : OptionalArray<byte> {}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDictionaryStringToObject : Optional<Dictionary<string, object>> {}
 
 	[System.Serializable]
 	[Agnostic]

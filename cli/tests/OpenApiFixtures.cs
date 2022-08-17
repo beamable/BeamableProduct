@@ -3398,7 +3398,11 @@ public static class OpenApiFixtures
                             ""$ref"": ""#/components/schemas/ItemProperty""
                         }
                     }
-                }
+                },
+                ""required"": [
+                    ""contentId"",
+                    ""properties""
+                ]
             },
             ""InventoryObject"": {
                 ""type"": ""object"",
@@ -3431,7 +3435,14 @@ public static class OpenApiFixtures
                     ""id"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""service"",
+                    ""id"",
+                    ""method"",
+                    ""path"",
+                    ""body""
+                ]
             },
             ""InventoryProxyUpdateRequest"": {
                 ""type"": ""object"",
@@ -3446,7 +3457,10 @@ public static class OpenApiFixtures
                     },
                     ""currencies"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     },
                     ""newItems"": {
                         ""type"": ""array"",
@@ -3456,7 +3470,10 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
-                    ""id""
+                    ""id"",
+                    ""transaction"",
+                    ""currencies"",
+                    ""newItems""
                 ]
             },
             ""ItemGroup"": {
@@ -3472,7 +3489,11 @@ public static class OpenApiFixtures
                             ""$ref"": ""#/components/schemas/Item""
                         }
                     }
-                }
+                },
+                ""required"": [
+                    ""id"",
+                    ""items""
+                ]
             },
             ""ItemUpdateRequest"": {
                 ""type"": ""object"",
@@ -3493,7 +3514,9 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
-                    ""id""
+                    ""contentId"",
+                    ""id"",
+                    ""properties""
                 ]
             },
             ""CommonResponse"": {
@@ -3503,27 +3526,45 @@ public static class OpenApiFixtures
                     },
                     ""data"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
                     }
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Common Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""result"",
+                    ""data""
+                ]
             },
             ""InventoryProxyState"": {
                 ""properties"": {
                     ""currencies"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     },
                     ""items"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""array"",
+                            ""items"": {
+                                ""$ref"": ""#/components/schemas/ItemProxy""
+                            }
+                        }
                     }
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Inventory Proxy State"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""currencies"",
+                    ""items""
+                ]
             },
             ""CurrencyPreview"": {
                 ""type"": ""object"",
@@ -3542,6 +3583,7 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
+                    ""id"",
                     ""amount"",
                     ""originalAmount""
                 ]
@@ -3565,7 +3607,9 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
-                    ""amount""
+                    ""id"",
+                    ""amount"",
+                    ""properties""
                 ]
             },
             ""InventoryView"": {
@@ -3588,7 +3632,11 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Inventory View"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""currencies"",
+                    ""items""
+                ]
             },
             ""InventoryGetRequest"": {
                 ""properties"": {
@@ -3612,7 +3660,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Doop Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""stuff""
+                ]
             },
             ""MultipliersGetResponse"": {
                 ""properties"": {
@@ -3625,7 +3676,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Multipliers Get Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""multipliers""
+                ]
             },
             ""CurrencyProperty"": {
                 ""type"": ""object"",
@@ -3637,7 +3691,11 @@ public static class OpenApiFixtures
                     ""value"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""name"",
+                    ""value""
+                ]
             },
             ""EndTransactionRequest"": {
                 ""properties"": {
@@ -3647,7 +3705,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""End Transaction Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""transaction""
+                ]
             },
             ""InventoryProxySettings"": {
                 ""type"": ""object"",
@@ -3656,7 +3717,10 @@ public static class OpenApiFixtures
                     ""service"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""service""
+                ]
             },
             ""Inventory"": {
                 ""type"": ""object"",
@@ -3712,7 +3776,11 @@ public static class OpenApiFixtures
                 },
                 ""required"": [
                     ""id"",
-                    ""nextItemId""
+                    ""currencies"",
+                    ""items"",
+                    ""completedTransactions"",
+                    ""nextItemId"",
+                    ""inventoryObjects""
                 ]
             },
             ""Currency"": {
@@ -3734,6 +3802,7 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
+                    ""id"",
                     ""amount""
                 ]
             },
@@ -3750,6 +3819,7 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
+                    ""id"",
                     ""index""
                 ]
             },
@@ -3767,20 +3837,33 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Inventory Proxy Operation"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""proxyUpdate"",
+                    ""proxySettings"",
+                    ""newInventory""
+                ]
             },
             ""InventoryUpdateRequest"": {
                 ""properties"": {
                     ""currencies"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     },
                     ""empty"": {
                         ""type"": ""boolean""
                     },
                     ""currencyProperties"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""array"",
+                            ""items"": {
+                                ""$ref"": ""#/components/schemas/CurrencyProperty""
+                            }
+                        }
                     },
                     ""currencyContentIds"": {
                         ""type"": ""array"",
@@ -3823,6 +3906,8 @@ public static class OpenApiFixtures
                 ""title"": ""Inventory Update Request"",
                 ""type"": ""object"",
                 ""required"": [
+                    ""itemContentIds"",
+                    ""currencyContentIds"",
                     ""empty""
                 ]
             },
@@ -3853,7 +3938,8 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
-                    ""id""
+                    ""id"",
+                    ""properties""
                 ]
             },
             ""ItemProperty"": {
@@ -3866,7 +3952,11 @@ public static class OpenApiFixtures
                     ""value"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""name"",
+                    ""value""
+                ]
             },
             ""InventoryQueryRequest"": {
                 ""properties"": {
@@ -3894,6 +3984,7 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
+                    ""id"",
                     ""expire""
                 ]
             },
@@ -3910,7 +4001,27 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
+                    ""contentId"",
                     ""id""
+                ]
+            },
+            ""ItemProxy"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""proxyId"": {
+                        ""type"": ""string""
+                    },
+                    ""properties"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/ItemProperty""
+                        }
+                    }
+                },
+                ""required"": [
+                    ""proxyId"",
+                    ""properties""
                 ]
             },
             ""VipBonus"": {
@@ -3930,6 +4041,7 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
+                    ""currency"",
                     ""multiplier"",
                     ""roundToNearest""
                 ]
@@ -3945,7 +4057,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Preview Vip Bonus Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""currencies""
+                ]
             },
             ""TransferRequest"": {
                 ""properties"": {
@@ -3958,7 +4073,10 @@ public static class OpenApiFixtures
                     },
                     ""currencies"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 },
                 ""additionalProperties"": false,
@@ -4031,6 +4149,7 @@ public static class OpenApiFixtures
                         ""content"": {
                             ""application/json"": {
                                 ""schema"": {
+												#/components/schemas/CurrencyPreview
                                     ""$ref"": ""#/components/schemas/ItemContentResponse""
                                 }
                             }
@@ -4085,7 +4204,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Currency Content Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""content""
+                ]
             },
             ""CurrencyArchetype"": {
                 ""type"": ""object"",
@@ -4101,9 +4223,13 @@ public static class OpenApiFixtures
                         ""$ref"": ""#/components/schemas/ClientPermission""
                     },
                     ""startingAmount"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     }
-                }
+                },
+                ""required"": [
+                    ""symbol""
+                ]
             },
             ""ClientPermission"": {
                 ""type"": ""object"",
@@ -4124,7 +4250,10 @@ public static class OpenApiFixtures
                     ""service"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""service""
+                ]
             },
             ""ItemArchetype"": {
                 ""type"": ""object"",
@@ -4139,7 +4268,10 @@ public static class OpenApiFixtures
                     ""clientPermission"": {
                         ""$ref"": ""#/components/schemas/ClientPermission""
                     }
-                }
+                },
+                ""required"": [
+                    ""symbol""
+                ]
             },
             ""ItemContentResponse"": {
                 ""properties"": {
@@ -4152,7 +4284,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Item Content Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""content""
+                ]
             }
         },
         ""securitySchemes"": {

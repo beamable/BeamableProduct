@@ -14,12 +14,12 @@ public class SwaggerService
 
 	public static readonly string[] BeamableOpenApis = new[]
 	{
-		"basic/inventory/platform/docs",
+		// "basic/inventory/platform/docs",
 		"object/inventory/platform/docs",
-		"basic/accounts/platform/docs",
-		"object/accounts/platform/docs",
-		"object/leaderboards/platform/docs",
-		"basic/leaderboards/platform/docs",
+		// "basic/accounts/platform/docs",
+		// "object/accounts/platform/docs",
+		// "object/leaderboards/platform/docs",
+		// "basic/leaderboards/platform/docs",
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, IEnumerable<ISourceGenerator> generators)
@@ -57,6 +57,7 @@ public class SwaggerService
 		{
 			foreach (var kvp in doc.Components.Schemas)
 			{
+				if (string.IsNullOrEmpty(kvp.Key)) continue;
 				list.Add(new NamedOpenApiSchema { Name = kvp.Key, Schema = kvp.Value, Document = doc});
 			}
 		}
@@ -83,6 +84,10 @@ public class SwaggerService
 				var stream = await downloader.GetStreamAsync(url);
 				var res = new OpenApiDocumentResult();
 				res.Document = new OpenApiStreamReader().Read(stream, out res.Diagnostic);
+				if (res.Diagnostic.Errors.Count > 0 || res.Diagnostic.Warnings.Count > 0)
+				{
+
+				}
 				return res;
 			}));
 		}
