@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservices can accept `InventoryUpdateBuilder` and other types that include subclasses of `SerializableStringTo<T>`
 - Microservices stop stale containers before rebuilding.
 - Microservices recognize build failure vs success correctly during local development.
+- Deployed Microservices will restart if they fail to re-authenticate with Beamable
 - Manually adding a `StorageObject` Assembly Definition as a dependency of a `Microservice`'s Assembly Definition now correctly sets up all the necessary Mongo DLLs for the `StorageObject` to be usable inside the Microservice. You can disable this behaviour by setting `MicroserviceConfiguration.EnsureMongoAssemblyDependencies = false`. The recommended way to do set service dependencies is still to use the Dependency button of the Microservice Manager Window.
 
 ### Changed
