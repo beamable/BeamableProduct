@@ -56,9 +56,9 @@ namespace Beamable.Server.Editor.CodeGen
             </ItemGroup>";
 		}
 
-		string GetNugetDependenciesString()
+		string GetCustomFragmentString()
 		{
-			if (Descriptor.TryGetCustomNugetFragment(out var fragment))
+			if (Descriptor.TryGetCustomProjectFragment(out var fragment))
 			{
 				return fragment;
 			}
@@ -81,7 +81,7 @@ namespace Beamable.Server.Editor.CodeGen
                <DocumentationFile>serviceDocs.xml</DocumentationFile>
             </PropertyGroup>
 
-{GetNugetDependenciesString()}
+{GetCustomFragmentString()}
             <ItemGroup>
                <Reference Include=""BeamableMicroserviceBase"">
                   <HintPath>/app/BeamableMicroserviceBase.dll</HintPath>

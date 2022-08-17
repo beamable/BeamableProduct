@@ -24,7 +24,7 @@ namespace Beamable.Server.Editor
 		public string SourcePath => Path.GetDirectoryName(AttributePath);
 		public string HidePath => $"./Assets/~/beamservicehide/{Name}";
 
-		public string CustomNugetListingPath => Path.Combine(SourcePath, "NugetPackageFragment.xml");
+		public string CustomCsProjFragmentPath => Path.Combine(SourcePath, "CsProjFragment.xml");
 		public string BuildPath => $"./Temp/beam/{(IsGenerator ? "generators/" : String.Empty)}{Name}";
 		public string ContainerName => $"{Name}_container";
 		public string NugetVolume => $"beamable_microservice_nuget_data"; // TODO: do we need to enter the name here? Does it need to be container specific? I don't think so...
@@ -34,12 +34,12 @@ namespace Beamable.Server.Editor
 		public bool HasValidationWarning { get; set; }
 		public bool IsGenerator { get; set; }
 
-		public bool TryGetCustomNugetFragment(out string csProjFragment)
+		public bool TryGetCustomProjectFragment(out string csProjFragment)
 		{
 			csProjFragment = "";
-			if (File.Exists(CustomNugetListingPath))
+			if (File.Exists(CustomCsProjFragmentPath))
 			{
-				csProjFragment = File.ReadAllText(CustomNugetListingPath);
+				csProjFragment = File.ReadAllText(CustomCsProjFragmentPath);
 				return true;
 			}
 
