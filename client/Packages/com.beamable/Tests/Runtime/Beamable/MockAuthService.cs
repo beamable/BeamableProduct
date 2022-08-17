@@ -115,6 +115,11 @@ namespace Beamable.Tests.Runtime.Api
 			throw new System.NotImplementedException();
 		}
 
+		public Promise<CurrentProjectResponse> GetCurrentProject()
+		{
+			throw new NotImplementedException();
+		}
+
 		public Promise<User> SetLanguage(SystemLanguage language)
 		{
 			throw new NotImplementedException();
