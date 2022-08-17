@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `BeamableRequestError` to `RequestException` base type that can be used to catch exception from Microservice requests to Beamable.
 - A leaderboard can now be frozen using `Services.Leaderboards.FreezeLeaderboard` method to prevent additional scores to be submitted.
 - Microservice can include a `CsProjFragment.xml` file as a `.csproj` `<ItemGroup>` property block of nuget references that the microservice will use to resolve.
 
