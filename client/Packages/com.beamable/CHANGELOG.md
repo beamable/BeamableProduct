@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - iOS builds will no longer overwrite the Beamable user language preference.
+- An expired token will no longer cause an unintended realm changes in rare cases.
+- Logging into the editor will automatically put you in the realm (PID) defined in your `config-defaults.txt` file instead of incorrectly resetting you to your default realm. 
 
 ## [1.3.0]
 ### Added
