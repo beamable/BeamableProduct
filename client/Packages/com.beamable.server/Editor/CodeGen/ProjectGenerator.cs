@@ -63,11 +63,7 @@ namespace Beamable.Server.Editor.CodeGen
 				return fragment;
 			}
 
-			return $@"
-			<ItemGroup>
-               <PackageReference Include=""Newtonsoft.Json"" Version=""12.0.3"" />
-			</ItemGroup>
-";
+			return "";
 		}
 		public string GetString()
 		{
