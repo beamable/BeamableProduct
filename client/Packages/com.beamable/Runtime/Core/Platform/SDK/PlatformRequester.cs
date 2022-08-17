@@ -359,7 +359,7 @@ namespace Beamable.Api
 			{
 				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
 			}
-			
+
 			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 
 			return request;
