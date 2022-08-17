@@ -5,20 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Fixed
-- Publish doesn't fail if there is an unused StorageObject entry in the MicroserviceConfiguration 
-
-## [Unreleased]
 ### Added
 - `BeamableRequestError` to `RequestException` base type that can be used to catch exception from Microservice requests to Beamable.
 - A leaderboard can now be frozen using `Services.Leaderboards.FreezeLeaderboard` method to prevent additional scores to be submitted.
+- Microservice can include a `CsProjFragment.xml` file as a `.csproj` `<ItemGroup>` property block of nuget references that the microservice will use to resolve.
 
 ### Fixed
+- Publish doesn't fail if there is an unused StorageObject entry in the MicroserviceConfiguration
 - Microservices reload route table after hot module reload code change. 
 - Microservices can accept `InventoryUpdateBuilder` and other types that include subclasses of `SerializableStringTo<T>`
 - Microservices stop stale containers before rebuilding.
 - Microservices recognize build failure vs success correctly during local development.
 - Deployed Microservices will restart if they fail to re-authenticate with Beamable
+- Reference `dll` file no longer copies parent directory
 
 ### Changed
 - Microservices use the docker `-v` flag to specify bind mounts instead of `--mount`.
