@@ -1,5 +1,9 @@
+using Beamable.Common;
+using Beamable.Common.Api.Inventory;
+using Beamable.Common.Content;
 using System.Reflection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using UnityEngine;
 
@@ -10,9 +14,24 @@ namespace Beamable.Server.Common
         private static UnitySerializationSettings _instance;
         public static UnitySerializationSettings Instance => _instance ??= new UnitySerializationSettings
         {
+			Converters = new List<JsonConverter>
+			{
+				new StringToSomethingDictionaryConverter<string>(),
+				new StringToSomethingDictionaryConverter<int>(),
+				new StringToSomethingDictionaryConverter<long>(),
+				new StringToSomethingDictionaryConverter<CurrencyPropertyList>(),
+
+				// THIS MUST BE LAST, because it is hacky, and falls back onto other converts as its _normal_ behaviour. If its not last, then other converts can run twice, which causes newtonsoft to explode.
+				new UnitySerializationCallbackInvoker(),
+
+			},
             ContractResolver = UnityJsonContractResolver.Instance
         };
-        private UnitySerializationSettings() { }
+
+        private UnitySerializationSettings()
+        {
+
+        }
     }
 
     public class JsonUtilityConverter : JsonUtility.IConverter
@@ -29,39 +48,118 @@ namespace Beamable.Server.Common
         public T FromJson<T>(string json) => JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
     }
 
-    public class UnitySerializationCallbackConverter : JsonConverter
+    public class StringToSomethingDictionaryConverter<T> : JsonConverter<SerializableDictionaryStringToSomething<T>>
     {
-        public readonly JsonConverter BaseConverter;
+	    public override void WriteJson(JsonWriter writer, SerializableDictionaryStringToSomething<T> value, JsonSerializer serializer)
+	    {
+		    // default to serializing an array...
+		    var list = new KeyValue[value.Count];
+		    var index = 0;
+		    foreach (var kvp in value)
+		    {
+			    list[index++] = new KeyValue { name = kvp.Key, value = kvp.Value };
+		    }
+		    serializer.Serialize(writer, list);
+	    }
 
-        public UnitySerializationCallbackConverter(JsonConverter baseConverter)
-        {
-            BaseConverter = baseConverter;
-        }
+	    public override SerializableDictionaryStringToSomething<T> ReadJson(JsonReader reader, Type objectType,
+		    SerializableDictionaryStringToSomething<T> existingValue, bool hasExistingValue, JsonSerializer serializer)
+	    {
+		    var instance = (SerializableDictionaryStringToSomething<T>)Activator.CreateInstance(objectType);
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            if (value is ISerializationCallbackReceiver receiver)
-            {
-                receiver.OnBeforeSerialize();
-            }
-            BaseConverter.WriteJson(writer, value, serializer);
-        }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var result = BaseConverter.ReadJson(reader, objectType, existingValue, serializer);
-            if (result is ISerializationCallbackReceiver receiver)
-            {
-                receiver.OnAfterDeserialize();
-            }
+		    SerializableDictionaryStringToSomething<T> HandleArrayVariant()
+		    {
+			    var keyValues = serializer.Deserialize<KeyValue[]>(reader);
+			    foreach (var kv in keyValues)
+			    {
+				    instance[kv.name] = kv.value;
+			    }
 
-            return result;
-        }
+			    return instance;
+		    }
 
-        public override bool CanConvert(Type objectType)
-        {
-            return BaseConverter.CanConvert(objectType);
-        }
+
+		    SerializableDictionaryStringToSomething<T> HandleObjectVariant()
+		    {
+			    var keysAndValues = serializer.Deserialize<KeysAndValues>(reader);
+			    if (keysAndValues.keys.Length != keysAndValues.values.Length)
+			    {
+				    BeamableLogger.LogWarning($"Deserializing dictionary but keys and values were different values. keyCount=[{keysAndValues.keys.Length}] valueCount=[{keysAndValues.values.Length}]");
+			    }
+			    for (var i = 0; i < keysAndValues.keys.Length && i < keysAndValues.values.Length; i++)
+			    {
+				    instance[keysAndValues.keys[i]] = keysAndValues.values[i];
+			    }
+
+			    return instance;
+		    }
+
+		    return reader.TokenType == JsonToken.StartArray
+			    ? HandleArrayVariant()
+			    : HandleObjectVariant();
+	    }
+
+	    public class KeyValue
+	    {
+		    public string name;
+		    public T value;
+	    }
+
+	    public class KeysAndValues
+	    {
+		    public string[] keys;
+		    public T[] values;
+	    }
+    }
+
+
+    /// <summary>
+    /// Call the ISerializationCallbackReceiver methods, and then fallback to the existing converter...
+    ///  adapted from https://github.com/JamesNK/Newtonsoft.Json/issues/719
+    /// </summary>
+    public class UnitySerializationCallbackInvoker : JsonConverter<ISerializationCallbackReceiver>, IDisposable
+    {
+	    private readonly ThreadLocal<bool> _skip = new ThreadLocal<bool>(() => false);
+
+	    public override bool CanRead => !_skip.Value || (_skip.Value = false);
+
+	    public override bool CanWrite => !_skip.Value || (_skip.Value = false);
+
+	    public override ISerializationCallbackReceiver ReadJson(JsonReader reader, Type objectType,
+		    ISerializationCallbackReceiver? existingValue, bool hasExistingValue, JsonSerializer serializer)
+	    {
+		    var jObject = serializer.Deserialize<JObject>(reader);
+
+		    _skip.Value = true;
+
+		    var result = jObject.ToObject(objectType, serializer) as ISerializationCallbackReceiver;
+			result?.OnAfterDeserialize();
+		    return result;
+	    }
+
+	    public override void WriteJson(JsonWriter writer, ISerializationCallbackReceiver? value,
+		    JsonSerializer serializer)
+	    {
+		    if (value == null)
+		    {
+			    writer.WriteNull();
+			    return;
+		    }
+		    value.OnBeforeSerialize();
+
+		    var thisIndex = serializer.Converters.IndexOf(this);
+		    serializer.Converters.RemoveAt(thisIndex);
+
+		    serializer.Serialize(writer, value);
+
+		    serializer.Converters.Insert(thisIndex, this);
+	    }
+
+	    public void Dispose()
+	    {
+		    _skip.Dispose();
+	    }
     }
 
     public class UnityJsonContractResolver : DefaultContractResolver
@@ -108,25 +206,17 @@ namespace Beamable.Server.Common
             var fields = GetAllFields(objectType);
 
             bool IsPublicField(FieldInfo field) => field.IsPublic;
+            bool IsReadOnly(FieldInfo field) => field.IsInitOnly;
+            bool IsPublicAndWritable(FieldInfo field) => IsPublicField(field) && !IsReadOnly(field);
             bool IsMarkedSerializeAttribute(FieldInfo field) => field.GetCustomAttribute<SerializeField>() != null;
 
-            bool ShouldIncludeField(FieldInfo field) => IsPublicField(field) || IsMarkedSerializeAttribute(field);
+            bool ShouldIncludeField(FieldInfo field) => IsPublicAndWritable(field) || IsMarkedSerializeAttribute(field);
 
             var validFields = fields
                .Where(ShouldIncludeField)
                .ToList();
 
             return validFields.Cast<MemberInfo>().ToList();
-        }
-
-        protected override JsonConverter ResolveContractConverter(Type objectType)
-        {
-            var baseConverter = base.ResolveContractConverter(objectType);
-            if (objectType.IsSubclassOf(typeof(ISerializationCallbackReceiver)))
-            {
-                return new UnitySerializationCallbackConverter(baseConverter);
-            }
-            return baseConverter;
         }
     }
 }
