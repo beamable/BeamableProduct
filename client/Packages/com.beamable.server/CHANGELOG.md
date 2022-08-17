@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservices can accept `InventoryUpdateBuilder` and other types that include subclasses of `SerializableStringTo<T>`
 - Microservices stop stale containers before rebuilding.
 - Microservices recognize build failure vs success correctly during local development.
+- Deployed Microservices will restart if they fail to re-authenticate with Beamable
 
 ### Changed
 - Microservices use the docker `-v` flag to specify bind mounts instead of `--mount`.
