@@ -1,6 +1,5 @@
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization;
-using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -266,6 +265,12 @@ namespace Beamable.Common.Api
 		/// </list>
 		/// </summary>
 		public string Prefix { get; private set;}
+
+		public RequesterException(string prefix, string method, string uri, long responseCode, BeamableRequestError err)
+			: this(prefix, method, uri, responseCode, err == null ? null : JsonSerializable.ToJson(err))
+		{
+
+		}
 
 		public RequesterException(string prefix, string method, string uri, long responseCode, string responsePayload)
 		   : base(GenerateMessage(prefix, method, uri, responseCode, responsePayload))

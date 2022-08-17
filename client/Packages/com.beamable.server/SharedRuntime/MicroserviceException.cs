@@ -12,7 +12,13 @@ namespace Beamable.Server
 		public string Error { get; set; }
 		public new string Message { get; set; }
 
-		public MicroserviceException(int responseStatus, string error, string message) : base(Constants.Requester.ERROR_PREFIX_MICROSERVICE, error, string.Empty, responseStatus, message)
+		public MicroserviceException(int responseStatus, string error, string message) : base(Constants.Requester.ERROR_PREFIX_MICROSERVICE, error, string.Empty, responseStatus, new BeamableRequestError
+		{
+			message = message,
+			error = error,
+			service = "beam-microservice",
+			status = responseStatus
+		})
 		{
 			ResponseStatus = responseStatus;
 			Error = error;
