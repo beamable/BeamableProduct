@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
+using Beamable.Server.Common;
 using Beamable.Server.Content;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;

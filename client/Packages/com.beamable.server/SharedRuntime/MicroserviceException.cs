@@ -91,4 +91,13 @@ namespace Beamable.Server
 
 		}
 	}
+
+	public class BadInputException : MicroserviceException
+	{
+		public BadInputException(string payload, Exception inner)
+			: base(400, "inputParameterFailure", $"Your input failed to deserialize correctly. Payload=[{payload}] Inner message=[{inner?.Message ?? "?"}]")
+		{
+
+		}
+	}
 }
