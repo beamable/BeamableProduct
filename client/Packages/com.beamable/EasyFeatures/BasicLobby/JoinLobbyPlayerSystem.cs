@@ -63,20 +63,17 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Passcode = string.Empty;
 		}
 
-		public virtual void RegisterLobbyData(SimGameType gameType,
-		                                      List<Lobby> data) =>
+		public virtual void RegisterLobbyData(SimGameType gameType, List<Lobby> data) =>
 			RegisterLobbyData(gameType.Id, data);
 
-		public virtual void RegisterLobbyData(SimGameTypeRef gameTypeRef,
-		                                      List<Lobby> data) =>
+		public virtual void RegisterLobbyData(SimGameTypeRef gameTypeRef, List<Lobby> data) =>
 			RegisterLobbyData(gameTypeRef.Id, data);
 
-		public virtual void RegisterLobbyData(string gameTypeId,
-		                                      List<Lobby> data)
+		public virtual void RegisterLobbyData(string gameTypeId, List<Lobby> data)
 		{
 			PerGameTypeLobbiesIds.TryGetValue(gameTypeId, out var ids);
 			PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var names);
-			PerGameTypeLobbiesNames.TryGetValue(gameTypeId, out var descriptions);
+			PerGameTypeLobbiesDescriptions.TryGetValue(gameTypeId, out var descriptions);
 			PerGameTypeLobbiesCurrentPlayers.TryGetValue(gameTypeId, out var currentPlayers);
 			PerGameTypeLobbiesMaxPlayers.TryGetValue(gameTypeId, out var maxPlayers);
 
@@ -150,6 +147,9 @@ namespace Beamable.EasyFeatures.BasicLobby
 			ids.AddRange(entries.Select(lobby => lobby.lobbyId));
 
 			GuaranteeInitList(ref names);
+
+			IEnumerable<string> enumerable = entries.Select(lobby => lobby.name);
+
 			names.AddRange(entries.Select(lobby => lobby.name));
 
 			GuaranteeInitList(ref descriptions);
@@ -215,7 +215,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public async Promise GetLobbies()
 		{
-			LobbyQueryResponse response = await BeamContext.Lobby.FindLobbies();
+			LobbyQueryResponse response = await BeamContext.Lobby.FindLobbiesOfType(SelectedGameType.Id);
 			RegisterLobbyData(GameTypes[SelectedGameTypeIndex], response.results);
 		}
 

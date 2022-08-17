@@ -133,7 +133,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, Model?.AllServiceCount ?? 0);
+			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, Model?.AllUnarchivedServiceCount ?? 0);
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();

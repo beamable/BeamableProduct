@@ -18,12 +18,21 @@ namespace Beamable.Experimental.Api.Lobbies
 		}
 
 		/// <inheritdoc cref="ILobbyApi.FindLobbies"/>
-		// TODO: This should also allow for all sorts of fun querying
 		public Promise<LobbyQueryResponse> FindLobbies()
 		{
 			return _requester.Request<LobbyQueryResponse>(
 				Method.GET,
 				$"/lobbies"
+			);
+		}
+		
+		/// <inheritdoc cref="ILobbyApi.FindLobbiesOfType"/>
+		public Promise<LobbyQueryResponse> FindLobbiesOfType(string matchType, int limit = 100, int skip = 0)
+		{
+			return _requester.Request<LobbyQueryResponse>(
+				Method.GET,
+				$"/lobbies",
+				new LobbyQueryRequest(skip, limit, matchType)
 			);
 		}
 

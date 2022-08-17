@@ -267,8 +267,8 @@ namespace Beamable.Server.Editor.DockerCommands
 				includeOuterQuotes = true;
 #endif
 				var quoteStr = includeOuterQuotes ? "'" : "";
-				var optionStr = $"{(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst={dst}";
-				return $"--mount {quoteStr}{optionStr}{quoteStr}";
+				var optionStr = $"\"{src}\":{dst}{(isReadOnly ? ":ro": "")}";
+				return $"-v {quoteStr}{optionStr}{quoteStr}";
 			}
 		}
 
