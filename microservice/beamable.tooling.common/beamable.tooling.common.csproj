@@ -11,6 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
       <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
 

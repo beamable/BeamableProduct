@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Microservices reload route table after hot module reload code change. 
+- Microservices can accept `InventoryUpdateBuilder` and other types that include subclasses of `SerializableStringTo<T>`
 - Microservices stop stale containers before rebuilding.
 - Microservices recognize build failure vs success correctly during local development.
 

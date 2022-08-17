@@ -1,6 +1,10 @@
+using Beamable.Common.Api;
+using Beamable.Common.Api.Inventory;
+using Beamable.Common.Inventory;
 using System.Threading.Tasks;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
+using Beamable.Server.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -12,6 +16,35 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
    [TestFixture]
    public class MethodSerializationTests : CommonTest
    {
+	   [Test]
+	   [NonParallelizable]
+	   public async Task Call_BadInput()
+	   {
+		   allowErrorLogs = true;
+		   TestSocket testSocket = null;
+		   var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+		   {
+			   testSocket = socket;
+			   socket.AddStandardMessageHandlers()
+				   .AddMessageHandler(
+					   MessageMatcher
+						   .WithReqId(1)
+						   .WithStatus(400),
+					   MessageResponder.NoResponse(),
+					   MessageFrequency.OnlyOnce()
+				   );
+		   }));
+
+		   await ms.Start<SimpleMicroservice>(new TestArgs());
+		   Assert.IsTrue(ms.HasInitialized);
+
+		   testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", nameof(SimpleMicroservice.Add), 1, 1, null, 3));
+
+		   // simulate shutdown event...
+		   await ms.OnShutdown(this, null);
+		   AssetBadInputError();
+		   Assert.IsTrue(testSocket.AllMocksCalled());
+	   }
 
 	   [Test]
       [NonParallelizable]
@@ -453,6 +486,42 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          allowErrorLogs = true;
          Assert.AreEqual(1, GetBadLogs().Count());
          Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      [Test]
+      [NonParallelizable]
+      public async Task Call_MethodWithSendMail()
+      {
+	      TestSocket testSocket = null;
+
+	      var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+	      {
+		      testSocket = socket;
+		      socket.AddStandardMessageHandlers()
+			      .AddMessageHandler(
+				      MessageMatcher
+					      .WithReqId(-5), // outbound mail response...
+				      MessageResponder.Success(new EmptyResponse()),
+				      MessageFrequency.OnlyOnce()
+			      )
+			      .AddMessageHandler(
+				      MessageMatcher
+					      .WithReqId(1)
+					      .WithStatus(200)
+					      .WithPayload<EmptyResponse>(x => x!=null),
+				      MessageResponder.NoResponse(),
+				      MessageFrequency.OnlyOnce()
+			      );
+	      }));
+
+	      await ms.Start<SimpleMicroservice>(new TestArgs());
+	      Assert.IsTrue(ms.HasInitialized);
+
+	      testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", nameof(SimpleMicroservice.MethodWithSendMail), 1, 1));
+
+	      // simulate shutdown event...
+	      await ms.OnShutdown(this, null);
+	      Assert.IsTrue(testSocket.AllMocksCalled());
       }
    }
 }
