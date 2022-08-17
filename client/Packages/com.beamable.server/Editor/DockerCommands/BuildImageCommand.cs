@@ -122,12 +122,7 @@ and then setting the beamable-builder as the default docker builder.";
 
 		protected override void Resolve()
 		{
-			bool success = StandardErrorBuffer?.Contains($"naming to docker.io/library/{_descriptor.ImageName} done") ?? true;
-			if (MicroserviceConfiguration.Instance.DisableDockerBuildkit)
-			{
-				success = string.IsNullOrEmpty(StandardErrorBuffer);
-			}
-
+			var success = _exitCode == 0;
 			SetAsBuild(_descriptor, success);
 			if (success)
 			{

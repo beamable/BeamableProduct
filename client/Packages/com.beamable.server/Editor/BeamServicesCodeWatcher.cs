@@ -163,6 +163,33 @@ namespace Beamable.Server.Editor
 			}
 		}
 
+		public void CheckForMissingMongoDependenciesOnMicroservices()
+		{
+			// Make sure this feature is not disabled.
+			var config = MicroserviceConfiguration.Instance;
+			if (!config.EnsureMongoAssemblyDependencies) 
+				return;
+
+			// Get the reflection cache
+			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+			// Find every declared Microservice that has a dependency on a storage object.
+			var storages = LatestCodeHandles.Where(c => c.CodeClass == BeamCodeClass.StorageObject).ToList();
+			var storageAsmNames = storages.Select(sch => sch.AsmDefInfo.Name).ToList();
+			var descToDeps = registry.Descriptors.ToDictionary(d => d, DependencyResolver.GetDependencies);
+			var microservicesThatDependOnStorage = registry.Descriptors.Where(d =>
+			{
+				var deps = descToDeps[d].Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
+				return deps != null;
+			});
+			
+			// Find all MSs that are missing the correct Mongo DLLs
+			var missingMongoDepsAsmDefs = microservicesThatDependOnStorage.Select(ms => ms.ConvertToAsset()).Where(asm => !asm.HasMongoLibraries());
+
+			// Add Mongo Libraries to each of the ones that are missing them.
+			foreach (var asset in missingMongoDepsAsmDefs) asset.AddMongoLibraries();
+		}
+
 		public void CheckForLocalChangesNotYetDeployed()
 		{
 			var microserviceConfiguration = MicroserviceConfiguration.Instance;
@@ -288,6 +315,7 @@ namespace Beamable.Server.Editor
 
 			// Check for the hint regarding local changes that are not deployed to your local docker environment
 			codeWatcher.CheckForLocalChangesNotYetDeployed();
+			codeWatcher.CheckForMissingMongoDependenciesOnMicroservices();
 
 			// Handle the client code generation for C#MSs.
 			try
