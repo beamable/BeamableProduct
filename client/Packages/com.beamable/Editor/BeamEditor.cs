@@ -582,10 +582,10 @@ namespace Beamable
 
 			// Gets the stored pid, if its there
 			ConfigDatabase.TryGetString("pid", out var pid);
-			
+
 			// Set the config defaults to reflect the new Customer.
 			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
-			
+
 			// Attempt to get an access token.
 			return await Login(email, password, pid);
 		}
