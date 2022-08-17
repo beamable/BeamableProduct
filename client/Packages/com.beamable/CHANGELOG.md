@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - iOS builds will no longer overwrite the Beamable user language preference.
 - An expired token will no longer cause an unintended realm changes in rare cases.
 - Logging into the editor will automatically put you in the realm (PID) defined in your `config-defaults.txt` file instead of incorrectly resetting you to your default realm. 
+- Correctly exposed `GetCurrentProject` method in `IAuthApi` to retrieve CID, PID and the project name. This functionality was already exposed in the `AuthService` class; we just moved it to the interface level to make it easier to access via `BeamContext.Api`.
 
 ## [1.3.0]
 ### Added
