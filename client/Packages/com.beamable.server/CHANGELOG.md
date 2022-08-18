@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Microservices use the docker `-v` flag to specify bind mounts instead of `--mount`.
+- Microservices may not be published as ARM images. Microservices will be forced to "linux/amd64" architecture.
 
 ## [1.3.0]
 ### Added
