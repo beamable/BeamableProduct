@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - A leaderboard can now be frozen using `Services.Leaderboards.FreezeLeaderboard` method to prevent additional scores to be submitted.
+- Added `GetAccountId` method to `IMicroserviceAuthApi` that returns the requesting user's AccountId as opposed to their GamerTag. 
 
 ### Fixed
 - Microservices reload route table after hot module reload code change. 
