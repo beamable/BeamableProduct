@@ -582,10 +582,10 @@ namespace Beamable
 
 			// Gets the stored pid, if its there
 			ConfigDatabase.TryGetString("pid", out var pid);
-			
+
 			// Set the config defaults to reflect the new Customer.
 			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
-			
+
 			// Attempt to get an access token.
 			return await Login(email, password, pid);
 		}
@@ -613,7 +613,7 @@ namespace Beamable
 			{
 				realm = await realmService.GetRealm();
 
-				if (realm == null && CurrentRealm != null) // reset current realm if last realm don't exist on serverside 
+				if (realm == null && CurrentRealm != null) // reset current realm if last realm don't exist on serverside
 				{
 					var currentRealmFromServer = await realmService.GetRealms().Map(all => { return all.Find(v => v.Pid == CurrentRealm.Pid); });
 
@@ -639,13 +639,19 @@ namespace Beamable
 			{
 				var games = await realmService.GetGames();
 
-				if (pid == null)
+				if (string.IsNullOrEmpty(pid))
 				{
 					var realms = await realmService.GetRealms(games.First());
 					realm = realms.First(rv => !rv.Archived);
 				}
 				else
-					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
+				{
+					realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
+					if (realm == null)
+					{
+						Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+					}
+				}
 			}
 
 			await (realm == null ? Promise.Success : SwitchRealm(realm));
