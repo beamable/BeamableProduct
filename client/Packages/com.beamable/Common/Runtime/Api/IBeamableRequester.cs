@@ -1,4 +1,5 @@
 using Beamable.Common.Api.Auth;
+using Beamable.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,61 @@ namespace Beamable.Common.Api
 		POST = 2,
 		PUT = 3,
 		DELETE = 4
+	}
+
+	public static class MethodUtil
+	{
+
+		/// <summary>
+		/// Convert the <see cref="Method"/> into a readable string.
+		/// </summary>
+		/// <param name="method">The <see cref="Method"/></param>
+		/// <returns>A string version the method that mirrors its value</returns>
+		public static string ToReadableString(this Method method)
+		{
+			switch (method)
+			{
+				case Method.GET:
+					return "get";
+				case Method.DELETE:
+					return "delete";
+				case Method.PUT:
+					return "put";
+				case Method.POST:
+					return "post";
+				default:
+					return "unknown";
+			}
+		}
+
+		/// <summary>
+		/// Given a string, try to parse it into a <see cref="Method"/> enum.
+		/// Valid values are case-insensitive version of Get, Post, Put, and Delete.
+		/// </summary>
+		/// <param name="str">The string to parse</param>
+		/// <param name="res">The <see cref="Method"/> value associated with the <see cref="str"/> if it was parsable. If the return of the method is false, do not use the value of this out parameter.</param>
+		/// <returns>True if the <see cref="res"/> out variable has been set, and the <see cref="str"/> was a valid <see cref="Method"/>. False otherwise.</returns>
+		public static bool TryParseMethod(string str, out Method res)
+		{
+			res = Method.GET;
+			switch (str?.ToLower())
+			{
+				case "get":
+					res = Method.GET;
+					return true;
+				case "post":
+					res = Method.POST;
+					return true;
+				case "delete":
+					res = Method.DELETE;
+					return true;
+				case "put":
+					res = Method.PUT;
+					return true;
+				default:
+					return false;
+			}
+		}
 	}
 
 	[Serializable]
@@ -166,17 +222,107 @@ namespace Beamable.Common.Api
 	/// </summary>
 	public class RequesterException : Exception, IRequestErrorWithStatus
 	{
+		/// <summary>
+		/// The HTTP status code of the request.
+		/// </summary>
 		public long Status => _responseCode;
 		private readonly long _responseCode;
+
+		/// <summary>
+		/// A <see cref="BeamableRequestError"/> structure that contains details about the error.
+		/// The <see cref="BeamableRequestError.status"/> should be equal to the <see cref="Status"/> property.
+		/// </summary>
+		public BeamableRequestError RequestError { get; private set; }
+
+		/// <summary>
+		/// The HTTP <see cref="Method"/> of the request that failed.
+		/// </summary>
+		public Method Method { get; private set;}
+
+		/// <summary>
+		/// The HTTP Uri of the method that failed.
+		/// </summary>
+		public string Uri { get; private set;}
+
+		/// <summary>
+		/// The raw JSON body of the response that failed the request.
+		/// </summary>
+		public string Payload { get; private set;}
+
+		/// <summary>
+		/// A string that indicates what type of failure this error represents.
+		/// It will one of the following
+		/// <list type="bullet">
+		/// <item>
+		///  <see cref="Constants.Requester.ERROR_PREFIX_UNITY_SDK"/> which indicates the request originated from the HTTP requester, likely from the Unity SDK.
+		/// </item>
+		/// <item>
+		///  <see cref="Constants.Requester.ERROR_PREFIX_WEBSOCKET_RES"/> which indicates the request originated came from the WSS requester, likely form the Microservice SDK.
+		/// </item>
+		/// <item>
+		///  <see cref="Constants.Requester.ERROR_PREFIX_MICROSERVICE"/> which indicates the error originated came from the Microservice.
+		/// </item>
+		/// </list>
+		/// </summary>
+		public string Prefix { get; private set;}
+
+		public RequesterException(string prefix, string method, string uri, long responseCode, BeamableRequestError err)
+			: this(prefix, method, uri, responseCode, err == null ? null : JsonSerializable.ToJson(err))
+		{
+
+		}
 
 		public RequesterException(string prefix, string method, string uri, long responseCode, string responsePayload)
 		   : base(GenerateMessage(prefix, method, uri, responseCode, responsePayload))
 		{
+			RequestError = string.IsNullOrEmpty(responsePayload)
+				? null
+				: JsonSerializable.FromJson<BeamableRequestError>(responsePayload);
+
+			if (MethodUtil.TryParseMethod(method, out var meth))
+			{
+				Method = meth;
+			}
+			Uri = uri;
+			Prefix = prefix;
+			Payload = responsePayload;
 			_responseCode = responseCode;
 		}
 		static string GenerateMessage(string prefix, string method, string uri, long responseCode, string responsePayload)
 		{
 			return $"{prefix}. method=[{method}] uri=[{uri}] code=[{responseCode}] payload=[{responsePayload}]";
+		}
+	}
+
+	[Serializable]
+	public class BeamableRequestError : JsonSerializable.ISerializable
+	{
+		/// <summary>
+		/// The http status code
+		/// </summary>
+		public long status;
+
+		/// <summary>
+		/// The Beamable service where the error originated
+		/// </summary>
+		public string service;
+
+		/// <summary>
+		/// The Beamable error code.
+		/// </summary>
+		public string error;
+
+		/// <summary>
+		/// A more detailed message about the error.
+		/// </summary>
+		public string message;
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize("status", ref status);
+			s.Serialize("service", ref service);
+			s.Serialize("error", ref error);
+			s.Serialize("message", ref message);
 		}
 	}
 
