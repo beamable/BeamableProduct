@@ -11,6 +11,7 @@ public class LoginCommandArgs : CommandArgs
 	public string username;
 	public string password;
 	public bool saveToEnvironment;
+	public bool saveToFile;
 }
 
 public class LoginCommand : AppCommand<LoginCommandArgs>
@@ -31,6 +32,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
+		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
 	}
 
 	public override async Task Handle(LoginCommandArgs args)
@@ -42,6 +44,12 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		{
 			BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
 			Environment.SetEnvironmentVariable(Constants.KEY_ENV_REFRESH_TOKEN, response.refresh_token);
+		}
+		if (args.saveToFile && !string.IsNullOrWhiteSpace(response.refresh_token))
+		{
+			BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
+			                   " do not add it to control version system. It should be used only locally.");
+			_configService.SaveTokenToFile(response);
 		}
 
 		args.username = username;

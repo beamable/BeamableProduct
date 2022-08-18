@@ -101,8 +101,15 @@ public class DefaultAppContext : IAppContext
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		TryGetSetting(out var accessToken, bindingContext, _accessTokenOption);
-		TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption);
+		string defaultAccessToken = string.Empty;
+		string defaultRefreshToken = string.Empty;
+		if (_configService.ReadTokenFromFile(out var response))
+		{
+			defaultAccessToken = response.access_token;
+			defaultRefreshToken = response.refresh_token;
+		}
+		TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
+		TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
 		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
 		Set(_cid, _pid, _host);
