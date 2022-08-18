@@ -72,9 +72,17 @@ namespace Beamable.Server
       public string result;
    }
 
-   public class MicroserviceProviderRequest
+   public class MicroserviceServiceProviderRequest
    {
-      public string name, type;
+	   public string type = "basic";
+	   public string name;
+   }
+
+   public class MicroserviceEventProviderRequest
+   {
+	   public string type = "event";
+	   public string[] evtWhitelist;
+	   public string name; // We can remove this field after the platform no longer needs it. Maybe mid August 2022?
    }
 
    public class MicroserviceProviderResponse
@@ -103,6 +111,7 @@ namespace Beamable.Server
       private MicroserviceRequester _requester;
       private SocketRequesterContext _socketRequesterContext;
       public ServiceMethodCollection ServiceMethods { get; private set; }
+      public MicroserviceAuthenticationDaemon AuthenticationDaemon => _socketRequesterContext?.Daemon;
       private MicroserviceAttribute _serviceAttribute;
 
       // default is false, set 1 for true.
@@ -929,7 +938,7 @@ namespace Beamable.Server
 
       private Promise<Unit> ProvideService(string name)
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceServiceProviderRequest
          {
             type = "basic",
             name = name
@@ -949,7 +958,7 @@ namespace Beamable.Server
 
       private Promise<Unit> RemoveService(string name)
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceServiceProviderRequest
          {
             type = "basic",
             name = name

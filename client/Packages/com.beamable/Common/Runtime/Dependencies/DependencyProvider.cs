@@ -243,9 +243,9 @@ namespace Beamable.Common.Dependencies
 
 			void DisposeServices(IEnumerable<object> services)
 			{
-				foreach (var service in services)
+				var clonedList = new List<object>(services);
+				foreach (var service in clonedList)
 				{
-
 					if (service == null) continue;
 					if (service is IBeamableDisposable disposable)
 					{

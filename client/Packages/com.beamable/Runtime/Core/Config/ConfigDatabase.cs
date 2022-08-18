@@ -198,6 +198,26 @@ namespace Beamable.Config
 		public static string GetFullPath(string fileName) =>
 			Path.Combine("Assets", "Beamable", "Resources", $"{fileName}.txt");
 
+
+		/// <summary>
+		/// Remove the config-defaults file. Calling this outside the Unity Editor has no effect.
+		/// </summary>
+		public static void DeleteConfigDatabase()
+		{
+#if !UNITY_EDITOR
+			Debug.LogWarning($"Cannot call {nameof(DeleteConfigDatabase)} unless in UnityEditor. The config database will not be deleted.");
+			return;
+#else
+			const string assetsFolder = "Assets/";
+			var path = GetFullPath(GetConfigFileName());
+			if (path.Length > assetsFolder.Length)
+			{
+				UnityEditor.FileUtil.DeleteFileOrDirectory(path);
+				UnityEditor.FileUtil.DeleteFileOrDirectory(path + ".meta");
+			}
+#endif
+		}
+
 		private static string GetFileContent(string fileName)
 		{
 #if UNITY_EDITOR

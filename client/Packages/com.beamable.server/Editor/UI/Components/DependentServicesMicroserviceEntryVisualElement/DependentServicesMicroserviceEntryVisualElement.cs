@@ -18,14 +18,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public Action<MongoStorageModel, bool> OnServiceRelationChanged;
 		public MicroserviceModel Model { get; set; }
 		public List<DependentServicesCheckboxVisualElement> DependentServices { get; private set; }
-
 		public Label MicroserviceName { get; private set; }
 		private VisualElement _dependencyCheckboxes;
 		private readonly IEnumerable<MongoStorageModel> _dependentServices;
+		private readonly IEnumerable<MongoStorageModel> _visibleServices;
 
-		public DependentServicesMicroserviceEntryVisualElement(IEnumerable<MongoStorageModel> dependentServices) : base(nameof(DependentServicesMicroserviceEntryVisualElement))
+		public DependentServicesMicroserviceEntryVisualElement(IEnumerable<MongoStorageModel> dependentServices, IEnumerable<MongoStorageModel> visibleServices) : base(nameof(DependentServicesMicroserviceEntryVisualElement))
 		{
 			_dependentServices = dependentServices;
+			_visibleServices = visibleServices;
 		}
 		public override void Refresh()
 		{
@@ -44,21 +45,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				MicroserviceName.tooltip = Model.Name;
 			}
-			MicroserviceName.text = microserviceName;
-			DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
 
-			foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
+			MicroserviceName.text = microserviceName + (Model.IsArchived ? " (Archived)" : string.Empty);
+			DependentServices = new List<DependentServicesCheckboxVisualElement>(_visibleServices.Count());
+
+			foreach (var storageObjectModel in _visibleServices)
 			{
-				if (storageObjectModel.IsArchived)
-					continue; ;
-
 				var isRelation = _dependentServices.Contains(storageObjectModel);
 				var newElement = new DependentServicesCheckboxVisualElement(isRelation) { MongoStorageModel = storageObjectModel };
 				newElement.OnServiceRelationChanged += TriggerServiceRelationChanged;
 				newElement.Refresh();
+				if (storageObjectModel.IsArchived || Model.IsArchived)
+					newElement.SetEnabled(false);
 				_dependencyCheckboxes.Add(newElement);
 				DependentServices.Add(newElement);
 			}
+
+			this.SetEnabled(!Model.IsArchived);
 		}
 		private void TriggerServiceRelationChanged(MongoStorageModel storageObjectModel, bool isServiceRelation)
 		{
@@ -71,12 +74,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			MicroserviceName.RemoveFromHierarchy();
 			Root.AddToClassList("emptyColumnEntry");
 
-			DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
-			foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
+			DependentServices = new List<DependentServicesCheckboxVisualElement>(_visibleServices.Count());
+			foreach (var storageObjectModel in _visibleServices)
 			{
-				if (storageObjectModel.IsArchived)
-					continue; ;
-
 				var newElement = new DependentServicesCheckboxVisualElement(false) { MongoStorageModel = storageObjectModel };
 				newElement.Refresh();
 				newElement.Q<BeamableCheckboxVisualElement>("checkbox").RemoveFromHierarchy();

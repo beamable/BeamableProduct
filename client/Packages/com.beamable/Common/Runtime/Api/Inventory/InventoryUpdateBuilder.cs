@@ -95,15 +95,15 @@ namespace Beamable.Common.Api.Inventory
 		private SerializableNullableBool _serializedApplyVipBonus;
 
 		[SerializeField]
-		private SerializableDictionaryStringToLong _serializedCurrencies;
+		private SerializableDictionaryStringToLong _serializedCurrencies = new SerializableDictionaryStringToLong();
 		[SerializeField]
-		private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties;
+		private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
 		[SerializeField]
-		private List<ItemCreateRequest> _serializedNewItems;
+		private List<ItemCreateRequest> _serializedNewItems = new List<ItemCreateRequest>();
 		[SerializeField]
-		private List<ItemDeleteRequest> _serializedDeleteItems;
+		private List<ItemDeleteRequest> _serializedDeleteItems = new List<ItemDeleteRequest>();
 		[SerializeField]
-		private List<ItemUpdateRequest> _serializedUpdateItems;
+		private List<ItemUpdateRequest> _serializedUpdateItems = new List<ItemUpdateRequest>();
 
 		/// <summary>
 		/// Checks if the <see cref="InventoryUpdateBuilder"/> has any inventory updates.
@@ -311,6 +311,40 @@ namespace Beamable.Common.Api.Inventory
 			where TContent : ItemContent, new()
 		{
 			return UpdateItem(item.ItemContent.Id, item.Id, item.Properties);
+		}
+
+		/// <summary>
+		/// Get a set of inventory scopes that the updater will affect.
+		/// </summary>
+		/// <returns>A set of scopes that will be changed based on the changes described in the builder</returns>
+		public HashSet<string> BuildScopes()
+		{
+			var scopes = new HashSet<string>();
+			foreach (var item in newItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in updateItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in deleteItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var curr in currencies)
+			{
+				scopes.Add(curr.Key);
+			}
+
+			foreach (var curr in currencyProperties)
+			{
+				scopes.Add(curr.Key);
+			}
+			return scopes;
 		}
 
 		void ISerializationCallbackReceiver.OnBeforeSerialize()

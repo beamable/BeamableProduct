@@ -337,6 +337,11 @@ namespace Beamable
 				// Initialize toolbar
 				BeamableToolbarExtender.LoadToolbarExtender();
 #endif
+				if (SessionState.GetBool(SESSION_STATE_INSTALL_DEPS, false) && !BeamEditorContext.HasDependencies())
+				{
+					await BeamEditorContext.Default.CreateDependencies();
+					SessionState.EraseBool(SESSION_STATE_INSTALL_DEPS);
+				}
 			}
 
 			InitDefaultContext();
@@ -513,7 +518,7 @@ namespace Beamable
 
 			if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
 			{
-				SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
+				SaveConfig(string.Empty, pid, BeamableEnvironment.ApiUrl);
 				Logout();
 				InitializePromise = Promise.Success;
 				return;
@@ -546,7 +551,9 @@ namespace Beamable
 					LoadLastAuthenticatedUserDataForToken(accessToken, pid, out CurrentUser, out CurrentCustomer, out CurrentRealm);
 
 					if (CurrentUser == null || CurrentCustomer == null || CurrentRealm == null || accessToken.IsExpired)
-						await Login(accessToken);
+					{
+						await Login(accessToken, pid);
+					}
 					else
 					{
 						// Set the token manually as we already have all the data we need be considered initialized (Serialized CurrentUser/CurrentCustomer/CurrentRealm data.
@@ -573,22 +580,25 @@ namespace Beamable
 			var alias = res.Alias.GetOrElse("");
 			var cid = res.Cid.GetOrThrow();
 
+			// Gets the stored pid, if its there
+			ConfigDatabase.TryGetString("pid", out var pid);
+			
 			// Set the config defaults to reflect the new Customer.
-			SaveConfig(alias, null, BeamableEnvironment.ApiUrl, cid);
-
+			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
+			
 			// Attempt to get an access token.
-			return await Login(email, password);
+			return await Login(email, password, pid);
 		}
 
-		public async Promise Login(string email, string password)
+		public async Promise Login(string email, string password, string pid = null)
 		{
 			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			var tokenRes = await authService.Login(email, password, customerScoped: true);
-			var token = new AccessToken(accessTokenStorage, requester.Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
+			var token = new AccessToken(accessTokenStorage, requester.Cid, pid, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
-			await Login(token);
+			await Login(token, pid);
 		}
 
 		public async Promise Login(AccessToken token, string pid = null)
@@ -810,7 +820,7 @@ namespace Beamable
 			BeamableEnvironment.ReloadEnvironment();
 		}
 
-		public static void WriteConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public static void WriteConfig(string alias, string pid, string host = null, string cid = "")
 		{
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
@@ -827,7 +837,7 @@ namespace Beamable
 				pid = pid,
 				platform = host,
 				socket = host,
-				containerPrefix = containerPrefix
+				containerPrefix = GetCustomContainerPrefix()
 			};
 
 			string path = ConfigDatabase.GetFullPath("config-defaults");
@@ -883,19 +893,24 @@ namespace Beamable
 			}
 		}
 
-		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public void SaveConfig(string alias, string pid, string host = null, string cid = "")
 		{
 			if (string.IsNullOrEmpty(host))
 			{
 				host = BeamableEnvironment.ApiUrl;
 			}
 
-			WriteConfig(alias, pid, host, cid, containerPrefix);
+			WriteConfig(alias, pid, host, cid);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
 			requester.Pid = pid;
 			requester.Host = host;
+		}
+
+		private static string GetCustomContainerPrefix()
+		{
+			return ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) ? customPrefix : null;
 		}
 
 		#region Customer & User Creation and Management

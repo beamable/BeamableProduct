@@ -65,7 +65,7 @@ namespace Beamable.Server
 
    public class WebsocketRequesterException : RequesterException
    {
-      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base("Microservice Requester", method,
+      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base(Constants.Requester.ERROR_PREFIX_WEBSOCKET_RES, method,
          uri, responseCode, responsePayload)
       {
 
@@ -93,6 +93,7 @@ namespace Beamable.Server
 
       public long Id { get; set; }
       public string Uri { get; set; }
+      public string Method { get; set; }
 
       public Func<string, T> Parser { get; set; }
 
@@ -100,16 +101,16 @@ namespace Beamable.Server
       {
          if (ctx.Status == 0)
          {
-            OnDone.CompleteError(new WebsocketRequesterException(ctx.Method, Uri, ctx.Status, "noconnection"));
+            OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, "noconnection"));
          }
          else if (ctx.Status == 403)
          {
             var error = JsonConvert.DeserializeObject<WebsocketErrorResponse>(ctx.Body, UnitySerializationSettings.Instance);
-            OnDone.CompleteError(new UnauthenticatedException(error, ctx.Method, Uri, ctx.Status, ctx.Body));
+            OnDone.CompleteError(new UnauthenticatedException(error, Method, Uri, ctx.Status, ctx.Body));
          }
          else if (ctx.Status != 200)
          {
-            OnDone.CompleteError(new WebsocketRequesterException(ctx.Method, Uri, ctx.Status, ctx.Body));
+            OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, ctx.Body));
          }
          else
          {
@@ -340,6 +341,7 @@ namespace Beamable.Server
             OnDone = promise,
             Parser = parser,
             Uri = uri,
+            Method = req.method
          };
 
          if (!_pendingMessages.TryAdd(requestId, listener))
@@ -524,9 +526,10 @@ namespace Beamable.Server
       /// <returns></returns>
       public Promise<EmptyResponse> InitializeSubscription()
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceEventProviderRequest
          {
-            type = "event"
+            type = "event",
+            evtWhitelist = new []{Constants.Features.Services.CONTENT_UPDATE_EVENT}
          };
          var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
 
