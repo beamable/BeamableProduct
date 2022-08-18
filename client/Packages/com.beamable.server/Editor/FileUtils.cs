@@ -35,14 +35,15 @@ namespace Beamable.Server.Editor
 		{
 			string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
 
+			var destinationDirectory = Path.Combine(descriptor.BuildPath, "libdll");
+			Directory.CreateDirectory(destinationDirectory);
 			foreach (var dll in dependencies.DllsToCopy)
 			{
-				var sourceDirectory = Path.GetDirectoryName(dll.assetPath);
-				var fullSource = Path.Combine(rootPath, sourceDirectory);
+				var fullSource = Path.Combine(rootPath, dll.assetPath);
+				var fullDest = Path.Combine(destinationDirectory, Path.GetFileName(dll.assetPath));
 				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying dll from " + fullSource);
 
-				// TODO: better folder namespacing?
-				CopyFolderToBuildDirectory(fullSource, "libdll", descriptor);
+				File.Copy(fullSource, fullDest, true);
 			}
 		}
 
