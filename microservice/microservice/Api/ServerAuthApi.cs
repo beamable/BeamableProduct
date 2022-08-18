@@ -2,6 +2,7 @@ using System;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server.Api
 {
@@ -19,13 +20,20 @@ namespace Beamable.Server.Api
          Context = context;
       }
 
-      public Promise<User> GetUser(long userId)
+      public Promise<User> GetUser(long gamerTag)
       {
          return Requester.Request<User>(Method.GET, $"{BASIC_SERVICE}", new GetUserRequest
          {
-            gamerTag = userId
+            gamerTag = gamerTag
          });
       }
+
+      public Promise<AccountId> GetAccountId() => 
+	      Requester.Request(Method.GET, $"{BASIC_SERVICE}/admin/me",parser: resp =>
+	      {
+		      var r = (ArrayDict)Json.Deserialize(resp);
+		      return new AccountId() { Id = (long)r["id"] };
+	      });
 
       public override Promise<User> GetUser(TokenResponse token)
       {
