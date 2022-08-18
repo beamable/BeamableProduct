@@ -547,10 +547,6 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 		}
 	}
 
-	public class GenType
-	{
-		public OpenA
-	}
 
 	public string GenerateService(OpenApiDocument document)
 	{
