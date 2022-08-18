@@ -5,12 +5,12 @@ using System.Linq;
 
 namespace Beamable.EasyFeatures.BasicParty
 {
-	public class BasicPartyPlayerSystem : BasicPartyView.IDependencies
+	public class BasicPartyPlayerSystem : BasicPartyView.IDependencies, CreatePartyView.IDependencies, JoinPartyView.IDependencies
 	{
 		public List<PartySlotPresenter.ViewData> SlotsData => BuildViewData();
-		public bool IsVisible { get; set; }
-		public Party Party { get; set; }
 		public int MaxPlayers { get; set; }
+		public PartyRestriction PartyRestriction { get; set; }
+		public string PartyIdToJoin { get; set; }
 
 		private List<string> _players;
 		
@@ -32,6 +32,16 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 			
 			return data.ToList();
+		}
+
+		public bool ValidateJoinButton()
+		{
+			return !string.IsNullOrWhiteSpace(PartyIdToJoin);
+		}
+		
+		public bool ValidateConfirmButton(int maxPlayers)
+		{
+			return maxPlayers > 0;
 		}
 	}
 }

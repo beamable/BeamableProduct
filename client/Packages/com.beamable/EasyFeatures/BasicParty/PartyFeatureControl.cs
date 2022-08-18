@@ -23,8 +23,6 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		protected BeamContext Context;
 		protected BasicPartyPlayerSystem PartyPlayerSystem;
-		protected CreatePartyPlayerSystem CreatePartyPlayerSystem;
-		protected JoinPartyPlayerSystem JoinPartyPlayerSystem;
 
 		private IBeamableView _currentView;
 		private readonly Dictionary<View, IBeamableView> views = new Dictionary<View, IBeamableView>();
@@ -38,8 +36,8 @@ namespace Beamable.EasyFeatures.BasicParty
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, BasicPartyView.IDependencies>();
-			builder.SetupUnderlyingSystemSingleton<CreatePartyPlayerSystem, CreatePartyView.IDependencies>();
-			builder.SetupUnderlyingSystemSingleton<JoinPartyPlayerSystem, JoinPartyView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, CreatePartyView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, JoinPartyView.IDependencies>();
 		}
 
 		[SerializeField]
@@ -70,8 +68,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			await Context.OnReady;
 
 			PartyPlayerSystem = Context.ServiceProvider.GetService<BasicPartyPlayerSystem>();
-			CreatePartyPlayerSystem = Context.ServiceProvider.GetService<CreatePartyPlayerSystem>();
-			JoinPartyPlayerSystem = Context.ServiceProvider.GetService<JoinPartyPlayerSystem>();
 
 			foreach (var view in PartyViewGroup.ManagedViews)
 			{
@@ -114,7 +110,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 			
 			// replace MaxPlayers parameter Party.MaxPlayers once it's available in the SDK
-			PartyPlayerSystem.Setup(Context.Party.Members.ToList(), CreatePartyPlayerSystem.MaxPlayers);
+			PartyPlayerSystem.Setup(Context.Party.Members.ToList(), PartyPlayerSystem.MaxPlayers);
 			OpenView(View.Party);
 		}
 		

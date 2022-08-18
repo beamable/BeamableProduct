@@ -10,7 +10,7 @@ namespace Beamable.EasyFeatures.BasicParty
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			string PartyId { get; set; }
+			string PartyIdToJoin { get; set; }
 			bool ValidateJoinButton();
 		}
 
@@ -70,7 +70,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnPartyIdValueChanged(string value)
 		{
-			System.PartyId = value;
+			System.PartyIdToJoin = value;
 			ValidateJoinButton();
 		}
 
@@ -86,7 +86,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private async void OnJoinButtonClicked()
 		{
-			await Context.Party.Join(System.PartyId); // add loading
+			await Context.Party.Join(System.PartyIdToJoin); // add loading
 			FeatureControl.OpenPartyView();
 		}
 	}
