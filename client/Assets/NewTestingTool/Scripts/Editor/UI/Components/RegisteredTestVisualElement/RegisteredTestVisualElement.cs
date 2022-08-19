@@ -18,9 +18,14 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			base.Refresh();
 			_testableName = Root.Q<Label>("testableName");
 			_testableName.text = RegisteredTest.TestClassName;
-			
 			_testResult = Root.Q("testResult");
-			TestHelper.SetTestResult(_testResult, RegisteredTest.TestResult);
+			
+			RegisteredTest.OnTestResultChanged -= HandleTestResultChange;
+			RegisteredTest.OnTestResultChanged += HandleTestResultChange;
+			TestHelper.SetTestResult(_testResult, RegisteredTest?.TestResult ?? TestResult.NotSet);
 		}
+		
+		private void HandleTestResultChange() 
+			=> TestHelper.SetTestResult(_testResult, RegisteredTest.TestResult);
 	}
 }

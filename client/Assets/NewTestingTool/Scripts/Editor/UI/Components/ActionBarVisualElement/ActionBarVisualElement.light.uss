@@ -10,26 +10,15 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");
     border-color: #b4b4b4;
 }
-#startIcon{
+
+#scanIcon{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");
 }
 
-#createNewIcon{
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewDark.png");
+#createTestSceneIcon{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/server-new.png");
 }
 
-#publishIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/publish_dark.png");
-}
-
-#infoIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_dark.png");
-}
-
-#refreshIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh-dark.png");
-}
-
-#dependenciesIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dependencies_dark.png");
+#deleteTestSceneIcon{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/server-delete.png");
 }

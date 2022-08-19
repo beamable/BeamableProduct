@@ -1,4 +1,5 @@
-﻿using NewTestingTool.Core;
+﻿using Beamable.NewTestingTool.Core.Models.Descriptors;
+using NewTestingTool.Core;
 using NewTestingTool.Helpers;
 using System;
 using System.Linq;
@@ -12,17 +13,18 @@ namespace Beamable.NewTestingTool.Core.Models
 	[Serializable]
 	public class RegisteredTestRuleMethod
 	{
-		public event Action<TestResult> OnTestResultChanged;
-		
+		public event Action OnTestResultChanged;
+
+		public TestRuleMethodDescriptor TestRuleMethodDescriptor => _testRuleMethodDescriptor;
 		public string Title 
 		{
-			get => _testDescriptor.Title;
-			set => _testDescriptor.Title = value;
+			get => _testRuleMethodDescriptor.Title;
+			set => _testRuleMethodDescriptor.Title = value;
 		}
 		public string Description 
 		{
-			get => _testDescriptor.Description;
-			set => _testDescriptor.Description = value;
+			get => _testRuleMethodDescriptor.Description;
+			set => _testRuleMethodDescriptor.Description = value;
 		}
 		public TestResult TestResult
 		{
@@ -30,9 +32,10 @@ namespace Beamable.NewTestingTool.Core.Models
 			set
 			{
 				_testResult = value;
-				OnTestResultChanged?.Invoke(TestResult);
+				OnTestResultChanged?.Invoke();
 			}
 		}
+
 		public Type TestableType
 		{
 			get
@@ -57,20 +60,18 @@ namespace Beamable.NewTestingTool.Core.Models
 		public string[] ArgumentsRaw => _argumentsRaw;
 		public bool IsTask => TestHelper.IsAsyncMethod(MethodInfo);
 		
-		[SerializeField] private TestResult _testResult;
 		[SerializeField] private string _testableName;
 		[SerializeField] private string _methodName;
+		[SerializeField] private TestResult _testResult;
+		[SerializeField, HideInInspector] private TestRuleMethodDescriptor _testRuleMethodDescriptor;
 		[SerializeField] private string[] _argumentsRaw;
 
-		private TestDescriptor _testDescriptor;
-
-		public RegisteredTestRuleMethod(ref Testable testable, MethodInfo methodInfo, object[] arguments, TestDescriptor testDescriptor)
+		public RegisteredTestRuleMethod(ref Testable testable, MethodInfo methodInfo, object[] arguments, TestRuleMethodDescriptor testRuleMethodDescriptor)
 		{
-			_testResult = TestResult.NotSet;
 			_testableName = testable.GetType().Name;
 			_methodName = methodInfo.Name;
 			_argumentsRaw = TestHelper.ConvertObjectToString(arguments);
-			_testDescriptor = testDescriptor;
+			_testRuleMethodDescriptor = testRuleMethodDescriptor;
 		}
 		public async Task<TestResult> InvokeTest(bool displayLogs, int orderIndex, int caseIndex)
 		{
@@ -78,11 +79,9 @@ namespace Beamable.NewTestingTool.Core.Models
 				TestableDebug.Log($"Invoking test: Testable=[{TestableType.Name}] Order=[{orderIndex+1}] Case=[{caseIndex+1}] Method=[{TestableDebug.WrapWithColor(MethodInfo.Name, Color.yellow)}]");
 			
 			var obj = Object.FindObjectOfType(TestableType);
-			TestResult = IsTask 
+			return IsTask 
 				? await (Task<TestResult>)MethodInfo.Invoke(obj, Arguments)
 				: (TestResult)MethodInfo.Invoke(obj, Arguments);
-			
-			return TestResult;
 		}
 		public void Reset() => TestResult = TestResult.NotSet;
 	}

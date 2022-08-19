@@ -10,30 +10,14 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
 
-#startIcon{
+#scanIcon{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
-#createNewIcon{
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
+#createTestSceneIcon{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/server-new.png");
 }
 
-#publishIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/publish L.png");
-}
-
-#infoIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_Light.png");
-}
-
-#refreshIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh.png");
-}
-
-#dropDownImg{
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png")
-}
-
-#dependenciesIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dependencies_light.png");
+#deleteTestSceneIcon{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/server-delete.png");
 }

@@ -43,13 +43,6 @@
     margin-left: 2px;
 }
 
-#startIcon{
-    top: 2px;
-    width: 18px;
-    height: 18px;
-    align-self: center;
-}
-
 .mainPart {
     width: 70px;
     padding-left: 6px;
@@ -78,21 +71,26 @@
     cursor: pan;
     border-radius: 0px;
 }
-#refreshIcon {
-    top: 4px;
-    align-self: center;
-    height: 28px;
-    width: 28px;
-
-}
-
-#infoIcon{
-    top: 8px;
-    align-self: center;
-    height: 15px;
-    width: 8px;
-}
 
 #scan {
     width: 72px;
+}
+
+#scanIcon {
+    top: 2px;
+    width: 18px;
+    height: 18px;
+    align-self: center;
+}
+
+#createTestSceneIcon, #deleteTestSceneIcon {
+    bottom: 0px;
+    width: 24px;
+    height: 24px;
+    align-self: center;
+}
+
+#createTestScene > Label,
+#deleteTestScene > Label {
+    top: -2px;
 }

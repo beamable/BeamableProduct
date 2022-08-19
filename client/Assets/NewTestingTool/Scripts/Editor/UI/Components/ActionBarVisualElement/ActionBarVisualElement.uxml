@@ -9,17 +9,17 @@
         <engine:VisualElement name="leftContentVisualElement">
 
             <engine:Button name="scan" class="boundedButton">
-                <engine:Image name="startIcon"/>
+                <engine:Image name="scanIcon"/>
                 <engine:Label class="buttonText" text="Scan"/>
             </engine:Button>
 
             <engine:Button name="createTestScene" class="boundedButton">
-                <engine:Image name="startIcon"/>
+                <engine:Image name="createTestSceneIcon"/>
                 <engine:Label class="buttonText" text="Create"/>
             </engine:Button>
 
             <engine:Button name="deleteTestScene" class="boundedButton">
-                <engine:Image name="startIcon"/>
+                <engine:Image name="deleteTestSceneIcon"/>
                 <engine:Label class="buttonText" text="Delete"/>
             </engine:Button>
             

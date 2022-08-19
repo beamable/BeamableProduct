@@ -2,6 +2,7 @@
 using Beamable.NewTestingTool.Core.Models;
 using Beamable.NewTestingTool.Scripts.Core;
 using NewTestingTool.Helpers;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.NewTestingTool.UI.Components
@@ -37,7 +38,7 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			Root.Q("methodInvocationsBody").SetEnabled(false);
 
 			_testResult = Root.Q("testResult");
-			TestHelper.SetTestResult(_testResult, TestResult.NotSet);
+			TestHelper.SetTestResult(_testResult, RegisteredTestRuleMethod?.TestResult ?? TestResult.NotSet);
 
 			SetEnabled(false);
 		}
@@ -47,11 +48,11 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			TestConfiguration = testConfiguration;
 			RegisteredTestRuleMethod = registeredTestRuleMethod;
 			
-			RegisteredTestRuleMethod.OnTestResultChanged -= HandleTestResultChange;
-			RegisteredTestRuleMethod.OnTestResultChanged += HandleTestResultChange;
-
 			_title.SetWithoutNotify(registeredTestRuleMethod.Title);
 			_description.SetWithoutNotify(registeredTestRuleMethod.Description);
+			
+			RegisteredTestRuleMethod.OnTestResultChanged -= HandleTestResultChange;
+			RegisteredTestRuleMethod.OnTestResultChanged += HandleTestResultChange;
 			TestHelper.SetTestResult(_testResult, registeredTestRuleMethod.TestResult);
 			
 			SetEnabled(true);
@@ -73,9 +74,7 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			RegisteredTestRuleMethod.Description = _description.Value;
 		}
 
-		private void HandleTestResultChange(TestResult result)
-		{
-			TestHelper.SetTestResult(_testResult, RegisteredTestRuleMethod.TestResult);
-		}
+		private void HandleTestResultChange() 
+			=> TestHelper.SetTestResult(_testResult, RegisteredTestRuleMethod.TestResult);
 	}
 }

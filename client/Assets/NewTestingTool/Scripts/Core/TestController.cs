@@ -3,9 +3,7 @@ using Beamable.NewTestingTool.Scripts.Core;
 using NewTestingTool.Core;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.ResourceManagement.Util;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -13,7 +11,7 @@ using static NewTestingTool.Constants.TestConstants;
 
 namespace Beamable.NewTestingTool.Core
 {
-	public class TestController : ComponentSingleton<TestController>
+	public class TestController : MonoBehaviour
 	{
 		[SerializeField] private bool automaticallyStart = true;
 		[SerializeField] private bool displayLogs = true;
@@ -22,57 +20,46 @@ namespace Beamable.NewTestingTool.Core
 		[SerializeField] private Button passedButton; 
 		[SerializeField] private Button failedButton;
 
-		[SerializeField] private Transform testObjectsParent;
-
 		private event Action OnTestReadyToInvoke;
-		private event Action OnNextTestRequested;
 
 		private TestConfiguration TestConfiguration { get; set; }
-		private RegisteredTest CurrentTest => _registeredTests[_currentTestIndex];
+		private RegisteredTestScene CurrentTestScene { get; set; }
+		private RegisteredTest CurrentTest =>  CurrentTestScene.RegisteredTests[_currentTestIndex];
 		private RegisteredTestRule CurrentTestRule => CurrentTest.RegisteredTestRules[_currentOrderIndex];
 		private RegisteredTestRuleMethod CurrentTestRuleMethod => CurrentTestRule.RegisteredTestRuleMethods[_currentCaseIndex - 1];
 
-		private List<RegisteredTest> _registeredTests = new List<RegisteredTest>();
-		private int _currentTestIndex, _currentOrderIndex, _currentCaseIndex;
+		private int _currentTestIndex = 0, _currentOrderIndex = 0, _currentCaseIndex = 0;
 
-		private List<GameObject> _testGroups = new List<GameObject>();
-
+		private Coroutine _coroutine;
+		
 		private void Awake()
 		{
 			if (!Application.isPlaying)
 				return;
 			
 			ChangeButtonsInteractableState(false);
-			_registeredTests = LoadTestData();
-
-			foreach (Transform child in testObjectsParent)
-			{
-				child.gameObject.SetActive(false);
-				_testGroups.Add(child.gameObject);
-			}
+			LoadTestData();
 
 			OnTestReadyToInvoke -= HandleTestReadyToInvoke;
 			OnTestReadyToInvoke += HandleTestReadyToInvoke;
-			OnNextTestRequested -= HandleNextTestRequested;
-			OnNextTestRequested += HandleNextTestRequested;
 		}
 		private void Start()
 		{
 			if (!automaticallyStart || !Application.isPlaying)
 				return;
-			StartCoroutine(InvokeNextTest());
+			_coroutine = StartCoroutine(InvokeNextTest());
 		}
 
-		private List<RegisteredTest> LoadTestData()
+		private void LoadTestData()
 		{
 			TestConfiguration = Resources.Load<TestConfiguration>(CONFIGURATION_FILE_NAME);
 			if (TestConfiguration == null)
 			{
 				Debug.LogError("Cannot load test scriptable object!");
 				Debug.Break();
-				return null;
+				return;
 			}
-			return TestConfiguration.GetTestData(SceneManager.GetActiveScene().name);
+			CurrentTestScene = TestConfiguration.GetRegisteredTestScene(SceneManager.GetActiveScene().name);
 		}
 		private void MarkTestResult(TestResult result)
 		{
@@ -81,14 +68,15 @@ namespace Beamable.NewTestingTool.Core
 				MarkTestResultManually();
 				return;
 			}
-			
+
+			CurrentTestRuleMethod.TestResult = result;
 			ChangeButtonsInteractableState(false);
-			ResetTestObjects();
 
 			if (displayLogs)
 				TestableDebug.Log($"Result=[{TestableDebug.WrapWithColor(result, result == TestResult.Passed ? Color.green : Color.red)}] Method=[{TestableDebug.WrapWithColor(CurrentTestRuleMethod.MethodInfo.Name, Color.yellow)}]");
 			
-			OnNextTestRequested?.Invoke();
+			TestConfiguration.OnTestFinished?.Invoke();
+			HandleTestFinished();
 		}
 		private void MarkTestResultManually()
 		{
@@ -112,14 +100,14 @@ namespace Beamable.NewTestingTool.Core
 			_currentOrderIndex = 0;
 			_currentCaseIndex = 0;
 
-			foreach (var registeredTest in _registeredTests)
+			foreach (var registeredTest in CurrentTestScene.RegisteredTests)
 				registeredTest.Reset();
 		}
 		private IEnumerator InvokeNextTest()
 		{
 			while (true)
 			{
-				if (_currentTestIndex < _registeredTests.Count)
+				if (_currentTestIndex < CurrentTestScene.RegisteredTests.Count)
 				{
 					if (_currentOrderIndex < CurrentTest.RegisteredTestRules.Count)
 					{
@@ -141,20 +129,20 @@ namespace Beamable.NewTestingTool.Core
 					continue;
 				}
 				
+				TestConfiguration.OnAllTestsFinished?.Invoke();
 				TestableDebug.Log("All tests finished");
+				SceneManager.LoadScene(0);
 				yield break;
 			}
 		}
 		private void ChangeButtonsInteractableState(bool isEnabled)
 		{
-			passedButton.interactable  = isEnabled;
-			failedButton.interactable  = isEnabled;
+			passedButton.interactable = isEnabled;
+			failedButton.interactable = isEnabled;
 		}
 		private async void HandleTestReadyToInvoke()
 		{
 			var result = await CurrentTestRuleMethod.InvokeTest(displayLogs, _currentOrderIndex, _currentCaseIndex - 1);
-			CurrentTestRuleMethod.TestResult = result;
-			
 			if (stopOnFirstFailed && result == TestResult.Failed)
 			{
 				TestableDebug.Log($"Testing tool stopped due to failed test.");
@@ -162,12 +150,11 @@ namespace Beamable.NewTestingTool.Core
 			}
 			MarkTestResult(result);
 		}
-		private void HandleNextTestRequested() => StartCoroutine(InvokeNextTest());
-
-		private void ResetTestObjects()
+		private void HandleTestFinished()
 		{
-			foreach (var testGroup in _testGroups)
-				testGroup.SetActive(false);
+			if (_coroutine != null)
+				StopCoroutine(_coroutine);
+			_coroutine = StartCoroutine(InvokeNextTest());
 		}
 	}
 }

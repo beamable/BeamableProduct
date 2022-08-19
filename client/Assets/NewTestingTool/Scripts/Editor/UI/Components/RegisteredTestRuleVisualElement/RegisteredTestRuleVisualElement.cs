@@ -22,7 +22,13 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			_ruleName.text = RegisteredTestRule.TestMethodName;
 
 			_testResult = Root.Q("testResult");
-			TestHelper.SetTestResult(_testResult, RegisteredTestRule.TestResult);
+			
+			RegisteredTestRule.OnTestResultChanged -= HandleTestResultChange;
+			RegisteredTestRule.OnTestResultChanged += HandleTestResultChange;
+			TestHelper.SetTestResult(_testResult, RegisteredTestRule?.TestResult ?? TestResult.NotSet);
 		}
+		
+		private void HandleTestResultChange() 
+			=> TestHelper.SetTestResult(_testResult, RegisteredTestRule.TestResult);
 	}
 }

@@ -21,7 +21,13 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			_sceneName.text = RegisteredTestScene.SceneName;
 			
 			_testResult = Root.Q("testResult");
+			
+			RegisteredTestScene.OnTestResultChanged -= HandleTestResultChange;
+			RegisteredTestScene.OnTestResultChanged += HandleTestResultChange;
 			TestHelper.SetTestResult(_testResult, RegisteredTestScene.TestResult);
 		}
+		
+		private void HandleTestResultChange() 
+			=> TestHelper.SetTestResult(_testResult, RegisteredTestScene.TestResult);
 	}
 }

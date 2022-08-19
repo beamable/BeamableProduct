@@ -101,9 +101,25 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		_ruleMethodBody = root.Q<RegisteredTestRuleMethodVisualElement>("ruleMethodBody");
 		_ruleMethodBody.Refresh();
 
+		_testingEditorModel.TestConfiguration.OnTestFinished -= HandleTestFinished;
+		_testingEditorModel.TestConfiguration.OnTestFinished += HandleTestFinished;
+
 		HandleScanButton();
 	}
 	
+	private void HandleTestFinished()
+	{
+		// if (_scenesListView != null && _scenesListView.childCount != 0)
+		// 	_scenesListView?.SetSelectionWithoutNotify(new [] { _scenesListView.selectedIndex });
+		// if (_testablesListView != null && _testablesListView.childCount != 0)
+		// 	_testablesListView?.SetSelectionWithoutNotify(new [] { _testablesListView.selectedIndex });
+		// if (_rulesListView != null && _rulesListView.childCount != 0)
+		// 	_rulesListView?.SetSelectionWithoutNotify(new [] { _rulesListView.selectedIndex });
+		
+		_rulesListView?.Refresh();
+		_testablesListView?.Refresh();
+		_scenesListView?.Refresh();
+	}
 	private void CreateRegisteredTestScenesList()
 	{
 		ResetList(_rulesList, ref _rulesListView);
@@ -124,6 +140,7 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		_registeredTestListModel.OnSelectionChanged -= CreateRegisteredTestRulesList;
 		_registeredTestListModel.OnSelectionChanged += CreateRegisteredTestRulesList;
 		_testablesList.Add(_testablesListView);
+		
 	}
 	private void CreateRegisteredTestRulesList(RegisteredTest registeredTest)
 	{
@@ -134,7 +151,6 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		_registeredTestRuleListModel.OnSelectionChanged += SetupDetailedInfo;
 		_rulesList.Add(_rulesListView);
 	}
-
 	private void SetupDetailedInfo(RegisteredTestRule registeredTestRule)
 	{
 		_ruleMethodBody.Setup(TestingEditorModel.TestConfiguration, registeredTestRule.RegisteredTestRuleMethods[0]);

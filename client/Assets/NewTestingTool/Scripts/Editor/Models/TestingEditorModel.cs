@@ -1,9 +1,9 @@
 ﻿using Beamable.NewTestingTool.Core.Models;
+using Beamable.NewTestingTool.Core.Models.Descriptors;
 using Beamable.NewTestingTool.Scripts.Core;
 using NewTestingTool.Attributes;
 using NewTestingTool.Core;
 using NewTestingTool.Extensions;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,7 +11,6 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-
 using static NewTestingTool.Constants.TestConstants;
 using Object = UnityEngine.Object;
 
@@ -98,6 +97,8 @@ namespace Beamable.Editor.NewTestingTool.Models
 			testingEditorModel.SelectedRegisteredTest = testingEditorModel.SelectedRegisteredTestScene.RegisteredTests[0];
 			testingEditorModel.SelectedRegisteredTestRule = testingEditorModel.SelectedRegisteredTest.RegisteredTestRules[0];
 			testingEditorModel.SelectedRegisteredTestRuleMethod = testingEditorModel.SelectedRegisteredTestRule.RegisteredTestRuleMethods[0];
+
+			EditorSceneManager.OpenScene($"{PATH_TO_TESTING_TOOL}/TestMainMenu.unity");
 		}
 		
 		private static void SetupTestScene(string sceneName)
@@ -108,8 +109,8 @@ namespace Beamable.Editor.NewTestingTool.Models
 				return;
 			}
 
-			var registeredTestSceneDescriptor = TestExtensions.LoadScriptableObject<RegisteredTestSceneDescriptor>($"{sceneName}_Descriptor", $"Tests/{sceneName}", PATH_TO_RESOURCES_TESTS(sceneName));
-			EditorUtility.SetDirty(registeredTestSceneDescriptor);
+			var testSceneDescriptor = TestExtensions.LoadScriptableObject<TestSceneDescriptor>($"{sceneName}_Descriptor", $"Tests/{sceneName}", PATH_TO_RESOURCES_TESTS(sceneName));
+			EditorUtility.SetDirty(testSceneDescriptor);
 
 			var registeredTests = new List<RegisteredTest>();
 			foreach (var testable in testables)
@@ -120,28 +121,30 @@ namespace Beamable.Editor.NewTestingTool.Models
 					return;
 				}
 
-				var registeredTestRules = RegisterTestRules(testable, methodInfos, registeredTestSceneDescriptor);
-				registeredTests.Add(new RegisteredTest(testable.GetType().Name, registeredTestRules));
+				var registeredTestRules = RegisterTestRules(testable, methodInfos, testSceneDescriptor);
+				registeredTests.Add(new RegisteredTest(testable.GetType().Name, registeredTestRules, testSceneDescriptor.GetTestDescriptor() ));
 			}
 
 			var registeredTestScene = TestExtensions.LoadScriptableObject<RegisteredTestScene>(sceneName, $"Tests/{sceneName}", PATH_TO_RESOURCES_TESTS(sceneName));
 			EditorUtility.SetDirty(registeredTestScene);
-			registeredTestScene.Init(sceneName, registeredTests, registeredTestSceneDescriptor);
+			registeredTestScene.Init(sceneName, registeredTests, testSceneDescriptor);
 			_testConfiguration.RegisterTests(registeredTestScene);
 		}
-		private static List<RegisteredTestRule> RegisterTestRules(Testable testable, IEnumerable<MethodInfo> methodInfos, RegisteredTestSceneDescriptor registeredTestSceneDescriptor)
+		private static List<RegisteredTestRule> RegisterTestRules(Testable testable, IEnumerable<MethodInfo> methodInfos, TestSceneDescriptor testSceneDescriptor)
 		{
 			var registeredTests = new List<RegisteredTestRule>();
+			var testRuleDescriptor = testSceneDescriptor.GetTestDescriptor().GetTestRuleDescriptor(testable);
 			foreach (var methodInfo in methodInfos)
 			{
-				var testDescriptor = registeredTestSceneDescriptor.GetTestDescriptor(testable, methodInfo);
+				var testRuleMethodDescriptor = testRuleDescriptor.GetTestRuleMethodDescriptor(methodInfo);
 				var customAttributesData = GetCustomAttributesData(methodInfo);
 				foreach (var customAttributeData in customAttributesData)
-					RegisterTestRuleMethod(testable, methodInfo, customAttributeData, ref registeredTests, testDescriptor);
+					RegisterTestRuleMethod(testable, methodInfo, customAttributeData, ref registeredTests, testRuleDescriptor);
 			}
 			
-			AssetDatabase.SaveAssetIfDirty(registeredTestSceneDescriptor);
+			AssetDatabase.SaveAssetIfDirty(testSceneDescriptor);
 			return registeredTests.OrderBy(x => x.Order).ToList();
+			
 		}
 		private static bool TryGetTestables(string sceneName, out List<Testable> results, out string errorLog)
 		{
@@ -183,16 +186,16 @@ namespace Beamable.Editor.NewTestingTool.Models
 		private static void RegisterTestRuleMethod(Testable testable, MethodInfo methodInfo,
 		                                           CustomAttributeData customAttributeData,
 		                                           ref List<RegisteredTestRule> registeredTests,
-		                                           TestDescriptor testDescriptor)
+		                                           TestRuleDescriptor testRuleDescriptor)
 		{
 			var allArguments = customAttributeData.ConstructorArguments;
 			var order = (int)allArguments[0].Value;
 			var filteredArguments = allArguments.Skip(1).Select(x => x.Value).ToArray();
 			
-			var registeredMethodTest = new RegisteredTestRuleMethod(ref testable, methodInfo, filteredArguments, testDescriptor);
+			var registeredMethodTest = new RegisteredTestRuleMethod(ref testable, methodInfo, filteredArguments, testRuleDescriptor.GetTestRuleMethodDescriptor(methodInfo));
 
 			if (registeredTests.All(x => x.Order != order))
-				registeredTests.Add(new RegisteredTestRule(methodInfo.Name, order));
+				registeredTests.Add(new RegisteredTestRule(methodInfo.Name, order, testRuleDescriptor));
 			registeredTests.First(x => x.Order == order).RegisteredTestRuleMethods.Add(registeredMethodTest);
 		}
 	}
