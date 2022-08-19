@@ -39,24 +39,7 @@ namespace Beamable.Editor.Toolbox.Models
 		void Destroy();
 		void SetQueryTag(WidgetTags tags, bool shouldHaveTag);
 		void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation);
-		void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther)
-		{
-			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
-			                     Query.FilterIncludes(status);
-			var nextQuery = new ToolboxQuery(Query);
-
-			if (hasOrientation && !shouldHaveStatus)
-			{
-				nextQuery.SupportStatusConstraint &= ~status;
-				nextQuery.HasSupportConstraint = nextQuery.SupportStatusConstraint > 0;
-			}
-			else if (!hasOrientation && shouldHaveStatus)
-			{
-				nextQuery.SupportStatusConstraint = disableOther ? status : nextQuery.SupportStatusConstraint | status;
-				nextQuery.HasSupportConstraint = true;
-			}
-			SetQuery(nextQuery);
-		}
+		void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther);
 	}
 
 	public class ToolboxViewService : IToolboxViewService
@@ -226,6 +209,25 @@ namespace Beamable.Editor.Toolbox.Models
 			{
 				nextQuery.OrientationConstraint |= orientation;
 				nextQuery.HasOrientationConstraint = true;
+			}
+			SetQuery(nextQuery);
+		}
+
+		public void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther)
+		{
+			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
+			                     Query.FilterIncludes(status);
+			var nextQuery = new ToolboxQuery(Query);
+
+			if (hasOrientation && !shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint &= ~status;
+				nextQuery.HasSupportConstraint = nextQuery.SupportStatusConstraint > 0;
+			}
+			else if (!hasOrientation && shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint = disableOther ? status : nextQuery.SupportStatusConstraint | status;
+				nextQuery.HasSupportConstraint = true;
 			}
 			SetQuery(nextQuery);
 		}
