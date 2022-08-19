@@ -61,6 +61,7 @@ namespace Beamable.Editor.Toolbox.Models
 
 	public class ToolboxViewService : IToolboxViewService
 	{
+		const string FILTER_TEXT_KEY = "ToolboxViewFilterText";
 		public event Action<List<RealmView>> OnAvailableRealmsChanged;
 		public event Action<RealmView> OnRealmChanged;
 		public event Action<IWidgetSource> OnWidgetSourceChanged;
@@ -73,7 +74,12 @@ namespace Beamable.Editor.Toolbox.Models
 		public EditorUser CurrentUser { get; private set; }
 		public IWidgetSource WidgetSource { get; private set; }
 		public ToolboxQuery Query { get; private set; }
-		public string FilterText { get; private set; }
+
+		public string FilterText
+		{
+			get => SessionState.GetString(FILTER_TEXT_KEY, "status:supported");
+			private set => SessionState.SetString(FILTER_TEXT_KEY, value);
+		}
 
 		private List<AnnouncementModelBase> _announcements = new List<AnnouncementModelBase>();
 		public IEnumerable<AnnouncementModelBase> Announcements => _announcements;
@@ -104,6 +110,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public void UseDefaultWidgetSource()
 		{
 			WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"{BASE_PATH}/Models/toolboxData.asset");
+			Query = ToolboxQuery.Parse(FilterText);
 			OnWidgetSourceChanged?.Invoke(WidgetSource);
 		}
 
