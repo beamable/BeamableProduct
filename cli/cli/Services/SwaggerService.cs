@@ -14,12 +14,12 @@ public class SwaggerService
 
 	public static readonly string[] BeamableOpenApis = new[]
 	{
-		// "basic/inventory/platform/docs",
+		"basic/inventory/platform/docs",
 		"object/inventory/platform/docs",
-		// "basic/accounts/platform/docs",
-		// "object/accounts/platform/docs",
-		// "object/leaderboards/platform/docs",
-		// "basic/leaderboards/platform/docs",
+		"basic/accounts/platform/docs",
+		"object/accounts/platform/docs",
+		"object/leaderboards/platform/docs",
+		"basic/leaderboards/platform/docs",
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, IEnumerable<ISourceGenerator> generators)

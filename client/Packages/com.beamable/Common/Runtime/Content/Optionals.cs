@@ -138,7 +138,14 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	public class OptionalBool : OptionalValue<bool> { }
+
+	[System.Serializable]
+	[Agnostic]
 	public class OptionalInt : OptionalValue<int> { }
+
+	[System.Serializable]
+	public class OptionalObject : Optional<object> { }
 
 	[System.Serializable]
 	[Agnostic]

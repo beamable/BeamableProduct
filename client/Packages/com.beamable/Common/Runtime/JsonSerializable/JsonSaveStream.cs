@@ -444,6 +444,35 @@ namespace Beamable.Serialization
 			}
 #endif
 
+			public bool SerializeDictionary<TDict, T>(string key, ref TDict target) where TDict : IDictionary<string, T>, new()
+			{
+				AppendKey(key);
+				if (target == null)
+				{
+					AppendNull();
+				}
+				else
+				{
+					StartObject();
+					{
+						var iter = target.GetEnumerator();
+
+						var elemType = typeof(T) == typeof(object) ? null : typeof(T);
+
+
+						while (iter.MoveNext())
+						{
+							var val = iter.Current;
+							SerializeAny(val.Key, val.Value, elemType);
+						}
+					}
+					EndObject();
+					AppendSeperator();
+				}
+
+				return true;
+			}
+
 			public bool SerializeDictionary<T>(string key, ref Dictionary<string, T> target)
 			{
 				AppendKey(key);

@@ -70,6 +70,9 @@ public class GenSchemaTests
 		Assert.AreEqual(elementExpected.FullName, tRef.BaseType);
 		Assert.AreEqual(0, tRef.TypeArguments.Count);
 		Assert.AreEqual(elementExpected.FullName, tRef.ArrayElementType.BaseType);
+
+		var optionalTRef = gen.GetOptionalTypeReference();
+
 	}
 
 	[TestCase("Tuna", TestName = "complex array")]
