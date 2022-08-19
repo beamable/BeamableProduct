@@ -116,9 +116,16 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		// if (_rulesListView != null && _rulesListView.childCount != 0)
 		// 	_rulesListView?.SetSelectionWithoutNotify(new [] { _rulesListView.selectedIndex });
 		
+		#if UNITY_2021_1_OR_NEWER
+		_rulesListView?.Rebuild();
+		_testablesListView?.Rebuild();
+		_scenesListView?.Rebuild();
+		#else
 		_rulesListView?.Refresh();
 		_testablesListView?.Refresh();
 		_scenesListView?.Refresh();
+		#endif
+
 	}
 	private void CreateRegisteredTestScenesList()
 	{
