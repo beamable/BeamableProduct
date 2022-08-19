@@ -11,7 +11,6 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
-using Beamable.Common.Api.Social;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -140,7 +139,7 @@ namespace Beamable
 		private PlayerStats _playerStats;
 
 		[SerializeField] private PlayerLobby _playerLobby;
-
+		
 		[SerializeField]
 		private PlayerParty _playerParty;
 

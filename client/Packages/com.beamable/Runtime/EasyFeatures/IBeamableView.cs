@@ -21,6 +21,11 @@ namespace Beamable.EasyFeatures
 	public interface IBeamableView
 	{
 		/// <summary>
+		/// Defines if the view is visible in the scene.
+		/// </summary>
+		bool IsVisible { get; set; }
+		
+		/// <summary>
 		/// <see cref="BeamableViewGroup"/> sorts it's managed <see cref="IBeamableView"/> by this value before calling Enrich.
 		/// </summary>
 		int GetEnrichOrder();

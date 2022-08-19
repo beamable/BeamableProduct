@@ -13,6 +13,7 @@ namespace Beamable.EasyFeatures.Components
 
 		public OverlayedModalWindow ModalWindow;
 		public OverlayedLabelWithButton LabelWithButton;
+		public OverlayedToastPopup ToastPopup;
 
 		private IOverlayComponent _currentObject;
 
@@ -72,6 +73,11 @@ namespace Beamable.EasyFeatures.Components
 			Mask.SetActive(true);
 			action?.Invoke();
 			_currentObject = activeComponent;
+		}
+
+		public void ShowToast(string message, float duration = 3f)
+		{
+			ToastPopup.Show(message, duration);
 		}
 	}
 }
