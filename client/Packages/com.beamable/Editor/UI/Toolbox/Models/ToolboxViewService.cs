@@ -39,6 +39,24 @@ namespace Beamable.Editor.Toolbox.Models
 		void Destroy();
 		void SetQueryTag(WidgetTags tags, bool shouldHaveTag);
 		void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation);
+		void SetSupportStatus(SupportStatus status, bool shouldHaveStatus)
+		{
+			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
+			                     Query.FilterIncludes(status);
+			var nextQuery = new ToolboxQuery(Query);
+
+			if (hasOrientation && !shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint &= ~status;
+				nextQuery.HasSupportConstraint = nextQuery.SupportStatusConstraint > 0;
+			}
+			else if (!hasOrientation && shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint |= status;
+				nextQuery.HasSupportConstraint = true;
+			}
+			SetQuery(nextQuery);
+		}
 	}
 
 	public class ToolboxViewService : IToolboxViewService
@@ -189,7 +207,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation)
 		{
 			var hasOrientation = (Query?.HasOrientationConstraint ?? false) &&
-								 Query.FilterIncludes(orientation);
+			                     Query.FilterIncludes(orientation);
 			var nextQuery = new ToolboxQuery(Query);
 
 			if (hasOrientation && !shouldHaveOrientation)

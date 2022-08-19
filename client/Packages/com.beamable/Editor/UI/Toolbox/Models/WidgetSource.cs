@@ -47,6 +47,17 @@ namespace Beamable.Editor.Toolbox.Models
 		public WidgetTags Tags;
 		public Texture Icon;
 		public GameObject Prefab;
+		[EnumFlags]
+		public SupportStatus Support;
+	}
+
+	[Flags]
+	[System.Serializable]
+	public enum SupportStatus
+	{
+		SUPPORTED = 1,
+		OBSOLETE = 1 << 1,
+		EXPERIMENTAL = 1 << 2,
 	}
 
 	[Flags]
@@ -148,6 +159,41 @@ namespace Beamable.Editor.Toolbox.Models
 		}
 
 		public static string Serialize(this WidgetTags widget)
+		{
+			var str = widget.ToString();
+			foreach (var kvp in stringToEnum)
+			{
+				str = str.Replace(kvp.Value.ToString(), kvp.Key);
+			}
+			str = str.Replace(",", "");
+			return str;
+		}
+	}
+
+	public static class WidgetStatusExtensions
+	{
+		static Dictionary<SupportStatus, string> enumToString = new Dictionary<SupportStatus, string>
+		{
+		};
+		static Dictionary<string, SupportStatus> stringToEnum = new Dictionary<string, SupportStatus>();
+		static WidgetStatusExtensions()
+		{
+			Enum.GetValues(typeof(SupportStatus)).Cast<SupportStatus>().ToList().ForEach(tag =>
+			{
+				enumToString.Add(tag, tag.ToString().ToLower());
+			});
+			foreach (var kvp in enumToString)
+			{
+				stringToEnum.Add(kvp.Value, kvp.Key);
+			}
+		}
+		
+		public static bool TryParse(string raw, out SupportStatus tags)
+		{
+			return Enum.TryParse(raw, true, out tags);
+		}
+
+		public static string Serialize(this SupportStatus widget)
 		{
 			var str = widget.ToString();
 			foreach (var kvp in stringToEnum)

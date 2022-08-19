@@ -8,6 +8,9 @@ namespace Beamable.Editor.Toolbox.Models
 		public bool HasOrientationConstraint;
 		public WidgetOrientationSupport OrientationConstraint;
 
+		public bool HasSupportConstraint;
+		public SupportStatus SupportStatusConstraint;
+
 		public bool HasTagConstraint;
 		public WidgetTags TagConstraint;
 
@@ -20,12 +23,13 @@ namespace Beamable.Editor.Toolbox.Models
 		 {
 			{"id", DefaultQueryParser.ApplyIdParse},
 			{"tag", ApplyTagRule},
-			{"layout", ApplyOrientationRule}
+			{"layout", ApplyOrientationRule},
+			{"status", ApplyStatusRule}
 		 };
 
 			EditorSerializeRules = new List<DefaultQueryParser.SerializeRule<ToolboxQuery>>
 		 {
-			SerializeOrientationRule, SerializeTypeConstraintsRule, SerializeIdRule
+			SerializeOrientationRule, SerializeTypeConstraintsRule, SerializeIdRule, SerializeStatusConstraintsRule
 		 };
 		}
 
@@ -43,11 +47,18 @@ namespace Beamable.Editor.Toolbox.Models
 			OrientationConstraint = other.OrientationConstraint;
 			HasTagConstraint = other.HasTagConstraint;
 			HasOrientationConstraint = other.HasOrientationConstraint;
+			HasSupportConstraint = other.HasSupportConstraint;
+			SupportStatusConstraint = other.SupportStatusConstraint;
 		}
 
 		public bool Accepts(Widget widget)
 		{
-			return AcceptIdContains(widget.Name.ToLower()) && AcceptsTag(widget.Tags) && AcceptsOrientation(widget.OrientationSupport);
+			return AcceptIdContains(widget.Name.ToLower()) && AcceptsTag(widget.Tags) && AcceptsOrientation(widget.OrientationSupport) && AcceptsSupportStatus(widget.Support);
+		}
+
+		private bool AcceptsSupportStatus(SupportStatus supportStatus)
+		{
+			return !HasSupportConstraint || supportStatus.ContainsAllFlags(SupportStatusConstraint);
 		}
 
 		public bool AcceptsTag(WidgetTags tags)
@@ -74,9 +85,15 @@ namespace Beamable.Editor.Toolbox.Models
 			return TagConstraint.ContainsAnyFlag(tags);
 		}
 
+		public bool FilterIncludes(SupportStatus tags)
+		{
+			if (!HasSupportConstraint) return false;
+			return SupportStatusConstraint.ContainsAnyFlag(tags);
+		}
+
 		private static bool SerializeTypeConstraintsRule(ToolboxQuery query, out string str)
 		{
-			str = "";
+			str = string.Empty;
 			if (query.HasTagConstraint)
 			{
 				str = $"tag:{query.TagConstraint.Serialize()}";
@@ -84,9 +101,19 @@ namespace Beamable.Editor.Toolbox.Models
 			}
 			return false;
 		}
+		private static bool SerializeStatusConstraintsRule(ToolboxQuery query, out string str)
+		{
+			str = string.Empty;
+			if (query.HasSupportConstraint)
+			{
+				str = $"status:{query.SupportStatusConstraint.Serialize()}";
+				return true;
+			}
+			return false;
+		}
 		private static bool SerializeOrientationRule(ToolboxQuery query, out string str)
 		{
-			str = "";
+			str = string.Empty;
 			if (query.HasOrientationConstraint)
 			{
 				str = $"layout:{query.OrientationConstraint.Serialize()}";
@@ -113,6 +140,16 @@ namespace Beamable.Editor.Toolbox.Models
 			{
 				query.HasOrientationConstraint = true;
 				query.OrientationConstraint = orientationConstraint;
+			}
+		}
+
+		private static void ApplyStatusRule(string raw, ToolboxQuery query)
+		{
+			query.HasSupportConstraint = false;
+			if (WidgetStatusExtensions.TryParse(raw, out var status))
+			{
+				query.HasSupportConstraint = true;
+				query.SupportStatusConstraint = status;
 			}
 		}
 

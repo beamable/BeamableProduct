@@ -13,6 +13,7 @@ using System.Reflection;
 #endif
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.XR;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -55,6 +56,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 		private Button _categoryButton;
 		private Button _typeButton;
+		private Button _supportButton;
 		private Button _infoButton;
 		private Button _microservicesButton;
 		private Button _accountButton;
@@ -98,6 +100,10 @@ namespace Beamable.Editor.Toolbox.Components
 			_typeButton.clickable.clicked += () => { TypeButton_OnClicked(_typeButton.worldBound); };
 			_typeButton.tooltip = Tooltips.Toolbox.LAYOUT;
 
+			_supportButton = Root.Q<Button>("supportButton");
+			_supportButton.clickable.clicked += HandleSupportButtonClicked;
+			_supportButton.tooltip = Tooltips.Toolbox.SUPPORT_STATUS;
+
 			_categoryButton = Root.Q<Button>("CategoryButton");
 			_categoryButton.clickable.clicked += () => { CategoryButton_OnClicked(_categoryButton.worldBound); };
 			_categoryButton.tooltip = Tooltips.Toolbox.TAG;
@@ -115,6 +121,17 @@ namespace Beamable.Editor.Toolbox.Components
 										wnd.minSize.y);
 			};
 			_accountButton.tooltip = Tooltips.Toolbox.MY_ACCOUNT;
+		}
+
+		private void HandleSupportButtonClicked()
+		{
+			Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(_supportButton.worldBound);
+
+			var content = new SupportDropdownVisualElement();
+			content.Model = Model;
+			var wnd = BeamablePopupWindow.ShowDropdown("Support", popupWindowRect, new Vector2(200, 100), content);
+
+			content.Refresh();
 		}
 
 		private void FilterBox_OnTextChanged(string filter)

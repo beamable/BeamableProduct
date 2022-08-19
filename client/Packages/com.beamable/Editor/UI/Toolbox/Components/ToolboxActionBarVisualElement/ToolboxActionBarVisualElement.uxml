@@ -33,6 +33,10 @@
 
     <engine:VisualElement name="rightContentVisualElement">
         <beamable:SearchBarVisualElement name="searchBar"/>
+        <engine:Button class="unboundedButton" name="supportButton">
+            <engine:Image name="typeIcon"/>
+            <engine:Label text="Support" class="buttonText"/>
+        </engine:Button>
         <engine:Button class="unboundedButton" name="typeButton">
             <engine:Image name="typeIcon"/>
             <engine:Label text="Layout" class="buttonText"/>
