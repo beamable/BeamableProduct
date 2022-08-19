@@ -13,7 +13,6 @@ using System.Reflection;
 #endif
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.XR;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

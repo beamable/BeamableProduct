@@ -39,7 +39,7 @@ namespace Beamable.Editor.Toolbox.Models
 		void Destroy();
 		void SetQueryTag(WidgetTags tags, bool shouldHaveTag);
 		void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation);
-		void SetSupportStatus(SupportStatus status, bool shouldHaveStatus)
+		void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther)
 		{
 			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
 			                     Query.FilterIncludes(status);
@@ -52,7 +52,7 @@ namespace Beamable.Editor.Toolbox.Models
 			}
 			else if (!hasOrientation && shouldHaveStatus)
 			{
-				nextQuery.SupportStatusConstraint |= status;
+				nextQuery.SupportStatusConstraint = disableOther ? status : nextQuery.SupportStatusConstraint | status;
 				nextQuery.HasSupportConstraint = true;
 			}
 			SetQuery(nextQuery);
