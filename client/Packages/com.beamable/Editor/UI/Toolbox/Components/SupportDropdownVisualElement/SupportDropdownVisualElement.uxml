@@ -5,12 +5,10 @@
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="typeList">
             <!-- list of realm -->
             <engine:Button text="Landscape"  name="allTypeButton"/>
         </engine:VisualElement>
     </engine:VisualElement>
-
 </engine:UXML>
