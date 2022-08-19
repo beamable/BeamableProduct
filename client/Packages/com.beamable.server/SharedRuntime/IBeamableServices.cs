@@ -150,7 +150,7 @@ namespace Beamable.Server
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/chat-overview">Chat</a> feature
 		/// </summary>
 		IMicroserviceChatApi Chat { get; }
-		
+
 		/// <summary>
 		/// %Microservice entry point for payment operations.
 		/// </summary>
