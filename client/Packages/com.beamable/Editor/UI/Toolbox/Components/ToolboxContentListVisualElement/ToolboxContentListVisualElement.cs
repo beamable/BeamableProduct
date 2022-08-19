@@ -107,7 +107,6 @@ namespace Beamable.Editor.Toolbox.Components
 
 		private void RefreshWidgetElements(VisualElement gridRoot)
 		{
-			Debug.Log("RefreshWidgetElements");
 			gridRoot.Clear();
 
 			TotalWidgets = 0;
