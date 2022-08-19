@@ -5,15 +5,16 @@ using Newtonsoft.Json;
 
 namespace cli;
 
-public class AccountMeCommandArgs : AuthorizedCommandArgs
-{
+public class AccountMeCommandArgs : CommandArgs {}
 
-}
-public class AccountMeCommand : AuthorizedCommand<AccountMeCommandArgs>
+public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
 {
+	public IAuthApi AuthApi { get; }
 
-	public AccountMeCommand(IAppContext ctx, IAuthApi authApi) : base(ctx, authApi, "me", "temp command to get current account")
-	{}
+	public AccountMeCommand(IAuthApi authApi) : base("me", "temp command to get current account")
+	{
+		AuthApi = authApi;
+	}
 
 	public override void Configure()
 	{
@@ -22,7 +23,6 @@ public class AccountMeCommand : AuthorizedCommand<AccountMeCommandArgs>
 
 	public override async Task Handle(AccountMeCommandArgs args)
 	{
-		await base.Handle(args);
 		var response = await AuthApi.GetUser().ShowLoading("Sending Request...");
 		BeamableLogger.Log(JsonConvert.SerializeObject(response));
 	}

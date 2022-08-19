@@ -6,28 +6,27 @@ using System.CommandLine;
 
 namespace cli;
 
-public abstract class BaseRequestCommand : AuthorizedCommand<BaseRequestArgs>
+public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 {
 	protected abstract Method Method { get; }
 	private readonly CliRequester _requester;
 
-	protected BaseRequestCommand(CliRequester requester, IAppContext ctx, IAuthApi authApi, string name, string description) : base(ctx, authApi, name, description)
+	protected BaseRequestCommand(CliRequester requester, string name, string description) : base( name, description)
 	{
 		_requester = requester;
 	}
 
 	public override void Configure()
 	{
-		base.Configure();
 		var uri = new Argument<string>(nameof(BaseRequestArgs.uri));
 		AddArgument(uri, (args, i) => args.uri = i);
 		AddOption(new HeaderOption(), (args, i) => args.customHeaders.AddRange(i));
 		AddOption(new BodyPathOption(), (args, i) => args.bodyPath = i);
+		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 	}
 
 	public override async Task Handle(BaseRequestArgs args)
 	{
-		await base.Handle(args);
 		string body = null;
 		if (!string.IsNullOrWhiteSpace(args.bodyPath))
 		{
@@ -48,9 +47,10 @@ public abstract class BaseRequestCommand : AuthorizedCommand<BaseRequestArgs>
 	}
 }
 
-public class BaseRequestArgs : AuthorizedCommandArgs
+public class BaseRequestArgs : CommandArgs
 {
 	public List<string> customHeaders = new();
 	public string uri;
 	public string bodyPath;
+	public bool customerScoped;
 }

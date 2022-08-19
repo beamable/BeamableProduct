@@ -12,6 +12,7 @@ public class LoginCommandArgs : CommandArgs
 	public string password;
 	public bool saveToEnvironment;
 	public bool saveToFile;
+	public bool customerScoped;
 }
 
 public class LoginCommand : AppCommand<LoginCommandArgs>
@@ -33,13 +34,14 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
+		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 	}
 
 	public override async Task Handle(LoginCommandArgs args)
 	{
 		var username = GetUserName(args);
 		var password = GetPassword(args);
-		var response = await _authApi.Login(username, password, true, true).ShowLoading("Authorizing...");
+		var response = await _authApi.Login(username, password, true, args.customerScoped).ShowLoading("Authorizing...");
 		if (args.saveToEnvironment && !string.IsNullOrWhiteSpace(response.refresh_token))
 		{
 			BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
