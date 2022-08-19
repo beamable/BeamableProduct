@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `Services.Payments` which allows receipt verification.
+- Added `long` PlayerId version of `InviteToParty`, `PromoteToLeader` and `KickPlayer` methods of the `IPartyApi` interface.
 
 ### Fixed
 - Manually adding a `StorageObject` Assembly Definition as a dependency of a `Microservice`'s Assembly Definition now correctly sets up all the necessary Mongo DLLs for the `StorageObject` to be usable inside the Microservice. You can disable this behaviour by setting `MicroserviceConfiguration.EnsureMongoAssemblyDependencies = false`. The recommended way to do set service dependencies is still to use the Dependency button of the Microservice Manager Window.
