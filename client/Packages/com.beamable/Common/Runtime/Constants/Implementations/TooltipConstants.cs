@@ -61,6 +61,7 @@
 				public const string TAG = "Tag";
 				public const string MY_ACCOUNT = "My Account";
 				public const string LAYOUT = "Layout";
+				public const string SUPPORT_STATUS = "Support Status";
 				public const string PORTRAIT_AND_LANDSCAPE = "Portrait & Landscape";
 				public const string PORTRAIT = "Portrait";
 				public const string LANDSCAPE = "Landscape";
