@@ -55,9 +55,8 @@ namespace Beamable.Editor.Toolbox.Models
 	[System.Serializable]
 	public enum SupportStatus
 	{
-		SUPPORTED = 1,
-		OBSOLETE = 1 << 1,
-		EXPERIMENTAL = 1 << 2,
+		OBSOLETE = 1,
+		EXPERIMENTAL = 2,
 	}
 
 	[Flags]
