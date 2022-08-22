@@ -1,7 +1,9 @@
 using Beamable.NewTestingTool.Core.Models;
 using NewTestingTool.Helpers;
+using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
+
+using static NewTestingTool.Constants.TestConstants;
 
 namespace Beamable.Editor.NewTestingTool.UI.Components
 {
@@ -22,11 +24,17 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			
 			_testResult = Root.Q("testResult");
 			
+			RegisterCallback<MouseDownEvent>(HandleMouseDownEvent);
+			
 			RegisteredTestScene.OnTestResultChanged -= HandleTestResultChange;
 			RegisteredTestScene.OnTestResultChanged += HandleTestResultChange;
 			TestHelper.SetTestResult(_testResult, RegisteredTestScene.TestResult);
 		}
-		
+		private void HandleMouseDownEvent(MouseDownEvent mde)
+		{
+			if (mde.clickCount > 1)
+				EditorSceneManager.OpenScene(GetPathToTestScene(RegisteredTestScene.SceneName));
+		}
 		private void HandleTestResultChange() 
 			=> TestHelper.SetTestResult(_testResult, RegisteredTestScene.TestResult);
 	}

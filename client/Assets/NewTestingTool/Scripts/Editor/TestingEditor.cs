@@ -5,6 +5,7 @@ using Beamable.Editor.UI;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.NewTestingTool.Core.Models;
+using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
 using ActionBarVisualElement = Beamable.Editor.NewTestingTool.UI.Components.ActionBarVisualElement;
@@ -103,29 +104,15 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 
 		_testingEditorModel.TestConfiguration.OnTestFinished -= HandleTestFinished;
 		_testingEditorModel.TestConfiguration.OnTestFinished += HandleTestFinished;
-
+		
 		HandleScanButton();
 	}
 	
 	private void HandleTestFinished()
 	{
-		// if (_scenesListView != null && _scenesListView.childCount != 0)
-		// 	_scenesListView?.SetSelectionWithoutNotify(new [] { _scenesListView.selectedIndex });
-		// if (_testablesListView != null && _testablesListView.childCount != 0)
-		// 	_testablesListView?.SetSelectionWithoutNotify(new [] { _testablesListView.selectedIndex });
-		// if (_rulesListView != null && _rulesListView.childCount != 0)
-		// 	_rulesListView?.SetSelectionWithoutNotify(new [] { _rulesListView.selectedIndex });
-		
-		#if UNITY_2021_1_OR_NEWER
-		_rulesListView?.Rebuild();
-		_testablesListView?.Rebuild();
-		_scenesListView?.Rebuild();
-		#else
-		_rulesListView?.Refresh();
-		_testablesListView?.Refresh();
-		_scenesListView?.Refresh();
-		#endif
-
+		// _rulesListView?.RefreshPolyfill();
+		// _testablesListView?.RefreshPolyfill();
+		// _scenesListView?.RefreshPolyfill();
 	}
 	private void CreateRegisteredTestScenesList()
 	{
@@ -133,8 +120,8 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		ResetList(_testablesList, ref _testablesListView);
 		ResetList(_scenesList, ref _scenesListView);
 		
-		_scenesListView = _registeredTestScenesListModel.CreateListView(TestingEditorModel.TestConfiguration.RegisteredTestScenes);
 		_registeredTestScenesListModel.OnSelectionChanged -= CreateRegisteredTestsList;
+		_scenesListView = _registeredTestScenesListModel.CreateListView(TestingEditorModel.TestConfiguration.RegisteredTestScenes);
 		_registeredTestScenesListModel.OnSelectionChanged += CreateRegisteredTestsList;
 		_scenesList.Add(_scenesListView);
 	}
@@ -143,25 +130,22 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		ResetList(_rulesList, ref _rulesListView);
 		ResetList(_testablesList, ref _testablesListView);
 
-		_testablesListView = _registeredTestListModel.CreateListView(registeredTestScene.RegisteredTests);
 		_registeredTestListModel.OnSelectionChanged -= CreateRegisteredTestRulesList;
+		_testablesListView = _registeredTestListModel.CreateListView(registeredTestScene.RegisteredTests);
 		_registeredTestListModel.OnSelectionChanged += CreateRegisteredTestRulesList;
 		_testablesList.Add(_testablesListView);
-		
 	}
 	private void CreateRegisteredTestRulesList(RegisteredTest registeredTest)
 	{
 		ResetList(_rulesList, ref _rulesListView);
 		
-		_rulesListView = _registeredTestRuleListModel.CreateListView(registeredTest.RegisteredTestRules);
 		_registeredTestRuleListModel.OnSelectionChanged -= SetupDetailedInfo;
+		_rulesListView = _registeredTestRuleListModel.CreateListView(registeredTest.RegisteredTestRules);
 		_registeredTestRuleListModel.OnSelectionChanged += SetupDetailedInfo;
 		_rulesList.Add(_rulesListView);
 	}
 	private void SetupDetailedInfo(RegisteredTestRule registeredTestRule)
-	{
-		_ruleMethodBody.Setup(TestingEditorModel.TestConfiguration, registeredTestRule.RegisteredTestRuleMethods[0]);
-	}
+		=> _ruleMethodBody.Setup(TestingEditorModel.TestConfiguration, registeredTestRule.RegisteredTestRuleMethods[0]);
 
 	private void HandleScanButton()
 	{

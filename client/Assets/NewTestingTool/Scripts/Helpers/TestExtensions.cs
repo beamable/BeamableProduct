@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using UnityEditor;
 using UnityEngine;
 
 using static NewTestingTool.Constants.TestConstants;
@@ -20,7 +19,9 @@ namespace NewTestingTool.Extensions
 					Directory.CreateDirectory(savePath);
 				
 				scriptable = ScriptableObject.CreateInstance<T>();
-				AssetDatabase.CreateAsset(scriptable, $"{savePath}/{fileName}.asset");
+				#if UNITY_EDITOR
+				UnityEditor.AssetDatabase.CreateAsset(scriptable, $"{savePath}/{fileName}.asset");
+				#endif
 			}
 			return scriptable;
 		}

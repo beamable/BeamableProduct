@@ -1,5 +1,4 @@
-﻿using Beamable.Editor.NewTestingTool.Models;
-using Beamable.Editor.NewTestingTool.UI.Components;
+﻿using Beamable.Editor.NewTestingTool.UI.Components;
 using Beamable.NewTestingTool.Core.Models;
 using System.Collections.Generic;
 using System.Linq;

@@ -21,7 +21,6 @@ namespace Beamable.NewTestingTool.Core.Models.Descriptors
 
 		[SerializeField] private string _title;
 		[SerializeField] private string _description;
-		[SerializeField] private TestResult _testResult;
 		[SerializeField] private List<TestRuleDescriptor> _testRuleDescriptors = new List<TestRuleDescriptor>();
 
 		public TestRuleDescriptor GetTestRuleDescriptor(Testable testable)

@@ -1,0 +1,180 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b532e21905444abbbcc0844773f0a65f, type: 3}
+  m_Name: ExampleTestScene
+  m_EditorClassIdentifier: 
+  _sceneName: ExampleTestScene
+  _testResult: 0
+  _testSceneDescriptor: {fileID: 11400000, guid: 981ce9e831f5b6c48aa3ad258e57873a,
+    type: 2}
+  _registeredTests:
+  - _testClassName: ExampleTest
+    _testResult: 0
+    _testDescriptor:
+      _title: 
+      _description: 
+      _testRuleDescriptors:
+      - _testableName: ExampleTest
+        _title: 
+        _description: 
+        _testRuleMethodDescriptors:
+        - _methodName: TestMethodWithoutArguments
+          _title: You can enter a SHORT description here
+          _description: "\rYou can enter a FULL description here"
+        - _methodName: TestMethodWithArguments
+          _title: 
+          _description: 
+        - _methodName: TestMethodWithArgumentsAndMultipleSteps
+          _title: 
+          _description: 
+        - _methodName: SuperTest
+          _title: 
+          _description: 
+    _registeredTestRules:
+    - _testMethodName: TestMethodWithoutArguments
+      _order: 1
+      _testResult: 0
+      _testRuleDescriptor:
+        _testableName: ExampleTest
+        _title: 
+        _description: 
+        _testRuleMethodDescriptors:
+        - _methodName: TestMethodWithoutArguments
+          _title: You can enter a SHORT description here
+          _description: "\rYou can enter a FULL description here"
+        - _methodName: TestMethodWithArguments
+          _title: 
+          _description: 
+        - _methodName: TestMethodWithArgumentsAndMultipleSteps
+          _title: 
+          _description: 
+        - _methodName: SuperTest
+          _title: 
+          _description: 
+      _registeredTestRuleMethods:
+      - _testableName: ExampleTest
+        _methodName: TestMethodWithoutArguments
+        _testResult: 0
+        _testRuleMethodDescriptor:
+          _methodName: TestMethodWithoutArguments
+          _title: You can enter a SHORT description here
+          _description: "\rYou can enter a FULL description here"
+        _argumentsRaw: []
+    - _testMethodName: TestMethodWithArguments
+      _order: 2
+      _testResult: 0
+      _testRuleDescriptor:
+        _testableName: ExampleTest
+        _title: 
+        _description: 
+        _testRuleMethodDescriptors:
+        - _methodName: TestMethodWithoutArguments
+          _title: You can enter a SHORT description here
+          _description: "\rYou can enter a FULL description here"
+        - _methodName: TestMethodWithArguments
+          _title: 
+          _description: 
+        - _methodName: TestMethodWithArgumentsAndMultipleSteps
+          _title: 
+          _description: 
+        - _methodName: SuperTest
+          _title: 
+          _description: 
+      _registeredTestRuleMethods:
+      - _testableName: ExampleTest
+        _methodName: TestMethodWithArguments
+        _testResult: 0
+        _testRuleMethodDescriptor:
+          _methodName: TestMethodWithArguments
+          _title: 
+          _description: 
+        _argumentsRaw:
+        - String_Hello
+        - String_World
+    - _testMethodName: TestMethodWithArgumentsAndMultipleSteps
+      _order: 3
+      _testResult: 0
+      _testRuleDescriptor:
+        _testableName: ExampleTest
+        _title: 
+        _description: 
+        _testRuleMethodDescriptors:
+        - _methodName: TestMethodWithoutArguments
+          _title: You can enter a SHORT description here
+          _description: "\rYou can enter a FULL description here"
+        - _methodName: TestMethodWithArguments
+          _title: 
+          _description: 
+        - _methodName: TestMethodWithArgumentsAndMultipleSteps
+          _title: 
+          _description: 
+        - _methodName: SuperTest
+          _title: 
+          _description: 
+      _registeredTestRuleMethods:
+      - _testableName: ExampleTest
+        _methodName: TestMethodWithArgumentsAndMultipleSteps
+        _testResult: 0
+        _testRuleMethodDescriptor:
+          _methodName: TestMethodWithArgumentsAndMultipleSteps
+          _title: 
+          _description: 
+        _argumentsRaw:
+        - Int32_2
+        - Int32_2
+      - _testableName: ExampleTest
+        _methodName: TestMethodWithArgumentsAndMultipleSteps
+        _testResult: 0
+        _testRuleMethodDescriptor:
+          _methodName: TestMethodWithArgumentsAndMultipleSteps
+          _title: 
+          _description: 
+        _argumentsRaw:
+        - Int32_5
+        - Int32_10
+    - _testMethodName: SuperTest
+      _order: 4
+      _testResult: 0
+      _testRuleDescriptor:
+        _testableName: ExampleTest
+        _title: 
+        _description: 
+        _testRuleMethodDescriptors:
+        - _methodName: TestMethodWithoutArguments
+          _title: You can enter a SHORT description here
+          _description: "\rYou can enter a FULL description here"
+        - _methodName: TestMethodWithArguments
+          _title: 
+          _description: 
+        - _methodName: TestMethodWithArgumentsAndMultipleSteps
+          _title: 
+          _description: 
+        - _methodName: SuperTest
+          _title: 
+          _description: 
+      _registeredTestRuleMethods:
+      - _testableName: ExampleTest
+        _methodName: SuperTest
+        _testResult: 0
+        _testRuleMethodDescriptor:
+          _methodName: SuperTest
+          _title: 
+          _description: 
+        _argumentsRaw: []
+      - _testableName: ExampleTest
+        _methodName: SuperTest
+        _testResult: 0
+        _testRuleMethodDescriptor:
+          _methodName: SuperTest
+          _title: 
+          _description: 
+        _argumentsRaw: []

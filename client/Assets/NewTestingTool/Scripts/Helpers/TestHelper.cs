@@ -47,20 +47,41 @@ namespace NewTestingTool.Helpers
 				var type = splitted[0];
 				var val = splitted[1];
 
-				object convertedValue = type switch
+				object convertedValue;
+				switch (type)
 				{
-					"byte" => byte.Parse(val),
-					"char" => char.Parse(val),
-					"short" => short.Parse(val),
-					"int" => int.Parse(val),
-					"long" => long.Parse(val),
-					"float" => float.Parse(val),
-					"double" => double.Parse(val),
-					"bool" => bool.Parse(val),
-					"string" => val,
-					_ => null
-				};
-				
+					case "byte":
+						convertedValue = byte.Parse(val);
+						break;
+					case "char":
+						convertedValue = char.Parse(val);
+						break;
+					case "short":
+						convertedValue = short.Parse(val);
+						break;
+					case "int":
+						convertedValue = int.Parse(val);
+						break;
+					case "long":
+						convertedValue = long.Parse(val);
+						break;
+					case "float":
+						convertedValue = float.Parse(val);
+						break;
+					case "double":
+						convertedValue = double.Parse(val);
+						break;
+					case "bool":
+						convertedValue = bool.Parse(val);
+						break;
+					case "string":
+						convertedValue = val;
+						break;
+					default:
+						convertedValue = null;
+						break;
+				}
+
 				originalValues.Add(convertedValue);
 			}
 			return originalValues.ToArray();

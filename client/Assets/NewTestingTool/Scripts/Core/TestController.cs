@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 using static NewTestingTool.Constants.TestConstants;
 
@@ -13,20 +12,19 @@ namespace Beamable.NewTestingTool.Core
 {
 	public class TestController : MonoBehaviour
 	{
+		public event Action OnTestReadyToInvoke;
+		public event Action OnManualTestResultRequested;
+		public bool AutomaticallyStart => automaticallyStart;
+		
 		[SerializeField] private bool automaticallyStart = true;
 		[SerializeField] private bool displayLogs = true;
 		[SerializeField] private bool stopOnFirstFailed;
 
-		[SerializeField] private Button passedButton; 
-		[SerializeField] private Button failedButton;
-
-		private event Action OnTestReadyToInvoke;
-
-		private TestConfiguration TestConfiguration { get; set; }
-		private RegisteredTestScene CurrentTestScene { get; set; }
-		private RegisteredTest CurrentTest =>  CurrentTestScene.RegisteredTests[_currentTestIndex];
-		private RegisteredTestRule CurrentTestRule => CurrentTest.RegisteredTestRules[_currentOrderIndex];
-		private RegisteredTestRuleMethod CurrentTestRuleMethod => CurrentTestRule.RegisteredTestRuleMethods[_currentCaseIndex - 1];
+		public TestConfiguration TestConfiguration { get; private set; }
+		public RegisteredTestScene CurrentTestScene { get; private set; }
+		public RegisteredTest CurrentTest =>  CurrentTestScene.RegisteredTests[_currentTestIndex];
+		public RegisteredTestRule CurrentTestRule => CurrentTest.RegisteredTestRules[_currentOrderIndex];
+		public RegisteredTestRuleMethod CurrentTestRuleMethod => CurrentTestRule.RegisteredTestRuleMethods[_currentCaseIndex - 1];
 
 		private int _currentTestIndex = 0, _currentOrderIndex = 0, _currentCaseIndex = 0;
 
@@ -36,16 +34,27 @@ namespace Beamable.NewTestingTool.Core
 		{
 			if (!Application.isPlaying)
 				return;
-			
-			ChangeButtonsInteractableState(false);
 			LoadTestData();
-
-			OnTestReadyToInvoke -= HandleTestReadyToInvoke;
-			OnTestReadyToInvoke += HandleTestReadyToInvoke;
 		}
 		private void Start()
 		{
 			if (!automaticallyStart || !Application.isPlaying)
+				return;
+			StartTest();
+		}
+		private void OnEnable()
+		{
+			OnTestReadyToInvoke += HandleTestReadyToInvoke;
+
+		}
+		private void OnDisable()
+		{
+			OnTestReadyToInvoke -= HandleTestReadyToInvoke;
+		}
+
+		public void StartTest()
+		{
+			if (_coroutine != null)
 				return;
 			_coroutine = StartCoroutine(InvokeNextTest());
 		}
@@ -61,16 +70,14 @@ namespace Beamable.NewTestingTool.Core
 			}
 			CurrentTestScene = TestConfiguration.GetRegisteredTestScene(SceneManager.GetActiveScene().name);
 		}
-		private void MarkTestResult(TestResult result)
+		public void MarkTestResult(TestResult result)
 		{
 			if (result == TestResult.NotSet)
 			{
-				MarkTestResultManually();
+				OnManualTestResultRequested?.Invoke();
 				return;
 			}
-
 			CurrentTestRuleMethod.TestResult = result;
-			ChangeButtonsInteractableState(false);
 
 			if (displayLogs)
 				TestableDebug.Log($"Result=[{TestableDebug.WrapWithColor(result, result == TestResult.Passed ? Color.green : Color.red)}] Method=[{TestableDebug.WrapWithColor(CurrentTestRuleMethod.MethodInfo.Name, Color.yellow)}]");
@@ -78,33 +85,11 @@ namespace Beamable.NewTestingTool.Core
 			TestConfiguration.OnTestFinished?.Invoke();
 			HandleTestFinished();
 		}
-		private void MarkTestResultManually()
-		{
-			void MarkTestAsPassed() => MarkTestResult(TestResult.Passed);
-			void MarkTestAsFailed() => MarkTestResult(TestResult.Failed);
-
-			passedButton.onClick.RemoveListener(MarkTestAsPassed);
-			passedButton.onClick.AddListener(MarkTestAsPassed);
-			
-			failedButton.onClick.RemoveListener(MarkTestAsFailed);
-			failedButton.onClick.AddListener(MarkTestAsFailed);
-
-			ChangeButtonsInteractableState(true);
-		}
-		/// <summary>
-		/// Restarts all tests loaded in a runtime to the starting position.
-		/// </summary>
-		public void ResetTests()
-		{
-			_currentTestIndex = 0;
-			_currentOrderIndex = 0;
-			_currentCaseIndex = 0;
-
-			foreach (var registeredTest in CurrentTestScene.RegisteredTests)
-				registeredTest.Reset();
-		}
+		public void MarkTestAsPassed() => MarkTestResult(TestResult.Passed);
+		public void MarkTestAsFailed() => MarkTestResult(TestResult.Failed);
 		private IEnumerator InvokeNextTest()
 		{
+			yield return new WaitForEndOfFrame();
 			while (true)
 			{
 				if (_currentTestIndex < CurrentTestScene.RegisteredTests.Count)
@@ -131,14 +116,8 @@ namespace Beamable.NewTestingTool.Core
 				
 				TestConfiguration.OnAllTestsFinished?.Invoke();
 				TestableDebug.Log("All tests finished");
-				SceneManager.LoadScene(0);
 				yield break;
 			}
-		}
-		private void ChangeButtonsInteractableState(bool isEnabled)
-		{
-			passedButton.interactable = isEnabled;
-			failedButton.interactable = isEnabled;
 		}
 		private async void HandleTestReadyToInvoke()
 		{

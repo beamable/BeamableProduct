@@ -92,11 +92,14 @@ namespace Beamable.Editor.NewTestingTool.Models
 				AssetDatabase.Refresh();
 				EditorUtility.ClearProgressBar();
 			}
-			
-			testingEditorModel.SelectedRegisteredTestScene = _testConfiguration.RegisteredTestScenes[0];
-			testingEditorModel.SelectedRegisteredTest = testingEditorModel.SelectedRegisteredTestScene.RegisteredTests[0];
-			testingEditorModel.SelectedRegisteredTestRule = testingEditorModel.SelectedRegisteredTest.RegisteredTestRules[0];
-			testingEditorModel.SelectedRegisteredTestRuleMethod = testingEditorModel.SelectedRegisteredTestRule.RegisteredTestRuleMethods[0];
+
+			if (_testConfiguration.RegisteredTestScenes.Count != 0)
+			{
+				testingEditorModel.SelectedRegisteredTestScene = _testConfiguration.RegisteredTestScenes[0];
+				testingEditorModel.SelectedRegisteredTest = testingEditorModel.SelectedRegisteredTestScene.RegisteredTests[0];
+				testingEditorModel.SelectedRegisteredTestRule = testingEditorModel.SelectedRegisteredTest.RegisteredTestRules[0];
+				testingEditorModel.SelectedRegisteredTestRuleMethod = testingEditorModel.SelectedRegisteredTestRule.RegisteredTestRuleMethods[0];
+			}
 
 			EditorSceneManager.OpenScene($"{PATH_TO_TESTING_TOOL}/TestMainMenu.unity");
 		}
@@ -141,8 +144,13 @@ namespace Beamable.Editor.NewTestingTool.Models
 				foreach (var customAttributeData in customAttributesData)
 					RegisterTestRuleMethod(testable, methodInfo, customAttributeData, ref registeredTests, testRuleDescriptor);
 			}
+
+			#if UNITY_2020_3_OR_NEWER
+				AssetDatabase.SaveAssetIfDirty(testSceneDescriptor);
+			#else
+				AssetDatabase.SaveAssets();
+			#endif
 			
-			AssetDatabase.SaveAssetIfDirty(testSceneDescriptor);
 			return registeredTests.OrderBy(x => x.Order).ToList();
 			
 		}

@@ -10,6 +10,10 @@ namespace Beamable.NewTestingTool.Scripts.Core
 	{
 		public Action OnTestFinished;
 		public Action OnAllTestsFinished;
+
+		public KeyCode ToggleTestUIKey => toggleTestUIKey;
+		
+		[SerializeField] private KeyCode toggleTestUIKey;
 		
 		public List<RegisteredTestScene> RegisteredTestScenes => _registeredTestScenes;
 		

@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5eded9884424dedb3ae16bd06fab36e, type: 3}
   m_Name: TestConfiguration
   m_EditorClassIdentifier: 
-  _registeredTestScenes:
-  - {fileID: 11400000, guid: 1bf65157f7e45d0469ceaa220965a646, type: 2}
+  toggleTestUIKey: 116
+  _registeredTestScenes: []
