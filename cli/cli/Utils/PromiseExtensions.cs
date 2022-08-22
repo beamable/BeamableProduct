@@ -19,7 +19,7 @@ public static class PromiseExtensions
 				catch (Exception ex)
 				{
 					ctx.Status = "failed: " + ex.Message;
-					throw ex;
+					throw;
 				}
 			}
 			);

@@ -85,6 +85,72 @@ namespace Beamable.Serialization
 				return false;
 			}
 
+			public bool SerializeDictionary<TDict, T>(string parentKey, ref TDict target)
+				where TDict : IDictionary<string, T>, new()
+			{
+				object tmp;
+				if (curDict.TryGetValue(parentKey, out tmp))
+				{
+					IDictionary<string, object> asDict = tmp as IDictionary<string, object>;
+					if (asDict == null)
+					{
+						if (mode != ListMode.kMerge)
+							target = default(TDict);
+						return false;
+					}
+
+					if (target == null)
+					{
+						target = new TDict();
+					}
+
+					// TODO: Check this!
+					// if this.mode
+					if (this.mode != ListMode.kMerge)
+						target.Clear();
+
+					var iter = asDict.GetEnumerator();
+					while (iter.MoveNext())
+					{
+						var key = iter.Current.Key;
+						var value = iter.Current.Value;
+						var valueType = value.GetType();
+
+						if (typeof(T) == valueType)
+						{
+							target[key] = (T)value;
+						}
+						else if (typeof(T).IsPrimitive && valueType.IsPrimitive)
+						{
+							target[key] = (T)Convert.ChangeType(value, typeof(T));
+						}
+						else
+						{
+							T elem;
+							if (!target.TryGetValue(key, out elem))
+							{
+								object objElem = null;
+								if (CreateElemType(typeof(T), value, ref objElem))
+								{
+									elem = (T)objElem;
+									target[key] = elem;
+								}
+							}
+							else
+							{
+								// It does exist, just deserialize
+								IDictionary<string, object> d = curDict;
+								curDict = asDict;
+								InternalSerializeObject(iter.Current.Key, elem, typeof(T));
+								curDict = d;
+							}
+						}
+					}
+					return true;
+				}
+				return false;
+			}
+
 			public bool SerializeDictionary<T>(string parentKey, ref Dictionary<string, T> target)
 			{
 				object tmp;
