@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Beamable.Editor.Content.UI
 {
 
-	#if !BEAMABLE_NO_DICT_DRAWERS
+#if !BEAMABLE_NO_DICT_DRAWERS
 	[CustomPropertyDrawer(typeof(SerializableDictionaryStringToSomething<>), true)]
 #endif
 	public class SerializedDictionaryStringToSomethingEditor2 : PropertyDrawer

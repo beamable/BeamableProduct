@@ -4,6 +4,6 @@ namespace Beamable.Server.Api.Payments
 {
 	public interface IMicroservicePaymentsApi : IPaymentsApi
 	{
-		
+
 	}
 }

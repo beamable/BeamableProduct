@@ -237,17 +237,17 @@ namespace Beamable.Common.Api
 		/// <summary>
 		/// The HTTP <see cref="Method"/> of the request that failed.
 		/// </summary>
-		public Method Method { get; private set;}
+		public Method Method { get; private set; }
 
 		/// <summary>
 		/// The HTTP Uri of the method that failed.
 		/// </summary>
-		public string Uri { get; private set;}
+		public string Uri { get; private set; }
 
 		/// <summary>
 		/// The raw JSON body of the response that failed the request.
 		/// </summary>
-		public string Payload { get; private set;}
+		public string Payload { get; private set; }
 
 		/// <summary>
 		/// A string that indicates what type of failure this error represents.
@@ -264,7 +264,7 @@ namespace Beamable.Common.Api
 		/// </item>
 		/// </list>
 		/// </summary>
-		public string Prefix { get; private set;}
+		public string Prefix { get; private set; }
 
 		public RequesterException(string prefix, string method, string uri, long responseCode, BeamableRequestError err)
 			: this(prefix, method, uri, responseCode, err == null ? null : JsonSerializable.ToJson(err))

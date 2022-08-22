@@ -197,7 +197,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation)
 		{
 			var hasOrientation = (Query?.HasOrientationConstraint ?? false) &&
-			                     Query.FilterIncludes(orientation);
+								 Query.FilterIncludes(orientation);
 			var nextQuery = new ToolboxQuery(Query);
 
 			if (hasOrientation && !shouldHaveOrientation)
@@ -216,7 +216,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther)
 		{
 			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
-			                     Query.FilterIncludes(status);
+								 Query.FilterIncludes(status);
 			var nextQuery = new ToolboxQuery(Query);
 
 			if (hasOrientation && !shouldHaveStatus)
