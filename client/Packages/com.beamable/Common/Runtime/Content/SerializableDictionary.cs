@@ -1,4 +1,5 @@
 using Beamable.Content;
+using Beamable.Serialization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,21 +7,20 @@ using UnityEngine;
 
 namespace Beamable.Common.Content
 {
-	[Serializable]
-	public class SerializableDictionaryStringToInt : SerializableDictionaryStringToSomething<int> { }
+	[Serializable] public class SerializableDictionaryStringToInt : SerializableDictionaryStringToSomething<int> { }
+	[Serializable] public class SerializableDictionaryStringToBool : SerializableDictionaryStringToSomething<bool> { }
+	[Serializable] public class SerializableDictionaryStringToShort : SerializableDictionaryStringToSomething<short> { }
+	[Serializable] public class SerializableDictionaryStringToDouble : SerializableDictionaryStringToSomething<double> { }
+	[Serializable] public class SerializableDictionaryStringToFloat : SerializableDictionaryStringToSomething<float> { }
+	[Serializable] public class SerializableDictionaryStringToByte : SerializableDictionaryStringToSomething<byte> { }
+	[Serializable] public class SerializableDictionaryStringToGuid : SerializableDictionaryStringToSomething<Guid> { }
 
 	[Serializable]
 	public class SerializableDictionaryStringToLong : SerializableDictionaryStringToSomething<long>
 	{
 		public SerializableDictionaryStringToLong() { }
 
-		public SerializableDictionaryStringToLong(IDictionary<string, long> existing)
-		{
-			foreach (var kvp in existing)
-			{
-				Add(kvp.Key, kvp.Value);
-			}
-		}
+		public SerializableDictionaryStringToLong(IDictionary<string, long> existing) : base(existing) { }
 	}
 
 	[Serializable]
@@ -51,6 +51,19 @@ namespace Beamable.Common.Content
 	public class SerializableDictionaryStringToSomething<T> : SerializableDictionary<string, T>, IDictionaryWithValue
 	{
 		public Type ValueType => typeof(T);
+
+		public SerializableDictionaryStringToSomething()
+		{
+
+		}
+
+		public SerializableDictionaryStringToSomething(IDictionary<string, T> existing)
+		{
+			foreach (var kvp in existing)
+			{
+				Add(kvp.Key, kvp.Value);
+			}
+		}
 	}
 
 	public interface IDictionaryWithValue : IDictionary, IIgnoreSerializationCallbacks

@@ -10,13 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
 ### Added
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu
 - `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
 
 ## [1.3.1]
 ### Added
 - A leaderboard can now be frozen using `LeaderboardService.FreezeLeaderboard` method to prevent additional scores to be submitted.
+
+### Changed
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` now supports all subtypes
 
 ### Fixed
 - iOS builds will no longer overwrite the Beamable user language preference.
