@@ -1,6 +1,7 @@
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Content;
@@ -10,6 +11,7 @@ using Beamable.Server.Api.Inventory;
 using Beamable.Server.Api.Leaderboards;
 using Beamable.Server.Api.Mail;
 using Beamable.Server.Api.Notifications;
+using Beamable.Server.Api.Payments;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
@@ -143,5 +145,15 @@ namespace Beamable.Server
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/commerce-overview">Commerce</a> feature
 		/// </summary>
 		IMicroserviceCommerceApi Commerce { get; }
+
+		/// <summary>
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/chat-overview">Chat</a> feature
+		/// </summary>
+		IMicroserviceChatApi Chat { get; }
+
+		/// <summary>
+		/// %Microservice entry point for payment operations.
+		/// </summary>
+		IMicroservicePaymentsApi Payments { get; }
 	}
 }

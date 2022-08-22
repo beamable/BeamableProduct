@@ -68,6 +68,9 @@ namespace Beamable.Server.Editor
 		[Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
 		public bool AutoBuildCommonAssembly = true;
 
+		[Tooltip("When true, Beamable guarantees any Assembly Definition referencing a StorageObject's AsmDef also references the required Mongo DLLs.")]
+		public bool EnsureMongoAssemblyDependencies = true;
+
 		[Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
 		public bool ColorLogs = true;
 
@@ -113,7 +116,13 @@ namespace Beamable.Server.Editor
 #pragma warning disable CS0219
 		public string WindowsDockerCommand = DOCKER_LOCATION;
 		public string UnixDockerCommand = "/usr/local/bin/docker";
-		public string DockerCPUArchitecture = "linux/amd64";
+		[Tooltip("When you build Microservices, they can be built to an AMD or ARM cpu architecture. By default, locally, Beamable will use whatever the default for your machine is. Allowed values are \"linux/arm64\" or \"linux/amd64\"")]
+		public OptionalString LocalMicroserviceCPUArchitecturePreference = new OptionalString();
+
+		[Obsolete("Beamable does not support deploying ARM images. Images will be forced to build as AMD.")]
+		[Tooltip("This feature is deprecated. Images will be forced to build as linux/amd64. ")]
+		public OptionalString RemoteMicroserviceCPUArchitecturePreference = new OptionalString();
+
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
 		public string WindowsDockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
@@ -162,6 +171,26 @@ namespace Beamable.Server.Editor
          _dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
       }
 #endif
+
+		/// <summary>
+		/// Get the user's microservice cpu choice.
+		/// </summary>
+		/// <returns>
+		/// Should either be linux/amd64 or linux/arm64, or NULL if no choice is made
+		/// </returns>
+		public string GetCPUArchitecture(CPUArchitectureContext context)
+		{
+			switch (context)
+			{
+				case CPUArchitectureContext.LOCAL:
+					return LocalMicroserviceCPUArchitecturePreference?.GetOrElse(() => null);
+				case CPUArchitectureContext.DEPLOY:
+					return Constants.Features.Docker.CPU_LINUX_AMD_64;
+				case CPUArchitectureContext.DEFAULT:
+				default:
+					return null;
+			}
+		}
 
 		public StorageConfigurationEntry GetStorageEntry(string storageName)
 		{
@@ -230,16 +259,6 @@ namespace Beamable.Server.Editor
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
-
-				BeamEditor.DelayedInitializationCall(SaveConfig, true);
-				async void SaveConfig()
-				{
-					// using delayCall to avoid Unity warning about sending messages from OnValidate()
-					var api = BeamEditorContext.Default;
-					await api.InitializePromise;
-					if (api.IsAuthenticated)
-						api.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
-				}
 			}
 
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
@@ -403,5 +422,13 @@ namespace Beamable.Server.Editor
 		[Tooltip("The SSH password to use to connect a debugger. This is only supported for local development. SSH is completely disabled on cloud services.")]
 		public string Password = "beamable";
 		public int SshPort = -1;
+	}
+
+	/// <summary>
+	/// An enum that describes the various scenarios in which a CPU architecture should be resolved
+	/// </summary>
+	public enum CPUArchitectureContext
+	{
+		LOCAL, DEPLOY, DEFAULT
 	}
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
@@ -13,7 +12,6 @@ using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
-using UnityEngine;
 
 namespace Beamable.Server
 {
@@ -25,6 +23,7 @@ namespace Beamable.Server
       public object body;
       public long? from;
       public string[] scopes;
+      public Dictionary<string, string> headers;
    }
 
    public class WebsocketReply
@@ -66,7 +65,7 @@ namespace Beamable.Server
 
    public class WebsocketRequesterException : RequesterException
    {
-      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base("Microservice Requester", method,
+      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base(Constants.Requester.ERROR_PREFIX_WEBSOCKET_RES, method,
          uri, responseCode, responsePayload)
       {
 
@@ -94,6 +93,7 @@ namespace Beamable.Server
 
       public long Id { get; set; }
       public string Uri { get; set; }
+      public string Method { get; set; }
 
       public Func<string, T> Parser { get; set; }
 
@@ -101,16 +101,16 @@ namespace Beamable.Server
       {
          if (ctx.Status == 0)
          {
-            OnDone.CompleteError(new WebsocketRequesterException(ctx.Method, Uri, ctx.Status, "noconnection"));
+            OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, "noconnection"));
          }
          else if (ctx.Status == 403)
          {
             var error = JsonConvert.DeserializeObject<WebsocketErrorResponse>(ctx.Body, UnitySerializationSettings.Instance);
-            OnDone.CompleteError(new UnauthenticatedException(error, ctx.Method, Uri, ctx.Status, ctx.Body));
+            OnDone.CompleteError(new UnauthenticatedException(error, Method, Uri, ctx.Status, ctx.Body));
          }
          else if (ctx.Status != 200)
          {
-            OnDone.CompleteError(new WebsocketRequesterException(ctx.Method, Uri, ctx.Status, ctx.Body));
+            OnDone.CompleteError(new WebsocketRequesterException(Method, Uri, ctx.Status, ctx.Body));
          }
          else
          {
@@ -190,14 +190,13 @@ namespace Beamable.Server
 	      var enteringCount = Daemon.AuthorizationCounter;
 	      while (Daemon.AuthorizationCounter > 0)
 	      {
-		      await Task.Delay(1);
-
 		      var totalWaitedTime = DateTime.UtcNow - startTime;
 		      if (totalWaitedTime > timeout)
 		      {
 			      var exitCount = Daemon.AuthorizationCounter;
 			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
+		      await Task.Delay(1);
 	      }
 	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }
@@ -342,6 +341,7 @@ namespace Beamable.Server
             OnDone = promise,
             Parser = parser,
             Uri = uri,
+            Method = req.method
          };
 
          if (!_pendingMessages.TryAdd(requestId, listener))
@@ -526,9 +526,10 @@ namespace Beamable.Server
       /// <returns></returns>
       public Promise<EmptyResponse> InitializeSubscription()
       {
-         var req = new MicroserviceProviderRequest
+         var req = new MicroserviceEventProviderRequest
          {
-            type = "event"
+            type = "event",
+            evtWhitelist = new []{Constants.Features.Services.CONTENT_UPDATE_EVENT}
          };
          var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
 

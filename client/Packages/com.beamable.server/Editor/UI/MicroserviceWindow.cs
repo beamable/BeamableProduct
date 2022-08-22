@@ -37,7 +37,7 @@ namespace Beamable.Editor.Microservice.UI
 				RequireLoggedUser = true,
 			};
 
-			CustomDelayClause = () => !MicroserviceEditor.IsInitialized;
+			CustomDelayClause = () => !MicroserviceEditor.IsInitialized && BeamEditorContext.Default.InitializePromise.IsCompleted;
 		}
 
 		[MenuItem(
@@ -62,15 +62,18 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			checkDockerPromise = new CheckDockerCommand().StartAsync().Then(_ =>
 			{
-				_microserviceBreadcrumbsVisualElement?.Refresh();
-				_actionBarVisualElement?.Refresh();
-				_microserviceContentVisualElement?.Refresh();
+				Model.RefreshState().Then(__ =>
+				{
+					_microserviceBreadcrumbsVisualElement?.Refresh();
+					_actionBarVisualElement?.Refresh();
+					_microserviceContentVisualElement?.Refresh();
+				});
 			});
 		}
 
 		protected override async void Build()
 		{
-			minSize = new Vector2(550, 200);
+			minSize = new Vector2(380, 200);
 
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;
@@ -84,19 +87,25 @@ namespace Beamable.Editor.Microservice.UI
 			ActiveContext.OnRealmChange -= OnRealmChange;
 			ActiveContext.OnRealmChange += OnRealmChange;
 
+			await Model.FinishedLoading;
 			SetForContent();
+
 
 			ActiveContext.OnServiceArchived -= ServiceArchived;
 			ActiveContext.OnServiceArchived += ServiceArchived;
 
 			ActiveContext.OnServiceUnarchived -= ServiceArchived;
 			ActiveContext.OnServiceUnarchived += ServiceArchived;
+
+			ActiveContext.OnServiceDeleteProceed -= OnServiceDeleteProceed;
+			ActiveContext.OnServiceDeleteProceed += OnServiceDeleteProceed;
 		}
 
 		private void OnDisable()
 		{
 			if (ActiveContext != null)
 			{
+				ActiveContext.OnServiceDeleteProceed -= OnServiceDeleteProceed;
 				ActiveContext.OnServiceArchived -= ServiceArchived;
 				ActiveContext.OnServiceUnarchived -= ServiceArchived;
 			}
@@ -124,7 +133,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, localServicesAmount);
+			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, Model?.AllUnarchivedServiceCount ?? 0);
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
@@ -208,6 +217,12 @@ namespace Beamable.Editor.Microservice.UI
 		private void ServiceArchived()
 		{
 			_microserviceBreadcrumbsVisualElement.RefreshFiltering();
+		}
+
+		private void OnServiceDeleteProceed()
+		{
+			var root = this.GetRootVisualContainer();
+			root?.SetEnabled(false);
 		}
 	}
 }

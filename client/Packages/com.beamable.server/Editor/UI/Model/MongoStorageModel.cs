@@ -134,6 +134,12 @@ namespace Beamable.Editor.UI.Model
 				OnSortChanged?.Invoke();
 			}, isLast);
 
+			AddArchiveSupport(evt);
+		}
+
+
+		protected void AddArchiveSupport(ContextualMenuPopulateEvent evt)
+		{
 			evt.menu.AppendSeparator();
 			if (Config.Archived)
 			{
@@ -144,12 +150,14 @@ namespace Beamable.Editor.UI.Model
 				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
 				{
 					var archiveServicePopup = new ArchiveServicePopupVisualElement();
-					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility(ARCHIVE_WINDOW_HEADER, archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.ShowDeleteOption = !string.IsNullOrEmpty(this.Descriptor.AttributePath);
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility($"{ARCHIVE_WINDOW_HEADER} {Descriptor.Name}", archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
 					archiveServicePopup.onClose += () => popupWindow.Close();
 					archiveServicePopup.onConfirm += Archive;
 				});
 			}
 		}
+
 
 		public override void Refresh(IDescriptor descriptor)
 		{

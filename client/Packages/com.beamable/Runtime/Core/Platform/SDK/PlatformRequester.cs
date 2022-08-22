@@ -22,7 +22,10 @@ namespace Beamable.Api
 		string TimeOverride { get; set; }
 		new string Cid { get; set; }
 		new string Pid { get; set; }
+
+		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		string Language { get; set; }
+
 		IAuthApi AuthService { set; }
 		void DeleteToken();
 	}
@@ -40,6 +43,7 @@ namespace Beamable.Api
 	public class PlatformRequester : IPlatformRequester, IHttpRequester
 	{
 		private const string ACCEPT_HEADER = "application/json";
+		private readonly PackageVersion _beamableVersion;
 		private AccessTokenStorage _accessTokenStorage;
 		private IConnectivityService _connectivityService;
 		private bool _disposed;
@@ -58,9 +62,10 @@ namespace Beamable.Api
 
 		private readonly OfflineCache _offlineCache;
 
-		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
+		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
+			_beamableVersion = beamableVersion;
 			_accessTokenStorage = accessTokenStorage;
 			_connectivityService = connectivityService;
 			_offlineCache = offlineCache;
@@ -68,7 +73,7 @@ namespace Beamable.Api
 
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = new PlatformRequester(Host, _accessTokenStorage, _connectivityService, _offlineCache)
+			var requester = new PlatformRequester(Host, _beamableVersion, _accessTokenStorage, _connectivityService, _offlineCache)
 			{
 				Cid = Cid,
 				Pid = Pid,
@@ -316,42 +321,46 @@ namespace Beamable.Api
 			request.SetRequestHeader("Accept", ACCEPT_HEADER);
 			if (!string.IsNullOrEmpty(Cid))
 			{
-				request.SetRequestHeader("X-KS-CLIENTID", Cid);
+				request.SetRequestHeader(Constants.Requester.HEADER_CID, Cid);
 			}
 
 			if (!string.IsNullOrEmpty(Pid))
 			{
-				request.SetRequestHeader("X-KS-PROJECTID", Pid);
+				request.SetRequestHeader(Constants.Requester.HEADER_PID, Pid);
 			}
+
+#if !BEAMABLE_DISABLE_VERSION_HEADERS
+			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, _beamableVersion.ToString());
+			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
+			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
+			request.SetRequestHeader(Constants.Requester.HEADER_ENGINE_TYPE, $"Unity-{Application.platform}");
+#endif
 
 			if (includeAuthHeader)
 			{
 				var authHeader = GenerateAuthorizationHeader();
 				if (authHeader != null)
 				{
-					request.SetRequestHeader("Authorization", authHeader);
+					request.SetRequestHeader(Constants.Requester.HEADER_AUTH, authHeader);
 				}
 			}
 
 			if (Shard != null)
 			{
-				request.SetRequestHeader("X-KS-SHARD", Shard);
+				request.SetRequestHeader(Constants.Requester.HEADER_SHARD, Shard);
 			}
 
 			if (TimeOverride != null)
 			{
-				request.SetRequestHeader("X-KS-TIME", TimeOverride);
-			}
-
-			if (Language != null)
-			{
-				request.SetRequestHeader("Accept-Language", Language);
+				request.SetRequestHeader(Constants.Requester.HEADER_TIME_OVERRIDE, TimeOverride);
 			}
 
 			if (RequestTimeoutMs != null)
 			{
-				request.SetRequestHeader("X-KS-TIMEOUT", RequestTimeoutMs);
+				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
 			}
+
+			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 
 			return request;
 		}
@@ -427,7 +436,7 @@ namespace Beamable.Api
 		public PlatformError Error { get; }
 		public UnityWebRequest Request { get; }
 		public PlatformRequesterException(PlatformError error, UnityWebRequest request, string responsePayload)
-		: base("HTTP Error", request.method, request.url, request.responseCode, responsePayload)
+		: base(Constants.Requester.ERROR_PREFIX_UNITY_SDK, request.method, request.url, request.responseCode, responsePayload)
 		{
 			Error = error;
 			Request = request;

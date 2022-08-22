@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
+using Beamable.Server.Common;
 using Beamable.Server.Content;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
@@ -818,7 +819,7 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithRouteContains("gateway/provider")
                      .WithReqId(-3 - requestIdOffset)
                      .WithPost()
-                     .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                     .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
                   MessageFrequency.OnlyOnce()
                )
@@ -827,24 +828,29 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithRouteContains("gateway/provider")
                      .WithReqId(-4 - requestIdOffset)
                      .WithPost()
-                     .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
+                     .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
                   MessageFrequency.OnlyOnce()
                );
             if (addShutdownResponder)
             {
-                socket = socket.AddMessageHandler(
-                   MessageMatcher
-                      .WithRouteContains("gateway/provider")
-                      .WithDelete()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
-                   MessageResponder.Success(new MicroserviceProviderResponse()),
-                   MessageFrequency.OnlyOnce()
-                );
+	            socket = AddProviderShutdownMessageHandler();
             }
 
             return socket;
 
+        }
+
+        public TestSocket AddProviderShutdownMessageHandler()
+        {
+	        return AddMessageHandler(
+		        MessageMatcher
+			        .WithRouteContains("gateway/provider")
+			        .WithDelete()
+			        .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
+		        MessageResponder.Success(new MicroserviceProviderResponse()),
+		        MessageFrequency.OnlyOnce()
+	        );
         }
 
         public TestSocket AddMessageHandler(TestSocketMessageMatcher matcher, TestSocketResponseGenerator responder, MessageFrequencyRequirements frequencyRequirements = null, string desc=null, bool? requiresAuth=true)

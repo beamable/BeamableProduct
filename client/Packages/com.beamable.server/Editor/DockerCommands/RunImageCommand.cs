@@ -136,6 +136,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			var rawSourcePath = Path.GetDirectoryName(Path.GetFullPath(_service.AttributePath));
 			var asmName = _service.ConvertToInfo().Name;
 
+			PruneAfterStartup = true;
 			BindMounts = new List<BindMount>
 			{
 				new BindMount {isReadOnly = false, src = clientPath, dst = "/client-output"},
@@ -169,21 +170,31 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_LOG_LEVEL = "LOG_LEVEL";
 		public const string ENV_NAME_PREFIX = "NAME_PREFIX";
 		public const string ENV_WATCH_TOKEN = "WATCH_TOKEN";
+		public const string ENV_DISABLE_RUN_CUSTOM_HOOK = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
+		public const string ENV_DISABLE_EMOJI = "DOTNET_WATCH_SUPPRESS_EMOJIS";
 
-		public RunServiceCommand(MicroserviceDescriptor service, string cid, string secret,
-		   Dictionary<string, string> env, bool watch = true) : base(service.ImageName, service.ContainerName, service)
+		public RunServiceCommand(MicroserviceDescriptor service,
+								 string cid,
+								 string pid,
+								 string secret,
+								 Dictionary<string, string> env,
+								 bool watch = true,
+								 bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
 			_watch = watch;
+			PruneAfterStartup = true;
 			Environment = new Dictionary<string, string>()
 			{
 				[ENV_CID] = cid,
-				[ENV_PID] = ConfigDatabase.GetString("pid"),
+				[ENV_PID] = pid,
 				[ENV_SECRET] = secret,
 				[ENV_HOST] = BeamableEnvironment.SocketUrl,
 				[ENV_LOG_LEVEL] = "Debug",
 				[ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix,
-				[ENV_WATCH_TOKEN] = "true"
+				[ENV_WATCH_TOKEN] = watch.ToString(),
+				[ENV_DISABLE_RUN_CUSTOM_HOOK] = (!shouldRunCustomHooks).ToString(),
+				[ENV_DISABLE_EMOJI] = "1"
 			};
 
 			if (_watch)
@@ -205,6 +216,11 @@ namespace Beamable.Server.Editor.DockerCommands
 					};
 					BindMounts.Add(mount);
 				}
+
+				NamedVolumes = new Dictionary<string, string>
+				{
+					[service.NugetVolume] = "/root/.nuget/packages", // save the nuget data between builds
+				};
 			}
 
 			if (env != null)
@@ -223,6 +239,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					[(uint)config.DebugData.SshPort] = 2222
 				};
 			}
+			MapDotnetCompileErrors();
 		}
 
 	}
@@ -245,20 +262,21 @@ namespace Beamable.Server.Editor.DockerCommands
 				 * On windows, the surrounding quotes aren't required, and in fact, cause it to fail.
 				 */
 
-				var includeOuterQuotes = true;
-#if UNITY_EDITOR_WIN
-				includeOuterQuotes = false;
+				var includeOuterQuotes = false;
+#if BEAMABLE_ENABLE_MOUNT_SINGLE_QUOTE
+				includeOuterQuotes = true;
 #endif
 				var quoteStr = includeOuterQuotes ? "'" : "";
-				var optionStr = $"{(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst={dst}";
-				return $"--mount {quoteStr}{optionStr}{quoteStr}";
+				var optionStr = $"\"{src}\":{dst}{(isReadOnly ? ":ro" : "")}";
+				return $"-v {quoteStr}{optionStr}{quoteStr}";
 			}
 		}
 
 		private readonly IDescriptor _descriptor;
+		private bool hasReceivedNonNullStandardOut;
 		public string ImageName { get; set; }
 		public string ContainerName { get; set; }
-
+		public bool PruneAfterStartup { get; set; }
 		public Dictionary<string, string> Environment { get; protected set; }
 		public Dictionary<uint, uint> Ports { get; protected set; }
 
@@ -266,20 +284,17 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public List<BindMount> BindMounts { get; protected set; }
 
-		public Action<string> OnStandardOut;
-		public Action<string> OnStandardErr;
-
 		public RunImageCommand(string imageName, string containerName,
-		   IDescriptor descriptor,
-		   Dictionary<string, string> env = null,
-		   Dictionary<uint, uint> ports = null,
-		   Dictionary<string, string> namedVolumes = null,
-		   List<BindMount> bindMounts = null)
+							   IDescriptor descriptor,
+							   Dictionary<string, string> env = null,
+							   Dictionary<uint, uint> ports = null,
+							   Dictionary<string, string> namedVolumes = null,
+							   List<BindMount> bindMounts = null)
 		{
 			_descriptor = descriptor;
 			ImageName = imageName;
 			ContainerName = containerName;
-
+			UnityLogLabel = null;
 			Environment = env ?? new Dictionary<string, string>();
 			Ports = ports ?? new Dictionary<uint, uint>();
 			NamedVolumes = namedVolumes ?? new Dictionary<string, string>();
@@ -288,15 +303,41 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardOut(string data)
 		{
-			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			HandleAutoPrune(data);
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardOutProcessors))
 			{
 				base.HandleStandardOut(data);
 			}
 			OnStandardOut?.Invoke(data);
 		}
+
+		protected virtual void HandleAutoPrune(string data)
+		{
+			if (hasReceivedNonNullStandardOut) return;
+
+			if (PruneAfterStartup)
+			{
+				if (!MicroserviceConfiguration.Instance.EnableAutoPrune)
+				{
+					return;
+				}
+
+				BeamEditorContext.Default.Dispatcher.Schedule(() =>
+				{
+					var prune = new PruneImageCommand(_descriptor);
+					var _ = prune.StartAsync().Then(__ => { });
+				});
+			}
+
+			if (!string.IsNullOrEmpty(data))
+			{
+				hasReceivedNonNullStandardOut = true;
+			}
+		}
+
 		protected override void HandleStandardErr(string data)
 		{
-			if (_descriptor == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardErrProcessors))
 			{
 				base.HandleStandardErr(data);
 			}
@@ -351,27 +392,6 @@ namespace Beamable.Server.Editor.DockerCommands
 						  $"--name {ContainerName} {ImageName} " +
 						  $"{GetArgString()}";
 			return command;
-		}
-
-
-		public override void Start()
-		{
-			base.Start();
-			if (!MicroserviceConfiguration.Instance.EnableAutoPrune)
-			{
-				return;
-			}
-
-			if (_descriptor == null) return;
-			Task.Run(async () =>
-			{
-				await Task.Delay(500);
-				BeamEditorContext.Default.Dispatcher.Schedule(() =>
-				{
-					var prune = new PruneImageCommand(_descriptor);
-					var _ = prune.StartAsync().Then(__ => { });
-				});
-			});
 		}
 
 	}

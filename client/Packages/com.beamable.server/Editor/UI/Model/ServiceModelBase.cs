@@ -53,6 +53,8 @@ namespace Beamable.Editor.UI.Model
 				OnSelectionChanged?.Invoke(value);
 			}
 		}
+
+		[SerializeField]
 		private bool _isSelected;
 
 		public bool IsCollapsed
@@ -103,6 +105,7 @@ namespace Beamable.Editor.UI.Model
 
 			if (deleteAllFiles)
 			{
+				BeamEditorContext.Default.OnServiceDeleteProceed?.Invoke();
 				MicroserviceEditor.DeleteServiceFiles(Descriptor);
 			}
 			else

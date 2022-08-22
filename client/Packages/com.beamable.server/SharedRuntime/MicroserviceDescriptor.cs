@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Server.Editor
@@ -25,12 +24,27 @@ namespace Beamable.Server.Editor
 		public string SourcePath => Path.GetDirectoryName(AttributePath);
 		public string HidePath => $"./Assets/~/beamservicehide/{Name}";
 
-		public string BuildPath => $"./Temp/beam/{Name}";
+		public string CustomCsProjFragmentPath => Path.Combine(SourcePath, "CsProjFragment.xml");
+		public string BuildPath => $"./Temp/beam/{(IsGenerator ? "generators/" : String.Empty)}{Name}";
 		public string ContainerName => $"{Name}_container";
+		public string NugetVolume => $"beamable_microservice_nuget_data"; // TODO: do we need to enter the name here? Does it need to be container specific? I don't think so...
 		public string ImageName => Name.ToLower();
 		public ServiceType ServiceType => ServiceType.MicroService;
 		public bool HasValidationError { get; set; }
 		public bool HasValidationWarning { get; set; }
+		public bool IsGenerator { get; set; }
+
+		public bool TryGetCustomProjectFragment(out string csProjFragment)
+		{
+			csProjFragment = "";
+			if (File.Exists(CustomCsProjFragmentPath))
+			{
+				csProjFragment = File.ReadAllText(CustomCsProjFragmentPath);
+				return true;
+			}
+
+			return false;
+		}
 
 	}
 

@@ -116,7 +116,7 @@ namespace Beamable.Editor.Content.Components
 			_nameTextField.value = ContentItemDescriptor.Name;
 			_pathLabel.text = ContentItemDescriptor.ContentType.ShortName;
 			_tagListVisualElement.TagDescriptors = ContentItemDescriptor.GetAllTags().ToList();
-			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged;
+			_lastChanged.text = ContentItemDescriptor.GetFormattedLastChanged + (ContentItemDescriptor.IsCorrupted ? " (corrupted)" : string.Empty);
 			// _tagListVisualElement.ContentItemDescriptor = _contentItemDescriptor;
 			_tagListVisualElement.Refresh();
 
@@ -192,6 +192,7 @@ namespace Beamable.Editor.Content.Components
 		/// </summary>
 		public void RenameGestureBegin()
 		{
+			if (ContentItemDescriptor == null) return;
 			// can only rename if we have local data.
 			if (ContentItemDescriptor.LocalStatus != HostStatus.AVAILABLE) return;
 

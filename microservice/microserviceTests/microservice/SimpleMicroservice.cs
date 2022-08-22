@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Inventory;
+using Beamable.Common.Api.Mail;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
@@ -29,9 +31,24 @@ namespace microserviceTests.microservice
    [StorageObject("simple")]
    public class SimpleStorageObject : MongoStorageObject
    {
-      
+
    }
-   
+
+   [Microservice("simple_no_updates", DisableAllBeamableEvents = true)]
+   public class SimpleMicroserviceWithNoEvents : Microservice
+   {
+	   public static MicroserviceFactory<SimpleMicroserviceWithNoEvents> Factory => () => new SimpleMicroserviceWithNoEvents();
+
+
+	   [ClientCallable]
+	   public async Task<string> GetContent(string id)
+	   {
+		   var content = await Services.Content.GetContent(id);
+		   return "Echo: " + content.Id;
+	   }
+
+   }
+
    [Microservice("simple", UseLegacySerialization = true)]
    public class SimpleMicroservice : Microservice
    {
@@ -58,9 +75,50 @@ namespace microserviceTests.microservice
       }
 
       [ClientCallable]
+      public async Task<int> InventoryUpdateBuilderTest(InventoryUpdateBuilder builder)
+      {
+	      await Services.Inventory.Update(builder);
+	      return 0;
+      }
+
+      [ClientCallable]
       public int Add(int a, int b)
       {
          return a + b;
+      }
+
+      [ClientCallable]
+      public async Task<EmptyResponse> MethodWithSendMail()
+      {
+	      var mailSendRequest = new MailSendRequest();
+	      var mailSendEntry = new MailSendEntry
+	      {
+		      category = "Test Category",
+		      senderGamerTag = 123,
+		      receiverGamerTag = 12345,
+		      body = $"Test Body",
+		      subject = "Test Subject"
+	      };
+
+	      Dictionary<string, string> ghx = new Dictionary<string, string>();
+	      ghx.Add("TST1", "BLANK");
+	      ghx.Add("TST2", "BLANK2");
+
+	      var mailRewards = new MailRewards();
+	      var items = new List<ItemCreateRequest>()
+	      {
+		      new ItemCreateRequest()
+		      {
+			      contentId = "WELCOME_MAIL_GIFT_LOOTBOX_SYMBOL",
+			      properties = new SerializableDictionaryStringToString(ghx)
+		      }
+	      };
+
+	      mailRewards.items = items;
+	      mailSendEntry.rewards = mailRewards;
+
+	      mailSendRequest.Add(mailSendEntry);
+	      return await Services.Mail.SendMail(mailSendRequest);
       }
 
       [ClientCallable(requiredScopes: new []{"someScope"})]
@@ -75,7 +133,7 @@ namespace microserviceTests.microservice
          await Task.Delay(ms);
          return ms;
       }
-      
+
       [ClientCallable]
       public async Task<string> DelayThenGetEmail(int ms, long dbid)
       {
@@ -120,7 +178,7 @@ namespace microserviceTests.microservice
       [ClientCallable]
       public string MethodWithExceptionThrow(string msg)
       {
-         throw new MicroserviceException(401, "UnauthorizedUser", "test");
+          throw new MicroserviceException(401, "UnauthorizedUser", "test");
       }
 
       // TODO: Add a test for an empty arg array, or a null
@@ -132,6 +190,16 @@ namespace microserviceTests.microservice
          var x = items.FirstOrDefault();
 
          return x.ItemContent.Id;
+      }
+
+      [ClientCallable]
+      public string GetVersionHeaders()
+      {
+	      Context.Headers.TryGetClientGameVersion(out var gameVersion);
+	      Context.Headers.TryGetBeamableSdkVersion(out var sdkVersion);
+	      Context.Headers.TryGetClientEngineVersion(out var engineVersion);
+	      Context.Headers.TryGetClientType(out var clientType);
+	      return $"h{gameVersion}/{sdkVersion}/{engineVersion}/{clientType}";
       }
 
       [AdminOnlyCallable]
@@ -196,7 +264,7 @@ namespace microserviceTests.microservice
          var res = await Services.Leaderboards.GetPlayerLeaderboards(dbid);
          return res.lbs.Count;
       }
-      
+
       [ClientCallable]
       public async Task RemovePlayerEntry(string leaderboardId, long dbid)
       {

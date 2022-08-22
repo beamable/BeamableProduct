@@ -46,6 +46,7 @@ namespace Beamable.Editor.Content.Components
 		private HeaderVisualElement _headerVisualElement;
 		private ExtendedListView _listView;
 		private List<HeaderSizeChange> _headerSizeChanges;
+		private List<ContentVisualElement> _contentVisualElements = new List<ContentVisualElement>();
 		private bool _isKeyboardInputBlocked;
 
 		public ContentListVisualElement() : base(nameof(ContentListVisualElement)) { }
@@ -84,6 +85,7 @@ namespace Beamable.Editor.Content.Components
 
 			var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
 			_listView.AddManipulator(manipulator);
+			_contentVisualElements = new List<ContentVisualElement>();
 
 			_listView.RefreshPolyfill();
 
@@ -123,7 +125,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			_headerSizeChanges = headerFlexSizes;
 			// update all content...
-			foreach (var listElement in _listView.Children())
+			foreach (var listElement in _contentVisualElements)
 			{
 				ApplyColumnSizes(listElement);
 			}
@@ -147,10 +149,11 @@ namespace Beamable.Editor.Content.Components
 			listElement.Q("tagListVisualElement").style.flexGrow = (GetHeaderSizeChanges()[2].Flex);
 			listElement.Q("lastChanged").style.flexGrow = (GetHeaderSizeChanges()[3].Flex);
 
-			listElement.Q("nameTextField").style.minWidth = (_headerSizeChanges[0].MinWidth);
-			listElement.Q("pathLabel").style.minWidth = (_headerSizeChanges[1].MinWidth);
-			listElement.Q("tagListVisualElement").style.minWidth = (_headerSizeChanges[2].MinWidth);
-			listElement.Q("lastChanged").style.minWidth = (_headerSizeChanges[3].MinWidth);
+
+			listElement.Q("nameTextField").style.minWidth = (_headerSizeChanges[0].SafeMinWidth);
+			listElement.Q("pathLabel").style.minWidth = (_headerSizeChanges[1].SafeMinWidth);
+			listElement.Q("tagListVisualElement").style.minWidth = (_headerSizeChanges[2].SafeMinWidth);
+			listElement.Q("lastChanged").style.minWidth = (_headerSizeChanges[3].SafeMinWidth);
 		}
 
 		private void Model_OnFilteredContentChanged()
@@ -200,6 +203,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			ContentVisualElement contentVisualElement = new ContentVisualElement();
 
+			_contentVisualElements.Add(contentVisualElement);
 			return contentVisualElement;
 		}
 

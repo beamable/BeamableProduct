@@ -1,5 +1,6 @@
 ﻿using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
 using Beamable.Platform.SDK.Auth;
@@ -253,7 +254,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Checking Account...", IsEmailRegistered(_currentEmail)).Then(registered =>
+			WithLoading("Checking Account...", API.Instance.Then(api => api.IsEmailRegistered(_currentEmail).Then(registered =>
 			{
 				if (registered)
 				{
@@ -263,7 +264,7 @@ namespace Beamable.AccountManagement
 				{
 					DeferBroadcast(_currentEmail, s => s.EmailIsAvailable);
 				}
-			});
+			})));
 		}
 
 		public void Login(LoginArguments reference)
@@ -311,7 +312,7 @@ namespace Beamable.AccountManagement
 			{
 				return de.GetDeviceUsers().FlatMap(deviceUsers =>
 				{
-					return IsEmailRegistered(email).FlatMap(registered =>
+					return de.IsEmailRegistered(email).FlatMap(registered =>
 					{
 						var currentUserHasEmail = de.User.HasDBCredentials();
 						var storedUser =
@@ -561,18 +562,46 @@ namespace Beamable.AccountManagement
 
 		private void OfferSwitch(User user)
 		{
-			Broadcast(user, s => s.UserSwitchAvailable);
+			API.Instance.Then(api =>
+			{
+				if (api.User.id == user.id)
+				{
+					api.UpdateUserData(user);
+				}
+				else
+				{
+					Broadcast(user, s => s.UserSwitchAvailable);
+				}
+			});
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, string email, string password)
 		{
-			return de.AuthService.Login(email, password, false)
+			return de.AuthService.Login(email, password)
+					 .RecoverWith(ex =>
+					 {
+						 if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+							 string.Equals("UnableToMergeError", platEx.Error.error))
+						 {
+							 return de.AuthService.Login(email, password, false);
+						 }
+						 return Promise<TokenResponse>.Failed(ex);
+					 })
 					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, AuthThirdParty thirdParty, string accessToken)
 		{
-			return de.AuthService.LoginThirdParty(thirdParty, accessToken, false)
+			return de.AuthService.LoginThirdParty(thirdParty, accessToken)
+					 .RecoverWith(ex =>
+					 {
+						 if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+							 string.Equals("UnableToMergeError", platEx.Error.error))
+						 {
+							 return de.AuthService.LoginThirdParty(thirdParty, accessToken, false);
+						 }
+						 return Promise<TokenResponse>.Failed(ex);
+					 })
 					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
@@ -587,23 +616,19 @@ namespace Beamable.AccountManagement
 
 		private Promise<Unit> LoginToNewUser(IBeamableAPI de)
 		{
-			return WithCriticalLoading("New Account...", de.AuthService.CreateUser()
-														   .FlatMap(de.ApplyToken));
+			return WithCriticalLoading("New Account...", de.LoginToNewUser());
 		}
 
 		private Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
 		{
-			return WithCriticalLoading("Loading...", de.AuthService.RegisterDBCredentials(email, password)
-													   .Then(de.UpdateUserData));
+			return WithCriticalLoading("Loading...", de.AttachEmailToCurrentUser(email, password));
 		}
 
 		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
 															AuthThirdParty thirdParty,
 															string accessToken)
 		{
-			return WithCriticalLoading("Loading...",
-									   de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
-										 .Then(de.UpdateUserData));
+			return WithCriticalLoading("Loading...", de.AttachThirdPartyToCurrentUser(thirdParty, accessToken));
 		}
 
 		private Promise<User> GetExistingAccount(IBeamableAPI de, UserBundle bundle)
@@ -637,12 +662,6 @@ namespace Beamable.AccountManagement
 			Broadcast(arg, s => s.Loading);
 
 			return promise;
-		}
-
-		private Promise<bool> IsEmailRegistered(string email)
-		{
-			return API.Instance.FlatMap(de => de.AuthService.IsEmailAvailable(email)
-												.Map(available => !available));
 		}
 
 		public void DeferBroadcast<TArg>(TArg arg, Func<AccountManagementSignals, DeSignal<TArg>> getter)

@@ -22,21 +22,19 @@ namespace Beamable.Editor.UI.Components
 		public Action<bool> onConfirm;
 		public Action onClose;
 
+		public bool ShowDeleteOption { get; set; }
+
 		public ArchiveServicePopupVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(ArchiveServicePopupVisualElement)}/{nameof(ArchiveServicePopupVisualElement)}")
 		{
-
 		}
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
-			_contentLabelTop = Root.Q<Label>("contentLabelTop");
-			_contentLabelTop.text = ARCHIVE_WINDOW_INFO_TEXT_TOP;
-
-			_contentLabelBottom = Root.Q<Label>("contentLabelBottom");
-			_contentLabelBottom.text = ARCHIVE_WINDOW_INFO_TEXT_BOTTOM;
+			_contentLabelTop = Root.Q("content").Q<Label>();
+			_contentLabelTop.text = ARCHIVE_WINDOW_TEXT;
 
 			_okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
 			_okButton.Button.clickable.clicked += HandleOkButtonClicked;
@@ -44,6 +42,12 @@ namespace Beamable.Editor.UI.Components
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_checkbox.Refresh();
 			_checkbox.SetText(DELETE_ALL_FILES_TEXT);
+			_checkbox.Q<Label>().RegisterCallback<MouseDownEvent>(evt => _checkbox.SetWithoutNotify(!_checkbox.Value));
+
+			if (!ShowDeleteOption)
+			{
+				_checkbox.RemoveFromHierarchy();
+			}
 
 			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			_cancelButton.OnClick += HandleCancelButtonClicked;
