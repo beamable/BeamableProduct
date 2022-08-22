@@ -5,41 +5,63 @@ using Beamable.Serialization;
 using Microsoft.OpenApi.Models;
 using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.Collections;
 using System.Text;
 
 namespace cli;
 
 public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 {
-	private const string BeamableOptionalNamespace = "Beamable.Common.Content";
-
-	public List<GeneratedFileDescriptors> Generate(IGenerationContext context)
+	/// <summary>
+	/// Given a <see cref="IGenerationContext"/> containing openAPI specifications, produce a set of <see cref="GeneratedFileDescriptor"/>
+	/// that contain the C# source code for the openAPI specs
+	/// </summary>
+	/// <param name="context"></param>
+	/// <returns></returns>
+	public List<GeneratedFileDescriptor> Generate(IGenerationContext context)
 	{
-		var res = new List<GeneratedFileDescriptors>();
+		var res = new List<GeneratedFileDescriptor>();
 
+		// generate all the services, which is 1:1 with the documents in the openAPI sequence
 		foreach (var document in context.Documents)
 		{
 			res.Add(UnityHelper.GenerateService(document));
 		}
 
-		var modelFile = GenerateModel(context);
+		// generate all of the models, which we cram into one single file, from all documents.
+		var modelFile = UnityHelper.GenerateModel(context);
 		res.Add(modelFile);
 		return res;
 	}
+}
 
+public class SchemaTypeDeclarations
+{
+	public CodeTypeDeclaration Model;
+	public CodeTypeDeclaration Optional;
+	public CodeTypeDeclaration OptionalArray;
+	public CodeTypeDeclaration OptionalMap;
+	public CodeTypeDeclaration OptionalMapArray;
+}
 
-	private GeneratedFileDescriptors GenerateModel(IGenerationContext context)
+public static class UnityHelper
+{
+	const string PARAM_SERIALIZER = "s";
+
+	private const string BeamableOptionalNamespace = "Beamable.Common.Content";
+	private const string BeamableGeneratedNamespace = "Beamable.Api.Open";
+
+	public static string BeamableGeneratedModelsNamespace => $"{BeamableGeneratedNamespace}.Models";
+
+	public static GeneratedFileDescriptor GenerateModel(IGenerationContext context)
 	{
 		var unit = new CodeCompileUnit();
-		var root = new CodeNamespace("Beamable.Api.Open.Models");
+		var root = new CodeNamespace(BeamableGeneratedModelsNamespace);
 		root.Imports.Add(new CodeNamespaceImport(BeamableOptionalNamespace));
 		unit.Namespaces.Add(root);
 
-
 		// add all of the model types...
 		var nameToTypes = new Dictionary<string, SchemaTypeDeclarations>();
-		var nameToOptionalRefCount = new Dictionary<string, int>();
+		var nameToRefCount = new Dictionary<string, int>();
 
 		foreach (var schema in context.OrderedSchemas)
 		{
@@ -55,11 +77,11 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 			{
 				if (member is CodeMemberField field)
 				{
-					if (!nameToOptionalRefCount.TryGetValue(field.Type.BaseType, out var existing))
+					if (!nameToRefCount.TryGetValue(field.Type.BaseType, out var existing))
 					{
 						existing = 0;
 					}
-					nameToOptionalRefCount[field.Type.BaseType] = existing + 1;
+					nameToRefCount[field.Type.BaseType] = existing + 1;
 				}
 			}
 		}
@@ -67,42 +89,24 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 		void AddTypeIfRequired(CodeTypeDeclaration countCheck, CodeTypeDeclaration decl=null)
 		{
 			decl ??= countCheck;
-			if (countCheck != null && decl != null && nameToOptionalRefCount.TryGetValue(countCheck.Name, out _))
+			if (countCheck != null && decl != null && nameToRefCount.TryGetValue(countCheck.Name, out _))
 			{
 				root.Types.Add(decl);
 			}
 		}
 
+		// we only need to generate model variants that are actually referenced. For example, if there was a TunaModel, we wouldn't want to generate an OptionalMapOfTunaModel unless some code actually needed it.
 		foreach (var kvp in nameToTypes)
 		{
 			AddTypeIfRequired(kvp.Value.Optional);
 			AddTypeIfRequired(kvp.Value.OptionalArray);
 			AddTypeIfRequired(kvp.Value.OptionalMap);
 			AddTypeIfRequired(kvp.Value.OptionalMapArray);
-			// AddTypeIfRequired(kvp.Value.OptionalMapArray, kvp.Value.MapArray);
 		}
 
-		return new GeneratedFileDescriptors { FileName = "Models.cs", Content = UnityHelper.GenerateCsharp(unit) };
+		return new GeneratedFileDescriptor { FileName = "Models.gs.cs", Content = UnityHelper.GenerateCsharp(unit) };
 	}
-
-}
-
-public class SchemaTypeDeclarations
-{
-	public CodeTypeDeclaration Model;
-	public CodeTypeDeclaration Optional;
-	public CodeTypeDeclaration OptionalArray;
-	public CodeTypeDeclaration OptionalMap;
-	public CodeTypeDeclaration OptionalMapArray;
-	public CodeTypeDeclaration MapArray;
-}
-
-public static class UnityHelper
-{
-	const string PARAM_SERIALIZER = "s";
-
-
-	public static GeneratedFileDescriptors GenerateService(OpenApiDocument document)
+	public static GeneratedFileDescriptor GenerateService(OpenApiDocument document)
 	{
 		const string varUrl = "gsUrl"; // gs stands for generated-source
 		const string varQuery = "gsQuery";
@@ -113,15 +117,11 @@ public static class UnityHelper
 
 		GetTypeNames(document, out var typeName, out var title, out var className);
 
-		var root = new CodeNamespace($"Beamable.Api.Open.{title}");
-		root.Imports.Add(new CodeNamespaceImport("Beamable.Api.Open.Models"));
+		var root = new CodeNamespace($"{BeamableGeneratedNamespace}.{title}");
+		root.Imports.Add(new CodeNamespaceImport(BeamableGeneratedModelsNamespace));
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
 		root.Imports.Add(new CodeNamespaceImport("IBeamableRequester = Beamable.Common.Api.IBeamableRequester"));
 		root.Imports.Add(new CodeNamespaceImport("Method = Beamable.Common.Api.Method"));
-
-		// root..Add(new CodeSnippetExpression(using IBeamableRequester = Beamable.Common.Api.IBeamableRequester));
-		// using IBeamableRequester = Beamable.Common.Api.IBeamableRequester;
-		// using Method = Beamable.Common.Api.Method;
 		unit.Namespaces.Add(root);
 
 
@@ -273,14 +273,6 @@ public static class UnityHelper
 					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varQuery,
 						new CodeSnippetExpression($"$\"{query}\"")));
 
-					// encode the url
-					// method.Statements.Add(
-					// 	new CodeCommentStatement("the query may need to be encoded if it contains any special characters"));
-					// method.Statements.Add(
-					// 	new CodeAssignStatement(new CodeVariableReferenceExpression(varQuery),
-					// 		new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
-					// 			nameof(IBeamableRequester.EscapeURL), new CodeVariableReferenceExpression(varQuery))));
-
 					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl), new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat), new CodeVariableReferenceExpression(varUrl), new CodeVariableReferenceExpression(varQuery))));
 				}
 
@@ -290,35 +282,37 @@ public static class UnityHelper
 					nameof(IBeamableRequester.Request));
 				requestCommand.Method.TypeArguments.Add(responseType);
 
-
+				// we always need a Method parameter...
 				requestCommand.Parameters.Add(new CodeTypeReferenceExpression("Method." + httpMethod));
+
+				// we then need a url
 				requestCommand.Parameters.Add(new CodeVariableReferenceExpression(varUrl));
 
+				// we always need a request body
 				if (hasReqBody)
 				{
+					// either use the reference to the given model,
 					requestCommand.Parameters.Add(new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(JsonSerializable)),
 						nameof(JsonSerializable.ToJson), new CodeVariableReferenceExpression(varReq)));
 				}
 				else
 				{
+					// or pass in null
 					requestCommand.Parameters.Add(new CodeDefaultValueExpression(new CodeTypeReference(typeof(object))));
 				}
 
+				// pass in the auth header
 				requestCommand.Parameters.Add(new CodeArgumentReferenceExpression(paramIncludeAuth)); // TODO: maybe not every method should have this open exposed?
 
-				// if (hasReqBody)
-				// {
-					requestCommand.Parameters.Add(new CodeMethodReferenceExpression(
-						new CodeTypeReferenceExpression(typeof(JsonSerializable)),
-						nameof(JsonSerializable.FromJson))
-					{
-						TypeArguments = { responseType }
-					});
-				// }
+				// always use a custom parser based on the response type so that we can use the serialization stuff
+				requestCommand.Parameters.Add(new CodeMethodReferenceExpression(
+					new CodeTypeReferenceExpression(typeof(JsonSerializable)),
+					nameof(JsonSerializable.FromJson))
+				{
+					TypeArguments = { responseType }
+				});
 
-				// TODO: Some parameters come in correctly as Query
-
-
+				// return the result
 				var returnCommand = new CodeMethodReturnStatement(requestCommand);
 				method.Statements.Add(new CodeCommentStatement("make the request and return the result"));
 				method.Statements.Add(returnCommand);
@@ -328,7 +322,7 @@ public static class UnityHelper
 			}
 		}
 
-		return new GeneratedFileDescriptors
+		return new GeneratedFileDescriptor
 		{
 			FileName = $"{className}.gs.cs",
 			Content = GenerateCsharp(unit)
@@ -367,6 +361,12 @@ public static class UnityHelper
 	}
 
 
+	/// <summary>
+	/// Generate all of the various model variants for the given schema.
+	/// </summary>
+	/// <param name="name">The name of the schema</param>
+	/// <param name="schema">the openAPI schema itself</param>
+	/// <returns>a <see cref="SchemaTypeDeclarations"/> that contains type decls </returns>
 	public static SchemaTypeDeclarations GenerateDeclarations(string name, OpenApiSchema schema)
 	{
 		return new SchemaTypeDeclarations
@@ -375,11 +375,24 @@ public static class UnityHelper
 			Optional = GenerateOptionalDecl(name, schema),
 			OptionalArray = GenerateOptionalArrayDecl(name, schema),
 			OptionalMap = GenerateOptionalMapDecl(name, schema),
-			OptionalMapArray = GenerateOptionalMapArrayDecl(name, schema),
-			// MapArray = GenerateMapArrayDecl(name, schema)
+			OptionalMapArray = GenerateOptionalMapArrayDecl(name, schema)
 		};
 	}
 
+	/// <summary>
+	/// The Optional-Map captures a type like
+	/// <code>
+	/// public OptionalMapOfInt doop;
+	/// </code>
+	///
+	/// which internally is an <code>
+	/// Optional{SerializableDictionaryStringToSomething{Int}}
+	/// </code>
+	///
+	/// </summary>
+	/// <param name="name"></param>
+	/// <param name="schema"></param>
+	/// <returns></returns>
 	public static CodeTypeDeclaration GenerateOptionalMapDecl(string name, OpenApiSchema schema)
 	{
 		switch (schema.Type, schema.Format)
@@ -404,30 +417,20 @@ public static class UnityHelper
 		return null;
 	}
 
-	public static CodeTypeDeclaration GenerateMapArrayDecl(string name, OpenApiSchema schema)
-	{
-		switch (schema.Type, schema.Format)
-		{
-			case ("array", _):
-			case ("object", _):
-				var className = SanitizeClassName(name);
-				var optionalClassName = $"MapOf{className}Array";
-				var type = new CodeTypeDeclaration();
-				type.CustomAttributes.Add(
-					new CodeAttributeDeclaration(new CodeTypeReference(typeof(System.SerializableAttribute))));
-
-				type.Name = optionalClassName;
-				var baseType = new CodeTypeReference(typeof(SerializableDictionaryStringToSomething<>));
-				var genericType = new CodeTypeReference(className);
-				genericType.ArrayRank = 1;
-				baseType.TypeArguments.Add(genericType);
-				type.BaseTypes.Add(baseType);
-				return type;
-		}
-		return null;
-	}
-
-
+	/// <summary>
+	/// The Optional-Map-Array captures a type like
+	/// <code>
+	/// public OptionalMapOfIntArray doop;
+	/// </code>
+	///
+	/// which internally is an <code>
+	/// Optional{SerializableDictionaryStringToSomething{Int[]}}
+	/// </code>
+	///
+	/// </summary>
+	/// <param name="name"></param>
+	/// <param name="schema"></param>
+	/// <returns></returns>
 	public static CodeTypeDeclaration GenerateOptionalMapArrayDecl(string name, OpenApiSchema schema)
 	{
 		switch (schema.Type, schema.Format)
@@ -451,6 +454,20 @@ public static class UnityHelper
 		return null;
 	}
 
+	/// <summary>
+	/// The Optional-Array captures a type like
+	/// <code>
+	/// public OptionalIntArray doop;
+	/// </code>
+	///
+	/// which internally is an <code>
+	/// OptionalArray{Int}
+	/// </code>
+	///
+	/// </summary>
+	/// <param name="name"></param>
+	/// <param name="schema"></param>
+	/// <returns></returns>
 	public static CodeTypeDeclaration GenerateOptionalArrayDecl(string name, OpenApiSchema schema)
 	{
 		switch (schema.Type, schema.Format)
@@ -491,6 +508,20 @@ public static class UnityHelper
 		return null;
 	}
 
+	/// <summary>
+	/// The Optional captures a type like
+	/// <code>
+	/// public OptionalInt doop;
+	/// </code>
+	///
+	/// which internally is an <code>
+	/// Optional{Int}
+	/// </code>
+	///
+	/// </summary>
+	/// <param name="name"></param>
+	/// <param name="schema"></param>
+	/// <returns></returns>
 	public static CodeTypeDeclaration GenerateOptionalDecl(string name, OpenApiSchema schema)
 	{
 		switch (schema.Type, schema.Format)
@@ -530,6 +561,13 @@ public static class UnityHelper
 
 	}
 
+	/// <summary>
+	/// The model decl is the main type decl for an open api Schema. Its the one that actually defines
+	/// all of the properties and serialization method.
+	/// </summary>
+	/// <param name="name"></param>
+	/// <param name="schema"></param>
+	/// <returns></returns>
 	public static CodeTypeDeclaration GenerateModelDecl(string name, OpenApiSchema schema)
 	{
 		var type = new CodeTypeDeclaration(SanitizeClassName(name));
@@ -571,6 +609,13 @@ public static class UnityHelper
 		return type;
 	}
 
+	/// <summary>
+	/// Generating a field decl for a model schema
+	/// </summary>
+	/// <param name="fieldName"></param>
+	/// <param name="schema"></param>
+	/// <param name="isRequired">If false, the field type will be an Optional</param>
+	/// <returns></returns>
 	public static CodeMemberField GenerateField(string fieldName, OpenApiSchema schema, bool isRequired)
 	{
 		var fieldSchema = new GenSchema(schema);
@@ -589,12 +634,22 @@ public static class UnityHelper
 		return field;
 	}
 
+	/// <summary>
+	/// The schemaName may be invalid C# for a className, so transform it into something valid
+	/// </summary>
+	/// <param name="schemaName"></param>
+	/// <returns></returns>
 	public static string SanitizeClassName(string schemaName)
 	{
 		var className = SanitizeFieldName(schemaName.Replace(" ", ""));
 		return className; // TODO: add upercasing and all that..
 	}
 
+	/// <summary>
+	/// The fieldName may be invalid for C# for a fieldName, so transform it into something valid
+	/// </summary>
+	/// <param name="propKey"></param>
+	/// <returns></returns>
 	private static string SanitizeFieldName(string propKey)
 	{
 		string AppendKey(string str) => str + "Key";
@@ -609,55 +664,97 @@ public static class UnityHelper
 			: propKey;
 	}
 
+	/// <summary>
+	/// Every field in a model declr needs to have a corresponding serialization statement in the serialization method.
+	/// This function will produce the code statement that correctly serializes the field.
+	///
+	/// If the given field is an Optional field (<see cref="isRequired"/> would be false), then
+	/// the serialization logic is complicated, because we CANNOT serialize the property if it doesn't have value.
+	/// This means we need to do an <i>if</i> statement.
+	///
+	/// But for fields that are required, then the statement is just a simple serialization.
+	/// </summary>
+	/// <param name="schema"></param>
+	/// <param name="field"></param>
+	/// <param name="apiFieldName"></param>
+	/// <param name="isRequired"></param>
+	/// <returns></returns>
 	public static CodeStatement GenerateSerializationStatement(OpenApiSchema schema, CodeMemberField field, string apiFieldName, bool isRequired)
 	{
+		// first, we need to figure out which serialization method to use.
 		var invokeSerializationMethod = GetSerializationMethodReference(schema);
+
+		// and if there is not valid serialization method, then we cannot serialize this field
 		if (invokeSerializationMethod == null) return null;
+
+
 		var varRef = new CodeSnippetExpression($"ref {field.Name}");
 		var referenceField = new CodeVariableReferenceExpression(field.Name);
 		var serializeName = new CodePrimitiveExpression(apiFieldName);
 
-		if (!isRequired)
-		{
-			var hasValue = new CodeFieldReferenceExpression(referenceField, nameof(Optional.HasValue));
-			var hasKey =
-				new CodeMethodInvokeExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER), nameof(JsonSerializable.IStreamSerializer.HasKey), serializeName);
-			var valueIsNotNull = new CodeBinaryOperatorExpression(referenceField,
-				CodeBinaryOperatorType.IdentityInequality,
-				new CodeDefaultValueExpression(field.Type));
-
-			var expr = new CodeBinaryOperatorExpression(hasKey, CodeBinaryOperatorType.BooleanOr,
-				new CodeBinaryOperatorExpression(valueIsNotNull, CodeBinaryOperatorType.BooleanAnd, hasValue));
-
-			var serializationStatement =
-				new CodeMethodInvokeExpression(invokeSerializationMethod, serializeName,
-					new CodeFieldReferenceExpression(varRef, nameof(Optional<int>.Value)));
-			var conditionStatement =
-				new CodeConditionStatement(expr,
-					// call the serialize
-					new CodeExpressionStatement(serializationStatement),
-
-					// and set the HasValue to true
-					new CodeAssignStatement(new CodeFieldReferenceExpression(referenceField, nameof(Optional.HasValue)), new CodePrimitiveExpression(true)));
-			return conditionStatement;
-
-		}
-		else
+		// if the field is required, we can simply return the usage of the serialization method...
+		if (isRequired)
 		{
 			return new CodeExpressionStatement(new CodeMethodInvokeExpression(invokeSerializationMethod, serializeName,
 				varRef));
 		}
+		// but otherwise, the field is an Optional, and we need to construct an if statement...
+
+		// create an expression that answers the question, "does the optional field have a value?"
+		var hasValueExpr = new CodeFieldReferenceExpression(referenceField, nameof(Optional.HasValue));
+
+		// create an expression that answers the question, "does the json contain a key for this field?"
+		var hasKeyExpr =
+			new CodeMethodInvokeExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER), nameof(JsonSerializable.IStreamSerializer.HasKey), serializeName);
+
+		// create an expression that answers the question, "is the optional _itself_ not null?"
+		var valueIsNotNullExpr = new CodeBinaryOperatorExpression(referenceField,
+			CodeBinaryOperatorType.IdentityInequality,
+			new CodeDefaultValueExpression(field.Type));
+
+		// create an expression that translates roughly to
+		//  (hasKeyExpr) || (valueIsNotNullExpr && hasValueExpr)
+		// which in english, sounds like, "is there json to serialize, OR, is the optional non-null and valued?"
+		var shouldSerializeExpr = new CodeBinaryOperatorExpression(hasKeyExpr, CodeBinaryOperatorType.BooleanOr,
+			new CodeBinaryOperatorExpression(valueIsNotNullExpr, CodeBinaryOperatorType.BooleanAnd, hasValueExpr));
+
+		// create the if-statement that uses the expression...
+		var conditionStatement =
+			new CodeConditionStatement(shouldSerializeExpr,
+
+				// in the positive case on the conditional, call the serialize method
+				new CodeExpressionStatement(new CodeMethodInvokeExpression(invokeSerializationMethod, serializeName,
+					new CodeFieldReferenceExpression(varRef, nameof(Optional<int>.Value)))),
+
+				// and set set the optional to have a value
+				new CodeAssignStatement(new CodeFieldReferenceExpression(referenceField, nameof(Optional.HasValue)), new CodePrimitiveExpression(true)));
+		return conditionStatement;
+
 	}
 
+	/// <summary>
+	/// Given a openAPI schema, the _way_ we serialize it is different.
+	/// We'll always call one of the following...
+	/// <list type="numbered">
+	/// <item> Serialize </item>
+	/// <item> SerializeArray </item>
+	/// <item> SerializeDictionary </item>
+	/// </list>
+	///
+	/// But knowing _which_ one is tricky, and it involves checking for the type of the schema.
+	/// Pretty much, if the schema is a Map type, we'd use <i>SerializeDictionary</i>, and if its an Array type, we'd use <i>SerializeArray</i>
+	/// </summary>
+	/// <param name="schema"></param>
+	/// <returns></returns>
 	private static CodeMethodReferenceExpression GetSerializationMethodReference(OpenApiSchema schema)
 	{
 		switch (schema.Type)
 		{
-
 			case "object" when schema.AdditionalPropertiesAllowed:
 				var method = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.SerializeDictionary));
 
+				// map types will ALWAYS be string->something, so to figure out what "something" is, check the openAPI's additionalProperties...
 				var elemType = new GenSchema(schema.AdditionalProperties).GetTypeReference();
 
 				if (schema.AdditionalProperties?.Type == "array")
@@ -676,13 +773,15 @@ public static class UnityHelper
 
 				return method;
 			case "array":
+				// use the array serialization
 				return new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.SerializeArray));
 			default:
-
-
+				// we just cannot support the serialization of unspecified object types, so don't serialize.
 				if (string.IsNullOrEmpty(schema.Type) || schema.Type == "object") return null;
 
+
+				// use the default serialize method.
 				return new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.Serialize));
 		}
@@ -709,11 +808,6 @@ public class GenCodeTypeReference : CodeTypeReference
 	public string DisplayName { get; set; }
 
 	public string UpperDisplayName => char.ToUpper(DisplayName[0]) + DisplayName.Substring(1);
-
-	public GenCodeTypeReference()
-	{
-
-	}
 
 	public GenCodeTypeReference(Type runtimeType) : base(runtimeType)
 	{
@@ -754,6 +848,9 @@ public class GenCodeTypeReference : CodeTypeReference
 	}
 }
 
+/// <summary>
+/// Given some OpenAPISchema spec, this class helps turn it into a GenCodeTypeReference codedom type
+/// </summary>
 public class GenSchema
 {
 	public OpenApiSchema Schema;
@@ -815,7 +912,6 @@ public class GenSchema
 				return new GenCodeTypeReference(typeof(int));
 			default:
 				return new GenCodeTypeReference(typeof(object));
-				// throw new Exception("Unknown code reference");
 		}
 	}
 }

@@ -54,11 +54,11 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 
 		if (args.Concat)
 		{
-			var file = new GeneratedFileDescriptors
+			var file = new GeneratedFileDescriptor
 			{
 				FileName = args.OutputPath, Content = string.Join("\n", output.Select(o => o.Content))
 			};
-			output = new List<GeneratedFileDescriptors> { file };
+			output = new List<GeneratedFileDescriptor> { file };
 		}
 
 		foreach (var file in output)
