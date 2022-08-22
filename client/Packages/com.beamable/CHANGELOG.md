@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu
 - `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
+- Version number is displayed on breadcrumbs bar in the Toolbox, Content Manager and Microservices Manger. Additionally Login Window displays version in the bottom right corner.
 
 ## [1.3.1]
 ### Added
