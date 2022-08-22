@@ -4,6 +4,10 @@ namespace Beamable.Common
 	{
 		public static partial class Requester
 		{
+			public const string ERROR_PREFIX_UNITY_SDK = "HTTP Error";
+			public const string ERROR_PREFIX_WEBSOCKET_RES = "WSS Error";
+			public const string ERROR_PREFIX_MICROSERVICE = "Service Error";
+
 			/// <summary>
 			/// The header describing the customer's cid. This _can_ be alias.
 			/// </summary>

@@ -95,15 +95,15 @@ namespace Beamable.Common.Api.Inventory
 		private SerializableNullableBool _serializedApplyVipBonus;
 
 		[SerializeField]
-		private SerializableDictionaryStringToLong _serializedCurrencies;
+		private SerializableDictionaryStringToLong _serializedCurrencies = new SerializableDictionaryStringToLong();
 		[SerializeField]
-		private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties;
+		private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
 		[SerializeField]
-		private List<ItemCreateRequest> _serializedNewItems;
+		private List<ItemCreateRequest> _serializedNewItems = new List<ItemCreateRequest>();
 		[SerializeField]
-		private List<ItemDeleteRequest> _serializedDeleteItems;
+		private List<ItemDeleteRequest> _serializedDeleteItems = new List<ItemDeleteRequest>();
 		[SerializeField]
-		private List<ItemUpdateRequest> _serializedUpdateItems;
+		private List<ItemUpdateRequest> _serializedUpdateItems = new List<ItemUpdateRequest>();
 
 		/// <summary>
 		/// Checks if the <see cref="InventoryUpdateBuilder"/> has any inventory updates.
