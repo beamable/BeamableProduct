@@ -60,7 +60,7 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public string FilterText
 		{
-			get => SessionState.GetString(FILTER_TEXT_KEY, "status:supported");
+			get => SessionState.GetString(FILTER_TEXT_KEY, string.Empty);
 			private set => SessionState.SetString(FILTER_TEXT_KEY, value);
 		}
 
