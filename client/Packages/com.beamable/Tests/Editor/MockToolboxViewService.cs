@@ -128,6 +128,25 @@ namespace Beamable.Editor.Tests
 			SetQuery(nextQuery);
 		}
 
+		public void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther)
+		{
+			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
+			                     Query.FilterIncludes(status);
+			var nextQuery = new ToolboxQuery(Query);
+
+			if (hasOrientation && !shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint &= ~status;
+				nextQuery.HasSupportConstraint = nextQuery.SupportStatusConstraint > 0;
+			}
+			else if (!hasOrientation && shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint = disableOther ? status : nextQuery.SupportStatusConstraint | status;
+				nextQuery.HasSupportConstraint = true;
+			}
+			SetQuery(nextQuery);
+		}
+
 		public void SetQuery(string filter)
 		{
 			var oldFilterText = FilterText;
