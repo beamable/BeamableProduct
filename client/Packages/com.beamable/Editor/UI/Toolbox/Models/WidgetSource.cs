@@ -186,7 +186,7 @@ namespace Beamable.Editor.Toolbox.Models
 				stringToEnum.Add(kvp.Value, kvp.Key);
 			}
 		}
-		
+
 		public static bool TryParse(string raw, out SupportStatus tags)
 		{
 			return Enum.TryParse(raw, true, out tags);

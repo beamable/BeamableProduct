@@ -131,7 +131,7 @@ namespace Beamable.Editor.Tests
 		public void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther)
 		{
 			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
-			                     Query.FilterIncludes(status);
+								 Query.FilterIncludes(status);
 			var nextQuery = new ToolboxQuery(Query);
 
 			if (hasOrientation && !shouldHaveStatus)
