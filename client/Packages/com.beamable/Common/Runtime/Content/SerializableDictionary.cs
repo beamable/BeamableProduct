@@ -20,7 +20,7 @@ namespace Beamable.Common.Content
 	{
 		public SerializableDictionaryStringToLong() { }
 
-		public SerializableDictionaryStringToLong(IDictionary<string, long> existing) : base(existing){}
+		public SerializableDictionaryStringToLong(IDictionary<string, long> existing) : base(existing) { }
 	}
 
 	[Serializable]
