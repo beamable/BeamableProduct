@@ -28,12 +28,12 @@ namespace Beamable.Editor.NewTestingTool.Models
 			}
 		}
 		private TestConfiguration _testConfiguration;
-		
+
 		public RegisteredTestScene SelectedRegisteredTestScene { get; set; }
 		public RegisteredTest SelectedRegisteredTest { get; set; }
 		public RegisteredTestRule SelectedRegisteredTestRule { get; set; }
 		public RegisteredTestRuleMethod SelectedRegisteredTestRuleMethod { get; set; }
-		
+
 		public void Scan() => TestScanUtility.Scan(this);
 		public void CreateTestScene(string testName) => TestManagement.CreateTestScene(testName);
 		public void DeleteTestScene(RegisteredTestScene registeredTestScene) => TestManagement.DeleteTestScene(registeredTestScene);
@@ -60,7 +60,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 	internal static class TestScanUtility
 	{
 		private static TestConfiguration _testConfiguration;
-		
+
 		public static void Scan(TestingEditorModel testingEditorModel)
 		{
 			if (Application.isPlaying) return;
@@ -78,10 +78,10 @@ namespace Beamable.Editor.NewTestingTool.Models
 					var testDirectory = testDirectories[index];
 					EditorUtility.DisplayProgressBar("Testing tool", $"Processing", index / (float)testDirectories.Length);
 
-					var testSceneName = testDirectory.Split('\\')[1];
+					var testSceneName = testDirectory.Split(Path.DirectorySeparatorChar).LastOrDefault();
 					var pathToTestScene = GetPathToTestScene(testSceneName);
 					var scene = EditorSceneManager.OpenScene(pathToTestScene);
-					
+
 					SetupTestScene(testSceneName);
 					EditorSceneManager.SaveScene(scene, pathToTestScene);
 				}
@@ -103,7 +103,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 
 			EditorSceneManager.OpenScene($"{PATH_TO_TESTING_TOOL}/TestMainMenu.unity");
 		}
-		
+
 		private static void SetupTestScene(string sceneName)
 		{
 			if (!TryGetTestables(sceneName, out var testables, out var errorLog))
@@ -150,9 +150,9 @@ namespace Beamable.Editor.NewTestingTool.Models
 			#else
 				AssetDatabase.SaveAssets();
 			#endif
-			
+
 			return registeredTests.OrderBy(x => x.Order).ToList();
-			
+
 		}
 		private static bool TryGetTestables(string sceneName, out List<Testable> results, out string errorLog)
 		{
@@ -199,7 +199,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 			var allArguments = customAttributeData.ConstructorArguments;
 			var order = (int)allArguments[0].Value;
 			var filteredArguments = allArguments.Skip(1).Select(x => x.Value).ToArray();
-			
+
 			var registeredMethodTest = new RegisteredTestRuleMethod(ref testable, methodInfo, filteredArguments, testRuleDescriptor.GetTestRuleMethodDescriptor(methodInfo));
 
 			if (registeredTests.All(x => x.Order != order))
