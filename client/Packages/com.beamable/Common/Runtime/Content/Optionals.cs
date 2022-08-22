@@ -178,43 +178,43 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalArray<T> : Optional<T[]> {}
+	public class OptionalArray<T> : Optional<T[]> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalIntArray : OptionalArray<int> {}
+	public class OptionalIntArray : OptionalArray<int> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalStringArray : OptionalArray<string> {}
+	public class OptionalStringArray : OptionalArray<string> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalFloatArray : OptionalArray<float> {}
+	public class OptionalFloatArray : OptionalArray<float> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalDoubleArray : OptionalArray<double> {}
+	public class OptionalDoubleArray : OptionalArray<double> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalShortArray : OptionalArray<short> {}
+	public class OptionalShortArray : OptionalArray<short> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLongArray : OptionalArray<long> {}
+	public class OptionalLongArray : OptionalArray<long> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalUuidArray : OptionalArray<Guid> {}
+	public class OptionalUuidArray : OptionalArray<Guid> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalByteArray : OptionalArray<byte> {}
+	public class OptionalByteArray : OptionalArray<byte> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalDictionaryStringToObject : Optional<Dictionary<string, object>> {}
+	public class OptionalDictionaryStringToObject : Optional<Dictionary<string, object>> { }
 
 	[System.Serializable]
 	[Agnostic]
