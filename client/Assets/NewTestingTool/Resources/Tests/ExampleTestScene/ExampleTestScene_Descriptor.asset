@@ -22,7 +22,7 @@ MonoBehaviour:
       _testRuleMethodDescriptors:
       - _methodName: TestMethodWithoutArguments
         _title: You can enter a SHORT description here
-        _description: "\rYou can enter a FULL description here"
+        _description: You can enter a FULL description here
       - _methodName: TestMethodWithArguments
         _title: 
         _description: 

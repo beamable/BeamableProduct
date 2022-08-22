@@ -29,7 +29,7 @@ MonoBehaviour:
         _testRuleMethodDescriptors:
         - _methodName: TestMethodWithoutArguments
           _title: You can enter a SHORT description here
-          _description: "\rYou can enter a FULL description here"
+          _description: You can enter a FULL description here
         - _methodName: TestMethodWithArguments
           _title: 
           _description: 
@@ -50,7 +50,7 @@ MonoBehaviour:
         _testRuleMethodDescriptors:
         - _methodName: TestMethodWithoutArguments
           _title: You can enter a SHORT description here
-          _description: "\rYou can enter a FULL description here"
+          _description: You can enter a FULL description here
         - _methodName: TestMethodWithArguments
           _title: 
           _description: 
@@ -67,7 +67,7 @@ MonoBehaviour:
         _testRuleMethodDescriptor:
           _methodName: TestMethodWithoutArguments
           _title: You can enter a SHORT description here
-          _description: "\rYou can enter a FULL description here"
+          _description: You can enter a FULL description here
         _argumentsRaw: []
     - _testMethodName: TestMethodWithArguments
       _order: 2
@@ -79,7 +79,7 @@ MonoBehaviour:
         _testRuleMethodDescriptors:
         - _methodName: TestMethodWithoutArguments
           _title: You can enter a SHORT description here
-          _description: "\rYou can enter a FULL description here"
+          _description: You can enter a FULL description here
         - _methodName: TestMethodWithArguments
           _title: 
           _description: 
@@ -110,7 +110,7 @@ MonoBehaviour:
         _testRuleMethodDescriptors:
         - _methodName: TestMethodWithoutArguments
           _title: You can enter a SHORT description here
-          _description: "\rYou can enter a FULL description here"
+          _description: You can enter a FULL description here
         - _methodName: TestMethodWithArguments
           _title: 
           _description: 
@@ -151,7 +151,7 @@ MonoBehaviour:
         _testRuleMethodDescriptors:
         - _methodName: TestMethodWithoutArguments
           _title: You can enter a SHORT description here
-          _description: "\rYou can enter a FULL description here"
+          _description: You can enter a FULL description here
         - _methodName: TestMethodWithArguments
           _title: 
           _description: 
