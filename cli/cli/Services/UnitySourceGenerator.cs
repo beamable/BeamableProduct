@@ -106,6 +106,8 @@ public static class UnityHelper
 
 		return new GeneratedFileDescriptor { FileName = "Models.gs.cs", Content = UnityHelper.GenerateCsharp(unit) };
 	}
+
+
 	public static GeneratedFileDescriptor GenerateService(OpenApiDocument document)
 	{
 		const string varUrl = "gsUrl"; // gs stands for generated-source
@@ -164,20 +166,7 @@ public static class UnityHelper
 				methodName = char.ToUpper(methodName[0]) + methodName.Substring(1);
 			}
 
-			for (var i = methodName.Length - 2; i >= 0; i--)
-			{
-				if (methodName[i] == '-' || methodName[i] == '/')
-				{
-					if (i + 2 >= methodName.Length)
-					{
-						methodName = methodName[..i] + char.ToUpper(methodName[i + 1]);
-					}
-					else
-					{
-						methodName = methodName[..i] + char.ToUpper(methodName[i+1]) + methodName[(i+2)..];
-					}
-				}
-			}
+			methodName = SanitizeFieldName(methodName);
 
 			foreach (var operation in path.Value.Operations)
 			{
@@ -435,6 +424,7 @@ public static class UnityHelper
 			}
 
 			className += casedWord + "Api";
+			className = SanitizeClassName(className);
 		}
 	}
 
@@ -736,6 +726,21 @@ public static class UnityHelper
 			// TODO: add all other C# keywords...
 			"do", "as", "if", "for", "int", "long", "params", "string", "var", "protected", "void", "while", "public", "private", "class", "interface", "const"
 		};
+
+		for (var i = propKey.Length - 2; i >= 0; i--)
+		{
+			if (propKey[i] == '-' || propKey[i] == '/')
+			{
+				if (i + 2 >= propKey.Length)
+				{
+					propKey = propKey[..i] + char.ToUpper(propKey[i + 1]);
+				}
+				else
+				{
+					propKey = propKey[..i] + char.ToUpper(propKey[i+1]) + propKey[(i+2)..];
+				}
+			}
+		}
 
 		return protectedKeys.Contains(propKey)
 			? AppendKey(propKey)

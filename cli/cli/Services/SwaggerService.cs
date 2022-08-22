@@ -19,7 +19,7 @@ public class SwaggerService
 		// BeamableApis.BasicService("beamo"),
 		// BeamableApis.BasicService("trails"),
 		// BeamableApis.BasicService("content"),
-		// BeamableApis.ObjectService("event-players"),
+		BeamableApis.ObjectService("event-players"),
 
 		// produces a bad fileName...
 		// BeamableApis.ObjectService("group-users"),
@@ -200,6 +200,7 @@ public class BeamableApiDescriptor
 	public BeamableApiSource Source;
 	public string RelativeUrl;
 	public string Service;
+	public string FileName => $"{BeamableApiSourceExtensions.ToDisplay(Source)}_{Service}.json";
 }
 
 public class BeamableApiFilter : DefaultQuery
@@ -261,6 +262,21 @@ public enum BeamableApiSource
 	PLAT_THOR_OBJECT,
 	PLAT_THOR_BASIC,
 	PLAT_PROTO
+}
+
+public static class BeamableApiSourceExtensions
+{
+	public static string ToDisplay(BeamableApiSource source)
+	{
+		switch (source)
+		{
+			case BeamableApiSource.PLAT_PROTO: return "proto";
+			case BeamableApiSource.PLAT_THOR_BASIC: return "basic";
+			case BeamableApiSource.PLAT_THOR_OBJECT: return "object";
+		}
+
+		return "unknown";
+	}
 }
 
 public class GeneratedFileDescriptor
