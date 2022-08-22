@@ -25,7 +25,7 @@ public class Tests
 
 
 	[Test]
-	public async Task GenerateStuff()
+	public async Task GenerateStuff() // TODO: better name please
 	{
 		var status = await Cli.RunAsyncWithParams(builder =>
 		{
@@ -44,7 +44,7 @@ public class Tests
 
 			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
 
-		}, "generate");
+		}, "oapi generate");
 		Assert.AreEqual(0, status);
 	}
 

@@ -115,10 +115,11 @@ public static class UnityHelper
 
 		var unit = new CodeCompileUnit();
 
-		GetTypeNames(document, out var typeName, out var title, out var className);
+		GetTypeNames(document, out var _, out var title, out var className);
 
 		var root = new CodeNamespace($"{BeamableGeneratedNamespace}.{title}");
 		root.Imports.Add(new CodeNamespaceImport(BeamableGeneratedModelsNamespace));
+		root.Imports.Add(new CodeNamespaceImport(BeamableOptionalNamespace));
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
 		root.Imports.Add(new CodeNamespaceImport("IBeamableRequester = Beamable.Common.Api.IBeamableRequester"));
 		root.Imports.Add(new CodeNamespaceImport("Method = Beamable.Common.Api.Method"));
@@ -141,6 +142,7 @@ public static class UnityHelper
 
 		foreach (var path in document.Paths)
 		{
+			// TODO: pull this into a helper method
 			var skipsLeft = document.Info.Title.Contains("object") ? 4 : 3;
 			var index = 0;
 			for (var i = 0; i < path.Key.Length; i++)
@@ -227,12 +229,12 @@ public static class UnityHelper
 
 				foreach (var param in operation.Value.Parameters)
 				{
+					var genSchema = new GenSchema(param.Schema);
 
 					method.Parameters.Add(new CodeParameterDeclarationExpression
 					{
-						Name = param.Name, Type = new GenSchema(param.Schema).GetTypeReference()
+						Name = param.Name, Type = param.Required ? genSchema.GetTypeReference() : genSchema.GetOptionalTypeReference()
 					});
-					// uri = uri.Replace($"{{{param.Name}}}", @"""+");
 				}
 				if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
 				{
@@ -244,12 +246,22 @@ public static class UnityHelper
 				}
 
 
-
+				// url construction
 				method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varUrl,
 					new CodePrimitiveExpression(uri)));
+
+				var queryStringRef = new CodeVariableReferenceExpression(varQuery);
+
 				var queryArgs = new List<string>();
+				var queryStatements = new List<CodeStatement>();
+
+				var queryListAssign = new CodeVariableDeclarationStatement(typeof(List<string>), "queries", new CodeObjectCreateExpression(typeof(List<string>)));
+
+				var queryListRef = new CodeVariableReferenceExpression("queries");
+
 				foreach (var param in operation.Value.Parameters)
 				{
+					var paramRef = new CodeVariableReferenceExpression(param.Name);
 					switch (param.In)
 					{
 						case ParameterLocation.Path:
@@ -261,6 +273,56 @@ public static class UnityHelper
 								replace));
 							break;
 						case ParameterLocation.Query:
+
+							if (param.Required)
+							{
+								var toStringExpr =
+									new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
+										nameof(object.ToString));
+								var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+										nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
+										toStringExpr);
+
+								var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
+									nameof(List<string>.Add), expr);
+								queryStatements.Add(new CodeExpressionStatement(methodInvoke));
+
+							}
+							else
+							{
+								// create an expression that answers the question, "does the optional field have a value?"
+								var hasValueExpr = new CodeFieldReferenceExpression(paramRef, nameof(Optional.HasValue));
+
+								// create an expression that answers the question, "is the optional _itself_ not null?"
+								var valueIsNotNullExpr = new CodeBinaryOperatorExpression(paramRef,
+									CodeBinaryOperatorType.IdentityInequality,
+									new CodeDefaultValueExpression(new GenSchema(param.Schema).GetOptionalTypeReference()));
+
+								// create an expression that translates
+								var shouldSerializeExpr = new CodeBinaryOperatorExpression(valueIsNotNullExpr, CodeBinaryOperatorType.BooleanAnd, hasValueExpr);
+
+								var toStringExpr =
+									new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
+										nameof(object.ToString));
+								var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+									nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
+									toStringExpr);
+
+								var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
+									nameof(List<string>.Add), expr);
+
+								// create the if-statement that uses the expression...
+								var conditionStatement =
+									new CodeConditionStatement(shouldSerializeExpr,
+
+										// and set set the optional to have a value
+										new CodeExpressionStatement(methodInvoke)
+										);
+
+								queryStatements.Add(conditionStatement);
+								// need to check if the param has a value or not...
+							}
+
 							queryArgs.Add(param.Name); // these are variables in the method
 							break;
 					}
@@ -268,10 +330,26 @@ public static class UnityHelper
 
 				if (queryArgs.Count > 0)
 				{
-					method.Statements.Add(new CodeCommentStatement("the method takes its inputs as query strings"));
-					var query = "?" + string.Join("&", queryArgs.Select(q => $"{q}={{{q}}}"));
+					// method.Statements.Add(new CodeCommentStatement("the method takes its inputs as query strings"));
+					// var query = "?" + string.Join("&", queryArgs.Select(q => $"{q}={{{q}}}"));
 					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varQuery,
-						new CodeSnippetExpression($"$\"{query}\"")));
+						new CodePrimitiveExpression("?")));
+
+					method.Statements.Add(queryListAssign);
+					method.Statements.AddRange(queryStatements.ToArray());
+					//
+					//
+					//
+					//
+					// queryStatements.Insert(0, new CodePrimitiveExpression("&"));
+					var joinExpr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+						nameof(string.Join), new CodePrimitiveExpression("&"), queryListRef);
+					//
+					var joinAssing = new CodeAssignStatement(queryStringRef,
+						new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+							nameof(string.Concat), queryStringRef,
+							joinExpr));
+					method.Statements.Add(joinAssing);
 
 					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl), new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat), new CodeVariableReferenceExpression(varUrl), new CodeVariableReferenceExpression(varQuery))));
 				}
@@ -799,7 +877,7 @@ public static class UnityHelper
 			unit, sourceWriter, options);
 		sourceWriter.Flush();
 		var source = sb.ToString();
-		return source.Substring(COUNT_OF_AUTO_GENERATED_MESSAGE_TEXT); // magic nu
+		return source.Substring(COUNT_OF_AUTO_GENERATED_MESSAGE_TEXT);
 	}
 }
 

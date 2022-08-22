@@ -12,15 +12,56 @@ public class SwaggerService
 	private readonly ISwaggerStreamDownloader _downloader;
 	private readonly List<ISourceGenerator> _generators;
 
-	// TODO: add in all the other doc strings...
-	public static readonly string[] BeamableOpenApis = new[]
+	// TODO: make a PLAT ticket to give us back all openAPI spec info
+	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
-		"basic/inventory/platform/docs",
-		"object/inventory/platform/docs",
-		"basic/accounts/platform/docs",
-		"object/accounts/platform/docs",
-		"object/leaderboards/platform/docs",
-		"basic/leaderboards/platform/docs",
+		// these are currently broken...
+		// BeamableApis.BasicService("beamo"),
+		// BeamableApis.BasicService("trails"),
+		// BeamableApis.BasicService("content"),
+		// BeamableApis.ObjectService("event-players"),
+
+		// produces a bad fileName...
+		// BeamableApis.ObjectService("group-users"),
+
+		BeamableApis.BasicService("inventory"),
+		BeamableApis.ObjectService("inventory"),
+
+		BeamableApis.BasicService("leaderboards"),
+		BeamableApis.ObjectService("leaderboards"),
+
+		BeamableApis.BasicService("accounts"),
+		BeamableApis.ObjectService("accounts"),
+
+		BeamableApis.BasicService("stats"),
+		BeamableApis.ObjectService("stats"),
+		//
+		BeamableApis.BasicService("events"),
+		BeamableApis.ObjectService("events"),
+		//
+		BeamableApis.BasicService("tournaments"),
+		BeamableApis.ObjectService("tournaments"),
+		//
+		//
+		BeamableApis.BasicService("auth"),
+		BeamableApis.BasicService("cloudsaving"),
+		BeamableApis.BasicService("payments"),
+		BeamableApis.ObjectService("payments"),
+		BeamableApis.BasicService("push"),
+		BeamableApis.BasicService("notification"),
+		BeamableApis.BasicService("realms"),
+		BeamableApis.BasicService("social"),
+		//
+		BeamableApis.ObjectService("chatV2"),
+		BeamableApis.ObjectService("matchmaking"),
+		BeamableApis.ObjectService("groups"),
+		BeamableApis.BasicService("commerce"),
+		BeamableApis.ObjectService("commerce"),
+		BeamableApis.ObjectService("calendars"),
+		BeamableApis.BasicService("announcements"),
+		BeamableApis.ObjectService("announcements"),
+		BeamableApis.BasicService("mail"),
+		BeamableApis.ObjectService("mail"),
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, IEnumerable<ISourceGenerator> generators)
@@ -34,10 +75,10 @@ public class SwaggerService
 	/// Create a list of <see cref="GeneratedFileDescriptor"/> that contain the generated source code
 	/// </summary>
 	/// <returns></returns>
-	public async Task<List<GeneratedFileDescriptor>> Generate()
+	public async Task<List<GeneratedFileDescriptor>> Generate(BeamableApiFilter filter)
 	{
 		// TODO: we should be able to specify if we want to generate from downloading, or from using a cached source.
-		var openApiDocuments = await DownloadBeamableApis();
+		var openApiDocuments = await DownloadBeamableApis(filter);
 
 		var allDocuments = openApiDocuments.Select(r => r.Document).ToList();
 		var context = new DefaultGenerationContext
@@ -45,8 +86,7 @@ public class SwaggerService
 			Documents = allDocuments, OrderedSchemas = ExtractAllSchemas(allDocuments)
 		};
 
-		// TODO: we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
-
+		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
 		var files = new List<GeneratedFileDescriptor>();
 		foreach (var generator in _generators)
 		{
@@ -76,10 +116,10 @@ public class SwaggerService
 		return list;
 	}
 
-	public async Task<IEnumerable<OpenApiDocumentResult>> DownloadBeamableApis()
+	public async Task<IEnumerable<OpenApiDocumentResult>> DownloadBeamableApis(BeamableApiFilter filter)
 	{
-		var urls = BeamableOpenApis.Select(api => $"{_context.Host}/{api}");
-		return await DownloadOpenApis(_downloader, urls).ToPromise().ShowLoading("fetching swagger docs...");
+		var selected = Apis.Where(filter.Accepts);
+		return await DownloadOpenApis(_downloader, selected).ToPromise();//.ShowLoading("fetching swagger docs...");
 	}
 
 	/// <summary>
@@ -88,25 +128,42 @@ public class SwaggerService
 	/// <param name="downloader"></param>
 	/// <param name="openApiUrls"></param>
 	/// <returns>A task that represents the completion of all downloads, and returns the open api docs as the result</returns>
-	public static async Task<IEnumerable<OpenApiDocumentResult>> DownloadOpenApis(ISwaggerStreamDownloader downloader, IEnumerable<string> openApiUrls)
+	private async Task<IEnumerable<OpenApiDocumentResult>> DownloadOpenApis(ISwaggerStreamDownloader downloader, IEnumerable<BeamableApiDescriptor> openApis)
 	{
 		var tasks = new List<Task<OpenApiDocumentResult>>();
-		foreach (var url in openApiUrls)
+		foreach (var api in openApis)
 		{
 			tasks.Add(Task.Run(async () =>
 			{
-				var stream = await downloader.GetStreamAsync(url);
-				var res = new OpenApiDocumentResult();
-				res.Document = new OpenApiStreamReader().Read(stream, out res.Diagnostic);
-				foreach (var warning in res.Diagnostic.Warnings)
+				var url = $"{_context.Host}/{api.RelativeUrl}";
+				try
 				{
-					Log.Warning("found warning for {url}. {message} . from {pointer}", url, warning.Message, warning.Pointer);
+					var stream = await downloader.GetStreamAsync(url);
+
+
+					var res = new OpenApiDocumentResult();
+					res.Document = new OpenApiStreamReader().Read(stream, out res.Diagnostic);
+					foreach (var warning in res.Diagnostic.Warnings)
+					{
+						Log.Warning("found warning for {url}. {message} . from {pointer}", url, warning.Message,
+							warning.Pointer);
+					}
+
+					foreach (var error in res.Diagnostic.Errors)
+					{
+						Log.Error("found ERROR for {url}. {message} . from {pointer}", url, error.Message,
+							error.Pointer);
+					}
+
+					res.Descriptor = api;
+					return res;
 				}
-				foreach (var error in res.Diagnostic.Errors)
+				catch (Exception ex)
 				{
-					Log.Error("found ERROR for {url}. {message} . from {pointer}", url, error.Message, error.Pointer);
+
+					Log.Fatal(url + " / " + ex.Message);
+					throw;
 				}
-				return res;
 			}));
 		}
 
@@ -118,6 +175,7 @@ public class SwaggerService
 	{
 		public OpenApiDocument Document;
 		public OpenApiDiagnostic Diagnostic;
+		public BeamableApiDescriptor Descriptor;
 	}
 
 	public class DefaultGenerationContext : IGenerationContext
@@ -135,6 +193,74 @@ public class SwaggerService
 		List<GeneratedFileDescriptor> Generate(IGenerationContext context);
 	}
 
+}
+
+public class BeamableApiDescriptor
+{
+	public BeamableApiSource Source;
+	public string RelativeUrl;
+	public string Service;
+}
+
+public class BeamableApiFilter : DefaultQuery
+{
+	// TODO: add service type filtering...
+	public bool Accepts(BeamableApiDescriptor descriptor)
+	{
+		return AcceptIdContains(descriptor.Service);
+	}
+
+	public static BeamableApiFilter Parse(string text)
+	{
+		return DefaultQueryParser.Parse(text, StandardRules);
+	}
+
+	protected static readonly Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>> StandardRules = new Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>>
+	{
+		// {"t", ApplyTypeParse},
+		{"id", DefaultQueryParser.ApplyIdParse},
+		// {"tag", ApplyTagParse},
+	};
+}
+
+public static class BeamableApis
+{
+	public static BeamableApiDescriptor ProtoActor(string service)
+	{
+		return new BeamableApiDescriptor
+		{
+			Source = BeamableApiSource.PLAT_PROTO,
+			RelativeUrl = $"basic/{service}/platform/docs",
+			Service = service
+		};
+	}
+
+	public static BeamableApiDescriptor ObjectService(string service)
+	{
+		return new BeamableApiDescriptor
+		{
+			Source = BeamableApiSource.PLAT_THOR_OBJECT,
+			RelativeUrl = $"object/{service}/platform/docs",
+			Service = service
+		};
+	}
+
+	public static BeamableApiDescriptor BasicService(string service)
+	{
+		return new BeamableApiDescriptor
+		{
+			Source = BeamableApiSource.PLAT_THOR_BASIC,
+			RelativeUrl = $"basic/{service}/platform/docs",
+			Service = service
+		};
+	}
+}
+
+public enum BeamableApiSource
+{
+	PLAT_THOR_OBJECT,
+	PLAT_THOR_BASIC,
+	PLAT_PROTO
 }
 
 public class GeneratedFileDescriptor

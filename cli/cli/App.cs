@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -96,7 +97,10 @@ public class App
 		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
-		Services.AddRootCommand<GenerateSdkCommand, GenerateSdkCommandArgs>();
+		Services.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
+		Services.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
+		Services.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
+
 
 		// customize
 		configurator?.Invoke(Services);

@@ -7,6 +7,8 @@ public class GenerateSdkCommandArgs : CommandArgs
 {
 	public bool Concat;
 	public string? OutputPath;
+
+	public string Filter;
 }
 public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 {
@@ -21,17 +23,23 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 	{
 		AddOption(new Option<bool>("--concat", () => false,
 			"when true, all the generated code will be in one file. When false, there will be multiple files"),
-			(args, val) => args.Concat = val);
+			(args, val) => args.Concat = val); // TODO: In C#, we can concat, but in C++/js, it could make no sense to support concat
 		AddOption(new Option<string>("--output", () => null,
 			"when null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path."),
 			(args, val) => args.OutputPath = val);
+
+		AddOption(new Option<string>("--filter", () => null,
+			"a string to filter which open apis to generate. An empty string matches everything"),
+			(args, val) => args.Filter = val);
 	}
 
 	public override async Task Handle(GenerateSdkCommandArgs args)
 	{
-		var output = await _swagger.Generate();
+		var filter = BeamableApiFilter.Parse(args.Filter);
+		var output = await _swagger.Generate(filter);
 
 		var outputData = !string.IsNullOrEmpty(args.OutputPath);
+		// TODO: rewrite as a pattern match
 		if (outputData)
 		{
 			var isFile = args.OutputPath.EndsWith(".cs");
