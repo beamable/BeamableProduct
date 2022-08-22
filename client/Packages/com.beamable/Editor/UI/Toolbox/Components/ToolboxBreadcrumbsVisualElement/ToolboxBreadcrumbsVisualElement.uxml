@@ -9,6 +9,7 @@
     <engine:VisualElement name="mainVisualElement">
         <engine:Button  name="openPortalButton" text="Open Portal"/>
         <beamable:RealmButtonVisualElement name="realmButton"/>
+        <engine:Label name="versionNumber"/>
 <!--        <engine:Button class="unboundedButton" name="accountButton">-->
 <!--            <engine:Image name="accountIcon"/>-->
 <!--        </engine:Button>-->

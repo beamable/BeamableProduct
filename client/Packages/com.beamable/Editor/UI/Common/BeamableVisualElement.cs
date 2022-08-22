@@ -51,6 +51,13 @@ namespace Beamable.Editor.UI.Components
 			{
 				elem?.SetBackgroundScaleModeToFit();
 			});
+			
+			Label versionLabel = Root.Q<Label>("versionNumber");
+			if (versionLabel != null)
+			{
+				var version = Provider.GetService<EnvironmentData>().SdkVersion;
+				versionLabel.text = $"v:{version}";
+			}
 		}
 	}
 }
