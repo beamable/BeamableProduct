@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 namespace Beamable.UI.Buss
 {
 	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style",
-					 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	                 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
@@ -18,15 +18,13 @@ namespace Beamable.UI.Buss
 #pragma warning disable CS0649
 		[SerializeField] private List<BussStyleRule> _styles = new List<BussStyleRule>();
 		[SerializeField, HideInInspector] private List<Object> _assetReferences = new List<Object>();
+		[SerializeField] private bool _isReadOnly;
+		[SerializeField] private int _sortingOrder;
 #pragma warning restore CS0649
 
 		public List<BussStyleRule> Styles => _styles;
-
-#pragma warning disable CS0649
-		[SerializeField] private bool _isReadOnly;
-#pragma warning restore CS0649
-
 		public bool IsReadOnly => _isReadOnly;
+		public int SortingOrder => _sortingOrder;
 
 		public bool IsWritable
 		{
@@ -111,6 +109,13 @@ namespace Beamable.UI.Buss
 		{
 			_isReadOnly = value;
 		}
+
+		public void SetSortingOrder(int order)
+		{
+			_sortingOrder = order;
+			
+			BussConfiguration.OptionalInstance.Value.RefreshDefaultStyles();
+		}
 #endif
 	}
 
@@ -134,7 +139,7 @@ namespace Beamable.UI.Buss
 
 		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
 		{
-			return new BussStyleRule { _selector = selector, _properties = properties };
+			return new BussStyleRule {_selector = selector, _properties = properties};
 		}
 
 		public bool RemoveProperty(IBussProperty bussProperty)
@@ -172,7 +177,7 @@ namespace Beamable.UI.Buss
 		{
 			var propertyProvider = new SerializableValueObject();
 			propertyProvider.Set(property);
-			return new BussPropertyProvider { key = key, property = propertyProvider };
+			return new BussPropertyProvider {key = key, property = propertyProvider};
 		}
 
 		public IBussProperty GetProperty()

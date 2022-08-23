@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using System;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -17,6 +18,7 @@ namespace Beamable.Editor.UI.Buss
 #if UNITY_2019_1_OR_NEWER
 		private BussStyleListVisualElement _list;
 		private BussStyleSheet _styleSheet;
+		private LabeledIntegerField _sortingOrder;
 
 		public override VisualElement CreateInspectorGUI()
 		{
@@ -37,7 +39,11 @@ namespace Beamable.Editor.UI.Buss
 			readonlyCheckbox.Refresh();
 			readonlyCheckbox.SetWithoutNotify(_styleSheet.IsReadOnly);
 			root.Add(readonlyCheckbox);
-#endif
+
+			_sortingOrder = new LabeledIntegerField();
+			_sortingOrder.Setup("Sorting Order", _styleSheet.SortingOrder, OnSortingOrderChanged, 0, Int32.MaxValue);
+			root.Add(_sortingOrder);
+#endif 
 
 			if (!_styleSheet.IsReadOnly)
 			{
@@ -48,10 +54,17 @@ namespace Beamable.Editor.UI.Buss
 			return root;
 		}
 
+
+
 #if BEAMABLE_DEVELOPER
 		private void OnReadonlyValueChanged(bool value)
 		{
 			_styleSheet.SetReadonly(value);
+		}
+		
+		private void OnSortingOrderChanged()
+		{
+			_styleSheet.SetSortingOrder(_sortingOrder.Value);
 		}
 #endif
 
