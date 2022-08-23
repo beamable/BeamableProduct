@@ -54,13 +54,13 @@ namespace Beamable.Editor.UI.Components
 			label.AddToClassList("headerLabel");
 			label.text = "Selected Buss Element";
 			header.Add(label);
-			
+
 			header.RegisterCallback<MouseDownEvent>(evt =>
 			{
 				_contentContainer.ToggleInClassList("hidden");
 				RefreshHeight();
 			});
-			
+
 			Root.Add(header);
 
 			_contentContainer = new VisualElement();
@@ -84,7 +84,7 @@ namespace Beamable.Editor.UI.Components
 			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), OnStylesheetChanged);
 			_contentContainer.Add(_currentStyleSheet);
 			Root.Add(_contentContainer);
-			
+
 			RefreshHeight();
 		}
 
