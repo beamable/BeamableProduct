@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 namespace Beamable.UI.Buss
 {
 	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style",
-	                 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+					 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
@@ -139,7 +139,7 @@ namespace Beamable.UI.Buss
 
 		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
 		{
-			return new BussStyleRule {_selector = selector, _properties = properties};
+			return new BussStyleRule { _selector = selector, _properties = properties };
 		}
 
 		public bool RemoveProperty(IBussProperty bussProperty)
@@ -177,7 +177,7 @@ namespace Beamable.UI.Buss
 		{
 			var propertyProvider = new SerializableValueObject();
 			propertyProvider.Set(property);
-			return new BussPropertyProvider {key = key, property = propertyProvider};
+			return new BussPropertyProvider { key = key, property = propertyProvider };
 		}
 
 		public IBussProperty GetProperty()
