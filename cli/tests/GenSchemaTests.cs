@@ -12,10 +12,10 @@ public class GenSchemaTests
 	[TestCase("number", null, typeof(double), "double", TestName = "primitive double by default")]
 	[TestCase("boolean", null, typeof(bool), "bool", TestName = "primitive boolean by default")]
 	[TestCase("string", null, typeof(string), "string", TestName = "primitive string by default")]
-	[TestCase("string", "byte", typeof(byte),"byte",  TestName = "primitive byte")]
-	[TestCase("string", "uuid", typeof(Guid), "Guid",TestName = "primitive guid")]
-	[TestCase("integer", "int64", typeof(long),"long", TestName = "primitive long")]
-	[TestCase("integer", "int16", typeof(short),"short", TestName = "primitive short")]
+	[TestCase("string", "byte", typeof(byte), "byte", TestName = "primitive byte")]
+	[TestCase("string", "uuid", typeof(Guid), "Guid", TestName = "primitive guid")]
+	[TestCase("integer", "int64", typeof(long), "long", TestName = "primitive long")]
+	[TestCase("integer", "int16", typeof(short), "short", TestName = "primitive short")]
 	[TestCase("integer", "int32", typeof(int), "int", TestName = "primitive int")]
 	[TestCase("integer", null, typeof(int), "int", TestName = "primitive int by default")]
 	[Test]
@@ -44,7 +44,7 @@ public class GenSchemaTests
 	[Test]
 	public void GenerateObjectRef(string refId)
 	{
-		var oapi = new OpenApiSchema { Type = "object", Reference = new OpenApiReference() {Id = refId}};
+		var oapi = new OpenApiSchema { Type = "object", Reference = new OpenApiReference() { Id = refId } };
 		var gen = new GenSchema(oapi);
 
 		var tRef = gen.GetTypeReference();
@@ -61,7 +61,7 @@ public class GenSchemaTests
 	[Test]
 	public void GeneratePrimitiveArrays(string type, string format, Type elementExpected)
 	{
-		var oapi = new OpenApiSchema { Type = "array", Items = new OpenApiSchema {Type=type, Format = format}};
+		var oapi = new OpenApiSchema { Type = "array", Items = new OpenApiSchema { Type = type, Format = format } };
 		var gen = new GenSchema(oapi);
 
 		var tRef = gen.GetTypeReference();
@@ -79,10 +79,17 @@ public class GenSchemaTests
 	[Test]
 	public void GenerateComplexArrays(string refId)
 	{
-		var oapi = new OpenApiSchema { Type = "array", Items = new OpenApiSchema { Reference = new OpenApiReference
+		var oapi = new OpenApiSchema
 		{
-			Id = refId
-		}}};
+			Type = "array",
+			Items = new OpenApiSchema
+			{
+				Reference = new OpenApiReference
+				{
+					Id = refId
+				}
+			}
+		};
 		var gen = new GenSchema(oapi);
 
 		var tRef = gen.GetTypeReference();
@@ -99,11 +106,16 @@ public class GenSchemaTests
 	[Test]
 	public void GenerateMapToPrimitives(string title, string format, Type expectedType)
 	{
-		var oapi = new OpenApiSchema { Type = "object", AdditionalPropertiesAllowed = true, AdditionalProperties = new OpenApiSchema
+		var oapi = new OpenApiSchema
 		{
-			Type = title,
-			Format = format
-		}};
+			Type = "object",
+			AdditionalPropertiesAllowed = true,
+			AdditionalProperties = new OpenApiSchema
+			{
+				Type = title,
+				Format = format
+			}
+		};
 		var gen = new GenSchema(oapi);
 
 		var expectedGenType = new GenCodeTypeReference(expectedType);
@@ -122,15 +134,20 @@ public class GenSchemaTests
 	[Test]
 	public void GenerateMapToArrayPrimitives(string title, string format, Type expectedType)
 	{
-		var oapi = new OpenApiSchema { Type = "object", AdditionalPropertiesAllowed = true, AdditionalProperties = new OpenApiSchema
+		var oapi = new OpenApiSchema
 		{
-			Type = "array",
-			Items = new OpenApiSchema
+			Type = "object",
+			AdditionalPropertiesAllowed = true,
+			AdditionalProperties = new OpenApiSchema
 			{
-				Type = title,
-				Format = format
+				Type = "array",
+				Items = new OpenApiSchema
+				{
+					Type = title,
+					Format = format
+				}
 			}
-		}};
+		};
 		var gen = new GenSchema(oapi);
 
 		var expectedGenType = new GenCodeTypeReference(new GenCodeTypeReference(expectedType), 1);
@@ -147,10 +164,15 @@ public class GenSchemaTests
 	[Test]
 	public void GenerateMapToComplex(string refId)
 	{
-		var oapi = new OpenApiSchema { Type = "object", AdditionalPropertiesAllowed = true, AdditionalProperties = new OpenApiSchema
+		var oapi = new OpenApiSchema
 		{
-			Reference = new OpenApiReference(){Id = refId}
-		}};
+			Type = "object",
+			AdditionalPropertiesAllowed = true,
+			AdditionalProperties = new OpenApiSchema
+			{
+				Reference = new OpenApiReference() { Id = refId }
+			}
+		};
 		var gen = new GenSchema(oapi);
 
 		// var expectedGenType = new GenCodeTypeReference(expectedType);
