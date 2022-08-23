@@ -91,6 +91,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_microservicesButton.tooltip = Tooltips.Toolbox.MICROSERVICE;
 
 			var filterBox = Root.Q<SearchBarVisualElement>();
+			filterBox.SetValueWithoutNotify(Model.FilterText);
 			filterBox.OnSearchChanged += FilterBox_OnTextChanged;
 			Model.OnQueryChanged += () => { filterBox.SetValueWithoutNotify(Model.FilterText); };
 
@@ -181,7 +182,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 					EditorApplication.delayCall += RecompileScripts;
 #endif
-					wnd.Close(); 
+					wnd.Close();
 				};
 				content.Refresh();
 			});

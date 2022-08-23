@@ -200,6 +200,31 @@ namespace Beamable.Serialization
 			}
 #endif
 
+
+			public bool SerializeDictionary<TDict, TElem>(string key, ref TDict target)
+				where TDict : IDictionary<string, TElem>, new()
+			{
+				if (target == null)
+				{
+					curDict[key] = null;
+					return true;
+				}
+				Dictionary<string, object> old = curDict;
+				Dictionary<string, object> newDict = new Dictionary<string, object>();
+				curDict = newDict;
+
+				var iter = target.GetEnumerator();
+				while (iter.MoveNext())
+				{
+					TElem value = iter.Current.Value;
+					SerializeAny(iter.Current.Key, value);
+				}
+
+				curDict = old;
+				curDict[key] = newDict;
+				return true;
+			}
+
 			public bool SerializeDictionary<T>(string key, ref Dictionary<string, T> target)
 			{
 				if (target == null)

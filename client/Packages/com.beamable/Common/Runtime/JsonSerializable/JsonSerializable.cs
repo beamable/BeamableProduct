@@ -47,6 +47,15 @@ using UnityEngine;
 
 namespace Beamable.Serialization
 {
+	// public static class Extensions
+	// {
+	// 	public static void SerializeDictionary<TDict, TElem>(this JsonSerializable.IStreamSerializer serializer, string key, ref TDict dict)
+	// 		where TDict : IDictionary<string, TElem>
+	// 	{
+	// 		serializer.SerializeDictionary<string>(key, ref dict);
+	// 	}
+	// }
+
 	public partial class JsonSerializable
 	{
 		// interface for all serializers
@@ -88,7 +97,11 @@ namespace Beamable.Serialization
 			bool SerializeInline<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeList<TList>(string key, ref TList value) where TList : IList, new();
 			bool SerializeArray<T>(string key, ref T[] value);
+
 			bool SerializeDictionary<T>(string key, ref Dictionary<string, T> target);
+
+			bool SerializeDictionary<TDict, TElem>(string key, ref TDict target) where TDict : IDictionary<string, TElem>, new();
+
 			bool SerializeILL<T>(string key, ref LinkedList<T> list) where T : ClassPool<T>, new();
 		}
 

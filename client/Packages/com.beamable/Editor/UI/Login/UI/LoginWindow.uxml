@@ -22,6 +22,8 @@
         <engine:VisualElement name="main">
             <!-- Content goes here, based on model -->
         </engine:VisualElement>
+        
+        <engine:Label name="versionNumber"/>
     </engine:ScrollView>
 
 </engine:UXML>

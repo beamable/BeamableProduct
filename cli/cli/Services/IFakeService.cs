@@ -19,6 +19,7 @@ public class FakeService : IFakeService
 	{
 		_ctx = ctx;
 		_requester = requester;
+		// _requester.Request<EmptyResponse>(Method.GET, "sdf");
 	}
 
 	public int Add(int a, int b)
