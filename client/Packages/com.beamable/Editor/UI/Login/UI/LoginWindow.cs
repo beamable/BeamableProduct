@@ -166,7 +166,8 @@ namespace Beamable.Editor.Login.UI
 			if (versionLabel != null)
 			{
 				var version = Provider.GetService<EnvironmentData>().SdkVersion;
-				versionLabel.text = $"v:{version}";
+				versionLabel.text = version.ToString();
+				versionLabel.tooltip = "Beamable version";
 			}
 		}
 

@@ -19,7 +19,6 @@
         </engine:Button>
         <beamable:ManifestButtonVisualElement name="manifestButton"/>
         <beamable:RealmButtonVisualElement name="realmButton"/>
-        <engine:Label name="versionNumber"/>
     </engine:VisualElement>
 
 </engine:UXML>
