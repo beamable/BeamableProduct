@@ -120,7 +120,7 @@ namespace Core.Platform.SDK
 			// swallow any responses if already disposed
 			if (_disposed)
 			{
-				PlatformLogger.Log("BeamableAPI REQUESTER: Disposed, Ignoring Response");
+				PlatformLogger.Log("<b>[BeamableRequester]</b> Disposed, Ignoring Response");
 				return;
 			}
 
@@ -147,7 +147,14 @@ namespace Core.Platform.SDK
 				else
 				{
 					// Parse JSON object and resolve promise
-					PlatformLogger.Log($"BeamableAPI RESPONSE: {request.downloadHandler.text}");
+					if (string.IsNullOrWhiteSpace(request.downloadHandler.text))
+					{
+						PlatformLogger.Log($"<b>[BeamableRequester][Response]</b> {typeof(T).Name}");
+					}
+					else
+					{
+						PlatformLogger.Log($"<b>[BeamableRequester][Response]</b> {typeof(T).Name}: {request.downloadHandler.text}");
+					}
 
 					try
 					{
