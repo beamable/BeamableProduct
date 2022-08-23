@@ -66,6 +66,12 @@ namespace Beamable.Editor.UI.Components
 			label.name = "headerLabel";
 			label.text = "Navigation window";
 			header.Add(label);
+			
+			header.RegisterCallback<MouseDownEvent>(evt =>
+			{
+				_hierarchyContainer.ToggleInClassList("hidden");
+			});
+			
 			Root.Add(header);
 
 			_hierarchyContainer = new ScrollView();
