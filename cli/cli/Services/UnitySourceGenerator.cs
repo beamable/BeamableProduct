@@ -86,7 +86,7 @@ public static class UnityHelper
 			}
 		}
 
-		void AddTypeIfRequired(CodeTypeDeclaration countCheck, CodeTypeDeclaration decl=null)
+		void AddTypeIfRequired(CodeTypeDeclaration countCheck, CodeTypeDeclaration decl = null)
 		{
 			decl ??= countCheck;
 			if (countCheck != null && decl != null && nameToRefCount.TryGetValue(countCheck.Name, out _))
@@ -174,7 +174,7 @@ public static class UnityHelper
 					}
 					else
 					{
-						methodName = methodName[..i] + char.ToUpper(methodName[i+1]) + methodName[(i+2)..];
+						methodName = methodName[..i] + char.ToUpper(methodName[i + 1]) + methodName[(i + 2)..];
 					}
 				}
 			}
@@ -224,7 +224,8 @@ public static class UnityHelper
 				bool hasReqBody = false;
 				method.Parameters.Add(new CodeParameterDeclarationExpression
 				{
-					Name = paramIncludeAuth, Type = new CodeTypeReference(typeof(bool))
+					Name = paramIncludeAuth,
+					Type = new CodeTypeReference(typeof(bool))
 				});
 
 				foreach (var param in operation.Value.Parameters)
@@ -233,7 +234,8 @@ public static class UnityHelper
 
 					method.Parameters.Add(new CodeParameterDeclarationExpression
 					{
-						Name = param.Name, Type = param.Required ? genSchema.GetTypeReference() : genSchema.GetOptionalTypeReference()
+						Name = param.Name,
+						Type = param.Required ? genSchema.GetTypeReference() : genSchema.GetOptionalTypeReference()
 					});
 				}
 				if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
@@ -241,7 +243,8 @@ public static class UnityHelper
 					hasReqBody = true;
 					method.Parameters.Add(new CodeParameterDeclarationExpression
 					{
-						Name = varReq, Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
+						Name = varReq,
+						Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
 					});
 				}
 
@@ -869,7 +872,7 @@ public static class UnityHelper
 	{
 		const int COUNT_OF_AUTO_GENERATED_MESSAGE_TEXT = 357;
 		CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
-		CodeGeneratorOptions options = new CodeGeneratorOptions { BracingStyle = "C", BlankLinesBetweenMembers = false};
+		CodeGeneratorOptions options = new CodeGeneratorOptions { BracingStyle = "C", BlankLinesBetweenMembers = false };
 		var sb = new StringBuilder();
 		using var sourceWriter = new StringWriter(sb);
 

@@ -64,7 +64,8 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 		{
 			var file = new GeneratedFileDescriptor
 			{
-				FileName = args.OutputPath, Content = string.Join("\n", output.Select(o => o.Content))
+				FileName = args.OutputPath,
+				Content = string.Join("\n", output.Select(o => o.Content))
 			};
 			output = new List<GeneratedFileDescriptor> { file };
 		}
