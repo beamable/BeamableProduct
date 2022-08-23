@@ -206,6 +206,48 @@ namespace Beamable.Serialization
 				return InternalSerialize<T>(key, ref value);
 			}
 
+			public bool SerializeDictionary<TDict, T>(string parentKey, ref TDict target)
+				where TDict : IDictionary<string, T>, new()
+			{
+				if (!curDict.ContainsKey(parentKey))
+					return false;
+
+				IDictionary<string, object> asDict = curDict[parentKey] as IDictionary<string, object>;
+				if (asDict == null || target == null)
+					return false;
+
+				bool isList = typeof(IList).IsAssignableFrom(typeof(T));
+				bool isManual = typeof(ISerializable).IsAssignableFrom(typeof(T));
+				bool shouldNotify = typeof(IDeletable).IsAssignableFrom(typeof(T));
+
+				var iter = asDict.GetEnumerator();
+				while (iter.MoveNext())
+				{
+					var key = iter.Current.Key;
+					var value = iter.Current.Value;
+
+					T current;
+					if (!target.TryGetValue(key, out current))
+						continue;
+
+					if (isList || (isManual && !IsLeafDictionary((IDictionary<string, object>)value)))
+					{
+						IDictionary<string, object> d = curDict;
+						curDict = asDict;
+						InternalSerialize<T>(iter.Current.Key, ref current);
+						curDict = d;
+					}
+					else
+					{
+						if (shouldNotify)
+							NotifyOfDelete(current);
+
+						target.Remove(key);
+					}
+				}
+				return true;
+			}
+
 			public bool SerializeDictionary<T>(string parentKey, ref Dictionary<string, T> target)
 			{
 				if (!curDict.ContainsKey(parentKey))
