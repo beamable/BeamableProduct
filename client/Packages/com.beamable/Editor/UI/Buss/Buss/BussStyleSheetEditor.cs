@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Buss
 			_sortingOrder = new LabeledIntegerField();
 			_sortingOrder.Setup("Sorting Order", _styleSheet.SortingOrder, OnSortingOrderChanged, 0, Int32.MaxValue);
 			root.Add(_sortingOrder);
-#endif 
+#endif
 
 			if (!_styleSheet.IsReadOnly)
 			{
