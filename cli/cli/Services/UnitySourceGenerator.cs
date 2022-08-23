@@ -2,9 +2,12 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Serialization;
+using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using System.CodeDom;
 using System.CodeDom.Compiler;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace cli;
@@ -41,6 +44,8 @@ public class SchemaTypeDeclarations
 	public CodeTypeDeclaration OptionalArray;
 	public CodeTypeDeclaration OptionalMap;
 	public CodeTypeDeclaration OptionalMapArray;
+	public CodeTypeDeclaration Map;
+	public CodeTypeDeclaration MapArray;
 }
 
 public static class UnityHelper
@@ -102,6 +107,10 @@ public static class UnityHelper
 			AddTypeIfRequired(kvp.Value.OptionalArray);
 			AddTypeIfRequired(kvp.Value.OptionalMap);
 			AddTypeIfRequired(kvp.Value.OptionalMapArray);
+			AddTypeIfRequired(kvp.Value.Map);
+			AddTypeIfRequired(kvp.Value.OptionalMap, kvp.Value.Map);
+			AddTypeIfRequired(kvp.Value.MapArray);
+			AddTypeIfRequired(kvp.Value.OptionalMapArray, kvp.Value.MapArray);
 		}
 
 		return new GeneratedFileDescriptor { FileName = "Models.gs.cs", Content = UnityHelper.GenerateCsharp(unit) };
@@ -110,16 +119,13 @@ public static class UnityHelper
 
 	public static GeneratedFileDescriptor GenerateService(OpenApiDocument document)
 	{
-		const string varUrl = "gsUrl"; // gs stands for generated-source
-		const string varQuery = "gsQuery";
-		const string varReq = "gsReq";
-		const string paramIncludeAuth = "includeAuthHeader";
+
 
 		var unit = new CodeCompileUnit();
 
 		GetTypeNames(document, out var _, out var title, out var className);
 
-		var root = new CodeNamespace($"{BeamableGeneratedNamespace}.{title}");
+		var root = new CodeNamespace($"{BeamableGeneratedNamespace}.{SanitizeClassName(title)}");
 		root.Imports.Add(new CodeNamespaceImport(BeamableGeneratedModelsNamespace));
 		root.Imports.Add(new CodeNamespaceImport(BeamableOptionalNamespace));
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
@@ -170,222 +176,11 @@ public static class UnityHelper
 
 			foreach (var operation in path.Value.Operations)
 			{
-				var httpMethod = Method.GET;
-
-				switch (operation.Key)
+				var method = GenerateApiMethod(path.Key, operation, methodName);
+				if (method != null)
 				{
-					case OperationType.Get:
-						httpMethod = Method.GET;
-						break;
-					case OperationType.Delete:
-						httpMethod = Method.DELETE;
-						break;
-					case OperationType.Post:
-						httpMethod = Method.POST;
-						break;
-					case OperationType.Put:
-						httpMethod = Method.PUT;
-						break;
+					type.Members.Add(method);
 				}
-
-				if (!operation.Value.Responses.TryGetValue("200", out var response))
-				{
-					continue; // TODO: support application/csv for content
-				}
-
-				if (!response.Content.TryGetValue("application/json", out var jsonResponse))
-				{
-					continue;
-				}
-				var operationName = operation.Key + methodName;
-				var returnType = new CodeTypeReference(nameof(Promise));
-				var responseType = new CodeTypeReference(jsonResponse.Schema.Reference.Id);
-				returnType.TypeArguments.Add(responseType);
-
-				var method = new CodeMemberMethod
-				{
-					Name = operationName,
-					Attributes = MemberAttributes.Public,
-					ReturnType = returnType
-				};
-
-				var uri = path.Key;
-				bool hasReqBody = false;
-				method.Parameters.Add(new CodeParameterDeclarationExpression
-				{
-					Name = paramIncludeAuth, Type = new CodeTypeReference(typeof(bool))
-				});
-
-				foreach (var param in operation.Value.Parameters)
-				{
-					var genSchema = new GenSchema(param.Schema);
-
-					method.Parameters.Add(new CodeParameterDeclarationExpression
-					{
-						Name = param.Name, Type = param.Required ? genSchema.GetTypeReference() : genSchema.GetOptionalTypeReference()
-					});
-				}
-				if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
-				{
-					hasReqBody = true;
-					method.Parameters.Add(new CodeParameterDeclarationExpression
-					{
-						Name = varReq, Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
-					});
-				}
-
-
-				// url construction
-				method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varUrl,
-					new CodePrimitiveExpression(uri)));
-
-				var queryStringRef = new CodeVariableReferenceExpression(varQuery);
-
-				var queryArgs = new List<string>();
-				var queryStatements = new List<CodeStatement>();
-
-				var queryListAssign = new CodeVariableDeclarationStatement(typeof(List<string>), "queries", new CodeObjectCreateExpression(typeof(List<string>)));
-
-				var queryListRef = new CodeVariableReferenceExpression("queries");
-
-				foreach (var param in operation.Value.Parameters)
-				{
-					var paramRef = new CodeVariableReferenceExpression(param.Name);
-					switch (param.In)
-					{
-						case ParameterLocation.Path:
-							var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(varUrl),
-								nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
-								new CodeVariableReferenceExpression(param.Name));
-
-							method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
-								replace));
-							break;
-						case ParameterLocation.Query:
-
-							if (param.Required)
-							{
-								var toStringExpr =
-									new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
-										nameof(object.ToString));
-								var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
-										nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
-										toStringExpr);
-
-								var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
-									nameof(List<string>.Add), expr);
-								queryStatements.Add(new CodeExpressionStatement(methodInvoke));
-
-							}
-							else
-							{
-								// create an expression that answers the question, "does the optional field have a value?"
-								var hasValueExpr = new CodeFieldReferenceExpression(paramRef, nameof(Optional.HasValue));
-
-								// create an expression that answers the question, "is the optional _itself_ not null?"
-								var valueIsNotNullExpr = new CodeBinaryOperatorExpression(paramRef,
-									CodeBinaryOperatorType.IdentityInequality,
-									new CodeDefaultValueExpression(new GenSchema(param.Schema).GetOptionalTypeReference()));
-
-								// create an expression that translates
-								var shouldSerializeExpr = new CodeBinaryOperatorExpression(valueIsNotNullExpr, CodeBinaryOperatorType.BooleanAnd, hasValueExpr);
-
-								var toStringExpr =
-									new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
-										nameof(object.ToString));
-								var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
-									nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
-									toStringExpr);
-
-								var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
-									nameof(List<string>.Add), expr);
-
-								// create the if-statement that uses the expression...
-								var conditionStatement =
-									new CodeConditionStatement(shouldSerializeExpr,
-
-										// and set set the optional to have a value
-										new CodeExpressionStatement(methodInvoke)
-										);
-
-								queryStatements.Add(conditionStatement);
-								// need to check if the param has a value or not...
-							}
-
-							queryArgs.Add(param.Name); // these are variables in the method
-							break;
-					}
-				}
-
-				if (queryArgs.Count > 0)
-				{
-					// method.Statements.Add(new CodeCommentStatement("the method takes its inputs as query strings"));
-					// var query = "?" + string.Join("&", queryArgs.Select(q => $"{q}={{{q}}}"));
-					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varQuery,
-						new CodePrimitiveExpression("?")));
-
-					method.Statements.Add(queryListAssign);
-					method.Statements.AddRange(queryStatements.ToArray());
-					//
-					//
-					//
-					//
-					// queryStatements.Insert(0, new CodePrimitiveExpression("&"));
-					var joinExpr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
-						nameof(string.Join), new CodePrimitiveExpression("&"), queryListRef);
-					//
-					var joinAssing = new CodeAssignStatement(queryStringRef,
-						new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
-							nameof(string.Concat), queryStringRef,
-							joinExpr));
-					method.Statements.Add(joinAssing);
-
-					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl), new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat), new CodeVariableReferenceExpression(varUrl), new CodeVariableReferenceExpression(varQuery))));
-				}
-
-
-				// make the request itself.
-				var requestCommand = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
-					nameof(IBeamableRequester.Request));
-				requestCommand.Method.TypeArguments.Add(responseType);
-
-				// we always need a Method parameter...
-				requestCommand.Parameters.Add(new CodeTypeReferenceExpression("Method." + httpMethod));
-
-				// we then need a url
-				requestCommand.Parameters.Add(new CodeVariableReferenceExpression(varUrl));
-
-				// we always need a request body
-				if (hasReqBody)
-				{
-					// either use the reference to the given model,
-					requestCommand.Parameters.Add(new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(JsonSerializable)),
-						nameof(JsonSerializable.ToJson), new CodeVariableReferenceExpression(varReq)));
-				}
-				else
-				{
-					// or pass in null
-					requestCommand.Parameters.Add(new CodeDefaultValueExpression(new CodeTypeReference(typeof(object))));
-				}
-
-				// pass in the auth header
-				requestCommand.Parameters.Add(new CodeArgumentReferenceExpression(paramIncludeAuth)); // TODO: maybe not every method should have this open exposed?
-
-				// always use a custom parser based on the response type so that we can use the serialization stuff
-				requestCommand.Parameters.Add(new CodeMethodReferenceExpression(
-					new CodeTypeReferenceExpression(typeof(JsonSerializable)),
-					nameof(JsonSerializable.FromJson))
-				{
-					TypeArguments = { responseType }
-				});
-
-				// return the result
-				var returnCommand = new CodeMethodReturnStatement(requestCommand);
-				method.Statements.Add(new CodeCommentStatement("make the request and return the result"));
-				method.Statements.Add(returnCommand);
-
-
-				type.Members.Add(method);
 			}
 		}
 
@@ -394,6 +189,280 @@ public static class UnityHelper
 			FileName = $"{className}.gs.cs",
 			Content = GenerateCsharp(unit)
 		};
+	}
+
+	static CodeMemberMethod GenerateApiMethod(string pathName, KeyValuePair<OperationType, OpenApiOperation> operation,
+		string methodName)
+	{
+		const string varUrl = "gsUrl"; // gs stands for generated-source
+		const string varQuery = "gsQuery";
+		const string varQueries = "gsQueries";
+		const string varReq = "gsReq";
+		const string paramIncludeAuth = "includeAuthHeader";
+
+		var httpMethod = Method.GET;
+
+		switch (operation.Key)
+		{
+			case OperationType.Get:
+				httpMethod = Method.GET;
+				break;
+			case OperationType.Delete:
+				httpMethod = Method.DELETE;
+				break;
+			case OperationType.Post:
+				httpMethod = Method.POST;
+				break;
+			case OperationType.Put:
+				httpMethod = Method.PUT;
+				break;
+		}
+
+		if (!operation.Value.Responses.TryGetValue("200", out var response))
+		{
+			return null; // TODO: support application/csv for content
+		}
+
+		if (!response.Content.TryGetValue("application/json", out var jsonResponse))
+		{
+			return null;
+		}
+
+		var operationName = operation.Key + methodName;
+		var returnType = new CodeTypeReference(nameof(Promise));
+		var responseType = new CodeTypeReference(jsonResponse.Schema.Reference.Id);
+		returnType.TypeArguments.Add(responseType);
+
+		var method = new CodeMemberMethod
+		{
+			Name = operationName, Attributes = MemberAttributes.Public, ReturnType = returnType
+		};
+
+		var uri = pathName;
+		bool hasReqBody = false;
+
+		// TODO: we only support one security schema at the moment...
+
+		var authHeaderRequired = false;
+		if (operation.Value.Security.Count == 1)
+		{
+			authHeaderRequired = operation.Value.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+		}
+
+
+
+		var requiredParams = new List<CodeParameterDeclarationExpression>();
+		var optionalParams = new List<CodeParameterDeclarationExpression>();
+
+		foreach (var param in operation.Value.Parameters)
+		{
+			var genSchema = new GenSchema(param.Schema);
+
+			if (param.Required)
+			{
+				requiredParams.Add(new CodeParameterDeclarationExpression
+				{
+					Name = param.Name,
+					Type = genSchema.GetTypeReference()
+				});
+			}
+			else
+			{
+				optionalParams.Add(new CodeParameterDeclarationExpression
+				{
+					// the optional parameter should default to null
+					Name = param.Name, Type = genSchema.GetOptionalTypeReferenceGeneric(),
+					CustomAttributes = new CodeAttributeDeclarationCollection(new CodeAttributeDeclaration[]
+					{
+						new CodeAttributeDeclaration(new CodeTypeReference(typeof(DefaultParameterValueAttribute)), new CodeAttributeArgument(new CodePrimitiveExpression(null))),
+						new CodeAttributeDeclaration(new CodeTypeReference(typeof(OptionalAttribute)))
+					})
+				});
+			}
+		}
+		method.Parameters.AddRange(requiredParams.ToArray());
+
+		if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
+		{
+			hasReqBody = true;
+			method.Parameters.Add(new CodeParameterDeclarationExpression
+			{
+				Name = varReq, Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
+			});
+		}
+
+		// optional parameters go last...
+		method.Parameters.AddRange(optionalParams.ToArray());
+
+		// the auth should always be the last parameter.
+		if (!authHeaderRequired)
+		{
+			method.Parameters.Add(new CodeParameterDeclarationExpression
+			{
+				// the auth header parameter should default to true.
+				Name = paramIncludeAuth, Type = new CodeTypeReference(typeof(bool)), CustomAttributes = new CodeAttributeDeclarationCollection(new CodeAttributeDeclaration[]
+				{
+					new CodeAttributeDeclaration(new CodeTypeReference(typeof(DefaultParameterValueAttribute)), new CodeAttributeArgument(new CodePrimitiveExpression(true))),
+					new CodeAttributeDeclaration(new CodeTypeReference(typeof(OptionalAttribute)))
+				})
+			});
+		}
+
+
+		// url construction
+		method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varUrl,
+			new CodePrimitiveExpression(uri)));
+
+		var queryStringRef = new CodeVariableReferenceExpression(varQuery);
+
+		var queryArgs = new List<string>();
+		var queryStatements = new List<CodeStatement>();
+
+		var queryListAssign = new CodeVariableDeclarationStatement(typeof(List<string>), varQueries,
+			new CodeObjectCreateExpression(typeof(List<string>)));
+
+		var queryListRef = new CodeVariableReferenceExpression(varQueries);
+
+		foreach (var param in operation.Value.Parameters)
+		{
+			var paramRef = new CodeVariableReferenceExpression(param.Name);
+			switch (param.In)
+			{
+				case ParameterLocation.Path:
+					var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(varUrl),
+						nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
+						new CodeVariableReferenceExpression(param.Name));
+
+					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
+						replace));
+					break;
+				case ParameterLocation.Query:
+
+					if (param.Required)
+					{
+						var toStringExpr =
+							new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
+								nameof(object.ToString));
+						var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+							nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
+							toStringExpr);
+
+						var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
+							nameof(List<string>.Add), expr);
+						queryStatements.Add(new CodeExpressionStatement(methodInvoke));
+
+					}
+					else
+					{
+						// create an expression that answers the question, "does the optional field have a value?"
+						var hasValueExpr = new CodeFieldReferenceExpression(paramRef, nameof(Optional.HasValue));
+
+						// create an expression that answers the question, "is the optional _itself_ not null?"
+						var valueIsNotNullExpr = new CodeBinaryOperatorExpression(paramRef,
+							CodeBinaryOperatorType.IdentityInequality,
+							new CodeDefaultValueExpression(new GenSchema(param.Schema).GetOptionalTypeReference()));
+
+						// create an expression that translates
+						var shouldSerializeExpr = new CodeBinaryOperatorExpression(valueIsNotNullExpr,
+							CodeBinaryOperatorType.BooleanAnd, hasValueExpr);
+
+						var toStringExpr =
+							new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
+								nameof(object.ToString));
+						var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+							nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
+							toStringExpr);
+
+						var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
+							nameof(List<string>.Add), expr);
+
+						// create the if-statement that uses the expression...
+						var conditionStatement =
+							new CodeConditionStatement(shouldSerializeExpr,
+
+								// and set set the optional to have a value
+								new CodeExpressionStatement(methodInvoke)
+							);
+
+						queryStatements.Add(conditionStatement);
+						// need to check if the param has a value or not...
+					}
+
+					queryArgs.Add(param.Name); // these are variables in the method
+					break;
+			}
+		}
+
+		if (queryArgs.Count > 0)
+		{
+			method.Statements.Add(new CodeVariableDeclarationStatement(typeof(string), varQuery,
+				new CodePrimitiveExpression("?")));
+
+			method.Statements.Add(queryListAssign);
+			method.Statements.AddRange(queryStatements.ToArray());
+			var joinExpr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+				nameof(string.Join), new CodePrimitiveExpression("&"), queryListRef);
+
+			var joinAssignment = new CodeAssignStatement(queryStringRef,
+				new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+					nameof(string.Concat), queryStringRef,
+					joinExpr));
+			method.Statements.Add(joinAssignment);
+
+			method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
+				new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat),
+					new CodeVariableReferenceExpression(varUrl), new CodeVariableReferenceExpression(varQuery))));
+		}
+
+
+		// make the request itself.
+		var requestCommand = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
+			nameof(IBeamableRequester.Request));
+		requestCommand.Method.TypeArguments.Add(responseType);
+
+		// we always need a Method parameter...
+		requestCommand.Parameters.Add(new CodeTypeReferenceExpression("Method." + httpMethod));
+
+		// we then need a url
+		requestCommand.Parameters.Add(new CodeVariableReferenceExpression(varUrl));
+
+		// we always need a request body
+		if (hasReqBody)
+		{
+			// either use the reference to the given model,
+			requestCommand.Parameters.Add(new CodeMethodInvokeExpression(
+				new CodeTypeReferenceExpression(typeof(JsonSerializable)),
+				nameof(JsonSerializable.ToJson), new CodeVariableReferenceExpression(varReq)));
+		}
+		else
+		{
+			// or pass in null
+			requestCommand.Parameters.Add(new CodeDefaultValueExpression(new CodeTypeReference(typeof(object))));
+		}
+
+		// pass in the auth header
+		if (authHeaderRequired)
+		{
+			requestCommand.Parameters.Add(new CodePrimitiveExpression(true));
+		}
+		else
+		{
+			requestCommand.Parameters.Add(
+				new CodeArgumentReferenceExpression(
+					paramIncludeAuth)); // TODO: maybe not every method should have this open exposed?
+		}
+
+		// always use a custom parser based on the response type so that we can use the serialization stuff
+		requestCommand.Parameters.Add(new CodeMethodReferenceExpression(
+			new CodeTypeReferenceExpression(typeof(JsonSerializable)),
+			nameof(JsonSerializable.FromJson)) { TypeArguments = { responseType } });
+
+		// return the result
+		var returnCommand = new CodeMethodReturnStatement(requestCommand);
+		method.Statements.Add(new CodeCommentStatement("make the request and return the result"));
+		method.Statements.Add(returnCommand);
+
+		return method;
 	}
 
 	static void GetTypeNames(OpenApiDocument document, out string typeName, out string title, out string className)
@@ -443,7 +512,9 @@ public static class UnityHelper
 			Optional = GenerateOptionalDecl(name, schema),
 			OptionalArray = GenerateOptionalArrayDecl(name, schema),
 			OptionalMap = GenerateOptionalMapDecl(name, schema),
-			OptionalMapArray = GenerateOptionalMapArrayDecl(name, schema)
+			OptionalMapArray = GenerateOptionalMapArrayDecl(name, schema),
+			MapArray = GenerateMapArrayDecl(name, schema),
+			Map = GenerateMapDecl(name, schema)
 		};
 	}
 
@@ -454,7 +525,7 @@ public static class UnityHelper
 	/// </code>
 	///
 	/// which internally is an <code>
-	/// Optional{SerializableDictionaryStringToSomething{Int}}
+	/// Optional{MapOf{Int}}
 	/// </code>
 	///
 	/// </summary>
@@ -475,7 +546,30 @@ public static class UnityHelper
 					new CodeAttributeDeclaration(new CodeTypeReference(typeof(System.SerializableAttribute))));
 
 				type.Name = optionalClassName;
-				var baseType = new CodeTypeReference(typeof(OptionalSerializableDictionaryStringToSomething<>));
+				var baseType = new CodeTypeReference(typeof(Optional<>));
+				baseType.TypeArguments.Add(new CodeTypeReference($"MapOf{className}"));
+				type.BaseTypes.Add(baseType);
+				return type;
+		}
+
+		return null;
+	}
+
+	public static CodeTypeDeclaration GenerateMapDecl(string name, OpenApiSchema schema)
+	{
+		switch (schema.Type, schema.Format)
+		{
+			case ("array", _):
+			case ("object", _):
+				var className = SanitizeClassName(name);
+				var optionalClassName = $"MapOf{className}";
+
+				var type = new CodeTypeDeclaration();
+				type.CustomAttributes.Add(
+					new CodeAttributeDeclaration(new CodeTypeReference(typeof(System.SerializableAttribute))));
+
+				type.Name = optionalClassName;
+				var baseType = new CodeTypeReference(typeof(SerializableDictionaryStringToSomething<>));
 				var genericType = new CodeTypeReference(className);
 				baseType.TypeArguments.Add(genericType);
 				type.BaseTypes.Add(baseType);
@@ -492,7 +586,7 @@ public static class UnityHelper
 	/// </code>
 	///
 	/// which internally is an <code>
-	/// Optional{SerializableDictionaryStringToSomething{Int[]}}
+	/// Optional{MapOf{Int[]}}
 	/// </code>
 	///
 	/// </summary>
@@ -512,10 +606,32 @@ public static class UnityHelper
 					new CodeAttributeDeclaration(new CodeTypeReference(typeof(System.SerializableAttribute))));
 
 				type.Name = optionalClassName;
-				var baseType = new CodeTypeReference(typeof(OptionalSerializableDictionaryStringToSomething<>));
+				var baseType = new CodeTypeReference(typeof(Optional<>));
+				baseType.TypeArguments.Add(new CodeTypeReference($"MapOf{className}Array"));
+				type.BaseTypes.Add(baseType);
+				return type;
+		}
+		return null;
+	}
+
+	public static CodeTypeDeclaration GenerateMapArrayDecl(string name, OpenApiSchema schema)
+	{
+		switch (schema.Type, schema.Format)
+		{
+			case ("array", _):
+			case ("object", _):
+				var className = SanitizeClassName(name);
+				var optionalClassName = $"MapOf{className}Array";
+				var type = new CodeTypeDeclaration();
+				type.CustomAttributes.Add(
+					new CodeAttributeDeclaration(new CodeTypeReference(typeof(System.SerializableAttribute))));
+
+				type.Name = optionalClassName;
+				var baseType = new CodeTypeReference(typeof(SerializableDictionaryStringToSomething<>));
 				var genericType = new CodeTypeReference(className);
 				genericType.ArrayRank = 1;
 				baseType.TypeArguments.Add(genericType);
+
 				type.BaseTypes.Add(baseType);
 				return type;
 		}
@@ -724,12 +840,14 @@ public static class UnityHelper
 		var protectedKeys = new HashSet<string>
 		{
 			// TODO: add all other C# keywords...
-			"do", "as", "if", "for", "int", "long", "params", "string", "var", "protected", "void", "while", "public", "private", "class", "interface", "const"
+			"object", "event", "namespace", "do", "as", "if", "for", "fixed",
+			"int", "long", "params", "string", "var", "protected", "void",
+			"while", "public", "private", "class", "interface", "const"
 		};
 
 		for (var i = propKey.Length - 2; i >= 0; i--)
 		{
-			if (propKey[i] == '-' || propKey[i] == '/')
+			if (propKey[i] == '-' || propKey[i] == '/' || propKey[i] == '$')
 			{
 				if (i + 2 >= propKey.Length)
 				{
@@ -840,13 +958,13 @@ public static class UnityHelper
 				// map types will ALWAYS be string->something, so to figure out what "something" is, check the openAPI's additionalProperties...
 				var elemType = new GenSchema(schema.AdditionalProperties).GetTypeReference();
 
-				if (schema.AdditionalProperties?.Type == "array")
-				{
-					var keyType = new CodeTypeReference(typeof(SerializableDictionaryStringToSomething<>));
-					keyType.TypeArguments.Add(elemType);
-					method.TypeArguments.Add(keyType);
-				}
-				else
+				// if (schema.AdditionalProperties?.Type == "array")
+				// {
+				// 	var keyType = new CodeTypeReference(typeof(SerializableDictionaryStringToSomething<>));
+				// 	keyType.TypeArguments.Add(elemType);
+				// 	method.TypeArguments.Add(keyType);
+				// }
+				// else
 				{
 					var keyType = new GenSchema(schema).GetTypeReference();
 					method.TypeArguments.Add(keyType);
@@ -948,6 +1066,14 @@ public class GenSchema
 		var innerType = GetTypeReference();
 		var clazzName = $"Optional{innerType.UpperDisplayName}";
 		return new GenCodeTypeReference(clazzName);
+	}
+
+	public CodeTypeReference GetOptionalTypeReferenceGeneric()
+	{
+		var innerType = GetTypeReference();
+		var typeRef = new CodeTypeReference(typeof(Optional<>));
+		typeRef.TypeArguments.Add(innerType);
+		return typeRef;
 	}
 
 	public GenCodeTypeReference GetTypeReference()

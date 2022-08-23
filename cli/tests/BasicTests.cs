@@ -49,7 +49,7 @@ public class Tests
 
 			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
 
-		}, "oapi", "generate", "--filter", "event-players");
+		}, "oapi", "generate", "--filter", "accounts");
 		Assert.AreEqual(0, status);
 	}
 

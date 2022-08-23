@@ -16,33 +16,26 @@ public class SwaggerService
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
 		// these are currently broken...
-		// BeamableApis.BasicService("beamo"),
-		// BeamableApis.BasicService("trails"),
 		// BeamableApis.BasicService("content"),
+		// BeamableApis.BasicService("trails"),
+
+		// behold the list of Beamable Apis
+		BeamableApis.BasicService("beamo"),
 		BeamableApis.ObjectService("event-players"),
-
-		// produces a bad fileName...
-		// BeamableApis.ObjectService("group-users"),
-
-		BeamableApis.BasicService("inventory"),
-		BeamableApis.ObjectService("inventory"),
-
-		BeamableApis.BasicService("leaderboards"),
-		BeamableApis.ObjectService("leaderboards"),
-
-		BeamableApis.BasicService("accounts"),
-		BeamableApis.ObjectService("accounts"),
-
-		BeamableApis.BasicService("stats"),
-		BeamableApis.ObjectService("stats"),
-		//
 		BeamableApis.BasicService("events"),
 		BeamableApis.ObjectService("events"),
-		//
+		BeamableApis.ObjectService("group-users"),
+		BeamableApis.ObjectService("groups"),
+		BeamableApis.BasicService("inventory"),
+		BeamableApis.ObjectService("inventory"),
+		BeamableApis.BasicService("leaderboards"),
+		BeamableApis.ObjectService("leaderboards"),
+		BeamableApis.BasicService("accounts"),
+		BeamableApis.ObjectService("accounts"),
+		BeamableApis.BasicService("stats"),
+		BeamableApis.ObjectService("stats"),
 		BeamableApis.BasicService("tournaments"),
 		BeamableApis.ObjectService("tournaments"),
-		//
-		//
 		BeamableApis.BasicService("auth"),
 		BeamableApis.BasicService("cloudsaving"),
 		BeamableApis.BasicService("payments"),
@@ -51,10 +44,8 @@ public class SwaggerService
 		BeamableApis.BasicService("notification"),
 		BeamableApis.BasicService("realms"),
 		BeamableApis.BasicService("social"),
-		//
 		BeamableApis.ObjectService("chatV2"),
 		BeamableApis.ObjectService("matchmaking"),
-		BeamableApis.ObjectService("groups"),
 		BeamableApis.BasicService("commerce"),
 		BeamableApis.ObjectService("commerce"),
 		BeamableApis.ObjectService("calendars"),
