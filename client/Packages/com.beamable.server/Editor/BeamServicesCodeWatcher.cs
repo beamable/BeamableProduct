@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Assistant;
+using Beamable.Common.Spew;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using System;
@@ -327,6 +328,11 @@ namespace Beamable.Server.Editor
 
 				CleanupRunningGeneratorProcesses(registry.Descriptors).Then(_ =>
 				{
+					if (DockerCommand.DockerNotRunning)
+					{
+						PlatformLogger.Log("<b><color=red>[Beamable]</color></b> Docker is not running- there would be no code regeneration for microservices.");
+						return;
+					}
 					// Gets the list of currently detected code handles.
 					var latestMSHandles = codeWatcher.LatestCodeHandles.Where(h => h.CodeClass == BeamCodeClass.Microservice).ToList();
 
