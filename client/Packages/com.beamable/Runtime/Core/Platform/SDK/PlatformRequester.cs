@@ -397,7 +397,7 @@ namespace Beamable.Api
 				else
 				{
 					// Parse JSON object and resolve promise
-					
+
 					if (string.IsNullOrWhiteSpace(responsePayload))
 					{
 						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}");

@@ -95,7 +95,7 @@ namespace Beamable.Editor.Login.UI
 		public static bool IsInstantiated { get { return Instance != null; } }
 		public static bool IsDomainReloaded { get { return Instance != null && Instance.LoginManager?.OnComplete?.IsCompleted == false; } }
 		private VisualElement _windowRoot;
-		
+
 		private IDependencyProvider _provider;
 		public IDependencyProvider Provider
 		{
@@ -105,7 +105,7 @@ namespace Beamable.Editor.Login.UI
 				{
 					_provider = BeamEditorContext.Default.ServiceScope;
 				}
-				 
+
 				return _provider;
 			}
 		}
@@ -161,7 +161,7 @@ namespace Beamable.Editor.Login.UI
 
 			root.Add(_windowRoot);
 			root.style.flexGrow = 1;
-			
+
 			Label versionLabel = _windowRoot.Q<Label>("versionNumber");
 			if (versionLabel != null)
 			{
