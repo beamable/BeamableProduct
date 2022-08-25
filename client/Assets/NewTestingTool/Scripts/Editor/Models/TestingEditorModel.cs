@@ -133,15 +133,16 @@ namespace Beamable.Editor.NewTestingTool.Models
 			EditorUtility.SetDirty(_testConfiguration);
 			_testConfiguration.Reset();
 
-			var activeScenePath = SceneManager.GetActiveScene().path;
-
+			var activeScenePath = string.Empty;
 			try
 			{
 				if (!Directory.Exists(PATH_TO_TEST_SCENES))
 					Directory.CreateDirectory(PATH_TO_TEST_SCENES);
-
 				
 				var testDirectories = Directory.GetDirectories(PATH_TO_TEST_SCENES);
+				if (testDirectories.Length != 0)
+					activeScenePath = SceneManager.GetActiveScene().path;
+				
 				for (var index = 0; index < testDirectories.Length; index++)
 				{
 					var testDirectory = testDirectories[index];
@@ -175,7 +176,8 @@ namespace Beamable.Editor.NewTestingTool.Models
 				testingEditorModel.SelectedRegisteredTestRuleMethod = testingEditorModel.SelectedRegisteredTestRule.RegisteredTestRuleMethods[0];
 			}
 			
-			EditorSceneManager.OpenScene(activeScenePath);
+			if (!string.IsNullOrWhiteSpace(activeScenePath))
+				EditorSceneManager.OpenScene(activeScenePath);
 		}
 		
 		private static void TrySetupTestScene(string sceneName)
