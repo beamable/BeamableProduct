@@ -400,7 +400,7 @@ namespace Beamable.Server
 			return isUnityAssembly;
 		}
 
-		private static bool IsStubbed(AssemblyDefinitionInfoCollection assemblies,
+		private static bool IsStubbed(AssemblyDefinitionInfoCollection assemblies, string serviceName,
 			string assemblyName)
 		{
 			// TODO: maybe don't rebuild this every check?
@@ -417,7 +417,15 @@ namespace Beamable.Server
                 assemblies.Find<BsonType>(), // Server Mocks
 
             };
+			
+			var entry = MicroserviceConfiguration.Instance.GetEntry(serviceName);
 
+			
+			if (entry?.ReferencesToStub.Value != null && entry.ReferencesToStub.Value.Contains(assemblyName))
+			{
+				return true; // this assembly is okay... user stubbed it from selected Service
+			}
+			
 			if (assemblyName.Equals("Unity.Addressables"))
 			{
 				return true; // this assembly is okay... We couldn't search for it above because the user may not even have it installed :/
@@ -496,7 +504,7 @@ namespace Beamable.Server
 			{
 				var curr = unityAssembliesToExpand.Dequeue();
 				if (curr == null) continue;
-				if (IsStubbed(unityAssemblies, curr.Name))
+				if (IsStubbed(unityAssemblies, descriptor.Name, curr.Name ))
 				{
 					stubbedAssemblies.Add(curr);
 					continue;
@@ -524,7 +532,7 @@ namespace Beamable.Server
 							var referencedAssembly = unityAssemblies.Find(referenceName);
 							unityAssembliesToExpand.Enqueue(referencedAssembly);
 						}
-						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, referenceName))
+						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, descriptor.Name, referenceName))
 						{
 							Debug.LogWarning($"Skipping {referenceName} because it is a stubbed package. You should still install the package for general safety.");
 						}
