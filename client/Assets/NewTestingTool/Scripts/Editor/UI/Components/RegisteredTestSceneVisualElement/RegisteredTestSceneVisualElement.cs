@@ -1,9 +1,9 @@
 using Beamable.NewTestingTool.Core.Models;
-using NewTestingTool.Helpers;
+using Beamable.NewTestingTool.Helpers;
 using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 
-using static NewTestingTool.Constants.TestConstants;
+using static Beamable.NewTestingTool.Constants.TestConstants.Paths;
 
 namespace Beamable.Editor.NewTestingTool.UI.Components
 {

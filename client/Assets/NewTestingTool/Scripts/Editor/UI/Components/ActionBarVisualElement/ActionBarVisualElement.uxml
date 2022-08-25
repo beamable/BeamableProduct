@@ -22,7 +22,7 @@
                 <engine:Image name="deleteTestSceneIcon"/>
                 <engine:Label class="buttonText" text="Delete"/>
             </engine:Button>
-            
+
         </engine:VisualElement>
 
 

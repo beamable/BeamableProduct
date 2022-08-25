@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NewTestingTool.Attributes
+namespace Beamable.NewTestingTool.Attributes
 {
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
 	public class TestRuleAttribute : Attribute

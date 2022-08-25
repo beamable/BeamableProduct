@@ -1,5 +1,6 @@
-﻿using NewTestingTool.Attributes;
-using NewTestingTool.Core;
+﻿using Beamable.NewTestingTool.Attributes;
+using Beamable.NewTestingTool.Core;
+using Beamable.NewTestingTool.Helpers.TestableDebug;
 using System.Threading.Tasks;
 
 /// <summary>

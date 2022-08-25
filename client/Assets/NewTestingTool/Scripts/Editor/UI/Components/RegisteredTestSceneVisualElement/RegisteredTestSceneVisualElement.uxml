@@ -9,5 +9,5 @@
         <engine:VisualElement name="testResult" class="resultNotSet resultPassed resultFailed"/>
         <engine:Label name="sceneName"/>
     </engine:VisualElement>
-    
+
 </engine:UXML>

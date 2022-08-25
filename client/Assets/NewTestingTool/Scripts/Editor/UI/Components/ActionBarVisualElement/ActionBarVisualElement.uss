@@ -1,14 +1,15 @@
 ﻿#mainVisualElement {
     height: 35px;
-    flex-direction:row;
+    flex-direction: row;
 }
 
 #leftContentVisualElement {
     flex-direction: row;
     justify-content: flex-start;
-    align-items:center;
+    align-items: center;
     margin-right: 10px;
 }
+
 #rightContentVisualElement {
     flex-grow: 1;
     justify-content: flex-end;
@@ -34,7 +35,8 @@
     cursor: pan;
     border-radius: 0px;
 }
-.buttonText{
+
+.buttonText {
     font-size: 9px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-center;

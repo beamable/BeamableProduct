@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Beamable.NewTestingTool.Core;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -7,10 +9,23 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace NewTestingTool.Helpers
+namespace Beamable.NewTestingTool.Helpers
 {
 	public static class TestHelper
 	{
+		private static readonly Dictionary<TestResult, string> TestResultsDict = new Dictionary<TestResult, string>
+		{
+			{ TestResult.NotSet, "resultNotSet" },
+			{ TestResult.Passed, "resultPassed" },
+			{ TestResult.Failed, "resultFailed" },
+		};
+		private static readonly Dictionary<TestResult, Color> TestResultToColorDict = new Dictionary<TestResult, Color>()
+		{
+			{ TestResult.NotSet, Color.yellow },
+			{ TestResult.Passed, Color.green },
+			{ TestResult.Failed, Color.red },
+		};
+		
 		public static bool IsAsyncMethod(Type classType, string methodName)
 		{
 			MethodInfo methodInfo = classType.GetMethod(methodName);
@@ -87,18 +102,17 @@ namespace NewTestingTool.Helpers
 			return originalValues.ToArray();
 		}
 		
-		private static readonly Dictionary<TestResult, string> TestResultsDict = new Dictionary<TestResult, string>
-		{
-			{ TestResult.NotSet, "resultNotSet" },
-			{ TestResult.Passed, "resultPassed" },
-			{ TestResult.Failed, "resultFailed" },
-		};
-		
 		public static void SetTestResult(VisualElement ve, TestResult result)
 		{
 			foreach (var testResult in TestResultsDict)
 				ve.EnableInClassList(testResult.Value, false);
 			ve.EnableInClassList(TestResultsDict[result], true);
+		}
+		public static Color ConvertTestResultToColor(TestResult testResult)
+		{
+			if (!TestResultToColorDict.ContainsKey(testResult))
+				throw new InvalidEnumArgumentException($"TestResult=[{testResult}] is not defined in color dict!");
+			return TestResultToColorDict[testResult];
 		}
 	}
 }

@@ -1,8 +1,8 @@
-﻿using Beamable.NewTestingTool.Scripts.Core;
+﻿using Beamable.NewTestingTool.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Beamable.NewTestingTool.Core
+namespace Beamable.NewTestingTool.UI
 {
 	public class TestControllerUI : MonoBehaviour
 	{

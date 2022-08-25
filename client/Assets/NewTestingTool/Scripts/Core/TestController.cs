@@ -1,12 +1,11 @@
 using Beamable.NewTestingTool.Core.Models;
-using Beamable.NewTestingTool.Scripts.Core;
-using NewTestingTool.Core;
+using Beamable.NewTestingTool.Helpers.TestableDebug;
 using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-using static NewTestingTool.Constants.TestConstants;
+using static Beamable.NewTestingTool.Constants.TestConstants.General;
 
 namespace Beamable.NewTestingTool.Core
 {

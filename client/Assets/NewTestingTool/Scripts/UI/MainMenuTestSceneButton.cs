@@ -1,10 +1,10 @@
 ﻿using Beamable.NewTestingTool.Core.Models;
 using Beamable.NewTestingTool.Core.Models.Descriptors;
 using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Beamable.NewTestingTool.Helpers;
 
 namespace Beamable.NewTestingTool.UI
 {
@@ -17,14 +17,6 @@ namespace Beamable.NewTestingTool.UI
 
         private RegisteredTestScene _registeredTestScene;
         private TestDescriptor _testDescriptor;
-        
-        // TODO - Temp check. Remove later
-        private Dictionary<TestResult, Color> _kek = new Dictionary<TestResult, Color>()
-        {
-	        {TestResult.NotSet, Color.yellow},
-	        {TestResult.Passed, Color.green},
-	        {TestResult.Failed, Color.red},
-        };
 
         public void Init(RegisteredTestScene registeredTestScene, Action<RegisteredTestScene> onLoadTestButtonPressed)
         {
@@ -35,10 +27,11 @@ namespace Beamable.NewTestingTool.UI
         }
         private void UpdateData()
         {
+	        
             testNameText.SetText(_registeredTestScene.SceneName);
             titleText.SetText(_testDescriptor.Title);
             descriptionText.SetText(_testDescriptor.Description);
-            statusImage.color = _kek[_registeredTestScene.TestResult];
+            statusImage.color = TestHelper.ConvertTestResultToColor(_registeredTestScene.TestResult);
         }
     }
 }

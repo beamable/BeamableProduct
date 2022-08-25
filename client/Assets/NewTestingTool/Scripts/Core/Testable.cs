@@ -1,10 +1,13 @@
 ﻿using UnityEngine;
 
-public abstract class Testable : MonoBehaviour { }
-
-public enum TestResult
+namespace Beamable.NewTestingTool.Core
 {
-	NotSet,
-	Passed,
-	Failed,
+	public abstract class Testable : MonoBehaviour { }
+
+	public enum TestResult
+	{
+		NotSet,
+		Passed,
+		Failed,
+	}
 }

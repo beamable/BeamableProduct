@@ -1,8 +1,7 @@
 ﻿using Beamable.Editor.UI.Components;
+using Beamable.NewTestingTool.Core;
 using Beamable.NewTestingTool.Core.Models;
-using Beamable.NewTestingTool.Scripts.Core;
-using NewTestingTool.Helpers;
-using UnityEngine;
+using Beamable.NewTestingTool.Helpers;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.NewTestingTool.UI.Components

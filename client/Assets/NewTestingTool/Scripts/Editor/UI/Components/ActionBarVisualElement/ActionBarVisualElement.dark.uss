@@ -6,18 +6,19 @@
     border-color: #383838;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
+
 .unboundedButton {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
 
-#scanIcon{
+#scanIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
-#createTestSceneIcon{
+#createTestSceneIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/server-new.png");
 }
 
-#deleteTestSceneIcon{
+#deleteTestSceneIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/server-delete.png");
 }

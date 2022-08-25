@@ -3,13 +3,12 @@ using Beamable.Editor.NewTestingTool.Models.Lists;
 using Beamable.Editor.NewTestingTool.UI.Components;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Common;
-using Beamable.Editor.UI.Components;
 using Beamable.NewTestingTool.Core.Models;
-using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
 using ActionBarVisualElement = Beamable.Editor.NewTestingTool.UI.Components.ActionBarVisualElement;
-using static NewTestingTool.Constants.TestConstants;
+
+using static Beamable.NewTestingTool.Constants.TestConstants;
 
 public class TestingEditor : BeamEditorWindow<TestingEditor>
 {
@@ -184,8 +183,8 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		var isDeleteConfirmed = EditorUtility.DisplayDialog(
 			"Confirm deletion",
 			$"Are you sure you want to delete the Test=[{TestingEditorModel.SelectedRegisteredTestScene.SceneName}]?",
-			"confirm",
-			"cancel");
+			"Confirm",
+			"Cancel");
 
 		if (!isDeleteConfirmed)
 			return;

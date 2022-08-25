@@ -1,9 +1,9 @@
 ﻿using System.IO;
 using UnityEngine;
 
-using static NewTestingTool.Constants.TestConstants;
+using static Beamable.NewTestingTool.Constants.TestConstants.Paths;
 
-namespace NewTestingTool.Extensions
+namespace Beamable.NewTestingTool.Extensions
 {
 	public static class TestExtensions
 	{

@@ -1,11 +1,10 @@
 using Beamable.Editor.UI.Components;
-using Beamable.NewTestingTool.Scripts.Core;
+using Beamable.NewTestingTool.Core;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using UnityEngine;
 
 namespace Beamable.Editor.NewTestingTool.UI.Components
 {

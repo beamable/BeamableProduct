@@ -29,7 +29,7 @@
 }
 
 ExtendedListView {
-    flex-grow : 1;
+    flex-grow: 1;
     margin-left: 2px;
     margin-right: 2px;
 }

@@ -30,6 +30,7 @@ Label {
     padding-left: 3px;
     color: rgb(255, 192, 0);
 }
+
 LabeledTextField > TemplateContainer > #mainVisualElement > TextField {
     flex-grow: 1;
     white-space: normal;
@@ -54,7 +55,7 @@ LabeledTextField > TemplateContainer > #mainVisualElement > TextField > TextInpu
     background-color: #808080;
 }
 
-.resultFailed{
+.resultFailed {
     background-color: #FF0000;
 }
 

@@ -3,31 +3,34 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class TestTopBarView : MonoBehaviour
+namespace Beamable.NewTestingTool.UI
 {
-	[SerializeField] private TextMeshProUGUI sceneNameText;
-	[SerializeField] private Button backToMainMenuButton;
-	[SerializeField] private Button startTestButton;
-
-	[SerializeField] private TestControllerUI _testControllerUI;
-	[SerializeField] private TestController _testController;
-
-	private void Start()
+	public class TestTopBarView : MonoBehaviour
 	{
-		sceneNameText.SetText(_testController.CurrentTestScene.SceneName);
-		backToMainMenuButton.onClick.AddListener(() => _testControllerUI.BackToMainMenu());
+		[SerializeField] private TextMeshProUGUI sceneNameText;
+		[SerializeField] private Button backToMainMenuButton;
+		[SerializeField] private Button startTestButton;
 
-		if (!_testController.AutomaticallyStart)
+		[SerializeField] private TestControllerUI _testControllerUI;
+		[SerializeField] private TestController _testController;
+
+		private void Start()
 		{
-			startTestButton.onClick.AddListener(() =>
+			sceneNameText.SetText(_testController.CurrentTestScene.SceneName);
+			backToMainMenuButton.onClick.AddListener(() => _testControllerUI.BackToMainMenu());
+
+			if (!_testController.AutomaticallyStart)
 			{
-				_testController.StartTest();
+				startTestButton.onClick.AddListener(() =>
+				{
+					_testController.StartTest();
+					startTestButton.interactable = false;
+				});
+			}
+			else
+			{
 				startTestButton.interactable = false;
-			});
-		}
-		else
-		{
-			startTestButton.interactable = false;
+			}
 		}
 	}
 }

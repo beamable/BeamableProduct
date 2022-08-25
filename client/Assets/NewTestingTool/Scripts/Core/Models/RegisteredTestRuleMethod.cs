@@ -1,6 +1,6 @@
 ﻿using Beamable.NewTestingTool.Core.Models.Descriptors;
-using NewTestingTool.Core;
-using NewTestingTool.Helpers;
+using Beamable.NewTestingTool.Helpers;
+using Beamable.NewTestingTool.Helpers.TestableDebug;
 using System;
 using System.Linq;
 using System.Reflection;

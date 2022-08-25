@@ -31,7 +31,7 @@ RegisteredTestRuleVisualElement #sceneName {
     background-color: #808080;
 }
 
-.resultFailed{
+.resultFailed {
     background-color: #FF0000;
 }
 

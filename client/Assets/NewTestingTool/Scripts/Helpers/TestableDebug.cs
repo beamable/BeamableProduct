@@ -1,23 +1,24 @@
-﻿using NewTestingTool.Constants;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace NewTestingTool.Core
+using static Beamable.NewTestingTool.Constants.TestConstants.General;
+
+namespace Beamable.NewTestingTool.Helpers.TestableDebug
 {
 	public static class TestableDebug
 	{
 		public static void Log(object message)
 		{
-			Debug.Log($"{TestConstants.DEBUG_PREFIX} {message}");
+			Debug.Log($"{DEBUG_PREFIX} {message}");
 		}
 
 		public static void LogWarning(object message)
 		{
-			Debug.LogWarning($"{TestConstants.DEBUG_PREFIX} {message}");
+			Debug.LogWarning($"{DEBUG_PREFIX} {message}");
 		}
 
 		public static void LogError(object message)
 		{
-			Debug.LogError($"{TestConstants.DEBUG_PREFIX} {message}");
+			Debug.LogError($"{DEBUG_PREFIX} {message}");
 		}
 
 		public static string WrapWithColor(object message, Color color) =>
