@@ -133,10 +133,13 @@ namespace Beamable.Editor.NewTestingTool.Models
 			EditorUtility.SetDirty(_testConfiguration);
 			_testConfiguration.Reset();
 
+			var activeScenePath = SceneManager.GetActiveScene().path;
+
 			try
 			{
 				if (!Directory.Exists(PATH_TO_TEST_SCENES))
 					Directory.CreateDirectory(PATH_TO_TEST_SCENES);
+
 				
 				var testDirectories = Directory.GetDirectories(PATH_TO_TEST_SCENES);
 				for (var index = 0; index < testDirectories.Length; index++)
@@ -171,6 +174,8 @@ namespace Beamable.Editor.NewTestingTool.Models
 				testingEditorModel.SelectedRegisteredTestRule = testingEditorModel.SelectedRegisteredTest.RegisteredTestRules[0];
 				testingEditorModel.SelectedRegisteredTestRuleMethod = testingEditorModel.SelectedRegisteredTestRule.RegisteredTestRuleMethods[0];
 			}
+			
+			EditorSceneManager.OpenScene(activeScenePath);
 		}
 		
 		private static void TrySetupTestScene(string sceneName)
