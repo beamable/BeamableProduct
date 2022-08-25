@@ -27,7 +27,7 @@
 		{
 			public const string SHOULD_CREATE_NEW_TEST = "testing_tool_should_create_new_test";
 			public const string TEST_NAME = "testing_tool_test_name";
-			public const string SCRIPT_NAME = "testing_tool_test_name";
+			public const string SCRIPT_NAME = "testing_tool_script_name";
 		}
 	}
 }
