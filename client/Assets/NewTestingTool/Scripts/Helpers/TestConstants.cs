@@ -12,6 +12,7 @@
 		public static class Paths
 		{
 			public const string PATH_TO_TESTING_TOOL = "Assets/NewTestingTool";
+			public static readonly string PATH_TO_UI_COMPONENTS = $"{PATH_TO_TESTING_TOOL}/Scripts/Editor/UI/Components";
 			public static readonly string PATH_TO_TEST_SCENES = $"{PATH_TO_TESTING_TOOL}/Tests";
 			public static readonly string PATH_TO_RESOURCES = $"{PATH_TO_TESTING_TOOL}/Resources";
 			public static readonly string PATH_TO_TEMPLATES = $"{PATH_TO_TESTING_TOOL}/Templates";

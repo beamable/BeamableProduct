@@ -7,13 +7,12 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-using static Beamable.Common.Constants.Features.Services;
-
+using static Beamable.NewTestingTool.Constants.TestConstants.Paths; 
 
 namespace Beamable.Editor.NewTestingTool.UI.Components
 {
 	public class TestingToolComponent : BeamableVisualElement
 	{
-		public TestingToolComponent(string name) : base($"Assets/NewTestingTool/Scripts/Editor/UI/Components/{name}/{name}") { }
+		public TestingToolComponent(string name) : base($"{PATH_TO_UI_COMPONENTS}/{name}/{name}") { }
 	}
 }

@@ -8,8 +8,6 @@ using UnityEditor;
 using UnityEngine.UIElements;
 using ActionBarVisualElement = Beamable.Editor.NewTestingTool.UI.Components.ActionBarVisualElement;
 
-using static Beamable.NewTestingTool.Constants.TestConstants;
-
 public class TestingEditor : BeamEditorWindow<TestingEditor>
 {
 	private TestingEditorModel TestingEditorModel
