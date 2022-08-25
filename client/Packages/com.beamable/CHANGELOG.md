@@ -12,8 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu
+
+
+### [1.3.2]
+
+### Added
 - `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
-- Beamable version number is displayed in Login Window's footer.
+- Logs improvements in Requesters.
+
 
 ## [1.3.1]
 ### Added

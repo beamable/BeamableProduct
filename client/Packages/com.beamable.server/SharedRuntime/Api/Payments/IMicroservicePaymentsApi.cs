@@ -1,4 +1,4 @@
-﻿using Beamable.Common.Api.Payments;
+using Beamable.Common.Api.Payments;
 
 namespace Beamable.Server.Api.Payments
 {
