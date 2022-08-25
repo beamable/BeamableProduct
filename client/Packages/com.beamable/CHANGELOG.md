@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
+- Logs improvements in Requesters.
 
 ## [1.3.1]
 ### Added
