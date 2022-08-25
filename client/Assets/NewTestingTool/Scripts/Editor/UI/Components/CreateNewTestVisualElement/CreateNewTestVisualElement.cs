@@ -20,7 +20,7 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 		
 		private TestConfiguration _testConfiguration;
 
-		private const string TEST_NAME_REGEX = "^[A-Za-z][A-Za-z-_]*$";
+		private const string TEST_NAME_REGEX = "^[A-Z][A-Za-z]*$";
 		
 		public new class UxmlFactory : UxmlFactory<CreateNewTestVisualElement, UxmlTraits> { }
 		public CreateNewTestVisualElement() : base(nameof(CreateNewTestVisualElement)) { }
@@ -66,7 +66,7 @@ namespace Beamable.Editor.NewTestingTool.UI.Components
 			}
 			if (!Regex.IsMatch(input, TEST_NAME_REGEX))
 			{
-				errorMessage += "- Test name must start with a letter, contain only letters, dashes or underscores\n";
+				errorMessage += "- Test name must start with a capital letter and contain only letters\n";
 			}
 			if (_testConfiguration.RegisteredTestScenes.Any(x => x.SceneName == input))
 			{
