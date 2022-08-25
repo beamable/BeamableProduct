@@ -113,10 +113,10 @@ namespace Beamable.Editor.NewTestingTool.Models
 
 		public static void DeleteTestScene(RegisteredTestScene registeredTestScene)
 		{
-			Directory.Delete($"Assets/NewTestingTool/Tests/{registeredTestScene.SceneName}", true);
-			File.Delete($"Assets/NewTestingTool/Tests/{registeredTestScene.SceneName}.meta");
-			Directory.Delete($"Assets/NewTestingTool/Resources/Tests/{registeredTestScene.SceneName}", true);
-			File.Delete($"Assets/NewTestingTool/Resources/Tests/{registeredTestScene.SceneName}.meta");
+			Directory.Delete(GetPathToTest(registeredTestScene.SceneName), true);
+			File.Delete($"{GetPathToTest(registeredTestScene.SceneName)}.meta");
+			Directory.Delete(GetPathToTestResources(registeredTestScene.SceneName), true);
+			File.Delete($"{GetPathToTestResources(registeredTestScene.SceneName)}.meta");
 			AssetDatabase.Refresh();
 		}
 	}
