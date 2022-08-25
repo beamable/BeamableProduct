@@ -74,15 +74,7 @@ namespace Beamable.Server.Api.Stats
 		/// <param name="criteria">List of all <see cref="Criteria"/> that must match.</param>
 		/// <returns>The list of DBIDs for all users that match ALL of the criteria provided.</returns>
 		Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteria);
-		
-		/// <summary>
-		/// Deletes a player's game private stats (<see cref="DeleteStats"/>).
-		/// </summary>
-		/// <param name="userId">A player's realm-specific GamerTag (for example, <see cref="RequestContext.UserId"/>).</param>
-		/// <param name="stats">The list of stats to delete.</param>
-		/// <returns></returns>
-		Promise DeleteProtectedPlayerStats(long userId, string[] stats);
-		
+
 		/// <summary>
 		/// Deletes the given stats.
 		/// </summary>

@@ -24,6 +24,8 @@ namespace Core.Platform.SDK
 		public AccessToken Token { get; set; }
 		public IAccessToken AccessToken => Token;
 		public string TimeOverride { get; set; }
+
+		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		public string Language { get; set; }
 		public string Cid => Token.Cid;
 		public string Pid => Token.Pid;
@@ -210,10 +212,7 @@ namespace Core.Platform.SDK
 				request.SetRequestHeader("Time-Override", TimeOverride);
 			}
 
-			if (Language != null)
-			{
-				request.SetRequestHeader("Accept-Language", Language);
-			}
+			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 
 			return request;
 		}
