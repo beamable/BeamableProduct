@@ -29,7 +29,7 @@
 
 .propertyContainer{
     background-color: rgb(77,77,77);
-    min-height: 8px;
+    min-height: 0;
 }
 
 .hidden{
