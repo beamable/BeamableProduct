@@ -105,7 +105,7 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		_testingEditorModel.TestConfiguration.OnTestFinished -= HandleTestFinished;
 		_testingEditorModel.TestConfiguration.OnTestFinished += HandleTestFinished;
 		
-		HandleScanButton();
+		EditorApplication.delayCall += HandleScanButton;
 	}
 	
 	private void HandleTestFinished()
@@ -162,8 +162,8 @@ public class TestingEditor : BeamEditorWindow<TestingEditor>
 		
 		_createNewTestVisualElement.OnCreateButtonPressed += testName =>
 		{
+			_createNewTestVisualElement.SetEnabled(false);
 			TestingEditorModel.CreateTestScene(testName);
-			HandleScanButton();
 			_windowMain.Remove(_createNewTestVisualElement);
 			_createNewTestVisualElement = null;
 		};

@@ -1,16 +1,20 @@
 ﻿using Beamable.NewTestingTool.Core.Models;
 using Beamable.NewTestingTool.Core.Models.Descriptors;
 using Beamable.NewTestingTool.Scripts.Core;
+using Beamable.Server.Editor.UI;
 using NewTestingTool.Attributes;
 using NewTestingTool.Core;
 using NewTestingTool.Extensions;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static NewTestingTool.Constants.TestConstants;
 using Object = UnityEngine.Object;
 
@@ -40,14 +44,70 @@ namespace Beamable.Editor.NewTestingTool.Models
 	}
 	internal static class TestManagement
 	{
+		private static bool ShouldCreateNewTest
+		{
+			get => EditorPrefs.GetBool("testing_tool_should_create_new_test", false);
+			set => EditorPrefs.SetBool("testing_tool_should_create_new_test", value);
+		}
+		private static string TestName
+		{
+			get => EditorPrefs.GetString("testing_tool_test_name", string.Empty);
+			set => EditorPrefs.SetString("testing_tool_test_name", value);
+		}
+		private static string ScriptName
+		{
+			get => EditorPrefs.GetString("testing_tool_script_name", string.Empty);
+			set => EditorPrefs.SetString("testing_tool_script_name", value);
+		}
+
 		public static void CreateTestScene(string testName)
 		{
+			WindowStateUtility.DisableAllWindows();
+
+			ShouldCreateNewTest = true;
+			TestName = testName;
+			
 			Directory.CreateDirectory($"Assets/NewTestingTool/Tests/{testName}");
 			Directory.CreateDirectory($"Assets/NewTestingTool/Tests/{testName}/Scripts");
 			File.Copy("Assets/NewTestingTool/Templates/TestTemplate.unity",
 			          $"Assets/NewTestingTool/Tests/{testName}/{testName}.unity");
+
+			GenerateTemplateCode();
+		}
+		private static void GenerateTemplateCode()
+		{
+			ScriptName = $"{TestName}Test";
+
+			var text = File.ReadAllText("Assets/NewTestingTool/Templates/TestableTemplate.cs");
+			text = text.Replace("TestableTemplate", ScriptName);
+			File.WriteAllText($"Assets/NewTestingTool/Tests/{TestName}/Scripts/{ScriptName}.cs", text);
+
+			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
 		}
+		[DidReloadScripts]
+		private static void HandleAfterAssemblyReload()
+		{
+			if (!ShouldCreateNewTest)
+				return;
+			ShouldCreateNewTest = false;
+
+			EditorApplication.delayCall += () =>
+			{
+				var scene = EditorSceneManager.OpenScene(GetPathToTestScene(TestName));
+				var type = Type.GetType(
+					$"{ScriptName}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+				var go = new GameObject(ScriptName);
+				go.AddComponent(type);
+				SceneManager.MoveGameObjectToScene(go, scene);
+
+				EditorSceneManager.SaveScene(scene);
+				AssetDatabase.Refresh();
+
+				WindowStateUtility.EnableAllWindows();
+			};
+		}
+
 		public static void DeleteTestScene(RegisteredTestScene registeredTestScene)
 		{
 			Directory.Delete($"Assets/NewTestingTool/Tests/{registeredTestScene.SceneName}", true);
@@ -78,11 +138,16 @@ namespace Beamable.Editor.NewTestingTool.Models
 					var testDirectory = testDirectories[index];
 					EditorUtility.DisplayProgressBar("Testing tool", $"Processing", index / (float)testDirectories.Length);
 
-					var testSceneName = testDirectory.Split('\\')[1];
+					var testSceneName = testDirectory.Split(Path.DirectorySeparatorChar).LastOrDefault();
+					
+					if (string.IsNullOrWhiteSpace(testSceneName))
+						continue;
+
 					var pathToTestScene = GetPathToTestScene(testSceneName);
 					var scene = EditorSceneManager.OpenScene(pathToTestScene);
-					
-					SetupTestScene(testSceneName);
+
+					TrySetupTestScene(testSceneName);
+
 					EditorSceneManager.SaveScene(scene, pathToTestScene);
 				}
 			}
@@ -100,11 +165,9 @@ namespace Beamable.Editor.NewTestingTool.Models
 				testingEditorModel.SelectedRegisteredTestRule = testingEditorModel.SelectedRegisteredTest.RegisteredTestRules[0];
 				testingEditorModel.SelectedRegisteredTestRuleMethod = testingEditorModel.SelectedRegisteredTestRule.RegisteredTestRuleMethods[0];
 			}
-
-			EditorSceneManager.OpenScene($"{PATH_TO_TESTING_TOOL}/TestMainMenu.unity");
 		}
 		
-		private static void SetupTestScene(string sceneName)
+		private static void TrySetupTestScene(string sceneName)
 		{
 			if (!TryGetTestables(sceneName, out var testables, out var errorLog))
 			{
@@ -125,7 +188,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 				}
 
 				var registeredTestRules = RegisterTestRules(testable, methodInfos, testSceneDescriptor);
-				registeredTests.Add(new RegisteredTest(testable.GetType().Name, registeredTestRules, testSceneDescriptor.GetTestDescriptor() ));
+				registeredTests.Add(new RegisteredTest(testable.GetType().Name, registeredTestRules, testSceneDescriptor.GetTestDescriptor()));
 			}
 
 			var registeredTestScene = TestExtensions.LoadScriptableObject<RegisteredTestScene>(sceneName, $"Tests/{sceneName}", PATH_TO_RESOURCES_TESTS(sceneName));
@@ -139,7 +202,6 @@ namespace Beamable.Editor.NewTestingTool.Models
 			var testRuleDescriptor = testSceneDescriptor.GetTestDescriptor().GetTestRuleDescriptor(testable);
 			foreach (var methodInfo in methodInfos)
 			{
-				var testRuleMethodDescriptor = testRuleDescriptor.GetTestRuleMethodDescriptor(methodInfo);
 				var customAttributesData = GetCustomAttributesData(methodInfo);
 				foreach (var customAttributeData in customAttributesData)
 					RegisterTestRuleMethod(testable, methodInfo, customAttributeData, ref registeredTests, testRuleDescriptor);
