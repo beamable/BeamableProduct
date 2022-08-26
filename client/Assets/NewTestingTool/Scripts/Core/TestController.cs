@@ -53,6 +53,12 @@ namespace Beamable.NewTestingTool.Core
 
 		public void StartTest()
 		{
+			if (CurrentTestScene == null)
+			{
+				TestableDebug.LogWarning($"No tests registered in scene=[{SceneManager.GetActiveScene().name}]");
+				return;
+			}
+
 			if (_coroutine != null)
 				return;
 			_coroutine = StartCoroutine(InvokeNextTest());
@@ -63,7 +69,7 @@ namespace Beamable.NewTestingTool.Core
 			TestConfiguration = Resources.Load<TestConfiguration>(CONFIGURATION_FILE_NAME);
 			if (TestConfiguration == null)
 			{
-				Debug.LogError("Cannot load test scriptable object!");
+				TestableDebug.LogError("Cannot load test scriptable object!");
 				Debug.Break();
 				return;
 			}

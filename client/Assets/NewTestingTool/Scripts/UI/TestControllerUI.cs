@@ -13,11 +13,26 @@ namespace Beamable.NewTestingTool.UI
 		[SerializeField] private TestController _testController;
 
 		private bool _isTestUIEnabled = true;
-		
+#if UNITY_ANDROID || UNITY_IOS
+		private readonly int _requiredTouchCount = 3;
+		private bool _waitForRelease;
+#endif
 		private void Update()
 		{
+#if UNITY_ANDROID || UNITY_IOS
+			if (Input.touchCount == _requiredTouchCount)
+			{
+				if (_waitForRelease)
+					return;
+				_waitForRelease = true;
+				ToggleTestUI();
+			}
+			else
+				_waitForRelease = false;
+#else
 			if (Input.GetKeyDown(TestConfiguration.ToggleTestUIKey))
 				ToggleTestUI();
+#endif
 		}
 
 		private void ToggleTestUI()

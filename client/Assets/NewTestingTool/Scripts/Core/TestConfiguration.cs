@@ -12,8 +12,8 @@ namespace Beamable.NewTestingTool.Core
 		public Action OnAllTestsFinished;
 
 		public KeyCode ToggleTestUIKey => toggleTestUIKey;
-		
-		[SerializeField] private KeyCode toggleTestUIKey;
+
+		[SerializeField] private KeyCode toggleTestUIKey = KeyCode.Semicolon;
 		
 		public List<RegisteredTestScene> RegisteredTestScenes => _registeredTestScenes;
 		
