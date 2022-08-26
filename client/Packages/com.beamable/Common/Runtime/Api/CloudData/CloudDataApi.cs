@@ -106,8 +106,14 @@ namespace Beamable.Common.Api.CloudData
 		{
 			return Requester.Request<GetCloudDataManifestResponse>(
 			   Method.GET,
-			   $"/basic/cloud/meta/player/all"
+			   "/basic/cloud/meta/player/all"
 			);
+		}
+
+		public Promise<string> GetCloudDataContent(CloudMetaData metaData)
+		{
+			return Requester.Request(Method.GET,
+			                         $"https://{metaData.uri}", parser: s => s);
 		}
 	}
 }
