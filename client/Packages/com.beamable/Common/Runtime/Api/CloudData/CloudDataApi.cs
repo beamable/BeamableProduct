@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Common.Api.CloudData
 {
@@ -88,6 +89,8 @@ namespace Beamable.Common.Api.CloudData
 		public IUserContext Ctx { get; }
 		public IBeamableRequester Requester { get; }
 
+		private GetCloudDataManifestResponse playerManifest = null;
+
 		public CloudDataApi(IUserContext ctx, IBeamableRequester requester)
 		{
 			Ctx = ctx;
@@ -104,16 +107,38 @@ namespace Beamable.Common.Api.CloudData
 
 		public Promise<GetCloudDataManifestResponse> GetPlayerManifest()
 		{
+			if(playerManifest != null)
+			{
+				Debug.Log("<b><color=green>[Beamable][GetCloudDataManifestResponse]</color></b> Returning from cache.");
+				return Promise<GetCloudDataManifestResponse>.Successful(playerManifest);
+			}
 			return Requester.Request<GetCloudDataManifestResponse>(
 			   Method.GET,
 			   "/basic/cloud/meta/player/all"
-			);
+			).FlatMap(response =>
+			{
+				playerManifest = response;
+				return Promise<GetCloudDataManifestResponse>.Successful(response);
+			});
 		}
 
 		public Promise<string> GetCloudDataContent(CloudMetaData metaData)
 		{
+			if (PlayerPrefs.GetInt($"BeamCloudMetaVersion_{metaData.@ref}", -1) == metaData.version)
+			{
+				var result = PlayerPrefs.GetString($"BeamCloudMetaContent_{metaData.@ref}", string.Empty);
+				if (!string.IsNullOrWhiteSpace(result))
+				{
+					return Promise<string>.Successful(result);
+				}
+			}
 			return Requester.Request(Method.GET,
-			                         $"https://{metaData.uri}", parser: s => s);
+			                         $"https://{metaData.uri}", parser: s => s).FlatMap(s =>
+			{
+				PlayerPrefs.SetInt($"BeamCloudMetaVersion_{metaData.@ref}", (int)metaData.version);
+				PlayerPrefs.SetString($"BeamCloudMetaContent_{metaData.@ref}", s);
+				return Promise<string>.Successful(s);
+			});
 		}
 	}
 }
