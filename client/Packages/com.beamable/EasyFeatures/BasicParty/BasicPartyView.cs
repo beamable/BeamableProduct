@@ -119,8 +119,13 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnAskedToLeave(string id)
 		{
-			// TODO Add confirm action once Party SDK is ready
-			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to ask {id} to leave the party?", null);
+			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to ask {id} to leave the party?",
+			                                              () => KickPlayer(id));
+		}
+
+		private async void KickPlayer(string id)
+		{
+			await Context.Party.Kick(id);
 		}
 
 		private void NextButtonClicked()

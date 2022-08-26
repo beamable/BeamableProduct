@@ -196,6 +196,16 @@ namespace Beamable.Player
 
 			await _partyApi.PromoteToLeader(State.id, playerId);
 		}
+
+		public async Promise Kick(string playerId)
+		{
+			if (State == null)
+			{
+				return;
+			}
+
+			await _partyApi.KickPlayer(State.id, playerId);
+		}
 		
 		public void Dispose()
 		{
