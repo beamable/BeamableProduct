@@ -14,14 +14,26 @@ namespace Beamable.Experimental.Api.Parties
 			_userContext = userContext;
 		}
 
-		public Promise<Party> CreateParty(PartyRestriction restriction)
+		public Promise<Party> CreateParty(PartyRestriction restriction, int maxSize)
 		{
 			return _requester.Request<Party>(
 				Method.POST,
 				"/parties",
 				new CreatePartyRequest(
 					restriction.ToString(),
-					_userContext.UserId.ToString())
+					_userContext.UserId.ToString(),
+					maxSize)
+			);
+		}
+
+		public Promise<Party> UpdateParty(string partyId, PartyRestriction restriction, int maxSize)
+		{
+			return _requester.Request<Party>(
+				Method.PUT,
+				$"/Parties/{partyId}/metadata",
+				new UpdatePartyRequest(
+					restriction.ToString(),
+					maxSize)
 			);
 		}
 

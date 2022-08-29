@@ -126,6 +126,10 @@ namespace Beamable.Player
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
 		public ObservableReadonlyList<string> Members { get; private set; }
 
+		/// <inheritdoc cref="Party.maxSize"/>
+		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
+		public int MaxSize => SafeAccess(State?.maxSize) ?? 0;
+
 		private T SafeAccess<T>(T value)
 		{
 			if (!IsInParty)
@@ -143,11 +147,17 @@ namespace Beamable.Player
 		}
 		
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
-		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null) 
+		public async Promise Create(PartyRestriction restriction, int maxSize, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null) 
 		{
-			State = await _partyApi.CreateParty(restriction);
+			State = await _partyApi.CreateParty(restriction, maxSize);
 			await Members.Refresh();
 			RegisterCallbacks(onPlayerJoined, onPlayerLeft);
+		}
+
+		public async Promise Update(PartyRestriction restriction, int maxSize)
+		{
+			State = await _partyApi.UpdateParty(Id, restriction, maxSize);
+			await Members.Refresh();
 		}
 
 		/// <inheritdoc cref="IPartyApi.JoinParty"/>

@@ -8,12 +8,6 @@ namespace Beamable.EasyFeatures.BasicParty
 {
 	public class BasicPartyView : MonoBehaviour, ISyncBeamableView
 	{
-		public interface IDependencies : IBeamableViewDeps
-		{
-			List<PartySlotPresenter.ViewData> SlotsData { get; }
-			int MaxPlayers { get; }
-		}
-
 		public PartyFeatureControl FeatureControl;
 		public int EnrichOrder;
 
@@ -36,7 +30,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button LeaveButton;
 
 		protected BeamContext Context;
-		protected IDependencies System;
 
 		public bool IsVisible
 		{
@@ -49,7 +42,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			Context = managedPlayers.GetSinglePlayerContext();
-			System = Context.ServiceProvider.GetService<IDependencies>();
 
 			if (!IsVisible)
 			{
@@ -77,11 +69,11 @@ namespace Beamable.EasyFeatures.BasicParty
 			SetupPartyList();
 		}
 		
-		private void SetupPlayerCountText() => PlayerCountText.text = $"{Context.Party.Members.Count}/{System.MaxPlayers}";
+		private void SetupPlayerCountText() => PlayerCountText.text = $"{Context.Party.Members.Count}/{Context.Party.MaxSize}";
 
 		private void SetupPartyList()
 		{
-			PartyList.Setup(Context.Party.Members.ToList(), Context.Party.IsLeader, null, OnAskedToLeave, OnPromoted, OnAddMember, System.MaxPlayers);
+			PartyList.Setup(Context.Party.Members.ToList(), Context.Party.IsLeader, null, OnAskedToLeave, OnPromoted, OnAddMember, Context.Party.MaxSize);
 		}
 
 		protected virtual void OnPlayerJoined(object playerId)

@@ -35,7 +35,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		[RegisterBeamableDependencies]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
-			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, BasicPartyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, CreatePartyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, JoinPartyView.IDependencies>();
 		}
@@ -109,8 +108,6 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 			
-			// replace MaxPlayers parameter Party.MaxPlayers once it's available in the SDK
-			PartyPlayerSystem.Setup(Context.Party.Members.ToList(), PartyPlayerSystem.MaxPlayers);
 			OpenView(View.Party);
 		}
 		
