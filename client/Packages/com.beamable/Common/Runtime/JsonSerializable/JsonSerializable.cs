@@ -252,20 +252,14 @@ namespace Beamable.Serialization
 			return dict;
 		}
 
-		private static JsonSaveStream _saveStream = new JsonSaveStream();
 		public static string ToJson(ISerializable obj)
 		{
-			// _saveStream.Init(JsonSaveStream.JsonType.Object);
-			// obj.Serialize(_saveStream);
-			// return "hello";
 			using (var jsonSaveStream = JsonSaveStream.Spawn())
 			{
 				jsonSaveStream.Init(JsonSaveStream.JsonType.Object);
 				obj.Serialize(jsonSaveStream);
-				// jsonSaveStream.Conclude();
-
-				return "hello";
-				// return jsonSaveStream.ToString();
+				jsonSaveStream.Conclude();
+				return jsonSaveStream.ToString();
 			}
 		}
 

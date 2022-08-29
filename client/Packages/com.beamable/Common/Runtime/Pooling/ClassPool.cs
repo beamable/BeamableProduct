@@ -46,17 +46,17 @@ namespace Beamable.Common.Pooling
 			{
 				var t = new T();
 				t.poolNode = new LinkedListNode<T>(t);
-// #if UNITY_EDITOR
-//             if (!ClassPoolProfiler.totalAllocated.ContainsKey(typeof(T)))
-//             {
-//                ClassPoolProfiler.totalAllocated.Add(typeof(T), 1);
-//             }
-//             else
-//             {
-//                int count = ClassPoolProfiler.totalAllocated[typeof(T)];
-//                ClassPoolProfiler.totalAllocated[typeof(T)] = count+1;
-//             }
-// #endif
+#if UNITY_EDITOR
+            if (!ClassPoolProfiler.totalAllocated.ContainsKey(typeof(T)))
+            {
+               ClassPoolProfiler.totalAllocated.Add(typeof(T), 1);
+            }
+            else
+            {
+               int count = ClassPoolProfiler.totalAllocated[typeof(T)];
+               ClassPoolProfiler.totalAllocated[typeof(T)] = count+1;
+            }
+#endif
 				return t;
 			}
 			var ret = node.Value;
