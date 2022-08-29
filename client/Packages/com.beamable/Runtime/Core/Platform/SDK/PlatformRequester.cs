@@ -314,7 +314,7 @@ namespace Beamable.Api
 		private UnityWebRequest BuildWebRequest(Method method, string uri, string contentType, byte[] body,
 		   bool includeAuthHeader)
 		{
-			PlatformLogger.Log($"PLATFORM REQUEST: {Host}{uri}");
+			PlatformLogger.Log($"<b>[PlatformRequester][{method.ToString()}]</b> {Host}{uri}");
 
 			// Prepare the request
 			UnityWebRequest request = BuildWebRequest(method, uri, contentType, body);
@@ -370,7 +370,7 @@ namespace Beamable.Api
 			// swallow any responses if already disposed
 			if (_disposed)
 			{
-				PlatformLogger.Log("PLATFORM REQUESTER: Disposed, Ignoring Response");
+				PlatformLogger.Log("<b>[PlatformRequester]</b> Disposed, Ignoring Response");
 				return;
 			}
 
@@ -397,7 +397,14 @@ namespace Beamable.Api
 				else
 				{
 					// Parse JSON object and resolve promise
-					PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
+					if (string.IsNullOrWhiteSpace(responsePayload))
+					{
+						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}");
+					}
+					else
+					{
+						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}: {responsePayload}");
+					}
 
 					try
 					{

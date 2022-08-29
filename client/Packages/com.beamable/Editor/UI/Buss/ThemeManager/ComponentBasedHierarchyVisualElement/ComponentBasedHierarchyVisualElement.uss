@@ -17,6 +17,11 @@
 
 #elementsContainer {
     flex-grow: 1;
+    height: 210px;
+}
+
+.hidden {
+    display: none;
 }
 
 IndentedLabelVisualElement {

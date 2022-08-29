@@ -156,6 +156,11 @@ namespace Beamable.Player
 
 		public async Promise Update(PartyRestriction restriction, int maxSize)
 		{
+			if (State == null)
+			{
+				return;
+			}
+			
 			State = await _partyApi.UpdateParty(Id, restriction, maxSize);
 			await Members.Refresh();
 		}

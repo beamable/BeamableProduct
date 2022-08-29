@@ -263,6 +263,7 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
+			await Stop();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
 
@@ -770,6 +771,8 @@ namespace Beamable
 			if (GameObject)
 			{
 				UnityEngine.Object.Destroy(GameObject);
+				_behaviour = null;
+				_gob = null;
 			}
 
 

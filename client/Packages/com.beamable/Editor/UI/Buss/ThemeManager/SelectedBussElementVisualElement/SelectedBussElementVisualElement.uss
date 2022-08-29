@@ -1,7 +1,6 @@
 ﻿#root {
     flex-grow: 1;
     margin-bottom: 10px;
-    padding-bottom: 10px;
 }
 
 .header {
@@ -87,6 +86,10 @@ LabeledObjectField #label {
     -unity-font-style: bold;
     font-size: 12px;
     width: 160px;
+}
+
+.hidden{
+    display: none;
 }
 
 
