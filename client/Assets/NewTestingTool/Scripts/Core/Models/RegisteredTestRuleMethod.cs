@@ -1,4 +1,5 @@
-﻿using Beamable.NewTestingTool.Core.Models.Descriptors;
+﻿using Beamable.Common;
+using Beamable.NewTestingTool.Core.Models.Descriptors;
 using Beamable.NewTestingTool.Helpers;
 using Beamable.NewTestingTool.Helpers.TestableDebug;
 using System;
@@ -59,6 +60,7 @@ namespace Beamable.NewTestingTool.Core.Models
 		public object[] Arguments => TestHelper.ConvertStringToObject(_argumentsRaw);
 		public string[] ArgumentsRaw => _argumentsRaw;
 		public bool IsTask => TestHelper.IsAsyncMethod(MethodInfo);
+		public bool IsPromise => TestHelper.IsPromiseMethod(MethodInfo);
 		
 		[SerializeField] private string _testableName;
 		[SerializeField] private string _methodName;
@@ -73,15 +75,20 @@ namespace Beamable.NewTestingTool.Core.Models
 			_argumentsRaw = TestHelper.ConvertObjectToString(arguments);
 			_testRuleMethodDescriptor = testRuleMethodDescriptor;
 		}
-		public async Task<TestResult> InvokeTest(bool displayLogs, int orderIndex, int caseIndex)
+		public async Promise<TestResult> InvokeTest(bool displayLogs, int orderIndex, int caseIndex)
 		{
 			if (displayLogs)
 				TestableDebug.Log($"Invoking test: Testable=[{TestableType.Name}] Order=[{orderIndex+1}] Case=[{caseIndex+1}] Method=[{TestableDebug.WrapWithColor(MethodInfo.Name, Color.yellow)}]");
 			
 			var obj = Object.FindObjectOfType(TestableType);
-			return IsTask 
-				? await (Task<TestResult>)MethodInfo.Invoke(obj, Arguments)
-				: (TestResult)MethodInfo.Invoke(obj, Arguments);
+
+			TestableDebug.LogWarning(IsPromise);
+
+			return IsPromise
+				? await (Promise<TestResult>)MethodInfo.Invoke(obj, Arguments)
+				: IsTask
+					? await (Task<TestResult>)MethodInfo.Invoke(obj, Arguments)
+					: (TestResult)MethodInfo.Invoke(obj, Arguments);
 		}
 		public void Reset() => TestResult = TestResult.NotSet;
 	}

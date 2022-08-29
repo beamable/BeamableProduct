@@ -1,4 +1,5 @@
-﻿using Beamable.NewTestingTool.Core;
+﻿using Beamable.Common;
+using Beamable.NewTestingTool.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -37,6 +38,10 @@ namespace Beamable.NewTestingTool.Helpers
 			var attrib = (AsyncStateMachineAttribute)methodInfo.GetCustomAttribute(attType);
 			return attrib != null;
 		}
+
+		public static bool IsPromiseMethod(MethodInfo methodInfo)
+			=> methodInfo.ReturnType.ToString().ToLower().Contains("promise");
+
 		public static string[] ConvertObjectToString(object[] objectValues)
 		{
 			if (objectValues == null)
@@ -46,7 +51,7 @@ namespace Beamable.NewTestingTool.Helpers
 			foreach (var value in objectValues)
 			{
 				var type = value.GetType();
-				convertedValues.Add($"{type.Name}_{value}");
+				convertedValues.Add($"{type.Name.ToLower()}_{value}");
 			}
 			return convertedValues.ToArray();
 		}
@@ -72,20 +77,25 @@ namespace Beamable.NewTestingTool.Helpers
 						convertedValue = char.Parse(val);
 						break;
 					case "short":
+					case "int16":
 						convertedValue = short.Parse(val);
 						break;
 					case "int":
+					case "int32":
 						convertedValue = int.Parse(val);
 						break;
 					case "long":
+					case "int64":
 						convertedValue = long.Parse(val);
 						break;
+					case "single":
 					case "float":
 						convertedValue = float.Parse(val);
 						break;
 					case "double":
 						convertedValue = double.Parse(val);
 						break;
+					case "boolean":
 					case "bool":
 						convertedValue = bool.Parse(val);
 						break;
