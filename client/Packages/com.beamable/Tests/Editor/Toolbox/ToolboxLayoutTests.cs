@@ -30,53 +30,6 @@ namespace Beamable.Editor.Tests.Toolbox
 			builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
 		}
 
-		[Test]
-		public void TestExample()
-		{
-			// setup
-			var mock = new MockPlatformAPI();
-			//
-
-			bool DoesRequestHaveAOf1(SampleRequest req)
-			{
-				return req.a == 1;
-			}
-
-			mock.MockRequest<SampleResult>(Method.GET, "/add")
-			    .WithBodyMatch<SampleRequest>(DoesRequestHaveAOf1)
-			    .WithResponse(new SampleResult{sum = 3})
-				;
-
-			mock.MockRequest<SampleResult>(Method.GET, "/add")
-			    .WithBodyMatch<SampleRequest>(req => req.a == 3 && req.b == 3)
-			    .WithResponse(new SampleResult{sum = 8})
-				;
-
-			// test code
-			IBeamableRequester requester = mock;
-			var data = new SampleRequest {a = 1, b = 2};
-			var networkCall = requester.Request<SampleResult>(Method.GET, "/add", data);
-			// yield return networkCall.ToYielder();
-			SampleResult res = networkCall.GetResult();
-			Assert.AreEqual(3, res.sum);
-
-			data = new SampleRequest {a = 5, b = 3};
-			networkCall = requester.Request<SampleResult>(Method.GET, "/add", data);
-			// yield return networkCall.ToYielder();
-			res = networkCall.GetResult();
-			Assert.AreEqual(8, res.sum);
-		}
-
-		public class SampleRequest
-		{
-			public int a, b;
-		}
-
-		public class SampleResult
-		{
-			public int sum;
-		}
-
 		//Test if ticking filter in tags will change the search bar value to tag:{tag}
 		[Test]
 		public void TestQueryTag()
