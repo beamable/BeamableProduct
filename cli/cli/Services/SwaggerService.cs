@@ -74,7 +74,8 @@ public class SwaggerService
 		var allDocuments = openApiDocuments.Select(r => r.Document).ToList();
 		var context = new DefaultGenerationContext
 		{
-			Documents = allDocuments, OrderedSchemas = ExtractAllSchemas(allDocuments)
+			Documents = allDocuments,
+			OrderedSchemas = ExtractAllSchemas(allDocuments)
 		};
 
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
@@ -97,7 +98,7 @@ public class SwaggerService
 			foreach (var kvp in doc.Components.Schemas)
 			{
 				if (string.IsNullOrEmpty(kvp.Key)) continue;
-				list.Add(new NamedOpenApiSchema { Name = kvp.Key, Schema = kvp.Value, Document = doc});
+				list.Add(new NamedOpenApiSchema { Name = kvp.Key, Schema = kvp.Value, Document = doc });
 			}
 		}
 
@@ -171,7 +172,7 @@ public class SwaggerService
 
 	public class DefaultGenerationContext : IGenerationContext
 	{
-		public IReadOnlyList<OpenApiDocument> Documents { get; init;  }
+		public IReadOnlyList<OpenApiDocument> Documents { get; init; }
 		public IReadOnlyList<NamedOpenApiSchema> OrderedSchemas { get; init; }
 	}
 

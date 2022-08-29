@@ -91,7 +91,7 @@ public static class UnityHelper
 			}
 		}
 
-		void AddTypeIfRequired(CodeTypeDeclaration countCheck, CodeTypeDeclaration decl=null)
+		void AddTypeIfRequired(CodeTypeDeclaration countCheck, CodeTypeDeclaration decl = null)
 		{
 			decl ??= countCheck;
 			if (countCheck != null && decl != null && nameToRefCount.TryGetValue(countCheck.Name, out _))
@@ -992,7 +992,7 @@ public static class UnityHelper
 	{
 		const int COUNT_OF_AUTO_GENERATED_MESSAGE_TEXT = 357;
 		CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
-		CodeGeneratorOptions options = new CodeGeneratorOptions { BracingStyle = "C", BlankLinesBetweenMembers = false};
+		CodeGeneratorOptions options = new CodeGeneratorOptions { BracingStyle = "C", BlankLinesBetweenMembers = false };
 		var sb = new StringBuilder();
 		using var sourceWriter = new StringWriter(sb);
 

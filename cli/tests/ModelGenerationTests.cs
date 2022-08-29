@@ -49,38 +49,38 @@ namespace Test
 ");
 	}
 
-// 	[Test]
-// 	public void OptionalObjectArrayType()
-// 	{
-// 		var type = UnityHelper.GenerateOptionalDecl("Tuna", new OpenApiSchema
-// 		{
-// 			Type = "object",
-// 		});
-//
-// 		Assert.IsNotNull(type);
-// 		var unit = new CodeCompileUnit();
-// 		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
-// 		var src = UnityHelper.GenerateCsharp(unit);
-//
-// 		src.AssertSrc(@"
-// namespace Test
-// {
-//
-// 	[System.SerializableAttribute()]
-// 	public class OptionalTuna : Beamable.Common.Content.Optional<Tuna>
-// 	{
-// 		public OptionalTuna()
-// 		{
-// 		}
-// 		public OptionalTuna(Tuna value)
-// 		{
-// 			HasValue = true;
-// 			Value = value;
-// 		}
-// 	}
-// }
-// ");
-// 	}
+	// 	[Test]
+	// 	public void OptionalObjectArrayType()
+	// 	{
+	// 		var type = UnityHelper.GenerateOptionalDecl("Tuna", new OpenApiSchema
+	// 		{
+	// 			Type = "object",
+	// 		});
+	//
+	// 		Assert.IsNotNull(type);
+	// 		var unit = new CodeCompileUnit();
+	// 		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
+	// 		var src = UnityHelper.GenerateCsharp(unit);
+	//
+	// 		src.AssertSrc(@"
+	// namespace Test
+	// {
+	//
+	// 	[System.SerializableAttribute()]
+	// 	public class OptionalTuna : Beamable.Common.Content.Optional<Tuna>
+	// 	{
+	// 		public OptionalTuna()
+	// 		{
+	// 		}
+	// 		public OptionalTuna(Tuna value)
+	// 		{
+	// 			HasValue = true;
+	// 			Value = value;
+	// 		}
+	// 	}
+	// }
+	// ");
+	// 	}
 
 	[TestCase("integer", "")]
 	[TestCase("integer", "int16")]
@@ -95,7 +95,8 @@ namespace Test
 	{
 		var type = UnityHelper.GenerateOptionalDecl("Tuna", new OpenApiSchema
 		{
-			Type = typeName, Format = format,
+			Type = typeName,
+			Format = format,
 		});
 
 		Assert.IsNull(type);
@@ -111,10 +112,11 @@ namespace Test
 			{
 				["foo"] = new OpenApiSchema
 				{
-					Type = "integer", Format = "int64"
+					Type = "integer",
+					Format = "int64"
 				}
 			},
-			Required = new HashSet<string>{"foo"}
+			Required = new HashSet<string> { "foo" }
 		});
 
 		Assert.IsNotNull(type);
@@ -152,7 +154,7 @@ namespace Test
 					Type = "string"
 				}
 			},
-			Required = new HashSet<string>{"foo"}
+			Required = new HashSet<string> { "foo" }
 		});
 
 		Assert.IsNotNull(type);
@@ -199,7 +201,7 @@ namespace Test
 					Type = "string"
 				}
 			},
-			Required = new HashSet<string>{keyWord}
+			Required = new HashSet<string> { keyWord }
 		});
 
 		Assert.IsNotNull(type);
@@ -234,13 +236,15 @@ namespace Test
 			{
 				["foo"] = new()
 				{
-					Type = "array", Items = new OpenApiSchema()
+					Type = "array",
+					Items = new OpenApiSchema()
 					{
-						Type = "integer", Format = "int64"
+						Type = "integer",
+						Format = "int64"
 					}
 				}
 			},
-			Required = new HashSet<string>{"foo"}
+			Required = new HashSet<string> { "foo" }
 		});
 
 		Assert.IsNotNull(type);
@@ -276,13 +280,16 @@ namespace Test
 			{
 				["foo"] = new()
 				{
-					Type = "object", AdditionalProperties = new OpenApiSchema
+					Type = "object",
+					AdditionalProperties = new OpenApiSchema
 					{
-						Type = "integer", Format = "int64"
-					}, AdditionalPropertiesAllowed = true
+						Type = "integer",
+						Format = "int64"
+					},
+					AdditionalPropertiesAllowed = true
 				}
 			},
-			Required = new HashSet<string>{"foo"}
+			Required = new HashSet<string> { "foo" }
 		});
 
 		Assert.IsNotNull(type);
@@ -317,7 +324,8 @@ namespace Test
 			{
 				["foo"] = new OpenApiSchema
 				{
-					Type = "integer", Format = "int64"
+					Type = "integer",
+					Format = "int64"
 				}
 			},
 			Required = new HashSet<string>()
@@ -361,9 +369,11 @@ namespace Test
 			{
 				["foo"] = new()
 				{
-					Type = "array", Items = new OpenApiSchema()
+					Type = "array",
+					Items = new OpenApiSchema()
 					{
-						Type = "integer", Format = "int64"
+						Type = "integer",
+						Format = "int64"
 					}
 				}
 			},
@@ -409,10 +419,13 @@ namespace Test
 			{
 				["foo"] = new()
 				{
-					Type = "object", AdditionalProperties = new OpenApiSchema
+					Type = "object",
+					AdditionalProperties = new OpenApiSchema
 					{
-						Type = "integer", Format = "int64"
-					}, AdditionalPropertiesAllowed = true
+						Type = "integer",
+						Format = "int64"
+					},
+					AdditionalPropertiesAllowed = true
 				}
 			},
 			Required = new HashSet<string>()
@@ -457,13 +470,17 @@ namespace Test
 			{
 				["foo"] = new()
 				{
-					Type = "object", AdditionalProperties = new OpenApiSchema
+					Type = "object",
+					AdditionalProperties = new OpenApiSchema
 					{
-						Type = "array", Items = new OpenApiSchema
+						Type = "array",
+						Items = new OpenApiSchema
 						{
-							Type = "integer", Format = "int64"
+							Type = "integer",
+							Format = "int64"
 						}
-					}, AdditionalPropertiesAllowed = true
+					},
+					AdditionalPropertiesAllowed = true
 				}
 			},
 			Required = new HashSet<string>()
@@ -507,16 +524,20 @@ namespace Test
 			{
 				["foo"] = new()
 				{
-					Type = "object", AdditionalProperties = new OpenApiSchema
+					Type = "object",
+					AdditionalProperties = new OpenApiSchema
 					{
-						Type = "array", Items = new OpenApiSchema
+						Type = "array",
+						Items = new OpenApiSchema
 						{
-							Type = "integer", Format = "int64"
+							Type = "integer",
+							Format = "int64"
 						}
-					}, AdditionalPropertiesAllowed = true
+					},
+					AdditionalPropertiesAllowed = true
 				}
 			},
-			Required = new HashSet<string>{"foo"}
+			Required = new HashSet<string> { "foo" }
 		});
 
 		Assert.IsNotNull(type);

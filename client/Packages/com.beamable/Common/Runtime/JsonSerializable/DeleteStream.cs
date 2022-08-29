@@ -214,7 +214,7 @@ namespace Beamable.Serialization
 			}
 
 			public bool SerializeDictionary<TDict, T>(string parentKey, ref TDict target)
-				where TDict : IDictionary<string, T> , new()
+				where TDict : IDictionary<string, T>, new()
 			{
 				if (!curDict.ContainsKey(parentKey))
 					return false;
