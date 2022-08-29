@@ -9,10 +9,10 @@
         "Beamable.SmallerJSON",
         "Beamable.JsonSerializable",
         "Beamable.Service",
-        "Beamable.Coroutines"
-    ],
-    "optionalUnityReferences": [
-        "TestAssemblies"
+        "Beamable.Coroutines",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Unity.PerformanceTesting"
     ],
     "includePlatforms": [
         "Editor"
@@ -20,7 +20,13 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": []
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

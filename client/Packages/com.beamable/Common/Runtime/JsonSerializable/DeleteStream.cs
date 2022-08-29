@@ -72,6 +72,7 @@ namespace Beamable.Serialization
 			public bool Serialize(string key, ref double target) { return false; }
 			public bool Serialize(string key, ref double? target) { return false; }
 			public bool Serialize(string key, ref string target) { return false; }
+			public bool Serialize(string key, ref Guid target) { return false; }
 			public bool Serialize(string key, ref StringBuilder target) { return false; }
 			public bool Serialize(string key, ref DateTime target) { return false; }
 
@@ -185,6 +186,12 @@ namespace Beamable.Serialization
 				}
 				return InternalSerialize(key, ref value);
 			}
+
+			public bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : ISerializable, new()
+			{
+				throw new NotImplementedException(nameof(SerializeKnownList));
+			}
+
 
 			public bool Serialize<T>(string key, ref T value)
 			   where T : class, ISerializable, new()

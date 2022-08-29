@@ -99,6 +99,11 @@ namespace Beamable.Serialization
 				curDict[key] = target; return true;
 			}
 
+			public bool Serialize(string key, ref Guid target)
+			{
+				curDict[key] = target; return true;
+			}
+
 			public bool Serialize(string key, ref StringBuilder target)
 			{
 				curDict[key] = target.ToString(); return true;
@@ -266,6 +271,12 @@ namespace Beamable.Serialization
 				return SerializeListInternal(key, value);
 			}
 
+			public bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : ISerializable, new()
+			{
+				return SerializeListInternal2(key, value);
+			}
+
+
 			public bool SerializeILL<T>(string key, ref LinkedList<T> list) where T : ClassPool<T>, new()
 			{
 				return SerializeILLInternal<T>(key, ref list);
@@ -302,6 +313,22 @@ namespace Beamable.Serialization
 					BeamableLogger.LogError("Cannot serialize LinkedList<T> of non JsonSerializable types");
 					return false;
 				}
+			}
+
+			private bool SerializeListInternal2<TElem>(string key, IList<TElem> value)
+				where TElem : ISerializable
+			{
+				if (value == null)
+				{
+					return false;
+				}
+				var list = new List<Dictionary<string, object>>(value.Count);
+				foreach (var serializable in value)
+				{
+					list.Add(SerializeNested(serializable));
+				}
+				curDict[key] = list;
+				return true;
 			}
 
 			private bool SerializeListInternal<TList>(string key, TList value)

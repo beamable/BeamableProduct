@@ -40,11 +40,22 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 
 		var data = await _swaggerService.DownloadBeamableApis(filter);
 
+		var hasOutput = !string.IsNullOrEmpty(args.OutputPath);
+
 		foreach (var api in data)
 		{
 			var json = api.Document.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
-			// var json = JsonConvert.SerializeObject(api, Formatting.Indented);
-			Log.Information(json);
+
+			if (!hasOutput)
+			{
+				Log.Information(json);
+				continue;
+			}
+
+			var pathName = Path.Combine(args.OutputPath, api.Descriptor.FileName);
+
+			Directory.CreateDirectory(Path.GetDirectoryName(pathName));
+			File.WriteAllText(pathName, json);
 		}
 	}
 }

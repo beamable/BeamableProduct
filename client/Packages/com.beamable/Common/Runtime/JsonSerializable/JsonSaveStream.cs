@@ -6,6 +6,7 @@ using Beamable.Common.Pooling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 #if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 using UnityEngine;
@@ -97,39 +98,46 @@ namespace Beamable.Serialization
 
 			public ListMode Mode { get { return ListMode.kRead; } }
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void StartObject()
 			{
 				_builder.Append('{');
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void TrimComma()
 			{
 				if (_builder[_builder.Length - 1] == ',')
 					_builder.Length -= 1;
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void EndObject()
 			{
 				TrimComma();
 				_builder.Append('}');
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendSeperator()
 			{
 				_builder.Append(',');
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void StartArray()
 			{
 				_builder.Append('[');
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void EndArray()
 			{
 				TrimComma();
 				_builder.Append(']');
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendKey(string key)
 			{
 				if (key != null)
@@ -140,12 +148,14 @@ namespace Beamable.Serialization
 				}
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNull()
 			{
 				_builder.Append("null");
 				AppendSeperator();
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendBooleanValue(bool value)
 			{
 				_builder.Append(value ? "true" : "false");
@@ -159,16 +169,34 @@ namespace Beamable.Serialization
 				AppendSeperator();
 			}
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(ulong number) { _builder.Append(number); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(long number) { _builder.Append(number); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(uint number) { _builder.Append(number); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(int number) { _builder.Append(number); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(ushort number) { _builder.Append(number); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(short number) { _builder.Append(number); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(byte number) { _builder.Append(number); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(float number) { _builder.Append(number.ToString("R", System.Globalization.CultureInfo.InvariantCulture)); AppendSeperator(); }
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendNumericValue(double number) { _builder.Append(number.ToString("R", System.Globalization.CultureInfo.InvariantCulture)); AppendSeperator(); }
 
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			protected void AppendStringValue(string value)
 			{
 				if (value == null)
@@ -235,16 +263,16 @@ namespace Beamable.Serialization
 					default:
 						// AR - Not sure if this is needed, but mini json
 						// Seems to do something like this for non-ansi
-						int codepoint = Convert.ToInt32(c);
-						if ((codepoint >= 32) && (codepoint <= 126))
-						{
+						// int codepoint = Convert.ToInt32(c);
+						// if ((codepoint >= 32) && (codepoint <= 126))
+						// {
 							_builder.Append(c);
-						}
-						else
-						{
-							_builder.Append("\\u");
-							_builder.Append(codepoint.ToString("x4"));
-						}
+						// }
+						// else
+						// {
+						// 	_builder.Append("\\u");
+						// 	_builder.Append(codepoint.ToString("x4"));
+						// }
 						break;
 				}
 			}
@@ -365,6 +393,13 @@ namespace Beamable.Serialization
 			{
 				AppendKey(key);
 				AppendStringValue(target);
+				return true;
+			}
+
+			public bool Serialize(string key, ref Guid target)
+			{
+				AppendKey(key);
+				AppendStringValue(target.ToString());
 				return true;
 			}
 
@@ -520,6 +555,11 @@ namespace Beamable.Serialization
 				return SerializeListInternal(key, value);
 			}
 
+			public bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : ISerializable, new()
+			{
+				return SerializeListInternal2(key, value);
+			}
+
 			public bool SerializeILL<T>(string key, ref LinkedList<T> list) where T : ClassPool<T>, new()
 			{
 				return SerializeILLInternal<T>(key, ref list);
@@ -528,6 +568,32 @@ namespace Beamable.Serialization
 			bool SerializeILLInternal<T>(string key, ref LinkedList<T> llist) where T : ClassPool<T>, new()
 			{
 				throw new NotSupportedException("LinkedList<T> llist Not Supported in Direct JSON Serialization");
+			}
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			private bool SerializeListInternal2<TElem>(string key, List<TElem> value)
+				where TElem : ISerializable
+			{
+				AppendKey(key);
+				if (value == null)
+				{
+					AppendNull();
+					return true;
+				}
+
+				StartArray();
+				{
+					foreach (var t in value)
+					{
+						// TODO: CH: this isn't actually as fast as it could be.
+						// The problem is that we need to rely on the dynamic dispatch to the sub object, which costs us like, .3ms from my Benchmarking.
+						// I tried to create another variant where you passed in a MethodGroup/delegate, and it saved .3ms, but made for grosser code.
+						InternalSerialize(null, t);
+					}
+				}
+				EndArray();
+				AppendSeperator();
+				return true;
 			}
 
 			private bool SerializeListInternal<TList>(string key, TList value)
@@ -562,6 +628,7 @@ namespace Beamable.Serialization
 			{
 				return SerializeListInternal(key, value);
 			}
+
 
 
 			private void SerializeAny<T>(string key, T elem, Type elemType = null)
@@ -660,7 +727,7 @@ namespace Beamable.Serialization
 				{
 					StartObject();
 					{
-						value.Serialize(this);
+						// value.Serialize(this);
 					}
 					EndObject();
 					AppendSeperator();
