@@ -585,6 +585,9 @@ namespace Beamable.Serialization
 				{
 					foreach (var t in value)
 					{
+						// TODO: CH: this isn't actually as fast as it could be.
+						// The problem is that we need to rely on the dynamic dispatch to the sub object, which costs us like, .3ms from my Benchmarking.
+						// I tried to create another variant where you passed in a MethodGroup/delegate, and it saved .3ms, but made for grosser code.
 						InternalSerialize(null, t);
 					}
 				}
