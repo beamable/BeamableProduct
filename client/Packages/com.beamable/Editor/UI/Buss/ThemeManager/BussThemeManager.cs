@@ -72,7 +72,7 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
 
-			BussThemeManagerActionBarVisualElement actionBar = new BussThemeManagerActionBarVisualElement(OnAddStyleButtonClicked, OnCopyButtonClicked);
+			BussThemeManagerActionBarVisualElement actionBar = new BussThemeManagerActionBarVisualElement(OnAddStyleButtonClicked, OnCopyButtonClicked, RefreshStyleSheets, OnDocsButtonClicked);
 			actionBar.name = "actionBar";
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
@@ -291,6 +291,11 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			context.ShowAsContext();
+		}
+
+		private void OnDocsButtonClicked()
+		{
+			Application.OpenURL(URLs.Documentations.URL_DOC_BUSS_THEME_MANAGER);
 		}
 		#endregion
 	}
