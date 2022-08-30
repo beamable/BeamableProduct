@@ -76,7 +76,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
 				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH), .01);
 			_isNameUnique = _nameTextField.AddErrorLabel("Name", IsNameUnique);
-			
+
 			_createBtn.AddGateKeeper(_isNameValid, _isNameSizedRight, _isNameUnique);
 
 			Root.Q("foldContainer").visible = false;
@@ -159,8 +159,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var localServices = MicroservicesDataModel.Instance.AllLocalServices;
 			var remoteServices = MicroservicesDataModel.Instance.AllRemoteOnlyServices;
 
-			return localServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)) || 
-			       remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase))
+			return localServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)) ||
+				   remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase))
 				? "Service name must be unique "
 				: null;
 		}

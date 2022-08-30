@@ -20,20 +20,20 @@ namespace Beamable.Editor.Tests
 				age = 101,
 				first = "Winston",
 				last = "Wax",
-				hobbies = new List<Hobby>() {new Hobby {name = "Saxaphone"}}
+				hobbies = new List<Hobby>() { new Hobby { name = "Saxaphone" } }
 			};
 
 			Measure.Method(() =>
-			       {
-				       for (var i = 0; i < count; i++)
-				       {
-					       var json = JsonUtility.ToJson(person);
-					       // var mirror = JsonUtility.FromJson<Person>(json);
-				       }
-			       })
-			       .GC()
-			       .MeasurementCount(10)
-			       .Run();
+				   {
+					   for (var i = 0; i < count; i++)
+					   {
+						   var json = JsonUtility.ToJson(person);
+						   // var mirror = JsonUtility.FromJson<Person>(json);
+					   }
+				   })
+				   .GC()
+				   .MeasurementCount(10)
+				   .Run();
 		}
 
 		[Performance]
@@ -46,21 +46,21 @@ namespace Beamable.Editor.Tests
 				age = 101,
 				first = "Winston",
 				last = "Wax",
-				hobbies = new List<Hobby>() {new Hobby {name = "Saxaphone"}}
+				hobbies = new List<Hobby>() { new Hobby { name = "Saxaphone" } }
 			};
 
 			JsonSerializable.JsonSaveStream.Preallocate(10);
 			Measure.Method(() =>
-			       {
-				       for (var i = 0; i < count; i++)
-				       {
-					       var json = JsonSerializable.ToJson(person);
-					       // var mirror = JsonSerializable.FromJson<Person>(json);
-				       }
-			       })
-			       .GC()
-			       .MeasurementCount(10)
-			       .Run();
+				   {
+					   for (var i = 0; i < count; i++)
+					   {
+						   var json = JsonSerializable.ToJson(person);
+						   // var mirror = JsonSerializable.FromJson<Person>(json);
+					   }
+				   })
+				   .GC()
+				   .MeasurementCount(10)
+				   .Run();
 		}
 
 		[Performance]
@@ -69,18 +69,18 @@ namespace Beamable.Editor.Tests
 		{
 			var sb = new StringBuilder(64);
 			Measure.Method(() =>
-			       {
+				   {
 
-				       for (var i = 0; i < 1000; i++)
-				       {
-					       sb.Append("hello world");
-				       }
+					   for (var i = 0; i < 1000; i++)
+					   {
+						   sb.Append("hello world");
+					   }
 
-				       var str = sb.ToString();
-			       })
-			       .GC()
-			       .MeasurementCount(10)
-			       .Run();
+					   var str = sb.ToString();
+				   })
+				   .GC()
+				   .MeasurementCount(10)
+				   .Run();
 		}
 
 

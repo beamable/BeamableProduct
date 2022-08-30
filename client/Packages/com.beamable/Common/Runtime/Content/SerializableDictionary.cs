@@ -7,28 +7,28 @@ using UnityEngine;
 
 namespace Beamable.Common.Content
 {
-	[Serializable] public class MapOfLong : SerializableDictionaryStringToLong {}
-	[Serializable] public class OptionalMapOfLong : Optional<MapOfLong> {}
-	[Serializable] public class MapOfInt : SerializableDictionaryStringToInt {}
-	[Serializable] public class OptionalMapOfInt : Optional<MapOfInt> {}
-	[Serializable] public class MapOfString : SerializableDictionaryStringToString {}
-	[Serializable] public class MapOfStringArray : SerializableDictionaryStringToSomething<string[]> {}
+	[Serializable] public class MapOfLong : SerializableDictionaryStringToLong { }
+	[Serializable] public class OptionalMapOfLong : Optional<MapOfLong> { }
+	[Serializable] public class MapOfInt : SerializableDictionaryStringToInt { }
+	[Serializable] public class OptionalMapOfInt : Optional<MapOfInt> { }
+	[Serializable] public class MapOfString : SerializableDictionaryStringToString { }
+	[Serializable] public class MapOfStringArray : SerializableDictionaryStringToSomething<string[]> { }
 	[Serializable] public class MapOfMapOfString : SerializableDictionaryStringToSomething<MapOfString> { }
-	[Serializable] public class OptionalMapOfString : Optional<MapOfString> {}
-	[Serializable] public class MapOfObject : SerializableDictionaryStringToObject {}
-	[Serializable] public class OptionalMapOfObject : Optional<MapOfObject> {}
-	[Serializable] public class MapOfBool : SerializableDictionaryStringToBool {}
-	[Serializable] public class OptionalMapOfBool : Optional<MapOfBool> {}
-	[Serializable] public class MapOfShort : SerializableDictionaryStringToShort {}
-	[Serializable] public class OptionalMapOfShort : Optional<MapOfShort> {}
-	[Serializable] public class MapOfDouble : SerializableDictionaryStringToDouble {}
-	[Serializable] public class OptionalMapOfDouble : Optional<MapOfDouble> {}
-	[Serializable] public class MapOfFloat : SerializableDictionaryStringToFloat {}
-	[Serializable] public class OptionalMapOfFloat : Optional<MapOfFloat> {}
-	[Serializable] public class MapOfByte : SerializableDictionaryStringToByte {}
-	[Serializable] public class OptionalMapOfByte : Optional<MapOfByte> {}
-	[Serializable] public class MapOfGuid : SerializableDictionaryStringToGuid {}
-	[Serializable] public class OptionalMapOfGuid : Optional<MapOfGuid> {}
+	[Serializable] public class OptionalMapOfString : Optional<MapOfString> { }
+	[Serializable] public class MapOfObject : SerializableDictionaryStringToObject { }
+	[Serializable] public class OptionalMapOfObject : Optional<MapOfObject> { }
+	[Serializable] public class MapOfBool : SerializableDictionaryStringToBool { }
+	[Serializable] public class OptionalMapOfBool : Optional<MapOfBool> { }
+	[Serializable] public class MapOfShort : SerializableDictionaryStringToShort { }
+	[Serializable] public class OptionalMapOfShort : Optional<MapOfShort> { }
+	[Serializable] public class MapOfDouble : SerializableDictionaryStringToDouble { }
+	[Serializable] public class OptionalMapOfDouble : Optional<MapOfDouble> { }
+	[Serializable] public class MapOfFloat : SerializableDictionaryStringToFloat { }
+	[Serializable] public class OptionalMapOfFloat : Optional<MapOfFloat> { }
+	[Serializable] public class MapOfByte : SerializableDictionaryStringToByte { }
+	[Serializable] public class OptionalMapOfByte : Optional<MapOfByte> { }
+	[Serializable] public class MapOfGuid : SerializableDictionaryStringToGuid { }
+	[Serializable] public class OptionalMapOfGuid : Optional<MapOfGuid> { }
 	[Serializable] public class SerializableDictionaryStringToInt : SerializableDictionaryStringToSomething<int> { }
 	[Serializable] public class SerializableDictionaryStringToBool : SerializableDictionaryStringToSomething<bool> { }
 	[Serializable] public class SerializableDictionaryStringToShort : SerializableDictionaryStringToSomething<short> { }
