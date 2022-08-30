@@ -12,14 +12,20 @@ namespace Beamable.Editor.UI.Buss
 		private readonly Action _onCopy;
 		private readonly Action _onRefresh;
 		private readonly Action _onDocs;
+		private readonly Action<string> _onSearch;
 
-		public BussThemeManagerActionBarVisualElement(Action onAddStyle, Action onCopy, Action onRefresh, Action onDocs) : base(
+		public BussThemeManagerActionBarVisualElement(Action onAddStyle,
+		                                              Action onCopy,
+		                                              Action onRefresh,
+		                                              Action onDocs,
+		                                              Action<string> onSearch) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManagerActionBarVisualElement)}/{nameof(BussThemeManagerActionBarVisualElement)}.uss")
 		{
 			_onAddStyle = onAddStyle;
 			_onCopy = onCopy;
 			_onRefresh = onRefresh;
 			_onDocs = onDocs;
+			_onSearch = onSearch;
 		}
 
 		public override void Init()
@@ -36,6 +42,7 @@ namespace Beamable.Editor.UI.Buss
 			Root.Add(rightContainer);
 
 			SearchBarVisualElement searchBarVisualElement = new SearchBarVisualElement {name = "searchBar"};
+			searchBarVisualElement.OnSearchChanged += _onSearch;
 			rightContainer.Add(searchBarVisualElement);
 
 			rightContainer.Add(CreateIconButton("refresh", _onRefresh));
