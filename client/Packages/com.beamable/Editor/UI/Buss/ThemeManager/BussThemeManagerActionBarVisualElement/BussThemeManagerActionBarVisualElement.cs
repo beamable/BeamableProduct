@@ -8,14 +8,18 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class BussThemeManagerActionBarVisualElement : BeamableBasicVisualElement
 	{
-		private readonly Action _onAddStyleAction;
-		private readonly Action _onCopyAction;
+		private readonly Action _onAddStyle;
+		private readonly Action _onCopy;
+		private readonly Action _onRefresh;
+		private readonly Action _onDocs;
 
-		public BussThemeManagerActionBarVisualElement(Action onAddStyleAction, Action onCopyAction) : base(
+		public BussThemeManagerActionBarVisualElement(Action onAddStyle, Action onCopy, Action onRefresh, Action onDocs) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManagerActionBarVisualElement)}/{nameof(BussThemeManagerActionBarVisualElement)}.uss")
 		{
-			_onAddStyleAction = onAddStyleAction;
-			_onCopyAction = onCopyAction;
+			_onAddStyle = onAddStyle;
+			_onCopy = onCopy;
+			_onRefresh = onRefresh;
+			_onDocs = onDocs;
 		}
 
 		public override void Init()
@@ -25,8 +29,8 @@ namespace Beamable.Editor.UI.Buss
 			VisualElement leftContainer = new VisualElement {name = "leftContainer"};
 			Root.Add(leftContainer);
 
-			leftContainer.Add(CreateLabeledIconButton("addStyle", "Add style", _onAddStyleAction));
-			leftContainer.Add(CreateLabeledIconButton("duplicateStylesheet", "Duplicate", _onCopyAction));
+			leftContainer.Add(CreateLabeledIconButton("addStyle", "Add style", _onAddStyle));
+			leftContainer.Add(CreateLabeledIconButton("duplicateStylesheet", "Duplicate", _onCopy));
 
 			VisualElement rightContainer = new VisualElement {name = "rightContainer"};
 			Root.Add(rightContainer);
@@ -34,8 +38,8 @@ namespace Beamable.Editor.UI.Buss
 			SearchBarVisualElement searchBarVisualElement = new SearchBarVisualElement {name = "searchBar"};
 			rightContainer.Add(searchBarVisualElement);
 
-			rightContainer.Add(CreateIconButton("refresh", null));
-			rightContainer.Add(CreateIconButton("doc", null));
+			rightContainer.Add(CreateIconButton("refresh", _onRefresh));
+			rightContainer.Add(CreateIconButton("doc", _onDocs));
 		}
 
 		private Button CreateLabeledIconButton(string buttonName, string buttonLabel, Action onClick)
