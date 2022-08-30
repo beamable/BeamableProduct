@@ -24,6 +24,21 @@ namespace Beamable.Common.Api.Stats
 			Provider = provider;
 		}
 
+		public void ClearCaches()
+		{
+			foreach (var kvp in caches)
+			{
+				kvp.Value.Clear();
+			}
+			caches.Clear();
+		}
+
+		public UserDataCache<Dictionary<string, string>> GetCache(string domain, string access, string type)
+		{
+			string prefix = $"{domain}.{access}.{type}.";
+			return GetCache(prefix);
+		}
+
 		public UserDataCache<Dictionary<string, string>> GetCache(string prefix)
 		{
 			if (!caches.TryGetValue(prefix, out var cache))
@@ -55,6 +70,8 @@ namespace Beamable.Common.Api.Stats
 			string prefix = $"{domain}.{access}.{type}.";
 			return GetCache(prefix).Get(id);
 		}
+
+
 
 		/// <summary>
 		/// <para>Supports searching for DBIDs by stat query. This method is useful e.g for friend search</para>
@@ -145,7 +162,7 @@ namespace Beamable.Common.Api.Stats
 	}
 
 	/// <summary>
-	/// A definition of a comparison (<see cref="Rel"/>) to be run against the specified <see cref="Stat"/>.  
+	/// A definition of a comparison (<see cref="Rel"/>) to be run against the specified <see cref="Stat"/>.
 	/// </summary>
 	public class Criteria
 	{
