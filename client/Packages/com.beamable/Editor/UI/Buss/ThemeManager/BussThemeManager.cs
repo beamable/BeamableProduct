@@ -1,18 +1,18 @@
-using Beamable.Editor.Common;
-using Beamable.Editor.UI.Components;
-using Beamable.UI.Buss;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 
+using Beamable.Editor.Common;
+using Beamable.Editor.UI.Components;
+using Beamable.UI.Buss;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -36,7 +36,7 @@ namespace Beamable.Editor.UI.Buss
 
 		static BussThemeManager()
 		{
-			WindowDefaultConfig = new BeamEditorWindowInitConfig()
+			WindowDefaultConfig = new BeamEditorWindowInitConfig
 			{
 				Title = MenuItems.Windows.Names.THEME_MANAGER,
 				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
@@ -71,6 +71,11 @@ namespace Beamable.Editor.UI.Buss
 
 			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
+
+			BussThemeManagerActionBarVisualElement actionBar = new BussThemeManagerActionBarVisualElement(OnAddStyleButtonClicked, OnCopyButtonClicked);
+			actionBar.name = "actionBar";
+			actionBar.Init();
+			mainVisualElement.Add(actionBar);
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
@@ -121,8 +126,6 @@ namespace Beamable.Editor.UI.Buss
 			root.Add(_windowRoot);
 
 			RefreshStyleSheets();
-
-			AddSelectorButton(mainVisualElement);
 		}
 
 		private void CacheSelectedGameObject(GameObject go)
@@ -153,24 +156,6 @@ namespace Beamable.Editor.UI.Buss
 		private void RefreshStyleSheets()
 		{
 			_stylesGroup.StyleSheets = _navigationWindow.StyleSheets;
-		}
-
-		private void AddSelectorButton(VisualElement parent)
-		{
-			VisualElement buttonsRow = new VisualElement { name = "buttonsRow" };
-			parent.Insert(parent.Children().Count() - 1, buttonsRow);
-
-			_addStyleButton = new AddStyleButton();
-			_addStyleButton.Setup(_stylesGroup, _ => RefreshStyleSheets());
-			_addStyleButton.CheckEnableState();
-			buttonsRow.Add(_addStyleButton);
-
-			VisualElement spacing = new VisualElement { name = "spacing" };
-			buttonsRow.Add(spacing);
-
-			CopyStyleSheetButton copyStyleSheetButton = new CopyStyleSheetButton();
-			copyStyleSheetButton.Setup(_stylesGroup);
-			buttonsRow.Add(copyStyleSheetButton);
 		}
 
 		private void SetScroll(GameObject _ = null)
@@ -215,5 +200,98 @@ namespace Beamable.Editor.UI.Buss
 
 			UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
+		
+		#region Action bar buttons' actions
+		private void OnAddStyleButtonClicked()
+		{
+			int styleSheetCount = _stylesGroup.WritableStyleSheets.Count();
+
+			if (styleSheetCount == 0)
+			{
+				return;
+			}
+
+			if (styleSheetCount == 1)
+			{
+				CreateEmptyStyle(_stylesGroup.WritableStyleSheets.First(), Features.Buss.NEW_SELECTOR_NAME);
+			}
+			else if (styleSheetCount > 1)
+			{
+				OpenAddStyleMenu(_stylesGroup.WritableStyleSheets);
+			}
+		}
+
+		public void CheckEnableState(MouseEnterEvent evt = null)
+		{
+			if (_addStyleButton == null) return;
+
+			_addStyleButton.tooltip = string.Empty;
+
+			int styleSheetCount = _stylesGroup.WritableStyleSheets?.Count() ?? 0;
+
+			if (styleSheetCount == 0)
+			{
+				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
+				_addStyleButton.SetInactive(true);
+			}
+			else
+			{
+				_addStyleButton.tooltip = String.Empty;
+				_addStyleButton.SetInactive(false);
+			}
+		}
+
+		private void OpenAddStyleMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
+		{
+			GenericMenu context = new GenericMenu();
+			context.AddItem(new GUIContent(ADD_STYLE_OPTIONS_HEADER), false, () => { });
+			context.AddSeparator(string.Empty);
+			foreach (BussStyleSheet styleSheet in bussStyleSheets)
+			{
+				context.AddItem(new GUIContent(styleSheet.name), false, () =>
+				{
+					CreateEmptyStyle(styleSheet, Features.Buss.NEW_SELECTOR_NAME);
+				});
+			}
+
+			context.ShowAsContext();
+		}
+
+		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string newName = "")
+		{
+			BussStyleRule selector = BussStyleRule.Create(newName, new List<BussPropertyProvider>());
+			selectedStyleSheet.Styles.Add(selector);
+			selectedStyleSheet.TriggerChange();
+			RefreshStyleSheets();
+			AssetDatabase.SaveAssets();
+		}
+		
+		private void OnCopyButtonClicked()
+		{
+			List<BussStyleSheet> readonlyStyles =
+				_stylesGroup.StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
+			OpenCopyMenu(readonlyStyles);
+		}
+
+		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
+		{
+			GenericMenu context = new GenericMenu();
+			context.AddItem(new GUIContent(DUPLICATE_STYLESHEET_OPTIONS_HEADER), false, () => { });
+			context.AddSeparator(string.Empty);
+			foreach (BussStyleSheet styleSheet in bussStyleSheets)
+			{
+				context.AddItem(new GUIContent(styleSheet.name), false, () =>
+				{
+					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
+					if (window != null)
+					{
+						window.Init(styleSheet.Styles);
+					}
+				});
+			}
+
+			context.ShowAsContext();
+		}
+		#endregion
 	}
 }
