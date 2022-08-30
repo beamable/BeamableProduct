@@ -1,0 +1,73 @@
+
+namespace Beamable.Api.Open.Events
+{
+    using Beamable.Api.Open.Models;
+    using Beamable.Common.Content;
+    using Beamable.Common;
+    using IBeamableRequester = Beamable.Common.Api.IBeamableRequester;
+    using Method = Beamable.Common.Api.Method;
+    
+    public interface IEventsApiBasicApi
+    {
+        Promise<EventContentResponse> GetContent();
+        Promise<EventsInDateRangeResponse> GetCalendar([System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> from, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> to, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> query, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<int> limit);
+        Promise<CommonResponse> PostApplyContent(EventApplyRequest gsReq);
+        Promise<EventQueryResponse> GetRunning([System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader);
+    }
+    public class EventsApiBasicApi : IEventsApiBasicApi
+    {
+        private IBeamableRequester _requester;
+        public EventsApiBasicApi(IBeamableRequester requester)
+        {
+            this._requester = requester;
+        }
+        public virtual Promise<EventContentResponse> GetContent()
+        {
+            string gsUrl = "/basic/events/content";
+            // make the request and return the result
+            return _requester.Request<EventContentResponse>(Method.GET, gsUrl, default(object), true, Beamable.Serialization.JsonSerializable.FromJson<EventContentResponse>);
+        }
+        public virtual Promise<EventsInDateRangeResponse> GetCalendar([System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> from, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> to, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> query, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<int> limit)
+        {
+            string gsUrl = "/basic/events/calendar";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            if (((from != default(OptionalString)) 
+                        && from.HasValue))
+            {
+                gsQueries.Add(string.Concat("from=", from.ToString()));
+            }
+            if (((to != default(OptionalString)) 
+                        && to.HasValue))
+            {
+                gsQueries.Add(string.Concat("to=", to.ToString()));
+            }
+            if (((query != default(OptionalString)) 
+                        && query.HasValue))
+            {
+                gsQueries.Add(string.Concat("query=", query.ToString()));
+            }
+            if (((limit != default(OptionalInt)) 
+                        && limit.HasValue))
+            {
+                gsQueries.Add(string.Concat("limit=", limit.ToString()));
+            }
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<EventsInDateRangeResponse>(Method.GET, gsUrl, default(object), true, Beamable.Serialization.JsonSerializable.FromJson<EventsInDateRangeResponse>);
+        }
+        public virtual Promise<CommonResponse> PostApplyContent(EventApplyRequest gsReq)
+        {
+            string gsUrl = "/basic/events/applyContent";
+            // make the request and return the result
+            return _requester.Request<CommonResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<CommonResponse>);
+        }
+        public virtual Promise<EventQueryResponse> GetRunning([System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/events/running";
+            // make the request and return the result
+            return _requester.Request<EventQueryResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<EventQueryResponse>);
+        }
+    }
+}

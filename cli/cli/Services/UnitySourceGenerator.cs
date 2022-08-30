@@ -135,6 +135,12 @@ public static class UnityHelper
 
 
 		var type = new CodeTypeDeclaration($"{className}");
+
+		var interfaceType = new CodeTypeDeclaration($"I{className}");
+		interfaceType.IsInterface = true;
+		type.BaseTypes.Add(new CodeTypeReference(interfaceType.Name));
+
+		root.Types.Add(interfaceType);
 		root.Types.Add(type);
 
 		var requesterField = new CodeMemberField(nameof(IBeamableRequester), "_requester")
@@ -179,10 +185,12 @@ public static class UnityHelper
 				var method = GenerateApiMethod(path.Key, operation, methodName);
 				if (method != null)
 				{
+					interfaceType.Members.Add(method);
 					type.Members.Add(method);
 				}
 			}
 		}
+
 
 		return new GeneratedFileDescriptor
 		{
