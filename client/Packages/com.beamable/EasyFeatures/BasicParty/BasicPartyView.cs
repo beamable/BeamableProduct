@@ -200,8 +200,19 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private async void LeaveButtonClicked()
 		{
-			await Context.Party.Leave();
-			FeatureControl.OpenJoinView();
+			try
+			{
+				await Context.Party.Leave();
+			}
+			catch (Exception e)
+			{
+				Debug.LogException(e);
+				throw;
+			}
+			finally
+			{
+				FeatureControl.OpenJoinView();
+			}
 		}
 	}
 }
