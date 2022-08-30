@@ -1,0 +1,450 @@
+
+namespace Beamable.Api.Open.Payments
+{
+    using Beamable.Api.Open.Models;
+    using Beamable.Common.Content;
+    using Beamable.Common;
+    using IBeamableRequester = Beamable.Common.Api.IBeamableRequester;
+    using Method = Beamable.Common.Api.Method;
+    
+    public class PaymentsApiBasicApi
+    {
+        private IBeamableRequester _requester;
+        public PaymentsApiBasicApi(IBeamableRequester requester)
+        {
+            this._requester = requester;
+        }
+        public virtual Promise<PaymentResultResponse> PostWindowsPurchaseTrack(TrackPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/windows/purchase/track";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<ListAuditResponse> GetAudits([System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> providerid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> provider, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<string> state, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<long> txid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<long> player, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<int> start, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<int> limit, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/audits";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            if (((providerid != default(OptionalString)) 
+                        && providerid.HasValue))
+            {
+                gsQueries.Add(string.Concat("providerid=", providerid.ToString()));
+            }
+            if (((provider != default(OptionalString)) 
+                        && provider.HasValue))
+            {
+                gsQueries.Add(string.Concat("provider=", provider.ToString()));
+            }
+            if (((state != default(OptionalString)) 
+                        && state.HasValue))
+            {
+                gsQueries.Add(string.Concat("state=", state.ToString()));
+            }
+            if (((txid != default(OptionalLong)) 
+                        && txid.HasValue))
+            {
+                gsQueries.Add(string.Concat("txid=", txid.ToString()));
+            }
+            if (((player != default(OptionalLong)) 
+                        && player.HasValue))
+            {
+                gsQueries.Add(string.Concat("player=", player.ToString()));
+            }
+            if (((start != default(OptionalInt)) 
+                        && start.HasValue))
+            {
+                gsQueries.Add(string.Concat("start=", start.ToString()));
+            }
+            if (((limit != default(OptionalInt)) 
+                        && limit.HasValue))
+            {
+                gsQueries.Add(string.Concat("limit=", limit.ToString()));
+            }
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<ListAuditResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<ListAuditResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostWindowsPurchaseComplete(CompletePurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/windows/purchase/complete";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<BeginPurchaseResponse> PostTestPurchaseBegin(BeginPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/test/purchase/begin";
+            // make the request and return the result
+            return _requester.Request<BeginPurchaseResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<BeginPurchaseResponse>);
+        }
+        public virtual Promise<SubscriptionVerificationResponse> GetFacebookUpdate(string hubMode, string hubChallenge, string hubVerifyToken, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/facebook/update";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("hubMode=", hubMode.ToString()));
+            gsQueries.Add(string.Concat("hubChallenge=", hubChallenge.ToString()));
+            gsQueries.Add(string.Concat("hubVerifyToken=", hubVerifyToken.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<SubscriptionVerificationResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<SubscriptionVerificationResponse>);
+        }
+        public virtual Promise<FacebookPaymentUpdateResponse> PostFacebookUpdate(FacebookPaymentUpdateRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/facebook/update";
+            // make the request and return the result
+            return _requester.Request<FacebookPaymentUpdateResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<FacebookPaymentUpdateResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostSteamPurchaseFail(FailPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/steam/purchase/fail";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostFacebookPurchaseComplete(CompletePurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/facebook/purchase/complete";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostFacebookPurchaseFail(FailPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/facebook/purchase/fail";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostTestPurchaseComplete(CompletePurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/test/purchase/complete";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<GetProductResponse> GetItunesProduct(string sku, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/itunes/product";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("sku=", sku.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostGoogleplayPurchaseComplete(CompletePurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/googleplay/purchase/complete";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostTestPurchaseTrack(TrackPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/test/purchase/track";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<BeginPurchaseResponse> PostGoogleplayPurchaseBegin(BeginPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/googleplay/purchase/begin";
+            // make the request and return the result
+            return _requester.Request<BeginPurchaseResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<BeginPurchaseResponse>);
+        }
+        public virtual Promise<BeginPurchaseResponse> PostItunesPurchaseBegin(BeginPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/itunes/purchase/begin";
+            // make the request and return the result
+            return _requester.Request<BeginPurchaseResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<BeginPurchaseResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostGoogleplayPurchaseVerify(VerifyPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/googleplay/purchase/verify";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostFacebookPurchaseCancel(CancelPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/facebook/purchase/cancel";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostCouponPurchaseTrack(TrackPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/coupon/purchase/track";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostSteamPurchaseComplete(CompletePurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/steam/purchase/complete";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostFacebookPurchaseTrack(TrackPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/facebook/purchase/track";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostItunesPurchaseFail(FailPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/itunes/purchase/fail";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostTestPurchaseVerify(VerifyPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/test/purchase/verify";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostTestPurchaseCancel(CancelPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/test/purchase/cancel";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostGoogleplayPurchaseTrack(TrackPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/googleplay/purchase/track";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<LocalizedPriceMap> GetSteamPrices(long steamId, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/steam/prices";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("steamId=", steamId.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<LocalizedPriceMap>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<LocalizedPriceMap>);
+        }
+        public virtual Promise<PaymentResultResponse> PostWindowsPurchaseVerify(VerifyPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/windows/purchase/verify";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostTestPurchaseFail(FailPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/test/purchase/fail";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostCouponPurchaseCancel(CancelPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/coupon/purchase/cancel";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostItunesPurchaseVerify(VerifyPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/itunes/purchase/verify";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostItunesPurchaseComplete(CompletePurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/itunes/purchase/complete";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<BeginPurchaseResponse> PostCouponPurchaseBegin(BeginPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/coupon/purchase/begin";
+            // make the request and return the result
+            return _requester.Request<BeginPurchaseResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<BeginPurchaseResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostFacebookPurchaseVerify(VerifyPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/facebook/purchase/verify";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostSteamPurchaseTrack(TrackPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/steam/purchase/track";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<BeginPurchaseResponse> PostFacebookPurchaseBegin(BeginPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/facebook/purchase/begin";
+            // make the request and return the result
+            return _requester.Request<BeginPurchaseResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<BeginPurchaseResponse>);
+        }
+        public virtual Promise<SteamOrderInfoResponse> GetSteamOrder(string orderId)
+        {
+            string gsUrl = "/basic/payments/steam/order";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("orderId=", orderId.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<SteamOrderInfoResponse>(Method.GET, gsUrl, default(object), true, Beamable.Serialization.JsonSerializable.FromJson<SteamOrderInfoResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostCouponPurchaseVerify(VerifyPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/coupon/purchase/verify";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<BeginPurchaseResponse> PostWindowsPurchaseBegin(BeginPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/windows/purchase/begin";
+            // make the request and return the result
+            return _requester.Request<BeginPurchaseResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<BeginPurchaseResponse>);
+        }
+        public virtual Promise<GetProductResponse> GetWindowsProduct(string sku, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/windows/product";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("sku=", sku.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostGoogleplayPurchaseFail(FailPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/googleplay/purchase/fail";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<GetProductResponse> GetFacebookProduct(string sku, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/facebook/product";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("sku=", sku.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostGoogleplayPurchaseCancel(CancelPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/googleplay/purchase/cancel";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<GetProductResponse> GetCouponProduct(string sku, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/coupon/product";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("sku=", sku.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostCouponPurchaseFail(FailPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/coupon/purchase/fail";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<BeginPurchaseResponse> PostSteamPurchaseBegin(BeginPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/steam/purchase/begin";
+            // make the request and return the result
+            return _requester.Request<BeginPurchaseResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<BeginPurchaseResponse>);
+        }
+        public virtual Promise<GetProductsResponse> GetSteamProducts(long steamId, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/steam/products";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("steamId=", steamId.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductsResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductsResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostSteamPurchaseCancel(CancelPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/steam/purchase/cancel";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<EmptyResponse> PostSteamAuth(SteamAuthRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/steam/auth";
+            // make the request and return the result
+            return _requester.Request<EmptyResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<EmptyResponse>);
+        }
+        public virtual Promise<GetProductResponse> GetSteamProduct(string sku, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/steam/product";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("sku=", sku.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostCouponPurchaseComplete(CompletePurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/coupon/purchase/complete";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostWindowsPurchaseCancel(CancelPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/windows/purchase/cancel";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<GetProductResponse> GetGoogleplayProduct(string sku, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/googleplay/product";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("sku=", sku.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostWindowsPurchaseFail(FailPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/windows/purchase/fail";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostItunesPurchaseCancel(CancelPurchaseRequest gsReq)
+        {
+            string gsUrl = "/basic/payments/itunes/purchase/cancel";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), true, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<GetProductResponse> GetTestProduct(string sku, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/test/product";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("sku=", sku.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<GetProductResponse>(Method.GET, gsUrl, default(object), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<GetProductResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostSteamPurchaseVerify(VerifyPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/steam/purchase/verify";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+        public virtual Promise<PaymentResultResponse> PostItunesPurchaseTrack(TrackPurchaseRequest gsReq, [System.Runtime.InteropServices.DefaultParameterValueAttribute(true)] [System.Runtime.InteropServices.OptionalAttribute()] bool includeAuthHeader)
+        {
+            string gsUrl = "/basic/payments/itunes/purchase/track";
+            // make the request and return the result
+            return _requester.Request<PaymentResultResponse>(Method.POST, gsUrl, Beamable.Serialization.JsonSerializable.ToJson(gsReq), includeAuthHeader, Beamable.Serialization.JsonSerializable.FromJson<PaymentResultResponse>);
+        }
+    }
+}
