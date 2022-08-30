@@ -34,5 +34,10 @@ namespace Beamable.Server.Api
       {
          // no op. In an ephemeral cache, data is never stored.
       }
+
+      public override void Clear()
+      {
+	      // no op. In an ephemeral cache, data is never stored, so there is no point in clearing it.
+      }
    }
 }
