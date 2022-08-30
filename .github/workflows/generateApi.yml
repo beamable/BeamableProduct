@@ -31,6 +31,7 @@ jobs:
           dotnet run --project ./cli/cli -- --host ${{ github.event.inputs.host }} oapi generate --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
+        id: cpr
         with:
           commit-message: syncing sdk from openapi 
           title: Auto generate SDK from openAPI 
