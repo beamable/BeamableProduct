@@ -16,33 +16,26 @@ public class SwaggerService
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
 		// these are currently broken...
-		// BeamableApis.BasicService("beamo"),
-		// BeamableApis.BasicService("trails"),
 		// BeamableApis.BasicService("content"),
-		// BeamableApis.ObjectService("event-players"),
+		// BeamableApis.BasicService("trails"),
 
-		// produces a bad fileName...
-		// BeamableApis.ObjectService("group-users"),
-
-		BeamableApis.BasicService("inventory"),
-		BeamableApis.ObjectService("inventory"),
-
-		BeamableApis.BasicService("leaderboards"),
-		BeamableApis.ObjectService("leaderboards"),
-
-		BeamableApis.BasicService("accounts"),
-		BeamableApis.ObjectService("accounts"),
-
-		BeamableApis.BasicService("stats"),
-		BeamableApis.ObjectService("stats"),
-		//
+		// behold the list of Beamable Apis
+		BeamableApis.BasicService("beamo"),
+		BeamableApis.ObjectService("event-players"),
 		BeamableApis.BasicService("events"),
 		BeamableApis.ObjectService("events"),
-		//
+		BeamableApis.ObjectService("group-users"),
+		BeamableApis.ObjectService("groups"),
+		BeamableApis.BasicService("inventory"),
+		BeamableApis.ObjectService("inventory"),
+		BeamableApis.BasicService("leaderboards"),
+		BeamableApis.ObjectService("leaderboards"),
+		BeamableApis.BasicService("accounts"),
+		BeamableApis.ObjectService("accounts"),
+		BeamableApis.BasicService("stats"),
+		BeamableApis.ObjectService("stats"),
 		BeamableApis.BasicService("tournaments"),
 		BeamableApis.ObjectService("tournaments"),
-		//
-		//
 		BeamableApis.BasicService("auth"),
 		BeamableApis.BasicService("cloudsaving"),
 		BeamableApis.BasicService("payments"),
@@ -51,10 +44,8 @@ public class SwaggerService
 		BeamableApis.BasicService("notification"),
 		BeamableApis.BasicService("realms"),
 		BeamableApis.BasicService("social"),
-		//
 		BeamableApis.ObjectService("chatV2"),
 		BeamableApis.ObjectService("matchmaking"),
-		BeamableApis.ObjectService("groups"),
 		BeamableApis.BasicService("commerce"),
 		BeamableApis.ObjectService("commerce"),
 		BeamableApis.ObjectService("calendars"),
@@ -201,6 +192,7 @@ public class BeamableApiDescriptor
 	public BeamableApiSource Source;
 	public string RelativeUrl;
 	public string Service;
+	public string FileName => $"{BeamableApiSourceExtensions.ToDisplay(Source)}_{Service}.json";
 }
 
 public class BeamableApiFilter : DefaultQuery
@@ -262,6 +254,21 @@ public enum BeamableApiSource
 	PLAT_THOR_OBJECT,
 	PLAT_THOR_BASIC,
 	PLAT_PROTO
+}
+
+public static class BeamableApiSourceExtensions
+{
+	public static string ToDisplay(BeamableApiSource source)
+	{
+		switch (source)
+		{
+			case BeamableApiSource.PLAT_PROTO: return "proto";
+			case BeamableApiSource.PLAT_THOR_BASIC: return "basic";
+			case BeamableApiSource.PLAT_THOR_OBJECT: return "object";
+		}
+
+		return "unknown";
+	}
 }
 
 public class GeneratedFileDescriptor

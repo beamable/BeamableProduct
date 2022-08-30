@@ -505,7 +505,7 @@ namespace Test
                         || ((foo != default(OptionalMapOfLongArray)) 
                         && foo.HasValue)))
 			{
-				s.SerializeDictionary<Beamable.Common.Content.SerializableDictionaryStringToSomething<long[]>, long[]>(""foo"", ref foo.Value);
+				s.SerializeDictionary<MapOfLongArray, long[]>(""foo"", ref foo.Value);
 				foo.HasValue = true;
 			}
 		}
@@ -555,7 +555,7 @@ namespace Test
 		public MapOfLongArray foo = new MapOfLongArray();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
-			s.SerializeDictionary<Beamable.Common.Content.SerializableDictionaryStringToSomething<long[]>, long[]>(""foo"", ref foo);
+			s.SerializeDictionary<MapOfLongArray, long[]>(""foo"", ref foo);
 		}
 	}
 }");
