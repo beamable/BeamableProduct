@@ -82,6 +82,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref double target);
 			bool Serialize(string key, ref double? target);
 			bool Serialize(string key, ref string target);
+			bool Serialize(string key, ref Guid target);
 			bool Serialize(string key, ref StringBuilder target);
 #if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 			bool Serialize(string key, ref DateTime target);
@@ -96,6 +97,7 @@ namespace Beamable.Serialization
 			bool Serialize<T>(string key, ref T value) where T : class, ISerializable, new();
 			bool SerializeInline<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeList<TList>(string key, ref TList value) where TList : IList, new();
+			bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : ISerializable, new();
 			bool SerializeArray<T>(string key, ref T[] value);
 
 			bool SerializeDictionary<T>(string key, ref Dictionary<string, T> target);
@@ -257,7 +259,6 @@ namespace Beamable.Serialization
 				jsonSaveStream.Init(JsonSaveStream.JsonType.Object);
 				obj.Serialize(jsonSaveStream);
 				jsonSaveStream.Conclude();
-
 				return jsonSaveStream.ToString();
 			}
 		}
