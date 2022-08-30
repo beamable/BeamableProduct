@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
 - `ClearCaches` function on `StatsApi` to force invalidate stats cache.
+- Added `GetCloudDataContent` method in `ICloudDataApi` to simplify getting cloud data.
 
 ### [1.3.2]
 
