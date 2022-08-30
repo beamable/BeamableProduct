@@ -41,3 +41,12 @@ jobs:
           delete-branch: true
           add-paths: |
             client/Packages/com.beamable/Common/Runtime/OpenApi
+      - name: Post to a Slack channel
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        id: slack
+        uses: slackapi/slack-github-action@v1.21.0
+        with:
+          channel-id: C0409CMRKA9
+          slack-message: "Auto generated API has changed at ${{ steps.cpr.outputs.pull-request-url }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
