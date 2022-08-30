@@ -235,7 +235,9 @@ public static class UnityHelper
 
 		var method = new CodeMemberMethod
 		{
-			Name = operationName, Attributes = MemberAttributes.Public, ReturnType = returnType
+			Name = operationName,
+			Attributes = MemberAttributes.Public,
+			ReturnType = returnType
 		};
 
 		var uri = pathName;
@@ -271,7 +273,8 @@ public static class UnityHelper
 				optionalParams.Add(new CodeParameterDeclarationExpression
 				{
 					// the optional parameter should default to null
-					Name = param.Name, Type = genSchema.GetOptionalTypeReferenceGeneric(),
+					Name = param.Name,
+					Type = genSchema.GetOptionalTypeReferenceGeneric(),
 					CustomAttributes = new CodeAttributeDeclarationCollection(new CodeAttributeDeclaration[]
 					{
 						new CodeAttributeDeclaration(new CodeTypeReference(typeof(DefaultParameterValueAttribute)), new CodeAttributeArgument(new CodePrimitiveExpression(null))),
@@ -287,7 +290,8 @@ public static class UnityHelper
 			hasReqBody = true;
 			method.Parameters.Add(new CodeParameterDeclarationExpression
 			{
-				Name = varReq, Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
+				Name = varReq,
+				Type = new CodeTypeReference(requestMediaType.Schema.Reference.Id)
 			});
 		}
 
@@ -300,7 +304,9 @@ public static class UnityHelper
 			method.Parameters.Add(new CodeParameterDeclarationExpression
 			{
 				// the auth header parameter should default to true.
-				Name = paramIncludeAuth, Type = new CodeTypeReference(typeof(bool)), CustomAttributes = new CodeAttributeDeclarationCollection(new CodeAttributeDeclaration[]
+				Name = paramIncludeAuth,
+				Type = new CodeTypeReference(typeof(bool)),
+				CustomAttributes = new CodeAttributeDeclarationCollection(new CodeAttributeDeclaration[]
 				{
 					new CodeAttributeDeclaration(new CodeTypeReference(typeof(DefaultParameterValueAttribute)), new CodeAttributeArgument(new CodePrimitiveExpression(true))),
 					new CodeAttributeDeclaration(new CodeTypeReference(typeof(OptionalAttribute)))
@@ -455,7 +461,8 @@ public static class UnityHelper
 		// always use a custom parser based on the response type so that we can use the serialization stuff
 		requestCommand.Parameters.Add(new CodeMethodReferenceExpression(
 			new CodeTypeReferenceExpression(typeof(JsonSerializable)),
-			nameof(JsonSerializable.FromJson)) { TypeArguments = { responseType } });
+			nameof(JsonSerializable.FromJson))
+		{ TypeArguments = { responseType } });
 
 		// return the result
 		var returnCommand = new CodeMethodReturnStatement(requestCommand);
@@ -855,7 +862,7 @@ public static class UnityHelper
 				}
 				else
 				{
-					propKey = propKey[..i] + char.ToUpper(propKey[i+1]) + propKey[(i+2)..];
+					propKey = propKey[..i] + char.ToUpper(propKey[i + 1]) + propKey[(i + 2)..];
 				}
 			}
 		}
