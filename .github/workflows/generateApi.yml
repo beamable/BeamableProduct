@@ -28,7 +28,7 @@ jobs:
           dotnet build ./cli/cli 
       - name: Generate API
         run: |
-          dotnet run --project ./cli/cli -- oapi generate --host ${{ github.event.inputs.host }} --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
+          dotnet run --project ./cli/cli -- --host ${{ github.event.inputs.host }} oapi generate --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
