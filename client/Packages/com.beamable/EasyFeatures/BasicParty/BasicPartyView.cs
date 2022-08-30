@@ -63,7 +63,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			QuickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
 			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
-			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft, OnPlayerInvited, _ => RefreshView(),
+			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft, OnPlayerInvited, OnPartyUpdated,
 			                                OnPlayerPromoted, OnPlayerKicked);
 		}
 
@@ -71,14 +71,23 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			PartyIdText.text = Context.Party.Id;
 			SetupPlayerCountText();
-			
+
 			LeadButtonsGroup.SetActive(Context.Party.IsLeader);
 			NonLeadButtonsGroup.SetActive(!Context.Party.IsLeader);
 			SettingsButton.gameObject.SetActive(Context.Party.IsLeader);
-			
+
 			SetupPartyList();
 		}
 
+		private void OnPartyUpdated(object partyId,
+		                            long oldMaxSize,
+		                            long newMaxSize,
+		                            string oldRestriction,
+		                            string newRestriction)
+		{
+			RefreshView();
+		}
+		
 		private void OnPlayerInvited(object playerId)
 		{
 			if (playerId.Equals(Context.PlayerId))
@@ -96,13 +105,13 @@ namespace Beamable.EasyFeatures.BasicParty
 			                OnPromoteButtonClicked, OnAddMember, Context.Party.MaxSize);
 		}
 
-		protected virtual void OnPlayerJoined(object playerId)
+		protected virtual void OnPlayerJoined(object partyId, object joinedPlayerId)
 		{
 			SetupPartyList();
 			SetupPlayerCountText();
 		}
 
-		protected virtual void OnPlayerLeft(object playerId)
+		protected virtual void OnPlayerLeft(object partyId, object leftPlayerId)
 		{
 			SetupPartyList();
 			SetupPlayerCountText();
@@ -133,7 +142,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnPlayerPromoted(object partyId, object promotedPlayerId)
 		{
 			RefreshView();
-			
+
 			if (promotedPlayerId.Equals(Context.PlayerId.ToString()))
 			{
 				FeatureControl.OverlaysController.ShowInform("You have been promoted to a party leader.", null);
@@ -151,9 +160,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			await Context.Party.Kick(id);
 		}
 
-		private void OnPlayerKicked(object id)
+		private void OnPlayerKicked(object partyId, object kickedPlayerId)
 		{
-			if (id.Equals(Context.PlayerId))
+			if (kickedPlayerId.Equals(Context.PlayerId.ToString()))
 			{
 				FeatureControl.OpenJoinView();
 				FeatureControl.OverlaysController.ShowInform("You have been kicked out from the party.", null);

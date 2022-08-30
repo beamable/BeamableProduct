@@ -19,12 +19,12 @@ namespace Beamable.Player
 		private readonly INotificationService _notificationService;
 		private readonly IUserContext _userContext;
 		private Party _state;
-		private Action<object> _onPlayerJoined;
-		private Action<object> _onPlayerLeft;
+		private Action<object, object> _onPlayerJoined;
+		private Action<object, object> _onPlayerLeft;
 		private Action<object> _onPlayerInvited;
-		private Action<object> _onPartyUpdated;
+		private Action<object, long, long, string, string> _onPartyUpdated;
 		private Action<object, object> _onPlayerPromoted;
-		private Action<object> _onPlayerKicked;
+		private Action<object, object> _onPlayerKicked;
 
 		public PlayerParty(IPartyApi partyApi, INotificationService notificationService, IUserContext userContext)
 		{
@@ -84,16 +84,32 @@ namespace Beamable.Player
 			}
 		}
 
-		private async void PlayerJoined(object playerId)
+		private async void PlayerJoined(object data)
 		{
 			await Refresh();
-			_onPlayerJoined?.Invoke(playerId);
+			
+			object partyId = null, playerId = null;
+			if (data is ArrayDict dict)
+			{
+				partyId = dict["partyId"];
+				playerId = dict["playerThatJoinedId"];
+			}
+			
+			_onPlayerJoined?.Invoke(partyId, playerId);
 		}
 
-		private async void PlayerLeft(object playerId)
+		private async void PlayerLeft(object data)
 		{
 			await Refresh();
-			_onPlayerLeft?.Invoke(playerId);
+			
+			object partyId = null, playerId = null;
+			if (data is ArrayDict dict)
+			{
+				partyId = dict["partyId"];
+				playerId = dict["playerThatLeftId"];
+			}
+			
+			_onPlayerLeft?.Invoke(partyId, playerId);
 		}
 
 		private void PlayerInvited(object data)
@@ -101,10 +117,23 @@ namespace Beamable.Player
 			_onPlayerInvited?.Invoke(data);
 		}
 
-		private async void PartyUpdated(object playerId)
+		private async void PartyUpdated(object data)
 		{
 			await Refresh();
-			_onPartyUpdated?.Invoke(playerId);
+			
+			object partyId = null;
+			long oldMaxSize = 0, newMaxSize = 0;
+			string oldRestriction = "", newRestriction = "";
+			if (data is ArrayDict dict)
+			{
+				partyId = dict["partyId"];
+				oldMaxSize = long.Parse(dict["oldMaxSize"].ToString());
+				newMaxSize = long.Parse(dict["newMaxSize"].ToString());
+				oldRestriction = dict["oldRestriction"].ToString();
+				newRestriction = dict["newRestriction"].ToString();
+			}
+			
+			_onPartyUpdated?.Invoke(partyId, oldMaxSize, newMaxSize, oldRestriction, newRestriction);
 		}
 
 		private async void PlayerPromoted(object data)
@@ -112,8 +141,7 @@ namespace Beamable.Player
 			await Refresh();
 
 			object partyId = null, playerId = null;
-			ArrayDict dict = data as ArrayDict;
-			if (dict != null)
+			if (data is ArrayDict dict)
 			{
 				partyId = dict["partyId"];
 				playerId = dict["playerPromotedId"];
@@ -122,10 +150,18 @@ namespace Beamable.Player
 			_onPlayerPromoted?.Invoke(partyId, playerId);
 		}
 
-		private async void PlayerKicked(object playerId)
+		private async void PlayerKicked(object data)
 		{
 			await Refresh();
-			_onPlayerKicked?.Invoke(playerId);
+			
+			object partyId = null, playerId = null;
+			if (data is ArrayDict dict)
+			{
+				partyId = dict["partyId"];
+				playerId = dict["kickedPlayerId"];
+			}
+			
+			_onPlayerKicked?.Invoke(partyId, playerId);
 		}
 
 		private Promise<List<string>> RefreshMembersList() => Promise<List<string>>.Successful(_state.members);
@@ -188,12 +224,12 @@ namespace Beamable.Player
 			return value;
 		}
 
-		public void RegisterCallbacks(Action<object> onPlayerJoined,
-		                              Action<object> onPlayerLeft,
+		public void RegisterCallbacks(Action<object, object> onPlayerJoined,
+		                              Action<object, object> onPlayerLeft,
 		                              Action<object> onPlayerInvited,
-		                              Action<object> onPartyUpdated,
+		                              Action<object, long, long, string, string> onPartyUpdated,
 		                              Action<object, object> onPlayerPromoted,
-		                              Action<object> onPlayerKicked)
+		                              Action<object, object> onPlayerKicked)
 		{
 			_onPlayerJoined = onPlayerJoined;
 			_onPlayerLeft = onPlayerLeft;
@@ -206,12 +242,12 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
 		public async Promise Create(PartyRestriction restriction,
 		                            int maxSize,
-		                            Action<object> onPlayerJoined = null,
-		                            Action<object> onPlayerLeft = null,
+		                            Action<object, object> onPlayerJoined = null,
+		                            Action<object, object> onPlayerLeft = null,
 		                            Action<object> onPlayerInvited = null,
-		                            Action<object> onPartyUpdated = null,
+		                            Action<object, long, long, string, string> onPartyUpdated = null,
 		                            Action<object, object> onPlayerPromoted = null,
-		                            Action<object> onPlayerKicked = null)
+		                            Action<object, object> onPlayerKicked = null)
 		{
 			State = await _partyApi.CreateParty(restriction, maxSize);
 			await Members.Refresh();
@@ -277,6 +313,7 @@ namespace Beamable.Player
 			await _partyApi.PromoteToLeader(State.id, playerId);
 		}
 
+		/// <inheritdoc cref="IPartyApi.KickPlayer"/>
 		public async Promise Kick(string playerId)
 		{
 			if (State == null)

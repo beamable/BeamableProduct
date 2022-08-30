@@ -30,7 +30,7 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			return _requester.Request<Party>(
 				Method.PUT,
-				$"/Parties/{partyId}/metadata",
+				$"/parties/{partyId}/metadata",
 				new UpdatePartyRequest(
 					restriction.ToString(),
 					maxSize)
@@ -57,7 +57,8 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			return _requester.Request<Unit>(
 				Method.DELETE,
-				$"/parties/{partyId}"
+				$"/parties/{partyId}/members",
+				new PlayerRequest(_userContext.UserId.ToString())
 			).ToPromise();
 		}
 
@@ -65,7 +66,7 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			return _requester.Request<Unit>(
 				Method.DELETE,
-				$"/parties/{partyId}",
+				$"/parties/{partyId}/members",
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}

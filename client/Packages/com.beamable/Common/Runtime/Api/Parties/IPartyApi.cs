@@ -1,6 +1,4 @@
 ﻿using Beamable.Common;
-using Beamable.Experimental.Api.Lobbies;
-using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Parties
 {
