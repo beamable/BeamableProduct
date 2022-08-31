@@ -8,12 +8,10 @@
 
 #contentManagerIcon{
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_dark.png");
-
 }
 
 #skinningIcon{
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Skinning_dark.png");
-
 }
 
 #globalConfigIcon{
@@ -22,7 +20,6 @@
 
 #microserviceIcon{
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_dark.png");
-
 }
 
 #categoryIcon{
@@ -35,7 +32,6 @@
 
 #infoIcon{
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Info_dark.png");
-
 }
 
 .unboundedButton {
