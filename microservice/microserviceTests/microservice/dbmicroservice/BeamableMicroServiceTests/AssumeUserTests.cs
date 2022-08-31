@@ -1,31 +1,21 @@
 using System.Threading.Tasks;
-using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
-using microserviceTests.microservice.Util;
 using NUnit.Framework;
 
 namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTests;
 
 [TestFixture]
-public class AssumeUserTests
+public class AssumeUserTests : CommonTest
 {
-	[SetUp]
-	[TearDown]
-	public void ResetContentInstance()
-	{
-		ContentApi.Instance = new Promise<IContentApi>();
-	}
-
 
 	[TestCase(true)]
 	[TestCase(false)]
 	[NonParallelizable]
 	public async Task AssumeUserAsAdmin(bool forceCheck)
 	{
-		LoggingUtil.Init();
+
 		TestSocket testSocket = null;
 		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
 		{
@@ -49,7 +39,8 @@ public class AssumeUserTests
 		await ms.Start<SimpleMicroservice>(new TestArgs());
 		Assert.IsTrue(ms.HasInitialized);
 
-		testSocket.SendToClient(ClientRequest.ClientCallableAsAdmin("micro_simple", "TestAssumeUser", 1, 0, 2, forceCheck));
+		testSocket.SendToClient(
+			ClientRequest.ClientCallableAsAdmin("micro_simple", "TestAssumeUser", 1, 1, 2, forceCheck));
 
 		// simulate shutdown event...
 		await ms.OnShutdown(this, null);
@@ -60,7 +51,7 @@ public class AssumeUserTests
 	[NonParallelizable]
 	public async Task AssumeUserAsNormal_WithNoCheck()
 	{
-		LoggingUtil.Init();
+
 		TestSocket testSocket = null;
 		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
 		{
@@ -84,7 +75,7 @@ public class AssumeUserTests
 		await ms.Start<SimpleMicroservice>(new TestArgs());
 		Assert.IsTrue(ms.HasInitialized);
 
-		testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", "TestAssumeUser", 1, 0, 2, false));
+		testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", "TestAssumeUser", 1, 1, 2, false));
 
 		// simulate shutdown event...
 		await ms.OnShutdown(this, null);
@@ -95,7 +86,7 @@ public class AssumeUserTests
 	[NonParallelizable]
 	public async Task AssumeUserAsNormal_WithCheck()
 	{
-		LoggingUtil.Init();
+
 		TestSocket testSocket = null;
 		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
 		{
@@ -113,10 +104,12 @@ public class AssumeUserTests
 		await ms.Start<SimpleMicroservice>(new TestArgs());
 		Assert.IsTrue(ms.HasInitialized);
 
-		testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", "TestAssumeUser", 1, 0, 2, true));
+		testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", "TestAssumeUser", 1, 1, 2, true));
 
 		// simulate shutdown event...
 		await ms.OnShutdown(this, null);
+		allowErrorLogs = true;
+		AssertMissingScopeError();
 		Assert.IsTrue(testSocket.AllMocksCalled());
 	}
 }

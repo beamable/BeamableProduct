@@ -26,9 +26,13 @@ using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
@@ -36,7 +40,9 @@ using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Chat;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.Experimental.Api.Matchmaking;
+using Beamable.Experimental.Api.Parties;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using Beamable.Player;
@@ -93,6 +99,10 @@ namespace Beamable
 				ReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
 				ReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
 			}
+			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
+			var contentReflectionCache = new ContentTypeReflectionCache();
+			ReflectionCache.RegisterTypeProvider(contentReflectionCache);
+			ReflectionCache.RegisterReflectionSystem(contentReflectionCache);
 
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance when in the editor. When not in the editor, the storage should really not
 			// be used and
@@ -115,16 +125,14 @@ namespace Beamable
 				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
 			}
 
-			// Flush cache that wasn't created with this version of the game.
-			OfflineCache.FlushInvalidCache();
-
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
+
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
 			DependencyBuilder.AddComponentSingleton<PubnubSubscriptionManager>(
-				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>()));
+				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
@@ -140,6 +148,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
 			DependencyBuilder.AddSingleton<ContentService>();
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
+			DependencyBuilder.AddSingleton<IMailApi, MailService>();
 			DependencyBuilder.AddScoped<InventoryService>();
 			DependencyBuilder.AddScoped<StatsService>(provider =>
 														  new StatsService(
@@ -147,7 +156,20 @@ namespace Beamable
 															  provider.GetService<PlatformRequester>(),
 															  provider,
 															  UnityUserDataCache<Dictionary<string, string>>
-																  .CreateInstance));
+																  .CreateInstance,
+															  provider.GetService<OfflineCache>()));
+			DependencyBuilder.AddScoped<ILobbyApi>(provider => new LobbyService(
+				// the lobby service needs a special instance of the beamable api requester
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
+			DependencyBuilder.AddScoped<IPartyApi>(provider => new PartyService(
+			   // the party service needs a special instance of the beamable api requester
+			   provider.GetService<IBeamableApiRequester>(),
+			   provider.GetService<IUserContext>()));
+			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
+				// the presence service needs a special instance of the beamable api requester
+				provider.GetService<IBeamableApiRequester>(),
+				provider.GetService<IUserContext>()));
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
 																 new AnalyticsTracker(
 																	 provider.GetService<IPlatformService>(),
@@ -180,7 +202,11 @@ namespace Beamable
 																   // the matchmaking service needs a special instance of the beamable api requester
 																   provider.GetService<IBeamableApiRequester>())
 			);
-			DependencyBuilder.AddSingleton<SocialService>();
+			DependencyBuilder.AddSingleton<ISocialApi>(provider =>
+														   new SocialService(
+															   provider.GetService<IUserContext>(),
+															   provider.GetService<IBeamableRequester>()
+															   ));
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
@@ -196,7 +222,10 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
+			DependencyBuilder.AddScoped<PlayerLobby>();
+			DependencyBuilder.AddScoped<PlayerParty>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
+			DependencyBuilder.AddScoped<PlayerSocial>();
 
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
@@ -204,9 +233,10 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
+			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
 
-			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder);
-			//LoadCustomDependencies();
+
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder, RegistrationOrigin.RUNTIME);
 		}
 
 		/// <summary>

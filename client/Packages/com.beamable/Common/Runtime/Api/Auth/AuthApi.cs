@@ -25,6 +25,11 @@ namespace Beamable.Common.Api.Auth
 			return _requester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
 		}
 
+		public Promise<User> SetLanguage(string languageCodeISO6391)
+		{
+			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
+		}
+
 		public virtual Promise<User> GetUser(TokenResponse token)
 		{
 			var tokenizedRequester = _requester.WithAccessToken(token);
@@ -446,7 +451,8 @@ namespace Beamable.Common.Api.Auth
 		Google,
 		GameCenter,
 		GameCenterLimited,
-		Steam
+		Steam,
+		GoogleGamesServices
 	}
 
 	public static class AuthThirdPartyMethods
@@ -476,6 +482,8 @@ namespace Beamable.Common.Api.Auth
 					return "gamecenterlimited";
 				case AuthThirdParty.Steam:
 					return "steam";
+				case AuthThirdParty.GoogleGamesServices:
+					return "googlePlayServices";
 				default:
 					return null;
 			}

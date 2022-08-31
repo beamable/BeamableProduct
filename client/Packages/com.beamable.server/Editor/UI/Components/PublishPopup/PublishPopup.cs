@@ -124,6 +124,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_scrollContainer.Add(newElement);
 
 				elementNumber++;
+
+
+				if (model.Archived)
+				{
+					newElement.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+				}
 			}
 
 			_generalComments = Root.Q<TextField>("largeCommentsArea");
@@ -257,13 +263,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
 			{
-				if (kvp.Value.IsRemoteOnly)
-					continue;
 				var serviceModel = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(kvp.Key);
 
 				if (serviceModel == null)
 				{
 					Debug.LogError($"Cannot find model: {kvp.Key}");
+					continue;
+				}
+
+				if (serviceModel.IsArchived)
+				{
 					continue;
 				}
 
@@ -276,7 +285,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void HandleServiceDeployed(IDescriptor descriptor)
 		{
 			EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
-			_servicesToPublish.First(x => x.Model.Name == descriptor.Name).LoadingBar.UpdateProgress(1);
+			_servicesToPublish.FirstOrDefault(x => x.Model.Name == descriptor.Name)?.LoadingBar?.UpdateProgress(1);
 			HandleServiceDeployProgress(descriptor);
 		}
 
@@ -287,7 +296,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
-			_publishManifestElements[descriptor.Name]?.UpdateStatus(state);
+			if (!_publishManifestElements.TryGetValue(descriptor.Name, out var element))
+			{
+				return;
+			}
+
+			element?.UpdateStatus(state);
 			SortServices();
 			switch (state)
 			{
@@ -309,6 +323,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
+			if (_servicesToPublish.Count == 0) return 0f;
 			return _servicesToPublish.Average(x => x.LoadingBar.Progress);
 		}
 	}

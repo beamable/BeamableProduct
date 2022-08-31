@@ -1,16 +1,19 @@
+using Beamable.Common;
 using System;
 using System.CommandLine;
 using System.IO;
 using System.Reflection;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
+using Serilog;
+using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
 	public static class CommandLine<TMicroService> where TMicroService : Microservice
 	{
 
-		public static int Main(string[] args)
+		public static async Task<int> Main(string[] args)
 		{
 			var rootCommand = new RootCommand
 			{
@@ -34,12 +37,24 @@ namespace Beamable.Server
 			{
 				args = new[] { "run" };
 			}
-			return rootCommand.Invoke(args);
+			return await rootCommand.InvokeAsync(args);
 		}
 
-		static void Run()
+		static async Task Run()
 		{
-			MicroserviceBootstrapper.Start<TMicroService>();
+			try
+			{
+				await MicroserviceBootstrapper.Start<TMicroService>();
+			}
+			catch (Exception ex)
+			{
+				// Just so we don't double log the same exception
+				if (ex is not BeamableMicroserviceException)
+				{
+					Log.Fatal(ex.GetType().Name + " / " + ex.Message);
+					Log.Fatal(ex.StackTrace);
+				}
+			}
 		}
 
 		static void GenerateClient(string outputDirectory)
@@ -65,6 +80,7 @@ namespace Beamable.Server
 				Directory.CreateDirectory(outputDirectory);
 			}
 			generator.GenerateCSharpCode(filePath);
+			Console.WriteLine(Constants.Features.Services.Logs.GENERATED_CLIENT_PREFIX);
 		}
 	}
 }

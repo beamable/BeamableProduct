@@ -2,9 +2,12 @@ using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.UI;
+using Beamable.Editor.UI.Model;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -63,9 +66,57 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public string UnityLogLabel = "Docker";
 
+		protected string StandardOutBuffer { get; private set; }
+
+		protected string StandardErrorBuffer { get; private set; }
+
+		public Action<string> OnStandardOut;
+		public Action<string> OnStandardErr;
+
+		protected List<Func<string, bool>> _standardOutFilters = new List<Func<string, bool>>();
+		protected List<Func<string, bool>> _standardErrFilters = new List<Func<string, bool>>();
+		protected Func<LogMessage, LogMessage> _standardOutProcessors = m => m;
+		protected Func<LogMessage, LogMessage> _standardErrProcessors = m => m;
+
+
 		public abstract string GetCommandString();
 
 		protected virtual void HandleOnExit() { }
+
+		private void ProcessStandardOut(string data)
+		{
+			if (_standardOutFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
+			if (!string.IsNullOrEmpty(data))
+			{
+				StandardOutBuffer += data;
+			}
+			HandleStandardOut(data);
+			if (data != null)
+			{
+				OnStandardOut?.Invoke(data);
+			}
+		}
+
+		private void ProcessStandardErr(string data)
+		{
+			if (_standardErrFilters.Any(pred => !(pred?.Invoke(data) ?? false)))
+			{
+				return; // ignore the standard out
+			}
+			if (!string.IsNullOrEmpty(data))
+			{
+				StandardErrorBuffer += data;
+			}
+
+			HandleStandardErr(data);
+			if (data != null)
+			{
+				OnStandardErr?.Invoke(data);
+			}
+		}
 
 		protected virtual void HandleStandardOut(string data)
 		{
@@ -187,14 +238,21 @@ namespace Beamable.Server.Editor.DockerCommands
 					_standardOutComplete = new TaskCompletionSource<int>();
 					EventHandler eh = (s, e) =>
 					{
-						// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-						_hasExited = true;
-						_exitCode = _process.ExitCode;
+						Task.Run(async () =>
+						{
+							await Task.Delay(1); // give 1 ms for log messages to eep out
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
+							{
+								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+								_hasExited = true;
+								_exitCode = _process.ExitCode;
 
-						OnExit?.Invoke(_process.ExitCode);
-						HandleOnExit();
+								OnExit?.Invoke(_process.ExitCode);
+								HandleOnExit();
 
-						_status.TrySetResult(0);
+								_status.TrySetResult(0);
+							});
+						});
 					};
 
 					_process.Exited += eh;
@@ -205,32 +263,36 @@ namespace Beamable.Server.Editor.DockerCommands
 
 						_process.OutputDataReceived += (sender, args) =>
 						{
-							EditorApplication.delayCall += () =>
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
 							{
 								try
 								{
-									HandleStandardOut(args.Data);
+									ProcessStandardOut(args.Data);
 								}
 								catch (Exception ex)
 								{
 									Debug.LogException(ex);
 								}
-							};
+							});
 						};
 						_process.ErrorDataReceived += (sender, args) =>
 						{
-							EditorApplication.delayCall += () =>
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
 							{
 								try
 								{
-									HandleStandardErr(args.Data);
+									ProcessStandardErr(args.Data);
 								}
 								catch (Exception ex)
 								{
 									Debug.LogException(ex);
 								}
-							};
+							});
 						};
+
+						// before starting anything, make sure the beam context has initialized, so that the dispatcher can be accessed later.
+						await BeamEditorContext.Default.InitializePromise;
+						await MicroserviceEditor.WaitForInit();
 
 						_process.Start();
 						_started = true;
@@ -259,6 +321,59 @@ namespace Beamable.Server.Editor.DockerCommands
 		public static void ClearDockerInstallFlag()
 		{
 			DockerNotInstalled = false;
+		}
+
+		public DockerCommand AddStandardOutFilter(Func<string, bool> predicate)
+		{
+			_standardOutFilters.Add(predicate);
+			return this;
+		}
+		public DockerCommand AddStandardErrFilter(Func<string, bool> predicate)
+		{
+			_standardErrFilters.Add(predicate);
+			return this;
+		}
+
+		public DockerCommand MapStandardOut(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardOutProcessors;
+			_standardOutProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public DockerCommand MapStandardErr(Func<LogMessage, LogMessage> processor)
+		{
+			var old = _standardErrProcessors;
+
+			_standardErrProcessors = m => processor(old(m));
+			return this;
+		}
+
+		public DockerCommand AddGlobalFilter(Func<string, bool> predicate)
+		{
+			AddStandardErrFilter(predicate);
+			AddStandardOutFilter(predicate);
+			return this;
+		}
+
+		public DockerCommand MapGlobal(Func<LogMessage, LogMessage> processor)
+		{
+			MapStandardErr(processor);
+			MapStandardOut(processor);
+			return this;
+		}
+
+		public DockerCommand MapDotnetCompileErrors()
+		{
+			return MapGlobal((logMessage) =>
+			{
+				if (MicroserviceLogHelper.TryGetErrorCode(logMessage.Message, out var errCode))
+				{
+					logMessage.Level = LogLevel.ERROR;
+					logMessage.Parameters.Add("errorCode", errCode);
+				}
+				return logMessage;
+			});
 		}
 
 		private static Task DockerCheckTask;
@@ -320,14 +435,14 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				await DockerCheckTask;
 
-				EditorApplication.delayCall += async () =>
+				BeamEditorContext.Default.Dispatcher.Schedule(async () =>
 				{
 					Debug.Log("Docker Desktop was closed!");
 					DockerNotRunning = true;
 
 					var tempQualifier = await BeamEditorWindow<MicroserviceWindow>.GetFullyInitializedWindow();
 					tempQualifier.RefreshWindowContent();
-				};
+				});
 			};
 
 			return true;

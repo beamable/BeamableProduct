@@ -77,7 +77,7 @@ namespace Beamable.Common.Api.CloudData
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/abtesting-feature">A/B Testing</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/ab-testing-feature-overview">A/B Testing</a> feature documentation
 	/// - See Beamable.API script reference
 	///
 	/// ![img beamable-logo]
@@ -106,8 +106,14 @@ namespace Beamable.Common.Api.CloudData
 		{
 			return Requester.Request<GetCloudDataManifestResponse>(
 			   Method.GET,
-			   $"/basic/cloud/meta/player/all"
+			   "/basic/cloud/meta/player/all"
 			);
+		}
+
+		public Promise<string> GetCloudDataContent(CloudMetaData metaData)
+		{
+			return Requester.Request(Method.GET,
+									 $"https://{metaData.uri}", parser: s => s);
 		}
 	}
 }

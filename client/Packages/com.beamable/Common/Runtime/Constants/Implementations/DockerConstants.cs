@@ -1,4 +1,6 @@
-﻿namespace Beamable.Common
+﻿using System;
+
+namespace Beamable.Common
 {
 	public static partial class Constants
 	{
@@ -6,8 +8,11 @@
 		{
 			public static partial class Docker
 			{
-				public const string COMPILER_ASSEMBLY_REFERENCE_ERROR_CODE = "CS0012";
-				public const string COMPILER_TYPE_NAMESPACE_ERROR_CODE = "CS0246";
+				[Obsolete]
+				public const string CPU_LINUX_ARM_64 = "linux/arm64";
+				public const string CPU_LINUX_AMD_64 = "linux/amd64";
+
+				public static readonly string[] CPU_SUPPORTED = new string[] { CPU_LINUX_AMD_64 };
 			}
 		}
 	}

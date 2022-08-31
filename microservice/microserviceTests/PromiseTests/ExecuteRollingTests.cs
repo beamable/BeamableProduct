@@ -11,7 +11,7 @@ namespace microserviceTests.PromiseTests
    public class ExecuteRollingTests
    {
       [Test]
-      [Timeout(8 * 1000)]
+      [TimeoutWithTeardown(8 * 1000)]
       public async Task AllSucceed()
       {
          const int promiseCount = 100000;
@@ -37,7 +37,7 @@ namespace microserviceTests.PromiseTests
             var index = i;
             var task = Task.Run( async () =>
             {
-               await Task.Yield();
+               await Task.Delay(1);;
 
                var promise = promises[index];
                promise.CompleteSuccess(index);

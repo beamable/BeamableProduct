@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using static Beamable.Common.Constants.URLs;
@@ -17,8 +18,9 @@ namespace Beamable.Console
 	{
 		public static ConsoleFlow Instance;
 
-		private static readonly Dictionary<string, ConsoleCommand> ConsoleCommandsByName =
-			new Dictionary<string, ConsoleCommand>();
+		// plrCode goes to a dictionary of command->callback.
+		private readonly Dictionary<string, Dictionary<string, ConsoleCommand>> ConsoleCommandsByName =
+			new Dictionary<string, Dictionary<string, ConsoleCommand>>();
 
 		public Canvas canvas;
 		public Text txtOutput;
@@ -34,6 +36,7 @@ namespace Beamable.Console
 		private TextAutoCompleter _textAutoCompleter;
 		private ConsoleHistory _consoleHistory;
 		private string consoleText;
+		private string _playerCode;
 
 #if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
         private bool _isMobileKeyboardOpened = false;
@@ -97,6 +100,12 @@ namespace Beamable.Console
 			InitializeConsole();
 		}
 
+		public void ChangePlayerContext(string newPlayerCode)
+		{
+			_playerCode = newPlayerCode;
+			InitializeConsole();
+		}
+
 		private void Awake()
 		{
 			HideConsole();
@@ -108,7 +117,7 @@ namespace Beamable.Console
 
 		private void Update()
 		{
-			var _ = Beamable.API.Instance;
+			var _ = BeamContext.ForPlayer(_playerCode).OnReady;
 			if (!_isInitialized) return;
 
 			if (_showNextTick)
@@ -147,27 +156,39 @@ namespace Beamable.Console
 
 		private async void InitializeConsole()
 		{
+			_playerCode = _playerCode ?? "";
 			_isInitialized = false;
 			txtInput.interactable = false;
 
 			// We want to ensure that we create the instance of the Beamable API if the console is the only thing
 			// in the scene.
 			// _beamable = await API.Instance;
-			_textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);
+			if (!ConsoleCommandsByName.ContainsKey(_playerCode))
+			{
+				ConsoleCommandsByName.Add(_playerCode, new Dictionary<string, ConsoleCommand>());
+			}
+			_textAutoCompleter = new TextAutoCompleter(this, ref txtInput, ref txtAutoCompleteSuggestion);
 			_consoleHistory = new ConsoleHistory();
 
-			var ctx = BeamContext.InParent(this);
+			var ctx = BeamContext.ForPlayer(_playerCode);
 			await ctx.OnReady;
-			var console = ctx.ServiceProvider.GetService<BeamableConsole>();
 
+			if (_console != null) // clean up old events
+			{
+				_console.OnLog -= Log;
+				_console.OnExecute -= ExecuteCommand;
+				_console.OnCommandRegistered -= RegisterCommand;
+			}
+
+			_console = ctx.ServiceProvider.GetService<BeamableConsole>();
 			ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...
 
-			console.OnLog += Log;
-			console.OnExecute += ExecuteCommand;
-			console.OnCommandRegistered += RegisterCommand;
+			_console.OnLog += Log;
+			_console.OnExecute += ExecuteCommand;
+			_console.OnCommandRegistered += RegisterCommand;
 			try
 			{
-				console.LoadCommands();
+				_console.LoadCommands();
 			}
 			catch (Exception)
 			{
@@ -184,8 +205,12 @@ namespace Beamable.Console
 			txtInput.interactable = true;
 			if (canvas.isActiveAndEnabled) txtInput.Select();
 
-			_isInitialized = true;
+			// Hacky method to prevent NullReferenceException in UnityEngine.UI.InputField.GenerateCaret
+			// Delay prevents the user from interacting with the console before all UI components are configured
+			// Sadly, Unity won't fix this problem
+			await Task.Delay(100);
 
+			_isInitialized = true;
 			Log("Console ready");
 		}
 
@@ -248,7 +273,7 @@ namespace Beamable.Console
 #if UNITY_EDITOR
             return true;
 #else
-			return ConsoleConfiguration.Instance.ForceEnabled || BeamContext.InParent(this).AuthorizedUser.Value.HasScope("cli:console");
+			return ConsoleConfiguration.Instance.ForceEnabled || BeamContext.ForPlayer(_playerCode).AuthorizedUser.Value.HasScope("cli:console");
 #endif
 		}
 
@@ -266,7 +291,7 @@ namespace Beamable.Console
 			for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];
 
 
-			var ctx = BeamContext.InParent(this);
+			var ctx = BeamContext.ForPlayer(_playerCode);
 			var console = ctx.ServiceProvider.GetService<BeamableConsole>();
 			// need to re-register commands because they might have been lost in a reset or restart
 			console.OnLog -= Log;
@@ -279,12 +304,12 @@ namespace Beamable.Console
 			Log(console.Execute(parts[0], args));
 		}
 
-		private static void RegisterCommand(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback)
+		private void RegisterCommand(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback)
 		{
 			foreach (var name in command.Names)
 			{
 				var cmd = new ConsoleCommand { Command = command, Callback = callback };
-				ConsoleCommandsByName[name.ToLower()] = cmd;
+				ConsoleCommandsByName[_playerCode][name.ToLower()] = cmd;
 			}
 		}
 
@@ -292,7 +317,7 @@ namespace Beamable.Console
 		{
 			if (command == "help") return OnHelp(args);
 
-			if (ConsoleCommandsByName.TryGetValue(command.ToLower(), out var cmd))
+			if (ConsoleCommandsByName[_playerCode].TryGetValue(command.ToLower(), out var cmd))
 			{
 				var echoLine = "> " + command;
 				foreach (var arg in args) echoLine += " " + arg;
@@ -311,7 +336,7 @@ namespace Beamable.Console
 				var builder = new StringBuilder();
 				builder.AppendLine("Listing commands:");
 				var uniqueCommands = new HashSet<ConsoleCommand>();
-				var commands = ConsoleCommandsByName.Values;
+				var commands = ConsoleCommandsByName[_playerCode].Values;
 				foreach (var command in commands)
 				{
 					if (uniqueCommands.Contains(command)) continue;
@@ -326,7 +351,7 @@ namespace Beamable.Console
 			}
 
 			var commandToGetHelpAbout = args[0].ToLower();
-			if (ConsoleCommandsByName.TryGetValue(commandToGetHelpAbout, out var found))
+			if (ConsoleCommandsByName[_playerCode].TryGetValue(commandToGetHelpAbout, out var found))
 				return
 					$"Help information about {commandToGetHelpAbout}\n\tDescription: {found.Command.Description}\n\tUsage: {found.Command.Usage}";
 
@@ -413,6 +438,7 @@ namespace Beamable.Console
 
 		private WaitForSeconds _mobileCheckWaiter = new WaitForSeconds(0.1f);
 		private WaitForSeconds _keyboardOpenWaiter = new WaitForSeconds(0.5f);
+		private BeamableConsole _console;
 
 		private IEnumerator CheckMobileKeyboardState()
 		{
@@ -488,6 +514,8 @@ namespace Beamable.Console
 
 		private class TextAutoCompleter
 		{
+			private readonly Dictionary<string, Dictionary<string, ConsoleCommand>> _consoleCommandsByName;
+			private readonly ConsoleFlow _consoleFlow;
 			private readonly InputField _inputField;
 			private readonly Text _textSuggestion;
 			private int _commandIndex;
@@ -496,8 +524,12 @@ namespace Beamable.Console
 			private string _previousInput = string.Empty;
 			private bool isFinderLocked = false;
 
-			public TextAutoCompleter(ref InputField inputField, ref Text textSuggestion)
+			public TextAutoCompleter(ConsoleFlow consoleFlow,
+									 ref InputField inputField,
+									 ref Text textSuggestion)
 			{
+				_consoleCommandsByName = consoleFlow.ConsoleCommandsByName;
+				_consoleFlow = consoleFlow;
 				_inputField = inputField;
 				_textSuggestion = textSuggestion;
 			}
@@ -513,9 +545,9 @@ namespace Beamable.Console
 				_commandIndex = 0;
 				if (string.IsNullOrWhiteSpace(input))
 				{
-					_foundCommands = ConsoleCommandsByName.OrderBy(x => x.Key)
-						.Select(x => x.Key)
-						.ToList();
+					_foundCommands = _consoleCommandsByName[_consoleFlow._playerCode].OrderBy(x => x.Key)
+																   .Select(x => x.Key)
+																   .ToList();
 
 					_currentSuggestedCommand = string.Empty;
 					_textSuggestion.text = string.Empty;
@@ -523,10 +555,10 @@ namespace Beamable.Console
 				else
 				{
 					_foundCommands = input.Length < _previousInput.Length || _previousInput.Length == 0
-						? ConsoleCommandsByName.Where(x => x.Key.StartsWith(input))
-							.OrderBy(x => x.Key)
-							.Select(x => x.Key)
-							.ToList()
+						? _consoleCommandsByName[_consoleFlow._playerCode].Where(x => x.Key.StartsWith(input))
+																		  .OrderBy(x => x.Key)
+																		  .Select(x => x.Key)
+																		  .ToList()
 						: _foundCommands.Where(x => x.StartsWith(input))
 							.ToList();
 

@@ -16,9 +16,10 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
-		private bool _hasDelayedChangeCallback;
-
 		public event Action BussStyleSheetChange;
+
+		private bool _hasDelayedChangeCallback;
+		private IndentedLabelVisualElement _selectedLabelVisualElement;
 
 		public List<BussStyleSheet> StyleSheets
 		{
@@ -42,7 +43,9 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (!component) return String.Empty; // if the component has been destroyed, we cannot reason about it.
 
-			string label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
+			string label = string.IsNullOrWhiteSpace(component.Id)
+				? component.name
+				: BussNameUtility.AsIdSelector(component.Id);
 
 			foreach (string className in component.Classes)
 			{
@@ -84,9 +87,16 @@ namespace Beamable.Editor.UI.Components
 
 			BussConfiguration.OptionalInstance.DoIfExists(config =>
 			{
-				if (config.GlobalStyleSheet != null)
+				foreach (BussStyleSheet styleSheet in config.DefaultBeamableStyleSheetSheets)
 				{
-					StyleSheets.Add(config.GlobalStyleSheet);
+					if (styleSheet != null)
+						StyleSheets.Add(styleSheet);
+				}
+
+				foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
+				{
+					if (styleSheet != null)
+						StyleSheets.Add(styleSheet);
 				}
 			});
 
@@ -149,7 +159,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshSelectedLabel()
 		{
-			SelectedLabel.RefreshLabel();
+			SelectedLabel?.RefreshLabel();
 		}
 	}
 }

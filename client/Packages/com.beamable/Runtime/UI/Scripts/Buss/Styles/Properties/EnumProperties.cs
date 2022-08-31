@@ -127,4 +127,40 @@ namespace Beamable.UI.Buss
 			return new TextAlignmentOptionsBussProperty(Enum);
 		}
 	}
+
+	[Serializable]
+	public class MainTextureBussProperty : EnumBussProperty<MainTextureBussProperty.Options>
+	{
+		public MainTextureBussProperty() { }
+
+		public MainTextureBussProperty(Options option) :
+			base(option)
+		{ }
+
+		public override IBussProperty CopyProperty()
+		{
+			return new MainTextureBussProperty(Enum);
+		}
+
+		public enum Options
+		{
+			SdfSprite,
+			BackgroundSprite
+		}
+	}
+
+	[Serializable]
+	public class NineSliceSourceBussProperty : EnumBussProperty<SdfImage.NineSliceSource>
+	{
+		public NineSliceSourceBussProperty() { }
+
+		public NineSliceSourceBussProperty(SdfImage.NineSliceSource option) :
+			base(option)
+		{ }
+
+		public override IBussProperty CopyProperty()
+		{
+			return new NineSliceSourceBussProperty(Enum);
+		}
+	}
 }

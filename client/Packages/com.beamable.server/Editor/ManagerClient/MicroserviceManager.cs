@@ -4,7 +4,6 @@ using Beamable.Common.Api;
 using Beamable.Serialization;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor.ManagerClient
@@ -13,9 +12,9 @@ namespace Beamable.Server.Editor.ManagerClient
 	{
 		public const string SERVICE = "/basic/beamo";
 
-		public PlatformRequester Requester { get; }
+		public IPlatformRequester Requester { get; }
 
-		public MicroserviceManager(PlatformRequester requester)
+		public MicroserviceManager(IPlatformRequester requester)
 		{
 			Requester = requester;
 		}
@@ -109,7 +108,9 @@ namespace Beamable.Server.Editor.ManagerClient
 		public string serviceName;
 		public string checksum;
 		public bool enabled;
+		public bool archived;
 		public string imageId;
+		public string imageCpuArch;
 		public string templateId;
 		public string comments;
 		public List<ServiceDependency> dependencies;
@@ -123,6 +124,7 @@ namespace Beamable.Server.Editor.ManagerClient
 		public string id;
 		public string storageType;
 		public bool enabled;
+		public bool archived;
 		public string templateId;
 		public string checksum;
 	}

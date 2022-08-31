@@ -5,6 +5,9 @@ using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
+
+using Beamable.Common.Dependencies;
+
 using System;
 using UnityEditor;
 using UnityEditor.VspAttribution.Beamable;
@@ -24,7 +27,6 @@ namespace Beamable.Editor.Toolbox.UI
 {
 	public class ToolboxWindow : BeamEditorWindow<ToolboxWindow>
 	{
-
 		static ToolboxWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
@@ -53,20 +55,26 @@ namespace Beamable.Editor.Toolbox.UI
 
 		private ToolboxContentListVisualElement _contentListVisualElement;
 
-		private ToolboxModel _model;
+		private IToolboxViewService _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
 
 		protected override void Build()
 		{
-			minSize = new Vector2(560, 300);
+#if UNITY_2021_1_OR_NEWER
+			// To hide horizontal scroll bar
+			minSize = new Vector2(575, 300);
+#else
+			minSize = new Vector2(550, 300);
+#endif
 
 			// Refresh if/when the user logs-in or logs-out while this window is open
 			ActiveContext.OnUserChange += _ => BuildWithContext();
 
+			_model = ActiveContext.ServiceScope.GetService<IToolboxViewService>();
+
 			// Force refresh to build the initial window
 			_model?.Destroy();
 
-			_model = new ToolboxModel();
 			_model.UseDefaultWidgetSource();
 			_model.Initialize();
 
@@ -106,22 +114,20 @@ namespace Beamable.Editor.Toolbox.UI
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BASE_PATH}/ToolboxWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement();
 
 			root.Add(_windowRoot);
 
 			_actionBarVisualElement = root.Q<ToolboxActionBarVisualElement>("actionBarVisualElement");
-			_actionBarVisualElement.Model = _model;
 			_actionBarVisualElement.Refresh();
 
 			_breadcrumbsVisualElement = root.Q<ToolboxBreadcrumbsVisualElement>("breadcrumbsVisualElement");
 			_breadcrumbsVisualElement.Refresh();
 
 			_contentListVisualElement = root.Q<ToolboxContentListVisualElement>("contentListVisualElement");
-			_contentListVisualElement.Model = _model;
 			_contentListVisualElement.Refresh();
 
 			_announcementListVisualElement = root.Q<ToolboxAnnouncementListVisualElement>();
-			_announcementListVisualElement.Model = _model;
 			_announcementListVisualElement.Refresh();
 			_announcementListVisualElement.OnHeightChanged += AnnouncementList_OnHeightChanged;
 

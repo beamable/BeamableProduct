@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Api.Events;
 using Beamable.Server.Api.Groups;
@@ -16,6 +17,7 @@ using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Notifications;
+using Beamable.Server.Api.Payments;
 
 namespace Beamable.Server
 {
@@ -37,5 +39,7 @@ namespace Beamable.Server
       public IMicroserviceCloudDataApi TrialData { get; set; }
       public IMicroserviceRealmConfigService RealmConfig { get; set; }
       public IMicroserviceCommerceApi Commerce { get; set; }
+      public IMicroserviceChatApi Chat { get; set; }
+      public IMicroservicePaymentsApi Payments { get; set; }
    }
 }

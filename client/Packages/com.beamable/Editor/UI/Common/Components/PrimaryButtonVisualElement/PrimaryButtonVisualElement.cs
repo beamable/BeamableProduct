@@ -27,6 +27,8 @@ namespace Beamable.Editor.UI.Components
 		private List<FormConstraint> _constraints = new List<FormConstraint>();
 
 		private const string CLASS_NAME_REGEX = "^[A-Za-z_][A-Za-z0-9_]*$";
+		private const string MANIFEST_NAME_REGEX = @"(^[0-9]*$)|(^[a-z][a-z0-9\-]*$)";
+		private const string ALIAS_REGEX = "^[a-z][a-z0-9-]*$";
 
 		public string Text { get; private set; }
 
@@ -172,7 +174,7 @@ namespace Beamable.Editor.UI.Components
 		public static string AliasErrorHandler(string alias)
 		{
 			if (string.IsNullOrEmpty(alias)) return "Alias is required";
-			if (!IsSlug(alias)) return "Alias must start with a lowercase letter, and must contain all lower case letters, numbers, or dashes";
+			if (!IsValidAlias(alias)) return "Alias must be at least 2 characters long and must start with a lowercase letter, contain only lower case letters, numbers or dashes";
 			return null;
 		}
 
@@ -260,23 +262,19 @@ namespace Beamable.Editor.UI.Components
 		{
 			return (str => string.Equals(tf.value, str));
 		}
+
+		private static bool IsValidAlias(string alias)
+		{
+			if (alias == null) return false;
+			bool isMatch = Regex.IsMatch(alias, ALIAS_REGEX);
+			return alias.Length > 1 && isMatch;
+		}
+
 		public static bool IsSlug(string slug)
 		{
 			if (slug == null) return false;
-			return slug.Length > 1 && GenerateSlug(slug).Equals(slug.Trim());
-		}
-
-		public static string GenerateSlug(string phrase)
-		{
-			string str = phrase.ToLower().Trim();
-			// invalid chars
-			str = Regex.Replace(str, @"^\d+", ""); // remove leading numbers..
-			str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
-			// convert multiple spaces into one space
-			str = Regex.Replace(str, @"\s+", " ").Trim();
-			// cut and trim
-			str = Regex.Replace(str, @"\s", "-").Trim(); // hyphens
-			return str;
+			bool isMatch = Regex.IsMatch(slug, MANIFEST_NAME_REGEX);
+			return slug.Length > 1 && isMatch;
 		}
 
 		public static bool IsGameNameValid(string gameName, out string errorMessage)

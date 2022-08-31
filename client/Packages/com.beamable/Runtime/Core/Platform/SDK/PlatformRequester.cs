@@ -20,9 +20,12 @@ namespace Beamable.Api
 	{
 		AccessToken Token { get; set; }
 		string TimeOverride { get; set; }
-		string Cid { get; set; }
-		string Pid { get; set; }
+		new string Cid { get; set; }
+		new string Pid { get; set; }
+
+		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		string Language { get; set; }
+
 		IAuthApi AuthService { set; }
 		void DeleteToken();
 	}
@@ -40,6 +43,7 @@ namespace Beamable.Api
 	public class PlatformRequester : IPlatformRequester, IHttpRequester
 	{
 		private const string ACCEPT_HEADER = "application/json";
+		private readonly PackageVersion _beamableVersion;
 		private AccessTokenStorage _accessTokenStorage;
 		private IConnectivityService _connectivityService;
 		private bool _disposed;
@@ -55,16 +59,21 @@ namespace Beamable.Api
 		public string TimeOverride { get; set; }
 		public IAuthApi AuthService { private get; set; }
 		public string RequestTimeoutMs { get; set; }
-		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService)
+
+		private readonly OfflineCache _offlineCache;
+
+		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
+			_beamableVersion = beamableVersion;
 			_accessTokenStorage = accessTokenStorage;
 			_connectivityService = connectivityService;
+			_offlineCache = offlineCache;
 		}
 
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = new PlatformRequester(Host, _accessTokenStorage, _connectivityService)
+			var requester = new PlatformRequester(Host, _beamableVersion, _accessTokenStorage, _connectivityService, _offlineCache)
 			{
 				Cid = Cid,
 				Pid = Pid,
@@ -237,9 +246,9 @@ namespace Beamable.Api
 						   _connectivityService?.ReportInternetLoss();
 					   }
 
-					   if (useCache && httpNoInternet && Application.isPlaying)
+					   if (useCache && httpNoInternet && Application.isPlaying && _offlineCache.UseOfflineCache)
 					   {
-						   return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
+						   return _offlineCache.Get<T>(uri, Token, includeAuthHeader);
 					   }
 
 					   switch (error)
@@ -271,15 +280,15 @@ namespace Beamable.Api
 					   //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
 				   }).Then(_response =>
 				   {
-					   if (useCache && Token != null && Application.isPlaying)
+					   if (useCache && Token != null && Application.isPlaying && _offlineCache.UseOfflineCache)
 					   {
-						   OfflineCache.Set<T>(uri, _response, Token, includeAuthHeader);
+						   _offlineCache.Set<T>(uri, _response, Token, includeAuthHeader);
 					   }
 				   });
 			}
-			else if (!internetConnectivity && useCache && Application.isPlaying)
+			else if (!internetConnectivity && useCache && Application.isPlaying && _offlineCache.UseOfflineCache)
 			{
-				return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
+				return _offlineCache.Get<T>(uri, Token, includeAuthHeader);
 			}
 			else
 			{
@@ -305,49 +314,53 @@ namespace Beamable.Api
 		private UnityWebRequest BuildWebRequest(Method method, string uri, string contentType, byte[] body,
 		   bool includeAuthHeader)
 		{
-			PlatformLogger.Log($"PLATFORM REQUEST: {Host}{uri}");
+			PlatformLogger.Log($"<b>[PlatformRequester][{method.ToString()}]</b> {Host}{uri}");
 
 			// Prepare the request
 			UnityWebRequest request = BuildWebRequest(method, uri, contentType, body);
 			request.SetRequestHeader("Accept", ACCEPT_HEADER);
 			if (!string.IsNullOrEmpty(Cid))
 			{
-				request.SetRequestHeader("X-KS-CLIENTID", Cid);
+				request.SetRequestHeader(Constants.Requester.HEADER_CID, Cid);
 			}
 
 			if (!string.IsNullOrEmpty(Pid))
 			{
-				request.SetRequestHeader("X-KS-PROJECTID", Pid);
+				request.SetRequestHeader(Constants.Requester.HEADER_PID, Pid);
 			}
+
+#if !BEAMABLE_DISABLE_VERSION_HEADERS
+			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, _beamableVersion.ToString());
+			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
+			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
+			request.SetRequestHeader(Constants.Requester.HEADER_ENGINE_TYPE, $"Unity-{Application.platform}");
+#endif
 
 			if (includeAuthHeader)
 			{
 				var authHeader = GenerateAuthorizationHeader();
 				if (authHeader != null)
 				{
-					request.SetRequestHeader("Authorization", authHeader);
+					request.SetRequestHeader(Constants.Requester.HEADER_AUTH, authHeader);
 				}
 			}
 
 			if (Shard != null)
 			{
-				request.SetRequestHeader("X-KS-SHARD", Shard);
+				request.SetRequestHeader(Constants.Requester.HEADER_SHARD, Shard);
 			}
 
 			if (TimeOverride != null)
 			{
-				request.SetRequestHeader("X-KS-TIME", TimeOverride);
-			}
-
-			if (Language != null)
-			{
-				request.SetRequestHeader("Accept-Language", Language);
+				request.SetRequestHeader(Constants.Requester.HEADER_TIME_OVERRIDE, TimeOverride);
 			}
 
 			if (RequestTimeoutMs != null)
 			{
-				request.SetRequestHeader("X-KS-TIMEOUT", RequestTimeoutMs);
+				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
 			}
+
+			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 
 			return request;
 		}
@@ -357,7 +370,7 @@ namespace Beamable.Api
 			// swallow any responses if already disposed
 			if (_disposed)
 			{
-				PlatformLogger.Log("PLATFORM REQUESTER: Disposed, Ignoring Response");
+				PlatformLogger.Log("<b>[PlatformRequester]</b> Disposed, Ignoring Response");
 				return;
 			}
 
@@ -384,7 +397,14 @@ namespace Beamable.Api
 				else
 				{
 					// Parse JSON object and resolve promise
-					PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
+					if (string.IsNullOrWhiteSpace(responsePayload))
+					{
+						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}");
+					}
+					else
+					{
+						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}: {responsePayload}");
+					}
 
 					try
 					{
@@ -423,7 +443,7 @@ namespace Beamable.Api
 		public PlatformError Error { get; }
 		public UnityWebRequest Request { get; }
 		public PlatformRequesterException(PlatformError error, UnityWebRequest request, string responsePayload)
-		: base("HTTP Error", request.method, request.url, request.responseCode, responsePayload)
+		: base(Constants.Requester.ERROR_PREFIX_UNITY_SDK, request.method, request.url, request.responseCode, responsePayload)
 		{
 			Error = error;
 			Request = request;

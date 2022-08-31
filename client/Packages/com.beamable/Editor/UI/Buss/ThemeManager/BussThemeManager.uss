@@ -1,8 +1,17 @@
-#themeManagerContainer {
+#_windowRoot {
+    flex-grow: 1;
+}
+
+#window-main {
+    flex-direction: column;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+    min-width: 550px;
+    min-height: 700px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    padding-top: 10px;
-    padding-left: 10px;
-    padding-right: 10px;
     padding-bottom: 10px;
     flex-grow: 1;
 }
@@ -12,7 +21,6 @@
 }
 
 #navigationGroup {
-    height: 210px;
     margin-bottom: 10px;
 }
 
@@ -25,12 +33,13 @@
     flex-grow: 1;
 }
 
-#filterToggle {
+#toggle {
     align-self: flex-end;
     margin-right: 10px;
+    margin-bottom: 5px
 }
 
-#filterToggle Label {
+#toggle Label {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     -unity-text-align: middle-right;
@@ -49,4 +58,8 @@ BussElementHierarchyVisualElement {
 
 #themeManagerContainerScrollView {
     flex-grow: 1;
+}
+
+InlineStyleCardVisualElement {
+    padding-bottom: 10px;
 }

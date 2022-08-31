@@ -8,6 +8,7 @@
     bottom: 0px;
     right: 0px;
     left: 0px;
+    min-width: 380px;
 }
 #microserviceContentVisualElement{
     flex-grow: 1;

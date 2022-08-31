@@ -46,6 +46,7 @@ namespace Beamable.Editor.Content.Components
 		private HeaderVisualElement _headerVisualElement;
 		private ExtendedListView _listView;
 		private List<HeaderSizeChange> _headerSizeChanges;
+		private List<ContentVisualElement> _contentVisualElements = new List<ContentVisualElement>();
 		private bool _isKeyboardInputBlocked;
 
 		public ContentListVisualElement() : base(nameof(ContentListVisualElement)) { }
@@ -66,7 +67,7 @@ namespace Beamable.Editor.Content.Components
 																TrickleDown.NoTrickleDown);
 
 			_headerVisualElement = Root.Q<HeaderVisualElement>("headerVisualElement");
-			_headerVisualElement.Headers = new[] { "Content ID", "Content Type", "Tags" };
+			_headerVisualElement.Headers = new[] { "Content ID", "Content Type", "Tags", "Latest update" };
 			_headerVisualElement.Refresh();
 			_headerVisualElement.OnValuesChanged += Header_OnValuesResized;
 			_headerSizeChanges = GetHeaderSizeChanges();
@@ -84,6 +85,7 @@ namespace Beamable.Editor.Content.Components
 
 			var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
 			_listView.AddManipulator(manipulator);
+			_contentVisualElements = new List<ContentVisualElement>();
 
 			_listView.RefreshPolyfill();
 
@@ -123,7 +125,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			_headerSizeChanges = headerFlexSizes;
 			// update all content...
-			foreach (var listElement in _listView.Children())
+			foreach (var listElement in _contentVisualElements)
 			{
 				ApplyColumnSizes(listElement);
 			}
@@ -132,7 +134,7 @@ namespace Beamable.Editor.Content.Components
 		private List<HeaderSizeChange> GetHeaderSizeChanges()
 		{
 			return _headerSizeChanges ??
-				   (_headerSizeChanges = _headerVisualElement.ComputeSizes(new List<float> { 1, .5f, .2f }));
+				   (_headerSizeChanges = _headerVisualElement.ComputeSizes(new List<float> { 1, .5f, .25f, .25f }));
 		}
 
 		private void ApplyColumnSizes(VisualElement listElement)
@@ -145,10 +147,13 @@ namespace Beamable.Editor.Content.Components
 			listElement.Q("nameTextField").style.flexGrow = (GetHeaderSizeChanges()[0].Flex);
 			listElement.Q("pathLabel").style.flexGrow = (GetHeaderSizeChanges()[1].Flex);
 			listElement.Q("tagListVisualElement").style.flexGrow = (GetHeaderSizeChanges()[2].Flex);
+			listElement.Q("lastChanged").style.flexGrow = (GetHeaderSizeChanges()[3].Flex);
 
-			listElement.Q("nameTextField").style.minWidth = (_headerSizeChanges[0].MinWidth);
-			listElement.Q("pathLabel").style.minWidth = (_headerSizeChanges[1].MinWidth);
-			listElement.Q("tagListVisualElement").style.minWidth = (_headerSizeChanges[2].MinWidth);
+
+			listElement.Q("nameTextField").style.minWidth = (_headerSizeChanges[0].SafeMinWidth);
+			listElement.Q("pathLabel").style.minWidth = (_headerSizeChanges[1].SafeMinWidth);
+			listElement.Q("tagListVisualElement").style.minWidth = (_headerSizeChanges[2].SafeMinWidth);
+			listElement.Q("lastChanged").style.minWidth = (_headerSizeChanges[3].SafeMinWidth);
 		}
 
 		private void Model_OnFilteredContentChanged()
@@ -198,6 +203,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			ContentVisualElement contentVisualElement = new ContentVisualElement();
 
+			_contentVisualElements.Add(contentVisualElement);
 			return contentVisualElement;
 		}
 
@@ -243,8 +249,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			if (string.IsNullOrEmpty(contentItemDescriptor.AssetPath))
 			{
-				Debug.LogError(new Exception("ListView_OnItemChosen() Error : " +
-											 "no AssetPath for " + contentItemDescriptor.Name));
+				Debug.LogWarning($"The selected content=[{contentItemDescriptor.Name}] does not exist locally. First, download the content from the server to be able to edit it.");
 				return;
 			}
 
@@ -322,7 +327,9 @@ namespace Beamable.Editor.Content.Components
 		private void AddCreateItemMenu(ContextualMenuPopulateEvent evt)
 		{
 			var selectedTypes = Model.SelectedContentTypes;
-			var types = Model.GetContentTypes().ToList();
+			var types = Model.GetContentTypes()
+				.OrderBy(x => x.TypeName)
+				.ToList();
 			string currentCategoryName = "";
 
 			if (selectedTypes.FirstOrDefault() is ContentTypeTreeViewItem selectedType)

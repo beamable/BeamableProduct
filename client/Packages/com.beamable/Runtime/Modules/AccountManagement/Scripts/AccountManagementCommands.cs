@@ -2,6 +2,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.ConsoleCommands;
 using Beamable.Signals;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -10,8 +11,13 @@ namespace Beamable.AccountManagement
 	[BeamableConsoleCommandProvider]
 	public class AccountManagementCommands
 	{
+		private readonly BeamContext _ctx;
+
 		[Preserve]
-		public AccountManagementCommands() { }
+		public AccountManagementCommands(BeamContext ctx)
+		{
+			_ctx = ctx;
+		}
 
 		[BeamableConsoleCommand("account_toggle", "emit an account management toggle event", "account_toggle")]
 		public string ToggleAccount(string[] args)
@@ -24,7 +30,7 @@ namespace Beamable.AccountManagement
 		[BeamableConsoleCommand("account_list", "list user data", "account_list")]
 		public string ListCredentials(string[] args)
 		{
-			API.Instance.Then(de =>
+			_ctx.OnReady.Map(_ => _ctx.Api).Then(de =>
 			{
 				de.GetDeviceUsers().Then(all =>
 				{
@@ -38,7 +44,7 @@ namespace Beamable.AccountManagement
 					});
 				});
 			});
-			return "";
+			return string.Empty;
 		}
 	}
 }

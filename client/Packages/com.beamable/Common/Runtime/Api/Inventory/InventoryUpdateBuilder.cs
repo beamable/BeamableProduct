@@ -15,7 +15,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -35,7 +35,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -54,7 +54,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -74,7 +74,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -95,15 +95,15 @@ namespace Beamable.Common.Api.Inventory
 		private SerializableNullableBool _serializedApplyVipBonus;
 
 		[SerializeField]
-		private SerializableDictionaryStringToLong _serializedCurrencies;
+		private SerializableDictionaryStringToLong _serializedCurrencies = new SerializableDictionaryStringToLong();
 		[SerializeField]
-		private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties;
+		private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
 		[SerializeField]
-		private List<ItemCreateRequest> _serializedNewItems;
+		private List<ItemCreateRequest> _serializedNewItems = new List<ItemCreateRequest>();
 		[SerializeField]
-		private List<ItemDeleteRequest> _serializedDeleteItems;
+		private List<ItemDeleteRequest> _serializedDeleteItems = new List<ItemDeleteRequest>();
 		[SerializeField]
-		private List<ItemUpdateRequest> _serializedUpdateItems;
+		private List<ItemUpdateRequest> _serializedUpdateItems = new List<ItemUpdateRequest>();
 
 		/// <summary>
 		/// Checks if the <see cref="InventoryUpdateBuilder"/> has any inventory updates.
@@ -248,7 +248,7 @@ namespace Beamable.Common.Api.Inventory
 		/// <returns>The mutated <see cref="InventoryUpdateBuilder"/></returns>
 		public InventoryUpdateBuilder DeleteItem<TContent>(long itemId) where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return DeleteItem(contentId, itemId);
 		}
 
@@ -297,7 +297,7 @@ namespace Beamable.Common.Api.Inventory
 		public InventoryUpdateBuilder UpdateItem<TContent>(long itemId, Dictionary<string, string> properties)
 			where TContent : ItemContent, new()
 		{
-			var contentId = ContentRegistry.TypeToName(typeof(TContent));
+			var contentId = ContentTypeReflectionCache.Instance.TypeToName(typeof(TContent));
 			return UpdateItem(contentId, itemId, properties);
 		}
 
@@ -311,6 +311,40 @@ namespace Beamable.Common.Api.Inventory
 			where TContent : ItemContent, new()
 		{
 			return UpdateItem(item.ItemContent.Id, item.Id, item.Properties);
+		}
+
+		/// <summary>
+		/// Get a set of inventory scopes that the updater will affect.
+		/// </summary>
+		/// <returns>A set of scopes that will be changed based on the changes described in the builder</returns>
+		public HashSet<string> BuildScopes()
+		{
+			var scopes = new HashSet<string>();
+			foreach (var item in newItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in updateItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var item in deleteItems)
+			{
+				scopes.Add(item.contentId);
+			}
+
+			foreach (var curr in currencies)
+			{
+				scopes.Add(curr.Key);
+			}
+
+			foreach (var curr in currencyProperties)
+			{
+				scopes.Add(curr.Key);
+			}
+			return scopes;
 		}
 
 		void ISerializationCallbackReceiver.OnBeforeSerialize()

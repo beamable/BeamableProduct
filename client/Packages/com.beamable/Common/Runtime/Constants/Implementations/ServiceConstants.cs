@@ -23,6 +23,8 @@ namespace Beamable.Common
 
 				public const string REMOTE_ONLY = "Remote Only";
 
+				public const string CONTENT_UPDATE_EVENT = "content.manifest";
+
 				public const int HEALTH_PORT = 6565;
 
 				public const string UPLOAD_CONTAINER_MESSAGE = "Uploaded container service=[{0}]";
@@ -34,7 +36,7 @@ namespace Beamable.Common
 				public const string STORAGE_IMAGE_CLASS = "storageImage";
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
 
-				public const float DEFAULT_ROW_HEIGHT = 55.0f;
+				public const float DEFAULT_ROW_HEIGHT = 56.0f;
 				public const int MAX_ROW = 6;
 				public static readonly Vector2 MIN_SIZE = new Vector2(900, 440);
 				public const float ROW_HEIGHT = 65;
@@ -45,6 +47,7 @@ namespace Beamable.Common
 					: text;
 
 				public const string GENERATOR_SUFFIX = "_generator";
+				public const string DOTNET_COMPILE_ERROR_SYMBOL = "error CS";
 
 				public static class Logs
 				{
@@ -56,6 +59,7 @@ namespace Beamable.Common
 					public const string SERVICE_PROVIDER_INITIALIZED = "Service provider initialized";
 					public const string EVENT_PROVIDER_INITIALIZED = "Event provider initialized";
 					public const string STORAGE_READY = "Waiting for connections";
+					public const string GENERATED_CLIENT_PREFIX = "Generated Client Code.";
 				}
 
 				public static class Dialogs

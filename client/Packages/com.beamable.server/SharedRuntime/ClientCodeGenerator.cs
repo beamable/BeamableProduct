@@ -46,8 +46,8 @@ namespace Beamable.Server.Generator
 		public const string PARAMETER_STRING = "Parameter";
 		public const string CLIENT_NAMESPACE = "Beamable.Server.Clients";
 
-		private string ExtensionClassToFind => $"internal class {TargetExtensionClassName}";
-		private string ExtensionClassToReplace => $"internal static class {TargetExtensionClassName}";
+		private string ExtensionClassToFind => $"public class {TargetExtensionClassName}";
+		private string ExtensionClassToReplace => $"public static class {TargetExtensionClassName}";
 
 		public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
 			$"MicroserviceParameters{descriptor.Name}Client";
@@ -98,7 +98,7 @@ namespace Beamable.Server.Generator
 
 			extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);
 			extensionClass.IsClass = true;
-			extensionClass.TypeAttributes = TypeAttributes.NotPublic;
+			extensionClass.TypeAttributes = TypeAttributes.Public;
 			extensionClass.CustomAttributes = new CodeAttributeDeclarationCollection
 			{
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(BeamContextSystemAttribute)))
@@ -150,11 +150,11 @@ namespace Beamable.Server.Generator
 			targetUnit.Namespaces.Add(samples);
 
 			// need to scan and get methods.
-			var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+			var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			var allParameterTypes = new HashSet<Type>();
 			foreach (var method in allMethods)
 			{
-				var clientCallable = method.GetCustomAttribute<ClientCallableAttribute>();
+				var clientCallable = method.GetCustomAttribute<CallableAttribute>();
 				if (clientCallable == null)
 				{
 					continue;
@@ -334,7 +334,7 @@ namespace Beamable.Server.Generator
 		public class CallableMethodInfo
 		{
 			public MethodInfo MethodInfo;
-			public ClientCallableAttribute ClientCallable;
+			public CallableAttribute ClientCallable;
 		}
 	}
 }

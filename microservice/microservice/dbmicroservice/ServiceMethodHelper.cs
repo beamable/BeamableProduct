@@ -40,11 +40,11 @@ namespace Beamable.Server
 
          Log.Debug(Logs.SCANNING_CLIENT_PREFIX + type.Name);
 
-         var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+         var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
          foreach (var method in allMethods)
          {
             var closureMethod = method;
-            var attribute = method.GetCustomAttribute<ClientCallableAttribute>();
+            var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null) continue;
 
             var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
@@ -72,6 +72,7 @@ namespace Beamable.Server
             servicePath = provider.pathPrefix + servicePath;
 
             var requiredScopes = attribute.RequiredScopes;
+            var requiredUser = attribute.RequireAuthenticatedUser;
 
             Log.Debug("Found {method} for {path}", method.Name, servicePath);
 
@@ -98,7 +99,8 @@ namespace Beamable.Server
                };
                if (namedDeserializers.ContainsKey(parameterName))
                {
-                  throw new Exception($"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]");
+                  throw new BeamableMicroserviceException($"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]")
+                     { ErrorCode = BeamableMicroserviceException.kBMS_ERROR_CODE_DUPLICATED_PARAMTER_NAME};
                }
 
                parameterNames.Add(parameterName);
@@ -154,6 +156,7 @@ namespace Beamable.Server
                ParameterNames = parameterNames,
                ParameterDeserializers = namedDeserializers,
                RequiredScopes = requiredScopes,
+               RequireAuthenticatedUser = requiredUser,
                Path = servicePath,
                Deserializers = deserializers,
                Method = method,
@@ -161,6 +164,11 @@ namespace Beamable.Server
                ResponseSerializer = responseSerializer,
                Tag = tag
             };
+
+            if (output.Select(sm => sm.Path).Contains(servicePath))
+               throw new BeamableMicroserviceException($"Overloaded Callables are not currently supported in C#MS! Class={method.DeclaringType.Name} Method={method.Name}")
+                  { ErrorCode = BeamableMicroserviceException.kBMS_ERROR_CODE_OVERLOADED_METHOD_UNSUPPORTED };
+            
             output.Add(serviceMethod);
          }
 

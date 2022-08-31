@@ -11,6 +11,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -35,6 +36,8 @@ namespace Beamable
 	public interface IObservedPlayer : IUserContext
 	{
 		PlayerStats Stats { get; }
+		PlayerLobby Lobby { get; }
+		PlayerParty Party { get; }
 	}
 
 	/// <summary>
@@ -136,6 +139,11 @@ namespace Beamable
 		[SerializeField]
 		private PlayerStats _playerStats;
 
+		[SerializeField] private PlayerLobby _playerLobby;
+
+		[SerializeField]
+		private PlayerParty _playerParty;
+
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -152,6 +160,16 @@ namespace Beamable
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
 		/// <summary>
+		/// Access the <see cref="PlayerLobby"/> for this context.
+		/// </summary>
+		public PlayerLobby Lobby => _playerLobby = _playerLobby ?? _serviceScope.GetService<PlayerLobby>();
+
+		/// <summary>
+		/// Access the <see cref="PlayerParty"/> for this context.
+		/// </summary>
+		public PlayerParty Party => _playerParty = _playerParty ?? _serviceScope.GetService<PlayerParty>();
+
+		/// <summary>
 		/// <para>
 		/// Access the player's inventory
 		/// </para>
@@ -164,13 +182,17 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="IContentApi"/> for this player.
 		/// </summary>
-		public IContentApi Content =>
-			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
+		public IContentApi Content => _contentService = _contentService ?? _serviceScope.GetService<IContentApi>();
 
 		/// <summary>
 		/// Access the <see cref="IBeamableAPI"/> for this player.
 		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
+
+		/// <summary>
+		/// Access the player's friends and blocked enemies.
+		/// </summary>
+		public PlayerSocial Social => _serviceScope.GetService<PlayerSocial>();
 
 		public string TimeOverride
 		{
@@ -206,6 +228,7 @@ namespace Beamable
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
+		private OfflineCache _offlineCache;
 
 		#endregion
 
@@ -241,6 +264,7 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
+			await Stop();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
 
@@ -370,8 +394,10 @@ namespace Beamable
 			builder.AddSingleton<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
+					_environment.SdkVersion,
 					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>()
+					provider.GetService<IConnectivityService>(),
+					provider.GetService<OfflineCache>()
 				)
 			);
 			builder.AddSingleton<IBeamableApiRequester>(
@@ -408,8 +434,7 @@ namespace Beamable
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
-
-
+			_offlineCache = ServiceProvider.GetService<OfflineCache>();
 		}
 
 
@@ -438,7 +463,7 @@ namespace Beamable
 			try
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 			}
 			catch (NoConnectivityException)
@@ -476,13 +501,19 @@ namespace Beamable
 						refresh_token = "offline",
 						expires_in = long.MaxValue - 1
 					});
-					OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me", new User
+
+					if (_offlineCache.UseOfflineCache)
 					{
-						id = Random.Range(int.MinValue, 0),
-						scopes = new List<string>(),
-						thirdPartyAppAssociations = new List<string>(),
-						deviceIds = new List<string>()
-					}, Requester.AccessToken, true);
+						_offlineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me",
+							new User
+							{
+								id = Random.Range(int.MinValue, 0),
+								scopes = new List<string>(),
+								thirdPartyAppAssociations = new List<string>(),
+								deviceIds = new List<string>()
+							}, Requester.AccessToken, true);
+					}
+
 					_connectivityService.OnReconnectOnce(async () =>
 					{
 						// disable the old token, because its bad
@@ -575,7 +606,6 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = "en"; // TODO: Put somewhere, like in configuration
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();
@@ -704,6 +734,7 @@ namespace Beamable
 
 			await _serviceScope.Dispose();
 
+			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
 
@@ -741,6 +772,8 @@ namespace Beamable
 			if (GameObject)
 			{
 				UnityEngine.Object.Destroy(GameObject);
+				_behaviour = null;
+				_gob = null;
 			}
 
 

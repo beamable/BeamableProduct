@@ -12,7 +12,7 @@ namespace Beamable.Common
 				{
 					public const string BUSS_THEME_MANAGER_PATH = BASE_PATH + "/ThemeManager";
 
-					public static readonly Vector2 THEME_MANAGER_WINDOW_SIZE = new Vector2(500, 300);
+					public static readonly Vector2 THEME_MANAGER_WINDOW_SIZE = new Vector2(550, 700);
 
 					public const string DELETE_STYLE_HEADER = "Delete style";
 					public const string DELETE_STYLE_MESSAGE = "Are You sure You want to delete this style?";
@@ -22,13 +22,25 @@ namespace Beamable.Common
 
 					public const string NO_BUSS_STYLE_SHEET_AVAILABLE =
 						"There should be created at least one Buss Style Sheet and it should be referenced by Buss Element present at scene";
+
+					public const string ADD_STYLE_BUTTON_LABEL = "Add Style";
+					public const string ADD_STYLE_OPTIONS_HEADER = "Select target stylesheet";
+
+					public const string DUPLICATE_STYLESHEET_BUTTON_LABEL = "Duplicate factory stylesheet";
+					public const string DUPLICATE_STYLESHEET_OPTIONS_HEADER = "Select source stylesheet";
 				}
 
 				public static partial class MenuItems
 				{
 					public const string DUPLICATE = "Duplicate";
 					public const string COPY_TO = "Copy to";
+					public const string COPY_INTO_NEW_STYLE_SHEET = "Copy into new style sheet";
 					public const string REMOVE = "Remove";
+				}
+
+				public static partial class Paths
+				{
+					public const string FACTORY_STYLES_RESOURCES_PATH = "DefaultStyleSheets";
 				}
 			}
 		}

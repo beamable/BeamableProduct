@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Beamable.Common.Content.Validation
 {
@@ -12,7 +13,7 @@ namespace Beamable.Common.Content.Validation
 	///
 	/// #### Related Links
 	/// - See Beamable.Common.Content.Validation.ValidationAttribute script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -130,6 +131,78 @@ namespace Beamable.Common.Content.Validation
 				throw new ContentValidationException(obj, field, "reference cannot be null. ");
 			}
 
+			// TODO TD985946 Instead of validating those string values we should have a dropdown with already valid options
+			// add id prefix if it was not provided by the user
+			void SetPrefixFromTypeField(string contentName)
+			{
+				// get prefix from the `type` field
+				Type fieldType = field.Field.DeclaringType;
+				if (fieldType != null)
+				{
+					var typeField = fieldType.GetField("type");
+					if (typeField != null)
+					{
+						string typeValue = typeField.GetValue(field.Target).ToString();
+						if (!string.IsNullOrWhiteSpace(typeValue))
+						{
+							string fullId = $"{typeValue}.{contentName}";
+							field.Field.SetValue(field.Target, fullId);
+						}
+					}
+				}
+			}
+			if (!ctx.ContentExists(id))
+			{
+				var idParts = id.Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
+				if (idParts.Length != 2)
+				{
+					// add obvious prefix
+					if (AllowedTypes.Length == 1)
+					{
+						if (ContentTypeReflectionCache.Instance.TryGetName(AllowedTypes[0], out string prefix))
+						{
+							object value = field.GetValue();
+							if (value is List<string> list)
+							{
+								for (int i = 0; i < list.Count; i++)
+								{
+									var split = list[i].Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
+									if (split.Length == 0)
+									{
+										continue;
+									}
+
+									if (split.Length != 2 || split[0] != prefix)
+									{
+										var newId = $"{prefix}.{split.Last()}";
+										if (ctx.ContentExists(newId))
+										{
+											list[i] = newId;
+										}
+									}
+								}
+							}
+							else if (value is string)
+							{
+								var newId = $"{prefix}.{id}";
+								if (ctx.ContentExists(newId))
+								{
+									field.Field.SetValue(field.Target, newId);
+								}
+							}
+						}
+					}
+					else if (idParts.Length > 0)
+					{
+						SetPrefixFromTypeField(idParts.Last());
+					}
+				}
+				else if (idParts.Length == 2)
+				{
+					SetPrefixFromTypeField(idParts.Last());
+				}
+			}
+
 			// check for valid types on the id string
 			if (AllowedTypes.Length > 0)
 			{
@@ -150,7 +223,6 @@ namespace Beamable.Common.Content.Validation
 			}
 
 		}
-
 
 	}
 }

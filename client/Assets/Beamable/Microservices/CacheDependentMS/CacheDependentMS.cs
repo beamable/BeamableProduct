@@ -20,19 +20,19 @@ namespace Beamable.Server
 	/// Things to Note:
 	///  - We use Microsoft's Dependency Injection for setting up the C#MS application internally.
 	///  - The IServiceBuilder and IServiceProvider are wrappers to provide you some utilities when working with Microsoft's DI.
-	///  - Currently, there is an issue that causes Singleton services to be disposed before they should be. The workaround is shown in the sample below.   /// 
+	///  - Currently, there is an issue that causes Singleton services to be disposed before they should be. The workaround is shown in the sample below.   ///
 	/// </summary>
 	[Microservice("CacheDependentMS")]
 	public partial class CacheDependentMS : Microservice
 	{
 
 		/// <summary>
-		/// Initialized global Cache instance --- This will eventually become unnecessary and managed by Beamable. 
+		/// Initialized global Cache instance --- This will eventually become unnecessary and managed by Beamable.
 		/// </summary>
 		private static readonly Cache CachedData = new Cache();
 
 		/// <summary>
-		/// This is the declaration of the class you wish to use to cache information. It can be any class you wish and does NOT have to be an internal class. 
+		/// This is the declaration of the class you wish to use to cache information. It can be any class you wish and does NOT have to be an internal class.
 		/// </summary>
 		public class Cache
 		{
@@ -54,33 +54,33 @@ namespace Beamable.Server
 			serviceBuilder.AddSingleton(_ => CachedData);
 
 			// Once the issue is fixed, you'll be able to simply say this.
-			// serviceBuilder.AddSingleton<Cache>(); 
+			// serviceBuilder.AddSingleton<Cache>();
 		}
 
 		/// <summary>
 		/// This is the async method that you can use to affect the C#MS's initialization. You can have any of these as you wish. They'll be executed in declaration or you can use
 		/// <see cref="InitializeServicesAttribute.ExecutionOrder"/> to make the order explicit. These are executed after you have access to our platform's services but before the C#MS is
-		/// receiving any player-traffic.  
+		/// receiving any player-traffic.
 		/// <para/>
 		/// You can use the <paramref name="serviceInitializer"/> to access any of our MicroserviceApi interfaces as well as our <see cref="IStorageObjectConnectionProvider"/>.
 		/// These can be used normally as you use in Client/AdminOnlyCallable methods, with a single caveat:
 		/// <para/>
-		///  - If you are calling an endpoint that gets data relative to a specific-player you must go through the AssumeUser("userId") flow and use <see cref="RequestHandlerData.Services"/> returned. 
+		///  - If you are calling an endpoint that gets data relative to a specific-player you must go through the AssumeUser("userId") flow and use <see cref="RequestHandlerData.Services"/> returned.
 		/// <para/>
 		/// Things to note:
 		/// <para/>
 		///  - You must return await a <see cref="Promise{Unit}"/>
 		///  - Any exception thrown during this Promise-chain will result in the C#MS failing to start.
 		///  - If you wish to handle an exception without failing to start, you must wrap it with your own try/catch block.
-		///  - If you prefer to use async/await instead of the callback syntax, you can. 
-		/// </summary>      
+		///  - If you prefer to use async/await instead of the callback syntax, you can.
+		/// </summary>
 		[InitializeServices]
 		public static /* async */ Promise<Unit> InitializeServicesForCacheDependentMS(IServiceInitializer serviceInitializer)
 		{
 			// Declares returning promise that'll be completed after we do what we want to ensure the C#MS is ready to receive traffic.
 			var promise = new Promise<Unit>();
 
-			// Gets our service that'll be used as a Cache. 
+			// Gets our service that'll be used as a Cache.
 			var cache = serviceInitializer.GetServiceAsCache<Cache>(); // This call has a internal guard that guarantee's the Cache service was registered as a singleton.
 																	   // var cache = serviceInitializer.GetService<Cache>(); // This call does the same as above, but does not have the guard.
 
@@ -104,11 +104,12 @@ namespace Beamable.Server
 				   promise.CompleteSuccess(new Unit());
 			   });
 
+
 			return promise;
 
 
 			// // Async/Await version (you no longer need the promise variable at the first line)
-			//  
+			//
 			// cache.CachedView = await leaderboardService.GetBoard(new LeaderboardRef() {Id = "leaderboards.New_LeaderboardContent"}, 0, int.MaxValue);
 			// BeamableLogger.Log($"[Async] Cache-ing LeaderboardView {cache.CachedView}");
 			// return new Unit();
@@ -116,41 +117,43 @@ namespace Beamable.Server
 
 
 		/// <summary>
-		/// This is the recommended way to get the Cache instance. For forward compatibility with the fix for the singleton issue, you should NOT use the static readonly cache directly.  
+		/// This is the recommended way to get the Cache instance. For forward compatibility with the fix for the singleton issue, you should NOT use the static readonly cache directly.
 		/// </summary>
 		private readonly Cache _instance;
 
 		/// <summary>
 		/// Constructor with declared service dependencies. This is how you tell the Dependency Injection framework that this Microservice depends on the Cache service.
-		/// </summary>      
+		/// </summary>
 		public CacheDependentMS(Cache injectedCache)
 		{
 			_instance = injectedCache;
 		}
 
 		/// <summary>
-		/// Just a trivial example of a ClientCallable that access the cached data. 
+		/// Just a trivial example of a ClientCallable that access the cached data.
 		/// </summary>
 		/// <returns></returns>
 		[ClientCallable]
 		public LeaderBoardView GetCachedView()
 		{
+			UnityEngine.Debug.LogFormat("{0}", 0);
+			
 			return _instance.CachedView;
 		}
 
 		/// <summary>
-		/// Just a trivial example of a ClientCallable that access the cached data. 
+		/// Just a trivial example of a ClientCallable that access the cached data.
 		/// </summary>
 		/// <returns></returns>
 		[ClientCallable]
-		public LeaderBoardView GetCachedView(int testParameters)
+		public LeaderBoardView GetCachedView2(int testParameters)
 		{
 			return _instance.CachedView;
 		}
 
 
 		/// <summary>
-		/// Just a trivial example of a ClientCallable that access the cached data. 
+		/// Just a trivial example of a ClientCallable that access the cached data.
 		/// </summary>
 		/// <returns></returns>
 		[ClientCallable]
@@ -160,7 +163,7 @@ namespace Beamable.Server
 		}
 
 		/// <summary>
-		/// Just a trivial example of a ClientCallable that access the cached data. 
+		/// Just a trivial example of a ClientCallable that access the cached data.
 		/// </summary>
 		/// <returns></returns>
 		[ClientCallable]

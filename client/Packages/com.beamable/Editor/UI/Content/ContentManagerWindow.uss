@@ -2,7 +2,6 @@
 
 #_windowRoot {
     flex-grow: 1;
-    min-width:500px;
 }
 #window-main {
     position: absolute;
@@ -10,6 +9,8 @@
     bottom: 0px;
     right: 0px;
     left: 0px;
+    min-width: 550px;
+    min-height: 150px;
 }
 
 #explorer-container {

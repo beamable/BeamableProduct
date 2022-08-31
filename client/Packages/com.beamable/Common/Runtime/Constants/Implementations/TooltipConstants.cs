@@ -24,6 +24,8 @@
 				public const string PLAY_STORAGE = "Run the Storage";
 				public const string MORE = "More";
 				public const string PLAY_NOT_LOGGED_IN = "You must be logged in to start the service";
+				public const string PLAY_DISABLED_GENERAL = "Cannot Run the Service";
+				public const string STOP_SERVICE_GENERAL = "Stop";
 
 				public const string DESELECT = "Deselect";
 				public const string SELECT = "Select";
@@ -46,6 +48,7 @@
 				public const string ERASE_ALL_STYLE = "Erase all style";
 				public const string REFRESH = "Refresh";
 				public const string MORE = "More";
+				public const string OPTIONS = "Options";
 			}
 
 			public static partial class Toolbox
@@ -58,6 +61,7 @@
 				public const string TAG = "Tag";
 				public const string MY_ACCOUNT = "My Account";
 				public const string LAYOUT = "Layout";
+				public const string SUPPORT_STATUS = "Support Status";
 				public const string PORTRAIT_AND_LANDSCAPE = "Portrait & Landscape";
 				public const string PORTRAIT = "Portrait";
 				public const string LANDSCAPE = "Landscape";

@@ -11,60 +11,36 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a96b3852b93843ef94fc3401214399e, type: 3}
   m_Name: MicroserviceConfiguration
-  m_EditorClassIdentifier:
-  Microservices:
-  - ServiceName: DeploymentTest
-    Enabled: 1
-    TemplateId: small
-    CustomDockerFileStrings: EXPOSE 27017:27017
-    IncludeDebugTools: 0
-    DebugData:
-      Username: root
-      Password: Password!
-      SshPort: 11108
-  - ServiceName: SecondService2
-    Enabled: 0
-    TemplateId: small
-    CustomDockerFileStrings:
-    IncludeDebugTools: 0
-    DebugData:
-      Username: root
-      Password: Password!
-      SshPort: 11101
-  - ServiceName: Demo
-    Enabled: 1
-    TemplateId: small
-    CustomDockerFileStrings:
-    IncludeDebugTools: 0
-    DebugData:
-      Username: root
-      Password: Password!
-      SshPort: 11102
-  - ServiceName: ForJustin
-    Enabled: 1
-    TemplateId: small
-    CustomDockerFileStrings:
-    IncludeDebugTools: 0
-    DebugData:
-      Username: root
-      Password: Password!
-      SshPort: 11103
-  - ServiceName: CacheDependentMS
-    Enabled: 1
-    TemplateId: small
-    CustomDockerFileStrings:
-    IncludeDebugTools: 0
-    DebugData:
-      Username: root
-      Password: Password!
-      SshPort: 11104
-  StorageObjects:
-  CustomContainerPrefix: []
+  m_EditorClassIdentifier: 
+  Microservices: []
+  StorageObjects: []
+  ServiceCodeHandlesOnLastDomainReload: []
+  LastBuiltDockerImagesCodeHandles: []
+  ServiceDependencyChecksums: []
+  CustomContainerPrefix: 
   AutoReferenceContent: 0
+  AutoBuildCommonAssembly: 1
+  EnsureMongoAssemblyDependencies: 1
   ColorLogs: 0
-  EnableDockerBuildkit: 0
-  DockerAppCheckInMicroservicesWindow: 1
-  DockerCommand:
+  DisableDockerBuildkit: 1
+  DockerDesktopCheckInMicroservicesWindow: 1
+  EnableHotModuleReload: 1
+  EnableAutoPrune: 1
+  RiderDebugTools:
+    HasValue: 0
+    Value:
+      RiderVersion: 2021.3.3
+      RiderToolsDownloadUrl: https://download.jetbrains.com/resharper/dotUltimate.2021.3.2/JetBrains.Rider.RemoteDebuggerUploads.linux-x64.2021.3.2.zip
+  WindowsDockerCommand: docker
+  UnixDockerCommand: /usr/local/bin/docker
+  LocalMicroserviceCPUArchitecturePreference:
+    HasValue: 0
+    Value: 
+  RemoteMicroserviceCPUArchitecturePreference:
+    HasValue: 0
+    Value: 
+  WindowsDockerDesktopPath: C:\Program Files\Docker\Docker\Docker Desktop.exe
+  UnixDockerDesktopPath: /Applications/Docker.app/
   ForwardContainerLogsToUnityConsole: 1
   LogProcessLabelColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   LogStandardOutColor: {r: 0.4, g: 0.4, b: 1, a: 1}

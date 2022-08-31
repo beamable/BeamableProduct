@@ -1,3 +1,4 @@
+using Beamable.Common.Shop;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -39,6 +40,15 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class Optional<T> : Optional
 	{
+		public static implicit operator T(Optional<T> option) => option?.HasValue == true ? (T)option.Value : default(T);
+		public static implicit operator Optional<T>(T val)
+		{
+			var x = new Optional<T>();
+			x.Value = val;
+			x.HasValue = true;
+			return x;
+		}
+
 		public T Value;
 		public override object GetValue()
 		{
@@ -51,16 +61,34 @@ namespace Beamable.Common.Content
 			HasValue = true;
 		}
 
+		public void Set(T value)
+		{
+			Value = value;
+			HasValue = true;
+		}
+
+		/// <summary>
+		/// Erase the value of the Optional, and mark the instance such that the result from the <see cref="Optional.HasValue"/> property be false.
+		/// </summary>
+		public virtual void Clear()
+		{
+			HasValue = false;
+			Value = default;
+		}
+
 		public override Type GetOptionalType()
 		{
 			return typeof(T);
 		}
 
-		public T GetOrThrow()
+		public T GetOrThrow() => GetOrThrow(null);
+
+		public T GetOrThrow(Func<Exception> exFactory)
 		{
-			if (!HasValue) throw new ArgumentException("Optional value does not exist, but it was forced.");
+			if (!HasValue) throw exFactory?.Invoke() ?? new ArgumentException("Optional value does not exist, but it was forced.");
 			return Value;
 		}
+
 		public T GetOrElse(T otherwise) => GetOrElse(() => otherwise);
 
 		public T GetOrElse(Func<T> otherwise)
@@ -100,7 +128,14 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalBoolean : Optional<bool> { }
+	public class OptionalValue<T> : Optional<T> where T : struct
+	{
+		public static implicit operator T?(OptionalValue<T> option) => option?.HasValue == true ? (T?)option.Value : null;
+	}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalBoolean : OptionalValue<bool> { }
 
 	public static class OptionalBooleanExtensions
 	{
@@ -112,15 +147,83 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalInt : Optional<int> { }
+	public class OptionalBool : OptionalValue<bool> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLong : Optional<long> { }
+	public class OptionalInt : OptionalValue<int> { }
+
+	[System.Serializable]
+	public class OptionalObject : Optional<object> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalDouble : Optional<double> { }
+	public class OptionalLong : OptionalValue<long> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalFloat : OptionalValue<float> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalByte : OptionalValue<byte> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalShort : OptionalValue<short> { }
+
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalGuid : OptionalValue<Guid> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDouble : OptionalValue<double> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalList<T> : Optional<List<T>> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArray<T> : Optional<T[]> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalIntArray : OptionalArray<int> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalStringArray : OptionalArray<string> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalFloatArray : OptionalArray<float> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDoubleArray : OptionalArray<double> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalShortArray : OptionalArray<short> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalLongArray : OptionalArray<long> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalUuidArray : OptionalArray<Guid> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalByteArray : OptionalArray<byte> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDictionaryStringToObject : Optional<Dictionary<string, object>> { }
 
 	[System.Serializable]
 	[Agnostic]

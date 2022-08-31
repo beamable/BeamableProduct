@@ -62,10 +62,10 @@ namespace Beamable.Common.Reflection
 		/// Mask for all possible <see cref="MemberTypes"/> that can be "Members" of declared classes/structs.
 		/// </summary>
 		public const MemberTypes INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES = MemberTypes.Constructor |
-																			  MemberTypes.Event |
-																			  MemberTypes.Field |
-																			  MemberTypes.Method |
-																			  MemberTypes.Property;
+																			 MemberTypes.Event |
+																			 MemberTypes.Field |
+																			 MemberTypes.Method |
+																			 MemberTypes.Property;
 
 		/// <summary>
 		/// Type of the attribute you are interested in.
@@ -196,16 +196,19 @@ namespace Beamable.Common.Reflection
 		/// <param name="declaredMemberAttributesToSearchFor">List of pre-filtered <see cref="AttributeOfInterest"/> that passes <see cref="AttributeOfInterest.TargetsDeclaredMember"/>.</param>
 		/// <param name="foundAttributes">Dictionary with pre-allocated lists for all registered <see cref="AttributeOfInterest"/>.</param>
 		private void GatherMembersFromAttributesOfInterest(MemberInfo member,
-																		IReadOnlyList<AttributeOfInterest> attributesToSearchFor,
-																		IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
-																		Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
+														   IReadOnlyList<AttributeOfInterest> attributesToSearchFor,
+														   IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
+														   Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
 		{
 			// Check for attributes over the type itself.
 			foreach (var attributeOfInterest in attributesToSearchFor)
 			{
-				var attribute = member.GetCustomAttribute(attributeOfInterest.AttributeType, false);
-				if (attribute != null)
+				var attributes = member.GetCustomAttributes(attributeOfInterest.AttributeType, false);
+				foreach (var attrObj in attributes)
+				{
+					var attribute = attrObj as Attribute;
 					foundAttributes[attributeOfInterest].Add(new MemberAttribute(member, attribute));
+				}
 			}
 
 			// Checks for Attributes declared over types' members
@@ -221,9 +224,9 @@ namespace Beamable.Common.Reflection
 					// For each declared member, check if they have the current attribute of interest -- if they do, add them to the found attribute list.
 					// In this step we catch every member with the attribute --- individual systems are welcome to parse and yield errors at a later step.
 					foreach (var memberInfo in type.FindMembers(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES, BindingFlags.Public |
-															   BindingFlags.NonPublic |
-															   BindingFlags.Instance |
-															   BindingFlags.Static, null, null))
+																															   BindingFlags.NonPublic |
+																															   BindingFlags.Instance |
+																															   BindingFlags.Static, null, null))
 					{
 						if (attributeOfInterest.TryGetFromMemberInfo(memberInfo, out var attribute))
 							foundAttributes[attributeOfInterest].Add(new MemberAttribute(memberInfo, attribute));

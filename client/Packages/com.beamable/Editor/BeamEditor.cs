@@ -1,25 +1,28 @@
 using Beamable.AccountManagement;
 using Beamable.Api;
+using Beamable.Api.Caches;
 using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Assistant;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
 using Beamable.Console;
 using Beamable.Content;
 using Beamable.Editor;
-using Beamable.Editor.Alias;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
-using Beamable.Editor.Realms;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
+using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
@@ -52,6 +55,48 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
+
+	public static class BeamEditorDependencies
+	{
+		public static IDependencyBuilder DependencyBuilder;
+
+		static BeamEditorDependencies()
+		{
+			DependencyBuilder = new DependencyBuilder();
+			DependencyBuilder.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
+			DependencyBuilder.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(
+																   BeamableEnvironment.ApiUrl,
+																   provider.GetService<EnvironmentData>().SdkVersion,
+																   provider.GetService<AccessTokenStorage>(),
+																   null,
+																   provider.GetService<OfflineCache>())
+			{
+				RequestTimeoutMs = $"{30 * 1000}"
+			}
+			);
+			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
+			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
+			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
+
+			DependencyBuilder.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
+			DependencyBuilder.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
+			DependencyBuilder.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
+			DependencyBuilder.AddSingleton<AliasService>();
+			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
+
+			DependencyBuilder.AddSingleton<BeamableVsp>();
+			DependencyBuilder.AddSingleton<BeamableDispatcher>();
+
+			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
+			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
+			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+
+			DependencyBuilder.AddSingleton<ServiceStorage>();
+			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
+			DependencyBuilder.AddSingleton<EnvironmentService>();
+		}
+	}
+
 	[InitializeOnLoad, BeamContextSystem]
 	public static class BeamEditor
 	{
@@ -66,12 +111,15 @@ namespace Beamable
 		static BeamEditor()
 		{
 			Initialize();
+			AssemblyReloadEvents.beforeAssemblyReload += () =>
+			{
+				BeamEditorContext.StopAll().Wait();
+			};
 		}
 
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
@@ -147,7 +195,7 @@ namespace Beamable
 					{
 						if (allowRetry)
 						{
-							BeamEditorContext.WriteConfig("", "");
+							BeamEditorContext.WriteConfig(string.Empty, string.Empty);
 							return TryInitConfigDatabase(false);
 						}
 						else
@@ -157,6 +205,7 @@ namespace Beamable
 							return false;
 						}
 					}
+
 					throw;
 				}
 			}
@@ -199,6 +248,11 @@ namespace Beamable
 				EditorReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
 				EditorReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
 			}
+
+			// Add non-ScriptableObject-based Reflection-Cache systems into the pipeline.
+			var contentReflectionCache = new ContentTypeReflectionCache();
+			EditorReflectionCache.RegisterTypeProvider(contentReflectionCache);
+			EditorReflectionCache.RegisterReflectionSystem(contentReflectionCache);
 
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
 			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
@@ -255,46 +309,39 @@ namespace Beamable
 			}
 
 			// Initialize BeamEditorContext dependencies
-			BeamEditorContextDependencies = new DependencyBuilder();
-			BeamEditorContextDependencies.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
-			BeamEditorContextDependencies.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(BeamableEnvironment.ApiUrl,
-																											 provider.GetService<AccessTokenStorage>(),
-																											 null)
-			{ RequestTimeoutMs = $"{30 * 1000}" }
-			);
-			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IHttpRequester);
-			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as PlatformRequester);
-			BeamEditorContextDependencies.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
-
-			BeamEditorContextDependencies.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
-			BeamEditorContextDependencies.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
-			BeamEditorContextDependencies.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
-			BeamEditorContextDependencies.AddSingleton<AliasService>();
-			BeamEditorContextDependencies.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
-
+			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
-			BeamEditorContextDependencies.AddSingleton<BeamableVsp>();
+			EditorReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
 				BeamEditorContextDependencies.AddSingleton(globallyAccessibleHintSystem.GetType(), () => globallyAccessibleHintSystem);
 
-			// Set flag of FacebookImporter
-			BeamableFacebookImporter.SetFlag();
+			// Set flag of SocialsImporter
+			BeamableSocialsImporter.SetFlag();
 
 			async void InitDefaultContext()
 			{
 				await BeamEditorContext.Default.InitializePromise;
 
+#if BEAMABLE_DEVELOPER
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
-						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
-						  $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Cid}] - " +
+				          $"[{BeamEditorContext.Default.ServiceScope.GetService<PlatformRequester>().Pid}]");
+#endif
 				IsInitialized = true;
 
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 				// Initialize toolbar
 				BeamableToolbarExtender.LoadToolbarExtender();
+#endif
+				if (SessionState.GetBool(SESSION_STATE_INSTALL_DEPS, false) && !BeamEditorContext.HasDependencies())
+				{
+					await BeamEditorContext.Default.CreateDependencies();
+					SessionState.EraseBool(SESSION_STATE_INSTALL_DEPS);
+				}
 			}
 
 			InitDefaultContext();
@@ -399,6 +446,7 @@ namespace Beamable
 
 			var ctx = new BeamEditorContext();
 			ctx.Init(playerCode, dependencyBuilder);
+			All.Add(ctx);
 			EditorContexts[playerCode] = ctx;
 			return ctx;
 		}
@@ -411,11 +459,19 @@ namespace Beamable
 		public Promise InitializePromise { get; private set; }
 		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
+		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 
 		public CustomerView CurrentCustomer;
 		public RealmView CurrentRealm;
 		public RealmView ProductionRealm;
 		public EditorUser CurrentUser;
+
+		/// <summary>
+		/// The permissions for the <see cref="CurrentUser"/> in the <see cref="CurrentRealm"/>.
+		/// If either the user or realm are null, the <see cref="Permissions"/> will be at the lowest level.
+		/// </summary>
+		public UserPermissions Permissions =>
+			CurrentUser?.GetPermissionsForRealm(CurrentRealm?.Pid) ?? new UserPermissions(null);
 
 		public bool HasToken => Requester.Token != null;
 		public bool HasCustomer => CurrentCustomer != null && !string.IsNullOrEmpty(CurrentCustomer.Cid);
@@ -424,6 +480,12 @@ namespace Beamable
 		public event Action<RealmView> OnRealmChange;
 		public event Action<CustomerView> OnCustomerChange;
 		public event Action<EditorUser> OnUserChange;
+
+		public Action OnServiceDeleteProceed;
+		public Action OnServiceArchived;
+		public Action OnServiceUnarchived;
+
+		public OptionalString RealmSecret { get; private set; } = new OptionalString();
 
 		public void Init(string playerCode, IDependencyBuilder builder)
 		{
@@ -441,7 +503,7 @@ namespace Beamable
 
 			if (!ConfigFileExists)
 			{
-				SaveConfig("", "", BeamableEnvironment.ApiUrl);
+				SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
 				Logout();
 				InitializePromise = Promise.Success;
 				return;
@@ -451,13 +513,12 @@ namespace Beamable
 			ConfigDatabase.TryGetString("alias", out var alias);
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
-			var platform = ConfigDatabase.GetString("platform");
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
 			if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
 			{
-				SaveConfig("", "", BeamableEnvironment.ApiUrl);
+				SaveConfig(string.Empty, pid, BeamableEnvironment.ApiUrl);
 				Logout();
 				InitializePromise = Promise.Success;
 				return;
@@ -467,8 +528,11 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
 			requester.Pid = pid;
-			requester.Host = platform;
+			requester.Host = BeamableEnvironment.ApiUrl;
 			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
+
+			// pre-initialize the dispatcher to dodge having to make the dependency scope handling multi-threaded inserts
+			ServiceScope.GetService<BeamableDispatcher>();
 
 			async Promise Initialize()
 			{
@@ -486,9 +550,10 @@ namespace Beamable
 				{
 					LoadLastAuthenticatedUserDataForToken(accessToken, pid, out CurrentUser, out CurrentCustomer, out CurrentRealm);
 
-
 					if (CurrentUser == null || CurrentCustomer == null || CurrentRealm == null || accessToken.IsExpired)
-						await Login(accessToken);
+					{
+						await Login(accessToken, pid);
+					}
 					else
 					{
 						// Set the token manually as we already have all the data we need be considered initialized (Serialized CurrentUser/CurrentCustomer/CurrentRealm data.
@@ -500,6 +565,8 @@ namespace Beamable
 #pragma warning restore CS4014
 						await Promise.Success;
 					}
+
+					await ResetRealmSecret();
 				}
 			}
 
@@ -508,27 +575,30 @@ namespace Beamable
 
 		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
 		{
-			var res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+			AliasResolve res = await GetAliasResolve(aliasOrCid);
+
 			var alias = res.Alias.GetOrElse("");
 			var cid = res.Cid.GetOrThrow();
 
+			// Gets the stored pid, if its there
+			ConfigDatabase.TryGetString("pid", out var pid);
+
 			// Set the config defaults to reflect the new Customer.
-			SaveConfig(alias, null, BeamableEnvironment.ApiUrl, cid);
+			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
 
 			// Attempt to get an access token.
-			return await Login(email, password);
+			return await Login(email, password, pid);
 		}
 
-		public async Promise Login(string email, string password)
+		public async Promise Login(string email, string password, string pid = null)
 		{
 			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			var tokenRes = await authService.Login(email, password, customerScoped: true);
-			var token = new AccessToken(accessTokenStorage, requester.Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
+			var token = new AccessToken(accessTokenStorage, requester.Cid, pid, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
-			await Login(token);
-
+			await Login(token, pid);
 		}
 
 		public async Promise Login(AccessToken token, string pid = null)
@@ -542,6 +612,16 @@ namespace Beamable
 			try
 			{
 				realm = await realmService.GetRealm();
+
+				if (realm == null && CurrentRealm != null) // reset current realm if last realm don't exist on serverside
+				{
+					var currentRealmFromServer = await realmService.GetRealms().Map(all => { return all.Find(v => v.Pid == CurrentRealm.Pid); });
+
+					if (currentRealmFromServer == null)
+					{
+						CurrentRealm = null;
+					}
+				}
 			}
 			catch (Exception ex)
 			{
@@ -559,15 +639,20 @@ namespace Beamable
 			{
 				var games = await realmService.GetGames();
 
-				if (pid == null)
+				if (string.IsNullOrEmpty(pid))
 				{
 					var realms = await realmService.GetRealms(games.First());
-					realm = realms.First();
+					realm = realms.First(rv => !rv.Archived);
 				}
 				else
-					realm = (await realmService.GetRealms(pid)).First(rv => rv.Pid == pid);
+				{
+					realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
+					if (realm == null)
+					{
+						Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+					}
+				}
 			}
-
 
 			await (realm == null ? Promise.Success : SwitchRealm(realm));
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
@@ -622,14 +707,13 @@ namespace Beamable
 			}
 		}
 
-
 		private Promise<Unit> SaveLastAuthenticatedUserDataForToken(AccessToken token, EditorUser authUserData, CustomerView authCustomerData, RealmView authRealmView)
 		{
 			var cid = token.Cid;
 			var pid = authRealmView.Pid;
 
-			var userSerializedData = SerializeToString(authUserData);// JsonUtility.ToJson(authUserData);
-			var customerSerializedData = SerializeToString(authCustomerData);// JsonUtility.ToJson(authCustomerData);
+			var userSerializedData = SerializeToString(authUserData); // JsonUtility.ToJson(authUserData);
+			var customerSerializedData = SerializeToString(authCustomerData); // JsonUtility.ToJson(authCustomerData);
 			var realmSerializedData = SerializeToString(authRealmView); //JsonUtility.ToJson(authRealmView);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_user_data", userSerializedData);
 			PlayerPrefs.SetString($"{PlayerCode}{cid}.{pid}.auth_customer_data", customerSerializedData);
@@ -640,7 +724,6 @@ namespace Beamable
 
 		private void ClearLastAuthenticatedUserDataForToken(AccessToken token, string pid)
 		{
-
 			if (string.IsNullOrEmpty(pid)) return; // nothing to do if the pid is empty.
 			var cid = token?.Cid;
 			if (string.IsNullOrEmpty(cid)) return; // nothing to do if the cid is empty.
@@ -699,6 +782,40 @@ namespace Beamable
 			}
 		}
 
+		private async Promise<AliasResolve> GetAliasResolve(string aliasOrCid)
+		{
+			var requester = ServiceScope.GetService<PlatformRequester>();
+			AliasResolve res = null;
+
+			if (!string.IsNullOrEmpty(requester.Pid)) // check is cached realm archived
+			{
+				try
+				{
+					res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+				}
+				catch (Exception ex)
+				{
+					if (ex is RequesterException err && err.Status == 400)
+					{
+						requester.Pid = string.Empty;
+						CurrentRealm = null;
+
+						res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+					}
+					else
+					{
+						throw ex;
+					}
+				};
+			}
+			else
+			{
+				res = await ServiceScope.GetService<AliasService>().Resolve(aliasOrCid);
+			}
+
+			return res;
+		}
+
 		public void Logout()
 		{
 			var requester = ServiceScope.GetService<PlatformRequester>();
@@ -709,7 +826,7 @@ namespace Beamable
 			BeamableEnvironment.ReloadEnvironment();
 		}
 
-		public static void WriteConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public static void WriteConfig(string alias, string pid, string host = null, string cid = "")
 		{
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
@@ -726,10 +843,10 @@ namespace Beamable
 				pid = pid,
 				platform = host,
 				socket = host,
-				containerPrefix = containerPrefix
+				containerPrefix = GetCustomContainerPrefix()
 			};
 
-			string path = "Assets/Beamable/Resources/config-defaults.txt";
+			string path = ConfigDatabase.GetFullPath("config-defaults");
 			var asJson = JsonUtility.ToJson(config, true);
 
 			var writeConfig = true;
@@ -744,7 +861,11 @@ namespace Beamable
 
 			if (writeConfig)
 			{
-				Directory.CreateDirectory("Assets/Beamable/Resources/");
+				string directoryName = Path.GetDirectoryName(path);
+				if (!string.IsNullOrWhiteSpace(directoryName))
+				{
+					Directory.CreateDirectory(directoryName);
+				}
 
 				if (File.Exists(path))
 				{
@@ -776,21 +897,26 @@ namespace Beamable
 
 				AssetDatabase.Refresh();
 			}
-
 		}
 
-		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
+		public void SaveConfig(string alias, string pid, string host = null, string cid = "")
 		{
 			if (string.IsNullOrEmpty(host))
 			{
 				host = BeamableEnvironment.ApiUrl;
 			}
-			WriteConfig(alias, pid, host, cid, containerPrefix);
+
+			WriteConfig(alias, pid, host, cid);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			requester.Cid = cid;
 			requester.Pid = pid;
 			requester.Host = host;
+		}
+
+		private static string GetCustomContainerPrefix()
+		{
+			return ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) ? customPrefix : null;
 		}
 
 		#region Customer & User Creation and Management
@@ -820,22 +946,15 @@ namespace Beamable
 
 		public async Promise CreateCustomer(string alias, string gameName, string email, string password)
 		{
-			async Task HandleNewCustomerAndUser(TokenResponse token, string cid, string pid)
+			async Promise HandleNewCustomerAndUser(TokenResponse tokenResponse, string cid, string pid)
 			{
 				SaveConfig(alias, pid, null, cid);
-
-				await Login(token);
-				await DoSilentContentPublish(true);
-			}
-
-			async Promise Login(TokenResponse tokenResponse)
-			{
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
-				var cid = CurrentCustomer.Cid;
-				var pid = CurrentRealm.Pid;
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
 											tokenResponse.refresh_token, tokenResponse.expires_in);
-				await this.Login(token);
+				CurrentRealm = null; // erase the current realm; if there is one..
+				await Login(token, pid);
+				await DoSilentContentPublish(true);
 			}
 
 			var customerName = alias; // TODO: For now...
@@ -843,14 +962,7 @@ namespace Beamable
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 
 			var res = await authService.RegisterCustomer(email, password, gameName, customerName, alias);
-			var task = HandleNewCustomerAndUser(res.token, res.cid.ToString(), res.pid);
-			var promise = new Promise<Unit>();
-			await task.ContinueWith(_ =>
-			{
-				// Put the execution back on the Editor thread; lest ye suffer Unity's wrath.
-				EditorApplication.delayCall += () => { promise.CompleteSuccess(PromiseBase.Unit); };
-			});
-			await promise;
+			await HandleNewCustomerAndUser(res.token, res.cid.ToString(), res.pid);
 		}
 
 		public async Promise SendPasswordReset(string cidOrAlias, string email)
@@ -896,7 +1008,6 @@ namespace Beamable
 		public Promise<string> GetRealmSecret()
 		{
 			// TODO this will only work if the current user is an admin.
-
 			return Requester.Request<CustomerResponse>(Method.GET, "/basic/realms/admin/customer").Map(resp =>
 			{
 				var matchingProject = resp.customer.projects.FirstOrDefault(p => p.name.Equals(CurrentRealm.Pid));
@@ -925,6 +1036,22 @@ namespace Beamable
 			return SwitchRealm(realm.FindRoot(), realm?.Pid);
 		}
 
+		public async Promise<OptionalString> ResetRealmSecret()
+		{
+			try
+			{
+				var secret = await GetRealmSecret();
+				RealmSecret.SetValue(secret);
+			}
+			catch
+			{
+				// this is expected to fail if the user doesn't have permission to get the realm secret.
+				RealmSecret.Clear();
+			}
+			return RealmSecret;
+		}
+
+
 		public async Promise SwitchRealm(RealmView game, string pid)
 		{
 			if (game == null)
@@ -942,7 +1069,6 @@ namespace Beamable
 				throw new Exception("Cannot switch to a realm with a null pid");
 			}
 
-			await ServiceScope.GetService<ContentIO>().FetchManifest();
 			var realms = await ServiceScope.GetService<RealmsService>().GetRealms(game);
 			var set = EditorPrefHelper
 					  .GetMap(REALM_PREFERENCE)
@@ -953,10 +1079,24 @@ namespace Beamable
 			if (CurrentRealm == null || !CurrentRealm.Equals(realm))
 			{
 				CurrentRealm = realm;
+				await SaveRealmInConfig();
+				await ServiceScope.GetService<ContentIO>().FetchManifest();
+				await ResetRealmSecret();
 				OnRealmChange?.Invoke(realm);
+				ProductionRealm = game;
+				return;
+			}
+			else
+			{
+				await ServiceScope.GetService<ContentIO>().FetchManifest();
 			}
 			ProductionRealm = game;
+			await SaveRealmInConfig();
+			await ResetRealmSecret();
+		}
 
+		private async Promise SaveRealmInConfig()
+		{
 			// Ensure we save the current cached data for domain reloads.
 			await SaveLastAuthenticatedUserDataForToken(Requester.Token, CurrentUser, CurrentCustomer, CurrentRealm);
 			SaveConfig(CurrentCustomer.Alias, CurrentRealm.Pid, cid: CurrentCustomer.Cid);
@@ -1010,6 +1150,20 @@ namespace Beamable
 		}
 
 		#endregion
+
+		public static async Task StopAll()
+		{
+			foreach (var ctx in All)
+			{
+				await ctx.Stop();
+			}
+		}
+
+		private async Promise Stop()
+		{
+			IsStopped = true;
+			await ServiceScope.Dispose();
+		}
 	}
 
 	[Serializable]

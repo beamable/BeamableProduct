@@ -6,10 +6,11 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 {
 	public class ParseTests
 	{
+		private ContentTypeReflectionCache contentTypeReflectionCache;
 		[SetUp]
 		public void Setup()
 		{
-			ContentRegistry.LoadRuntimeTypeData();
+			contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 		}
 
 		[Test]

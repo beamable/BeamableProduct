@@ -4,6 +4,7 @@
 }
 /* === END - ANNOUNCEMENTS === */
 
+/* TODO TD625827 UI hover interactions implemented in different way for each element. Need to standardize our UI elements. */
 .boundedButton:hover, .unboundedButton:hover {
     -unity-background-image-tint-color: #8D8D8D;
 }

@@ -305,7 +305,7 @@ namespace Beamable.UI.Buss
 		{
 			foreach (BussElement element in elements.ToArray())
 			{
-				if (element != this)
+				if (element != this && element != null)
 				{
 					element.CheckParent();
 				}

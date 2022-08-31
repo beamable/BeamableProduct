@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
-		private BussStyleRule _styleRule;
+		private BussStyleDescription _styleRule;
 		private Action<string, IBussProperty> _onPropertyCreated;
 
 		private LabeledTextField _variableName;
@@ -34,7 +34,7 @@ namespace Beamable.Editor.UI.Buss
 		// Numbers and special characters are not valid
 		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
 
-		public NewVariableVisualElement(BussStyleRule styleRule, Action<string, IBussProperty> onPropertyCreated) : base(
+		public NewVariableVisualElement(BussStyleDescription styleRule, Action<string, IBussProperty> onPropertyCreated) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
 			_styleRule = styleRule;

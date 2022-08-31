@@ -2,6 +2,7 @@
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -28,13 +29,18 @@ namespace Beamable.Editor.UI.Components
 		private VariableDatabase _variableDatabase;
 		private PropertySourceTracker _propertySourceTracker;
 		private BussStyleSheet _styleSheet;
+		private BussStyleDescription _styleDescription;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
+
+		public BussElement InlineStyleOwner { get; set; }
+
+		public event Action PropertyChanged;
 
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
 
-		public bool PropertyIsInStyle => _styleRule.Properties.Contains(_propertyProvider);
+		public bool PropertyIsInStyle => _styleDescription.Properties.Contains(_propertyProvider);
 
 		public string VariableSource
 		{
@@ -77,7 +83,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void LabelClicked(MouseDownEvent evt)
 		{
-			if (!_styleSheet.IsWritable)
+			if (_styleSheet != null && !_styleSheet.IsWritable)
 			{
 				return;
 			}
@@ -106,7 +112,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
+						  BussStyleDescription styleRule,
 						  BussPropertyProvider property,
 						  VariableDatabase variableDatabase,
 						  PropertySourceTracker propertySourceTracker)
@@ -114,7 +120,8 @@ namespace Beamable.Editor.UI.Components
 			_variableDatabase = variableDatabase;
 			_propertySourceTracker = propertySourceTracker;
 			_styleSheet = styleSheet;
-			_styleRule = styleRule;
+			_styleDescription = styleRule;
+			_styleRule = styleRule as BussStyleRule;
 			_propertyProvider = property;
 
 			Init();
@@ -131,15 +138,15 @@ namespace Beamable.Editor.UI.Components
 			PropertySourceTracker context = null;
 			if (_propertySourceTracker != null && _propertySourceTracker.Element != null)
 			{
-				if (_styleRule.Selector?.CheckMatch(_propertySourceTracker.Element) ?? false)
+				if (_styleRule?.Selector?.CheckMatch(_propertySourceTracker.Element) ?? false)
 				{
 					context = _propertySourceTracker;
 				}
 			}
 
-			var result =
-				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleRule, _variableDatabase,
-																	 context, out var property, out var variableSource);
+			BussStylePropertyVisualElementUtility.PropertyValueState result =
+				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleDescription, _variableDatabase,
+																	 context, out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
 
 			SetVariableSource(variableSource);
 
@@ -170,7 +177,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetOverridenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result)
 		{
-			var overriden = false;
+			bool overriden = false;
 			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
 			{
 				overriden = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
@@ -278,6 +285,8 @@ namespace Beamable.Editor.UI.Components
 					_styleSheet.TriggerChange();
 				}
 			}
+
+			PropertyChanged?.Invoke();
 		}
 
 		protected override void OnDestroy()
@@ -291,8 +300,16 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemoveProperty()
 		{
-			IBussProperty bussProperty = _propertyProvider.GetProperty();
-			_styleSheet.RemoveStyleProperty(bussProperty, _styleRule);
+			if (InlineStyleOwner != null)
+			{
+				InlineStyleOwner.InlineStyle.Properties.Remove(_propertyProvider);
+				PropertyChanged?.Invoke();
+			}
+			else
+			{
+				IBussProperty bussProperty = _propertyProvider.GetProperty();
+				_styleSheet.RemoveStyleProperty(bussProperty, _styleRule);
+			}
 		}
 
 		private void SetupVariableConnection()
@@ -305,6 +322,7 @@ namespace Beamable.Editor.UI.Components
 				_variableConnection = new VariableConnectionVisualElement();
 				_variableParent.Add(_variableConnection);
 				_variableConnection.Refresh();
+				_variableConnection.OnConnectionChange += () => PropertyChanged?.Invoke();
 			}
 
 			_variableConnection.Setup(_styleSheet, _styleRule, _propertyProvider, _variableDatabase);
@@ -312,14 +330,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void CheckIfIsReadOnly()
 		{
-			var isReadOnly = _styleSheet.IsReadOnly;
+			bool isWritable = _styleSheet != null && _styleSheet.IsWritable;
 
-			_labelComponent.SetEnabled(!isReadOnly);
-			_propertyVisualElement.SetEnabled(!isReadOnly);
+			_labelComponent.SetEnabled(isWritable);
+			_propertyVisualElement.SetEnabled(isWritable);
 
 			if (_variableConnection != null)
 			{
-				_variableConnection.SetEnabled(!_styleSheet.IsReadOnly);
+				_variableConnection.SetEnabled(isWritable);
 			}
 		}
 	}
