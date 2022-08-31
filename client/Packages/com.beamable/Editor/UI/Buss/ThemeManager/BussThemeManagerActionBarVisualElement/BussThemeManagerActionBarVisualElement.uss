@@ -1,15 +1,16 @@
-#mainVisualElement {
-    height: 35px;
+﻿#root {
+    height: 37px;
     flex-direction:row;
 }
 
-#leftContentVisualElement {
+#leftContainer {
     flex-direction: row;
     justify-content: flex-start;
     align-items:center;
     margin-right: 10px;
 }
-#rightContentVisualElement {
+
+#rightContainer {
     flex-grow: 1;
     justify-content: flex-start;
     flex-direction: row;
@@ -30,45 +31,8 @@
     border-right-width: 1px;
     border-top-width: 0px;
     border-bottom-width: 0px;
-    cursor: pan;
     background-image: none;
     border-radius: 0px;
-}
-.buttonText{
-    font-size: 9px;
-    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    -unity-text-align: middle-center;
-    top: 6px;
-    margin-right: 2px;
-    margin-left: 2px;
-}
-
-#contentManagerIcon{
-    top: 4px;
-    width: 10px;
-    height: 12px;
-    align-self: center;
-}
-
-#skinningIcon{
-    top: 4px;
-    width: 12px;
-    height: 12px;
-    align-self: center;
-}
-
-#globalConfigIcon{
-    top: 4px;
-    width: 12px;
-    height: 12px;
-    align-self: center;
-}
-
-#microserviceIcon{
-    top: 4px;
-    width: 12px;
-    height: 12px;
-    align-self: center;
 }
 
 .unboundedButton {
@@ -90,24 +54,25 @@
     padding-bottom: 0px;
     background-image: none;
     border-radius: 0px;
-    cursor: pan;
 }
 
-#categoryIcon{
-    top: 5px;
-    width: 12px;
+.buttonText{
+    font-size: 9px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-center;
+    top: 6px;
+    margin-right: 2px;
+    margin-left: 2px;
+}
+
+.iconLabelButton{
+    top: 4px;
+    width: 10px;
     height: 12px;
     align-self: center;
 }
 
-#typeIcon{
-    top: 5px;
-    width: 12px;
-    height:12px;
-    align-self: center;
-}
-
-#infoIcon{
+.iconButton {
     top: 8px;
     width: 8px;
     height: 15px;
@@ -119,16 +84,10 @@
     border-radius: 8px;
     flex-grow: 1;
     min-width: 100px;
+    padding-right: 10px;
 }
 
 Button.unity-button,
 Button {
     background-color: rgba(0,0,0,0);
-}
-
-#accountIcon{
-    top: 8px;
-    width: 15px;
-    height: 15px;
-    align-self: center;
 }

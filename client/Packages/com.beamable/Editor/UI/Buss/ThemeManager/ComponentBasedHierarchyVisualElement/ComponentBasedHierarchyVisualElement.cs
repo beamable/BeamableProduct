@@ -21,17 +21,19 @@ namespace Beamable.Editor.UI.Components
 	{
 		public event Action HierarchyChanged;
 		public event Action<GameObject> SelectionChanged;
+		public event Action SelectionCleared;
 
-		private readonly List<IndentedLabelVisualElement> _spawnedLabels = new List<IndentedLabelVisualElement>();
+		protected readonly List<IndentedLabelVisualElement> SpawnedLabels = new List<IndentedLabelVisualElement>();
+
 		private ScrollView _hierarchyContainer;
 		private IndentedLabelVisualElement _selectedLabel;
 
-		protected IEnumerable<T> Components => _spawnedLabels.Select(l => l.RelatedGameObject.GetComponent<T>());
+		protected IEnumerable<T> Components => SpawnedLabels.Select(l => l.RelatedGameObject.GetComponent<T>());
 
 		public T SelectedComponent
 		{
 			get;
-			private set;
+			protected set;
 		}
 
 		protected IndentedLabelVisualElement SelectedLabel
@@ -107,12 +109,12 @@ namespace Beamable.Editor.UI.Components
 
 		protected void RefreshTree()
 		{
-			foreach (IndentedLabelVisualElement child in _spawnedLabels)
+			foreach (IndentedLabelVisualElement child in SpawnedLabels)
 			{
 				child.Destroy();
 			}
 
-			_spawnedLabels.Clear();
+			SpawnedLabels.Clear();
 			_hierarchyContainer.Clear();
 
 			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
@@ -128,7 +130,7 @@ namespace Beamable.Editor.UI.Components
 		protected virtual void OnSelectionChanged()
 		{
 			IndentedLabelVisualElement indentedLabelVisualElement =
-				_spawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
+				SpawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
 
 			if (indentedLabelVisualElement != null)
 			{
@@ -153,12 +155,24 @@ namespace Beamable.Editor.UI.Components
 
 			if (!setInHierarchy) return;
 
-			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
-												 SelectedLabel?.RelatedGameObject);
+			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject, SelectedLabel?.RelatedGameObject);
 		}
 
 		private void OnMouseClicked(IndentedLabelVisualElement newLabel)
 		{
+			// Deselecting label in case of clicking same one for the second time
+			if (SelectedLabel != null)
+			{
+				if (SelectedLabel == newLabel)
+				{
+					SelectedLabel.Deselect();
+					SelectedLabel = null;
+					Selection.SetActiveObjectWithContext(null, null);
+					SelectionCleared?.Invoke();
+					return;
+				}
+			}
+
 			ChangeSelectedLabel(newLabel);
 		}
 
@@ -171,10 +185,10 @@ namespace Beamable.Editor.UI.Components
 			if (foundComponent != null)
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-				label.Setup(foundComponent.gameObject, (str) => GetLabel(foundComponent), OnMouseClicked,
+				label.Setup(foundComponent.gameObject, bussElement => GetLabel(foundComponent), OnMouseClicked,
 							currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Init();
-				_spawnedLabels.Add(label);
+				SpawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);
 
 				OnObjectRegistered(foundComponent);

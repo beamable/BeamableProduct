@@ -12,9 +12,6 @@
     min-width: 550px;
     min-height: 700px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    padding-top: 10px;
-    padding-left: 10px;
-    padding-right: 10px;
     padding-bottom: 10px;
     flex-grow: 1;
 }
@@ -48,16 +45,6 @@
     -unity-text-align: middle-right;
 }
 
-#buttonsRow {
-    flex-direction: row;
-    align-self: center;
-    align-items: center;
-}
-
-#spacing {
-    width: 20px;
-}
-
 BussElementHierarchyVisualElement {
     flex-grow: 1;
 }
@@ -71,4 +58,8 @@ BussElementHierarchyVisualElement {
 
 #themeManagerContainerScrollView {
     flex-grow: 1;
+}
+
+InlineStyleCardVisualElement {
+    padding-bottom: 10px;
 }

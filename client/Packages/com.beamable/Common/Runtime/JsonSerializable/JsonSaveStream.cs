@@ -266,7 +266,7 @@ namespace Beamable.Serialization
 						// int codepoint = Convert.ToInt32(c);
 						// if ((codepoint >= 32) && (codepoint <= 126))
 						// {
-							_builder.Append(c);
+						_builder.Append(c);
 						// }
 						// else
 						// {
