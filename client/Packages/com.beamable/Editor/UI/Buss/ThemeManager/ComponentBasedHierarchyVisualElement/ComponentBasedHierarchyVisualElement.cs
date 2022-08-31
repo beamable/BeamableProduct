@@ -56,7 +56,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected ComponentBasedHierarchyVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss") { }
+			$"{BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss")
+		{ }
 
 		public override void Init()
 		{
@@ -185,7 +186,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
 				label.Setup(foundComponent.gameObject, bussElement => GetLabel(foundComponent), OnMouseClicked,
-				            currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
+							currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Init();
 				SpawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);

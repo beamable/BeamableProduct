@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Buss
 		private AddStyleButton _addStyleButton;
 		private GameObject _selectedGameObject;
 		private bool _inStyleSheetChangedLoop;
-		
+
 
 		static BussThemeManager()
 		{
@@ -74,7 +74,7 @@ namespace Beamable.Editor.UI.Buss
 
 			BussThemeManagerActionBarVisualElement actionBar =
 				new BussThemeManagerActionBarVisualElement(OnAddStyleButtonClicked, OnCopyButtonClicked,
-				                                           RefreshStyleSheets, OnDocsButtonClicked, OnSearch);
+														   RefreshStyleSheets, OnDocsButtonClicked, OnSearch);
 
 			actionBar.name = "actionBar";
 			actionBar.Init();

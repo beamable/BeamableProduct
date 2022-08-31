@@ -15,10 +15,10 @@ namespace Beamable.Editor.UI.Buss
 		private readonly Action<string> _onSearch;
 
 		public BussThemeManagerActionBarVisualElement(Action onAddStyle,
-		                                              Action onCopy,
-		                                              Action onRefresh,
-		                                              Action onDocs,
-		                                              Action<string> onSearch) : base(
+													  Action onCopy,
+													  Action onRefresh,
+													  Action onDocs,
+													  Action<string> onSearch) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManagerActionBarVisualElement)}/{nameof(BussThemeManagerActionBarVisualElement)}.uss")
 		{
 			_onAddStyle = onAddStyle;
@@ -32,16 +32,16 @@ namespace Beamable.Editor.UI.Buss
 		{
 			base.Init();
 
-			VisualElement leftContainer = new VisualElement {name = "leftContainer"};
+			VisualElement leftContainer = new VisualElement { name = "leftContainer" };
 			Root.Add(leftContainer);
 
 			leftContainer.Add(CreateLabeledIconButton("addStyle", "Add style", _onAddStyle));
 			leftContainer.Add(CreateLabeledIconButton("duplicateStylesheet", "Duplicate", _onCopy));
 
-			VisualElement rightContainer = new VisualElement {name = "rightContainer"};
+			VisualElement rightContainer = new VisualElement { name = "rightContainer" };
 			Root.Add(rightContainer);
 
-			SearchBarVisualElement searchBarVisualElement = new SearchBarVisualElement {name = "searchBar"};
+			SearchBarVisualElement searchBarVisualElement = new SearchBarVisualElement { name = "searchBar" };
 			searchBarVisualElement.OnSearchChanged += _onSearch;
 			rightContainer.Add(searchBarVisualElement);
 
