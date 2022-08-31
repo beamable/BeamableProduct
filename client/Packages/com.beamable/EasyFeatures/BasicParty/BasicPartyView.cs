@@ -107,14 +107,12 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		protected virtual void OnPlayerJoined(object partyId, object joinedPlayerId)
 		{
-			SetupPartyList();
-			SetupPlayerCountText();
+			RefreshView();
 		}
 
 		protected virtual void OnPlayerLeft(object partyId, object leftPlayerId)
 		{
-			SetupPartyList();
-			SetupPlayerCountText();
+			RefreshView();
 		}
 
 		private void OnAddMember()
