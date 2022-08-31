@@ -94,8 +94,8 @@ namespace Beamable.Editor.UI.Buss
 			BussStyleRule[] rulesToDraw = StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
 			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements
-			                                             .Where(card => !rulesToDraw.Contains(card.StyleRule))
-			                                             .ToArray();
+														 .Where(card => !rulesToDraw.Contains(card.StyleRule))
+														 .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
 			{
@@ -135,7 +135,7 @@ namespace Beamable.Editor.UI.Buss
 			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
 			{
 				bool isVisible = _filter.CardFilter(styleCardVisualElement.StyleRule,
-				                                    _currentSelected);
+													_currentSelected);
 
 				styleCardVisualElement.SetHidden(!isVisible);
 			}
@@ -191,7 +191,7 @@ namespace Beamable.Editor.UI.Buss
 				VariableDatabase.ReconsiderAllStyleSheets();
 
 				if (VariableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
-				    VariableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
+					VariableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
 				{
 					RefreshStyleCards();
 				}
