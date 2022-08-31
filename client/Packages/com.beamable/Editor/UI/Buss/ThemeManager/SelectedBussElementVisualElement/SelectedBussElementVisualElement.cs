@@ -39,6 +39,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_navigationWindow = navigationWindow;
 			_navigationWindow.SelectionChanged += OnBussElementChanged;
+			_navigationWindow.SelectionCleared += OnSelectionCleared;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Init();
 		}
@@ -161,6 +162,16 @@ namespace Beamable.Editor.UI.Components
 				RefreshClassesList();
 			}
 
+			RefreshHeight();
+		}
+
+		private void OnSelectionCleared()
+		{
+			_currentBussElement = null;
+			_selectedClassListIndex = null;
+			_idField.Value = null;
+			_currentStyleSheet.Reset();
+			RefreshClassesList();
 			RefreshHeight();
 		}
 
@@ -291,6 +302,7 @@ namespace Beamable.Editor.UI.Components
 			if (_navigationWindow != null)
 			{
 				_navigationWindow.SelectionChanged -= OnBussElementChanged;
+				_navigationWindow.SelectionCleared -= OnSelectionCleared;
 			}
 
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;

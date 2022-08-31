@@ -21,6 +21,7 @@ namespace Beamable.Editor.UI.Components
 	{
 		public event Action HierarchyChanged;
 		public event Action<GameObject> SelectionChanged;
+		public event Action SelectionCleared;
 
 		protected readonly List<IndentedLabelVisualElement> SpawnedLabels = new List<IndentedLabelVisualElement>();
 
@@ -166,6 +167,7 @@ namespace Beamable.Editor.UI.Components
 					SelectedLabel.Deselect();
 					SelectedLabel = null;
 					Selection.SetActiveObjectWithContext(null, null);
+					SelectionCleared?.Invoke();
 					return;
 				}
 			}
