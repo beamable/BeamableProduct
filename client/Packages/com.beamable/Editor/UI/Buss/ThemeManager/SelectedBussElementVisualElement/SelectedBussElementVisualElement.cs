@@ -33,13 +33,13 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _contentContainer;
 
 		public SelectedBussElementVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss")
-		{ }
+			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss") { }
 
 		public void Setup(BussElementHierarchyVisualElement navigationWindow)
 		{
 			_navigationWindow = navigationWindow;
 			_navigationWindow.SelectionChanged += OnBussElementChanged;
+			_navigationWindow.SelectionCleared += OnSelectionCleared;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Init();
 		}
@@ -90,14 +90,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void CreateButtons()
 		{
-			VisualElement buttonsContainer = new VisualElement { name = "buttonsContainer" };
+			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
 
-			VisualElement removeButton = new VisualElement { name = "removeButton" };
+			VisualElement removeButton = new VisualElement {name = "removeButton"};
 			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
 
-			VisualElement addButton = new VisualElement { name = "addButton" };
+			VisualElement addButton = new VisualElement {name = "addButton"};
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
@@ -125,7 +125,14 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
-			_currentBussElement.RemoveClass((string)_classesList.itemsSource[(int)_selectedClassListIndex]);
+			string className = (string)_classesList.itemsSource[(int)_selectedClassListIndex];
+
+			if (className.StartsWith("."))
+			{
+				className = className.Remove(0,1);
+			}
+
+			_currentBussElement.RemoveClass(className);
 			RefreshClassesList();
 			RefreshHeight();
 			_navigationWindow.RefreshSelectedLabel();
@@ -155,6 +162,16 @@ namespace Beamable.Editor.UI.Components
 				RefreshClassesList();
 			}
 
+			RefreshHeight();
+		}
+
+		private void OnSelectionCleared()
+		{
+			_currentBussElement = null;
+			_selectedClassListIndex = null;
+			_idField.Value = null;
+			_currentStyleSheet.Reset();
+			RefreshClassesList();
 			RefreshHeight();
 		}
 
@@ -239,14 +256,15 @@ namespace Beamable.Editor.UI.Components
 
 		private VisualElement CreateListViewElement()
 		{
-			VisualElement classElement = new VisualElement { name = "classElement" };
+			VisualElement classElement = new VisualElement {name = "classElement"};
+			classElement.Add(new VisualElement {name = "space"});
 			classElement.Add(new TextField());
 			return classElement;
 		}
 
 		private void BindListViewElement(VisualElement element, int index)
 		{
-			TextField textField = (TextField)element.Children().ToList()[0];
+			TextField textField = (TextField)element.Children().ToList()[1];
 			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
 			textField.isDelayed = true;
 
@@ -284,6 +302,7 @@ namespace Beamable.Editor.UI.Components
 			if (_navigationWindow != null)
 			{
 				_navigationWindow.SelectionChanged -= OnBussElementChanged;
+				_navigationWindow.SelectionCleared -= OnSelectionCleared;
 			}
 
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
