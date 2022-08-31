@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Buss
 		private AddStyleButton _addStyleButton;
 		private GameObject _selectedGameObject;
 		private bool _inStyleSheetChangedLoop;
-		// private bool _filterMode;
+		
 
 		static BussThemeManager()
 		{
@@ -75,7 +75,7 @@ namespace Beamable.Editor.UI.Buss
 			BussThemeManagerActionBarVisualElement actionBar =
 				new BussThemeManagerActionBarVisualElement(OnAddStyleButtonClicked, OnCopyButtonClicked,
 				                                           RefreshStyleSheets, OnDocsButtonClicked, OnSearch);
-			
+
 			actionBar.name = "actionBar";
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
@@ -103,7 +103,6 @@ namespace Beamable.Editor.UI.Buss
 			_scrollView.name = "themeManagerContainerScrollView";
 			mainVisualElement.Add(_scrollView);
 			_stylesGroup.name = "stylesGroup";
-			_stylesGroup.Filter = CardFilter;
 			_scrollView.Add(_stylesGroup);
 
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
@@ -128,27 +127,6 @@ namespace Beamable.Editor.UI.Buss
 			_selectedGameObject = go;
 		}
 
-		// private void OnFilterToggleClicked(bool value)
-		// {
-		// 	_filterMode = value;
-		// 	_stylesGroup.FilterCards();
-		// }
-
-		private bool CardFilter(BussStyleSheet styleSheet, BussStyleRule styleRule)
-		{
-			GameObject selected = Selection.activeGameObject;
-			BussElement selectedElement = null;
-			if (selected != null)
-			{
-				selectedElement = selected.GetComponent<BussElement>();
-			}
-
-			// if (selectedElement == null || !_filterMode) return true;
-			if (selectedElement == null) return true;
-
-			return styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
-		}
-
 		private void RefreshStyleSheets()
 		{
 			_stylesGroup.StyleSheets = _navigationWindow.StyleSheets;
@@ -156,10 +134,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void SetScroll(GameObject _ = null)
 		{
-			// if (!_filterMode)
-			// {
-				EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
-			// }
+			EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
 		}
 
 		private void UpdateScroll(float scrollValue)
@@ -180,11 +155,6 @@ namespace Beamable.Editor.UI.Buss
 		public override void OnDestroy()
 		{
 			base.OnDestroy();
-
-			// if (_filterToggle != null)
-			// {
-			// 	_filterToggle.OnValueChanged -= OnFilterToggleClicked;
-			// }
 
 			if (_navigationWindow != null)
 			{
@@ -215,26 +185,6 @@ namespace Beamable.Editor.UI.Buss
 			else if (styleSheetCount > 1)
 			{
 				OpenAddStyleMenu(_stylesGroup.WritableStyleSheets);
-			}
-		}
-
-		public void CheckEnableState(MouseEnterEvent evt = null)
-		{
-			if (_addStyleButton == null) return;
-
-			_addStyleButton.tooltip = string.Empty;
-
-			int styleSheetCount = _stylesGroup.WritableStyleSheets?.Count() ?? 0;
-
-			if (styleSheetCount == 0)
-			{
-				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
-				_addStyleButton.SetInactive(true);
-			}
-			else
-			{
-				_addStyleButton.tooltip = String.Empty;
-				_addStyleButton.SetInactive(false);
 			}
 		}
 

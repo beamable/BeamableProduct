@@ -76,7 +76,7 @@
 				public const string URL_DOC_WINDOW_CONFIG_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/configuration-manager-overview";
 				public const string URL_DOC_WINDOW_TOOLBOX = URL_BEAMABLE_DOCS_WEBSITE + "/unity-toolbox";
 				
-				public const string URL_DOC_BUSS_THEME_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/unity-toolbox";
+				public const string URL_DOC_BUSS_THEME_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/theme-manager-overview";
 			}
 		}
 		public static class MenuItems
