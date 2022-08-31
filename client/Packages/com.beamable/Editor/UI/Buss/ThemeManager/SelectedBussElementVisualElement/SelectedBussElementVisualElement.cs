@@ -124,7 +124,14 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
-			_currentBussElement.RemoveClass((string)_classesList.itemsSource[(int)_selectedClassListIndex]);
+			string className = (string)_classesList.itemsSource[(int)_selectedClassListIndex];
+
+			if (className.StartsWith("."))
+			{
+				className = className.Remove(0,1);
+			}
+
+			_currentBussElement.RemoveClass(className);
 			RefreshClassesList();
 			RefreshHeight();
 			_navigationWindow.RefreshSelectedLabel();

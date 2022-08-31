@@ -159,7 +159,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshSelectedLabel()
 		{
-			SelectedLabel.RefreshLabel();
+			SelectedLabel?.RefreshLabel();
 		}
 	}
 }
