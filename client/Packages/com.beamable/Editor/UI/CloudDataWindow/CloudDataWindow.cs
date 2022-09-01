@@ -67,7 +67,7 @@ namespace Beamable.Editor.UI.CloudDataWindow
 			s.Clear();
 			foreach (KeyValuePair<CloudMetaData, string> metaData in cloudMetaDatas)
 			{
-				var label = new Label(metaData.Key.@ref);
+				var label = new Label($"<b>{metaData.Key.@ref}</b> <size=15>v{metaData.Key.version}</size>");
 				label.AddToClassList("refName");
 				var content = new Label(metaData.Value);
 				content.AddToClassList("content");
