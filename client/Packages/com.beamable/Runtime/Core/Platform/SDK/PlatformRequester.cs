@@ -20,8 +20,6 @@ namespace Beamable.Api
 	{
 		AccessToken Token { get; set; }
 		string TimeOverride { get; set; }
-		new string Cid { get; set; }
-		new string Pid { get; set; }
 
 		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		string Language { get; set; }
@@ -79,7 +77,7 @@ namespace Beamable.Api
 		}
 
 
-		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService)
+		public PlatformRequester(string host, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService)
 		{
 			Host = host;
 			_accessTokenStorage = accessTokenStorage;
