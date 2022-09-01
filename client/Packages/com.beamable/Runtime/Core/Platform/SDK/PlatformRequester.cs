@@ -60,7 +60,7 @@ namespace Beamable.Api
 		public IAuthApi AuthService { private get; set; }
 
 		private string _requestTimeoutMs = null;
-		private int _timeoutSeconds = 0;
+		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
 
 		public string RequestTimeoutMs
 		{
@@ -68,13 +68,13 @@ namespace Beamable.Api
 			set
 			{
 				_requestTimeoutMs = value;
-				if (int.TryParse(value, out var ms))
+				if (int.TryParse(value, out var ms) && ms > 0)
 				{
 					_timeoutSeconds = ms / 1000;
 				}
 				else
 				{
-					_timeoutSeconds = 0;
+					_timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
 				}
 			}
 		}
@@ -201,8 +201,7 @@ namespace Beamable.Api
 				request.uploadHandler = upload;
 			}
 
-			request.timeout = _timeoutSeconds > 0 ? _timeoutSeconds : 10;
-
+			request.timeout = _timeoutSeconds;
 			return request;
 		}
 
