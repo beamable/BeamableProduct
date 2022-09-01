@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ClearCaches` function on `StatsApi` to force invalidate stats cache.
 - Added `GetCloudDataContent` method in `ICloudDataApi` to simplify getting cloud data.
 
+### Changed
+- `UnityWebRequest` respect a 10 second timeout before reporting `NoConnectivityException`
+
 ### [1.3.2]
 
 ### Added
