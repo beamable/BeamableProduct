@@ -47,6 +47,8 @@ namespace Beamable.Common.Content
 			{
 				try
 				{
+					// the type may be a nullable type, which means the default instance will be null, which we don't want...
+					argType = Nullable.GetUnderlyingType(argType) ?? argType;
 					var defaultInstance = Activator.CreateInstance(argType);
 					return SerializeArgument(defaultInstance, argType);
 				}
@@ -655,7 +657,7 @@ namespace Beamable.Common.Content
 						{
 							if (!disableExceptions)
 							{
-								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{dataValue}]");
+								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}]");
 								throw;
 							}
 							else
