@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `UnityWebRequest` respect a 10 second timeout before reporting `NoConnectivityException`
 
-### [1.3.2]
+### Fixed
+- fixed issue with ChangeAuthorizedUser that cause the BeamContext to enter a bad state with respect to its MonoBehaviour systems
+
+## [1.3.2]
 
 ### Added
 - `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
