@@ -19,6 +19,20 @@ namespace Beamable.Common.Api.Stats
 		UserDataCache<Dictionary<string, string>> GetCache(string prefix);
 
 		/// <summary>
+		/// Get the <see cref="UserDataCache{T}"/> for the stat keys
+		/// </summary>
+		/// <param name="domain">Should be either "client" or "game"</param>
+		/// <param name="access">Should be "public" or "private"</param>
+		/// <param name="type">should always be "player" </param>
+		/// <returns>The <see cref="UserDataCache{T}"/> containing stats given the prefix.</returns>
+		UserDataCache<Dictionary<string, string>> GetCache(string domain, string access, string type);
+
+		/// <summary>
+		/// Removes any stored data for all local stats.
+		/// </summary>
+		void ClearCaches();
+
+		/// <summary>
 		/// Set the current player's client player stats.
 		/// </summary>
 		/// <param name="access">

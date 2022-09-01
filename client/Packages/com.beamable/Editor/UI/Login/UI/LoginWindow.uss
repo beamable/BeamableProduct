@@ -104,3 +104,9 @@ ScrollView #unity-content-container {
     height: 35px;
 }
 
+#versionNumber {
+    flex-direction: row;
+    align-self: flex-end;
+    padding-bottom: 5px;
+    padding-right: 5px;
+}

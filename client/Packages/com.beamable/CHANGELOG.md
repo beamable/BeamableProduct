@@ -9,11 +9,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [1.3.2]
+## [1.3.3]
+### Added
+- `ClearCaches` function on `StatsApi` to force invalidate stats cache.
+- Beamable version number is displayed in Login Window's footer.
+- Added `GetCloudDataContent` method in `ICloudDataApi` to simplify getting cloud data.
+
+### Changed
+- `UnityWebRequest` respect a 10 second timeout before reporting `NoConnectivityException`
+
+### Fixed
+- fixed issue with ChangeAuthorizedUser that cause the BeamContext to enter a bad state with respect to its MonoBehaviour systems
+
+## [1.3.2]
 
 ### Added
 - `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
-- Logs improvements in Requesters.
 
 ## [1.3.1]
 ### Added
