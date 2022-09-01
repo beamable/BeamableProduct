@@ -216,7 +216,7 @@ namespace Core.Platform.SDK
 				request.SetRequestHeader("Time-Override", TimeOverride);
 			}
 
-			request.timeout = 10;
+			request.timeout = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
 
 			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 
