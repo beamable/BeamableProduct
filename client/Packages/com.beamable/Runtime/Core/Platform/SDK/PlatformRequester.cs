@@ -58,7 +58,28 @@ namespace Beamable.Api
 		public string Language { get; set; }
 		public string TimeOverride { get; set; }
 		public IAuthApi AuthService { private get; set; }
-		public string RequestTimeoutMs { get; set; }
+
+		private string _requestTimeoutMs = null;
+		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+
+		public string RequestTimeoutMs
+		{
+			get => _requestTimeoutMs;
+			set
+			{
+				_requestTimeoutMs = value;
+				if (int.TryParse(value, out var ms) && ms > 0)
+				{
+					_timeoutSeconds = ms / 1000;
+				}
+				else
+				{
+					_timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+				}
+			}
+		}
+
+
 
 		private readonly OfflineCache _offlineCache;
 
@@ -180,6 +201,7 @@ namespace Beamable.Api
 				request.uploadHandler = upload;
 			}
 
+			request.timeout = _timeoutSeconds;
 			return request;
 		}
 
@@ -378,7 +400,13 @@ namespace Beamable.Api
 			{
 				var responsePayload = request.downloadHandler.text;
 
-				if (request.responseCode >= 300 || request.IsNetworkError())
+
+				if (request.IsNetworkError())
+				{
+					PlatformLogger.Log($"<b>[PlatformRequester][NetworkError]</b> {typeof(T).Name}");
+					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. status=[{request.responseCode}] error=[{request.error}]"));
+				}
+				else if (request.responseCode >= 300)
 				{
 					// Handle errors
 					PlatformError platformError = null;
