@@ -9,9 +9,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.3]
 ### Added
-- Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
 - `ClearCaches` function on `StatsApi` to force invalidate stats cache.
 - Beamable version number is displayed in Login Window's footer.
 - Added `GetCloudDataContent` method in `ICloudDataApi` to simplify getting cloud data.
