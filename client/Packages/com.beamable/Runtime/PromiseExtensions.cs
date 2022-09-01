@@ -13,7 +13,7 @@ namespace Beamable
 	public static class PromiseExtensions
 	{
 		private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
-		private static int _uncaughtCount;
+
 		public static async Task WaitForAllUncaughtHandlers()
 		{
 			var tasks = _uncaughtTasks.Select(k => k.Value).Where(t => t != null).ToArray();
@@ -30,8 +30,7 @@ namespace Beamable
 
 		private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
 		{
-			var id = _uncaughtCount;
-			_uncaughtCount++;
+			var id = promise.GetHashCode();
 			// we need to wait one frame before logging anything.
 			async Task DelayedCheck()
 			{
@@ -50,8 +49,8 @@ namespace Beamable
 
 				_uncaughtTasks.Remove(id);
 			}
-			var t = DelayedCheck(); // we don't want to await this call.
-			_uncaughtTasks.TryAdd(id, t);
+			var task = DelayedCheck(); // we don't want to await this call.
+			_uncaughtTasks.TryAdd(id, task);
 		}
 
 		/// <summary>
