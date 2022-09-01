@@ -9,6 +9,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.3]
+### Added
+- `ClearCaches` function on `StatsApi` to force invalidate stats cache.
+- Beamable version number is displayed in Login Window's footer.
+- Added `GetCloudDataContent` method in `ICloudDataApi` to simplify getting cloud data.
+
+### Changed
+- `UnityWebRequest` respect a 10 second timeout before reporting `NoConnectivityException`
+
+### Fixed
+- fixed issue with ChangeAuthorizedUser that cause the BeamContext to enter a bad state with respect to its MonoBehaviour systems
+
+## [1.3.2]
+
+### Added
+- `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
+
+## [1.3.1]
+### Added
+- A leaderboard can now be frozen using `LeaderboardService.FreezeLeaderboard` method to prevent additional scores to be submitted.
+
+### Fixed
+- iOS builds will no longer overwrite the Beamable user language preference.
+- An expired token will no longer cause an unintended realm changes in rare cases.
+- Logging into the editor will automatically put you in the realm (PID) defined in your `config-defaults.txt` file instead of incorrectly resetting you to your default realm. 
+- Correctly exposed `GetCurrentProject` method in `IAuthApi` to retrieve CID, PID and the project name. This functionality was already exposed in the `AuthService` class; we just moved it to the interface level to make it easier to access via `BeamContext.Api`.
+- Microservices Manager window will now render correctly after importing the microservices module.
+
+## [1.3.0]
+### Added
+- `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
+- `BeamableDispatcher` for editor scenarios to manage registering callbacks on the Unity Editor thread without needing an editor render frame.
+- `Latest update` field for content item in Content Manager.
+- Content items sort option by `Recently updated` in Content Manager.
+- `Window/Beamable/Utilities/Change Environment` path to change the Beamable host parameters
+- Added "experimental" package status support to the `PackageVersion` utility
+- `Cid` and `Pid` field to `IBeamableRequester` interface
+- `Social` list accessible through the `BeamContext`
+- User's realm permission overrides apply in editor
+- Added posibility of disable content serialization exceptions during content download to allow manual repair for corrupted files. 
+- Added to `ISocialApi` methods to make/accept/decline friend requests via `gamertag`s.
+- Added Party SDK as a `PlayerParty` object inside `BeamContext` to manage parties
+- Adds application version headers to all requests sent to Beamable
+
+### Changed
+- Fields of auto-properties with attribute SerializeField are now serialized for content classes under the name of the property.
+- List of available to create `ContentTypes` in `Content Manager` contextual menu is now ordered alphabetically
+- The Beamable host URL is no longer sourced from `config-defaults.txt`. Instead, it comes from the `BeamableEnvironment` class. 
+- Changed `PackageVersion` to accept "preview" prefix strings instead of requiring a direct match of the string "preview"
+- Moved `JsonSerializable` to Beamable.Common assembly
+- Moved some parts of the `ChatService` to Beamable.Common assembly
+- Changed namespace of `Beamable.Pooling.ClassPool` to `Beamable.Common.Pooling.ClassPool`
+- Account Management Flow will merge gamertags when existing login credential is detected, instead of always creating a new gamertag. This allows you to keep your gamertag on the realm. 
+- Improved performance of `PlayerInventory` sdk
+
+### Fixed
+- Beamable button in Unity toolbar should be in correct position for production packages
+- Content validation callbacks now support invoking private methods in base classes
+- BeamConsole accepts events after RESET command
+- Too many `EventSystem` components on startup
+- Fixed Beamable login error for archived & not existing realms
+- In Events and Listings schedule windows calendar buttons with days earlier than today can't be clicked
+- The `RankEntry` for current player is now mapped correctly in `LeaderBoardView` 
+
+## [1.2.12]
+### Fixed
+- The default uncaught Promise handler no longer throws IndexOutOfBounds errors in high failure cases.
+
 ## [1.2.11]
 ### Changed
 - `UnityWebRequest` respect a 10 second timeout before reporting `NoConnectivityException`
