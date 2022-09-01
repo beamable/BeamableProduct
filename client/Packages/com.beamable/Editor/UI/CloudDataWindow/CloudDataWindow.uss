@@ -1,0 +1,29 @@
+﻿#_windowRoot {
+    flex-grow: 1;
+}
+#window-main {
+    flex-direction: column;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+    min-width: 550px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+
+.refName {
+    padding: 10px 10px;
+    -unity-font-style: bold;
+    font-size: 25px;
+}
+
+.content {
+    margin: 15px;
+    padding: 10px;
+    border-width: 2px;
+    border-color: aquamarine;
+    background-color: darkblue;
+    color: cyan;
+    font-size: 15px;
+}
