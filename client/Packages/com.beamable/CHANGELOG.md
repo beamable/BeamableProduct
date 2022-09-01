@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable version number is displayed in Login Window's footer.
 - Added `GetCloudDataContent` method in `ICloudDataApi` to simplify getting cloud data.
 
+### Changed
+- `UnityWebRequest` respect a 10 second timeout before reporting `NoConnectivityException`
+
 ### [1.3.2]
 
 ### Added
