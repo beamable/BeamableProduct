@@ -12,8 +12,6 @@ namespace Beamable
 {
 	public static class PromiseExtensions
 	{
-
-		// public static
 		private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
 		private static int _uncaughtCount;
 		public static async Task WaitForAllUncaughtHandlers()
