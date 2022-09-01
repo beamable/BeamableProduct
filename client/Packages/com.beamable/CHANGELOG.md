@@ -9,7 +9,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
+
 ## [1.3.3]
+
 ### Added
 - `ClearCaches` function on `StatsApi` to force invalidate stats cache.
 - Beamable version number is displayed in Login Window's footer.
@@ -29,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.1]
 ### Added
 - A leaderboard can now be frozen using `LeaderboardService.FreezeLeaderboard` method to prevent additional scores to be submitted.
+
+### Changed
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` now supports all subtypes
 
 ### Fixed
 - iOS builds will no longer overwrite the Beamable user language preference.

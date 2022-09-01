@@ -1,4 +1,4 @@
-﻿namespace Beamable.Common.Api.Payments
+namespace Beamable.Common.Api.Payments
 {
 	public interface IPaymentsApi
 	{
