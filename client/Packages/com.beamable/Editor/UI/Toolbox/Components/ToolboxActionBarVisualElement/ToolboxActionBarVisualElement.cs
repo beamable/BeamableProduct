@@ -181,7 +181,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 					EditorApplication.delayCall += RecompileScripts;
 #endif
-					wnd.Close(); 
+					wnd.Close();
 				};
 				content.Refresh();
 			});

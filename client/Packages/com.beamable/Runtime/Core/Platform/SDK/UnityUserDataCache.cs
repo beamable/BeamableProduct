@@ -81,6 +81,11 @@ namespace Beamable.Api
 			cache.Remove(gamerTag);
 		}
 
+		public override void Clear()
+		{
+			cache.Clear();
+		}
+
 		protected virtual void Resolve()
 		{
 

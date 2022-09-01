@@ -51,6 +51,12 @@ namespace Beamable.Common.Api
 		/// <param name="gamerTag">The gamertag of the player to remove from the cache</param>
 		public abstract void Remove(long gamerTag);
 
+		/// <summary>
+		/// Remove all players from the cache. The next time any player data is requested, the <see cref="CacheResolver"/> will be used
+		/// to get the latest data for the players.
+		/// </summary>
+		public abstract void Clear();
+
 		protected class UserDataCacheEntry
 		{
 			public T data;

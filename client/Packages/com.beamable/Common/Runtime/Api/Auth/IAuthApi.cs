@@ -200,8 +200,8 @@ namespace Beamable.Common.Api.Auth
 		/// The resulting <see cref="User"/> object will have the <see cref="User.thirdPartyAppAssociations"/> field updated.
 		/// </returns>
 		Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token);
-		
-		
+
+
 		/// <summary>
 		/// Based on the logged in user, gets the current CID, PID and project name.
 		/// </summary>
