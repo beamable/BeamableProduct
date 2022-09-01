@@ -24,6 +24,9 @@ namespace Beamable.Api
 		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		string Language { get; set; }
 
+		string Cid { get; set; }
+		string Pid { get; set; }
+
 		IAuthApi AuthService { set; }
 		void DeleteToken();
 	}
