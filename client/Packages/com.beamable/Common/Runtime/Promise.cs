@@ -104,6 +104,21 @@ namespace Beamable.Common
 
 	}
 
+	public interface IScheduler
+	{
+		/// <summary>
+		/// Schedules a Unity coroutine-esque enumerable to execute.
+		/// </summary>
+		/// <param name="enumerableJob">The work that will be scheduled to execute.</param>
+		// Promise Schedule(IEnumerator enumerableJob);
+		Promise Delay();
+	}
+
+	/// <summary>
+	/// A function template that returns an <see cref="IScheduler"/>
+	/// </summary>
+	public delegate IScheduler SchedulerResolver();
+
 	public delegate void PromiseEvent(PromiseBase promise, Exception err);
 
 

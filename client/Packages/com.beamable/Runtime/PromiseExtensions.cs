@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
@@ -22,28 +23,71 @@ namespace Beamable
 		/// <summary>
 		/// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers
 		/// </summary>
-		public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
+		public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true, IDependencyProvider provider = null)
 		{
-			PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError, replaceExistingHandlers);
-		}
 
-		private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
-		{
-			// we need to wait one frame before logging anything.
-			async Task DelayedCheck()
+			Promise nextPhase = null;
+			var pendingPromises = new Queue<(PromiseBase, Exception)>();
+
+			void Handler(PromiseBase promise, Exception ex)
 			{
-				await Task.Yield();
-				// await Task.Delay(10);
-				// execute check.
-				if (!promise.HadAnyErrbacks)
+				pendingPromises.Enqueue((promise, ex));
+				ScheduleCheck();
+			}
+
+			void ScheduleCheck()
+			{
+				var scheduler = provider.GetService<IScheduler>();
+				if (nextPhase == null && pendingPromises.Count > 0)
 				{
-					Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
+					nextPhase = scheduler.Delay();
+					nextPhase.Then(_ => Check());
 				}
 			}
-			var t = DelayedCheck(); // we don't want to await this call.
-			_uncaughtTasks.Add(t);
-			t.ContinueWith(_ => _uncaughtTasks.Remove(t));
+
+			void Check()
+			{
+				try
+				{
+					var maxIteration = 100;
+					while (pendingPromises.Count > 0 && maxIteration-- > 0)
+					{
+						var (promise, ex) = pendingPromises.Dequeue();
+						if (!promise.HadAnyErrbacks)
+						{
+							Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
+						}
+					}
+				}
+				finally
+				{
+					nextPhase = null;
+					ScheduleCheck();
+				}
+			}
+
+			PromiseBase.SetPotentialUncaughtErrorHandler(Handler, replaceExistingHandlers);
 		}
+
+		// private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
+		// {
+		//
+		// 	// we need to wait one frame before logging anything.
+		// 	async Task DelayedCheck()
+		// 	{
+		//
+		// 		await Task.Yield();
+		// 		// await Task.Delay(10);
+		// 		// execute check.
+		// 		if (!promise.HadAnyErrbacks)
+		// 		{
+		// 			Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
+		// 		}
+		// 	}
+		// 	var t = DelayedCheck(); // we don't want to await this call.
+		// 	_uncaughtTasks.Add(t);
+		// 	t.ContinueWith(_ => _uncaughtTasks.Remove(t));
+		// }
 
 		/// <summary>
 		/// Returns a promise that will complete successfully in <paramref name="seconds"/>.
@@ -90,7 +134,7 @@ namespace Beamable
 
 		/// <summary>
 		/// Returns a promise configured to be attempted multiple times --- waiting for the amount of seconds defined by <paramref name="falloffSeconds"/> for each attempt. If <paramref name="maxRetries"/>
-		/// is greater than the number of items in <paramref name="falloffSeconds"/>, it will reuse the final item of the array for every attempt over the array's size.  
+		/// is greater than the number of items in <paramref name="falloffSeconds"/>, it will reuse the final item of the array for every attempt over the array's size.
 		/// </summary>
 		/// <param name="promise">The promise to recover from in case of failure.</param>
 		/// <param name="callback">A callback that returns a promise based on which attempt you are making and the error that happened in the previous attempt or original promise.</param>
@@ -136,8 +180,10 @@ namespace Beamable
 			return new PromiseYieldInstruction<T>(self);
 		}
 
-		public static void SetupDefaultHandler()
+		public static void SetupDefaultHandler(IDependencyProvider provider=null)
 		{
+			if (provider == null) provider = Beam.SystemScope;
+
 			if (Application.isPlaying)
 			{
 				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
@@ -146,14 +192,14 @@ namespace Beamable
 					case CoreConfiguration.EventHandlerConfig.Guarantee:
 					{
 						if (!PromiseBase.HasUncaughtErrorHandler)
-							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(provider:provider);
 
 						break;
 					}
 					case CoreConfiguration.EventHandlerConfig.Replace:
 					case CoreConfiguration.EventHandlerConfig.Add:
 					{
-						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace, provider:provider);
 						break;
 					}
 					default:

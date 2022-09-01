@@ -78,6 +78,9 @@ namespace Beamable
 		/// </summary>
 		public static IDependencyBuilder DependencyBuilder;
 
+		public static IDependencyBuilder SystemDependencyBuilder;
+		public static IDependencyProvider SystemScope;
+
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
@@ -111,6 +114,12 @@ namespace Beamable
 			ReflectionCache.SetStorage(RuntimeGlobalStorage);
 #endif
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
+
+			SystemDependencyBuilder = new DependencyBuilder();
+			SystemDependencyBuilder.AddSingleton<IGameObjectContext, BeamSystemGameObject>();
+			SystemDependencyBuilder.AddComponentSingleton<CoroutineService>();
+			SystemDependencyBuilder.AddSingleton<IScheduler, BeamSystemScheduler>();
+			SystemScope = SystemDependencyBuilder.Build();
 
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();

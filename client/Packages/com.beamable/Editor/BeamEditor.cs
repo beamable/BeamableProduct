@@ -59,9 +59,16 @@ namespace Beamable
 	public static class BeamEditorDependencies
 	{
 		public static IDependencyBuilder DependencyBuilder;
+		public static IDependencyBuilder SystemDependencyBuilder;
+		public static IDependencyProvider SystemScope;
 
 		static BeamEditorDependencies()
 		{
+			SystemDependencyBuilder = new DependencyBuilder();
+			SystemDependencyBuilder.AddSingleton<IScheduler, BeamEditorScheduler>();
+			SystemScope = SystemDependencyBuilder.Build();
+
+
 			DependencyBuilder = new DependencyBuilder();
 			DependencyBuilder.AddSingleton(provider => new AccessTokenStorage(provider.GetService<BeamEditorContext>().PlayerCode));
 			DependencyBuilder.AddSingleton<IPlatformRequester>(provider => new PlatformRequester(
@@ -162,14 +169,15 @@ namespace Beamable
 					case CoreConfiguration.EventHandlerConfig.Guarantee:
 					{
 						if (!PromiseBase.HasUncaughtErrorHandler)
-							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+							PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(
+								provider: BeamEditorDependencies.SystemScope);
 
 						break;
 					}
 					case CoreConfiguration.EventHandlerConfig.Replace:
 					case CoreConfiguration.EventHandlerConfig.Add:
 					{
-						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+						PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace, provider: BeamEditorDependencies.SystemScope);
 						break;
 					}
 					default:
