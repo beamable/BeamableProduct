@@ -113,7 +113,7 @@ namespace Beamable.Common.Api.CloudData
 		public Promise<string> GetCloudDataContent(CloudMetaData metaData)
 		{
 			return Requester.Request(Method.GET,
-			                         $"https://{metaData.uri}", parser: s => s);
+									 $"https://{metaData.uri}", parser: s => s);
 		}
 	}
 }
