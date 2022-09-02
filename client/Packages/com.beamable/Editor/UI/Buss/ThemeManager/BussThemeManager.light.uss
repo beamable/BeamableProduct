@@ -7,11 +7,11 @@
 }
 
 .unfolded {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_dark.png");
 }
 
 .folded {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_dark.png");
 }
 
 

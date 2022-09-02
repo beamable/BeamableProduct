@@ -3,9 +3,9 @@
 }
 
 .unfolded {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light_dark.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_light.png");
 }
 
 .folded {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light_dark.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_light.png");
 }
