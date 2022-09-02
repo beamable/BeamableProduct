@@ -15,6 +15,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
+	// TODO: TD000003
 	public class InlineStyleCardVisualElement : BeamableBasicVisualElement
 	{
 		private VisualElement _variableContainer;
