@@ -158,25 +158,11 @@ namespace Beamable.Common.Content
 						var fieldValue = field.GetValue(arg);
 						var fieldType = field.FieldType;
 
-						var nullableBaseType = Nullable.GetUnderlyingType(fieldType);
-						if (nullableBaseType != null)
-						{
-							var hasValueProp = fieldType.GetProperty(nameof(Nullable<int>.HasValue),
-							                      BindingFlags.Public | BindingFlags.Instance);
-							var hasValue = fieldValue != null && (bool)(hasValueProp?.GetValue(fieldValue) ?? false);
 
-							if (hasValue)
-							{
-								var getValueProp =
-									fieldType.GetProperty(nameof(Nullable<int>.Value),
-									                      BindingFlags.Public | BindingFlags.Instance);
-								fieldValue = getValueProp?.GetValue(fieldValue);
-								fieldType = nullableBaseType;
-							}
-							else
-							{
-								continue; // skip field.
-							}
+						CheckNullable(fieldType, fieldValue, out fieldType, out fieldValue, out var shouldSkip);
+						if (shouldSkip)
+						{
+							continue;
 						}
 
 
@@ -265,7 +251,7 @@ namespace Beamable.Common.Content
 			{
 				case null:
 					return null;
-				
+
 
 				/* REFERENCE TYPES */
 				case ArrayDict linkDict when typeof(IContentLink).IsAssignableFrom(type):
@@ -555,26 +541,11 @@ namespace Beamable.Common.Content
 							}
 						}
 
-						var nullableBaseType = Nullable.GetUnderlyingType(fieldType);
-						if (nullableBaseType != null)
+						CheckNullable(fieldType, fieldValue, out fieldType, out fieldValue, out var shouldSkip);
+						if (shouldSkip)
 						{
-							var hasValueProp = fieldType.GetProperty(nameof(Nullable<int>.HasValue),
-							                                         BindingFlags.Public | BindingFlags.Instance);
-							var hasValue = fieldValue != null && (bool)(hasValueProp?.GetValue(fieldValue) ?? false);
-							if (hasValue)
-							{
-								var getValueProp =
-									fieldType.GetProperty(nameof(Nullable<int>.Value),
-									                      BindingFlags.Public | BindingFlags.Instance);
-								fieldValue = getValueProp?.GetValue(fieldValue);
-								fieldType = nullableBaseType;
-							}
-							else
-							{
-								continue; // skip field.
-							}
+							continue;
 						}
-
 						var jsonValue = SerializeArgument(fieldValue, fieldType);
 						fieldDict.Add("data", new PropertyValue { rawJson = jsonValue });
 						propertyDict.Add(fieldName, fieldDict);
@@ -585,6 +556,32 @@ namespace Beamable.Common.Content
 
 			var json = Json.Serialize(propertyDict, new StringBuilder());
 			return json;
+		}
+
+		private static void CheckNullable(Type fieldType, object fieldValue, out Type outputFieldType, out object outputFieldValue, out bool shouldSkip)
+		{
+			outputFieldValue = fieldValue;
+			outputFieldType = fieldType;
+			shouldSkip = false;
+			var nullableBaseType = Nullable.GetUnderlyingType(fieldType);
+			if (nullableBaseType != null)
+			{
+				var hasValueProp = fieldType.GetProperty(nameof(Nullable<int>.HasValue),
+				                                         BindingFlags.Public | BindingFlags.Instance);
+				var hasValue = fieldValue != null && (bool)(hasValueProp?.GetValue(fieldValue) ?? false);
+				if (hasValue)
+				{
+					var getValueProp =
+						fieldType.GetProperty(nameof(Nullable<int>.Value),
+						                      BindingFlags.Public | BindingFlags.Instance);
+					outputFieldValue = getValueProp?.GetValue(fieldValue);
+					outputFieldType = nullableBaseType;
+				}
+				else
+				{
+					shouldSkip = true;
+				}
+			}
 		}
 
 		/// <summary>
