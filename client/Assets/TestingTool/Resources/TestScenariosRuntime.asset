@@ -18,19 +18,6 @@ MonoBehaviour:
     shortDescription: 
     fullDescription: 
     testSteps: []
-  - sceneName: 002 - BeamContext_Lifecycle
-    progress: 0
-    shortDescription: Test BeamContext
-    fullDescription: Check initialization process and multiplayer capability
-    testSteps:
-    - progress: 0
-      description: "Does default BeamContext initialize correctly? \r\nIt should
-        eventually show a player ID"
-    - progress: 0
-      description: 'Enable Group 2
-
-        There are two separate players. Do they
-        have different IDs?'
   - sceneName: 003 - Sdf Test
     progress: 0
     shortDescription: SDF Test
