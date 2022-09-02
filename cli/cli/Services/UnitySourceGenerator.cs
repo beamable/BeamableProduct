@@ -3,11 +3,9 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Serialization;
 using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -429,9 +427,13 @@ public static class UnityHelper
 						var shouldSerializeExpr = new CodeBinaryOperatorExpression(valueIsNotNullExpr,
 							CodeBinaryOperatorType.BooleanAnd, hasValueExpr);
 
+						var valueExpr =
+							new CodeFieldReferenceExpression(new CodeVariableReferenceExpression(param.Name),
+								nameof(Optional<int>.Value));
 						var toStringExpr =
-							new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
+							new CodeMethodInvokeExpression(valueExpr,
 								nameof(object.ToString));
+
 						var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
 							nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
 							toStringExpr);
