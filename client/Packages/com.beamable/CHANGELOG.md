@@ -9,6 +9,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
+
+### Fixed
+- The default uncaught Promise handler no longer throws `IndexOutOfBounds` errors in high failure cases.
+
+### Changed
+- Beamable requests have a 15 second application level timeout.
+
 ## [1.3.3]
 ### Added
 - `ClearCaches` function on `StatsApi` to force invalidate stats cache.
