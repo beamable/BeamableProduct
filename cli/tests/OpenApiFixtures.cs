@@ -2181,8 +2181,7 @@ public static class OpenApiFixtures
 
 	#region account object
 
-	public const string AccountObjectOpenApi = @"
-{
+	public const string AccountObjectOpenApi = @"{
     ""info"": {
         ""title"": ""accounts object"",
         ""version"": ""1.0"",
@@ -2222,7 +2221,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2234,173 +2238,6 @@ public static class OpenApiFixtures
                         }
                     }
                 },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/force-password-update"": {
-            ""put"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/ForceUpdatePassword""
-                            }
-                        }
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/me/third-party"": {
-            ""delete"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EmptyResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/DeleteThirdPartyAssociation""
-                            }
-                        }
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/email-update/confirm"": {
-            ""post"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EmptyResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/UpdateEmail""
-                            }
-                        }
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/realm-scoped-migration"": {
-            ""put"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
                 ""security"": [
                     {
                         ""scope"": [],
@@ -2433,91 +2270,17 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""security"": [
                     {
                         ""scope"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/me/devices"": {
-            ""delete"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EmptyResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/DeleteDevicesRequest""
-                            }
-                        }
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/merge"": {
-            ""put"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
                     }
                 ]
             }
@@ -2546,7 +2309,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""security"": [
@@ -2581,7 +2349,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2623,7 +2396,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2635,76 +2413,6 @@ public static class OpenApiFixtures
                         }
                     }
                 },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/add-association-legacy"": {
-            ""put"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/associations"": {
-            ""delete"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EmptyResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
                 ""security"": [
                     {
                         ""scope"": [],
@@ -2737,7 +2445,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2779,7 +2492,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2823,7 +2541,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2865,7 +2588,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2886,39 +2614,6 @@ public static class OpenApiFixtures
             }
         },
         ""/object/accounts/{objectId}/"": {
-            ""get"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            },
             ""put"": {
                 ""responses"": {
                     ""200"": {
@@ -2942,7 +2637,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        }
                     }
                 ],
                 ""requestBody"": {
@@ -2950,83 +2650,6 @@ public static class OpenApiFixtures
                         ""application/json"": {
                             ""schema"": {
                                 ""$ref"": ""#/components/schemas/AccountUpdate""
-                            }
-                        }
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            },
-            ""delete"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EmptyResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/password-update/confirm"": {
-            ""post"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/EmptyResponse""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/UpdatePassword""
                             }
                         }
                     }
@@ -3063,53 +2686,14 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": true
-                    }
-                ],
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/object/accounts/{objectId}/register"": {
-            ""post"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""objectId"",
-                        ""in"": ""path"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": true
-                    }
-                ],
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/AccountRegistration""
-                            }
+                        ""description"": ""AccountId of the player. Underlying objectId type is integer in format int64."",
+                        ""required"": true,
+                        ""x-beamable-object-id"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
                         }
                     }
-                },
+                ],
                 ""security"": [
                     {
                         ""scope"": [],
@@ -3166,7 +2750,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Email Update Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""newEmail""
+                ]
             },
             ""ThirdPartyAssociation"": {
                 ""type"": ""object"",
@@ -3186,25 +2773,20 @@ public static class OpenApiFixtures
                     },
                     ""meta"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
                     },
                     ""appId"": {
                         ""type"": ""string""
                     }
-                }
-            },
-            ""DeleteDevicesRequest"": {
-                ""properties"": {
-                    ""deviceIds"": {
-                        ""type"": ""array"",
-                        ""items"": {
-                            ""type"": ""string""
-                        }
-                    }
                 },
-                ""additionalProperties"": false,
-                ""title"": ""Delete Devices Request"",
-                ""type"": ""object""
+                ""required"": [
+                    ""name"",
+                    ""appId"",
+                    ""userAppId"",
+                    ""meta""
+                ]
             },
             ""InFlightMessage"": {
                 ""type"": ""object"",
@@ -3232,7 +2814,14 @@ public static class OpenApiFixtures
                     ""id"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""service"",
+                    ""id"",
+                    ""method"",
+                    ""path"",
+                    ""body""
+                ]
             },
             ""AccountRolesReport"": {
                 ""properties"": {
@@ -3254,7 +2843,9 @@ public static class OpenApiFixtures
                 ""title"": ""Account Roles Report"",
                 ""type"": ""object"",
                 ""required"": [
-                    ""accountId""
+                    ""accountId"",
+                    ""email"",
+                    ""realms""
                 ]
             },
             ""DeleteThirdPartyAssociation"": {
@@ -3268,17 +2859,11 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Delete Third Party Association"",
-                ""type"": ""object""
-            },
-            ""ForceUpdatePassword"": {
-                ""properties"": {
-                    ""hashedPassword"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false,
-                ""title"": ""Force Update Password"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""thirdParty"",
+                    ""userAppId""
+                ]
             },
             ""DeleteRole"": {
                 ""properties"": {
@@ -3303,20 +2888,11 @@ public static class OpenApiFixtures
                     ""role"": {
                         ""type"": ""string""
                     }
-                }
-            },
-            ""AccountRegistration"": {
-                ""properties"": {
-                    ""email"": {
-                        ""type"": ""string""
-                    },
-                    ""password"": {
-                        ""type"": ""string""
-                    }
                 },
-                ""additionalProperties"": false,
-                ""title"": ""Account Registration"",
-                ""type"": ""object""
+                ""required"": [
+                    ""projectId"",
+                    ""role""
+                ]
             },
             ""UpdateRole"": {
                 ""properties"": {
@@ -3345,7 +2921,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Available Roles Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""roles""
+                ]
             },
             ""RealmRolesReport"": {
                 ""type"": ""object"",
@@ -3363,7 +2942,12 @@ public static class OpenApiFixtures
                             ""type"": ""string""
                         }
                     }
-                }
+                },
+                ""required"": [
+                    ""realmName"",
+                    ""realmDisplayName"",
+                    ""roles""
+                ]
             },
             ""GamerTagAssociation"": {
                 ""type"": ""object"",
@@ -3378,6 +2962,7 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
+                    ""projectId"",
                     ""gamerTag""
                 ]
             },
@@ -3389,17 +2974,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Empty Response"",
-                ""type"": ""object""
-            },
-            ""UpdatePassword"": {
-                ""properties"": {
-                    ""newPassword"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false,
-                ""title"": ""Update Password"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""result""
+                ]
             },
             ""TransferThirdPartyAssociation"": {
                 ""properties"": {
@@ -3415,18 +2993,9 @@ public static class OpenApiFixtures
                 ""title"": ""Transfer Third Party Association"",
                 ""type"": ""object"",
                 ""required"": [
-                    ""fromAccountId""
+                    ""fromAccountId"",
+                    ""thirdParty""
                 ]
-            },
-            ""UpdateEmail"": {
-                ""properties"": {
-                    ""newEmail"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false,
-                ""title"": ""Update Email"",
-                ""type"": ""object""
             },
             ""Account"": {
                 ""properties"": {
@@ -3512,6 +3081,8 @@ public static class OpenApiFixtures
                 ""type"": ""object"",
                 ""required"": [
                     ""id"",
+                    ""gamerTags"",
+                    ""thirdParties"",
                     ""createdTimeMillis"",
                     ""updatedTimeMillis"",
                     ""privilegedAccount""

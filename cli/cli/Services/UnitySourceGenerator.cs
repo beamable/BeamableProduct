@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Serialization;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using System.CodeDom;
@@ -27,7 +28,7 @@ public class UnitySourceGenerator : SwaggerService.ISourceGenerator
 		// find the unique services...
 		var serviceTypes = context.Documents.DistinctBy(document =>
 		{
-			UnityHelper.GetTypeNames(document, out _, out var className, out _);
+			UnityHelper.GetTypeNames(document, out _, out var className, out _, out _);
 			return className;
 		});
 		foreach (var document in serviceTypes)
@@ -131,7 +132,7 @@ public static class UnityHelper
 	public static void GeneratePartialServiceType(OpenApiDocument document, out CodeCompileUnit unit, out CodeTypeDeclaration type, out CodeTypeDeclaration interfaceType)
 	{
 		unit = new CodeCompileUnit();
-		GetTypeNames(document, out var title, out var className, out var fileName);
+		GetTypeNames(document, out var title, out var className, out _, out _);
 		var root = new CodeNamespace($"{BeamableGeneratedNamespace}.{SanitizeClassName(title)}");
 		root.Imports.Add(new CodeNamespaceImport(BeamableGeneratedModelsNamespace));
 		root.Imports.Add(new CodeNamespaceImport(BeamableOptionalNamespace));
@@ -152,7 +153,7 @@ public static class UnityHelper
 	public static GeneratedFileDescriptor GenerateBaseService(OpenApiDocument document)
 	{
 		GeneratePartialServiceType(document, out var unit, out var type, out _);
-		GetTypeNames(document, out _, out _, out var fileName);
+		GetTypeNames(document, out _, out _, out var fileName, out _);
 
 		var requesterField = new CodeMemberField(nameof(IBeamableRequester), "_requester")
 		{
@@ -173,7 +174,7 @@ public static class UnityHelper
 
 	public static GeneratedFileDescriptor GenerateService(OpenApiDocument document)
 	{
-		GetTypeNames(document, out _, out _, out var fileName);
+		GetTypeNames(document, out _, out _, out var fileName,out var methodSuffix);
 		GeneratePartialServiceType(document, out var unit, out var type, out var interfaceType);
 
 		foreach (var path in document.Paths)
@@ -204,7 +205,7 @@ public static class UnityHelper
 
 			foreach (var operation in path.Value.Operations)
 			{
-				var method = GenerateApiMethod(path.Key, operation, methodName);
+				var method = GenerateApiMethod(methodSuffix, path.Key, operation, methodName);
 				if (method != null)
 				{
 					interfaceType.Members.Add(method);
@@ -221,8 +222,7 @@ public static class UnityHelper
 		};
 	}
 
-
-	static CodeMemberMethod GenerateApiMethod(string pathName, KeyValuePair<OperationType, OpenApiOperation> operation,
+	static CodeMemberMethod GenerateApiMethod(string methodPrefix, string pathName, KeyValuePair<OperationType, OpenApiOperation> operation,
 		string methodName)
 	{
 		const string varUrl = "gsUrl"; // gs stands for generated-source
@@ -259,7 +259,7 @@ public static class UnityHelper
 			return null;
 		}
 
-		var operationName = operation.Key + methodName;
+		var operationName = methodPrefix + operation.Key + methodName;
 		var returnType = new CodeTypeReference(nameof(Promise));
 		var responseType = new CodeTypeReference(jsonResponse.Schema.Reference.Id);
 		returnType.TypeArguments.Add(responseType);
@@ -270,6 +270,8 @@ public static class UnityHelper
 			Attributes = MemberAttributes.Public,
 			ReturnType = returnType
 		};
+
+		var methodComments = new List<string>();
 
 		var uri = pathName;
 		bool hasReqBody = false;
@@ -291,8 +293,28 @@ public static class UnityHelper
 		{
 			var genSchema = new GenSchema(param.Schema);
 
+			methodComments.Add($"<param name=\"{param.Name}\">{param.Description }</param>");
+
+			if (param.Name == "objectId")
+			{
+				if (param.Extensions.TryGetValue("x-beamable-object-id", out var ext) && ext is OpenApiObject obj)
+				{
+					if (obj.TryGetValue("type", out var customType) && customType is OpenApiString typeStr)
+					{
+						var customSchema = new OpenApiSchema { Type = typeStr.Value };
+						if (obj.TryGetValue("format", out var customFormat) && customFormat is OpenApiString formatStr)
+						{
+							customSchema.Format = formatStr.Value;
+						}
+
+						genSchema = new GenSchema(customSchema);
+					}
+				}
+			}
+
 			if (param.Required)
 			{
+
 				requiredParams.Add(new CodeParameterDeclarationExpression
 				{
 					Name = param.Name,
@@ -319,6 +341,7 @@ public static class UnityHelper
 		if (operation.Value.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
 		{
 			hasReqBody = true;
+			methodComments.Add($"<param name=\"{varReq}\">The <see cref=\"{requestMediaType.Schema.Reference.Id}\"/> instance to use for the request</param>");
 			method.Parameters.Add(new CodeParameterDeclarationExpression
 			{
 				Name = varReq,
@@ -332,6 +355,7 @@ public static class UnityHelper
 		// the auth should always be the last parameter.
 		if (!authHeaderRequired)
 		{
+			methodComments.Add($"<param name=\"{paramIncludeAuth}\">By default, every request will include an authorization header so that the request acts on behalf of the current user. When the {paramIncludeAuth} argument is false, the request will not include the authorization header for the current user.</param>");
 			method.Parameters.Add(new CodeParameterDeclarationExpression
 			{
 				// the auth header parameter should default to true.
@@ -366,9 +390,11 @@ public static class UnityHelper
 			switch (param.In)
 			{
 				case ParameterLocation.Path:
+					var paramToStr = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
+						nameof(object.ToString));
 					var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(varUrl),
 						nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
-						new CodeVariableReferenceExpression(param.Name));
+						paramToStr);
 
 					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
 						replace));
@@ -497,21 +523,25 @@ public static class UnityHelper
 
 		// return the result
 		var returnCommand = new CodeMethodReturnStatement(requestCommand);
+		methodComments.Add($"<returns>A promise containing the <see cref=\"{responseType.BaseType}\"/></returns>");
+		method.Comments.AddRange(methodComments.Select(str => new CodeCommentStatement(str, true)).ToArray());
 		method.Statements.Add(new CodeCommentStatement("make the request and return the result"));
 		method.Statements.Add(returnCommand);
 
 		return method;
 	}
 
-	public static void GetTypeNames(OpenApiDocument document, out string title, out string className, out string fileName)
+	public static void GetTypeNames(OpenApiDocument document, out string title, out string className, out string fileName, out string methodCustomization)
 	{
 		var words = document.Info.Title.Split(' ');
 		// remove "basic" and "object" words...
-		var removeSet = new[] { "Object", "Basic" };
+		const string basicService = "Basic";
+		const string objectService = "Object";
 
 		fileName = "";
 		title = "";
 		className = "";
+		methodCustomization = "";
 		for (var j = 0; j < words.Length; j++)
 		{
 			var casedWord = "";
@@ -530,9 +560,16 @@ public static class UnityHelper
 			}
 
 			fileName += casedWord;
-			if (!removeSet.Contains(casedWord))
+			switch (casedWord)
 			{
-				className += casedWord;
+				case basicService:
+					break;
+				case objectService:
+					methodCustomization = "Object";
+					break;
+				default:
+					className += casedWord;
+					break;
 			}
 		}
 
@@ -1152,6 +1189,8 @@ public class GenSchema
 				return new GenCodeTypeReference(typeof(Guid));
 			case ("string", "byte", _):
 				return new GenCodeTypeReference(typeof(byte));
+			case ("string", _, _) when (Schema?.Extensions.TryGetValue("x-beamable-object-id", out var ext) ?? false):
+				return new GenCodeTypeReference(typeof(string));
 			case ("System.String", _, _):
 			case ("string", _, _):
 				return new GenCodeTypeReference(typeof(string));
