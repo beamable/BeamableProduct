@@ -31,3 +31,19 @@ public class TestScript : Testable
     }
 }
 ```
+
+### V. Prepare tests for the runtime (build)
+1. Open `BuildSettings`
+2. Delete all, non test scenes
+3. Add `TestMainMenu` as **FIRST SCENE** `(index 0)`
+4. Add rest tests in any order
+
+### VI. Add Title and Description to the test in TestMainMenu
+1. Go under `NewTestingTool/Resources/Tests` and select `<YourTestName>_Descriptor` scriptable object.
+2. Do this steps if `NewTestingTool/Resources/Tests` doesn't exist
+   1. Open `Testing Editor` at `TestingTool/Testing Editor`
+   2. Press `Scan` button on the top bar
+   3. Go to step 1. 
+3. Fill `Title` and `Description` under `Test Descriptor` (first one)
+4. Add `TestMainMenu` as **FIRST SCENE** `(index 0)` to the build settings
+5. Add your selected scene to the build settings

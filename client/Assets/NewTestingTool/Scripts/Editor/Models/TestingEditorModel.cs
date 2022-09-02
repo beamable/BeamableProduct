@@ -19,7 +19,7 @@ using Object = UnityEngine.Object;
 
 using static Beamable.NewTestingTool.Constants.TestConstants.General;
 using static Beamable.NewTestingTool.Constants.TestConstants.Paths;
-using static Beamable.NewTestingTool.Constants.TestConstants.EditorPrefs;
+using static Beamable.NewTestingTool.Constants.TestConstants.SessionState;
 
 namespace Beamable.Editor.NewTestingTool.Models
 {

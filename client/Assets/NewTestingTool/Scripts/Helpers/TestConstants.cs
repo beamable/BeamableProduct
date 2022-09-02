@@ -24,7 +24,7 @@
 			public static string GetPathToTestScene(string sceneName) => $"{GetPathToTest(sceneName)}/{sceneName}.unity";
 			public static string GetPathToTestScripts(string sceneName) => $"{GetPathToTest(sceneName)}/Scripts";
 		}
-		public static class EditorPrefs
+		public static class SessionState
 		{
 			public const string SHOULD_CREATE_NEW_TEST = "testing_tool_should_create_new_test";
 			public const string TEST_NAME = "testing_tool_test_name";
