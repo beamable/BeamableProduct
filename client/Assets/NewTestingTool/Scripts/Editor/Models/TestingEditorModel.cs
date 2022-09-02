@@ -49,24 +49,25 @@ namespace Beamable.Editor.NewTestingTool.Models
 	{
 		private static bool ShouldCreateNewTest
 		{
-			get => EditorPrefs.GetBool(SHOULD_CREATE_NEW_TEST, false);
-			set => EditorPrefs.SetBool(SHOULD_CREATE_NEW_TEST, value);
+			get => SessionState.GetBool(SHOULD_CREATE_NEW_TEST, false);
+			set => SessionState.SetBool(SHOULD_CREATE_NEW_TEST, value);
 		}
 		private static string TestName
 		{
-			get => EditorPrefs.GetString(TEST_NAME, string.Empty);
-			set => EditorPrefs.SetString(TEST_NAME, value);
+			get => SessionState.GetString(TEST_NAME, string.Empty);
+			set => SessionState.SetString(TEST_NAME, value);
 		}
 		private static string ScriptName
 		{
-			get => EditorPrefs.GetString(SCRIPT_NAME, string.Empty);
-			set => EditorPrefs.SetString(SCRIPT_NAME, value);
+			get => SessionState.GetString(SCRIPT_NAME, string.Empty);
+			set => SessionState.SetString(SCRIPT_NAME, value);
 		}
 
 		public static void CreateTestScene(string testName)
 		{
 			WindowStateUtility.DisableAllWindows();
-
+			EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+			
 			ShouldCreateNewTest = true;
 			TestName = testName;
 			
@@ -128,6 +129,8 @@ namespace Beamable.Editor.NewTestingTool.Models
 		{
 			if (Application.isPlaying) return;
 
+			EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+
 			_testConfiguration = testingEditorModel.TestConfiguration;
 			EditorUtility.DisplayProgressBar("Testing tool", "Processing", 0);
 			EditorUtility.SetDirty(_testConfiguration);
@@ -155,9 +158,7 @@ namespace Beamable.Editor.NewTestingTool.Models
 
 					var pathToTestScene = GetPathToTestScene(testSceneName);
 					var scene = EditorSceneManager.OpenScene(pathToTestScene);
-
 					TrySetupTestScene(testSceneName);
-
 					EditorSceneManager.SaveScene(scene, pathToTestScene);
 				}
 			}
