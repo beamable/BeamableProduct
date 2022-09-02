@@ -52,16 +52,25 @@
     visibility: hidden;
 }
 
-.overrideIndicator{
-    background-color: #ffffff;
-    height: 1px;
-    width: 340px;
+.overrideIndicatorParent {
     position: absolute;
-    top: 19px;
-    left: 24px;
+    top: 0px;
+    left: -20px;
+    right: 0px;
+    bottom: 0px;
+    padding-left: 10px;
+    padding-right: 10px;
+    justify-content: center;
     display: none;
 }
 
-.overriden .overrideIndicator{
+.overrideIndicator{
+
+    height: 2px;
+    width: auto;
+    position: relative;
+}
+
+.overriden .overrideIndicatorParent{
     display: flex;
 }

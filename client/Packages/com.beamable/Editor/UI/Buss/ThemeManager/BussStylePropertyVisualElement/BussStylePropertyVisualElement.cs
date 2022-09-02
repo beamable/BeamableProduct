@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleDescription _styleDescription;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
+		private bool _overriden;
 
 		public BussElement InlineStyleOwner { get; set; }
 
@@ -49,8 +50,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public BussStylePropertyVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss")
-		{ }
+			$"{BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
 
 		public override void Init()
 		{
@@ -72,12 +72,17 @@ namespace Beamable.Editor.UI.Components
 			_variableParent.name = "globalVariable";
 			Root.Add(_variableParent);
 
+			var overrideIndicatorParent = new VisualElement {name = "overrideIndicatorParent"};
+			overrideIndicatorParent.AddToClassList("overrideIndicatorParent");
+			Root.Add(overrideIndicatorParent);
+
 			var overrideIndicator = new VisualElement();
 			overrideIndicator.AddToClassList("overrideIndicator");
-			Root.Add(overrideIndicator);
+			overrideIndicatorParent.Add(overrideIndicator);
 
 			Root.parent.EnableInClassList("exists", PropertyIsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !PropertyIsInStyle);
+
 			Refresh();
 		}
 
@@ -112,10 +117,10 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-						  BussStyleDescription styleRule,
-						  BussPropertyProvider property,
-						  VariableDatabase variableDatabase,
-						  PropertySourceTracker propertySourceTracker)
+		                  BussStyleDescription styleRule,
+		                  BussPropertyProvider property,
+		                  VariableDatabase variableDatabase,
+		                  PropertySourceTracker propertySourceTracker)
 		{
 			_variableDatabase = variableDatabase;
 			_propertySourceTracker = propertySourceTracker;
@@ -131,6 +136,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_propertySourceTracker = tracker;
 			SetupEditableField();
+			CheckIfIsReadOnly();
 		}
 
 		private void SetupEditableField()
@@ -145,11 +151,13 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			BussStylePropertyVisualElementUtility.PropertyValueState result =
-				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleDescription, _variableDatabase,
-																	 context, out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
+				BussStylePropertyVisualElementUtility.TryGetProperty(_propertyProvider, _styleDescription,
+				                                                     _variableDatabase,
+				                                                     context, out IBussProperty property,
+				                                                     out VariableDatabase.PropertyReference
+					                                                     variableSource);
 
 			SetVariableSource(variableSource);
-
 			SetOverridenClass(context, result);
 
 			if (result != BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
@@ -157,7 +165,6 @@ namespace Beamable.Editor.UI.Components
 				CreateMessageField(result);
 				return;
 			}
-
 
 			if (_propertyVisualElement == null)
 			{
@@ -175,15 +182,16 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		private void SetOverridenClass(PropertySourceTracker context, BussStylePropertyVisualElementUtility.PropertyValueState result)
+		private void SetOverridenClass(PropertySourceTracker context,
+		                               BussStylePropertyVisualElementUtility.PropertyValueState result)
 		{
-			bool overriden = false;
+			_overriden = false;
 			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
 			{
-				overriden = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
+				_overriden = _propertyProvider != context.GetUsedPropertyProvider(_propertyProvider.Key);
 			}
 
-			EnableInClassList("overriden", overriden);
+			EnableInClassList("overriden", _overriden);
 		}
 
 		private void CreateMessageField(BussStylePropertyVisualElementUtility.PropertyValueState result)
@@ -222,13 +230,13 @@ namespace Beamable.Editor.UI.Components
 				if (variableSource.styleSheet == null)
 				{
 					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
-									 "Declared in inline style.";
+					                 "Declared in inline style.";
 				}
 				else
 				{
 					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
-									 $"Selector: {variableSource.styleRule.SelectorString}\n" +
-									 $"Style sheet: {variableSource.styleSheet.name}";
+					                 $"Selector: {variableSource.styleRule.SelectorString}\n" +
+					                 $"Style sheet: {variableSource.styleSheet.name}";
 				}
 			}
 			else
@@ -251,6 +259,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				DestroyEditableField();
 			}
+
 			_propertyVisualElement = property.GetVisualElement();
 
 			if (_propertyVisualElement != null)
@@ -331,6 +340,11 @@ namespace Beamable.Editor.UI.Components
 		private void CheckIfIsReadOnly()
 		{
 			bool isWritable = _styleSheet != null && _styleSheet.IsWritable;
+
+			if (_overriden)
+			{
+				isWritable = false;
+			}
 
 			_labelComponent.SetEnabled(isWritable);
 			_propertyVisualElement.SetEnabled(isWritable);

@@ -20,10 +20,7 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleSheet UpdatedStyleSheet;
 		protected bool IsTriggeringStyleSheetChange { get; private set; }
 
-		public abstract IBussProperty BaseProperty
-		{
-			get;
-		}
+		public abstract IBussProperty BaseProperty { get; }
 
 		protected BussPropertyVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss", false)
