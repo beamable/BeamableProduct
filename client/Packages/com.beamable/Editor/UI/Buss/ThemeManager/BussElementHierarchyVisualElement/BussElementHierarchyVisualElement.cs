@@ -3,7 +3,6 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -14,27 +13,25 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
+	// TODO: TD000003
 	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
 		public event Action BussStyleSheetChange;
 
 		private bool _hasDelayedChangeCallback;
-		private IndentedLabelVisualElement _selectedLabelVisualElement;
 
-		public List<BussStyleSheet> StyleSheets
-		{
-			get;
-		} = new List<BussStyleSheet>();
+		public List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
 
-		public void ForceRebuild(GameObject selectedGameObject = null)
+		public string SelectedElementLabel() => GetLabel(SelectedComponent).Replace(" ", "");
+
+		public void ForceRebuild()
 		{
 			StyleSheets.Clear();
 			RefreshTree();
 			OnBussStyleSheetChange();
 
-			if (selectedGameObject != null)
+			if (Selection.activeGameObject != null)
 			{
-				Selection.activeGameObject = selectedGameObject;
 				OnSelectionChanged();
 			}
 		}

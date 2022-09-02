@@ -17,6 +17,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
+	// TODO: TD000003
 	public abstract class ComponentBasedHierarchyVisualElement<T> : BeamableBasicVisualElement where T : MonoBehaviour
 	{
 		public event Action HierarchyChanged;
