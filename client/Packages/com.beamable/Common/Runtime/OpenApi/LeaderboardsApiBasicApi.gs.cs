@@ -1,0 +1,71 @@
+
+namespace Beamable.Api.Open.Leaderboards
+{
+    using Beamable.Api.Open.Models;
+    using Beamable.Common.Content;
+    using Beamable.Common;
+    using IBeamableRequester = Beamable.Common.Api.IBeamableRequester;
+    using Method = Beamable.Common.Api.Method;
+    
+    public class LeaderboardsApiBasicApi
+    {
+        private IBeamableRequester _requester;
+        public LeaderboardsApiBasicApi(IBeamableRequester requester)
+        {
+            this._requester = requester;
+        }
+        public virtual Promise<LeaderboardListResponse> GetList([System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<int> skip, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<int> limit)
+        {
+            string gsUrl = "/basic/leaderboards/list";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            if (((skip != default(OptionalInt)) 
+                        && skip.HasValue))
+            {
+                gsQueries.Add(string.Concat("skip=", skip.ToString()));
+            }
+            if (((limit != default(OptionalInt)) 
+                        && limit.HasValue))
+            {
+                gsQueries.Add(string.Concat("limit=", limit.ToString()));
+            }
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<LeaderboardListResponse>(Method.GET, gsUrl, default(object), true, Beamable.Serialization.JsonSerializable.FromJson<LeaderboardListResponse>);
+        }
+        public virtual Promise<ListLeaderBoardViewResponse> GetPlayer(long dbid)
+        {
+            string gsUrl = "/basic/leaderboards/player";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("dbid=", dbid.ToString()));
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<ListLeaderBoardViewResponse>(Method.GET, gsUrl, default(object), true, Beamable.Serialization.JsonSerializable.FromJson<ListLeaderBoardViewResponse>);
+        }
+        public virtual Promise<LeaderboardAssignmentInfo> GetAssignment(string boardId, [System.Runtime.InteropServices.DefaultParameterValueAttribute(null)] [System.Runtime.InteropServices.OptionalAttribute()] Beamable.Common.Content.Optional<bool> joinBoard)
+        {
+            string gsUrl = "/basic/leaderboards/assignment";
+            string gsQuery = "?";
+            System.Collections.Generic.List<string> gsQueries = new System.Collections.Generic.List<string>();
+            gsQueries.Add(string.Concat("boardId=", boardId.ToString()));
+            if (((joinBoard != default(OptionalBool)) 
+                        && joinBoard.HasValue))
+            {
+                gsQueries.Add(string.Concat("joinBoard=", joinBoard.ToString()));
+            }
+            gsQuery = string.Concat(gsQuery, string.Join("&", gsQueries));
+            gsUrl = string.Concat(gsUrl, gsQuery);
+            // make the request and return the result
+            return _requester.Request<LeaderboardAssignmentInfo>(Method.GET, gsUrl, default(object), true, Beamable.Serialization.JsonSerializable.FromJson<LeaderboardAssignmentInfo>);
+        }
+        public virtual Promise<LeaderboardUidResponse> GetUid()
+        {
+            string gsUrl = "/basic/leaderboards/uid";
+            // make the request and return the result
+            return _requester.Request<LeaderboardUidResponse>(Method.GET, gsUrl, default(object), true, Beamable.Serialization.JsonSerializable.FromJson<LeaderboardUidResponse>);
+        }
+    }
+}
