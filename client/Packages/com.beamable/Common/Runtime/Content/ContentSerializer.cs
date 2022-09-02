@@ -47,6 +47,9 @@ namespace Beamable.Common.Content
 			{
 				try
 				{
+
+					// if the type is nullable, return the string "null"...
+
 					// the type may be a nullable type, which means the default instance will be null, which we don't want...
 					argType = Nullable.GetUnderlyingType(argType) ?? argType;
 					var defaultInstance = Activator.CreateInstance(argType);
@@ -155,6 +158,28 @@ namespace Beamable.Common.Content
 						var fieldValue = field.GetValue(arg);
 						var fieldType = field.FieldType;
 
+						var nullableBaseType = Nullable.GetUnderlyingType(fieldType);
+						if (nullableBaseType != null)
+						{
+							var hasValueProp = fieldType.GetProperty(nameof(Nullable<int>.HasValue),
+							                      BindingFlags.Public | BindingFlags.Instance);
+							var hasValue = fieldValue != null && (bool)(hasValueProp?.GetValue(fieldValue) ?? false);
+
+							if (hasValue)
+							{
+								var getValueProp =
+									fieldType.GetProperty(nameof(Nullable<int>.Value),
+									                      BindingFlags.Public | BindingFlags.Instance);
+								fieldValue = getValueProp?.GetValue(fieldValue);
+								fieldType = nullableBaseType;
+							}
+							else
+							{
+								continue; // skip field.
+							}
+						}
+
+
 						if (fieldValue is Optional optional)
 						{
 							if (optional.HasValue)
@@ -235,10 +260,12 @@ namespace Beamable.Common.Content
 
 			IContentRef contentRef;
 			IContentLink contentLink;
+			type = Nullable.GetUnderlyingType(type) ?? type;
 			switch (preParsedValue)
 			{
 				case null:
 					return null;
+				
 
 				/* REFERENCE TYPES */
 				case ArrayDict linkDict when typeof(IContentLink).IsAssignableFrom(type):
@@ -527,6 +554,27 @@ namespace Beamable.Common.Content
 								continue;
 							}
 						}
+
+						var nullableBaseType = Nullable.GetUnderlyingType(fieldType);
+						if (nullableBaseType != null)
+						{
+							var hasValueProp = fieldType.GetProperty(nameof(Nullable<int>.HasValue),
+							                                         BindingFlags.Public | BindingFlags.Instance);
+							var hasValue = fieldValue != null && (bool)(hasValueProp?.GetValue(fieldValue) ?? false);
+							if (hasValue)
+							{
+								var getValueProp =
+									fieldType.GetProperty(nameof(Nullable<int>.Value),
+									                      BindingFlags.Public | BindingFlags.Instance);
+								fieldValue = getValueProp?.GetValue(fieldValue);
+								fieldType = nullableBaseType;
+							}
+							else
+							{
+								continue; // skip field.
+							}
+						}
+
 						var jsonValue = SerializeArgument(fieldValue, fieldType);
 						fieldDict.Add("data", new PropertyValue { rawJson = jsonValue });
 						propertyDict.Add(fieldName, fieldDict);

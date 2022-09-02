@@ -1,6 +1,8 @@
 using Beamable.Common.Content;
 using Beamable.Tests.Content.Serialization.Support;
+using JetBrains.Annotations;
 using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
@@ -24,11 +26,47 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			Assert.IsNotNull(reconstructed.Thematic3);
 			Assert.IsTrue(reconstructed.Thematic2);
 			Assert.IsFalse(reconstructed.Thematic3);
-
-			// TODO: this doesn't feel great, because the data was serialized without 'Thematic' being set, why should it be there on the way back?
-			Assert.IsNotNull(reconstructed.Thematic);
-			Assert.IsFalse(reconstructed.Thematic);
+			Assert.IsNull(reconstructed.Thematic);
+			Assert.IsNull(reconstructed.x);
 		}
+
+		[Test]
+		public void SerializeIntNotNull()
+		{
+			var meta = new BundlesContent {Id = "metadata.bundles.tuna"};
+			meta.x = 3;
+			var s = new TestSerializer();
+			var json = s.Serialize(meta);
+			Debug.Log(json);
+			var reconstructed = s.Deserialize<BundlesContent>(json);
+
+			Assert.IsNotNull(reconstructed.x);
+			Assert.AreEqual(3, reconstructed.x);
+		}
+
+		[Test]
+		public void SerializeNested()
+		{
+			var meta = new TopLevel() {Id = "top.pop"};
+			meta.nested = new NestedComponent{x = 2};
+			meta.nestedList = new List<NestedComponent> {new NestedComponent {x = 3}, new NestedComponent {x = null}};
+			var s = new TestSerializer();
+			var json = s.Serialize(meta);
+			Debug.Log(json);
+			var reconstructed = s.Deserialize<TopLevel>(json);
+
+			Assert.IsNotNull(reconstructed.nested);
+			Assert.AreEqual(2, reconstructed.nested.x);
+
+			Assert.AreEqual(2, reconstructed.nestedList.Count);
+			Assert.IsNotNull(reconstructed.nestedList[0].x);
+			Assert.AreEqual(3, reconstructed.nestedList[0].x);
+			Assert.IsNull(reconstructed.nestedList[1].x);
+
+			Assert.IsNotNull(reconstructed.nested);
+
+		}
+
 
 		[System.Serializable]
 		[ContentType(CONTENT_TYPE)]
@@ -51,6 +89,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			public int[] Common;
 		}
 
+		[ContentType("top")]
+		public class TopLevel : TestContentObject
+		{
+			public List<NestedComponent> nestedList;
+			public NestedComponent nested;
+		}
 
+		public class NestedComponent
+		{
+			public int? x;
+		}
 	}
 }
