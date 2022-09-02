@@ -142,7 +142,7 @@ public static class UnityHelper
 		unit.Namespaces.Add(root);
 
 		type = new CodeTypeDeclaration($"{className}") { IsPartial = true };
-		interfaceType = new CodeTypeDeclaration($"I{className}") { IsInterface = true, IsPartial = true};
+		interfaceType = new CodeTypeDeclaration($"I{className}") { IsInterface = true, IsPartial = true };
 
 		type.BaseTypes.Add(new CodeTypeReference(interfaceType.Name));
 
@@ -174,7 +174,7 @@ public static class UnityHelper
 
 	public static GeneratedFileDescriptor GenerateService(OpenApiDocument document)
 	{
-		GetTypeNames(document, out _, out _, out var fileName,out var methodSuffix);
+		GetTypeNames(document, out _, out _, out var fileName, out var methodSuffix);
 		GeneratePartialServiceType(document, out var unit, out var type, out var interfaceType);
 
 		foreach (var path in document.Paths)
