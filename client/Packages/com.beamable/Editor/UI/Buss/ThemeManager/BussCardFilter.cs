@@ -10,7 +10,8 @@ namespace Beamable.Editor.UI.Buss
 
 		public bool CardFilter(BussStyleRule styleRule, BussElement selectedElement)
 		{
-			bool contains = styleRule.Properties.Any(property => property.Key.ToLower().Contains(CurrentFilter));
+			bool contains = styleRule.Properties.Any(property => property.Key.ToLower().Contains(CurrentFilter)) ||
+			                styleRule.Properties.Count == 0;
 
 			return selectedElement == null
 				? CurrentFilter.Length <= 0 || contains
