@@ -3,6 +3,7 @@ name: Generate API
 # TODO: eventually, we want this job to trigger based on perforce pushes
 on:
   schedule:
+    # this cron string runs every 2 hours
     - cron: 0 0/2 * * *
   workflow_dispatch:
 
@@ -19,15 +20,24 @@ jobs:
         uses: actions/setup-dotnet@v1.7.2
         with:
           dotnet-version: 6.0.x
+      - name: Install dotnet-format
+        run: dotnet tool install --global --version 5.1.250801 dotnet-format
       - name: Build CLI 
         run: |
           dotnet build ./cli/cli 
       - name: Generate API
         run: |
           dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
+      - name: Format files
+        id: format
+        run: dotnet-format -f ./client/Packages/com.beamable/Common/Runtime/OpenApi
+      - name: Check for Changes
+        run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
+        id: changes
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         id: cpr
+        if: ${{ steps.changes.outputs.any == 'true' }}
         with:
           commit-message: syncing sdk from openapi 
           title: Auto generate SDK from openAPI 
@@ -39,7 +49,7 @@ jobs:
           add-paths: |
             client/Packages/com.beamable/Common/Runtime/OpenApi
       - name: Post to a Slack channel
-        if: ${{ steps.cpr.outputs.pull-request-number }}
+        if: ${{ steps.changes.outputs.any == 'true' && steps.cpr.outputs.pull-request-number }}
         id: slack
         uses: slackapi/slack-github-action@v1.21.0
         with:
