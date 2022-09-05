@@ -63,3 +63,10 @@ BussElementHierarchyVisualElement {
 InlineStyleCardVisualElement {
     padding-bottom: 10px;
 }
+
+#foldIcon {
+    height: 7px;
+    width: 7px;
+}
+
+

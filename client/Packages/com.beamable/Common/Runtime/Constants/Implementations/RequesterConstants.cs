@@ -8,6 +8,8 @@ namespace Beamable.Common
 			public const string ERROR_PREFIX_WEBSOCKET_RES = "WSS Error";
 			public const string ERROR_PREFIX_MICROSERVICE = "Service Error";
 
+			public const int DEFAULT_APPLICATION_TIMEOUT_SECONDS = 15;
+
 			/// <summary>
 			/// The header describing the customer's cid. This _can_ be alias.
 			/// </summary>

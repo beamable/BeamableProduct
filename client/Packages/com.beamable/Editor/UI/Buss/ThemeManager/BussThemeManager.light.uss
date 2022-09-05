@@ -5,3 +5,13 @@
 #filterToggle > TemplateContainer > #mainVisualElement> Label {
     color: #090909;
 }
+
+.unfolded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_dark.png");
+}
+
+.folded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_dark.png");
+}
+
+

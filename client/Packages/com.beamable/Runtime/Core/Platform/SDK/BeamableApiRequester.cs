@@ -126,7 +126,11 @@ namespace Core.Platform.SDK
 
 			try
 			{
-				if (request.responseCode >= 300 || request.IsNetworkError())
+				if (request.IsNetworkError())
+				{
+					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. apirequester. status=[{request.responseCode}] error=[{request.error}]"));
+				}
+				else if (request.responseCode >= 300)
 				{
 					// Handle errors
 					var payload = request.downloadHandler.text;
@@ -211,6 +215,8 @@ namespace Core.Platform.SDK
 			{
 				request.SetRequestHeader("Time-Override", TimeOverride);
 			}
+
+			request.timeout = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
 
 			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 

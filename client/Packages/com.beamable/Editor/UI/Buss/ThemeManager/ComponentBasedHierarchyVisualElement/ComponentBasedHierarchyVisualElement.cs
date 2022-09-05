@@ -17,6 +17,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
+	// TODO: TD000003
 	public abstract class ComponentBasedHierarchyVisualElement<T> : BeamableBasicVisualElement where T : MonoBehaviour
 	{
 		public event Action HierarchyChanged;
@@ -62,8 +63,14 @@ namespace Beamable.Editor.UI.Components
 		public override void Init()
 		{
 			base.Init();
+
 			VisualElement header = new VisualElement();
 			header.name = "header";
+
+			Image foldIcon = new Image { name = "foldIcon" };
+			foldIcon.AddToClassList("unfolded");
+			header.Add(foldIcon);
+
 			TextElement label = new TextElement();
 			label.name = "headerLabel";
 			label.text = "Navigation window";
@@ -72,6 +79,8 @@ namespace Beamable.Editor.UI.Components
 			header.RegisterCallback<MouseDownEvent>(evt =>
 			{
 				_hierarchyContainer.ToggleInClassList("hidden");
+				foldIcon.ToggleInClassList("unfolded");
+				foldIcon.ToggleInClassList("folded");
 			});
 
 			Root.Add(header);
