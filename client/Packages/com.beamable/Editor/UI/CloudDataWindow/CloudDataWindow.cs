@@ -49,7 +49,6 @@ namespace Beamable.Editor.UI.CloudDataWindow
 
 			_model = new CloudDataViewService();
 			_model.OnAvailableMetaDataDownloaded += HandleMetaDataDownloaded;
-			_model.Init();
 			// _model = ActiveContext.ServiceScope.GetService<IToolboxViewService>();
 			//
 			// // Force refresh to build the initial window
@@ -59,6 +58,7 @@ namespace Beamable.Editor.UI.CloudDataWindow
 			// _model.Initialize();
 
 			SetForContent();
+			_model.Init();
 		}
 
 		private void HandleMetaDataDownloaded(Dictionary<CloudMetaData, string> cloudMetaDatas)
