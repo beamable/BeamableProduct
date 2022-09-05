@@ -63,14 +63,14 @@ namespace Beamable.Editor.UI.Components
 		public override void Init()
 		{
 			base.Init();
-			
+
 			VisualElement header = new VisualElement();
 			header.name = "header";
-			
-			Image foldIcon = new Image {name = "foldIcon"};
+
+			Image foldIcon = new Image { name = "foldIcon" };
 			foldIcon.AddToClassList("unfolded");
 			header.Add(foldIcon);
-			
+
 			TextElement label = new TextElement();
 			label.name = "headerLabel";
 			label.text = "Navigation window";

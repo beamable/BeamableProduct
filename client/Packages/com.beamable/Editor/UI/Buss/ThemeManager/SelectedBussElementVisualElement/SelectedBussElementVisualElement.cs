@@ -52,11 +52,11 @@ namespace Beamable.Editor.UI.Components
 
 			VisualElement header = new VisualElement();
 			header.AddToClassList("header");
-			
-			Image foldIcon = new Image {name = "foldIcon"};
+
+			Image foldIcon = new Image { name = "foldIcon" };
 			foldIcon.AddToClassList("unfolded");
 			header.Add(foldIcon);
-			
+
 			TextElement label = new TextElement();
 			label.AddToClassList("headerLabel");
 			label.text = "Selected Buss Element";
