@@ -59,6 +59,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public event Action OnInfoButtonClicked;
 
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
+		bool IsDockerActive => !(DockerCommand.DockerNotInstalled || 
+		                         (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow && DockerCommand.DockerNotRunning));
+		bool CanHaveDependencies => IsDockerActive && MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
+		MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
 
 		public override void Refresh()
 		{
@@ -74,18 +78,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_createNew.tooltip = Tooltips.Microservice.ADD_NEW;
 			_createNew.AddManipulator(manipulator);
 
-			_createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
 
 			_startAll = Root.Q<Button>("startAll");
 			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
-			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-
-			var dependenciesState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
-											MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
 
 			_dependencies = Root.Q<Button>("dependencies");
 			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
-			_dependencies.SetEnabled(dependenciesState);
 			_dependencies.tooltip = Tooltips.Microservice.DEPENDENCIES;
 
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
@@ -102,7 +100,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_publish.tooltip = Tooltips.Microservice.PUBLISH;
 			if (!NoErrorsValidator.LastCompilationSucceded)
 				_publish.tooltip = cannotPublishText;
-			_publish.SetEnabled(!DockerCommand.DockerNotInstalled && HasPublishPermissions);
 
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
@@ -123,8 +120,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			bool anyModelSelected = selectedServicesAmount > 0;
 			UpdateTextButtonTexts(selectedServicesAmount == servicesAmount);
-			_startAll.SetEnabled(anyModelSelected);
-			_publish.SetEnabled(servicesAmount > 0 && HasPublishPermissions);
+			_startAll.SetEnabled(IsDockerActive && anyModelSelected);
+			_publish.SetEnabled(IsDockerActive && servicesAmount > 0 && HasPublishPermissions);
+			_startAll.SetEnabled(IsDockerActive);
+			_dependencies.SetEnabled(CanHaveDependencies);
+			_createNew.SetEnabled(IsDockerActive);
 		}
 
 		private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)

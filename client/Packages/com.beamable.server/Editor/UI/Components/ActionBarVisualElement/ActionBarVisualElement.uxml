@@ -18,16 +18,16 @@
                 <engine:Label class="buttonText" text="Dependencies"/>
             </engine:Button>
 
-            <engine:Button name="createNew" class="boundedButton">
+            <engine:Button name="createNew" class="boundedButton" enabled="false">
                 <engine:VisualElement class="mainPart">
                     <engine:Image name="createNewIcon"/>
-                    <engine:Label class="buttonText" text="Create New" />
+                    <engine:Label class="buttonText" text="Create New"/>
                 </engine:VisualElement>
                 <engine:Image name="dropDownImg" class="--image-scale-to-fit">
                 </engine:Image>
             </engine:Button>
 
-            <engine:Button name="publish" class="boundedButton">
+            <engine:Button name="publish" class="boundedButton" enabled="false">
                 <engine:Image name="publishIcon"/>
                 <engine:Label class="buttonText" text="Publish"/>
             </engine:Button>
