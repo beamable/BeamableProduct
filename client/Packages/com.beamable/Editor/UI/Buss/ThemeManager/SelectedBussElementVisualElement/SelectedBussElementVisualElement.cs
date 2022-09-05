@@ -28,7 +28,7 @@ namespace Beamable.Editor.UI.Components
 		private LabeledTextField _idField;
 		private LabeledObjectField _currentStyleSheet;
 		private ListView _classesList;
-		private BussElementHierarchyVisualElement _navigationWindow;
+		private ThemeManagerNavigationComponent _navigationWindow;
 		private BussElement _currentBussElement;
 		private int? _selectedClassListIndex;
 		private VisualElement _contentContainer;
@@ -37,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss")
 		{ }
 
-		public void Setup(BussElementHierarchyVisualElement navigationWindow)
+		public void Setup(ThemeManagerNavigationComponent navigationWindow)
 		{
 			_navigationWindow = navigationWindow;
 			_navigationWindow.SelectionChanged += OnBussElementChanged;

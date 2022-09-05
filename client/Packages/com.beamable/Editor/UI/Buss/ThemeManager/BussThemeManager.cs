@@ -21,7 +21,7 @@ namespace Beamable.Editor.UI.Buss
 	public class BussThemeManager : BeamEditorWindow<BussThemeManager>
 	{
 		private BussStyleListVisualElement _stylesGroup;
-		private BussElementHierarchyVisualElement _navigationWindow;
+		private ThemeManagerNavigationComponent _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
 		private LabeledCheckboxVisualElement _hideOverridenToggle;
 		private ScrollView _scrollView;
@@ -80,7 +80,7 @@ namespace Beamable.Editor.UI.Buss
 			navigationGroup.name = "navigationGroup";
 			mainVisualElement.Add(navigationGroup);
 
-			_navigationWindow = new BussElementHierarchyVisualElement();
+			_navigationWindow = new ThemeManagerNavigationComponent();
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
 
