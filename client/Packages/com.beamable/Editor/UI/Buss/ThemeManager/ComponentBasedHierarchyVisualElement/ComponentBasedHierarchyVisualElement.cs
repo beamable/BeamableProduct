@@ -63,8 +63,14 @@ namespace Beamable.Editor.UI.Components
 		public override void Init()
 		{
 			base.Init();
+			
 			VisualElement header = new VisualElement();
 			header.name = "header";
+			
+			Image foldIcon = new Image {name = "foldIcon"};
+			foldIcon.AddToClassList("unfolded");
+			header.Add(foldIcon);
+			
 			TextElement label = new TextElement();
 			label.name = "headerLabel";
 			label.text = "Navigation window";
@@ -73,6 +79,8 @@ namespace Beamable.Editor.UI.Components
 			header.RegisterCallback<MouseDownEvent>(evt =>
 			{
 				_hierarchyContainer.ToggleInClassList("hidden");
+				foldIcon.ToggleInClassList("unfolded");
+				foldIcon.ToggleInClassList("folded");
 			});
 
 			Root.Add(header);
