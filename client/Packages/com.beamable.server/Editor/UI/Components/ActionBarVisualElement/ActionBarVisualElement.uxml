@@ -18,7 +18,7 @@
                 <engine:Label class="buttonText" text="Dependencies"/>
             </engine:Button>
 
-            <engine:Button name="createNew" class="boundedButton" enabled="false">
+            <engine:Button name="createNew" class="boundedButton">
                 <engine:VisualElement class="mainPart">
                     <engine:Image name="createNewIcon"/>
                     <engine:Label class="buttonText" text="Create New"/>
@@ -27,7 +27,7 @@
                 </engine:Image>
             </engine:Button>
 
-            <engine:Button name="publish" class="boundedButton" enabled="false">
+            <engine:Button name="publish" class="boundedButton">
                 <engine:Image name="publishIcon"/>
                 <engine:Label class="buttonText" text="Publish"/>
             </engine:Button>
