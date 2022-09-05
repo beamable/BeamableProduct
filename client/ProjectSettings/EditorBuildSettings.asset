@@ -4,19 +4,7 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes:
-  - enabled: 1
-    path: Assets/TestingTool/MainMenu.unity
-    guid: c64c0c403ed3175419f76ed620601066
-  - enabled: 1
-    path: Assets/TestingTool/Scenes/001 - NewTestScene_RenameMe.unity
-    guid: 314edf7d04bfd4d96ab8d76db5a6d6d4
-  - enabled: 1
-    path: Assets/TestingTool/Scenes/003 - Sdf Test.unity
-    guid: 87082cf671f2b48aea1f2649d5abee00
-  - enabled: 1
-    path: Assets/TestingTool/Scenes/004 - Leaderboards_Buss_Prefab.unity
-    guid: 2aad2beaa51c00d46a8bf27bc6fca95b
+  m_Scenes: []
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 52f274da26cb73a49ac06b8a1df87e85,
       type: 2}
