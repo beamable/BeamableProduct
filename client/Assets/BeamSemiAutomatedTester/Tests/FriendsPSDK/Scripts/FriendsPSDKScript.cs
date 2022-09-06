@@ -10,7 +10,7 @@ namespace Beamable.BSAT.Test.FriendsPSDK
 {
 	public class FriendsPSDKScript : Testable
 	{
-		private const float TIMEOUT_MS = 3000;
+		private const int TIMEOUT_MS = 3000;
 
 		public string plrCode1;
 		public string plrCode2;
@@ -43,12 +43,6 @@ namespace Beamable.BSAT.Test.FriendsPSDK
 		{
 			try
 			{
-				if (ctx1.Social.IsFriend(plr2Id))
-				{
-					TestableDebug.LogWarning("Already friends. Unfriending first...");
-					await ctx1.Social.Unfriend(plr2Id);
-				}
-
 				await ctx1.Social.Invite(plr2Id);
 
 				await Until(
@@ -57,6 +51,8 @@ namespace Beamable.BSAT.Test.FriendsPSDK
 					$"Invite from player {plr1Id} was not received within {TIMEOUT_MS}ms");
 
 				await ctx2.Social.AcceptInviteFrom(plr1Id);
+
+				await ctx1.Social.Unfriend(plr2Id);
 			}
 			catch (Exception e)
 			{
@@ -100,6 +96,8 @@ namespace Beamable.BSAT.Test.FriendsPSDK
 			{
 				if (e.Payload.Contains("BlockedError"))
 				{
+					await ctx1.Social.UnblockPlayer(plr2Id);
+					
 					return TestResult.Passed;
 				}
 
