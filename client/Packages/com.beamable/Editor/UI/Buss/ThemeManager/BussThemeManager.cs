@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -18,6 +17,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
+	// TODO: TD000003
 	public class BussThemeManager : BeamEditorWindow<BussThemeManager>
 	{
 		private BussStyleListVisualElement _stylesGroup;
@@ -29,10 +29,7 @@ namespace Beamable.Editor.UI.Buss
 		private VisualElement _windowRoot;
 
 		private BeamablePopupWindow _confirmationPopup;
-		private AddStyleButton _addStyleButton;
-		private GameObject _selectedGameObject;
 		private bool _inStyleSheetChangedLoop;
-
 
 		static BussThemeManager()
 		{
@@ -65,7 +62,6 @@ namespace Beamable.Editor.UI.Buss
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 			_windowRoot.name = nameof(_windowRoot);
 			_windowRoot.TryAddScrollViewAsMainElement();
-			_addStyleButton = null;
 
 			VisualElement mainVisualElement = _windowRoot.Q("window-main");
 
@@ -114,17 +110,9 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.SelectionChanged -= SetScroll;
 			_navigationWindow.SelectionChanged += SetScroll;
 
-			_navigationWindow.SelectionChanged -= CacheSelectedGameObject;
-			_navigationWindow.SelectionChanged += CacheSelectedGameObject;
-
 			root.Add(_windowRoot);
 
 			RefreshStyleSheets();
-		}
-
-		private void CacheSelectedGameObject(GameObject go)
-		{
-			_selectedGameObject = go;
 		}
 
 		private void RefreshStyleSheets()
@@ -148,8 +136,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnFocus()
 		{
-			_navigationWindow?.ForceRebuild(_selectedGameObject);
-			_addStyleButton?.CheckEnableState();
+			_navigationWindow?.ForceRebuild();
 		}
 
 		public override void OnDestroy()
@@ -180,7 +167,7 @@ namespace Beamable.Editor.UI.Buss
 
 			if (styleSheetCount == 1)
 			{
-				CreateEmptyStyle(_stylesGroup.WritableStyleSheets.First(), Features.Buss.NEW_SELECTOR_NAME);
+				CreateEmptyStyle(_stylesGroup.WritableStyleSheets.First());
 			}
 			else if (styleSheetCount > 1)
 			{
@@ -197,16 +184,21 @@ namespace Beamable.Editor.UI.Buss
 			{
 				context.AddItem(new GUIContent(styleSheet.name), false, () =>
 				{
-					CreateEmptyStyle(styleSheet, Features.Buss.NEW_SELECTOR_NAME);
+					CreateEmptyStyle(styleSheet);
 				});
 			}
 
 			context.ShowAsContext();
 		}
 
-		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string newName = "")
+		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string selectorName = "*")
 		{
-			BussStyleRule selector = BussStyleRule.Create(newName, new List<BussPropertyProvider>());
+			if (Selection.activeGameObject != null && _selectedBussElement != null)
+			{
+				selectorName = _navigationWindow.SelectedElementLabel();
+			}
+
+			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
 			RefreshStyleSheets();
