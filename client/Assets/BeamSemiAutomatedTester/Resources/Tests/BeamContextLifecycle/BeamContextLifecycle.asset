@@ -40,11 +40,12 @@ MonoBehaviour:
           _title: 
           _description: 
         - _methodName: DefaultBeamContextInitTest
-          _title: 
-          _description: 
+          _title: BeamContext initialization
+          _description: Test if default BeamContext initalizes correctly.
         - _methodName: OtherBeamContextInitTest
-          _title: 
-          _description: 
+          _title: Other BeamContext initialization
+          _description: Test if other than default BeamContext initializes correctly
+            and has different player ID.
     _registeredTestRules:
     - _testMethodName: DefaultBeamContextInitTest
       _order: 0
@@ -67,11 +68,12 @@ MonoBehaviour:
           _title: 
           _description: 
         - _methodName: DefaultBeamContextInitTest
-          _title: 
-          _description: 
+          _title: BeamContext initialization
+          _description: Test if default BeamContext initalizes correctly.
         - _methodName: OtherBeamContextInitTest
-          _title: 
-          _description: 
+          _title: Other BeamContext initialization
+          _description: Test if other than default BeamContext initializes correctly
+            and has different player ID.
       _registeredTestRuleMethods:
       - _testableName: Beamable.BSAT.Test.BeamContextLifecycle.BeamContextLifecycleScript,
           Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
@@ -79,8 +81,8 @@ MonoBehaviour:
         _testResult: 0
         _testRuleMethodDescriptor:
           _methodName: DefaultBeamContextInitTest
-          _title: 
-          _description: 
+          _title: BeamContext initialization
+          _description: Test if default BeamContext initalizes correctly.
         _argumentsRaw: []
     - _testMethodName: OtherBeamContextInitTest
       _order: 1
@@ -103,11 +105,12 @@ MonoBehaviour:
           _title: 
           _description: 
         - _methodName: DefaultBeamContextInitTest
-          _title: 
-          _description: 
+          _title: BeamContext initialization
+          _description: Test if default BeamContext initalizes correctly.
         - _methodName: OtherBeamContextInitTest
-          _title: 
-          _description: 
+          _title: Other BeamContext initialization
+          _description: Test if other than default BeamContext initializes correctly
+            and has different player ID.
       _registeredTestRuleMethods:
       - _testableName: Beamable.BSAT.Test.BeamContextLifecycle.BeamContextLifecycleScript,
           Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
@@ -115,6 +118,7 @@ MonoBehaviour:
         _testResult: 0
         _testRuleMethodDescriptor:
           _methodName: OtherBeamContextInitTest
-          _title: 
-          _description: 
+          _title: Other BeamContext initialization
+          _description: Test if other than default BeamContext initializes correctly
+            and has different player ID.
         _argumentsRaw: []

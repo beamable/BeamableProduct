@@ -33,8 +33,9 @@ MonoBehaviour:
         _title: 
         _description: 
       - _methodName: DefaultBeamContextInitTest
-        _title: 
-        _description: 
+        _title: BeamContext initialization
+        _description: Test if default BeamContext initalizes correctly.
       - _methodName: OtherBeamContextInitTest
-        _title: 
-        _description: 
+        _title: Other BeamContext initialization
+        _description: Test if other than default BeamContext initializes correctly
+          and has different player ID.
