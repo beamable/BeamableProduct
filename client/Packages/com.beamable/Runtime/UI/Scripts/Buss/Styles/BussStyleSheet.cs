@@ -18,15 +18,13 @@ namespace Beamable.UI.Buss
 #pragma warning disable CS0649
 		[SerializeField] private List<BussStyleRule> _styles = new List<BussStyleRule>();
 		[SerializeField, HideInInspector] private List<Object> _assetReferences = new List<Object>();
+		[SerializeField] private bool _isReadOnly;
+		[SerializeField] private int _sortingOrder;
 #pragma warning restore CS0649
 
 		public List<BussStyleRule> Styles => _styles;
-
-#pragma warning disable CS0649
-		[SerializeField] private bool _isReadOnly;
-#pragma warning restore CS0649
-
 		public bool IsReadOnly => _isReadOnly;
+		public int SortingOrder => _sortingOrder;
 
 		public bool IsWritable
 		{
@@ -110,6 +108,13 @@ namespace Beamable.UI.Buss
 		public void SetReadonly(bool value)
 		{
 			_isReadOnly = value;
+		}
+
+		public void SetSortingOrder(int order)
+		{
+			_sortingOrder = order;
+			
+			BussConfiguration.OptionalInstance.Value.RefreshDefaultStyles();
 		}
 #endif
 	}

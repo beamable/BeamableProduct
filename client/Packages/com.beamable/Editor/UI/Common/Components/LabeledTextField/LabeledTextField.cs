@@ -61,6 +61,7 @@ namespace Beamable.Editor.UI.Components
 
 		private string Label { get; set; }
 		public bool IsDelayed { get; set; }
+		public bool IsMultiline { get; set; }
 
 		public LabeledTextField() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
@@ -77,14 +78,16 @@ namespace Beamable.Editor.UI.Components
 			_textFieldComponent = Root.Q<TextField>("textField");
 			_textFieldComponent.value = Value;
 			_textFieldComponent.isDelayed = IsDelayed;
+			_textFieldComponent.multiline = IsMultiline;
 			_textFieldComponent.RegisterValueChangedCallback(ValueChanged);
 		}
 
-		public void Setup(string label, string value, Action onValueChanged, bool isDelayed = false)
+		public void Setup(string label, string value, Action onValueChanged, bool isDelayed = false, bool isMultiline = false)
 		{
 			Label = label;
 			Value = value;
 			IsDelayed = isDelayed;
+			IsMultiline = isMultiline;
 			_onValueChanged = onValueChanged;
 		}
 
