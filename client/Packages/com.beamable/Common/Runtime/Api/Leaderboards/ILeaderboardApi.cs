@@ -165,6 +165,13 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <param name="boardId"></param>
 		/// <returns></returns>
 		Promise<LeaderBoardView> GetFriendRanks(string boardId);
+
+		/// <summary>
+		/// Freeze given leaderboard which in effect will block submitting new scores.
+		/// </summary>
+		/// <param name="boardId"></param>
+		/// <returns></returns>
+		Promise<EmptyResponse> FreezeLeaderboard(string boardId);
 	}
 
 	[Serializable]

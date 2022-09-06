@@ -39,10 +39,12 @@ namespace Beamable.Editor.Toolbox.Models
 		void Destroy();
 		void SetQueryTag(WidgetTags tags, bool shouldHaveTag);
 		void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation);
+		void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther);
 	}
 
 	public class ToolboxViewService : IToolboxViewService
 	{
+		const string FILTER_TEXT_KEY = "ToolboxViewFilterText";
 		public event Action<List<RealmView>> OnAvailableRealmsChanged;
 		public event Action<RealmView> OnRealmChanged;
 		public event Action<IWidgetSource> OnWidgetSourceChanged;
@@ -55,7 +57,12 @@ namespace Beamable.Editor.Toolbox.Models
 		public EditorUser CurrentUser { get; private set; }
 		public IWidgetSource WidgetSource { get; private set; }
 		public ToolboxQuery Query { get; private set; }
-		public string FilterText { get; private set; }
+
+		public string FilterText
+		{
+			get => SessionState.GetString(FILTER_TEXT_KEY, string.Empty);
+			private set => SessionState.SetString(FILTER_TEXT_KEY, value);
+		}
 
 		private List<AnnouncementModelBase> _announcements = new List<AnnouncementModelBase>();
 		public IEnumerable<AnnouncementModelBase> Announcements => _announcements;
@@ -86,6 +93,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public void UseDefaultWidgetSource()
 		{
 			WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"{BASE_PATH}/Models/toolboxData.asset");
+			Query = ToolboxQuery.Parse(FilterText);
 			OnWidgetSourceChanged?.Invoke(WidgetSource);
 		}
 
@@ -201,6 +209,25 @@ namespace Beamable.Editor.Toolbox.Models
 			{
 				nextQuery.OrientationConstraint |= orientation;
 				nextQuery.HasOrientationConstraint = true;
+			}
+			SetQuery(nextQuery);
+		}
+
+		public void SetSupportStatus(SupportStatus status, bool shouldHaveStatus, bool disableOther)
+		{
+			var hasOrientation = (Query?.HasSupportConstraint ?? false) &&
+								 Query.FilterIncludes(status);
+			var nextQuery = new ToolboxQuery(Query);
+
+			if (hasOrientation && !shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint &= ~status;
+				nextQuery.HasSupportConstraint = nextQuery.SupportStatusConstraint > 0;
+			}
+			else if (!hasOrientation && shouldHaveStatus)
+			{
+				nextQuery.SupportStatusConstraint = disableOther ? status : nextQuery.SupportStatusConstraint | status;
+				nextQuery.HasSupportConstraint = true;
 			}
 			SetQuery(nextQuery);
 		}

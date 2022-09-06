@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
 using Beamable.Editor.UI.Components;
@@ -95,6 +96,20 @@ namespace Beamable.Editor.Login.UI
 		public static bool IsDomainReloaded { get { return Instance != null && Instance.LoginManager?.OnComplete?.IsCompleted == false; } }
 		private VisualElement _windowRoot;
 
+		private IDependencyProvider _provider;
+		public IDependencyProvider Provider
+		{
+			get
+			{
+				if (_provider == null)
+				{
+					_provider = BeamEditorContext.Default.ServiceScope;
+				}
+
+				return _provider;
+			}
+		}
+
 		public LoginManager LoginManager;
 		public LoginModel Model;
 		private VisualElement _pageContainer;
@@ -146,6 +161,14 @@ namespace Beamable.Editor.Login.UI
 
 			root.Add(_windowRoot);
 			root.style.flexGrow = 1;
+
+			Label versionLabel = _windowRoot.Q<Label>("versionNumber");
+			if (versionLabel != null)
+			{
+				var version = Provider.GetService<EnvironmentData>().SdkVersion;
+				versionLabel.text = version.ToString();
+				versionLabel.tooltip = "Beamable version";
+			}
 		}
 
 		private void LoginManager_OnPageChanged(LoginBaseComponent nextPage)

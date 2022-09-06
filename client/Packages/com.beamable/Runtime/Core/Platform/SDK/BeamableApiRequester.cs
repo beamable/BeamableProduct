@@ -24,6 +24,8 @@ namespace Core.Platform.SDK
 		public AccessToken Token { get; set; }
 		public IAccessToken AccessToken => Token;
 		public string TimeOverride { get; set; }
+
+		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		public string Language { get; set; }
 		public string Cid => Token.Cid;
 		public string Pid => Token.Pid;
@@ -118,13 +120,17 @@ namespace Core.Platform.SDK
 			// swallow any responses if already disposed
 			if (_disposed)
 			{
-				PlatformLogger.Log("BeamableAPI REQUESTER: Disposed, Ignoring Response");
+				PlatformLogger.Log("<b>[BeamableRequester]</b> Disposed, Ignoring Response");
 				return;
 			}
 
 			try
 			{
-				if (request.responseCode >= 300 || request.IsNetworkError())
+				if (request.IsNetworkError())
+				{
+					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. apirequester. status=[{request.responseCode}] error=[{request.error}]"));
+				}
+				else if (request.responseCode >= 300)
 				{
 					// Handle errors
 					var payload = request.downloadHandler.text;
@@ -145,7 +151,14 @@ namespace Core.Platform.SDK
 				else
 				{
 					// Parse JSON object and resolve promise
-					PlatformLogger.Log($"BeamableAPI RESPONSE: {request.downloadHandler.text}");
+					if (string.IsNullOrWhiteSpace(request.downloadHandler.text))
+					{
+						PlatformLogger.Log($"<b>[BeamableRequester][Response]</b> {typeof(T).Name}");
+					}
+					else
+					{
+						PlatformLogger.Log($"<b>[BeamableRequester][Response]</b> {typeof(T).Name}: {request.downloadHandler.text}");
+					}
 
 					try
 					{
@@ -203,10 +216,9 @@ namespace Core.Platform.SDK
 				request.SetRequestHeader("Time-Override", TimeOverride);
 			}
 
-			if (Language != null)
-			{
-				request.SetRequestHeader("Accept-Language", Language);
-			}
+			request.timeout = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+
+			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 
 			return request;
 		}

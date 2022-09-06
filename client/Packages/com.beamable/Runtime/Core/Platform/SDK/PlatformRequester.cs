@@ -58,7 +58,28 @@ namespace Beamable.Api
 		public string Language { get; set; }
 		public string TimeOverride { get; set; }
 		public IAuthApi AuthService { private get; set; }
-		public string RequestTimeoutMs { get; set; }
+
+		private string _requestTimeoutMs = null;
+		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+
+		public string RequestTimeoutMs
+		{
+			get => _requestTimeoutMs;
+			set
+			{
+				_requestTimeoutMs = value;
+				if (int.TryParse(value, out var ms) && ms > 0)
+				{
+					_timeoutSeconds = ms / 1000;
+				}
+				else
+				{
+					_timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+				}
+			}
+		}
+
+
 
 		private readonly OfflineCache _offlineCache;
 
@@ -180,6 +201,7 @@ namespace Beamable.Api
 				request.uploadHandler = upload;
 			}
 
+			request.timeout = _timeoutSeconds;
 			return request;
 		}
 
@@ -314,7 +336,7 @@ namespace Beamable.Api
 		private UnityWebRequest BuildWebRequest(Method method, string uri, string contentType, byte[] body,
 		   bool includeAuthHeader)
 		{
-			PlatformLogger.Log($"PLATFORM REQUEST: {Host}{uri}");
+			PlatformLogger.Log($"<b>[PlatformRequester][{method.ToString()}]</b> {Host}{uri}");
 
 			// Prepare the request
 			UnityWebRequest request = BuildWebRequest(method, uri, contentType, body);
@@ -360,6 +382,8 @@ namespace Beamable.Api
 				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
 			}
 
+			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
+
 			return request;
 		}
 
@@ -368,7 +392,7 @@ namespace Beamable.Api
 			// swallow any responses if already disposed
 			if (_disposed)
 			{
-				PlatformLogger.Log("PLATFORM REQUESTER: Disposed, Ignoring Response");
+				PlatformLogger.Log("<b>[PlatformRequester]</b> Disposed, Ignoring Response");
 				return;
 			}
 
@@ -376,7 +400,13 @@ namespace Beamable.Api
 			{
 				var responsePayload = request.downloadHandler.text;
 
-				if (request.responseCode >= 300 || request.IsNetworkError())
+
+				if (request.IsNetworkError())
+				{
+					PlatformLogger.Log($"<b>[PlatformRequester][NetworkError]</b> {typeof(T).Name}");
+					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. status=[{request.responseCode}] error=[{request.error}]"));
+				}
+				else if (request.responseCode >= 300)
 				{
 					// Handle errors
 					PlatformError platformError = null;
@@ -395,7 +425,14 @@ namespace Beamable.Api
 				else
 				{
 					// Parse JSON object and resolve promise
-					PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
+					if (string.IsNullOrWhiteSpace(responsePayload))
+					{
+						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}");
+					}
+					else
+					{
+						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}: {responsePayload}");
+					}
 
 					try
 					{
@@ -434,7 +471,7 @@ namespace Beamable.Api
 		public PlatformError Error { get; }
 		public UnityWebRequest Request { get; }
 		public PlatformRequesterException(PlatformError error, UnityWebRequest request, string responsePayload)
-		: base("HTTP Error", request.method, request.url, request.responseCode, responsePayload)
+		: base(Constants.Requester.ERROR_PREFIX_UNITY_SDK, request.method, request.url, request.responseCode, responsePayload)
 		{
 			Error = error;
 			Request = request;

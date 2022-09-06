@@ -7,14 +7,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
 	public class BussStyleListVisualElement : BeamableBasicVisualElement
 	{
-		public Func<BussStyleSheet, BussStyleRule, bool> Filter;
-
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
@@ -25,6 +24,8 @@ namespace Beamable.Editor.UI.Buss
 
 		private IEnumerable<BussStyleSheet> _styleSheets;
 		private BussElement _currentSelected;
+		private string _currentFilter;
+		private readonly BussCardFilter _filter;
 
 		public IEnumerable<BussStyleSheet> StyleSheets
 		{
@@ -50,9 +51,13 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		public BussStyleListVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss", false)
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
+			false)
 		{
 			Init();
+
+			_filter = new BussCardFilter();
+
 			Selection.selectionChanged += OnSelectionChange;
 		}
 
@@ -88,8 +93,9 @@ namespace Beamable.Editor.UI.Buss
 
 			BussStyleRule[] rulesToDraw = StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
-			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
-																				  .ToArray();
+			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements
+														 .Where(card => !rulesToDraw.Contains(card.StyleRule))
+														 .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
 			{
@@ -100,7 +106,8 @@ namespace Beamable.Editor.UI.Buss
 			{
 				foreach (BussStyleRule rule in styleSheet.Styles)
 				{
-					BussStyleCardVisualElement spawned = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
+					BussStyleCardVisualElement spawned =
+						_styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
 					if (spawned != null)
 					{
 						spawned.RefreshProperties();
@@ -123,12 +130,13 @@ namespace Beamable.Editor.UI.Buss
 			FilterCards();
 		}
 
-		public void FilterCards()
+		private void FilterCards()
 		{
 			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
 			{
-				bool isVisible =
-					Filter?.Invoke(styleCardVisualElement.StyleSheet, styleCardVisualElement.StyleRule) ?? true;
+				bool isVisible = _filter.CardFilter(styleCardVisualElement.StyleRule,
+													_currentSelected);
+
 				styleCardVisualElement.SetHidden(!isVisible);
 			}
 		}
@@ -198,6 +206,7 @@ namespace Beamable.Editor.UI.Buss
 						}
 					}
 				}
+
 				VariableDatabase.FlushDirtyMarkers();
 			}
 			catch (Exception e)
@@ -221,6 +230,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				styleCard.OnBussElementSelected(_currentSelected);
 			}
+
 			FilterCards();
 		}
 
@@ -228,6 +238,12 @@ namespace Beamable.Editor.UI.Buss
 		{
 			Selection.selectionChanged -= OnSelectionChange;
 			PropertyDatabase.Discard();
+		}
+
+		public void SetFilter(string value)
+		{
+			_filter.CurrentFilter = value;
+			FilterCards();
 		}
 	}
 }

@@ -88,6 +88,19 @@ namespace Beamable.Server.Api.Stats
             });
         }
 
+        public Promise DeleteProtectedPlayerStats(long userId, string[] stats) => 
+	        DeleteStats("game", "private", "player", userId, stats);
+
+        public Promise DeleteStats(string domain, string access, string type, long userId, string[] stats)
+        {
+	        var key = $"{domain}.{access}.{type}.{userId}";
+	        var statString = stats == null ? string.Empty : string.Join(",", stats);
+	        return Requester.Request<Unit>(Method.DELETE, $"{OBJECT_SERVICE}/{key}", new StatsRequest
+	        {
+		        stats = statString
+	        }).ToPromise();
+        }
+
         protected override Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix, List<long> gamerTags)
         {
             string queryString = "";

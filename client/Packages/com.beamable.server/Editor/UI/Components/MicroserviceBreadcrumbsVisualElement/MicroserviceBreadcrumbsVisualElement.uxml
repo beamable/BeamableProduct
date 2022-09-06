@@ -13,7 +13,6 @@
             <engine:Label text="Filter" class="buttonText"/>
         </engine:Button>
         <beamable:RealmButtonVisualElement name="realmButton"/>
-        
     </engine:VisualElement>
 
 </engine:UXML>

@@ -65,4 +65,32 @@ static class TestUtil
 			button.SendEvent(evt);
 #endif
 	}
+
+	/// <summary>
+	/// In order to trick a TextField into receiving a keystroke, we need to send both a KeyDown and KeyUp event. This utility method makes that a
+	/// little easier.
+	/// </summary>
+	/// <param name="textField"></param>
+	public static void SendTestKeystroke(this TextField textField, string text)
+	{
+
+		textField.BeamableFocus();
+		foreach (var letter in text)
+		{
+			var es = Event.KeyboardEvent(letter.ToString());
+
+			es.character = letter;
+			using (var evt = KeyDownEvent.GetPooled(es))
+			{
+				textField.SendEvent(evt);
+			}
+
+			using (var evt = KeyUpEvent.GetPooled(Event.KeyboardEvent(letter.ToString())))
+			{
+				textField.SendEvent(evt);
+			}
+		}
+
+		textField.Blur();
+	}
 }

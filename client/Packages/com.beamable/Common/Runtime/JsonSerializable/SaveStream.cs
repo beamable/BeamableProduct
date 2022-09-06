@@ -99,6 +99,11 @@ namespace Beamable.Serialization
 				curDict[key] = target; return true;
 			}
 
+			public bool Serialize(string key, ref Guid target)
+			{
+				curDict[key] = target; return true;
+			}
+
 			public bool Serialize(string key, ref StringBuilder target)
 			{
 				curDict[key] = target.ToString(); return true;
@@ -200,6 +205,31 @@ namespace Beamable.Serialization
 			}
 #endif
 
+
+			public bool SerializeDictionary<TDict, TElem>(string key, ref TDict target)
+				where TDict : IDictionary<string, TElem>, new()
+			{
+				if (target == null)
+				{
+					curDict[key] = null;
+					return true;
+				}
+				Dictionary<string, object> old = curDict;
+				Dictionary<string, object> newDict = new Dictionary<string, object>();
+				curDict = newDict;
+
+				var iter = target.GetEnumerator();
+				while (iter.MoveNext())
+				{
+					TElem value = iter.Current.Value;
+					SerializeAny(iter.Current.Key, value);
+				}
+
+				curDict = old;
+				curDict[key] = newDict;
+				return true;
+			}
+
 			public bool SerializeDictionary<T>(string key, ref Dictionary<string, T> target)
 			{
 				if (target == null)
@@ -241,6 +271,12 @@ namespace Beamable.Serialization
 				return SerializeListInternal(key, value);
 			}
 
+			public bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : ISerializable, new()
+			{
+				return SerializeListInternal2(key, value);
+			}
+
+
 			public bool SerializeILL<T>(string key, ref LinkedList<T> list) where T : ClassPool<T>, new()
 			{
 				return SerializeILLInternal<T>(key, ref list);
@@ -277,6 +313,22 @@ namespace Beamable.Serialization
 					BeamableLogger.LogError("Cannot serialize LinkedList<T> of non JsonSerializable types");
 					return false;
 				}
+			}
+
+			private bool SerializeListInternal2<TElem>(string key, IList<TElem> value)
+				where TElem : ISerializable
+			{
+				if (value == null)
+				{
+					return false;
+				}
+				var list = new List<Dictionary<string, object>>(value.Count);
+				foreach (var serializable in value)
+				{
+					list.Add(SerializeNested(serializable));
+				}
+				curDict[key] = list;
+				return true;
 			}
 
 			private bool SerializeListInternal<TList>(string key, TList value)

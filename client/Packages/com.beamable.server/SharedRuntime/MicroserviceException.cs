@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,13 @@ namespace Beamable.Server
 		public string Error { get; set; }
 		public new string Message { get; set; }
 
-		public MicroserviceException(int responseStatus, string error, string message) : base("Service Error", error, string.Empty, responseStatus, message)
+		public MicroserviceException(int responseStatus, string error, string message) : base(Constants.Requester.ERROR_PREFIX_MICROSERVICE, error, string.Empty, responseStatus, new BeamableRequestError
+		{
+			message = message,
+			error = error,
+			service = "beam-microservice",
+			status = responseStatus
+		})
 		{
 			ResponseStatus = responseStatus;
 			Error = error;
@@ -87,6 +94,15 @@ namespace Beamable.Server
 	{
 		public ParameterNullException()
 		   : base(400, "inputParameterFailure", $"Parameters payload cannot be null. Use an empty array for no parameters.")
+		{
+
+		}
+	}
+
+	public class BadInputException : MicroserviceException
+	{
+		public BadInputException(string payload, Exception inner)
+			: base(400, "inputParameterFailure", $"Your input failed to deserialize correctly. Payload=[{payload}] Inner message=[{inner?.Message ?? "?"}]")
 		{
 
 		}
