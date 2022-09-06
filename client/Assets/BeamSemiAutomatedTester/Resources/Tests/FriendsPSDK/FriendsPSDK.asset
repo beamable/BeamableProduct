@@ -45,11 +45,12 @@ MonoBehaviour:
             the next step if everything works well...
         - _methodName: Invite
           _title: Invite
-          _description: By now, there should be 2 player ids in the Inspector when
-            you select the TestObject
+          _description: Test if players can send and accept friend invites and also
+            unfriend.
         - _methodName: Block
-          _title: 
-          _description: 
+          _title: Block players
+          _description: Test if players can block each other and if the block is
+            actually effective.
     _registeredTestRules:
     - _testMethodName: Setup
       _order: 1
@@ -77,14 +78,15 @@ MonoBehaviour:
             the next step if everything works well...
         - _methodName: Invite
           _title: Invite
-          _description: By now, there should be 2 player ids in the Inspector when
-            you select the TestObject
+          _description: Test if players can send and accept friend invites and also
+            unfriend.
         - _methodName: Block
-          _title: 
-          _description: 
+          _title: Block players
+          _description: Test if players can block each other and if the block is
+            actually effective.
       _registeredTestRuleMethods:
-      - _testableName: Beamable.BSAT.Test.FriendsPSDK.Scripts.FriendsPSDKScript,
-          Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      - _testableName: Beamable.BSAT.Test.FriendsPSDK.FriendsPSDKScript, Assembly-CSharp,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         _methodName: Setup
         _testResult: 0
         _testRuleMethodDescriptor:
@@ -119,21 +121,22 @@ MonoBehaviour:
             the next step if everything works well...
         - _methodName: Invite
           _title: Invite
-          _description: By now, there should be 2 player ids in the Inspector when
-            you select the TestObject
+          _description: Test if players can send and accept friend invites and also
+            unfriend.
         - _methodName: Block
-          _title: 
-          _description: 
+          _title: Block players
+          _description: Test if players can block each other and if the block is
+            actually effective.
       _registeredTestRuleMethods:
-      - _testableName: Beamable.BSAT.Test.FriendsPSDK.Scripts.FriendsPSDKScript,
-          Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      - _testableName: Beamable.BSAT.Test.FriendsPSDK.FriendsPSDKScript, Assembly-CSharp,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         _methodName: Invite
         _testResult: 0
         _testRuleMethodDescriptor:
           _methodName: Invite
           _title: Invite
-          _description: By now, there should be 2 player ids in the Inspector when
-            you select the TestObject
+          _description: Test if players can send and accept friend invites and also
+            unfriend.
         _argumentsRaw: []
     - _testMethodName: Block
       _order: 3
@@ -161,18 +164,20 @@ MonoBehaviour:
             the next step if everything works well...
         - _methodName: Invite
           _title: Invite
-          _description: By now, there should be 2 player ids in the Inspector when
-            you select the TestObject
+          _description: Test if players can send and accept friend invites and also
+            unfriend.
         - _methodName: Block
-          _title: 
-          _description: 
+          _title: Block players
+          _description: Test if players can block each other and if the block is
+            actually effective.
       _registeredTestRuleMethods:
-      - _testableName: Beamable.BSAT.Test.FriendsPSDK.Scripts.FriendsPSDKScript,
-          Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      - _testableName: Beamable.BSAT.Test.FriendsPSDK.FriendsPSDKScript, Assembly-CSharp,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         _methodName: Block
         _testResult: 0
         _testRuleMethodDescriptor:
           _methodName: Block
-          _title: 
-          _description: 
+          _title: Block players
+          _description: Test if players can block each other and if the block is
+            actually effective.
         _argumentsRaw: []

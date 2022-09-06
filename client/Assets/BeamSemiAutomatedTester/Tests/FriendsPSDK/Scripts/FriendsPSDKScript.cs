@@ -6,7 +6,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Beamable.BSAT.Test.FriendsPSDK.Scripts
+namespace Beamable.BSAT.Test.FriendsPSDK
 {
 	public class FriendsPSDKScript : Testable
 	{

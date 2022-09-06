@@ -38,8 +38,9 @@ MonoBehaviour:
           next step if everything works well...
       - _methodName: Invite
         _title: Invite
-        _description: By now, there should be 2 player ids in the Inspector when
-          you select the TestObject
+        _description: Test if players can send and accept friend invites and also
+          unfriend.
       - _methodName: Block
-        _title: 
-        _description: 
+        _title: Block players
+        _description: Test if players can block each other and if the block is actually
+          effective.
