@@ -58,9 +58,14 @@ namespace Beamable.Editor.Toolbox.Models
 
 		private bool AcceptsSupportStatus(SupportStatus supportStatus)
 		{
-			// We want to show prefabs with the same support status
-			// supportStatus == 0 means that there is no status set and it is supported
-			return !HasSupportConstraint && (int)supportStatus == 0 || supportStatus.ContainsAllFlags(SupportStatusConstraint);
+			if (HasSupportConstraint)
+			{
+				return (int)supportStatus == 0 || supportStatus.ContainsAllFlags(SupportStatusConstraint);
+			}
+			else
+			{
+				return supportStatus == 0;
+			}
 		}
 
 		public bool AcceptsTag(WidgetTags tags)
