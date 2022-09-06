@@ -30,7 +30,7 @@ namespace Beamable.Editor.UI.Buss
 				return root;
 			}
 
-			_list = new BussStyleListVisualElement {StyleSheets = new[] {_styleSheet}};
+			//_list = new BussStyleListVisualElement {StyleSheets = new[] {_styleSheet}};
 
 #if BEAMABLE_DEVELOPER
 			LabeledCheckboxVisualElement readonlyCheckbox = new LabeledCheckboxVisualElement("Readonly");

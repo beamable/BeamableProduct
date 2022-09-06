@@ -28,6 +28,7 @@ namespace Beamable.Editor.UI.Buss
 		private SelectedBussElementVisualElement _selectedBussElement;
 		private BussStyleListVisualElement _stylesGroup;
 		private VisualElement _windowRoot;
+		private ThemeManagerModel _model;
 
 		static ThemeManager()
 		{
@@ -44,20 +45,25 @@ namespace Beamable.Editor.UI.Buss
 		{
 			base.OnDestroy();
 
-			if (_navigationWindow != null)
-			{
-				_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
-				_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
-				_navigationWindow.SelectionChanged -= SetScroll;
-				_navigationWindow.Destroy();
-			}
+			_navigationWindow?.Destroy();
+			_selectedBussElement?.Destroy();
 
 			UndoSystem<BussStyleRule>.DeleteAllRecords();
+
+			// _model.OnChange -= Refresh;
+
+			// if (_navigationWindow != null)
+			// {
+			// _navigationWindow.HierarchyChanged -= RefreshStyleSheets;
+			// _navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
+			// _navigationWindow.SelectionChanged -= SetScroll;
+			// }
 		}
 
 		private void OnFocus()
 		{
-			_navigationWindow?.ForceRebuild();
+			_model.OnFocus();
+			// _navigationWindow?.ForceRebuild();
 		}
 
 		[MenuItem(
@@ -69,6 +75,8 @@ namespace Beamable.Editor.UI.Buss
 
 		protected override void Build()
 		{
+			_model = new ThemeManagerModel();
+
 			minSize = THEME_MANAGER_WINDOW_SIZE;
 
 			VisualElement root = this.GetRootVisualContainer();
@@ -88,60 +96,60 @@ namespace Beamable.Editor.UI.Buss
 
 			BussThemeManagerActionBarVisualElement actionBar =
 				new BussThemeManagerActionBarVisualElement(OnAddStyleButtonClicked, OnCopyButtonClicked,
-				                                           RefreshStyleSheets, OnDocsButtonClicked, OnSearch);
+				                                           Refresh, OnDocsButtonClicked, OnSearch) {name = "actionBar"};
 
-			actionBar.name = "actionBar";
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
 
-			VisualElement navigationGroup = new VisualElement();
-			navigationGroup.name = "navigationGroup";
+			VisualElement navigationGroup = new VisualElement {name = "navigationGroup"};
 			mainVisualElement.Add(navigationGroup);
 
-			_navigationWindow = new ThemeManagerNavigationComponent();
+			_navigationWindow = new ThemeManagerNavigationComponent(_model);
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
 
-			_selectedBussElement = new SelectedBussElementVisualElement();
-			_selectedBussElement.Setup(_navigationWindow);
+			_selectedBussElement = new SelectedBussElementVisualElement(_model);
+			_selectedBussElement.Init();
 			mainVisualElement.Add(_selectedBussElement);
 
-			_stylesGroup = new BussStyleListVisualElement();
-
+			_scrollView = new ScrollView {name = "themeManagerContainerScrollView"};
+			_stylesGroup = new BussStyleListVisualElement(_model) {name = "stylesGroup"};
+			_stylesGroup.Init();
+			_scrollView.Add(_stylesGroup);
+			
+			// TODO: remove constructor params after moving variables and properties database into model
 			InlineStyleCardVisualElement inlineStyle =
 				new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);
-			mainVisualElement.Add(inlineStyle);
 			inlineStyle.Init();
-
-			_scrollView = new ScrollView();
-			_scrollView.name = "themeManagerContainerScrollView";
+			mainVisualElement.Add(inlineStyle);
+			
 			mainVisualElement.Add(_scrollView);
-			_stylesGroup.name = "stylesGroup";
-			_scrollView.Add(_stylesGroup);
 
-			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
-			_navigationWindow.HierarchyChanged += RefreshStyleSheets;
+			// _navigationWindow.HierarchyChanged -= RefreshStyleSheets;
+			// _navigationWindow.HierarchyChanged += RefreshStyleSheets;
 
-			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
-			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
+			// _navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
+			// _navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
 
-			_navigationWindow.SelectionChanged -= SetScroll;
-			_navigationWindow.SelectionChanged += SetScroll;
+			// _navigationWindow.SelectionChanged -= SetScroll;
+			// _navigationWindow.SelectionChanged += SetScroll;
 
 			root.Add(_windowRoot);
 
-			RefreshStyleSheets();
+			// _model.OnChange += Refresh;
+
+			//RefreshStyleSheets();
 		}
 
-		private void RefreshStyleSheets()
+		private void Refresh()
 		{
-			_stylesGroup.StyleSheets = _navigationWindow.StyleSheets;
+			//_stylesGroup.StyleSheets = _navigationWindow.StyleSheets;
 		}
 
-		private void SetScroll(GameObject _ = null)
-		{
-			EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
-		}
+		// private void SetScroll(GameObject _ = null)
+		// {
+		// 	EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
+		// }
 
 		private void UpdateScroll(float scrollValue)
 		{
@@ -193,21 +201,22 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (Selection.activeGameObject != null && _selectedBussElement != null)
 			{
-				selectorName = _navigationWindow.SelectedElementLabel();
+				// TODO: get this selector name from selected buss element from model
+				// selectorName = _navigationWindow.SelectedElementLabel();
 			}
 
 			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
-			RefreshStyleSheets();
+			Refresh();
 			AssetDatabase.SaveAssets();
 		}
 
 		private void OnCopyButtonClicked()
 		{
-			List<BussStyleSheet> readonlyStyles =
-				_stylesGroup.StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
-			OpenCopyMenu(readonlyStyles);
+			// List<BussStyleSheet> readonlyStyles =
+			// 	_stylesGroup.StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
+			// OpenCopyMenu(readonlyStyles);
 		}
 
 		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)

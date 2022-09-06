@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
+using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -20,45 +21,44 @@ namespace Beamable.Editor.UI.Components
 
 		private float _singleIndentWidth;
 		private float _level;
-		private Action<IndentedLabelVisualElement> _onMouseClicked;
+		private string _label;
+
+		private Action<BussElement> _onMouseClicked;
 
 		private VisualElement _container;
 		private TextElement _labelComponent;
-		private BussElement _relatedBussElement;
-		private Func<BussElement, string> _getLabelAction;
+		private BussElement _bussElement;
+		private bool _selected;
 
-		public GameObject RelatedGameObject { get; private set; }
+		public GameObject RelatedGameObject => _bussElement.gameObject;
 
 		public IndentedLabelVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/ThemeManagerNavigationComponent/IndentedLabelVisualElement/IndentedLabelVisualElement.uss")
-		{ }
+			$"{BUSS_THEME_MANAGER_PATH}/ThemeManagerNavigationComponent/IndentedLabelVisualElement/IndentedLabelVisualElement.uss") { }
 
-		public void Setup(GameObject relatedGameObject,
-						  Func<BussElement, string> getLabelAction,
-						  Action<IndentedLabelVisualElement> onMouseClicked,
-						  int level,
-						  float width)
+		public void Setup(BussElement bussElement, string label, Action<BussElement> onMouseClicked, int level, float width,
+		                  bool selected)
 		{
-			RelatedGameObject = relatedGameObject;
-			_relatedBussElement = RelatedGameObject.GetComponent<BussElement>();
+			_bussElement = bussElement;
 
 			_onMouseClicked = onMouseClicked;
-			_getLabelAction = getLabelAction;
 
+			_label = label;
 			_level = level;
 			_singleIndentWidth = width;
+			_selected = selected;
 		}
 
 		public override void Init()
 		{
 			base.Init();
 
-			_container = new VisualElement();
-			_container.name = "indentedLabelContainer";
+			_container = new VisualElement {name = "indentedLabelContainer"};
 
 			_labelComponent = new TextElement();
 			_labelComponent.name = "indentedLabel";
-			_labelComponent.text = _getLabelAction.Invoke(_relatedBussElement);
+			_labelComponent.text = _label;
+			
+			_container.SetSelected(_selected);
 
 			float width = (_singleIndentWidth * _level) + _singleIndentWidth;
 
@@ -76,7 +76,7 @@ namespace Beamable.Editor.UI.Components
 			_container.RegisterCallback<MouseOverEvent>(OnMouseOver);
 			_container.RegisterCallback<MouseOutEvent>(OnMouseOut);
 
-			_relatedBussElement.Validate += RefreshLabel;
+			// _bussElement.Validate += RefreshLabel;
 		}
 
 		protected override void OnDestroy()
@@ -85,7 +85,7 @@ namespace Beamable.Editor.UI.Components
 			_container?.UnregisterCallback<MouseOverEvent>(OnMouseOver);
 			_container?.UnregisterCallback<MouseOutEvent>(OnMouseOut);
 
-			_relatedBussElement.Validate -= RefreshLabel;
+			// _bussElement.Validate -= RefreshLabel;
 		}
 
 		public void Select()
@@ -98,11 +98,11 @@ namespace Beamable.Editor.UI.Components
 			_container.SetSelected(false);
 		}
 
-		public void RefreshLabel()
-		{
-			_labelComponent.text = _getLabelAction.Invoke(_relatedBussElement);
-			_labelComponent.MarkDirtyRepaint();
-		}
+		// public void RefreshLabel()
+		// {
+		// 	_labelComponent.text = _label;
+		// 	_labelComponent.MarkDirtyRepaint();
+		// }
 
 		private void OnMouseOver(MouseOverEvent evt)
 		{
@@ -119,7 +119,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnMouseClicked(MouseDownEvent evt)
 		{
-			_onMouseClicked?.Invoke(this);
+			_onMouseClicked?.Invoke(_bussElement);
+			Selection.activeObject = _bussElement.gameObject;
 		}
 	}
 }

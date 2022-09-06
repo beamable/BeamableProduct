@@ -25,25 +25,18 @@ namespace Beamable.Editor.UI.Components
 		private const float MIN_CONTENT_HEIGHT = 120.0f;
 		private const float SINGLE_CLASS_ENTRY_HEIGHT = 24.0f;
 
+		private VisualElement _contentContainer;
 		private LabeledTextField _idField;
 		private LabeledObjectField _currentStyleSheet;
 		private ListView _classesList;
-		private ThemeManagerNavigationComponent _navigationWindow;
-		private BussElement _currentBussElement;
+
 		private int? _selectedClassListIndex;
-		private VisualElement _contentContainer;
+		private readonly ThemeManagerModel _model;
 
-		public SelectedBussElementVisualElement() : base(
+		public SelectedBussElementVisualElement(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss")
-		{ }
-
-		public void Setup(ThemeManagerNavigationComponent navigationWindow)
 		{
-			_navigationWindow = navigationWindow;
-			_navigationWindow.SelectionChanged += OnBussElementChanged;
-			_navigationWindow.SelectionCleared += OnSelectionCleared;
-			EditorApplication.hierarchyChanged += OnHierarchyChanged;
-			Init();
+			_model = model;
 		}
 
 		public override void Init()
@@ -68,7 +61,7 @@ namespace Beamable.Editor.UI.Components
 			_contentContainer = new VisualElement();
 
 			_idField = new LabeledTextField();
-			_idField.Setup("Id", String.Empty, OnValueChanged, true);
+			_idField.Setup("Id", _model.SelectedElementId, _model.OnIdChanged, true);
 			_idField.Refresh();
 			_contentContainer.Add(_idField);
 
@@ -83,23 +76,33 @@ namespace Beamable.Editor.UI.Components
 			CreateButtons();
 
 			_currentStyleSheet = new LabeledObjectField();
-			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), OnStylesheetChanged);
+			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), _model.SelectedElementStyleSheet,
+			                         _model.OnStylesheetChanged);
 			_contentContainer.Add(_currentStyleSheet);
 			Root.Add(_contentContainer);
 
+			_model.Change += Refresh;
+		}
+
+		public override void Refresh()
+		{
+			_idField.SetWithoutNotify(_model.SelectedElementId);
+			_currentStyleSheet.SetValue(_model.SelectedElementStyleSheet);
+
+			RefreshClassesList();
 			RefreshHeight();
 		}
 
 		private void CreateButtons()
 		{
-			VisualElement buttonsContainer = new VisualElement { name = "buttonsContainer" };
+			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
 
-			VisualElement removeButton = new VisualElement { name = "removeButton" };
+			VisualElement removeButton = new VisualElement {name = "removeButton"};
 			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
 
-			VisualElement addButton = new VisualElement { name = "addButton" };
+			VisualElement addButton = new VisualElement {name = "addButton"};
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
@@ -109,20 +112,20 @@ namespace Beamable.Editor.UI.Components
 
 		private void AddClassButtonClicked(MouseDownEvent evt)
 		{
-			if (_currentBussElement == null)
+			if (_model.SelectedElement == null)
 			{
 				return;
 			}
 
-			_currentBussElement.AddClass("");
-			RefreshClassesList();
-			RefreshHeight();
-			_navigationWindow.RefreshSelectedLabel();
+			_model.SelectedElement.AddClass("");
+			// RefreshClassesList();
+			// RefreshHeight();
+			// _navigationWindow.RefreshSelectedLabel();
 		}
 
 		private void RemoveClassButtonClicked(MouseDownEvent evt)
 		{
-			if (_selectedClassListIndex == null || _currentBussElement == null)
+			if (_selectedClassListIndex == null || _model.SelectedElement == null)
 			{
 				return;
 			}
@@ -134,57 +137,10 @@ namespace Beamable.Editor.UI.Components
 				className = className.Remove(0, 1);
 			}
 
-			_currentBussElement.RemoveClass(className);
-			RefreshClassesList();
-			RefreshHeight();
-			_navigationWindow.RefreshSelectedLabel();
-		}
-
-		private void OnHierarchyChanged()
-		{
-			_currentBussElement = null;
-			_selectedClassListIndex = null;
-
-			_idField.Value = string.Empty;
-			_currentStyleSheet.Reset();
-
-			RefreshClassesList();
-			RefreshHeight();
-		}
-
-		private void OnBussElementChanged(GameObject current)
-		{
-			_currentBussElement = current.GetComponent<BussElement>();
-			_selectedClassListIndex = null;
-
-			if (_currentBussElement != null)
-			{
-				_idField.Value = _currentBussElement.Id;
-				_currentStyleSheet.SetValue(_currentBussElement.StyleSheet);
-				RefreshClassesList();
-			}
-
-			RefreshHeight();
-		}
-
-		private void OnSelectionCleared()
-		{
-			_currentBussElement = null;
-			_selectedClassListIndex = null;
-			_idField.Value = null;
-			_currentStyleSheet.Reset();
-			RefreshClassesList();
-			RefreshHeight();
-		}
-
-		private void OnStylesheetChanged(Object styleSheet)
-		{
-			BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
-
-			if (_currentBussElement != null)
-			{
-				_currentBussElement.StyleSheet = newStyleSheet;
-			}
+			_model.SelectedElement.RemoveClass(className);
+			// RefreshClassesList();
+			// RefreshHeight();
+			// _navigationWindow.RefreshSelectedLabel();
 		}
 
 		private void RefreshHeight()
@@ -199,9 +155,9 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
-			if (_currentBussElement != null)
+			if (_model.SelectedElement != null)
 			{
-				float allClassesHeight = SINGLE_CLASS_ENTRY_HEIGHT * _currentBussElement.Classes.Count();
+				float allClassesHeight = SINGLE_CLASS_ENTRY_HEIGHT * _model.SelectedElement.Classes.Count();
 				height += allClassesHeight;
 
 				_classesList.style.SetHeight(allClassesHeight);
@@ -217,11 +173,11 @@ namespace Beamable.Editor.UI.Components
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
-				itemsSource = _currentBussElement != null
-					? _currentBussElement.Classes.ToList()
+				itemsSource = _model.SelectedElement != null
+					? _model.SelectedElement.Classes.ToList()
 					: new List<string>()
 			};
-			view.SetItemHeight(24);
+			view.SetItemHeight(SINGLE_CLASS_ENTRY_HEIGHT);
 			view.name = "classesList";
 
 #if UNITY_2020_1_OR_NEWER
@@ -250,16 +206,16 @@ namespace Beamable.Editor.UI.Components
 
 		private void RefreshClassesList()
 		{
-			_classesList.itemsSource = _currentBussElement
-				? BussNameUtility.AsClassesList(_currentBussElement.Classes.ToList())
+			_classesList.itemsSource = _model.SelectedElement
+				? BussNameUtility.AsClassesList(_model.SelectedElement.Classes.ToList())
 				: new List<string>();
 			_classesList.RefreshPolyfill();
 		}
 
 		private VisualElement CreateListViewElement()
 		{
-			VisualElement classElement = new VisualElement { name = "classElement" };
-			classElement.Add(new VisualElement { name = "space" });
+			VisualElement classElement = new VisualElement {name = "classElement"};
+			classElement.Add(new VisualElement {name = "space"});
 			classElement.Add(new TextField());
 			return classElement;
 		}
@@ -281,33 +237,14 @@ namespace Beamable.Editor.UI.Components
 				string newValue = BussNameUtility.AsClassSelector(evt.newValue);
 				_classesList.itemsSource[index] = newValue;
 				textField.SetValueWithoutNotify(newValue);
-				_currentBussElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
-				_navigationWindow.RefreshSelectedLabel();
+				// _currentBussElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
+				// _navigationWindow.RefreshSelectedLabel();
 			}
-		}
-
-		private void OnValueChanged()
-		{
-			if (_currentBussElement == null)
-			{
-				return;
-			}
-
-			string value = BussNameUtility.AsIdSelector(_idField.Value);
-			_idField.SetWithoutNotify(value);
-			_currentBussElement.Id = BussNameUtility.CleanString(value);
-			_navigationWindow.RefreshSelectedLabel();
 		}
 
 		protected override void OnDestroy()
 		{
-			if (_navigationWindow != null)
-			{
-				_navigationWindow.SelectionChanged -= OnBussElementChanged;
-				_navigationWindow.SelectionCleared -= OnSelectionCleared;
-			}
-
-			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+			_model.Change -= Refresh;
 		}
 	}
 }

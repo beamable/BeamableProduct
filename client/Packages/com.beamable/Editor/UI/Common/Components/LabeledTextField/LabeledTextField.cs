@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 
-		private Action _onValueChanged;
+		private Action<string> _onValueChanged;
 		private Label _labelComponent;
 		private TextField _textFieldComponent;
 		private string _value;
@@ -55,7 +55,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				_value = value;
 				_textFieldComponent?.SetValueWithoutNotify(_value);
-				_onValueChanged?.Invoke();
+				_onValueChanged?.Invoke(_value);
 			}
 		}
 
@@ -80,7 +80,7 @@ namespace Beamable.Editor.UI.Components
 			_textFieldComponent.RegisterValueChangedCallback(ValueChanged);
 		}
 
-		public void Setup(string label, string value, Action onValueChanged, bool isDelayed = false)
+		public void Setup(string label, string value, Action<string> onValueChanged, bool isDelayed = false)
 		{
 			Label = label;
 			Value = value;

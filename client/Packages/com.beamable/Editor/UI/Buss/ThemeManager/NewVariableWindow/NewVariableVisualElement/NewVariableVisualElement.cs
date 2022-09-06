@@ -93,10 +93,10 @@ namespace Beamable.Editor.UI.Buss
 
 			_reservedVariableNames = _styleRule?.GetVariablePropertyProviders()?.Select(x => x.Key.Substring(2)).ToList();
 
-			OnValidate();
+			OnValidate(String.Empty);
 		}
 
-		private void OnValidate()
+		private void OnValidate(string value)
 		{
 			if (!IsNameValid(out var message))
 			{

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.UI.Buss;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -43,6 +45,22 @@ namespace Beamable.Editor.UI.Buss
 			List<string> finalList = new List<string>();
 			finalList.AddRange(list.Select(CleanString));
 			return finalList;
+		}
+		
+		public static string FormatLabel(BussElement component)
+		{
+			if (!component) return String.Empty;
+
+			string label = string.IsNullOrWhiteSpace(component.Id)
+				? component.name
+				: AsIdSelector(component.Id);
+
+			foreach (string className in component.Classes)
+			{
+				label += " " + AsClassSelector(className);
+			}
+
+			return label.Replace(" ", "");
 		}
 	}
 }

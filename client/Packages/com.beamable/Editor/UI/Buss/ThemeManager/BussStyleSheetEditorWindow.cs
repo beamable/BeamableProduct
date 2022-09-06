@@ -36,7 +36,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnEnable()
 		{
-			_styleList = new BussStyleListVisualElement();
+			//_styleList = new BussStyleListVisualElement();
 			_parent = new VisualElement();
 			_parent.style.SetLeft(0f);
 			_parent.style.SetRight(0f);
@@ -77,7 +77,7 @@ namespace Beamable.Editor.UI.Buss
 		public void SetStyleSheet(BussStyleSheet styleSheet)
 		{
 			_styleSheet = styleSheet;
-			_styleList.StyleSheets = new[] { styleSheet };
+			//_styleList.StyleSheets = new[] { styleSheet };
 			_addStyleButton.CheckEnableState();
 		}
 

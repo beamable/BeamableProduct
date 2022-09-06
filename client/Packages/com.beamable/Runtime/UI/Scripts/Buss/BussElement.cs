@@ -76,10 +76,7 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public virtual void ApplyStyle()
-		{
-			// TODO: common style implementation for BUSS Elements, so: applying all properties that affect RectTransform
-		}
+		public virtual void ApplyStyle() { }
 
 		#region Unity Callbacks
 
