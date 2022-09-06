@@ -53,21 +53,21 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnClick(MouseDownEvent evt = null)
 		{
-			int styleSheetCount = _styleList.WritableStyleSheets.Count();
-
-			if (styleSheetCount == 0)
-			{
-				return;
-			}
-
-			if (styleSheetCount == 1)
-			{
-				CreateEmptyStyle(_styleList.WritableStyleSheets.First());
-			}
-			else if (styleSheetCount > 1)
-			{
-				OpenMenu(_styleList.WritableStyleSheets);
-			}
+			// int styleSheetCount = _styleList.WritableStyleSheets.Count();
+			//
+			// if (styleSheetCount == 0)
+			// {
+			// 	return;
+			// }
+			//
+			// if (styleSheetCount == 1)
+			// {
+			// 	CreateEmptyStyle(_styleList.WritableStyleSheets.First());
+			// }
+			// else if (styleSheetCount > 1)
+			// {
+			// 	OpenMenu(_styleList.WritableStyleSheets);
+			// }
 		}
 
 		public void CheckEnableState(MouseEnterEvent evt = null)
@@ -75,8 +75,10 @@ namespace Beamable.Editor.UI.Components
 			if (_addStyleButton == null) return;
 
 			_addStyleButton.tooltip = string.Empty;
+			
+			// int styleSheetCount = _styleList.WritableStyleSheets?.Count() ?? 0;
+			int styleSheetCount = 0;
 
-			int styleSheetCount = _styleList.WritableStyleSheets?.Count() ?? 0;
 
 			if (styleSheetCount == 0)
 			{

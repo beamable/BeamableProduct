@@ -19,37 +19,10 @@ namespace Beamable.Editor.UI.Buss
 			new List<BussStyleCardVisualElement>();
 
 		private string _currentFilter;
-		// private BussElement _currentSelected;
-
 		private bool _inStyleSheetChangedLoop;
-
-		private IEnumerable<BussStyleSheet> _styleSheets;
 
 		public VariableDatabase VariableDatabase { get; } = new VariableDatabase();
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
-
-		// public IEnumerable<BussStyleSheet> StyleSheets
-		// {
-		// 	get => _styleSheets;
-		// 	set
-		// 	{
-		// 		ClearStyleSheets();
-		// 		_styleSheets = value;
-		// 		RefreshStyleSheets();
-		// 	}
-		// }
-
-		public IEnumerable<BussStyleSheet> WritableStyleSheets
-		{
-			get
-			{
-#if BEAMABLE_DEVELOPER
-				return _styleSheets ?? Enumerable.Empty<BussStyleSheet>();
-#else
-				return _styleSheets?.Where(s => !s.IsReadOnly) ?? Enumerable.Empty<BussStyleSheet>();
-#endif
-			}
-		}
 
 		public BussStyleListVisualElement(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
@@ -58,9 +31,6 @@ namespace Beamable.Editor.UI.Buss
 			_model = model;
 
 			_filter = new BussCardFilter();
-
-			// Selection.selectionChanged += OnSelectionChange;
-
 			_model.Change += Refresh;
 		}
 
@@ -79,7 +49,8 @@ namespace Beamable.Editor.UI.Buss
 
 			for (int i = 0; i < _styleCardsVisualElements.Count; i++)
 			{
-				bool isMatch = _styleCardsVisualElements[i].StyleRule.Selector?.CheckMatch(_model.SelectedElement) ?? false;
+				bool isMatch = _styleCardsVisualElements[i].StyleRule.Selector?.CheckMatch(_model.SelectedElement) ??
+				               false;
 
 				if (selectedIndex != -1)
 					continue;
@@ -93,6 +64,7 @@ namespace Beamable.Editor.UI.Buss
 			return selectedHeight;
 		}
 
+		// TODO: change way how this works, we should render cards that are filtered inside model
 		public void RefreshStyleCards()
 		{
 			UndoSystem<BussStyleRule>.Update();
@@ -118,7 +90,7 @@ namespace Beamable.Editor.UI.Buss
 					{
 						spawned.RefreshProperties();
 						spawned.RefreshButtons();
-						spawned.RefreshWritableStyleSheets(WritableStyleSheets);
+						spawned.RefreshWritableStyleSheets(_model.WritableStyleSheets);
 					}
 					else
 					{
@@ -145,29 +117,16 @@ namespace Beamable.Editor.UI.Buss
 		protected override void OnDestroy()
 		{
 			_model.Change -= Refresh;
-			// Selection.selectionChanged -= OnSelectionChange;
 			PropertyDatabase.Discard();
 		}
 
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, VariableDatabase, PropertyDatabase, callback, WritableStyleSheets);
+			styleCard.Setup(styleSheet, styleRule, VariableDatabase, PropertyDatabase, callback,
+			                _model.WritableStyleSheets);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
-		}
-
-		private void ClearStyleSheets()
-		{
-			if (_model.StyleSheets != null)
-			{
-				foreach (BussStyleSheet styleSheet in _model.StyleSheets)
-				{
-					styleSheet.Change -= OnStyleSheetChanged;
-				}
-
-				_styleSheets = null;
-			}
 		}
 
 		private void FilterCards()
@@ -178,23 +137,6 @@ namespace Beamable.Editor.UI.Buss
 				styleCardVisualElement.SetHidden(!isVisible);
 			}
 		}
-
-		// private void OnSelectionChange()
-		// {
-		// 	_currentSelected = null;
-		// 	var gameObject = Selection.activeGameObject;
-		// 	if (gameObject != null)
-		// 	{
-		// 		_currentSelected = gameObject.GetComponent<BussElement>();
-		// 	}
-		//
-		// 	foreach (var styleCard in _styleCardsVisualElements)
-		// 	{
-		// 		styleCard.OnBussElementSelected(_currentSelected);
-		// 	}
-		//
-		// 	FilterCards();
-		// }
 
 		private void OnStyleSheetChanged()
 		{
@@ -232,19 +174,6 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			_inStyleSheetChangedLoop = false;
-		}
-
-		private void RefreshStyleSheets()
-		{
-			VariableDatabase.RemoveAllStyleSheets();
-
-			foreach (BussStyleSheet styleSheet in _model.StyleSheets)
-			{
-				VariableDatabase.AddStyleSheet(styleSheet);
-				styleSheet.Change += OnStyleSheetChanged;
-			}
-
-			RefreshStyleCards();
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)

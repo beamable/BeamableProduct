@@ -1,5 +1,8 @@
-﻿#region
-
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
+using Beamable.UI.Buss;
+using System.Collections.Generic;
+#region
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -7,10 +10,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 #endif
 
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
-using Beamable.UI.Buss;
-using System.Collections.Generic;
+
+
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 #endregion
@@ -19,16 +20,11 @@ namespace Beamable.Editor.UI.Components
 {
 	public class ThemeManagerNavigationComponent : BeamableBasicVisualElement
 	{
-		// public event Action<GameObject> SelectionChanged;
-		// public event Action BussStyleSheetChange;
-
 		private readonly List<IndentedLabelVisualElement> _spawnedLabels = new List<IndentedLabelVisualElement>();
 		private bool _hasDelayedChangeCallback;
 		private ScrollView _hierarchyContainer;
 		private IndentedLabelVisualElement _selectedLabel;
 		private readonly ThemeManagerModel _model;
-
-		public List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
 
 		public ThemeManagerNavigationComponent(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/ThemeManagerNavigationComponent/ThemeManagerNavigationComponent.uss")
@@ -72,7 +68,7 @@ namespace Beamable.Editor.UI.Components
 			foreach (KeyValuePair<BussElement,int> pair in _model.FoundElements)
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-				label.Setup(pair.Key, BussNameUtility.FormatLabel(pair.Key), _model.BussElementClicked,
+				label.Setup(pair.Key, BussNameUtility.FormatLabel(pair.Key), _model.NavigationElementClicked,
 				            pair.Value, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH, pair.Key == _model.SelectedElement);
 				label.Init();
 				_spawnedLabels.Add(label);
@@ -83,25 +79,6 @@ namespace Beamable.Editor.UI.Components
 		protected override void OnDestroy()
 		{
 			_model.Change -= Refresh;
-			
-			// foreach (BussElement bussElement in Components)
-			// {
-			// 	bussElement.StyleSheetsChanged -= OnBussStyleSheetChange;
-			// }
 		}
-
-		// private void OnBussStyleSheetChange()
-		// {
-		// 	if (!_hasDelayedChangeCallback)
-		// 	{
-		// 		_hasDelayedChangeCallback = true;
-		// 		EditorApplication.delayCall += () =>
-		// 		{
-		// 			// RefreshStyleSheets();
-		// 			_hasDelayedChangeCallback = false;
-		// 			BussStyleSheetChange?.Invoke();
-		// 		};
-		// 	}
-		// }
 	}
 }

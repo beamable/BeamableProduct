@@ -30,16 +30,17 @@ namespace Beamable.Editor.UI.Components
 		private BussElement _bussElement;
 		private bool _selected;
 
-		public GameObject RelatedGameObject => _bussElement.gameObject;
-
 		public IndentedLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/ThemeManagerNavigationComponent/IndentedLabelVisualElement/IndentedLabelVisualElement.uss") { }
 
-		public void Setup(BussElement bussElement, string label, Action<BussElement> onMouseClicked, int level, float width,
+		public void Setup(BussElement bussElement,
+		                  string label,
+		                  Action<BussElement> onMouseClicked,
+		                  int level,
+		                  float width,
 		                  bool selected)
 		{
 			_bussElement = bussElement;
-
 			_onMouseClicked = onMouseClicked;
 
 			_label = label;
@@ -54,16 +55,13 @@ namespace Beamable.Editor.UI.Components
 
 			_container = new VisualElement {name = "indentedLabelContainer"};
 
-			_labelComponent = new TextElement();
-			_labelComponent.name = "indentedLabel";
-			_labelComponent.text = _label;
-			
+			_labelComponent = new TextElement {name = "indentedLabel", text = _label};
 			_container.SetSelected(_selected);
 
 			float width = (_singleIndentWidth * _level) + _singleIndentWidth;
 
 #if UNITY_2018
-	_labelComponent.SetLeft(width);
+			_labelComponent.SetLeft(width);
 #elif UNITY_2019_1_OR_NEWER
 			_labelComponent.style.paddingLeft = new StyleLength(width);
 #endif
@@ -75,8 +73,6 @@ namespace Beamable.Editor.UI.Components
 			_container.RegisterCallback<MouseDownEvent>(OnMouseClicked);
 			_container.RegisterCallback<MouseOverEvent>(OnMouseOver);
 			_container.RegisterCallback<MouseOutEvent>(OnMouseOut);
-
-			// _bussElement.Validate += RefreshLabel;
 		}
 
 		protected override void OnDestroy()
@@ -84,25 +80,7 @@ namespace Beamable.Editor.UI.Components
 			_container?.UnregisterCallback<MouseDownEvent>(OnMouseClicked);
 			_container?.UnregisterCallback<MouseOverEvent>(OnMouseOver);
 			_container?.UnregisterCallback<MouseOutEvent>(OnMouseOut);
-
-			// _bussElement.Validate -= RefreshLabel;
 		}
-
-		public void Select()
-		{
-			_container.SetSelected(true);
-		}
-
-		public void Deselect()
-		{
-			_container.SetSelected(false);
-		}
-
-		// public void RefreshLabel()
-		// {
-		// 	_labelComponent.text = _label;
-		// 	_labelComponent.MarkDirtyRepaint();
-		// }
 
 		private void OnMouseOver(MouseOverEvent evt)
 		{
@@ -120,7 +98,6 @@ namespace Beamable.Editor.UI.Components
 		private void OnMouseClicked(MouseDownEvent evt)
 		{
 			_onMouseClicked?.Invoke(_bussElement);
-			Selection.activeObject = _bussElement.gameObject;
 		}
 	}
 }

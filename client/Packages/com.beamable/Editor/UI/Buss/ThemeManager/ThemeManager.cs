@@ -47,23 +47,14 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow?.Destroy();
 			_selectedBussElement?.Destroy();
+			_model?.Clear();
 
 			UndoSystem<BussStyleRule>.DeleteAllRecords();
-
-			// _model.OnChange -= Refresh;
-
-			// if (_navigationWindow != null)
-			// {
-			// _navigationWindow.HierarchyChanged -= RefreshStyleSheets;
-			// _navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
-			// _navigationWindow.SelectionChanged -= SetScroll;
-			// }
 		}
 
 		private void OnFocus()
 		{
 			_model.OnFocus();
-			// _navigationWindow?.ForceRebuild();
 		}
 
 		[MenuItem(
@@ -122,7 +113,6 @@ namespace Beamable.Editor.UI.Buss
 				new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);
 			inlineStyle.Init();
 			mainVisualElement.Add(inlineStyle);
-			
 			mainVisualElement.Add(_scrollView);
 
 			// _navigationWindow.HierarchyChanged -= RefreshStyleSheets;
@@ -164,7 +154,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnAddStyleButtonClicked()
 		{
-			int styleSheetCount = _stylesGroup.WritableStyleSheets.Count();
+			int styleSheetCount = _model.WritableStyleSheets.Count();
 
 			if (styleSheetCount == 0)
 			{
@@ -173,11 +163,11 @@ namespace Beamable.Editor.UI.Buss
 
 			if (styleSheetCount == 1)
 			{
-				CreateEmptyStyle(_stylesGroup.WritableStyleSheets.First());
+				CreateEmptyStyle(_model.WritableStyleSheets.First());
 			}
 			else if (styleSheetCount > 1)
 			{
-				OpenAddStyleMenu(_stylesGroup.WritableStyleSheets);
+				OpenAddStyleMenu(_model.WritableStyleSheets);
 			}
 		}
 

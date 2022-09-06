@@ -1,6 +1,7 @@
 ﻿using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,7 +11,28 @@ namespace Beamable.Editor.UI.Buss
 	{
 		public event Action Change;
 
+		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
+
 		public List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
+
+		public IEnumerable<BussStyleSheet> WritableStyleSheets
+		{
+			get
+			{
+#if BEAMABLE_DEVELOPER
+				return StyleSheets ?? Enumerable.Empty<BussStyleSheet>();
+#else
+				return StyleSheets?.Where(s => !s.IsReadOnly) ?? Enumerable.Empty<BussStyleSheet>();
+#endif
+			}
+		}
+
+		public BussElement SelectedElement { get; private set; }
+
+		public string SelectedElementId =>
+			SelectedElement != null ? BussNameUtility.AsIdSelector(SelectedElement.Id) : String.Empty;
+
+		public BussStyleSheet SelectedElementStyleSheet => SelectedElement != null ? SelectedElement.StyleSheet : null;
 
 		public ThemeManagerModel()
 		{
@@ -24,6 +46,39 @@ namespace Beamable.Editor.UI.Buss
 		{
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			Selection.selectionChanged -= OnSelectionChanged;
+		}
+
+		public void NavigationElementClicked(BussElement element)
+		{
+			Selection.activeGameObject = element.gameObject;
+		}
+
+		public void OnFocus()
+		{
+			Change?.Invoke();
+		}
+
+		public void OnIdChanged(string value)
+		{
+			SelectedElement.Id = BussNameUtility.CleanString(value);
+			Change?.Invoke();
+		}
+
+		public void OnStylesheetChanged(UnityEngine.Object styleSheet)
+		{
+			BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
+
+			if (SelectedElement != null)
+			{
+				SelectedElement.StyleSheet = newStyleSheet;
+				Change?.Invoke();
+			}
+		}
+
+		private void BussElementClicked(BussElement element)
+		{
+			SelectedElement = element;
+			Change?.Invoke();
 		}
 
 		private void OnHierarchyChanged()
@@ -42,6 +97,21 @@ namespace Beamable.Editor.UI.Buss
 			Change?.Invoke();
 		}
 
+		private void OnObjectRegistered(BussElement registeredObject)
+		{
+			BussStyleSheet styleSheet = registeredObject.StyleSheet;
+
+			if (styleSheet == null) return;
+
+			if (!StyleSheets.Contains(styleSheet))
+			{
+				StyleSheets.Add(styleSheet);
+			}
+
+			// registeredObject.StyleSheetsChanged -= OnBussStyleSheetChange;
+			// registeredObject.StyleSheetsChanged += OnBussStyleSheetChange;
+		}
+
 		private void OnSelectionChanged()
 		{
 			if (Selection.activeGameObject != null)
@@ -54,15 +124,6 @@ namespace Beamable.Editor.UI.Buss
 				BussElementClicked(null);
 			}
 		}
-
-		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
-		public BussElement SelectedElement { get; private set; }
-
-		public string SelectedElementId =>
-			SelectedElement != null ? BussNameUtility.AsIdSelector(SelectedElement.Id) : String.Empty;
-
-		public BussStyleSheet SelectedElementStyleSheet => 
-			SelectedElement != null ? SelectedElement.StyleSheet : null;
 
 		private void Traverse(GameObject gameObject, int currentLevel)
 		{
@@ -88,94 +149,5 @@ namespace Beamable.Editor.UI.Buss
 				}
 			}
 		}
-
-		private void OnObjectRegistered(BussElement registeredObject)
-		{
-			BussStyleSheet styleSheet = registeredObject.StyleSheet;
-
-			if (styleSheet == null) return;
-
-			if (!StyleSheets.Contains(styleSheet))
-			{
-				StyleSheets.Add(styleSheet);
-			}
-
-			// registeredObject.StyleSheetsChanged -= OnBussStyleSheetChange;
-			// registeredObject.StyleSheetsChanged += OnBussStyleSheetChange;
-		}
-
-		// private void OnBussStyleSheetChange()
-		// {
-		// 	if (!_hasDelayedChangeCallback)
-		// 	{
-		// 		_hasDelayedChangeCallback = true;
-		// 		EditorApplication.delayCall += () =>
-		// 		{
-		// 			RefreshStyleSheets();
-		// 			_hasDelayedChangeCallback = false;
-		// 			BussStyleSheetChange?.Invoke();
-		// 		};
-		// 	}
-		// }
-
-		public void BussElementClicked(BussElement element)
-		{
-			SelectedElement = element;
-			Change?.Invoke();
-		}
-
-		public void OnFocus()
-		{
-			Change?.Invoke();
-		}
-
-		public void OnIdChanged(string value)
-		{
-			SelectedElement.Id = BussNameUtility.CleanString(value);
-			Change?.Invoke();
-		}
-
-		public void OnStylesheetChanged(UnityEngine.Object styleSheet)
-		{
-			BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
-
-			if (SelectedElement != null)
-			{
-				SelectedElement.StyleSheet = newStyleSheet;
-				Change?.Invoke();
-			}
-		}
-		
-		// private void RefreshStyleSheets()
-		// {
-		// 	StyleSheets.Clear();
-		//
-		// 	BussConfiguration.OptionalInstance.DoIfExists(config =>
-		// 	{
-		// 		foreach (BussStyleSheet styleSheet in config.DefaultBeamableStyleSheetSheets)
-		// 		{
-		// 			if (styleSheet != null)
-		// 				StyleSheets.Add(styleSheet);
-		// 		}
-		//
-		// 		foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
-		// 		{
-		// 			if (styleSheet != null)
-		// 				StyleSheets.Add(styleSheet);
-		// 		}
-		// 	});
-		//
-		// 	foreach (var element in FoundElements)
-		// 	{
-		// 		var styleSheet = element.Key.StyleSheet;
-		//
-		// 		if (styleSheet == null) continue;
-		//
-		// 		if (!StyleSheets.Contains(styleSheet))
-		// 		{
-		// 			StyleSheets.Add(styleSheet);
-		// 		}
-		// 	}
-		// }
 	}
 }
