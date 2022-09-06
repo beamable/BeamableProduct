@@ -84,7 +84,7 @@ namespace Beamable.Editor.UI.Buss
 		private void AddSelectorButton(VisualElement parent, BussStyleListVisualElement list)
 		{
 			_addStyleButton = new AddStyleButton();
-			_addStyleButton.Setup(list, _ => list.RefreshStyleCards());
+			//_addStyleButton.Setup(list, _ => list.RefreshStyleCards());
 			_addStyleButton.CheckEnableState();
 			parent.Add(_addStyleButton);
 		}

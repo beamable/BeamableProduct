@@ -77,7 +77,7 @@ namespace Beamable.Editor.UI.Components
 
 			_currentStyleSheet = new LabeledObjectField();
 			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), _model.SelectedElementStyleSheet,
-			                         _model.OnStylesheetChanged);
+			                         _model.OnStyleSheetSelected);
 			_contentContainer.Add(_currentStyleSheet);
 			Root.Add(_contentContainer);
 

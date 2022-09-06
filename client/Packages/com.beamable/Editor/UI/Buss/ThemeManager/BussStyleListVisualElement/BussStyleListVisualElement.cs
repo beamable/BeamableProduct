@@ -12,132 +12,62 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class BussStyleListVisualElement : BeamableBasicVisualElement
 	{
-		private readonly BussCardFilter _filter;
 		private readonly ThemeManagerModel _model;
 
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
-		private string _currentFilter;
 		private bool _inStyleSheetChangedLoop;
-
-		public VariableDatabase VariableDatabase { get; } = new VariableDatabase();
-		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public BussStyleListVisualElement(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
 			false)
 		{
 			_model = model;
-
-			_filter = new BussCardFilter();
 			_model.Change += Refresh;
+			_model.StyleSheetChange += OnStyleSheetChanged;
 		}
 
 		public override void Refresh()
 		{
-			RefreshStyleCards();
-		}
+			RefreshCards();
 
-		public float GetSelectedElementPosInScroll()
-		{
-			if (_model.SelectedElement == null)
-				return 0;
-
-			int selectedIndex = -1;
-			float selectedHeight = 0;
-
-			for (int i = 0; i < _styleCardsVisualElements.Count; i++)
+			if (_model.SelectedElement != null)
 			{
-				bool isMatch = _styleCardsVisualElements[i].StyleRule.Selector?.CheckMatch(_model.SelectedElement) ??
-				               false;
-
-				if (selectedIndex != -1)
-					continue;
-
-				if (isMatch)
-					selectedIndex = i;
-				else
-					selectedHeight += _styleCardsVisualElements[i].contentRect.height;
-			}
-
-			return selectedHeight;
-		}
-
-		// TODO: change way how this works, we should render cards that are filtered inside model
-		public void RefreshStyleCards()
-		{
-			UndoSystem<BussStyleRule>.Update();
-
-			BussStyleRule[] rulesToDraw = _model.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
-
-			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements
-			                                             .Where(card => !rulesToDraw.Contains(card.StyleRule))
-			                                             .ToArray();
-
-			foreach (BussStyleCardVisualElement card in cardsToRemove)
-			{
-				RemoveStyleCard(card);
-			}
-
-			foreach (BussStyleSheet styleSheet in _model.StyleSheets)
-			{
-				foreach (BussStyleRule rule in styleSheet.Styles)
+				foreach (var card in _styleCardsVisualElements)
 				{
-					BussStyleCardVisualElement spawned =
-						_styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
-					if (spawned != null)
-					{
-						spawned.RefreshProperties();
-						spawned.RefreshButtons();
-						spawned.RefreshWritableStyleSheets(_model.WritableStyleSheets);
-					}
-					else
-					{
-						string undoKey = $"{styleSheet.name}-{rule.SelectorString}";
-						UndoSystem<BussStyleRule>.AddRecord(rule, undoKey);
-						AddStyleCard(styleSheet, rule, () =>
-						{
-							UndoSystem<BussStyleRule>.Undo(undoKey);
-							RefreshStyleCards();
-						});
-					}
+					card.OnBussElementSelected(_model.SelectedElement);
 				}
 			}
-
-			FilterCards();
-		}
-
-		public void SetFilter(string value)
-		{
-			_filter.CurrentFilter = value;
-			FilterCards();
 		}
 
 		protected override void OnDestroy()
 		{
 			_model.Change -= Refresh;
-			PropertyDatabase.Discard();
+			_model.StyleSheetChange -= OnStyleSheetChanged;
+			_model.PropertyDatabase.Discard();
 		}
 
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, VariableDatabase, PropertyDatabase, callback,
+			styleCard.Setup(styleSheet, styleRule, _model.VariableDatabase, _model.PropertyDatabase, callback,
 			                _model.WritableStyleSheets);
 			_styleCardsVisualElements.Add(styleCard);
 			Root.Add(styleCard);
 		}
 
-		private void FilterCards()
+		private void ClearCards()
 		{
-			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
+			foreach (var element in _styleCardsVisualElements)
 			{
-				bool isVisible = _filter.CardFilter(styleCardVisualElement.StyleRule, _model.SelectedElement);
-				styleCardVisualElement.SetHidden(!isVisible);
+				RemoveStyleCard(element);
 			}
+
+			_styleCardsVisualElements.Clear();
 		}
 
+		// TODO: implement things related to VariablesDatabase
 		private void OnStyleSheetChanged()
 		{
 			if (_inStyleSheetChangedLoop) return;
@@ -146,19 +76,17 @@ namespace Beamable.Editor.UI.Buss
 
 			try
 			{
-				VariableDatabase.ReconsiderAllStyleSheets();
+				_model.VariableDatabase.ReconsiderAllStyleSheets();
 
-				if (VariableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
-				    VariableDatabase.DirtyProperties.Count ==
-				    0) // or if we did no changes (the source of change is unknown)
+				if (_model.VariableDatabase.ForceRefreshAll || _model.VariableDatabase.DirtyProperties.Count == 0)
 				{
-					RefreshStyleCards();
+					RefreshCards();
 				}
 				else
 				{
-					foreach (VariableDatabase.PropertyReference reference in VariableDatabase.DirtyProperties)
+					foreach (VariableDatabase.PropertyReference reference in _model.VariableDatabase.DirtyProperties)
 					{
-						var card = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == reference.styleRule);
+						var card = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == reference.StyleRule);
 						if (card != null)
 						{
 							card.RefreshPropertyByReference(reference);
@@ -166,7 +94,7 @@ namespace Beamable.Editor.UI.Buss
 					}
 				}
 
-				VariableDatabase.FlushDirtyMarkers();
+				_model.VariableDatabase.FlushDirtyMarkers();
 			}
 			catch (Exception e)
 			{
@@ -176,9 +104,29 @@ namespace Beamable.Editor.UI.Buss
 			_inStyleSheetChangedLoop = false;
 		}
 
+		private void RefreshCards()
+		{
+			UndoSystem<BussStyleRule>.Update();
+
+			ClearCards();
+
+			foreach (var pair in _model.FilteredRules)
+			{
+				var styleSheet = pair.Value;
+				var styleRule = pair.Key;
+
+				string undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
+				UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
+				AddStyleCard(styleSheet, styleRule, () =>
+				{
+					UndoSystem<BussStyleRule>.Undo(undoKey);
+					RefreshCards(); // TODO: check if we need this refresh here
+				});
+			}
+		}
+
 		private void RemoveStyleCard(BussStyleCardVisualElement card)
 		{
-			_styleCardsVisualElements.Remove(card);
 			card.RemoveFromHierarchy();
 			card.Destroy();
 		}

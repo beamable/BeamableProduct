@@ -19,40 +19,57 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
-		private BussSelectorLabelVisualElement _selectorLabelComponent;
-		private VisualElement _selectorLabelParent;
-		private VisualElement _variablesParent;
-		private VisualElement _propertiesParent;
-		private VisualElement _colorBlock;
-		private VisualElement _wizardButton;
-		private VisualElement _optionsButton;
-		private VisualElement _undoButton;
-		private VisualElement _cleanAllButton;
-		private VisualElement _addVariableButton;
+		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
 		private VisualElement _addRuleButton;
-		private VisualElement _showAllButton;
-		private VisualElement _sortButton;
-		private TextElement _showAllButtonText;
-
-		private VariableDatabase _variableDatabase;
+		private VisualElement _addVariableButton;
+		private VisualElement _cleanAllButton;
+		private VisualElement _colorBlock;
+		private Action _onUndoRequest;
+		private VisualElement _optionsButton;
+		private VisualElement _propertiesParent;
 		private PropertySourceDatabase _propertyDatabase;
-		private BussStyleSheet _styleSheet;
-		private BussStyleRule _styleRule;
 
 		private BussElement _selectedElement;
-
-		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
-		private Action _onUndoRequest;
-		private bool _sorted;
+		private BussSelectorLabelVisualElement _selectorLabelComponent;
+		private VisualElement _selectorLabelParent;
+		private VisualElement _showAllButton;
+		private TextElement _showAllButtonText;
 		private bool _showAllMode;
+		private VisualElement _sortButton;
+		private bool _sorted;
+		private BussStyleRule _styleRule;
+		private BussStyleSheet _styleSheet;
+		private VisualElement _undoButton;
+
+		private VariableDatabase _variableDatabase;
+		private VisualElement _variablesParent;
+		private VisualElement _wizardButton;
 		private IEnumerable<BussStyleSheet> _writableStyleSheets;
 
-		public BussStyleSheet StyleSheet => _styleSheet;
 		public BussStyleRule StyleRule => _styleRule;
 
 		public BussStyleCardVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
-		{ }
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
+
+		public void OnBussElementSelected(BussElement element)
+		{
+			_selectedElement = element;
+			PropertySourceTracker tracker = _propertyDatabase.GetTracker(_selectedElement);
+			foreach (BussStylePropertyVisualElement propertyVisualElement in _properties)
+			{
+				propertyVisualElement.SetPropertySourceTracker(tracker);
+			}
+
+			if (_colorBlock == null) return;
+
+			bool active = false;
+			if (element != null && StyleRule.Selector != null)
+			{
+				active = StyleRule.Selector.CheckMatch(element);
+			}
+
+			_colorBlock.EnableInClassList("active", active);
+		}
 
 		public override void Refresh()
 		{
@@ -92,30 +109,25 @@ namespace Beamable.Editor.UI.Components
 			RefreshProperties();
 
 			UpdateShowAllStatus();
-
 			RefreshButtons();
 		}
 
-		public void RefreshButtons()
+		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)
 		{
-			bool enabled = _styleSheet.IsWritable;
-
-			_undoButton.SetEnabled(enabled);
-			_cleanAllButton.SetEnabled(enabled);
-			_addVariableButton.SetEnabled(enabled);
-			_addRuleButton.SetEnabled(enabled);
-			_showAllButton.SetEnabled(enabled);
-			_sortButton.SetEnabled(enabled);
-
-			_optionsButton.SetEnabled(true);
+			BussStylePropertyVisualElement property =
+				_properties.FirstOrDefault(p => p.PropertyProvider == reference.PropertyProvider);
+			if (property != null)
+			{
+				property.Refresh();
+			}
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
-						  VariableDatabase variableDatabase,
-						  PropertySourceDatabase propertySourceDatabase,
-						  Action onUndoRequest,
-						  IEnumerable<BussStyleSheet> writableStyleSheets)
+		                  BussStyleRule styleRule,
+		                  VariableDatabase variableDatabase,
+		                  PropertySourceDatabase propertySourceDatabase,
+		                  Action onUndoRequest,
+		                  IEnumerable<BussStyleSheet> writableStyleSheets)
 		{
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
@@ -130,45 +142,6 @@ namespace Beamable.Editor.UI.Components
 		protected override void OnDestroy()
 		{
 			ClearButtonActions();
-		}
-
-		private void RegisterButtonActions()
-		{
-			ClearButtonActions();
-
-			_wizardButton?.RegisterCallback<MouseDownEvent>(WizardButtonClicked);
-			_undoButton?.RegisterCallback<MouseDownEvent>(UndoButtonClicked);
-			_cleanAllButton?.RegisterCallback<MouseDownEvent>(ClearAllButtonClicked);
-			_addVariableButton?.RegisterCallback<MouseDownEvent>(AddVariableButtonClicked);
-			_addRuleButton?.RegisterCallback<MouseDownEvent>(AddRuleButtonClicked);
-			_showAllButton?.RegisterCallback<MouseDownEvent>(ShowAllButtonClicked);
-			_sortButton?.RegisterCallback<MouseDownEvent>(SortButtonClicked);
-			_optionsButton?.RegisterCallback<MouseDownEvent>(OptionsButtonClicked);
-		}
-
-		private void ClearButtonActions()
-		{
-			_wizardButton?.UnregisterCallback<MouseDownEvent>(WizardButtonClicked);
-			_undoButton?.UnregisterCallback<MouseDownEvent>(UndoButtonClicked);
-			_cleanAllButton?.UnregisterCallback<MouseDownEvent>(ClearAllButtonClicked);
-			_addVariableButton?.UnregisterCallback<MouseDownEvent>(AddVariableButtonClicked);
-			_addRuleButton?.UnregisterCallback<MouseDownEvent>(AddRuleButtonClicked);
-			_showAllButton?.UnregisterCallback<MouseDownEvent>(ShowAllButtonClicked);
-			_sortButton?.UnregisterCallback<MouseDownEvent>(SortButtonClicked);
-			_optionsButton?.UnregisterCallback<MouseDownEvent>(OptionsButtonClicked);
-		}
-
-		private void OptionsButtonClicked(MouseDownEvent evt)
-		{
-			GenericMenu context = new GenericMenu();
-
-			foreach (GenericMenuCommand command in PrepareCommands())
-			{
-				GUIContent label = new GUIContent(command.Name);
-				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
-			}
-
-			context.ShowAsContext();
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -189,7 +162,7 @@ namespace Beamable.Editor.UI.Components
 				SerializableValueImplementationHelper.ImplementationData data =
 					SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-																   t != typeof(FractionFloatBussProperty));
+				                                                   t != typeof(FractionFloatBussProperty));
 
 				foreach (Type type in types)
 				{
@@ -238,37 +211,19 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow.ShowConfirmationUtility(CLEAR_ALL_PROPERTIES_HEADER, confirmationPopup,
-														this.GetEditorWindowWithReflection());
+			                                            this.GetEditorWindowWithReflection());
 		}
 
-		private void UndoButtonClicked(MouseDownEvent evt)
+		private void ClearButtonActions()
 		{
-			_onUndoRequest?.Invoke();
-		}
-
-		private void WizardButtonClicked(MouseDownEvent evt)
-		{
-			Debug.Log("WizardButtonClicked");
-		}
-
-		private void ShowAllButtonClicked(MouseDownEvent evt)
-		{
-			_showAllMode = !_showAllMode;
-			UpdateShowAllStatus();
-			RefreshProperties();
-		}
-
-		private void SortButtonClicked(MouseDownEvent evt)
-		{
-			_sorted = !_sorted;
-			SortProperties();
-		}
-
-		private void UpdateShowAllStatus()
-		{
-			const string showAllProperty = "showAllProperties";
-			EnableInClassList(showAllProperty, _showAllMode);
-			_showAllButtonText.text = _showAllMode ? "Hide All" : "Show All";
+			_wizardButton?.UnregisterCallback<MouseDownEvent>(WizardButtonClicked);
+			_undoButton?.UnregisterCallback<MouseDownEvent>(UndoButtonClicked);
+			_cleanAllButton?.UnregisterCallback<MouseDownEvent>(ClearAllButtonClicked);
+			_addVariableButton?.UnregisterCallback<MouseDownEvent>(AddVariableButtonClicked);
+			_addRuleButton?.UnregisterCallback<MouseDownEvent>(AddRuleButtonClicked);
+			_showAllButton?.UnregisterCallback<MouseDownEvent>(ShowAllButtonClicked);
+			_sortButton?.UnregisterCallback<MouseDownEvent>(SortButtonClicked);
+			_optionsButton?.UnregisterCallback<MouseDownEvent>(OptionsButtonClicked);
 		}
 
 		private void CreateSelectorLabel()
@@ -280,6 +235,19 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent.Setup(StyleRule, _styleSheet, PrepareCommands);
 			_selectorLabelParent.Add(_selectorLabelComponent);
+		}
+
+		private void OptionsButtonClicked(MouseDownEvent evt)
+		{
+			GenericMenu context = new GenericMenu();
+
+			foreach (GenericMenuCommand command in PrepareCommands())
+			{
+				GUIContent label = new GUIContent(command.Name);
+				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+			}
+
+			context.ShowAsContext();
 		}
 
 		private List<GenericMenuCommand> PrepareCommands()
@@ -302,11 +270,11 @@ namespace Beamable.Editor.UI.Components
 				foreach (BussStyleSheet targetStyleSheet in writableStyleSheets)
 				{
 					commands.Add(new GenericMenuCommand($"{Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}",
-														() =>
-														{
-															BussStyleSheetUtility.CopySingleStyle(
-																targetStyleSheet, _styleRule);
-														}));
+					                                    () =>
+					                                    {
+						                                    BussStyleSheetUtility.CopySingleStyle(
+							                                    targetStyleSheet, _styleRule);
+					                                    }));
 				}
 			}
 			else
@@ -316,7 +284,7 @@ namespace Beamable.Editor.UI.Components
 					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
 					if (window != null)
 					{
-						window.Init(new List<BussStyleRule> { _styleRule });
+						window.Init(new List<BussStyleRule> {_styleRule});
 					}
 				}));
 			}
@@ -329,24 +297,21 @@ namespace Beamable.Editor.UI.Components
 			return commands;
 		}
 
-		private void RemoveStyleClicked()
+		private void RefreshButtons()
 		{
-			BeamablePopupWindow.CloseConfirmationWindow();
+			bool enabled = _styleSheet.IsWritable;
 
-			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				DELETE_STYLE_MESSAGE,
-				() =>
-				{
-					BussStyleSheetUtility.RemoveSingleStyle(_styleSheet, _styleRule);
-				},
-				BeamablePopupWindow.CloseConfirmationWindow
-			);
+			_undoButton.SetEnabled(enabled);
+			_cleanAllButton.SetEnabled(enabled);
+			_addVariableButton.SetEnabled(enabled);
+			_addRuleButton.SetEnabled(enabled);
+			_showAllButton.SetEnabled(enabled);
+			_sortButton.SetEnabled(enabled);
 
-			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup,
-														this.GetEditorWindowWithReflection());
+			_optionsButton.SetEnabled(true);
 		}
 
-		public void RefreshProperties()
+		private void RefreshProperties()
 		{
 			foreach (BussStylePropertyVisualElement element in _properties.ToArray())
 			{
@@ -359,7 +324,7 @@ namespace Beamable.Editor.UI.Components
 				else
 				{
 					remove = !_showAllMode ||
-							 _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
+					         _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
 				}
 
 				if (remove)
@@ -382,7 +347,7 @@ namespace Beamable.Editor.UI.Components
 
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase,
-							  _propertyDatabase.GetTracker(_selectedElement));
+				              _propertyDatabase.GetTracker(_selectedElement));
 				(property.IsVariable ? _variablesParent : _propertiesParent).Add(element);
 				_properties.Add(element);
 			}
@@ -406,12 +371,56 @@ namespace Beamable.Editor.UI.Components
 						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 					BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase,
-								  _propertyDatabase.GetTracker(_selectedElement));
+					              _propertyDatabase.GetTracker(_selectedElement));
 					_propertiesParent.Add(element);
 					_properties.Add(element);
 				}
 			}
 
+			SortProperties();
+		}
+
+		private void RegisterButtonActions()
+		{
+			ClearButtonActions();
+
+			_wizardButton?.RegisterCallback<MouseDownEvent>(WizardButtonClicked);
+			_undoButton?.RegisterCallback<MouseDownEvent>(UndoButtonClicked);
+			_cleanAllButton?.RegisterCallback<MouseDownEvent>(ClearAllButtonClicked);
+			_addVariableButton?.RegisterCallback<MouseDownEvent>(AddVariableButtonClicked);
+			_addRuleButton?.RegisterCallback<MouseDownEvent>(AddRuleButtonClicked);
+			_showAllButton?.RegisterCallback<MouseDownEvent>(ShowAllButtonClicked);
+			_sortButton?.RegisterCallback<MouseDownEvent>(SortButtonClicked);
+			_optionsButton?.RegisterCallback<MouseDownEvent>(OptionsButtonClicked);
+		}
+
+		private void RemoveStyleClicked()
+		{
+			BeamablePopupWindow.CloseConfirmationWindow();
+
+			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
+				DELETE_STYLE_MESSAGE,
+				() =>
+				{
+					BussStyleSheetUtility.RemoveSingleStyle(_styleSheet, _styleRule);
+				},
+				BeamablePopupWindow.CloseConfirmationWindow
+			);
+
+			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup,
+			                                            this.GetEditorWindowWithReflection());
+		}
+
+		private void ShowAllButtonClicked(MouseDownEvent evt)
+		{
+			_showAllMode = !_showAllMode;
+			UpdateShowAllStatus();
+			RefreshProperties();
+		}
+
+		private void SortButtonClicked(MouseDownEvent evt)
+		{
+			_sorted = !_sorted;
 			SortProperties();
 		}
 
@@ -436,7 +445,7 @@ namespace Beamable.Editor.UI.Components
 
 						string[] keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
-							   Array.IndexOf(keys, p2.PropertyProvider.Key);
+						       Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
 
 					return p2.PropertyIsInStyle ? 1 : -1;
@@ -461,39 +470,21 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)
+		private void UndoButtonClicked(MouseDownEvent evt)
 		{
-			BussStylePropertyVisualElement property =
-				_properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
-			if (property != null)
-			{
-				property.Refresh();
-			}
+			_onUndoRequest?.Invoke();
 		}
 
-		public void OnBussElementSelected(BussElement element)
+		private void UpdateShowAllStatus()
 		{
-			_selectedElement = element;
-			PropertySourceTracker tracker = _propertyDatabase.GetTracker(_selectedElement);
-			foreach (BussStylePropertyVisualElement propertyVisualElement in _properties)
-			{
-				propertyVisualElement.SetPropertySourceTracker(tracker);
-			}
-
-			if (_colorBlock == null) return;
-
-			bool active = false;
-			if (element != null && StyleRule.Selector != null)
-			{
-				active = StyleRule.Selector.CheckMatch(element);
-			}
-
-			_colorBlock.EnableInClassList("active", active);
+			const string showAllProperty = "showAllProperties";
+			EnableInClassList(showAllProperty, _showAllMode);
+			_showAllButtonText.text = _showAllMode ? "Hide All" : "Show All";
 		}
 
-		public void RefreshWritableStyleSheets(IEnumerable<BussStyleSheet> writableStyleSheets)
+		private void WizardButtonClicked(MouseDownEvent evt)
 		{
-			_writableStyleSheets = writableStyleSheets;
+			Debug.Log("WizardButtonClicked");
 		}
 	}
 }

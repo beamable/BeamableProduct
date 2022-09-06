@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -13,10 +12,18 @@ namespace Beamable.Editor.UI.Buss
 	public class ThemeManagerModel
 	{
 		public event Action Change;
+		public event Action StyleSheetChange;
+
+		private readonly BussCardFilter _filter;
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
 
-		public List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
+		private List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
+
+		public Dictionary<BussStyleRule, BussStyleSheet> FilteredRules =>
+			_filter != null
+				? _filter.FilteredAlt(StyleSheets, SelectedElement)
+				: new Dictionary<BussStyleRule, BussStyleSheet>();
 
 		public IEnumerable<BussStyleSheet> WritableStyleSheets
 		{
@@ -31,16 +38,18 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		public BussElement SelectedElement { get; private set; }
-
 		public string SelectedElementId =>
 			SelectedElement != null ? BussNameUtility.AsIdSelector(SelectedElement.Id) : String.Empty;
-
 		public BussStyleSheet SelectedElementStyleSheet => SelectedElement != null ? SelectedElement.StyleSheet : null;
+		public VariableDatabase VariableDatabase { get; } = new VariableDatabase();
+		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public ThemeManagerModel()
 		{
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Selection.selectionChanged += OnSelectionChanged;
+
+			_filter = new BussCardFilter();
 
 			OnHierarchyChanged();
 		}
@@ -49,6 +58,18 @@ namespace Beamable.Editor.UI.Buss
 		{
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			Selection.selectionChanged -= OnSelectionChanged;
+			
+			foreach (var styleSheet in StyleSheets)
+			{
+				styleSheet.Change -= OnStyleSheetChanged;
+			}
+			StyleSheets.Clear();
+
+			foreach (var element in FoundElements)
+			{
+				element.Key.Change -= OnStyleSheetChanged;
+			}
+			FoundElements.Clear();
 		}
 
 		public void ForceRefresh()
@@ -72,7 +93,7 @@ namespace Beamable.Editor.UI.Buss
 			Change?.Invoke();
 		}
 
-		public void OnStylesheetChanged(UnityEngine.Object styleSheet)
+		public void OnStyleSheetSelected(UnityEngine.Object styleSheet)
 		{
 			BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
 
@@ -107,6 +128,8 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnObjectRegistered(BussElement registeredObject)
 		{
+			registeredObject.Change += OnStyleSheetChanged;
+			
 			BussStyleSheet styleSheet = registeredObject.StyleSheet;
 
 			if (styleSheet == null) return;
@@ -114,7 +137,13 @@ namespace Beamable.Editor.UI.Buss
 			if (!StyleSheets.Contains(styleSheet))
 			{
 				StyleSheets.Add(styleSheet);
+				styleSheet.Change += OnStyleSheetChanged;
 			}
+		}
+
+		private void OnStyleSheetChanged()
+		{
+			StyleSheetChange?.Invoke();
 		}
 
 		private void OnSelectionChanged()
@@ -203,7 +232,7 @@ namespace Beamable.Editor.UI.Buss
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
 			AssetDatabase.SaveAssets();
-			
+
 			Change?.Invoke();
 		}
 
@@ -240,7 +269,8 @@ namespace Beamable.Editor.UI.Buss
 
 		public void OnSearch(string value)
 		{
-			//_stylesGroup.SetFilter(value);
+			_filter.CurrentFilter = value;
+			Change?.Invoke();
 		}
 
 		#endregion

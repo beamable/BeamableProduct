@@ -70,7 +70,7 @@ namespace Beamable.Editor.UI.Components
 				{
 					state = PropertyValueState.SingleResult;
 					propertyReference = variableData.Declarations[0];
-					result = propertyReference.propertyProvider.GetProperty();
+					result = propertyReference.PropertyProvider.GetProperty();
 				}
 				else
 				{
@@ -104,7 +104,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				_usedVariableNames.Add(variableProperty.VariableName);
 				var usedPropertyReference = context.GetUsedPropertyReference(variableProperty.VariableName, expectedType);
-				var propertyProvider = usedPropertyReference.propertyProvider;
+				var propertyProvider = usedPropertyReference.PropertyProvider;
 				if (propertyProvider == null)
 				{
 					_usedVariableNames.Clear();

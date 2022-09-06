@@ -217,18 +217,18 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetVariableSource(VariableDatabase.PropertyReference variableSource)
 		{
-			if (_propertyProvider.HasVariableReference && variableSource.propertyProvider != null)
+			if (_propertyProvider.HasVariableReference && variableSource.PropertyProvider != null)
 			{
-				if (variableSource.styleSheet == null)
+				if (variableSource.StyleSheet == null)
 				{
-					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
+					VariableSource = $"Variable: {variableSource.PropertyProvider.Key}\n" +
 									 "Declared in inline style.";
 				}
 				else
 				{
-					VariableSource = $"Variable: {variableSource.propertyProvider.Key}\n" +
-									 $"Selector: {variableSource.styleRule.SelectorString}\n" +
-									 $"Style sheet: {variableSource.styleSheet.name}";
+					VariableSource = $"Variable: {variableSource.PropertyProvider.Key}\n" +
+									 $"Selector: {variableSource.StyleRule.SelectorString}\n" +
+									 $"Style sheet: {variableSource.StyleSheet.name}";
 				}
 			}
 			else

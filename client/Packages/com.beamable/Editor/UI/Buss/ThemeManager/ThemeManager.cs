@@ -84,7 +84,8 @@ namespace Beamable.Editor.UI.Buss
 
 			BussThemeManagerActionBarVisualElement actionBar =
 				new BussThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
-				                                           _model.ForceRefresh, _model.OnDocsButtonClicked, _model.OnSearch) {name = "actionBar"};
+				                                           _model.ForceRefresh, _model.OnDocsButtonClicked,
+				                                           _model.OnSearch) {name = "actionBar"};
 
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
@@ -104,31 +105,14 @@ namespace Beamable.Editor.UI.Buss
 			_stylesGroup = new BussStyleListVisualElement(_model) {name = "stylesGroup"};
 			_stylesGroup.Init();
 			_scrollView.Add(_stylesGroup);
-			
+
 			// TODO: remove constructor params after moving variables and properties database into model
 			InlineStyleCardVisualElement inlineStyle =
-				new InlineStyleCardVisualElement(_stylesGroup.VariableDatabase, _stylesGroup.PropertyDatabase);
+				new InlineStyleCardVisualElement(_model.VariableDatabase, _model.PropertyDatabase);
 			inlineStyle.Init();
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);
 			root.Add(_windowRoot);
-
-			// _navigationWindow.SelectionChanged -= SetScroll;
-			// _navigationWindow.SelectionChanged += SetScroll;
 		}
-
-		// private void SetScroll(GameObject _ = null)
-		// {
-		// 	EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
-		// }
-
-		// private void UpdateScroll(float scrollValue)
-		// {
-		// 	EditorApplication.delayCall += () =>
-		// 	{
-		// 		_scrollView.verticalScroller.value = scrollValue;
-		// 		_scrollView.MarkDirtyRepaint();
-		// 	};
-		// }
 	}
 }

@@ -116,17 +116,17 @@ namespace Beamable.UI.Buss
 					{
 						foreach (var reference in variableData.Declarations)
 						{
-							if (reference.styleSheet != null)
+							if (reference.StyleSheet != null)
 							{
 								_visitedVariables.Clear();
 								var endProperty = reference
-												  .propertyProvider.GetProperty()
+												  .PropertyProvider.GetProperty()
 												  .GetEndProperty(variableDatabase, out variableSource, baseType);
 								if (baseType.IsInstanceOfType(endProperty))
 								{
 									if (variableSource == null)
 									{
-										variableSource = reference.styleSheet;
+										variableSource = reference.StyleSheet;
 									}
 									return endProperty;
 								}

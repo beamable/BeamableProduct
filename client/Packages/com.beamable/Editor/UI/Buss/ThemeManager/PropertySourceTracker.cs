@@ -51,7 +51,7 @@ namespace Beamable.UI.Buss
 		public bool IsUsed(string key, BussStyleRule styleRule)
 		{
 			var data = _sources[key];
-			return data.Properties.First().styleRule == styleRule;
+			return data.Properties.First().StyleRule == styleRule;
 		}
 
 		public BussPropertyProvider GetUsedPropertyProvider(string key)
@@ -65,9 +65,9 @@ namespace Beamable.UI.Buss
 			{
 				foreach (var reference in _sources[key].Properties)
 				{
-					if (reference.propertyProvider.IsPropertyOfType(baseType) || reference.propertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					if (reference.PropertyProvider.IsPropertyOfType(baseType) || reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
-						return reference.propertyProvider;
+						return reference.PropertyProvider;
 					}
 				}
 			}
@@ -86,7 +86,7 @@ namespace Beamable.UI.Buss
 			{
 				foreach (var reference in _sources[key].Properties)
 				{
-					if (reference.propertyProvider.IsPropertyOfType(baseType) || reference.propertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					if (reference.PropertyProvider.IsPropertyOfType(baseType) || reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
 						return reference;
 					}
