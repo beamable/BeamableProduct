@@ -1,5 +1,3 @@
-using Beamable;
-using Beamable.BSAT;
 using Beamable.BSAT.Attributes;
 using Beamable.BSAT.Core;
 using Beamable.Common;
@@ -11,42 +9,45 @@ using System;
 /// TestResult.NotSet - Requires user manual check if a test is passed or failed using buttons in scene UI (Passed/Failed). Used especially for UI tests.
 /// </summary>
 
-public class BeamContextLifecycleScript : Testable
+namespace Beamable.BSAT.Test.BeamContextLifecycle
 {
-	[TestRule(0)]
-	public async Promise<TestResult> DefaultBeamContextInitTest()
+	public class BeamContextLifecycleScript : Testable
 	{
-		try
+		[TestRule(0)]
+		public async Promise<TestResult> DefaultBeamContextInitTest()
 		{
-			var context = BeamContext.Default;
-			await context.OnReady;
-			return TestResult.Passed;
+			try
+			{
+				var context = BeamContext.Default;
+				await context.OnReady;
+				return TestResult.Passed;
+			}
+			catch (Exception e)
+			{
+				TestableDebug.LogError(e);
+				return TestResult.Failed;
+			}
 		}
-		catch (Exception e)
+
+		[TestRule(1)]
+		public async Promise<TestResult> OtherBeamContextInitTest()
 		{
-			TestableDebug.LogError(e);
-			return TestResult.Failed;
-		}
-	}
-	
-	[TestRule(1)]
-	public async Promise<TestResult> OtherBeamContextInitTest()
-	{
-		try
-		{
-			var defaultContext = BeamContext.Default;
-			var otherContext = BeamContext.InParent(this);
-			await defaultContext.OnReady;
-			await otherContext.OnReady;
-	
-			bool areDifferent = defaultContext.PlayerId != otherContext.PlayerId;
-			
-			return areDifferent ? TestResult.Passed : TestResult.Failed;
-		}
-		catch (Exception e)
-		{
-			TestableDebug.LogError(e);
-			return TestResult.Failed;
+			try
+			{
+				var defaultContext = BeamContext.Default;
+				var otherContext = BeamContext.InParent(this);
+				await defaultContext.OnReady;
+				await otherContext.OnReady;
+
+				bool areDifferent = defaultContext.PlayerId != otherContext.PlayerId;
+
+				return areDifferent ? TestResult.Passed : TestResult.Failed;
+			}
+			catch (Exception e)
+			{
+				TestableDebug.LogError(e);
+				return TestResult.Failed;
+			}
 		}
 	}
 }
