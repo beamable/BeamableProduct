@@ -73,8 +73,8 @@ MonoBehaviour:
           _title: 
           _description: 
       _registeredTestRuleMethods:
-      - _testableName: BeamContextLifecycleScript, Assembly-CSharp, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
+      - _testableName: Beamable.BSAT.Test.BeamContextLifecycle.BeamContextLifecycleScript,
+          Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         _methodName: DefaultBeamContextInitTest
         _testResult: 0
         _testRuleMethodDescriptor:
@@ -109,8 +109,8 @@ MonoBehaviour:
           _title: 
           _description: 
       _registeredTestRuleMethods:
-      - _testableName: BeamContextLifecycleScript, Assembly-CSharp, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
+      - _testableName: Beamable.BSAT.Test.BeamContextLifecycle.BeamContextLifecycleScript,
+          Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         _methodName: OtherBeamContextInitTest
         _testResult: 0
         _testRuleMethodDescriptor:
