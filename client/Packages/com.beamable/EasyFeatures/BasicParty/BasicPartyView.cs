@@ -88,12 +88,15 @@ namespace Beamable.EasyFeatures.BasicParty
 			RefreshView();
 		}
 		
-		private void OnPlayerInvited(object playerId)
+		private void OnPlayerInvited(object partyId, object playerId)
 		{
-			if (playerId.Equals(Context.PlayerId))
-			{
-				// FeatureControl.OverlaysController.ShowConfirm("You have been invited to a party.", );
-			}
+			FeatureControl.OverlaysController.ShowConfirm($"{playerId} invited you to a party. Would you like to join?", () => AcceptPartyInvite(partyId));
+		}
+
+		private async void AcceptPartyInvite(object partyId)
+		{
+			await Context.Party.Join(partyId.ToString());
+			FeatureControl.OpenPartyView();
 		}
 
 		private void SetupPlayerCountText() =>

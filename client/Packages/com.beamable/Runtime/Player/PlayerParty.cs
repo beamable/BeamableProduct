@@ -21,7 +21,7 @@ namespace Beamable.Player
 		private Party _state;
 		private Action<object, object> _onPlayerJoined;
 		private Action<object, object> _onPlayerLeft;
-		private Action<object> _onPlayerInvited;
+		private Action<object, object> _onPlayerInvited;
 		private Action<object, long, long, string, string> _onPartyUpdated;
 		private Action<object, object> _onPlayerPromoted;
 		private Action<object, object> _onPlayerKicked;
@@ -32,11 +32,12 @@ namespace Beamable.Player
 			_notificationService = notificationService;
 			_userContext = userContext;
 			Members = new ObservableReadonlyList<string>(RefreshMembersList);
+			_notificationService.Subscribe(PlayerInvitedName(), PlayerInvited);
 		}
 
 		private static string PlayersLeftName(string partyId) => $"party.players_left.{partyId}";
 		private static string PlayersJoinedName(string partyId) => $"party.players_joined.{partyId}";
-		private static string PlayerInvitedName(string partyId) => $"party.players_invited.{partyId}";
+		private static string PlayerInvitedName() => "party.player_invited";
 		private static string PartyUpdatedName(string partyId) => $"party.updated.{partyId}";
 		private static string PlayerPromotedName(string partyId) => $"party.player_promoted_to_leader.{partyId}";
 		private static string PlayerKickedName(string partyId) => $"party.player_kicked.{partyId}";
@@ -52,7 +53,6 @@ namespace Beamable.Player
 					{
 						_notificationService.Subscribe(PlayersLeftName(value.id), PlayerLeft);
 						_notificationService.Subscribe(PlayersJoinedName(value.id), PlayerJoined);
-						_notificationService.Subscribe(PlayerInvitedName(value.id), PlayerInvited);
 						_notificationService.Subscribe(PartyUpdatedName(value.id), PartyUpdated);
 						_notificationService.Subscribe(PlayerPromotedName(value.id), PlayerPromoted);
 						_notificationService.Subscribe(PlayerKickedName(value.id), PlayerKicked);
@@ -64,7 +64,6 @@ namespace Beamable.Player
 					{
 						_notificationService.Unsubscribe(PlayersLeftName(_state.id), PlayerLeft);
 						_notificationService.Unsubscribe(PlayersJoinedName(_state.id), PlayerJoined);
-						_notificationService.Unsubscribe(PlayerInvitedName(_state.id), PlayerInvited);
 						_notificationService.Unsubscribe(PartyUpdatedName(_state.id), PartyUpdated);
 						_notificationService.Unsubscribe(PlayerPromotedName(_state.id), PlayerPromoted);
 						_notificationService.Unsubscribe(PlayerKickedName(_state.id), PlayerKicked);
@@ -114,7 +113,14 @@ namespace Beamable.Player
 
 		private void PlayerInvited(object data)
 		{
-			_onPlayerInvited?.Invoke(data);
+			object partyId = null, playerId = null;
+			if (data is ArrayDict dict)
+			{
+				partyId = dict["partyId"];
+				playerId = dict["invitingPlayerId"];
+			}
+			
+			_onPlayerInvited?.Invoke(partyId, playerId);
 		}
 
 		private async void PartyUpdated(object data)
@@ -226,7 +232,7 @@ namespace Beamable.Player
 
 		public void RegisterCallbacks(Action<object, object> onPlayerJoined,
 		                              Action<object, object> onPlayerLeft,
-		                              Action<object> onPlayerInvited,
+		                              Action<object, object> onPlayerInvited,
 		                              Action<object, long, long, string, string> onPartyUpdated,
 		                              Action<object, object> onPlayerPromoted,
 		                              Action<object, object> onPlayerKicked)
@@ -244,7 +250,7 @@ namespace Beamable.Player
 		                            int maxSize,
 		                            Action<object, object> onPlayerJoined = null,
 		                            Action<object, object> onPlayerLeft = null,
-		                            Action<object> onPlayerInvited = null,
+		                            Action<object, object> onPlayerInvited = null,
 		                            Action<object, long, long, string, string> onPartyUpdated = null,
 		                            Action<object, object> onPlayerPromoted = null,
 		                            Action<object, object> onPlayerKicked = null)
@@ -326,6 +332,7 @@ namespace Beamable.Player
 
 		public void Dispose()
 		{
+			_notificationService.Unsubscribe(PlayerInvitedName(), PlayerInvited);
 			_state = null;
 		}
 	}
