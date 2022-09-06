@@ -7,10 +7,7 @@ using UnityEngine.UIElements;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
-using UnityEngine;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -86,8 +83,8 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.TryAddScrollViewAsMainElement();
 
 			BussThemeManagerActionBarVisualElement actionBar =
-				new BussThemeManagerActionBarVisualElement(OnAddStyleButtonClicked, OnCopyButtonClicked,
-				                                           Refresh, OnDocsButtonClicked, OnSearch) {name = "actionBar"};
+				new BussThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
+				                                           _model.ForceRefresh, _model.OnDocsButtonClicked, _model.OnSearch) {name = "actionBar"};
 
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
@@ -114,26 +111,10 @@ namespace Beamable.Editor.UI.Buss
 			inlineStyle.Init();
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);
-
-			// _navigationWindow.HierarchyChanged -= RefreshStyleSheets;
-			// _navigationWindow.HierarchyChanged += RefreshStyleSheets;
-
-			// _navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
-			// _navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
+			root.Add(_windowRoot);
 
 			// _navigationWindow.SelectionChanged -= SetScroll;
 			// _navigationWindow.SelectionChanged += SetScroll;
-
-			root.Add(_windowRoot);
-
-			// _model.OnChange += Refresh;
-
-			//RefreshStyleSheets();
-		}
-
-		private void Refresh()
-		{
-			//_stylesGroup.StyleSheets = _navigationWindow.StyleSheets;
 		}
 
 		// private void SetScroll(GameObject _ = null)
@@ -141,104 +122,13 @@ namespace Beamable.Editor.UI.Buss
 		// 	EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
 		// }
 
-		private void UpdateScroll(float scrollValue)
-		{
-			EditorApplication.delayCall += () =>
-			{
-				_scrollView.verticalScroller.value = scrollValue;
-				_scrollView.MarkDirtyRepaint();
-			};
-		}
-
-		#region Action bar buttons' actions
-
-		private void OnAddStyleButtonClicked()
-		{
-			int styleSheetCount = _model.WritableStyleSheets.Count();
-
-			if (styleSheetCount == 0)
-			{
-				return;
-			}
-
-			if (styleSheetCount == 1)
-			{
-				CreateEmptyStyle(_model.WritableStyleSheets.First());
-			}
-			else if (styleSheetCount > 1)
-			{
-				OpenAddStyleMenu(_model.WritableStyleSheets);
-			}
-		}
-
-		private void OpenAddStyleMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
-		{
-			GenericMenu context = new GenericMenu();
-			context.AddItem(new GUIContent(ADD_STYLE_OPTIONS_HEADER), false, () => { });
-			context.AddSeparator(string.Empty);
-			foreach (BussStyleSheet styleSheet in bussStyleSheets)
-			{
-				context.AddItem(new GUIContent(styleSheet.name), false, () =>
-				{
-					CreateEmptyStyle(styleSheet);
-				});
-			}
-
-			context.ShowAsContext();
-		}
-
-		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string selectorName = "*")
-		{
-			if (Selection.activeGameObject != null && _selectedBussElement != null)
-			{
-				// TODO: get this selector name from selected buss element from model
-				// selectorName = _navigationWindow.SelectedElementLabel();
-			}
-
-			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
-			selectedStyleSheet.Styles.Add(selector);
-			selectedStyleSheet.TriggerChange();
-			Refresh();
-			AssetDatabase.SaveAssets();
-		}
-
-		private void OnCopyButtonClicked()
-		{
-			// List<BussStyleSheet> readonlyStyles =
-			// 	_stylesGroup.StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
-			// OpenCopyMenu(readonlyStyles);
-		}
-
-		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
-		{
-			GenericMenu context = new GenericMenu();
-			context.AddItem(new GUIContent(DUPLICATE_STYLESHEET_OPTIONS_HEADER), false, () => { });
-			context.AddSeparator(string.Empty);
-			foreach (BussStyleSheet styleSheet in bussStyleSheets)
-			{
-				context.AddItem(new GUIContent(styleSheet.name), false, () =>
-				{
-					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
-					if (window != null)
-					{
-						window.Init(styleSheet.Styles);
-					}
-				});
-			}
-
-			context.ShowAsContext();
-		}
-
-		private void OnDocsButtonClicked()
-		{
-			Application.OpenURL(URLs.Documentations.URL_DOC_BUSS_THEME_MANAGER);
-		}
-
-		private void OnSearch(string value)
-		{
-			_stylesGroup.SetFilter(value);
-		}
-
-		#endregion
+		// private void UpdateScroll(float scrollValue)
+		// {
+		// 	EditorApplication.delayCall += () =>
+		// 	{
+		// 		_scrollView.verticalScroller.value = scrollValue;
+		// 		_scrollView.MarkDirtyRepaint();
+		// 	};
+		// }
 	}
 }

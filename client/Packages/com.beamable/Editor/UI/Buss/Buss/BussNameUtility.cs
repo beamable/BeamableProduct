@@ -47,20 +47,25 @@ namespace Beamable.Editor.UI.Buss
 			return finalList;
 		}
 		
-		public static string FormatLabel(BussElement component)
+		public static string GetFormattedLabel(BussElement element)
 		{
-			if (!component) return String.Empty;
+			return GetLabel(element).Replace(" ", "");
+		}
 
-			string label = string.IsNullOrWhiteSpace(component.Id)
-				? component.name
-				: AsIdSelector(component.Id);
+		public static string GetLabel(BussElement element)
+		{
+			if (!element) return String.Empty;
 
-			foreach (string className in component.Classes)
+			string label = string.IsNullOrWhiteSpace(element.Id)
+				? element.name
+				: AsIdSelector(element.Id);
+
+			foreach (string className in element.Classes)
 			{
 				label += " " + AsClassSelector(className);
 			}
 
-			return label.Replace(" ", "");
+			return label;
 		}
 	}
 }

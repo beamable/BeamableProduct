@@ -2,7 +2,6 @@
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
-#region
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -10,11 +9,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 #endif
 
-
-
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
-#endregion
 
 namespace Beamable.Editor.UI.Components
 {
@@ -68,7 +64,7 @@ namespace Beamable.Editor.UI.Components
 			foreach (KeyValuePair<BussElement,int> pair in _model.FoundElements)
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-				label.Setup(pair.Key, BussNameUtility.FormatLabel(pair.Key), _model.NavigationElementClicked,
+				label.Setup(pair.Key, BussNameUtility.GetFormattedLabel(pair.Key), _model.NavigationElementClicked,
 				            pair.Value, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH, pair.Key == _model.SelectedElement);
 				label.Init();
 				_spawnedLabels.Add(label);

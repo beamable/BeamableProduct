@@ -5,6 +5,9 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
+
 namespace Beamable.Editor.UI.Buss
 {
 	public class ThemeManagerModel
@@ -48,9 +51,14 @@ namespace Beamable.Editor.UI.Buss
 			Selection.selectionChanged -= OnSelectionChanged;
 		}
 
+		public void ForceRefresh()
+		{
+			Change?.Invoke();
+		}
+
 		public void NavigationElementClicked(BussElement element)
 		{
-			Selection.activeGameObject = element.gameObject;
+			Selection.activeGameObject = Selection.activeGameObject == element.gameObject ? null : element.gameObject;
 		}
 
 		public void OnFocus()
@@ -107,9 +115,6 @@ namespace Beamable.Editor.UI.Buss
 			{
 				StyleSheets.Add(styleSheet);
 			}
-
-			// registeredObject.StyleSheetsChanged -= OnBussStyleSheetChange;
-			// registeredObject.StyleSheetsChanged += OnBussStyleSheetChange;
 		}
 
 		private void OnSelectionChanged()
@@ -127,7 +132,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void Traverse(GameObject gameObject, int currentLevel)
 		{
-			if (!gameObject) return; // if the gameobject has been destroyed, we cannot traverse it.
+			if (!gameObject) return;
 
 			BussElement foundComponent = gameObject.GetComponent<BussElement>();
 
@@ -149,5 +154,95 @@ namespace Beamable.Editor.UI.Buss
 				}
 			}
 		}
+
+		#region Action bar buttons' actions
+
+		public void OnAddStyleButtonClicked()
+		{
+			int styleSheetCount = WritableStyleSheets.Count();
+
+			if (styleSheetCount == 0)
+			{
+				return;
+			}
+
+			if (styleSheetCount == 1)
+			{
+				CreateEmptyStyle(WritableStyleSheets.First());
+			}
+			else if (styleSheetCount > 1)
+			{
+				OpenAddStyleMenu(WritableStyleSheets);
+			}
+		}
+
+		private void OpenAddStyleMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
+		{
+			GenericMenu context = new GenericMenu();
+			context.AddItem(new GUIContent(ADD_STYLE_OPTIONS_HEADER), false, () => { });
+			context.AddSeparator(string.Empty);
+			foreach (BussStyleSheet styleSheet in bussStyleSheets)
+			{
+				context.AddItem(new GUIContent(styleSheet.name), false, () =>
+				{
+					CreateEmptyStyle(styleSheet);
+				});
+			}
+
+			context.ShowAsContext();
+		}
+
+		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string selectorName = "*")
+		{
+			if (SelectedElement != null)
+			{
+				selectorName = BussNameUtility.GetLabel(SelectedElement);
+			}
+
+			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
+			selectedStyleSheet.Styles.Add(selector);
+			selectedStyleSheet.TriggerChange();
+			AssetDatabase.SaveAssets();
+			
+			Change?.Invoke();
+		}
+
+		public void OnCopyButtonClicked()
+		{
+			List<BussStyleSheet> readonlyStyles = StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
+			OpenCopyMenu(readonlyStyles);
+		}
+
+		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
+		{
+			GenericMenu context = new GenericMenu();
+			context.AddItem(new GUIContent(DUPLICATE_STYLESHEET_OPTIONS_HEADER), false, () => { });
+			context.AddSeparator(string.Empty);
+			foreach (BussStyleSheet styleSheet in bussStyleSheets)
+			{
+				context.AddItem(new GUIContent(styleSheet.name), false, () =>
+				{
+					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
+					if (window != null)
+					{
+						window.Init(styleSheet.Styles);
+					}
+				});
+			}
+
+			context.ShowAsContext();
+		}
+
+		public void OnDocsButtonClicked()
+		{
+			Application.OpenURL(URLs.Documentations.URL_DOC_BUSS_THEME_MANAGER);
+		}
+
+		public void OnSearch(string value)
+		{
+			//_stylesGroup.SetFilter(value);
+		}
+
+		#endregion
 	}
 }
