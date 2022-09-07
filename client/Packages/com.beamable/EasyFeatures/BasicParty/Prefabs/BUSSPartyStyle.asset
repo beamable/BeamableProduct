@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6878a57282fc4d5dae9c2e3538013b26, type: 3}
-  m_Name: BUSSLobbyStyle
+  m_Name: BUSSPartyStyle
   m_EditorClassIdentifier: 
   _styles:
   - _properties:
@@ -85,6 +85,26 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":20.0}'
+    - key: shadowOffset
+      property:
+        type: Beamable.UI.Buss.Vector2BussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_vector2Value":{"x":0.0,"y":-5.0}}'
+    - key: shadowSoftness
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":1.0}'
+    - key: shadowThreshold
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":3.0}'
+    - key: shadowColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":0.32549020648002627}}'
     _selector: .card
   - _properties:
     - key: backgroundColor
