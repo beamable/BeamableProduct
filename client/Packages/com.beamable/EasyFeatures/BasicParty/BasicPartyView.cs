@@ -14,8 +14,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public int EnrichOrder;
 
 		[Header("Components")]
-		public TextMeshProUGUI PartyIdText;
-
 		public TextMeshProUGUI PlayerCountText;
 
 		public PlayersListPresenter PartyList;
@@ -69,7 +67,6 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		protected void RefreshView()
 		{
-			PartyIdText.text = Context.Party.Id;
 			SetupPlayerCountText();
 
 			LeadButtonsGroup.SetActive(Context.Party.IsLeader);

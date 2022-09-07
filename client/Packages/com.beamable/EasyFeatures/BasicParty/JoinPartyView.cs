@@ -20,7 +20,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public TMP_InputField PartyIdInputField;
 		public Button BackButton;
 		public Button JoinButton;
-		public Button CancelButton;
 		public BussElement JoinButtonBussElement;
 
 		protected BeamContext Context;
@@ -49,7 +48,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			PartyIdInputField.onValueChanged.ReplaceOrAddListener(OnPartyIdValueChanged);
 			JoinButton.onClick.ReplaceOrAddListener(OnJoinButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
-			CancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
 		}
 
 		private void ValidateJoinButton()
@@ -72,11 +70,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			System.PartyIdToJoin = value;
 			ValidateJoinButton();
-		}
-
-		private void OnCancelButtonClicked()
-		{
-			FeatureControl.OpenCreatePartyView();
 		}
 
 		private void OnBackButtonClicked()

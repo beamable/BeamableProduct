@@ -8,7 +8,6 @@ namespace Beamable.EasyFeatures.BasicParty
 	public class BasicPartyPlayerSystem : CreatePartyView.IDependencies, JoinPartyView.IDependencies
 	{
 		public int MaxPlayers { get; set; }
-		public PartyRestriction PartyRestriction { get; set; }
 		public string PartyIdToJoin { get; set; }
 
 		public bool ValidateJoinButton()

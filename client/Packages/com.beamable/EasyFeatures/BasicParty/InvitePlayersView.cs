@@ -11,7 +11,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public PartyFeatureControl FeatureControl;
 		public int EnrichOrder;
 
-		public TextMeshProUGUI TitleText;
 		public PlayersListPresenter PartyList;
 		public Button SettingsButton;
 		public Button BackButton;
@@ -36,8 +35,6 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 
-			TitleText.text = Context.PlayerId.ToString();
-			
 			// set callbacks
 			SettingsButton.onClick.ReplaceOrAddListener(OnSettingsButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
@@ -46,7 +43,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			// prepare friends list
 			await Context.Social.OnReady;	// show loading
 			var friendsList = Context.Social.Friends;
-			// string[] friends = new string[friendsList.Count];
 			List<string> friends = new List<string>(friendsList.Count);
 			for (int i = 0; i < friendsList.Count; i++)
 			{
