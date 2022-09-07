@@ -1,6 +1,7 @@
 ﻿using Beamable.ConsoleCommands;
 using Beamable.InputManagerIntegration;
 using Beamable.Service;
+using Beamable.TcpConsole;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,6 +27,7 @@ namespace Beamable.Console
 		public Text txtOutput;
 		public InputField txtInput;
 		public Text txtAutoCompleteSuggestion;
+		public bool enableTcpConsole = false;
 		private bool _isInitialized;
 		private bool _showNextTick;
 		private bool _isActive;
@@ -37,6 +39,7 @@ namespace Beamable.Console
 		private ConsoleHistory _consoleHistory;
 		private string consoleText;
 		private string _playerCode;
+		private TcpConsoleHandler _tcpConsoleHandler;
 
 #if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
         private bool _isMobileKeyboardOpened = false;
@@ -108,6 +111,7 @@ namespace Beamable.Console
 
 		private void Awake()
 		{
+			_tcpConsoleHandler = new TcpConsoleHandler();
 			HideConsole();
 
 #if UNITY_ANDROID || UNITY_IOS
@@ -115,10 +119,20 @@ namespace Beamable.Console
 #endif
 		}
 
+		private void OnDestroy()
+		{
+			_tcpConsoleHandler.Disable();
+		}
+
 		private void Update()
 		{
 			var _ = BeamContext.ForPlayer(_playerCode).OnReady;
 			if (!_isInitialized) return;
+
+			if(enableTcpConsole)
+			{
+				_tcpConsoleHandler.Update();
+			}
 
 			if (_showNextTick)
 			{
@@ -183,6 +197,10 @@ namespace Beamable.Console
 			_console = ctx.ServiceProvider.GetService<BeamableConsole>();
 			ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...
 
+			if (enableTcpConsole)
+			{
+				_tcpConsoleHandler.Init(ctx);
+			}
 			_console.OnLog += Log;
 			_console.OnExecute += ExecuteCommand;
 			_console.OnCommandRegistered += RegisterCommand;

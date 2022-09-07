@@ -4,32 +4,32 @@ using UnityEngine;
 
 namespace Beamable.TcpConsole
 {
-	public class TcpConsoleClient : MonoBehaviour
+	public class TcpConsoleHandler
 	{
 		private TcpMessagesServer _server = new TcpMessagesServer();
 		private BeamContext _ctx;
 		private BeamableConsole _console;
 
-		public async void Awake()
+		public void Init(BeamContext ctx)
 		{
-			_ctx = BeamContext.Default;
-			await _ctx.OnReady;
+			_ctx = ctx;
 			_console = _ctx.ServiceProvider.GetService<BeamableConsole>();
 			_server.Init();
 			_console.OnLog -= HandleConsoleLog;
 			_console.OnLog += HandleConsoleLog;
 
+			_server.MessageReceived -= HandleServerMessage;
 			_server.MessageReceived += HandleServerMessage;
 		}
 
-		public void OnDestroy()
+		public void Disable()
 		{
-			_server.Disable();
+			_server?.Disable();
 		}
 
-		private void Update()
+		public void Update()
 		{
-			_server.Update();
+			_server?.Update();
 		}
 
 		private void HandleServerMessage(string message)

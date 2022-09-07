@@ -27,6 +27,10 @@ namespace Beamable.TcpConsole
 			try
 			{
 				var ipAddress = Dns.GetHostEntry("localhost").AddressList[0];
+				if (running)
+				{
+					server.Stop();
+				}
 				server = new TcpListener(ipAddress, PORT);
 				server.Start();
 				StartListening();
@@ -115,9 +119,13 @@ namespace Beamable.TcpConsole
 			clients.Add(listener.EndAcceptTcpClient(ar));
 			StartListening();
 			UnityEngine.Debug.Log("User connected!");
-			Broadcast("User connected");
+			
 
-			UnityMainThreadDispatcher.Instance().Enqueue(() => NewUserConnected?.Invoke());
+			UnityMainThreadDispatcher.Instance().Enqueue(() =>
+			{
+				Broadcast("Secret BEAM console access granted, type 'help' to list all commands");
+				NewUserConnected?.Invoke();
+			});
 		}
 
 		private bool IsConnected(TcpClient c)
