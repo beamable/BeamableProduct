@@ -14,14 +14,26 @@ namespace Beamable.Experimental.Api.Parties
 			_userContext = userContext;
 		}
 
-		public Promise<Party> CreateParty(PartyRestriction restriction)
+		public Promise<Party> CreateParty(PartyRestriction restriction, int maxSize)
 		{
 			return _requester.Request<Party>(
 				Method.POST,
 				"/parties",
 				new CreatePartyRequest(
 					restriction.ToString(),
-					_userContext.UserId.ToString())
+					_userContext.UserId.ToString(),
+					maxSize)
+			);
+		}
+
+		public Promise<Party> UpdateParty(string partyId, PartyRestriction restriction, int maxSize)
+		{
+			return _requester.Request<Party>(
+				Method.PUT,
+				$"/parties/{partyId}/metadata",
+				new UpdatePartyRequest(
+					restriction.ToString(),
+					maxSize)
 			);
 		}
 
@@ -45,7 +57,8 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			return _requester.Request<Unit>(
 				Method.DELETE,
-				$"/parties/{partyId}"
+				$"/parties/{partyId}/members",
+				new PlayerRequest(_userContext.UserId.ToString())
 			).ToPromise();
 		}
 
@@ -53,7 +66,7 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			return _requester.Request<Unit>(
 				Method.DELETE,
-				$"/parties/{partyId}",
+				$"/parties/{partyId}/members",
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}
