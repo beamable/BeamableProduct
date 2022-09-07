@@ -18,11 +18,14 @@ using Beamable.Config;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
+using Connection;
 using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
@@ -230,6 +233,7 @@ namespace Beamable
 		private EnvironmentData _environment;
 		private IPlatformRequester _requester;
 		private IBeamableApiRequester _beamableApiRequester;
+		private IBeamableConnection _connection;
 
 		// TODO: Assess each of these as "do we need this as hard field state"
 		private IAuthService _authService;
@@ -466,6 +470,10 @@ namespace Beamable
 			builder.AddSingleton<IPlatformService>(this);
 			builder.AddSingleton<IGameObjectContext>(this);
 			builder.AddSingleton(new AccessTokenStorage(PlayerCode));
+			builder.AddSingleton<IBeamableConnection>(
+				provider => new WebSocketConnection(provider.GetService<CoroutineService>())
+			);
+
 		}
 
 		protected virtual void InitServices(string cid, string pid)
@@ -488,6 +496,7 @@ namespace Beamable
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
+			_connection = ServiceProvider.GetService<IBeamableConnection>();
 		}
 
 
@@ -575,7 +584,8 @@ namespace Beamable
 						// re-create the user
 						await InitStep_SaveToken();
 						await InitStep_GetUser();
-						await InitStep_StartPubnub();
+						// await InitStep_StartPubnub();
+						await InitStep_StartWebsocket();
 					}, -100);
 				}
 			}
@@ -632,6 +642,26 @@ namespace Beamable
 			}
 		}
 
+		private async Promise InitStep_StartWebsocket()
+		{
+			// Let's make sure that we get a fresh new JWT before attempting to connect.
+			await _beamableApiRequester.RefreshToken();
+			
+#if UNITY_EDITOR
+			EditorApplication.playModeStateChanged += state =>
+			{
+				if (state == PlayModeStateChange.ExitingPlayMode)
+				{
+					_connection.Disconnect();
+				}
+			};
+#endif
+			// TODO: Move this into configuration
+			// string connectionAddress = ConfigDatabase.GetString("connection");
+			const string connectionAddress = "ws://localhost:5060/connect";
+			await _connection.Connect(connectionAddress, _beamableApiRequester.Token);
+		}
+
 		private async Promise InitStep_StartPurchaser()
 		{
 			try
@@ -639,7 +669,7 @@ namespace Beamable
 				if (ServiceProvider.CanBuildService<IBeamablePurchaser>())
 				{
 					var purchaser = ServiceProvider.GetService<IBeamablePurchaser>();
-					var promise = purchaser.Initialize(ServiceProvider);
+					Promise<Unit> promise = purchaser.Initialize(ServiceProvider);
 					await promise.Recover(err =>
 					{
 						Debug.LogError(err);
@@ -662,7 +692,8 @@ namespace Beamable
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();
-			var pubnub = InitStep_StartPubnub();
+			// var pubnub = InitStep_StartPubnub();
+			var websocket = InitStep_StartWebsocket();
 			// Start Session
 			var session = InitStep_StartNewSession();
 			if (CoreConfiguration.Instance.SendHeartbeat)
@@ -672,7 +703,8 @@ namespace Beamable
 
 			// Check if we should initialize the purchaser
 			var purchase = InitStep_StartPurchaser();
-			await Promise.Sequence(pubnub, session, purchase);
+			// await Promise.Sequence(pubnub, websocket, session, purchase);
+			await Promise.Sequence(websocket, session, purchase);
 
 			OnReloadUser?.Invoke();
 
@@ -790,6 +822,9 @@ namespace Beamable
 			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
+			
+			await _connection.Disconnect();
+			_connection = null;
 
 			OnShutdownComplete?.Invoke();
 			OnShutdownComplete = null;

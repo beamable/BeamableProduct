@@ -14,6 +14,7 @@ namespace Core.Platform.SDK
 	public interface IBeamableApiRequester : IBeamableRequester
 	{
 		AccessToken Token { get; set; }
+		Promise<Unit> RefreshToken();
 	}
 
 	// Since the new access tokens are short lived, no need to store them. We can use the same refresh tokens
@@ -27,6 +28,7 @@ namespace Core.Platform.SDK
 
 		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
 		public string Language { get; set; }
+
 		public string Cid => Token.Cid;
 		public string Pid => Token.Pid;
 
@@ -38,7 +40,8 @@ namespace Core.Platform.SDK
 		private readonly IConnectivityService _connectivityService;
 		private readonly AccessTokenStorage _accessTokenStorage;
 
-		public BeamableApiRequester(string host, AccessTokenStorage accessTokenStorage,
+		public BeamableApiRequester(string host,
+		                            AccessTokenStorage accessTokenStorage,
 		  IConnectivityService connectivityService)
 		{
 			Host = host;
@@ -51,8 +54,22 @@ namespace Core.Platform.SDK
 			_disposed = true;
 		}
 
-		public Promise<T> Request<T>(
-		  Method method,
+		public Promise<Unit> RefreshToken()
+		{
+			var authBody = new BeamableApiTokenRequest
+			{
+				refreshToken = Token.RefreshToken, customerId = Token.Cid, realmId = Token.Pid
+			};
+			return Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody, false)
+				.Map(rsp =>
+				{
+					Token = new AccessToken(_accessTokenStorage, Token.Cid, Token.Pid, rsp.accessToken,
+					                        rsp.refreshToken, long.MaxValue - 1);
+					return PromiseBase.Unit;
+				});
+		}
+
+		public Promise<T> Request<T>(Method method,
 		  string uri,
 		  object body = null,
 		  bool includeAuthHeader = true,
@@ -71,38 +88,24 @@ namespace Core.Platform.SDK
 			return MakeRequestWithTokenRefresh<T>(method, uri, bodyBytes, includeAuthHeader);
 		}
 
-		private Promise<T> MakeRequestWithTokenRefresh<T>(
-		  Method method,
-		  string uri,
-		  byte[] body,
-		  bool includeAuthHeader
-		)
+		private Promise<T> MakeRequestWithTokenRefresh<T>(Method method,
+		                                                  string uri,
+		                                                  byte[] body,
+		                                                  bool includeAuthHeader)
 		{
 			return MakeRequest<T>(method, uri, body, includeAuthHeader).RecoverWith(error =>
 			{
 				switch (error)
 				{
 					case PlatformRequesterException e when e.Status == 401:
-						var authBody = new BeamableApiTokenRequest
-						{
-							refreshToken = Token.RefreshToken,
-							customerId = Token.Cid,
-							realmId = Token.Pid
-						};
-						return Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody, false).Map(rsp =>
-					{
-						Token = new AccessToken(_accessTokenStorage, Token.Cid, Token.Pid, rsp.accessToken,
-												rsp.refreshToken, long.MaxValue - 1);
-						return PromiseBase.Unit;
-					})
-					.FlatMap(_ => MakeRequest<T>(method, uri, body, includeAuthHeader));
+						return RefreshToken().FlatMap(_ => MakeRequest<T>(method, uri, body, includeAuthHeader));
 				}
 
 				return Promise<T>.Failed(error);
 			});
 		}
 
-		private Promise<T> MakeRequest<T>(
+		private Promise<T> MakeRequest<T>(Method method,
 		  Method method,
 		  string uri,
 		  byte[] body,
@@ -128,7 +131,8 @@ namespace Core.Platform.SDK
 			{
 				if (request.IsNetworkError())
 				{
-					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. apirequester. status=[{request.responseCode}] error=[{request.error}]"));
+					promise.CompleteError(new NoConnectivityException(
+						                      $"Unity webRequest failed with a network error. apirequester. status=[{request.responseCode}] error=[{request.error}]"));
 				}
 				else if (request.responseCode >= 300)
 				{
@@ -157,7 +161,8 @@ namespace Core.Platform.SDK
 					}
 					else
 					{
-						PlatformLogger.Log($"<b>[BeamableRequester][Response]</b> {typeof(T).Name}: {request.downloadHandler.text}");
+						PlatformLogger.Log(
+							$"<b>[BeamableRequester][Response]</b> {typeof(T).Name}: {request.downloadHandler.text}");
 					}
 
 					try
@@ -166,6 +171,7 @@ namespace Core.Platform.SDK
 						{
 							promise.CompleteSuccess(default);
 						}
+
 						var result = JsonUtility.FromJson<T>(request.downloadHandler.text);
 						promise.CompleteSuccess(result);
 					}
@@ -188,14 +194,14 @@ namespace Core.Platform.SDK
 			// Prepare the request
 			var request = new UnityWebRequest(address)
 			{
-				downloadHandler = new DownloadHandlerBuffer(),
+				downloadHandler = new DownloadHandlerBuffer(), method = method.ToString()
 				method = method.ToString()
 			};
 
 			// Set the body
 			if (body != null)
 			{
-				var upload = new UploadHandlerRaw(body) { contentType = "application/json" };
+				var upload = new UploadHandlerRaw(body) {contentType = "application/json"};
 				request.uploadHandler = upload;
 			}
 
@@ -229,6 +235,7 @@ namespace Core.Platform.SDK
 			{
 				return null;
 			}
+
 			return $"Bearer {Token.Token}";
 		}
 
