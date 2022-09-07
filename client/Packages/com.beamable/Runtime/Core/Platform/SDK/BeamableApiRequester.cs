@@ -106,7 +106,6 @@ namespace Core.Platform.SDK
 		}
 
 		private Promise<T> MakeRequest<T>(Method method,
-		  Method method,
 		  string uri,
 		  byte[] body,
 		  bool includeAuthHeader)
@@ -150,7 +149,6 @@ namespace Core.Platform.SDK
 					}
 
 					promise.CompleteError(new PlatformRequesterException(platformError, request, payload));
-
 				}
 				else
 				{
@@ -195,7 +193,6 @@ namespace Core.Platform.SDK
 			var request = new UnityWebRequest(address)
 			{
 				downloadHandler = new DownloadHandlerBuffer(), method = method.ToString()
-				method = method.ToString()
 			};
 
 			// Set the body

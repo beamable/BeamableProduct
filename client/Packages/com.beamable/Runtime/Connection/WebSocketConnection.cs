@@ -40,13 +40,21 @@ namespace Connection
 			_webSocket
 				.Connect()
 				.ContinueWith(_ => p.CompleteSuccess(PromiseBase.Unit));
+#if !UNITY_WEBGL || UNITY_EDITOR
 			_dispatchMessagesRoutine = DispatchMessages();
 			_coroutineService.StartCoroutine(_dispatchMessagesRoutine);
+#endif
 			return p;
 		}
 
 		public Promise<Unit> Disconnect()
 		{
+#if !UNITY_WEBGL || UNITY_EDITOR
+			if (_dispatchMessagesRoutine != null)
+			{
+				_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
+			}
+#endif
 			var p = new Promise<Unit>();
 			_webSocket
 				.Close()
@@ -54,7 +62,7 @@ namespace Connection
 			return p;
 		}
 
-		private WebSocket CreateWebSocket(string address, IAccessToken token)
+		private static WebSocket CreateWebSocket(string address, IAccessToken token)
 		{
 			var subprotocols = new List<string>();
 			var headers = new Dictionary<string, string>
