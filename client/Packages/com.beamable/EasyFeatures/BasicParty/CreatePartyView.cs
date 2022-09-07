@@ -121,6 +121,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (Context.Party.IsInParty)
 			{
+				if (System.MaxPlayers < Context.Party.Members.Count)
+				{
+					FeatureControl.OverlaysController.ShowError($"There's currently {Context.Party.Members.Count} players in the party. You can't set max size to less than that.");
+					return;
+				}
+				
 				// update party settings
 				await Context.Party.Update(PartyRestriction.InviteOnly, System.MaxPlayers);
 			}

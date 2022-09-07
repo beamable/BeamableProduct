@@ -27,7 +27,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button CreateLobbyButton;
 		public Button JoinLobbyButton;
 		public Button QuickStartButton;
-		public Button CopyIdButton;
 		public Button NextButton;
 		public Button LeaveButton;
 
@@ -59,7 +58,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			CreateLobbyButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
 			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
 			QuickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
-			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
 			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft, OnPartyUpdated,
 			                                OnPlayerPromoted, OnPlayerKicked);
@@ -107,12 +105,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnAddMember()
 		{
 			FeatureControl.OpenInviteView();
-		}
-
-		private void OnCopyIdButtonClicked()
-		{
-			GUIUtility.systemCopyBuffer = Context.Party.Id;
-			FeatureControl.OverlaysController.ShowToast("Party ID was copied");
 		}
 
 		private void OnPromoteButtonClicked(string id)
