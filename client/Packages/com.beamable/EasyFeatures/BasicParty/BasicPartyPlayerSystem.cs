@@ -1,9 +1,4 @@
-﻿using Beamable.Avatars;
-using Beamable.Experimental.Api.Parties;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Beamable.EasyFeatures.BasicParty
+﻿namespace Beamable.EasyFeatures.BasicParty
 {
 	public class BasicPartyPlayerSystem : CreatePartyView.IDependencies, JoinPartyView.IDependencies
 	{

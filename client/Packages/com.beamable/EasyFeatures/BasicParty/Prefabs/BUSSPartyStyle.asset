@@ -845,8 +845,21 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.6627451181411743,"g":0.30588236451148989,"b":0.0,"a":1.0}}'
     _selector: .button.outline.add
+  - _properties:
+    - key: sdfImage
+      property:
+        type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"AssetSerializationKey":3}'
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.6627451181411743,"g":0.30588236451148989,"b":0.0,"a":1.0}}'
+    _selector: .badge
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   - {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}
   - {fileID: 21300000, guid: bc7ea403e291d45408e34a2c22501a60, type: 3}
+  - {fileID: 21300000, guid: 44e528430d3396b45982754daab3b07d, type: 3}
   _isReadOnly: 0

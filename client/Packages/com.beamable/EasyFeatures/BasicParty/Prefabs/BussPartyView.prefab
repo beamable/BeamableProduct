@@ -746,8 +746,7 @@ MonoBehaviour:
   m_text: 4/8
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -857,7 +856,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1803853297890384518}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &443405170512740869
 GameObject:
@@ -1057,8 +1056,7 @@ MonoBehaviour:
   m_text: Create a lobby
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1168,7 +1166,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 8034446206520995320}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &450700549227120144
 GameObject:
@@ -3181,8 +3179,7 @@ MonoBehaviour:
   m_text: Invite
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3207,7 +3204,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 60
+  m_fontSize: 48
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3291,7 +3288,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 8515045719811572704}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &1415160765434732219
 GameObject:
@@ -3415,7 +3412,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
     BottomRightColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
@@ -3593,7 +3590,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 6298717437523822600}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &1565706214516536733
 GameObject:
@@ -5017,7 +5014,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
     BottomRightColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
@@ -5066,7 +5063,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1803853297890384518}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &2505980170522706436
 GameObject:
@@ -5123,7 +5120,7 @@ MonoBehaviour:
   _padding:
     m_Left: 10
     m_Right: 10
-    m_Top: 0
+    m_Top: 35
     m_Bottom: 0
   _elasticity: 0.1
   _inertia: 1
@@ -5658,7 +5655,6 @@ MonoBehaviour:
   CreateLobbyButton: {fileID: 9008591003559927477}
   JoinLobbyButton: {fileID: 8236127578800033316}
   QuickStartButton: {fileID: 9005654422470141562}
-  CopyIdButton: {fileID: 0}
   NextButton: {fileID: 8971657186933146511}
   LeaveButton: {fileID: 3992048262147189559}
 --- !u!114 &6848503777562028130
@@ -6001,7 +5997,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 5762542613482602906}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &3470094144884785930
 GameObject:
@@ -6082,7 +6078,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
     BottomRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
@@ -6698,8 +6694,7 @@ MonoBehaviour:
   m_text: Join a lobby
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -6809,7 +6804,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1806650953729161551}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &3681503111756403381
 GameObject:
@@ -8328,7 +8323,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
     BottomRightColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
@@ -8836,7 +8831,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
     BottomRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
@@ -9479,7 +9474,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.7568628, g: 0.90196085, b: 0.36078432, a: 1}
     BottomRightColor: {r: 0.21960786, g: 0.56078434, b: 0.054901965, a: 1}
@@ -10176,7 +10171,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
     BottomRightColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
@@ -10689,8 +10684,7 @@ MonoBehaviour:
   m_text: Party
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -10799,7 +10793,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 7955188352063997804}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &7058446534835018339
 GameObject:
@@ -11692,15 +11686,20 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 2276874058785543585}
+  - {fileID: 267795231653204070}
   - {fileID: 287543073179065500}
   - {fileID: 333188493150026846}
   - {fileID: 654536145819611390}
+  - {fileID: 655068402923662870}
   - {fileID: 720472615717813639}
   - {fileID: 731457673789459286}
   - {fileID: 819211492010915643}
   - {fileID: 1024693945962012685}
   - {fileID: 1043360234325085021}
+  - {fileID: 1126933628841049207}
   - {fileID: 1531982027628998858}
+  - {fileID: 1803853297890384518}
+  - {fileID: 1806650953729161551}
   - {fileID: 1865924025303145143}
   - {fileID: 2054216876066723682}
   - {fileID: 2088083709590841821}
@@ -11709,16 +11708,19 @@ MonoBehaviour:
   - {fileID: 2181997837165036370}
   - {fileID: 2214005089609198759}
   - {fileID: 2215968256693138377}
+  - {fileID: 2249371787461086070}
   - {fileID: 2336873624437602776}
   - {fileID: 2364139765376756431}
   - {fileID: 2460049701572921094}
   - {fileID: 2630236567800274747}
   - {fileID: 2650649391545940321}
+  - {fileID: 2674524142173362637}
   - {fileID: 2927080513431883182}
   - {fileID: 2987346519146606566}
   - {fileID: 3140475970169791925}
   - {fileID: 3293026133044107132}
   - {fileID: 3762659438784391830}
+  - {fileID: 3828208233885850925}
   - {fileID: 3856785381318034115}
   - {fileID: 3875699359298861248}
   - {fileID: 3902703983827424181}
@@ -11728,23 +11730,33 @@ MonoBehaviour:
   - {fileID: 4489580013196758273}
   - {fileID: 4638797991002692526}
   - {fileID: 4855049664603966365}
+  - {fileID: 4869691873065029364}
   - {fileID: 4889646795767693338}
+  - {fileID: 5370172409308139665}
   - {fileID: 5384181552324655808}
   - {fileID: 5398844875404962038}
   - {fileID: 5429742713176582092}
   - {fileID: 5457711448997599324}
+  - {fileID: 5567154148468603483}
   - {fileID: 5692861773696402825}
+  - {fileID: 5762542613482602906}
   - {fileID: 6013712808835938291}
   - {fileID: 6021015997725700611}
   - {fileID: 6077481244633485219}
   - {fileID: 6138629402621532639}
   - {fileID: 6290300071539446376}
+  - {fileID: 6298717437523822600}
   - {fileID: 6390733183148494032}
   - {fileID: 6482817137391007753}
+  - {fileID: 6744534030260047613}
   - {fileID: 6972756201993583677}
   - {fileID: 7364145944014820432}
   - {fileID: 7738403116676165283}
+  - {fileID: 7788742087694503204}
+  - {fileID: 7955188352063997804}
+  - {fileID: 8034446206520995320}
   - {fileID: 8364218200935556317}
+  - {fileID: 8515045719811572704}
   - {fileID: 8732269423149768903}
   - {fileID: 8855498774721569000}
   - {fileID: 9158196248141860116}
@@ -12231,7 +12243,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
     BottomRightColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
@@ -13236,8 +13248,7 @@ MonoBehaviour:
   m_text: Quick start
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -13347,7 +13358,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 6744534030260047613}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &8195712089439050602
 GameObject:
@@ -14430,7 +14441,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
     BottomRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
@@ -14914,7 +14925,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 655068402923662870}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &9078813363438006617
 GameObject:

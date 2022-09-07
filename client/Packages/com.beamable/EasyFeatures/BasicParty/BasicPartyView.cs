@@ -1,6 +1,4 @@
-﻿using Beamable.EasyFeatures.Components;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using TMPro;
 using UnityEngine;

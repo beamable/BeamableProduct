@@ -18,7 +18,7 @@ namespace Beamable.Experimental.Api.Parties
 		public string restriction;
 
 		/// <summary>
-		/// PlayerId of a player who created the party.
+		/// PlayerId of a party leader.
 		/// </summary>
 		public string leader;
 

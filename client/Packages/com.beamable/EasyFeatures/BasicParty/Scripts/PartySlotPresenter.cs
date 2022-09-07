@@ -18,6 +18,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button AddMemberButton;
 		public GameObject ExpandableButtons;
 		public GameObject OccupiedSlotGroup;
+		public GameObject LeaderBadge;
 
 		protected PlayersListPresenter ListPresenter;
 		protected PoolData Item;
@@ -47,7 +48,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			bool isSlotOccupied = !string.IsNullOrWhiteSpace(item.ViewData.PlayerId);
 			OccupiedSlotGroup.SetActive(isSlotOccupied);
 			AddMemberButton.gameObject.SetActive(!isSlotOccupied);
-			
+
+			bool isLeader = item.ViewData.PlayerId == BeamContext.Default.Party.Leader;
+			LeaderBadge.SetActive(isLeader);
 			AvatarImage.sprite = item.ViewData.Avatar;
 			PlayerNameText.text = item.ViewData.PlayerId;
 			AcceptButton.gameObject.SetActive(onAcceptButton != null);
