@@ -14,6 +14,7 @@ using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
+using Beamable.Server.Api.Analytics;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
 using Beamable.Server.Api.Chat;
@@ -36,6 +37,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using ContentService = Beamable.Server.Content.ContentService;
 using ServiceDescriptor = Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 #if DB_MICROSERVICE
+using Beamable.Api.Analytics;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -623,6 +625,7 @@ namespace Beamable.Server
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
                .AddTransient<IBeamableRequester, MicroserviceRequester>((provider) => new MicroserviceRequester(_args, provider.GetService<RequestContext>(), _socketRequesterContext, true))
                .AddTransient<IUserContext>(provider => provider.GetService<RequestContext>())
+               .AddTransient<IMicroserviceAnalyticsService, MicroserviceAnalyticsService>()
                .AddTransient<IMicroserviceAuthApi, ServerAuthApi>()
                .AddTransient<IMicroserviceStatsApi, MicroserviceStatsApi>()
                .AddTransient<IStatsApi, MicroserviceStatsApi>()
@@ -890,6 +893,7 @@ namespace Beamable.Server
             Content = _contentService,
             Inventory = new MicroserviceInventoryApi(requester, ctx),
             Leaderboards = new MicroserviceLeaderboardApi(requester, ctx, null, LeaderboardRankEntryFactory),
+            Analytics = new MicroserviceAnalyticsService(ctx, requester),
             Announcements = new MicroserviceAnnouncementsApi(requester, ctx),
             Calendars = new MicroserviceCalendarsApi(requester, ctx),
             Events = new MicroserviceEventsApi(requester, ctx),

@@ -1,6 +1,6 @@
-
 using Beamable.Common.Content;
 using Beamable.Server.Api;
+using Beamable.Server.Api.Analytics;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
 using Beamable.Server.Api.Chat;
@@ -21,25 +21,26 @@ using Beamable.Server.Api.Payments;
 
 namespace Beamable.Server
 {
-   public class BeamableServices : IBeamableServices
-   {
-      public IMicroserviceAuthApi Auth { get; set; }
-      public IMicroserviceStatsApi Stats { get; set; }
-      public IMicroserviceContentApi Content { get; set; }
-      public IMicroserviceInventoryApi Inventory { get; set; }
-      public IMicroserviceLeaderboardsApi Leaderboards { get; set; }
-      public IMicroserviceAnnouncementsApi Announcements { get; set; }
-      public IMicroserviceCalendarsApi Calendars { get; set; }
-      public IMicroserviceEventsApi Events { get; set; }
-      public IMicroserviceGroupsApi Groups { get; set; }
-      public IMicroserviceMailApi Mail { get; set; }
-      public IMicroserviceNotificationsApi Notifications { get; set; }
-      public IMicroserviceSocialApi Social { get; set; }
-      public IMicroserviceTournamentApi Tournament { get; set; }
-      public IMicroserviceCloudDataApi TrialData { get; set; }
-      public IMicroserviceRealmConfigService RealmConfig { get; set; }
-      public IMicroserviceCommerceApi Commerce { get; set; }
-      public IMicroserviceChatApi Chat { get; set; }
-      public IMicroservicePaymentsApi Payments { get; set; }
-   }
+	public class BeamableServices : IBeamableServices
+	{
+		public IMicroserviceAnalyticsService Analytics { get; set; }
+		public IMicroserviceAuthApi Auth { get; set; }
+		public IMicroserviceStatsApi Stats { get; set; }
+		public IMicroserviceContentApi Content { get; set; }
+		public IMicroserviceInventoryApi Inventory { get; set; }
+		public IMicroserviceLeaderboardsApi Leaderboards { get; set; }
+		public IMicroserviceAnnouncementsApi Announcements { get; set; }
+		public IMicroserviceCalendarsApi Calendars { get; set; }
+		public IMicroserviceEventsApi Events { get; set; }
+		public IMicroserviceGroupsApi Groups { get; set; }
+		public IMicroserviceMailApi Mail { get; set; }
+		public IMicroserviceNotificationsApi Notifications { get; set; }
+		public IMicroserviceSocialApi Social { get; set; }
+		public IMicroserviceTournamentApi Tournament { get; set; }
+		public IMicroserviceCloudDataApi TrialData { get; set; }
+		public IMicroserviceRealmConfigService RealmConfig { get; set; }
+		public IMicroserviceCommerceApi Commerce { get; set; }
+		public IMicroserviceChatApi Chat { get; set; }
+		public IMicroservicePaymentsApi Payments { get; set; }
+	}
 }
