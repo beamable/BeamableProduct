@@ -12,13 +12,13 @@ namespace Beamable.Editor.UI.Buss
 	public class ThemeManagerModel
 	{
 		public event Action Change;
-		public event Action StyleSheetChange;
+		// public event Action StyleSheetChange;
 
 		private readonly BussCardFilter _filter;
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
 
-		private List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
+		public List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
 
 		public Dictionary<BussStyleRule, BussStyleSheet> FilteredRules =>
 			_filter != null
@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Buss
 		public string SelectedElementId =>
 			SelectedElement != null ? BussNameUtility.AsIdSelector(SelectedElement.Id) : String.Empty;
 		public BussStyleSheet SelectedElementStyleSheet => SelectedElement != null ? SelectedElement.StyleSheet : null;
-		public VariableDatabase VariableDatabase { get; } = new VariableDatabase();
+		public VariableDatabase VariableDatabase { get; }
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public ThemeManagerModel()
@@ -50,6 +50,7 @@ namespace Beamable.Editor.UI.Buss
 			Selection.selectionChanged += OnSelectionChanged;
 
 			_filter = new BussCardFilter();
+			VariableDatabase = new VariableDatabase(this);
 
 			OnHierarchyChanged();
 		}
@@ -143,7 +144,8 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnStyleSheetChanged()
 		{
-			StyleSheetChange?.Invoke();
+			VariableDatabase.ReconsiderAllStyleSheets();
+			// Change?.Invoke();
 		}
 
 		private void OnSelectionChanged()

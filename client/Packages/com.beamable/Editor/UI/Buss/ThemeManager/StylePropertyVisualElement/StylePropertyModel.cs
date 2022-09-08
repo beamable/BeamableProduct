@@ -1,0 +1,110 @@
+﻿using Beamable.Common;
+using Beamable.Editor.Common;
+using Beamable.UI.Buss;
+using System;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace Beamable.Editor.UI.Components
+{
+	public class StylePropertyModel
+	{
+		public event Action Change;
+		public BussStyleSheet StyleSheet { get; }
+		public BussStyleRule StyleRule { get; }
+		public BussPropertyProvider PropertyProvider { get; }
+		public VariableDatabase VariablesDatabase { get; }
+		public PropertySourceTracker PropertySourceTracker { get; set; }
+		private BussElement InlineStyleOwner { get; }
+
+		public bool PropertyIsInStyle => StyleRule.Properties.Contains(PropertyProvider);
+		public bool IsWritable => StyleSheet != null && StyleSheet.IsWritable;
+
+		public StylePropertyModel(BussStyleSheet styleSheet,
+		                          BussStyleRule styleRule,
+		                          BussPropertyProvider propertyProvider,
+		                          VariableDatabase variablesDatabase,
+		                          PropertySourceTracker propertySourceTracker,
+		                          BussElement inlineStyleOwner)
+		{
+			StyleSheet = styleSheet;
+			StyleRule = styleRule;
+			PropertyProvider = propertyProvider;
+			VariablesDatabase = variablesDatabase;
+			PropertySourceTracker = propertySourceTracker;
+			InlineStyleOwner = inlineStyleOwner;
+		}
+
+		public void LabelClicked(MouseDownEvent evt)
+		{
+			if (StyleSheet != null && !StyleSheet.IsWritable)
+			{
+				return;
+			}
+
+			List<GenericMenuCommand> commands = new List<GenericMenuCommand>
+			{
+				new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveProperty)
+			};
+
+			GenericMenu context = new GenericMenu();
+
+			foreach (GenericMenuCommand command in commands)
+			{
+				GUIContent label = new GUIContent(command.Name);
+				context.AddItem(new GUIContent(label), false, () => { command.Invoke(); });
+			}
+
+			context.ShowAsContext();
+		}
+
+		private void RemoveProperty()
+		{
+			if (InlineStyleOwner != null)
+			{
+				InlineStyleOwner.InlineStyle.Properties.Remove(PropertyProvider);
+				Change?.Invoke();
+				//PropertyChanged?.Invoke();
+			}
+			else
+			{
+				IBussProperty bussProperty = PropertyProvider.GetProperty();
+				StyleSheet.RemoveStyleProperty(bussProperty, StyleRule);
+			}
+		}
+		
+		public void HandlePropertyChanged()
+		{
+			if (PropertyProvider.IsVariable)
+			{
+				VariablesDatabase.SetVariableDirty(PropertyProvider.Key);
+			}
+			else if (PropertyProvider.GetProperty() is VariableProperty vp)
+			{
+				VariablesDatabase.SetVariableDirty(vp.VariableName);
+			}
+			else
+			{
+				VariablesDatabase.SetPropertyDirty(StyleSheet, StyleRule, PropertyProvider);
+			}
+
+			if (!PropertyIsInStyle)
+			{
+				if (StyleRule.TryAddProperty(PropertyProvider.Key, PropertyProvider.GetProperty()))
+				{
+					StyleSheet.TriggerChange();
+				}
+			}
+
+			Change?.Invoke();
+		}
+		
+		public void SetPropertySourceTracker(PropertySourceTracker tracker)
+		{
+			PropertySourceTracker = tracker;
+			Change?.Invoke();
+		}
+	}
+}

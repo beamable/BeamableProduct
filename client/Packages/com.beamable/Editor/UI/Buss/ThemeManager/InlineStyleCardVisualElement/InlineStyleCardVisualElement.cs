@@ -21,11 +21,11 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _variableContainer;
 		private VisualElement _propertyContainer;
 
-		private VariableDatabase _variableDatabase;
-		private PropertySourceDatabase _propertySourceDatabase;
+		private readonly VariableDatabase _variableDatabase;
+		private readonly PropertySourceDatabase _propertySourceDatabase;
 
-		private List<BussStylePropertyVisualElement> _variables = new List<BussStylePropertyVisualElement>();
-		private List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
+		private readonly List<StylePropertyVisualElement> _variables = new List<StylePropertyVisualElement>();
+		private readonly List<StylePropertyVisualElement> _properties = new List<StylePropertyVisualElement>();
 
 		private BussElement _bussElement;
 
@@ -195,7 +195,7 @@ namespace Beamable.Editor.UI.Components
 
 			List<BussPropertyProvider> toSpawn = inlineStyle.Properties.ToList();
 
-			foreach (BussStylePropertyVisualElement visualElement in _variables.Concat(_properties).ToArray())
+			foreach (StylePropertyVisualElement visualElement in _variables.Concat(_properties).ToArray())
 			{
 				BussPropertyProvider propertyProvider = inlineStyle.GetPropertyProvider(visualElement.PropertyProvider.Key);
 				if (propertyProvider != visualElement.PropertyProvider)
@@ -207,9 +207,9 @@ namespace Beamable.Editor.UI.Components
 				}
 				else
 				{
-					visualElement.PropertyChanged -= OnPropertyChange;
+					//visualElement.PropertyChanged -= OnPropertyChange; // Was moved to model and named Change
 					visualElement.Refresh();
-					visualElement.PropertyChanged += OnPropertyChange;
+					// visualElement.PropertyChanged += OnPropertyChange; // Was moved to model and named Change
 					toSpawn.Remove(propertyProvider);
 				}
 			}
@@ -218,35 +218,35 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (BussPropertyProvider propertyProvider in toSpawn)
 			{
-				var visualElement = new BussStylePropertyVisualElement();
-				visualElement.InlineStyleOwner = _bussElement;
-				visualElement.Setup(null, _bussElement.InlineStyle, propertyProvider, _variableDatabase,
-									propertySourceTracker);
-				if (propertyProvider.IsVariable)
-				{
-					_variableContainer.Add(visualElement);
-					_variables.Add(visualElement);
-				}
-				else
-				{
-					_propertyContainer.Add(visualElement);
-					_properties.Add(visualElement);
-				}
-
-				visualElement.PropertyChanged += OnPropertyChange;
+				// var visualElement = new StylePropertyVisualElement();
+				// visualElement.InlineStyleOwner = _bussElement;
+				// visualElement.Setup(null, _bussElement.InlineStyle, propertyProvider, _variableDatabase,
+				// 					propertySourceTracker);
+				// if (propertyProvider.IsVariable)
+				// {
+				// 	_variableContainer.Add(visualElement);
+				// 	_variables.Add(visualElement);
+				// }
+				// else
+				// {
+				// 	_propertyContainer.Add(visualElement);
+				// 	_properties.Add(visualElement);
+				// }
+				//
+				// visualElement.PropertyChanged += OnPropertyChange;
 			}
 		}
 
 		private void ClearAll()
 		{
-			foreach (BussStylePropertyVisualElement visualElement in _variables)
+			foreach (StylePropertyVisualElement visualElement in _variables)
 			{
 				visualElement.RemoveFromHierarchy();
 				visualElement.Destroy();
 			}
 
 			_variables.Clear();
-			foreach (BussStylePropertyVisualElement visualElement in _properties)
+			foreach (StylePropertyVisualElement visualElement in _properties)
 			{
 				visualElement.RemoveFromHierarchy();
 				visualElement.Destroy();
@@ -261,21 +261,21 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (BussPropertyProvider property in _bussElement.InlineStyle.Properties)
 			{
-				var visualElement = new BussStylePropertyVisualElement();
-				visualElement.InlineStyleOwner = _bussElement;
-				visualElement.Setup(null, _bussElement.InlineStyle, property, _variableDatabase, propertySourceTracker);
-				if (property.IsVariable)
-				{
-					_variableContainer.Add(visualElement);
-					_variables.Add(visualElement);
-				}
-				else
-				{
-					_propertyContainer.Add(visualElement);
-					_properties.Add(visualElement);
-				}
-
-				visualElement.PropertyChanged += OnPropertyChange;
+				// var visualElement = new StylePropertyVisualElement();
+				// visualElement.InlineStyleOwner = _bussElement;
+				// visualElement.Setup(null, _bussElement.InlineStyle, property, _variableDatabase, propertySourceTracker);
+				// if (property.IsVariable)
+				// {
+				// 	_variableContainer.Add(visualElement);
+				// 	_variables.Add(visualElement);
+				// }
+				// else
+				// {
+				// 	_propertyContainer.Add(visualElement);
+				// 	_properties.Add(visualElement);
+				// }
+				//
+				// visualElement.PropertyChanged += OnPropertyChange;
 			}
 		}
 	}

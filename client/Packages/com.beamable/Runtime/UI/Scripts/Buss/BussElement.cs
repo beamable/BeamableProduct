@@ -10,6 +10,9 @@ namespace Beamable.UI.Buss
 	[ExecuteAlways, DisallowMultipleComponent]
 	public class BussElement : MonoBehaviour, ISerializationCallbackReceiver
 	{
+		public event Action Change;
+		public event Action StyleRecalculated;
+		
 #pragma warning disable CS0649
 		[SerializeField, BussId] private string _id;
 		[SerializeField, BussClass] private List<string> _classes = new List<string>();
@@ -23,10 +26,6 @@ namespace Beamable.UI.Buss
 		private readonly List<string> _pseudoClasses = new List<string>();
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
-
-		public event Action StyleSheetsChanged;
-		public event Action StyleRecalculated;
-		public event Action Validate;
 
 		public string Id
 		{
@@ -102,7 +101,6 @@ namespace Beamable.UI.Buss
 
 			CheckParent();
 			OnStyleChanged();
-			Validate?.Invoke();
 		}
 
 		private void OnTransformParentChanged()
@@ -206,7 +204,7 @@ namespace Beamable.UI.Buss
 			AddParentStyleSheets(this);
 			if (hash != GetStyleSheetHash())
 			{
-				StyleSheetsChanged?.Invoke();
+				Change?.Invoke();
 			}
 		}
 
