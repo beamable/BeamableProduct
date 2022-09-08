@@ -19,13 +19,13 @@ namespace Beamable.Api.Analytics
 		/// This method also groups batches by gamertag, and issues a request for each
 		/// </summary>
 		/// <param name="eventBatch">Event batch.</param>
-		public void SendAnalyticsEventBatch(List<AnalyticsEventRequest> eventBatch);
+		void SendAnalyticsEventBatch(List<AnalyticsEventRequest> eventBatch);
 
 		/// <summary>
 		/// Prepares request based on analytics event.
 		/// </summary>
 		/// <param name="analyticsEvent">Event to convert.</param>
 		/// <returns>Event request ready to send.</returns>
-		public AnalyticsEventRequest BuildRequest(IAnalyticsEvent analyticsEvent);
+		AnalyticsEventRequest BuildRequest(IAnalyticsEvent analyticsEvent);
 	}
 }
