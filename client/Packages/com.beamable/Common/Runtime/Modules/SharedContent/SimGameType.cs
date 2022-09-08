@@ -72,7 +72,7 @@ namespace Beamable.Common.Content
 		[Tooltip(ContentObject.TooltipTeamContent1)]
 		[CannotBeEmpty]
 		public TeamContentList teams;
-		
+
 		[Tooltip(ContentObject.TooltipMatchmakingRule1)]
 		public List<NumericMatchmakingRule> numericRules;
 
@@ -124,7 +124,8 @@ namespace Beamable.Common.Content
 		public List<TeamContent> listData = new List<TeamContent>();
 
 		protected override IList InternalList => listData;
-		public override string GetListPropertyPath() => nameof(listData);}
+		public override string GetListPropertyPath() => nameof(listData);
+	}
 
 	[Serializable]
 	public class TeamContent
