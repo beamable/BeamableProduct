@@ -47,7 +47,7 @@ namespace Beamable.Editor.NoUser
 			}
 			_root.RegisterCallback<FocusEvent>(_ =>
 			{
-				if (BeamEditorContext.Default.IsAuthenticated)
+				if(BeamEditorContext.Default.IsAuthenticated)
 					OnLoginCheckComplete?.Invoke();
 			});
 		}

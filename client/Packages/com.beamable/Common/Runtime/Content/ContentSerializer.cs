@@ -567,13 +567,13 @@ namespace Beamable.Common.Content
 			if (nullableBaseType != null)
 			{
 				var hasValueProp = fieldType.GetProperty(nameof(Nullable<int>.HasValue),
-														 BindingFlags.Public | BindingFlags.Instance);
+				                                         BindingFlags.Public | BindingFlags.Instance);
 				var hasValue = fieldValue != null && (bool)(hasValueProp?.GetValue(fieldValue) ?? false);
 				if (hasValue)
 				{
 					var getValueProp =
 						fieldType.GetProperty(nameof(Nullable<int>.Value),
-											  BindingFlags.Public | BindingFlags.Instance);
+						                      BindingFlags.Public | BindingFlags.Instance);
 					outputFieldValue = getValueProp?.GetValue(fieldValue);
 					outputFieldType = nullableBaseType;
 				}
