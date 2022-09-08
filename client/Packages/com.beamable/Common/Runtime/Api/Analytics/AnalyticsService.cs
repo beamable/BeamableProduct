@@ -1,5 +1,6 @@
 using Beamable.Common.Api;
 using Beamable.Common.Spew;
+using Beamable.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,6 +35,22 @@ namespace Beamable.Api.Analytics
 				batch[i] = eventBatch[i].Payload;
 			}
 			AnalyticsEventBatchRequest(batch);
+		}
+
+		public AnalyticsEventRequest BuildRequest(IAnalyticsEvent analyticsEvent)
+		{
+			using (var jsonSaveStream = JsonSerializable.JsonSaveStream.Spawn())
+			{
+				// Start as Object and Serialize Directly, so that we can inject shard
+				jsonSaveStream.Init(JsonSerializable.JsonSaveStream.JsonType.Object);
+				analyticsEvent.Serialize(jsonSaveStream);
+				// TODO: Double check that we don't support shards anymore.
+				// string shard = _platform.Shard;
+				// if(shard != null)
+				// 	jsonSaveStream.Serialize("shard", ref shard);
+				jsonSaveStream.Conclude();
+				return new AnalyticsEventRequest(jsonSaveStream.ToString());
+			}
 		}
 
 		/// <summary>

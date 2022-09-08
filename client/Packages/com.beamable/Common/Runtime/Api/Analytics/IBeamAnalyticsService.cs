@@ -20,5 +20,12 @@ namespace Beamable.Api.Analytics
 		/// </summary>
 		/// <param name="eventBatch">Event batch.</param>
 		public void SendAnalyticsEventBatch(List<AnalyticsEventRequest> eventBatch);
+
+		/// <summary>
+		/// Prepares request based on analytics event.
+		/// </summary>
+		/// <param name="analyticsEvent">Event to convert.</param>
+		/// <returns>Event request ready to send.</returns>
+		public AnalyticsEventRequest BuildRequest(IAnalyticsEvent analyticsEvent);
 	}
 }
