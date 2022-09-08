@@ -264,7 +264,7 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
-			await Stop();
+			await ClearPlayerAndStop();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
 
