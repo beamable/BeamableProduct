@@ -866,6 +866,7 @@ namespace Beamable.Server
             Content = provider.GetRequiredService<IMicroserviceContentApi>(),
             Inventory = provider.GetRequiredService<IMicroserviceInventoryApi>(),
             Leaderboards = provider.GetRequiredService<IMicroserviceLeaderboardsApi>(),
+            Analytics = provider.GetRequiredService<IMicroserviceAnalyticsService>(),
             Announcements = provider.GetRequiredService<IMicroserviceAnnouncementsApi>(),
             Calendars = provider.GetRequiredService<IMicroserviceCalendarsApi>(),
             Events = provider.GetRequiredService<IMicroserviceEventsApi>(),
