@@ -53,8 +53,8 @@ namespace Beamable.Editor.UI.Components
 			overrideIndicator.AddToClassList("overrideIndicator");
 			Root.Add(overrideIndicator);
 
-			Root.parent.EnableInClassList("exists", _model.PropertyIsInStyle);
-			Root.parent.EnableInClassList("doesntExists", !_model.PropertyIsInStyle);
+			Root.parent.EnableInClassList("exists", _model.IsInStyle);
+			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
 
 			_model.Change += Refresh;
 
@@ -99,7 +99,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (_propertyVisualElement != null)
 			{
-				_propertyVisualElement.UpdatedStyleSheet = _model.PropertyIsInStyle ? _model.StyleSheet : null;
+				_propertyVisualElement.UpdatedStyleSheet = _model.IsInStyle ? _model.StyleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Init();
 				_propertyVisualElement.OnValueChanged -= _model.HandlePropertyChanged;
@@ -107,18 +107,18 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		private void CreateMessageField(BussStylePropertyVisualElementUtility.PropertyValueState result)
+		private void CreateMessageField(StylePropertyVisualElementUtility.PropertyValueState result)
 		{
 			string text;
 			switch (result)
 			{
-				case BussStylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
+				case StylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
 					text = "Multiple possible values.";
 					break;
-				case BussStylePropertyVisualElementUtility.PropertyValueState.NoResult:
+				case StylePropertyVisualElementUtility.PropertyValueState.NoResult:
 					text = "No possible value.";
 					break;
-				case BussStylePropertyVisualElementUtility.PropertyValueState.VariableLoopDetected:
+				case StylePropertyVisualElementUtility.PropertyValueState.VariableLoopDetected:
 					text = "Variable loop-reference detected.";
 					break;
 				default:
@@ -145,10 +145,10 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		private void SetOverridenClass(PropertySourceTracker context,
-		                               BussStylePropertyVisualElementUtility.PropertyValueState result)
+		                               StylePropertyVisualElementUtility.PropertyValueState result)
 		{
 			bool overriden = false;
-			if (context != null && result == BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
+			if (context != null && result == StylePropertyVisualElementUtility.PropertyValueState.SingleResult)
 			{
 				overriden = _model.PropertyProvider != context.GetUsedPropertyProvider(_model.PropertyProvider.Key);
 			}
@@ -167,8 +167,8 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			BussStylePropertyVisualElementUtility.PropertyValueState result =
-				BussStylePropertyVisualElementUtility.TryGetProperty(_model.PropertyProvider, _model.StyleRule,
+			StylePropertyVisualElementUtility.PropertyValueState result =
+				StylePropertyVisualElementUtility.TryGetProperty(_model.PropertyProvider, _model.StyleRule,
 				                                                     _model.VariablesDatabase,
 				                                                     context, out IBussProperty property,
 				                                                     out VariableDatabase.PropertyReference
@@ -178,7 +178,7 @@ namespace Beamable.Editor.UI.Components
 
 			SetOverridenClass(context, result);
 
-			if (result != BussStylePropertyVisualElementUtility.PropertyValueState.SingleResult)
+			if (result != StylePropertyVisualElementUtility.PropertyValueState.SingleResult)
 			{
 				CreateMessageField(result);
 				return;

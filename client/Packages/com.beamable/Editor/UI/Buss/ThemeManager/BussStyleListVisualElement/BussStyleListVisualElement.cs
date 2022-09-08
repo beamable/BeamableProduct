@@ -1,5 +1,4 @@
-﻿// using Beamable.Common;
-using Beamable.Editor.Common;
+﻿using Beamable.Editor.Common;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -24,26 +23,16 @@ namespace Beamable.Editor.UI.Buss
 		{
 			_model = model;
 			_model.Change += Refresh;
-			// _model.StyleSheetChange += OnStyleSheetChanged;
 		}
 
 		public override void Refresh()
 		{
 			RefreshCards();
-
-			// if (_model.SelectedElement != null)
-			// {
-			// 	foreach (var card in _styleCardsVisualElements)
-			// 	{
-			// 		card.OnBussElementSelected(_model.SelectedElement);
-			// 	}
-			// }
 		}
 
 		protected override void OnDestroy()
 		{
 			_model.Change -= Refresh;
-			// _model.StyleSheetChange -= OnStyleSheetChanged;
 			
 			ClearCards();
 			
@@ -71,45 +60,6 @@ namespace Beamable.Editor.UI.Buss
 
 			_styleCardsVisualElements.Clear();
 		}
-
-		// TODO: implement things related to VariablesDatabase
-		// private void OnStyleSheetChanged()
-		// {
-		// 	if (_inStyleSheetChangedLoop) return;
-		//
-		// 	_inStyleSheetChangedLoop = true;
-		//
-		// 	try
-		// 	{
-		// 		_model.VariableDatabase.ReconsiderAllStyleSheets();
-		//
-		// 		// if (_model.VariableDatabase.ForceRefreshAll || _model.VariableDatabase.DirtyProperties.Count == 0)
-		// 		// {
-		// 		// 	RefreshCards();
-		// 		// }
-		// 		// else
-		// 		// {
-		// 		// 	foreach (VariableDatabase.PropertyReference reference in _model.VariableDatabase.DirtyProperties)
-		// 		// 	{
-		// 		// 		var card = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == reference.StyleRule);
-		// 		// 		if (card != null)
-		// 		// 		{
-		// 		// 			card.RefreshPropertyByReference(reference);
-		// 		// 		}
-		// 		// 	}
-		// 		// }
-		// 		
-		// 		RefreshCards();
-		//
-		// 		// _model.VariableDatabase.FlushDirtyMarkers();
-		// 	}
-		// 	catch (Exception e)
-		// 	{
-		// 		BeamableLogger.LogException(e);
-		// 	}
-		//
-		// 	_inStyleSheetChangedLoop = false;
-		// }
 
 		private void RefreshCards()
 		{

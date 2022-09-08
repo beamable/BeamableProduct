@@ -14,7 +14,25 @@ namespace Beamable.Editor.UI.Components
 {
 	public class StyleCardModel
 	{
+		private class PropertyComparer : IComparer<StylePropertyModel>
+		{
+			public int Compare(StylePropertyModel x, StylePropertyModel y)
+			{
+				int comparison = (y != null && y.IsInStyle).CompareTo(x != null && x.IsInStyle);
+
+				if (comparison == 0)
+				{
+					comparison = String.Compare(x.PropertyProvider.Key, y.PropertyProvider.Key,
+					                            StringComparison.Ordinal);
+				}
+
+				return comparison;
+			}
+		}
+
 		public event Action Change;
+
+		private PropertyComparer _propertyComparer = new PropertyComparer();
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -25,9 +43,10 @@ namespace Beamable.Editor.UI.Components
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
 		public bool IsWritable => StyleSheet.IsWritable;
 		public bool ShowAll { get; private set; }
-		private bool Sorted { get; set; }
+		public bool Sorted { get; set; }
 		public BussElement SelectedElement { get; }
-		
+		public List<StylePropertyModel> PropertyModels => GetModels();
+
 		public StyleCardModel(BussStyleSheet styleSheet,
 		                      BussStyleRule styleRule,
 		                      Action onUndoAction,
@@ -76,6 +95,7 @@ namespace Beamable.Editor.UI.Components
 							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
 						AssetDatabase.SaveAssets();
 						StyleSheet.TriggerChange();
+						Change?.Invoke();
 					});
 				}
 			}
@@ -95,6 +115,7 @@ namespace Beamable.Editor.UI.Components
 					{
 						AssetDatabase.SaveAssets();
 						StyleSheet.TriggerChange();
+						Change?.Invoke();
 					}
 				});
 			}
@@ -181,6 +202,46 @@ namespace Beamable.Editor.UI.Components
 			return commands;
 		}
 
+		public void ShowAllButtonClicked(MouseDownEvent evt)
+		{
+			ShowAll = !ShowAll;
+			Change?.Invoke();
+		}
+
+		public void SortButtonClicked(MouseDownEvent evt)
+		{
+			Sorted = !Sorted;
+			Change?.Invoke();
+		}
+
+		public void UndoButtonClicked(MouseDownEvent evt)
+		{
+			UndoAction?.Invoke();
+			Change?.Invoke();
+		}
+
+		private List<StylePropertyModel> GetModels()
+		{
+			var models = new List<StylePropertyModel>();
+
+			foreach (string key in BussStyle.Keys)
+			{
+				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
+				                       BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
+
+				StylePropertyModel model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
+				                                                  VariablesDatabase,
+				                                                  PropertiesDatabase.GetTracker(SelectedElement),
+				                                                  null);
+
+				models.Add(model);
+			}
+
+			models.Sort(_propertyComparer);
+
+			return models;
+		}
+
 		private void RemoveStyleClicked()
 		{
 			BeamablePopupWindow.CloseConfirmationWindow();
@@ -194,29 +255,7 @@ namespace Beamable.Editor.UI.Components
 				BeamablePopupWindow.CloseConfirmationWindow
 			);
 
-			// BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup,
-			//                                             this.GetEditorWindowWithReflection());
 			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup, null);
-		}
-
-		public void ShowAllButtonClicked(MouseDownEvent evt)
-		{
-			ShowAll = !ShowAll;
-			Change?.Invoke();
-			// UpdateShowAllStatus();
-			// RefreshProperties();
-		}
-
-		public void SortButtonClicked(MouseDownEvent evt)
-		{
-			Sorted = !Sorted;
-			Change?.Invoke();
-			// SortProperties();
-		}
-
-		public void UndoButtonClicked(MouseDownEvent evt)
-		{
-			UndoAction?.Invoke();
 		}
 	}
 }

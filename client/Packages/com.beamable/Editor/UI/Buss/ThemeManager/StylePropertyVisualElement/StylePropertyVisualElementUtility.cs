@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Beamable.Editor.UI.Components
 {
-	public static class BussStylePropertyVisualElementUtility
+	public static class StylePropertyVisualElementUtility
 	{
 		private static readonly HashSet<string> UsedVariableNames = new HashSet<string>();
 

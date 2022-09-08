@@ -16,10 +16,11 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
 		public VariableDatabase VariablesDatabase { get; }
-		public PropertySourceTracker PropertySourceTracker { get; set; }
+		public PropertySourceTracker PropertySourceTracker { get; }
 		private BussElement InlineStyleOwner { get; }
 
-		public bool PropertyIsInStyle => StyleRule.Properties.Contains(PropertyProvider);
+		public bool IsVariable => PropertyProvider.IsVariable;
+		public bool IsInStyle => StyleRule.Properties.Contains(PropertyProvider);
 		public bool IsWritable => StyleSheet != null && StyleSheet.IsWritable;
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
@@ -65,14 +66,14 @@ namespace Beamable.Editor.UI.Components
 			if (InlineStyleOwner != null)
 			{
 				InlineStyleOwner.InlineStyle.Properties.Remove(PropertyProvider);
-				Change?.Invoke();
-				//PropertyChanged?.Invoke();
 			}
 			else
 			{
 				IBussProperty bussProperty = PropertyProvider.GetProperty();
 				StyleSheet.RemoveStyleProperty(bussProperty, StyleRule);
 			}
+			
+			Change?.Invoke();
 		}
 		
 		public void HandlePropertyChanged()
@@ -90,7 +91,7 @@ namespace Beamable.Editor.UI.Components
 				VariablesDatabase.SetPropertyDirty(StyleSheet, StyleRule, PropertyProvider);
 			}
 
-			if (!PropertyIsInStyle)
+			if (!IsInStyle)
 			{
 				if (StyleRule.TryAddProperty(PropertyProvider.Key, PropertyProvider.GetProperty()))
 				{
@@ -98,12 +99,6 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			Change?.Invoke();
-		}
-		
-		public void SetPropertySourceTracker(PropertySourceTracker tracker)
-		{
-			PropertySourceTracker = tracker;
 			Change?.Invoke();
 		}
 	}
