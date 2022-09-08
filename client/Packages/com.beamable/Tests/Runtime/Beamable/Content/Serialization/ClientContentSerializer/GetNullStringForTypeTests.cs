@@ -14,7 +14,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Serialize()
 		{
-			var meta = new BundlesContent { Id = "metadata.bundles.tuna" };
+			var meta = new BundlesContent {Id = "metadata.bundles.tuna"};
 			meta.Thematic2 = true;
 			meta.Thematic3 = false;
 			var s = new TestSerializer();
@@ -33,7 +33,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void SerializeIntNotNull()
 		{
-			var meta = new BundlesContent { Id = "metadata.bundles.tuna" };
+			var meta = new BundlesContent {Id = "metadata.bundles.tuna"};
 			meta.x = 3;
 			var s = new TestSerializer();
 			var json = s.Serialize(meta);
@@ -47,9 +47,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void SerializeNested()
 		{
-			var meta = new TopLevel() { Id = "top.pop" };
-			meta.nested = new NestedComponent { x = 2 };
-			meta.nestedList = new List<NestedComponent> { new NestedComponent { x = 3 }, new NestedComponent { x = null } };
+			var meta = new TopLevel() {Id = "top.pop"};
+			meta.nested = new NestedComponent{x = 2};
+			meta.nestedList = new List<NestedComponent> {new NestedComponent {x = 3}, new NestedComponent {x = null}};
 			var s = new TestSerializer();
 			var json = s.Serialize(meta);
 			Debug.Log(json);
