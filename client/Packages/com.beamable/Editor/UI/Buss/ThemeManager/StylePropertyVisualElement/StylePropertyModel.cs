@@ -11,13 +11,14 @@ namespace Beamable.Editor.UI.Components
 {
 	public class StylePropertyModel
 	{
+		private readonly Action<string> _removePropertyAction;
 		public event Action Change;
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
 		public VariableDatabase VariablesDatabase { get; }
 		public PropertySourceTracker PropertySourceTracker { get; }
-		private BussElement InlineStyleOwner { get; }
+		public BussElement InlineStyleOwner { get; }
 
 		public bool IsVariable => PropertyProvider.IsVariable;
 		public bool IsInStyle => StyleRule.Properties.Contains(PropertyProvider);
@@ -28,8 +29,10 @@ namespace Beamable.Editor.UI.Components
 		                          BussPropertyProvider propertyProvider,
 		                          VariableDatabase variablesDatabase,
 		                          PropertySourceTracker propertySourceTracker,
-		                          BussElement inlineStyleOwner)
+		                          BussElement inlineStyleOwner,
+		                          Action<string> removePropertyAction)
 		{
+			_removePropertyAction = removePropertyAction;
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
 			PropertyProvider = propertyProvider;
@@ -47,7 +50,10 @@ namespace Beamable.Editor.UI.Components
 
 			List<GenericMenuCommand> commands = new List<GenericMenuCommand>
 			{
-				new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveProperty)
+				new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, ()=>
+				{
+					_removePropertyAction?.Invoke(PropertyProvider.Key);
+				})
 			};
 
 			GenericMenu context = new GenericMenu();
@@ -61,20 +67,7 @@ namespace Beamable.Editor.UI.Components
 			context.ShowAsContext();
 		}
 
-		private void RemoveProperty()
-		{
-			if (InlineStyleOwner != null)
-			{
-				InlineStyleOwner.InlineStyle.Properties.Remove(PropertyProvider);
-			}
-			else
-			{
-				IBussProperty bussProperty = PropertyProvider.GetProperty();
-				StyleSheet.RemoveStyleProperty(bussProperty, StyleRule);
-			}
-			
-			Change?.Invoke();
-		}
+
 		
 		public void HandlePropertyChanged()
 		{

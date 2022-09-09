@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Components
 
 		public event Action Change;
 
-		private PropertyComparer _propertyComparer = new PropertyComparer();
+		private readonly PropertyComparer _propertyComparer = new PropertyComparer();
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -232,7 +232,7 @@ namespace Beamable.Editor.UI.Components
 				StylePropertyModel model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
 				                                                  VariablesDatabase,
 				                                                  PropertiesDatabase.GetTracker(SelectedElement),
-				                                                  null);
+				                                                  null, RemovePropertyClicked);
 
 				models.Add(model);
 			}
@@ -256,6 +256,29 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup, null);
+		}
+
+		private void RemovePropertyClicked(string propertyKey)
+		{
+			var propertyModel = PropertyModels.Find(property => property.PropertyProvider.Key == propertyKey);
+
+			if (propertyModel == null)
+			{
+				Debug.LogWarning($"StyleCardModel:RemovePropertyCLicked: can't find property with {propertyKey} key");
+				return;
+			}
+
+			if (propertyModel.InlineStyleOwner != null)
+			{
+				propertyModel.InlineStyleOwner.InlineStyle.Properties.Remove(propertyModel.PropertyProvider);
+			}
+			else
+			{
+				IBussProperty bussProperty = propertyModel.PropertyProvider.GetProperty();
+				propertyModel.StyleSheet.RemoveStyleProperty(bussProperty, propertyModel.StyleRule);
+			}
+			
+			Change?.Invoke();
 		}
 	}
 }
