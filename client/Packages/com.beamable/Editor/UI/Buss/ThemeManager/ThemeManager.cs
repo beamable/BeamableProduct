@@ -22,7 +22,7 @@ namespace Beamable.Editor.UI.Buss
 		private bool _inStyleSheetChangedLoop;
 		private ThemeManagerNavigationComponent _navigationWindow;
 		private ScrollView _scrollView;
-		private SelectedBussElementVisualElement _selectedBussElement;
+		private SelectedElementVisualElement _selectedElement;
 		private BussStyleListVisualElement _stylesGroup;
 		private VisualElement _windowRoot;
 		private ThemeManagerModel _model;
@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Buss
 			base.OnDestroy();
 
 			_navigationWindow?.Destroy();
-			_selectedBussElement?.Destroy();
+			_selectedElement?.Destroy();
 			_model?.Clear();
 
 			UndoSystem<BussStyleRule>.DeleteAllRecords();
@@ -97,18 +97,16 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
 
-			_selectedBussElement = new SelectedBussElementVisualElement(_model);
-			_selectedBussElement.Init();
-			mainVisualElement.Add(_selectedBussElement);
+			_selectedElement = new SelectedElementVisualElement(_model);
+			_selectedElement.Init();
+			mainVisualElement.Add(_selectedElement);
 
 			_scrollView = new ScrollView {name = "themeManagerContainerScrollView"};
 			_stylesGroup = new BussStyleListVisualElement(_model) {name = "stylesGroup"};
 			_stylesGroup.Init();
 			_scrollView.Add(_stylesGroup);
 
-			// TODO: remove constructor params after moving variables and properties database into model
-			InlineStyleCardVisualElement inlineStyle =
-				new InlineStyleCardVisualElement(_model.VariableDatabase, _model.PropertyDatabase);
+			InlineStyleCardVisualElement inlineStyle = new InlineStyleCardVisualElement(_model);
 			inlineStyle.Init();
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);

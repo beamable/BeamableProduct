@@ -2,10 +2,6 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -21,20 +17,12 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _variableContainer;
 		private VisualElement _propertyContainer;
 
-		private readonly VariableDatabase _variableDatabase;
-		private readonly PropertySourceDatabase _propertySourceDatabase;
+		private readonly ThemeManagerModel _model;
 
-		private readonly List<StylePropertyVisualElement> _variables = new List<StylePropertyVisualElement>();
-		private readonly List<StylePropertyVisualElement> _properties = new List<StylePropertyVisualElement>();
-
-		private BussElement _bussElement;
-
-		public InlineStyleCardVisualElement(VariableDatabase variableDatabase,
-											PropertySourceDatabase propertySourceDatabase) : base(
+		public InlineStyleCardVisualElement(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/InlineStyleCardVisualElement/InlineStyleCardVisualElement.uss", false)
 		{
-			_variableDatabase = variableDatabase;
-			_propertySourceDatabase = propertySourceDatabase;
+			_model = model;
 		}
 
 		public override void Init()
@@ -59,22 +47,57 @@ namespace Beamable.Editor.UI.Components
 				mainContainer.ToggleInClassList("hidden");
 			});
 
-			VisualElement variablesHeader = CreateSubheader("Variables", OnAddVariable);
+			VisualElement variablesHeader = CreateSubheader("Variables", _model.AddInlineVariable);
 			mainContainer.Add(variablesHeader);
 
 			_variableContainer = new VisualElement();
 			_variableContainer.AddToClassList("propertyContainer");
 			mainContainer.Add(_variableContainer);
 
-			VisualElement propertiesHeader = CreateSubheader("Properties", OnAddProperty);
+			VisualElement propertiesHeader = CreateSubheader("Properties", _model.AddInlineProperty);
 			mainContainer.Add(propertiesHeader);
 
 			_propertyContainer = new VisualElement();
 			_propertyContainer.AddToClassList("propertyContainer");
 			mainContainer.Add(_propertyContainer);
 
-			Selection.selectionChanged += SelectionChanged;
-			SelectionChanged();
+			_model.Change += Refresh;
+		}
+
+		protected override void OnDestroy()
+		{
+			_model.Change -= Refresh;
+			ClearAll();
+		}
+
+		public override void Refresh()
+		{
+			ClearAll();
+
+			if (_model.SelectedElement == null)
+			{
+				return;
+			}
+
+			SpawnProperties();
+		}
+
+		private void SpawnProperties()
+		{
+			var selectedElement = _model.SelectedElement;
+
+			PropertySourceTracker propertySourceTracker = _model.PropertyDatabase.GetTracker(selectedElement);
+
+			foreach (BussPropertyProvider property in selectedElement.InlineStyle.Properties)
+			{
+				StylePropertyModel model = new StylePropertyModel(selectedElement.StyleSheet, null,
+				                                                  property, _model.VariableDatabase,
+				                                                  propertySourceTracker, selectedElement, _model.RemoveInlineProperty);
+
+				var element = new StylePropertyVisualElement(model);
+				element.Init();
+				(model.IsVariable ? _variableContainer : _propertyContainer).Add(element);
+			}
 		}
 
 		private VisualElement CreateSubheader(string text, Action onAddClicked)
@@ -98,185 +121,10 @@ namespace Beamable.Editor.UI.Components
 			return header;
 		}
 
-		private void SelectionChanged()
-		{
-			GameObject target = Selection.activeGameObject;
-			BussElement element = null;
-			if (target != null)
-			{
-				element = target.GetComponent<BussElement>();
-			}
-
-			SetBussElement(element);
-		}
-
-		private void OnAddVariable()
-		{
-			if (_bussElement == null) return;
-
-			NewVariableWindow window = NewVariableWindow.ShowWindow();
-			if (window != null)
-			{
-				window.Init(_bussElement.InlineStyle, (key, property) =>
-				{
-					if (_bussElement.InlineStyle.TryAddProperty(key, property))
-					{
-						OnPropertyChange();
-					}
-				});
-			}
-		}
-
-		private void OnAddProperty()
-		{
-			if (_bussElement == null) return;
-
-			var keys = new HashSet<string>();
-			foreach (BussPropertyProvider propertyProvider in _bussElement.InlineStyle.Properties)
-			{
-				keys.Add(propertyProvider.Key);
-			}
-
-			IOrderedEnumerable<string> sorted = BussStyle.Keys.OrderBy(k => k);
-			var context = new GenericMenu();
-
-			foreach (string key in sorted)
-			{
-				if (keys.Contains(key)) continue;
-				Type baseType = BussStyle.GetBaseType(key);
-				SerializableValueImplementationHelper.ImplementationData data = SerializableValueImplementationHelper.Get(baseType);
-				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-																   t != typeof(FractionFloatBussProperty));
-				foreach (Type type in types)
-				{
-					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
-					context.AddItem(new GUIContent(label), false, () =>
-					{
-						_bussElement.InlineStyle.Properties.Add(
-							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
-						OnPropertyChange();
-					});
-				}
-			}
-
-			context.ShowAsContext();
-		}
-
-		private void SetBussElement(BussElement element)
-		{
-			if (element == _bussElement) return;
-			_bussElement = element;
-			ClearAll();
-			if (element != null)
-			{
-				SpawnProperties();
-			}
-		}
-
-		private void OnPropertyChange()
-		{
-			RefreshProperties();
-			if (_bussElement != null)
-			{
-				EditorUtility.SetDirty(_bussElement);
-				_bussElement.RecalculateStyle();
-			}
-		}
-
-		private void RefreshProperties()
-		{
-			if (_bussElement == null)
-			{
-				ClearAll();
-				return;
-			}
-
-			BussStyleDescription inlineStyle = _bussElement.InlineStyle;
-
-			List<BussPropertyProvider> toSpawn = inlineStyle.Properties.ToList();
-
-			foreach (StylePropertyVisualElement visualElement in _variables.Concat(_properties).ToArray())
-			{
-				BussPropertyProvider propertyProvider = inlineStyle.GetPropertyProvider(visualElement.PropertyProvider.Key);
-				if (propertyProvider != visualElement.PropertyProvider)
-				{
-					visualElement.RemoveFromHierarchy();
-					visualElement.Destroy();
-					_variables.Remove(visualElement);
-					_properties.Remove(visualElement);
-				}
-				else
-				{
-					//visualElement.PropertyChanged -= OnPropertyChange; // Was moved to model and named Change
-					visualElement.Refresh();
-					// visualElement.PropertyChanged += OnPropertyChange; // Was moved to model and named Change
-					toSpawn.Remove(propertyProvider);
-				}
-			}
-
-			PropertySourceTracker propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
-
-			foreach (BussPropertyProvider propertyProvider in toSpawn)
-			{
-				// var visualElement = new StylePropertyVisualElement();
-				// visualElement.InlineStyleOwner = _bussElement;
-				// visualElement.Setup(null, _bussElement.InlineStyle, propertyProvider, _variableDatabase,
-				// 					propertySourceTracker);
-				// if (propertyProvider.IsVariable)
-				// {
-				// 	_variableContainer.Add(visualElement);
-				// 	_variables.Add(visualElement);
-				// }
-				// else
-				// {
-				// 	_propertyContainer.Add(visualElement);
-				// 	_properties.Add(visualElement);
-				// }
-				//
-				// visualElement.PropertyChanged += OnPropertyChange;
-			}
-		}
-
 		private void ClearAll()
 		{
-			foreach (StylePropertyVisualElement visualElement in _variables)
-			{
-				visualElement.RemoveFromHierarchy();
-				visualElement.Destroy();
-			}
-
-			_variables.Clear();
-			foreach (StylePropertyVisualElement visualElement in _properties)
-			{
-				visualElement.RemoveFromHierarchy();
-				visualElement.Destroy();
-			}
-
-			_properties.Clear();
-		}
-
-		private void SpawnProperties()
-		{
-			PropertySourceTracker propertySourceTracker = _propertySourceDatabase.GetTracker(_bussElement);
-
-			foreach (BussPropertyProvider property in _bussElement.InlineStyle.Properties)
-			{
-				// var visualElement = new StylePropertyVisualElement();
-				// visualElement.InlineStyleOwner = _bussElement;
-				// visualElement.Setup(null, _bussElement.InlineStyle, property, _variableDatabase, propertySourceTracker);
-				// if (property.IsVariable)
-				// {
-				// 	_variableContainer.Add(visualElement);
-				// 	_variables.Add(visualElement);
-				// }
-				// else
-				// {
-				// 	_propertyContainer.Add(visualElement);
-				// 	_properties.Add(visualElement);
-				// }
-				//
-				// visualElement.PropertyChanged += OnPropertyChange;
-			}
+			_propertyContainer.Clear();
+			_variableContainer.Clear();
 		}
 	}
 }

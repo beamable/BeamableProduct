@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -276,5 +277,49 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		#endregion
+
+		public void AddInlineVariable()
+		{
+			if (SelectedElement == null)
+			{
+				return;
+			}
+			
+			NewVariableWindow window = NewVariableWindow.ShowWindow();
+			if (window != null)
+			{
+				window.Init(SelectedElement.InlineStyle, (key, property) =>
+				{
+					if (SelectedElement.InlineStyle.TryAddProperty(key, property))
+					{
+						Change?.Invoke();
+					}
+				});
+			}
+		}
+
+		public void AddInlineProperty()
+		{
+			if (SelectedElement == null)
+			{
+				return;
+			}
+		}
+
+		public void RemoveInlineProperty(string value)
+		{
+			if(SelectedElement == null)
+			{
+				return;
+			}
+
+			var propertyProvider = SelectedElement.InlineStyle.Properties.Find(property => property.Key == value);
+
+			if (propertyProvider != null)
+			{
+				SelectedElement.InlineStyle.Properties.Remove(propertyProvider);
+				Change?.Invoke();
+			}
+		}
 	}
 }

@@ -21,7 +21,7 @@ namespace Beamable.Editor.UI.Components
 		public BussElement InlineStyleOwner { get; }
 
 		public bool IsVariable => PropertyProvider.IsVariable;
-		public bool IsInStyle => StyleRule.Properties.Contains(PropertyProvider);
+		public bool IsInStyle => StyleRule != null && StyleRule.Properties.Contains(PropertyProvider);
 		public bool IsWritable => StyleSheet != null && StyleSheet.IsWritable;
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
