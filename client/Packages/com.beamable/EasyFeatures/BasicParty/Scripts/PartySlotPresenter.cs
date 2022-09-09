@@ -12,6 +12,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public RectTransform RectTransform;
 		public Image AvatarImage;
 		public TextMeshProUGUI PlayerNameText;
+		public TextMeshProUGUI AcceptButtonText;
 		public Button AcceptButton;
 		public Button AskToLeaveButton;
 		public Button PromoteButton;
@@ -30,14 +31,14 @@ namespace Beamable.EasyFeatures.BasicParty
 			public string Name;
 			public Sprite Avatar;
 		}
-		
+
 		public class PoolData : PoolableScrollView.IItem
 		{
 			public ViewData ViewData { get; set; }
 			public int Index { get; set; }
 			public float Height { get; set; }
 		}
-		
+
 		public void Setup(PoolData item,
 		                  PlayersListPresenter listPresenter,
 		                  bool isExpandable,
@@ -50,15 +51,17 @@ namespace Beamable.EasyFeatures.BasicParty
 			OccupiedSlotGroup.SetActive(isSlotOccupied);
 			AddMemberButton.gameObject.SetActive(!isSlotOccupied);
 
-			bool isLeader = item.ViewData.PlayerId == BeamContext.Default.Party.Leader;
+			bool isLeader = BeamContext.Default.Party.IsInParty &&
+			                item.ViewData.PlayerId == BeamContext.Default.Party.Leader;
 			LeaderBadge.SetActive(isLeader);
 			AvatarImage.sprite = item.ViewData.Avatar;
 			PlayerNameText.text = item.ViewData.Name;
 			AcceptButton.gameObject.SetActive(onAcceptButton != null);
-			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptButton(item.ViewData.PlayerId));
-			AskToLeaveButton.onClick.ReplaceOrAddListener(() => onAskToLeaveButton(item.ViewData.PlayerId));
-			PromoteButton.onClick.ReplaceOrAddListener(() => onPromoteButton(item.ViewData.PlayerId));
-			AddMemberButton.onClick.ReplaceOrAddListener(() => onAddMemberButton());
+			AcceptButtonText.text = BeamContext.Default.Party.IsInParty ? "Invite" : "Accept";
+			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptButton?.Invoke(item.ViewData.PlayerId));
+			AskToLeaveButton.onClick.ReplaceOrAddListener(() => onAskToLeaveButton?.Invoke(item.ViewData.PlayerId));
+			PromoteButton.onClick.ReplaceOrAddListener(() => onPromoteButton?.Invoke(item.ViewData.PlayerId));
+			AddMemberButton.onClick.ReplaceOrAddListener(() => onAddMemberButton?.Invoke());
 
 			ListPresenter = listPresenter;
 			Item = item;
@@ -71,7 +74,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				return;
 			}
-			
+
 			ExpandableButtons.SetActive(!ExpandableButtons.activeSelf);
 			StartCoroutine(UpdateItemHeight());
 		}

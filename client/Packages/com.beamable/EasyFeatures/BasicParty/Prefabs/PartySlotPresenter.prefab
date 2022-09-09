@@ -1208,7 +1208,8 @@ MonoBehaviour:
   m_text: Player name
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1771,6 +1772,7 @@ MonoBehaviour:
   RectTransform: {fileID: 69944372115679436}
   AvatarImage: {fileID: 949341961193650799}
   PlayerNameText: {fileID: 6443954801838977889}
+  AcceptButtonText: {fileID: 2076308874224819391}
   AcceptButton: {fileID: 5542326114139980189}
   AskToLeaveButton: {fileID: 450531831482193945}
   PromoteButton: {fileID: 1222238243831241241}
@@ -2096,7 +2098,8 @@ MonoBehaviour:
   m_text: Invite
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

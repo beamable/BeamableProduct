@@ -1,29 +1,29 @@
 ﻿using Beamable.UI.Buss;
 using EasyFeatures.Components;
-using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicParty
 {
+	public struct PartyInvite
+	{
+		public string partyId, playerId;
+	}
+	
 	public class JoinPartyView : MonoBehaviour, ISyncBeamableView
 	{
-		public interface IDependencies : IBeamableViewDeps
-		{
-			string PartyIdToJoin { get; set; }
-			bool ValidateJoinButton();
-		}
-
+		// Use invites list stored on backend once ready
+		public static List<PartyInvite> ReceivedInvites = new List<PartyInvite>();
+		[SerializeField] private GameObject _noInvitesPendingText;
+		
 		public PartyFeatureControl FeatureControl;
 		public int EnrichOrder;
 
-		public TMP_InputField PartyIdInputField;
+		public PlayersListPresenter InvitesList;
 		public Button BackButton;
-		public Button JoinButton;
-		public BussElement JoinButtonBussElement;
 
 		protected BeamContext Context;
-		protected IDependencies System;
 
 		public bool IsVisible
 		{
@@ -33,54 +33,49 @@ namespace Beamable.EasyFeatures.BasicParty
 		
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			Context = managedPlayers.GetSinglePlayerContext();
-			System = Context.ServiceProvider.GetService<IDependencies>();
 			
 			if (!IsVisible)
 			{
 				return;
 			}
+
+			_noInvitesPendingText.SetActive(ReceivedInvites.Count == 0);
+
+			List<long> playerIds = new List<long>(ReceivedInvites.Count);
+			foreach (var invite in ReceivedInvites)
+			{
+				if (long.TryParse(invite.playerId, out long id))
+				{
+					playerIds.Add(id);
+				}
+			}
+
+			await InvitesList.Setup(playerIds, false, OnInviteAccepted, null, null, null);
 			
-			OnPartyIdValueChanged(PartyIdInputField.text);
-			
-			PartyIdInputField.onValueChanged.ReplaceOrAddListener(OnPartyIdValueChanged);
-			JoinButton.onClick.ReplaceOrAddListener(OnJoinButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 		}
 
-		private void ValidateJoinButton()
+		private async void OnInviteAccepted(string playerId)
 		{
-			bool canJoinParty = System.ValidateJoinButton();
-
-			JoinButton.interactable = canJoinParty;
-
-			if (canJoinParty)
+			for (int i = 0; i < ReceivedInvites.Count; i++)
 			{
-				JoinButtonBussElement.SetButtonPrimary();
+				var invite = ReceivedInvites[i];
+				if (invite.playerId == playerId)
+				{
+					ReceivedInvites.Remove(invite);
+					await Context.Party.Join(invite.partyId);
+					FeatureControl.OpenPartyView();
+					return;
+				}
 			}
-			else
-			{
-				JoinButtonBussElement.SetButtonDisabled();
-			}
-		}
-
-		private void OnPartyIdValueChanged(string value)
-		{
-			System.PartyIdToJoin = value;
-			ValidateJoinButton();
 		}
 
 		private void OnBackButtonClicked()
 		{
 			FeatureControl.OpenCreatePartyView();
-		}
-
-		private async void OnJoinButtonClicked()
-		{
-			await Context.Party.Join(System.PartyIdToJoin); // add loading
-			FeatureControl.OpenPartyView();
 		}
 	}
 }
