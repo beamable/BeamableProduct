@@ -27,6 +27,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public struct ViewData
 		{
 			public string PlayerId;
+			public string Name;
 			public Sprite Avatar;
 		}
 		
@@ -52,7 +53,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			bool isLeader = item.ViewData.PlayerId == BeamContext.Default.Party.Leader;
 			LeaderBadge.SetActive(isLeader);
 			AvatarImage.sprite = item.ViewData.Avatar;
-			PlayerNameText.text = item.ViewData.PlayerId;
+			PlayerNameText.text = item.ViewData.Name;
 			AcceptButton.gameObject.SetActive(onAcceptButton != null);
 			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptButton(item.ViewData.PlayerId));
 			AskToLeaveButton.onClick.ReplaceOrAddListener(() => onAskToLeaveButton(item.ViewData.PlayerId));

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,9 +11,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public int EnrichOrder;
 
 		public PlayersListPresenter PartyList;
-		public Button SettingsButton;
 		public Button BackButton;
-		public Button CreateButton;
 
 		protected BeamContext Context;
 
@@ -36,44 +33,31 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 
 			// set callbacks
-			SettingsButton.onClick.ReplaceOrAddListener(OnSettingsButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
-			CreateButton.onClick.ReplaceOrAddListener(OnCreateButtonClicked);
 			
 			// prepare friends list
 			await Context.Social.OnReady;	// show loading
 			var friendsList = Context.Social.Friends;
-			List<string> friends = new List<string>(friendsList.Count);
+			List<long> friends = new List<long>(friendsList.Count);
 			for (int i = 0; i < friendsList.Count; i++)
 			{
 				if (Context.Party.Members.Any(playerId => playerId.Equals(friendsList[i].playerId.ToString())))
 					continue;
 				
-				friends.Add(friendsList[i].playerId.ToString());
+				friends.Add(friendsList[i].playerId);
 			}
 			
-			PartyList.Setup(friends, false, OnPlayerInvited, null, null, null);
+			await PartyList.Setup(friends, false, OnPlayerInvited, null, null, null);
 		}
 
 		private async void OnPlayerInvited(string id)
 		{
-			// send invite request
-			await Context.Party.Invite(id);	// add loading
-		}
-
-		private void OnCreateButtonClicked()
-		{
-			throw new System.NotImplementedException();
+			await Context.Party.Invite(id);
 		}
 
 		private void OnBackButtonClicked()
 		{
 			FeatureControl.OpenPartyView();
-		}
-
-		private void OnSettingsButtonClicked()
-		{
-			throw new System.NotImplementedException();
 		}
 	}
 }

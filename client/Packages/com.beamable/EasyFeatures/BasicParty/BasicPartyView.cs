@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Beamable.AccountManagement;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -84,9 +86,24 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void SetupPlayerCountText() =>
 			PlayerCountText.text = $"{Context.Party.Members.Count}/{Context.Party.MaxSize}";
 
-		private void SetupPartyList()
+		private async void SetupPartyList()
 		{
-			PartyList.Setup(Context.Party.Members.ToList(), Context.Party.IsLeader, null, OnAskedToLeave,
+			var members = Context.Party.Members;
+			List<long> playerIds = new List<long>(members.Count);
+			for (int i = 0; i < members.Count; i++)
+			{
+				if (long.TryParse(members[i], out long id))
+				{
+					playerIds.Add(id);
+				}
+				else
+				{
+					Debug.LogError($"Party member's id '{members[i]}' could not be parsed to long");
+					return;
+				}
+			}
+			
+			await PartyList.Setup(playerIds, Context.Party.IsLeader, null, OnAskedToLeave,
 			                OnPromoteButtonClicked, OnAddMember, Context.Party.MaxSize);
 		}
 
