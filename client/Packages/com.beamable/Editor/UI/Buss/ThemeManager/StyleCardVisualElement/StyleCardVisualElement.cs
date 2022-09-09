@@ -94,6 +94,12 @@ namespace Beamable.Editor.UI.Components
 				var currentCount = _propertiesParent.Children().Count();
 				_propertiesParent.RemoveAt(currentCount - 1);
 			}
+			
+			while (_variablesParent.Children().Count() > 1)
+			{
+				var currentCount = _variablesParent.Children().Count();
+				_variablesParent.RemoveAt(currentCount - 1);
+			}
 		}
 
 		private void CreateSelectorLabel()
@@ -129,14 +135,16 @@ namespace Beamable.Editor.UI.Components
 		{
 			ClearSpawnedProperties();
 
-			foreach (StylePropertyModel model in _model.PropertyModels)
+			foreach (StylePropertyModel model in _model.GetProperties())
 			{
-				if (_model.ShowAll || (!_model.ShowAll && model.IsInStyle))
+				if (!_model.ShowAll && (_model.ShowAll || !model.IsInStyle))
 				{
-					StylePropertyVisualElement element = new StylePropertyVisualElement(model);
-					element.Init();
-					(model.IsVariable ? _variablesParent : _propertiesParent).Add(element);
+					continue;
 				}
+
+				StylePropertyVisualElement element = new StylePropertyVisualElement(model);
+				element.Init();
+				(model.IsVariable ? _variablesParent : _propertiesParent).Add(element);
 			}
 		}
 

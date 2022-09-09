@@ -16,7 +16,7 @@
 
         <engine:VisualElement name="variables">
             <engine:VisualElement name="sectionHeader">
-                <engine:TextElement name="sectionLabel" text="Local variables"/>
+                <engine:TextElement name="sectionLabel" text="Variables"/>
                 <engine:VisualElement name="divider"/>
                 <engine:VisualElement name="addVariableButton" class="button smallButton add"/>
             </engine:VisualElement>
