@@ -21,8 +21,6 @@ namespace Beamable.Editor.UI.Components
 		private VariableConnectionVisualElement _variableConnection;
 		private VisualElement _variableParent;
 
-		public BussPropertyProvider PropertyProvider => _model.PropertyProvider; // Temporarily, to delete
-
 		public string VariableSource // TODO: do we need this?
 		{
 			get => _labelComponent.tooltip;
@@ -169,10 +167,10 @@ namespace Beamable.Editor.UI.Components
 
 			StylePropertyVisualElementUtility.PropertyValueState result =
 				StylePropertyVisualElementUtility.TryGetProperty(_model.PropertyProvider, _model.StyleRule,
-				                                                     _model.VariablesDatabase,
-				                                                     context, out IBussProperty property,
-				                                                     out VariableDatabase.PropertyReference
-					                                                     variableSource);
+				                                                 _model.VariablesDatabase, context,
+				                                                 out IBussProperty property,
+				                                                 out VariableDatabase.PropertyReference
+					                                                 variableSource);
 
 			SetVariableSource(variableSource);
 

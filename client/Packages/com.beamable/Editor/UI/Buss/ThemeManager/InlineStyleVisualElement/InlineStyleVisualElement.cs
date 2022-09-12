@@ -2,10 +2,6 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -24,7 +20,8 @@ namespace Beamable.Editor.UI.Components
 		private readonly ThemeManagerModel _model;
 
 		public InlineStyleVisualElement(ThemeManagerModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(InlineStyleVisualElement)}/{nameof(InlineStyleVisualElement)}.uss", false)
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(InlineStyleVisualElement)}/{nameof(InlineStyleVisualElement)}.uss",
+			false)
 		{
 			_model = model;
 		}
@@ -58,7 +55,7 @@ namespace Beamable.Editor.UI.Components
 			_variableContainer.AddToClassList("propertyContainer");
 			mainContainer.Add(_variableContainer);
 
-			VisualElement propertiesHeader = CreateSubheader("Properties", Test);
+			VisualElement propertiesHeader = CreateSubheader("Properties", _model.AddInlineProperty);
 			mainContainer.Add(propertiesHeader);
 
 			_propertyContainer = new VisualElement();
@@ -85,40 +82,7 @@ namespace Beamable.Editor.UI.Components
 
 			SpawnProperties();
 		}
-
-		private void Test()
-		{
-			var keys = new HashSet<string>();
-			foreach (BussPropertyProvider propertyProvider in _model.SelectedElement.InlineStyle.Properties)
-			{
-				keys.Add(propertyProvider.Key);
-			}
-
-			IOrderedEnumerable<string> sorted = BussStyle.Keys.OrderBy(k => k);
-			var context = new GenericMenu();
-
-			foreach (string key in sorted)
-			{
-				if (keys.Contains(key)) continue;
-				Type baseType = BussStyle.GetBaseType(key);
-				SerializableValueImplementationHelper.ImplementationData data = SerializableValueImplementationHelper.Get(baseType);
-				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                                   t != typeof(FractionFloatBussProperty)).ToList();
-				foreach (Type type in types)
-				{
-					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
-					context.AddItem(new GUIContent(label), false, () =>
-					{
-						_model.SelectedElement.InlineStyle.Properties.Add(
-							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
-						_model.ForceRefresh();
-					});
-				}
-			}
-
-			context.ShowAsContext();
-		}
-
+		
 		private void SpawnProperties()
 		{
 			var selectedElement = _model.SelectedElement;
@@ -129,7 +93,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				StylePropertyModel model = new StylePropertyModel(selectedElement.StyleSheet, null,
 				                                                  property, _model.VariableDatabase,
-				                                                  propertySourceTracker, selectedElement, _model.RemoveInlineProperty);
+				                                                  propertySourceTracker, selectedElement,
+				                                                  _model.RemoveInlineProperty);
 
 				var element = new StylePropertyVisualElement(model);
 				element.Init();

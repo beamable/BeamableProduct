@@ -71,15 +71,15 @@ namespace Beamable.Editor.UI.Buss
 			root.Clear();
 
 			VisualTreeAsset uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/ThemeManager.uxml");
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uxml");
 			_windowRoot = uiAsset.CloneTree();
-			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/ThemeManager.uss");
+			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			_windowRoot.name = nameof(_windowRoot);
 			_windowRoot.TryAddScrollViewAsMainElement();
 
 			VisualElement mainVisualElement = _windowRoot.Q("window-main");
 
-			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/ThemeManager.uss");
+			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
 
 			BussThemeManagerActionBarVisualElement actionBar =

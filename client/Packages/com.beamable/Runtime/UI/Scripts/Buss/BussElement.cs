@@ -38,9 +38,9 @@ namespace Beamable.UI.Buss
 		}
 
 		public IEnumerable<string> Classes => _classes;
-		public IEnumerable<string> PseudoClasses => _pseudoClasses;
+		// public IEnumerable<string> PseudoClasses => _pseudoClasses;
 		public string TypeName => GetType().Name;
-		public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
+		// public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
 		public BussStyleDescription InlineStyle => _inlineStyle;
 
 		public BussStyleSheet StyleSheet
@@ -150,9 +150,9 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetClass(string className, bool enabled)
+		public void SetClass(string className, bool isEnabled)
 		{
-			if (enabled)
+			if (isEnabled)
 			{
 				AddClass(className);
 			}
@@ -162,10 +162,10 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetPseudoClass(string className, bool enabled)
+		public void SetPseudoClass(string className, bool isEnabled)
 		{
 			var changed = false;
-			if (enabled)
+			if (isEnabled)
 			{
 				if (!_pseudoClasses.Contains(className))
 				{
@@ -181,7 +181,7 @@ namespace Beamable.UI.Buss
 			if (changed)
 			{
 				Style.SetStyleAnimatedListener(ApplyStyle);
-				Style.SetPseudoStyle(className, enabled);
+				Style.SetPseudoStyle(className, isEnabled);
 			}
 		}
 
@@ -257,7 +257,8 @@ namespace Beamable.UI.Buss
 
 		public void CheckParent()
 		{
-			var foundParent = (transform == null || transform.parent == null)
+			var mysTransform = transform;
+			var foundParent = (mysTransform == null || mysTransform.parent == null)
 				? null
 				: transform.parent.GetComponentInParent<BussElement>();
 

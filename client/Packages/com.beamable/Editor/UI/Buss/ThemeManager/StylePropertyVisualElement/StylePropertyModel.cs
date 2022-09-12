@@ -21,8 +21,9 @@ namespace Beamable.Editor.UI.Components
 		public BussElement InlineStyleOwner { get; }
 
 		public bool IsVariable => PropertyProvider.IsVariable;
-		public bool IsInStyle => StyleRule != null && StyleRule.Properties.Contains(PropertyProvider);
-		public bool IsWritable => StyleSheet != null && StyleSheet.IsWritable;
+		public bool IsInStyle => IsInline || (StyleRule != null && StyleRule.Properties.Contains(PropertyProvider));
+		public bool IsWritable => IsInline || (StyleSheet != null && StyleSheet.IsWritable);
+		private bool IsInline => InlineStyleOwner != null;
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
 		                          BussStyleRule styleRule,
@@ -67,8 +68,6 @@ namespace Beamable.Editor.UI.Components
 			context.ShowAsContext();
 		}
 
-
-		
 		public void HandlePropertyChanged()
 		{
 			if (PropertyProvider.IsVariable)

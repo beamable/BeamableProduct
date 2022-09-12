@@ -122,6 +122,8 @@ namespace Beamable.Editor.UI.Components
 			_model.SelectedElement.AddClass("");
 			RefreshClassesList();
 			RefreshHeight();
+			
+			EditorUtility.SetDirty(_model.SelectedElement);
 			_model.ForceRefresh();
 		}
 
@@ -142,6 +144,8 @@ namespace Beamable.Editor.UI.Components
 			_model.SelectedElement.RemoveClass(className);
 			RefreshClassesList();
 			RefreshHeight();
+			
+			EditorUtility.SetDirty(_model.SelectedElement);
 			_model.ForceRefresh();
 		}
 

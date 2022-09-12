@@ -35,7 +35,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 		}
 
-		private static Dictionary<string, SelectorWeight> _weights = new Dictionary<string, SelectorWeight>();
+		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
@@ -154,9 +154,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
 		public void RecalculateStyle(BussElement element)
 		{
-			_weights.Clear();
+			Weights.Clear();
 			element.Style.Clear();
-			element.PseudoStyles.Clear();
 
 			// Applying default bemable styles
 			foreach (BussStyleSheet styleSheet in _defaultBeamableStyleSheets)
@@ -208,11 +207,11 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			if (element == null || descriptor == null) return;
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
-				if (!_weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
+				if (!Weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
 					weight.CompareTo(currentWeight) >= 0)
 				{
 					element.Style[property.Key] = property.GetProperty();
-					_weights[property.Key] = weight;
+					Weights[property.Key] = weight;
 				}
 			}
 		}
@@ -226,11 +225,11 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				string weightKey = pseudoClass + property.Key;
-				if (!_weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
+				if (!Weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
 					weight.CompareTo(currentWeight) >= 0)
 				{
 					element.Style[pseudoClass, property.Key] = property.GetProperty();
-					_weights[weightKey] = weight;
+					Weights[weightKey] = weight;
 				}
 			}
 		}

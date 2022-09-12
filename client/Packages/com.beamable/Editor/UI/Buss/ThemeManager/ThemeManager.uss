@@ -60,6 +60,6 @@ BussElementHierarchyVisualElement {
     flex-grow: 1;
 }
 
-InlineStyleCardVisualElement {
+InlineStyleVisualElement {
     padding-bottom: 10px;
 }
