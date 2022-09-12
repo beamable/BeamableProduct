@@ -47,6 +47,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private FormConstraint _isNameValid;
 		private FormConstraint _isNameSizedRight;
+		private FormConstraint _isNameUnique;
 
 		public override void Refresh()
 		{
@@ -74,7 +75,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName, .01);
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
 				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH), .01);
-			_createBtn.AddGateKeeper(_isNameValid);
+			_isNameUnique = _nameTextField.AddErrorLabel("Name", IsNameUnique);
+
+			_createBtn.AddGateKeeper(_isNameValid, _isNameSizedRight, _isNameUnique);
 
 			Root.Q("foldContainer").visible = false;
 		}
@@ -138,7 +141,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void HandleNameLabelKeyUp(KeyUpEvent evt)
 		{
-			if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _isNameValid.IsValid && _isNameSizedRight.IsValid)
+			if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _isNameValid.IsValid && _isNameSizedRight.IsValid && _isNameUnique.IsValid)
 			{
 				HandleContinueButtonClicked();
 				return;
@@ -149,6 +152,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 			NewServiceName = _nameTextField.value;
 			_nameTextField.SetEnabled(true);
 			_nameTextField.BeamableFocus();
+		}
+
+		private string IsNameUnique(string txt)
+		{
+			var localServices = MicroservicesDataModel.Instance.AllLocalServices;
+			var remoteServices = MicroservicesDataModel.Instance.AllRemoteOnlyServices;
+
+			return localServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)) ||
+				   remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase))
+				? "Service name must be unique "
+				: null;
 		}
 	}
 }

@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Assistant;
+using Beamable.Common.Spew;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using System;
@@ -167,7 +168,7 @@ namespace Beamable.Server.Editor
 		{
 			// Make sure this feature is not disabled.
 			var config = MicroserviceConfiguration.Instance;
-			if (!config.EnsureMongoAssemblyDependencies) 
+			if (!config.EnsureMongoAssemblyDependencies)
 				return;
 
 			// Get the reflection cache
@@ -182,7 +183,7 @@ namespace Beamable.Server.Editor
 				var deps = descToDeps[d].Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
 				return deps != null;
 			});
-			
+
 			// Find all MSs that are missing the correct Mongo DLLs
 			var missingMongoDepsAsmDefs = microservicesThatDependOnStorage.Select(ms => ms.ConvertToAsset()).Where(asm => !asm.HasMongoLibraries());
 
@@ -327,6 +328,11 @@ namespace Beamable.Server.Editor
 
 				CleanupRunningGeneratorProcesses(registry.Descriptors).Then(_ =>
 				{
+					if (DockerCommand.DockerNotRunning)
+					{
+						PlatformLogger.Log("<b><color=red>[Beamable]</color></b> Docker is not running- there would be no code regeneration for microservices.");
+						return;
+					}
 					// Gets the list of currently detected code handles.
 					var latestMSHandles = codeWatcher.LatestCodeHandles.Where(h => h.CodeClass == BeamCodeClass.Microservice).ToList();
 

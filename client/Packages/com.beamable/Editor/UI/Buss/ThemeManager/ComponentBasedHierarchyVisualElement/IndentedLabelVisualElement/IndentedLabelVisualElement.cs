@@ -27,11 +27,7 @@ namespace Beamable.Editor.UI.Components
 		private BussElement _relatedBussElement;
 		private Func<BussElement, string> _getLabelAction;
 
-		public GameObject RelatedGameObject
-		{
-			get;
-			private set;
-		}
+		public GameObject RelatedGameObject { get; private set; }
 
 		public IndentedLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/IndentedLabelVisualElement/IndentedLabelVisualElement.uss")

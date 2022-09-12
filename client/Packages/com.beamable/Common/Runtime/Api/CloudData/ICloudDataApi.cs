@@ -28,5 +28,13 @@ namespace Beamable.Common.Api.CloudData
 		/// </summary>
 		/// <returns>A <see cref="GetCloudDataManifestResponse"/> promise representing the player's cloud trial data.</returns>
 		Promise<GetCloudDataManifestResponse> GetPlayerManifest();
+
+
+		/// <summary>
+		/// Get the cloud data content based on metadata from manifest
+		/// </summary>
+		/// <param name="metaData"></param>
+		/// <returns>A string containing content of remote cloud data</returns>
+		Promise<string> GetCloudDataContent(CloudMetaData metaData);
 	}
 }

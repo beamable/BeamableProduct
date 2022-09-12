@@ -11,6 +11,7 @@
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;
+    background-color: rgba(49, 49, 49, 1);
 }
 
 #selectorLabelParent {
