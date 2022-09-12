@@ -53,7 +53,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			                               AccessOptions.ElementAt(SelectedAccessOption).Value,
 			                               GameTypes[SelectedGameTypeIndex].Id,
 			                               Description,
-			                               maxPlayers: GameTypes[SelectedGameTypeIndex].maxPlayers);
+			                               maxPlayers: GameTypes[SelectedGameTypeIndex].CalculateMaxPlayers());
 		}
 	}
 }
