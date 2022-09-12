@@ -47,7 +47,7 @@ namespace Beamable.Editor.UI.Components
 			header.AddToClassList("header");
 			TextElement label = new TextElement();
 			label.AddToClassList("headerLabel");
-			label.text = "Selected Buss Element";
+			label.text = "Selected Element";
 			header.Add(label);
 
 			header.RegisterCallback<MouseDownEvent>(evt =>

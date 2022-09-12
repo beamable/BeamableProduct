@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Buss
 		private LabeledCheckboxVisualElement _filterToggle;
 		private LabeledCheckboxVisualElement _hideOverridenToggle;
 		private bool _inStyleSheetChangedLoop;
-		private ThemeManagerNavigationComponent _navigationWindow;
+		private NavigationVisualElement _navigationWindow;
 		private ScrollView _scrollView;
 		private SelectedElementVisualElement _selectedElement;
 		private BussStyleListVisualElement _stylesGroup;
@@ -93,7 +93,7 @@ namespace Beamable.Editor.UI.Buss
 			VisualElement navigationGroup = new VisualElement {name = "navigationGroup"};
 			mainVisualElement.Add(navigationGroup);
 
-			_navigationWindow = new ThemeManagerNavigationComponent(_model);
+			_navigationWindow = new NavigationVisualElement(_model);
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
 
@@ -106,7 +106,7 @@ namespace Beamable.Editor.UI.Buss
 			_stylesGroup.Init();
 			_scrollView.Add(_stylesGroup);
 
-			InlineStyleCardVisualElement inlineStyle = new InlineStyleCardVisualElement(_model);
+			InlineStyleVisualElement inlineStyle = new InlineStyleVisualElement(_model);
 			inlineStyle.Init();
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);

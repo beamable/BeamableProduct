@@ -14,7 +14,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class ThemeManagerNavigationComponent : BeamableBasicVisualElement
+	public class NavigationVisualElement : BeamableBasicVisualElement
 	{
 		private readonly List<IndentedLabelVisualElement> _spawnedLabels = new List<IndentedLabelVisualElement>();
 		private bool _hasDelayedChangeCallback;
@@ -22,8 +22,8 @@ namespace Beamable.Editor.UI.Components
 		private IndentedLabelVisualElement _selectedLabel;
 		private readonly ThemeManagerModel _model;
 
-		public ThemeManagerNavigationComponent(ThemeManagerModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/ThemeManagerNavigationComponent/ThemeManagerNavigationComponent.uss")
+		public NavigationVisualElement(ThemeManagerModel model) : base(
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(NavigationVisualElement)}/{nameof(NavigationVisualElement)}.uss")
 		{
 			_model = model;
 		}

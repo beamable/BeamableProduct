@@ -31,7 +31,7 @@ namespace Beamable.Editor.UI.Components
 		private bool _selected;
 
 		public IndentedLabelVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/ThemeManagerNavigationComponent/IndentedLabelVisualElement/IndentedLabelVisualElement.uss") { }
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(NavigationVisualElement)}/{nameof(IndentedLabelVisualElement)}/{nameof(IndentedLabelVisualElement)}.uss") { }
 
 		public void Setup(BussElement bussElement,
 		                  string label,
