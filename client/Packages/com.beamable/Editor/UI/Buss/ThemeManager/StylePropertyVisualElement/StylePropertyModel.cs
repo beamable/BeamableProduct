@@ -11,19 +11,25 @@ namespace Beamable.Editor.UI.Components
 {
 	public class StylePropertyModel
 	{
-		private readonly Action<string> _removePropertyAction;
 		public event Action Change;
+		
+		private readonly Action<string> _removePropertyAction;
+		private IBussProperty _cachedProperty;
+		
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
 		public VariableDatabase VariablesDatabase { get; }
 		public PropertySourceTracker PropertySourceTracker { get; }
 		public BussElement InlineStyleOwner { get; }
+		
+		public string Tooltip { get; set; }
 
 		public bool IsVariable => PropertyProvider.IsVariable;
 		public bool IsInStyle => IsInline || (StyleRule != null && StyleRule.Properties.Contains(PropertyProvider));
 		public bool IsWritable => IsInline || (StyleSheet != null && StyleSheet.IsWritable);
 		private bool IsInline => InlineStyleOwner != null;
+		public bool HasVariableConnected => PropertyProvider.GetProperty() is VariableProperty;
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
 		                          BussStyleRule styleRule,
@@ -67,30 +73,35 @@ namespace Beamable.Editor.UI.Components
 
 			context.ShowAsContext();
 		}
-
-		public void HandlePropertyChanged()
+		
+		public void OnButtonClick()
 		{
-			if (PropertyProvider.IsVariable)
-			{
-				VariablesDatabase.SetVariableDirty(PropertyProvider.Key);
-			}
-			else if (PropertyProvider.GetProperty() is VariableProperty vp)
-			{
-				VariablesDatabase.SetVariableDirty(vp.VariableName);
-			}
-			else
-			{
-				VariablesDatabase.SetPropertyDirty(StyleSheet, StyleRule, PropertyProvider);
-			}
+			 // if (_cachedProperty == null)
+			 // {
+				//  _cachedProperty = PropertyProvider.GetProperty();
+				//  PropertyProvider.SetProperty(new VariableProperty());   
+				//   //   HasVariableConnected
+			 // 		// ? BussStyle.GetDefaultValue(PropertyProvider.Key).CopyProperty()
+			 // 		// : new VariableProperty();
+			 // }
+			 // else
+			 // {
+				//  PropertyProvider.SetProperty(_cachedProperty);
+				//  _cachedProperty = null;
+			 // }
+			 
+			 // PropertyProvider.SetProperty(BussStyle.GetDefaultValue("backgroundColor"));
+			
+			 // var temp = _cachedProperty;
+			 // _cachedProperty = PropertyProvider.GetProperty();
+			 // PropertyProvider.SetProperty(temp);
+			 // if (StyleSheet != null)
+			 // {
+			 // 	// StyleSheet.TriggerChange();
+			 // }
 
-			if (!IsInStyle)
-			{
-				if (StyleRule.TryAddProperty(PropertyProvider.Key, PropertyProvider.GetProperty()))
-				{
-					StyleSheet.TriggerChange();
-				}
-			}
-
+			 AssetDatabase.SaveAssets();
+			//ConnectionChange?.Invoke();
 			Change?.Invoke();
 		}
 	}

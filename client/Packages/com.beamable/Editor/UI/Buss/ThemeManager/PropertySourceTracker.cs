@@ -7,8 +7,8 @@ namespace Beamable.UI.Buss
 {
 	public class PropertySourceTracker
 	{
+		private readonly Dictionary<string, SourceData> _sources = new Dictionary<string, SourceData>();
 		public BussElement Element { get; }
-		private Dictionary<string, SourceData> _sources = new Dictionary<string, SourceData>();
 
 		public PropertySourceTracker(BussElement element)
 		{
@@ -120,8 +120,7 @@ namespace Beamable.UI.Buss
 		{
 			var key = propertyProvider.Key;
 			var propertyReference = new PropertyReference(styleSheet, styleRule, propertyProvider);
-			SourceData sourceData;
-			if (!_sources.TryGetValue(key, out sourceData))
+			if (!_sources.TryGetValue(key, out SourceData sourceData))
 			{
 				_sources[key] = sourceData = new SourceData(key);
 			}
@@ -131,7 +130,7 @@ namespace Beamable.UI.Buss
 		public class SourceData
 		{
 			public readonly string key;
-			public List<PropertyReference> Properties = new List<PropertyReference>();
+			public readonly List<PropertyReference> Properties = new List<PropertyReference>();
 
 			public SourceData(string key)
 			{

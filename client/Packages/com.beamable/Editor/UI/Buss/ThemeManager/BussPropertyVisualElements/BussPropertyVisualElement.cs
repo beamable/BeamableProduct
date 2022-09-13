@@ -16,7 +16,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public abstract class BussPropertyVisualElement : BeamableBasicVisualElement
 	{
-		public Action OnValueChanged;
 		public BussStyleSheet UpdatedStyleSheet;
 		protected bool IsTriggeringStyleSheetChange { get; private set; }
 
@@ -47,7 +46,6 @@ namespace Beamable.Editor.UI.Components
 			IsTriggeringStyleSheetChange = true;
 			try
 			{
-				OnValueChanged?.Invoke();
 				if (UpdatedStyleSheet != null)
 				{
 					UpdatedStyleSheet.TriggerChange();
@@ -70,7 +68,7 @@ namespace Beamable.Editor.UI.Components
 			get;
 		}
 
-		protected BussPropertyVisualElement(T property) : base()
+		protected BussPropertyVisualElement(T property)
 		{
 			Property = property;
 		}

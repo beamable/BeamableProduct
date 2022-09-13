@@ -1,12 +1,7 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
+using System;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
@@ -14,18 +9,12 @@ namespace Beamable.Editor.UI.Components
 	public class StylePropertyVisualElement : BeamableBasicVisualElement
 	{
 		private readonly StylePropertyModel _model;
-		private TextElement _labelComponent;
 		private BussPropertyVisualElement _propertyVisualElement;
+		private VariableConnectionVisualElement _variableConnection;
+		private TextElement _labelComponent;
 		private VisualElement _removeButton;
 		private VisualElement _valueParent;
-		private VariableConnectionVisualElement _variableConnection;
 		private VisualElement _variableParent;
-
-		public string VariableSource // TODO: do we need this?
-		{
-			get => _labelComponent.tooltip;
-			set => _labelComponent.tooltip = value;
-		}
 
 		public StylePropertyVisualElement(StylePropertyModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(StylePropertyVisualElement)}/{nameof(StylePropertyVisualElement)}.uss")
@@ -37,7 +26,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_labelComponent = new TextElement {name = "propertyLabel"};
+			_labelComponent = new TextElement {name = "propertyLabel", tooltip = _model.Tooltip};
 			_labelComponent.RegisterCallback<MouseDownEvent>(_model.LabelClicked);
 			Root.Add(_labelComponent);
 
@@ -74,7 +63,6 @@ namespace Beamable.Editor.UI.Components
 
 			if (_propertyVisualElement != null)
 			{
-				_propertyVisualElement.OnValueChanged -= _model.HandlePropertyChanged;
 				_labelComponent.UnregisterCallback<MouseDownEvent>(_model.LabelClicked);
 			}
 		}
@@ -84,6 +72,8 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent?.SetEnabled(_model.IsWritable);
 			_propertyVisualElement?.SetEnabled(_model.IsWritable);
 			_variableConnection?.SetEnabled(_model.IsWritable);
+
+			// TODO: set tooltip text 
 		}
 
 		private void CreateEditableField(IBussProperty property)
@@ -100,8 +90,6 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.UpdatedStyleSheet = _model.IsInStyle ? _model.StyleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Init();
-				_propertyVisualElement.OnValueChanged -= _model.HandlePropertyChanged;
-				_propertyVisualElement.OnValueChanged += _model.HandlePropertyChanged;
 			}
 		}
 
@@ -205,14 +193,11 @@ namespace Beamable.Editor.UI.Components
 
 			if (_variableConnection == null)
 			{
-				_variableConnection = new VariableConnectionVisualElement();
+				_variableConnection = new VariableConnectionVisualElement(_model);
+				_variableConnection.Init();
 				_variableParent.Add(_variableConnection);
 				_variableConnection.Refresh();
-				// _variableConnection.ConnectionChange += () => PropertyChanged?.Invoke();
 			}
-
-			_variableConnection.Setup(_model.StyleSheet, _model.StyleRule, _model.PropertyProvider,
-			                          _model.VariablesDatabase);
 		}
 
 		private void SetVariableSource(VariableDatabase.PropertyReference variableSource)
@@ -221,19 +206,19 @@ namespace Beamable.Editor.UI.Components
 			{
 				if (variableSource.StyleSheet == null)
 				{
-					VariableSource = $"Variable: {variableSource.PropertyProvider.Key}\n" +
+					_model.Tooltip = $"Variable: {variableSource.PropertyProvider.Key}\n" +
 					                 "Declared in inline style.";
 				}
 				else
 				{
-					VariableSource = $"Variable: {variableSource.PropertyProvider.Key}\n" +
+					_model.Tooltip = $"Variable: {variableSource.PropertyProvider.Key}\n" +
 					                 $"Selector: {variableSource.StyleRule.SelectorString}\n" +
 					                 $"Style sheet: {variableSource.StyleSheet.name}";
 				}
 			}
 			else
 			{
-				VariableSource = null;
+				_model.Tooltip = String.Empty;
 			}
 		}
 	}

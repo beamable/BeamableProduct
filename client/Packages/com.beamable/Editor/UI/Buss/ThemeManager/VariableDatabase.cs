@@ -167,7 +167,7 @@ namespace Beamable.UI.Buss
 
 			_variables.Clear();
 			_styleSheets.Clear();
-			
+
 			foreach (BussStyleSheet sheet in _model.StyleSheets)
 			{
 				AddStyleSheet(sheet);
