@@ -1,4 +1,5 @@
 ﻿using Beamable.BSAT.Core.Models.Descriptors;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,5 +47,25 @@ namespace Beamable.BSAT.Core.Models
 		}
 		private void HandleTestResultChange()
 			=> OnTestResultChanged?.Invoke();
+
+		public ArrayDict GenerateReport()
+		{
+			var data = new List<ArrayDict>();
+			foreach (var registeredTestRule in _registeredTestRules)
+			{
+				var nestedData = new ArrayDict
+				{
+					{ registeredTestRule.TestMethodName, registeredTestRule.GenerateReport() }
+				};
+				data.Add(nestedData);
+			}
+			return new ArrayDict
+			{
+				{ "TestResult", TestResult},
+				{ "Title", TestDescriptor.Title },
+				{ "Description", TestDescriptor.Description },
+				{ "TestRules", data}
+			};
+		}
 	}
 }

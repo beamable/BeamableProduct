@@ -10,10 +10,12 @@ namespace Beamable.BSAT.Editor.UI.Components
 		public event Action OnScanButtonPressed;
 		public event Action OnCreateNewTestSceneButtonPressed;
 		public event Action OnDeleteTestSceneButtonPressed;
+		public event Action OnGenerateReportButtonPressed;
 
 		private Button _scanButton;
 		private Button _createTestSceneButton;
 		private Button _deleteTestSceneButton;
+		private Button _generateReportButton;
 		
 		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits> { }
 		public new class UxmlTraits : VisualElement.UxmlTraits
@@ -50,10 +52,15 @@ namespace Beamable.BSAT.Editor.UI.Components
 			_deleteTestSceneButton = Root.Q<Button>("deleteTestScene");
 			_deleteTestSceneButton.clickable.clicked -= HandleDeleteTestSceneButton;
 			_deleteTestSceneButton.clickable.clicked += HandleDeleteTestSceneButton;
+
+			_generateReportButton = Root.Q<Button>("generateReport");
+			_generateReportButton.clickable.clicked -= HandleReportGenerateButton;
+			_generateReportButton.clickable.clicked += HandleReportGenerateButton;
 		}
 
 		private void HandleScanButtonPressed() => OnScanButtonPressed?.Invoke();
 		private void HandleCreateTestSceneButton() => OnCreateNewTestSceneButtonPressed?.Invoke();
 		private void HandleDeleteTestSceneButton() => OnDeleteTestSceneButtonPressed?.Invoke();
+		private void HandleReportGenerateButton() => OnGenerateReportButtonPressed?.Invoke();
 	}
 }

@@ -98,6 +98,9 @@ namespace Beamable.BSAT.Editor.UI
 			_actionBarVisualElement.OnDeleteTestSceneButtonPressed -= HandleDeleteTestSceneButton;
 			_actionBarVisualElement.OnDeleteTestSceneButtonPressed += HandleDeleteTestSceneButton;
 
+			_actionBarVisualElement.OnGenerateReportButtonPressed -= HandleGenerateReportButton;
+			_actionBarVisualElement.OnGenerateReportButtonPressed += HandleGenerateReportButton;
+
 			_actionBarVisualElement.Refresh();
 
 			_registeredTestScenesListModel = new RegisteredTestSceneListModel(TestingEditorModel);
@@ -207,6 +210,8 @@ namespace Beamable.BSAT.Editor.UI
 			TestingEditorModel.DeleteTestScene(TestingEditorModel.SelectedRegisteredTestScene);
 			HandleScanButton();
 		}
+
+		private void HandleGenerateReportButton() => TestingEditorModel.GenerateReport();
 
 		private void ResetList(VisualElement ve, ref ExtendedListView elv)
 		{
