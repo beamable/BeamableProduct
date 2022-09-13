@@ -44,6 +44,25 @@ namespace Beamable.BSAT.Editor.Models
 		public void Scan() => TestScanUtility.Scan(this);
 		public void CreateTestScene(string testName) => TestManagement.CreateTestScene(testName);
 		public void DeleteTestScene(RegisteredTestScene registeredTestScene) => TestManagement.DeleteTestScene(registeredTestScene);
+		public void GenerateReport()
+		{
+			var json = TestConfiguration.GenerateReport();
+
+			if (!Directory.Exists(PATH_TO_REPORTS))
+				Directory.CreateDirectory(PATH_TO_REPORTS);
+
+			var fileName = GetReportFileName($"{DateTime.UtcNow:yyyy-MM-dd_hh-mm-ss-tt}");
+			var pathToFile = $"{PATH_TO_REPORTS}/{fileName}.json";
+			using (var writer = File.CreateText(pathToFile))
+			{
+				writer.Write(json);
+				writer.Close();
+			}
+			
+			TestableDebug.Log(json);
+			AssetDatabase.Refresh();
+			EditorUtility.DisplayDialog("Report Generator", $"Report has been generated at path=[{pathToFile}].", "Ok");
+		}
 	}
 	internal static class TestManagement
 	{

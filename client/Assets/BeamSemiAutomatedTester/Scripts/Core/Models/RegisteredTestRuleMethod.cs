@@ -2,6 +2,7 @@
 using Beamable.BSAT;
 using Beamable.BSAT.Extensions;
 using Beamable.Common;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -88,5 +89,14 @@ namespace Beamable.BSAT.Core.Models
 					: (TestResult)MethodInfo.Invoke(obj, Arguments);
 		}
 		public void Reset() => TestResult = TestResult.NotSet;
+
+		public ArrayDict GenerateReport()
+		{
+			return new ArrayDict
+			{
+				{ "TestResult", TestResult},
+				{ "Arguments", ArgumentsRaw }
+			};
+		}
 	}
 }
