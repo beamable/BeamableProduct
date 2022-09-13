@@ -109,9 +109,17 @@ namespace Beamable.Editor.Content.UI
 
 		public override void OnInspectorGUI()
 		{
-
 			var contentObject = target as ContentObject;
 			if (contentObject == null) return;
+			var wrongFields = target.GetType().GetFields().ToList()
+			                      .Where(info => typeof(ScriptableObject).IsAssignableFrom(info.FieldType));
+			foreach(var wrongField in wrongFields)
+			{
+				var gui = new GUIStyle(GUI.skin.textArea) {padding = new RectOffset(15, 15, 15, 15), richText = true};
+				EditorGUILayout.LabelField($"<b>{wrongField.Name}</b> field should not have type <b>{wrongField.FieldType.Name}</b>. \n" +
+				                           "You should use Addressables <b>AssetReference</b> instead of direct <b>ScriptableObject</b> reference."
+				                           ,gui);
+			}
 
 			if (contentObject.SerializeToConsoleRequested)
 			{
