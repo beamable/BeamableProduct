@@ -1,7 +1,9 @@
 ﻿using Beamable.BSAT.Core.Models;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace Beamable.BSAT.Core
@@ -11,9 +13,14 @@ namespace Beamable.BSAT.Core
 		public Action OnTestFinished;
 		public Action OnAllTestsFinished;
 
+		public TestResult TestResult => _testResult = RegisteredTestScenes.Any(x => x.TestResult == TestResult.Failed) ? TestResult.Failed :
+			RegisteredTestScenes.All(x => x.TestResult == TestResult.Passed) ? TestResult.Passed :
+			TestResult.NotSet;
+		
 		public KeyCode ToggleTestUIKey => toggleTestUIKey;
 
 		[SerializeField] private KeyCode toggleTestUIKey = KeyCode.Semicolon;
+		[SerializeField, HideInInspector] private TestResult _testResult;
 		
 		public List<RegisteredTestScene> RegisteredTestScenes => _registeredTestScenes;
 		
@@ -27,5 +34,24 @@ namespace Beamable.BSAT.Core
 			_registeredTestScenes.FirstOrDefault(x => x.SceneName == sceneName);
 
 		public void Reset() => _registeredTestScenes.Clear();
+
+		public string GenerateReport()
+		{
+			var data = new List<ArrayDict>();
+			foreach (var registeredTestScene in _registeredTestScenes)
+			{
+				var nestedData = new ArrayDict
+				{
+					{ registeredTestScene.SceneName, registeredTestScene.GenerateReport() }
+				};
+				data.Add(nestedData);
+			}
+			return Json.Serialize(new ArrayDict
+			{
+				{ "ReportGenerateTimeUTC", DateTime.UtcNow.ToString("yyyy.MM.dd hh:mm:ss tt")},
+				{ "TestResult", TestResult },
+				{ "TestScenes", data }
+			}, new StringBuilder());
+		}
 	}
 }
