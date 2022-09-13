@@ -61,7 +61,11 @@ namespace Beamable.BSAT.Editor.Models
 			
 			TestableDebug.Log(json);
 			AssetDatabase.Refresh();
-			EditorUtility.DisplayDialog("Report Generator", $"Report has been generated at path=[{pathToFile}].", "Ok");
+			if (EditorUtility.DisplayDialog("Report Generator", $"Report has been generated at path=[{pathToFile}].",
+			                                "Ok"))
+			{
+				EditorUtility.RevealInFinder(pathToFile);
+			}
 		}
 	}
 	internal static class TestManagement
