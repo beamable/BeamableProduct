@@ -21,7 +21,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			int MaxPlayers { get; }
 			int CurrentPlayers { get; }
 			int? CurrentlySelectedPlayerIndex { get; set; }
-			bool IsVisible { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
 			bool IsMatchStarting { get; }
@@ -75,14 +74,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 		
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(System.IsVisible);
-
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}
@@ -111,7 +108,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbySlotsList.RebuildPooledLobbiesEntries();
 		}
 
-		private void ValidateStartButton()
+		public virtual void ValidateStartButton()
 		{
 			bool buttonValid = System.IsPlayerAdmin && System.IsServerReady();
 			StartButton.interactable = buttonValid;
@@ -167,7 +164,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OnSettingButtonClicked?.Invoke();
 		}
 
-		private void ReadyButtonClicked()
+		public virtual void ReadyButtonClicked()
 		{
 			if (System.IsMatchStarting)
 			{
@@ -177,7 +174,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			System.SetPlayerReady(true);
 		}
 
-		private void NotReadyButtonClicked()
+		public virtual void NotReadyButtonClicked()
 		{
 			if (System.IsMatchStarting)
 			{
@@ -187,7 +184,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			System.SetPlayerReady(false);
 		}
 
-		private async void StartButtonClicked()
+		public virtual async void StartButtonClicked()
 		{
 			if (!System.IsPlayerAdmin || System.IsMatchStarting)
 			{
@@ -206,7 +203,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		private async void LeaveButtonClicked()
+		public virtual async void LeaveButtonClicked()
 		{
 			if (System.IsMatchStarting)
 			{

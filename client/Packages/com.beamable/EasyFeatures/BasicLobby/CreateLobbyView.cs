@@ -19,7 +19,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			bool IsVisible { get; set; }
 			List<SimGameType> GameTypes { get; }
 			int SelectedGameTypeIndex { get; set; }
 			Dictionary<string, LobbyRestriction> AccessOptions { get; } // TODO: remove this dependency
@@ -62,15 +61,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 		
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(System.IsVisible);
-
 			// We don't need to perform anything in case if view is not visible. Visibility is controlled by a feature control script.
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}
@@ -93,7 +90,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 		}
 		
-		private void ValidateConfirmButton()
+		public virtual void ValidateConfirmButton()
 		{
 			bool canJoinLobby = System.ValidateConfirmButton();
 
@@ -115,18 +112,18 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OnCancelButtonClicked?.Invoke();
 		}
 
-		private void OnNameChanged(string value)
+		public virtual void OnNameChanged(string value)
 		{
 			System.Name = value;
 			ValidateConfirmButton();
 		}
 
-		private void OnDescriptionChanged(string value)
+		public virtual void OnDescriptionChanged(string value)
 		{
 			System.Description = value;
 		}
 
-		private void OnAccessOptionSelected(int optionId)
+		public virtual void OnAccessOptionSelected(int optionId)
 		{
 			if (optionId == System.SelectedAccessOption)
 			{
@@ -136,7 +133,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			System.SelectedAccessOption = optionId;
 		}
 
-		private void OnGameTypeSelected(int optionId)
+		public virtual void OnGameTypeSelected(int optionId)
 		{
 			if (optionId == System.SelectedGameTypeIndex)
 			{
@@ -146,7 +143,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			System.SelectedGameTypeIndex = optionId;
 		}
 
-		private async void CreateLobbyButtonClicked()
+		public virtual async void CreateLobbyButtonClicked()
 		{
 			OnCreateLobbyRequestSent?.Invoke();
 			

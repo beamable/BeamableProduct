@@ -88,5 +88,11 @@ namespace Beamable.Experimental.Api.Parties
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}
+		
+		public Promise KickPlayer(string partyId, long playerId) => KickPlayer(partyId, playerId.ToString());
+
+		public Promise PromoteToLeader(string partyId, long playerId) => PromoteToLeader(partyId, playerId.ToString());
+
+		public Promise InviteToParty(string partyId, long playerId) => InviteToParty(partyId, playerId.ToString());
 	}
 }

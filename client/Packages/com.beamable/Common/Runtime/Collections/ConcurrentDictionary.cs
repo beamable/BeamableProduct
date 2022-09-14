@@ -1,6 +1,7 @@
 #if UNITY_WEBGL
 #define DISABLE_THREADING
 #endif
+
 using System.Collections;
 using System.Collections.Generic;
 
@@ -15,6 +16,7 @@ namespace Beamable.Common.Runtime.Collections
 		int Count { get; }
 		IEnumerable<TValue> Values { get; }
 		void Clear();
+		bool Remove(TKey key);
 
 		TValue this[TKey key] { get; set; }
 
@@ -46,6 +48,8 @@ namespace Beamable.Common.Runtime.Collections
 		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _internal.GetEnumerator();
 
 		IEnumerator IEnumerable.GetEnumerator() => _internal.GetEnumerator();
+
+		public bool Remove(TKey key) => _internal.TryRemove(key, out _);
 
 #else
       private Dictionary<TKey, TValue> _internal = new Dictionary<TKey, TValue>();
@@ -81,6 +85,10 @@ namespace Beamable.Common.Runtime.Collections
 
       IEnumerator IEnumerable.GetEnumerator() => _internal.GetEnumerator();
 
+      public bool Remove(TKey key)
+      {
+	      return _internal.Remove(key);
+      }
 #endif
 
 	}
