@@ -59,8 +59,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public event Action OnInfoButtonClicked;
 
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
-		bool IsDockerActive => !(DockerCommand.DockerNotInstalled || 
-		                         (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow && DockerCommand.DockerNotRunning));
+		bool IsDockerActive => !(DockerCommand.DockerNotInstalled ||
+								 (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow && DockerCommand.DockerNotRunning));
 		bool CanHaveDependencies => IsDockerActive && MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
 		MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
 
