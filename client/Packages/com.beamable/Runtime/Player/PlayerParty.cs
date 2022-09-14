@@ -319,6 +319,12 @@ namespace Beamable.Player
 			await _partyApi.InviteToParty(State.id, playerId);
 		}
 
+		/// <inheritdoc cref="IPartyApi.GetPartyInvites"/>
+		public Promise<InvitesResponse> GetInvites()
+		{
+			return _partyApi.GetPartyInvites();
+		}
+
 		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
 		public async Promise Promote(string playerId)
 		{

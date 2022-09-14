@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Parties;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,7 +59,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			Run();
 		}
-
+		
 		public async void Run()
 		{
 			await PartyViewGroup.RebuildPlayerContexts(PartyViewGroup.AllPlayerCodes);
@@ -80,22 +81,18 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private async void OnPlayerInvitedToParty(object partyId, object invitingPlayerId)
 		{
-			var invite = new PartyInvite {partyId = partyId.ToString(), playerId = invitingPlayerId.ToString()};
-			JoinPartyView.ReceivedInvites.Add(invite);
-
 			if (_currentView == views[View.Join])
 			{
 				await PartyViewGroup.Enrich();
 			}
 			
 			OverlaysController.ShowConfirm($"{invitingPlayerId} invited you to a party. Would you like to join?",
-			                               () => AcceptPartyInvite(invite));
+			                               () => AcceptPartyInvite(partyId.ToString()));
 		}
 
-		private async void AcceptPartyInvite(PartyInvite invite)
+		private async void AcceptPartyInvite(string partyId)
 		{
-			JoinPartyView.ReceivedInvites.Remove(invite);
-			await Context.Party.Join(invite.partyId);
+			await Context.Party.Join(partyId);
 			OpenPartyView();
 		}
 

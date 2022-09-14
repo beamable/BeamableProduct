@@ -1,19 +1,13 @@
-﻿using Beamable.UI.Buss;
-using EasyFeatures.Components;
+﻿using Beamable.Common;
+using Beamable.Experimental.Api.Parties;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicParty
 {
-	public struct PartyInvite
-	{
-		public string partyId, playerId;
-	}
-	
 	public class JoinPartyView : MonoBehaviour, ISyncBeamableView
 	{
-		// Use invites list stored on backend once ready
 		public static List<PartyInvite> ReceivedInvites = new List<PartyInvite>();
 		[SerializeField] private GameObject _noInvitesPendingText;
 		
@@ -41,21 +35,36 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				return;
 			}
+			
+			Context.Party.onPlayerInvited += OnPlayerInvited;
 
-			_noInvitesPendingText.SetActive(ReceivedInvites.Count == 0);
+			await RefreshInvitesList();
+			
+			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
+		}
 
-			List<long> playerIds = new List<long>(ReceivedInvites.Count);
-			foreach (var invite in ReceivedInvites)
+		protected virtual async Promise RefreshInvitesList()
+		{
+			var pendingInvites = await Context.Party.GetInvites();
+			ReceivedInvites = pendingInvites.invitations;
+			
+			_noInvitesPendingText.SetActive(pendingInvites.invitations.Count == 0);
+
+			List<long> playerIds = new List<long>(pendingInvites.invitations.Count);
+			foreach (var invite in pendingInvites.invitations)
 			{
-				if (long.TryParse(invite.playerId, out long id))
+				if (long.TryParse(invite.invitedBy, out long id))
 				{
 					playerIds.Add(id);
 				}
 			}
-
-			await InvitesList.Setup(playerIds, false, OnInviteAccepted, null, null, null);
 			
-			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
+			await InvitesList.Setup(playerIds, false, OnInviteAccepted, null, null, null);
+		}
+
+		private async void OnPlayerInvited(object partyId, object invitedById)
+		{
+			await RefreshInvitesList();
 		}
 
 		private async void OnInviteAccepted(string playerId)
@@ -63,9 +72,8 @@ namespace Beamable.EasyFeatures.BasicParty
 			for (int i = 0; i < ReceivedInvites.Count; i++)
 			{
 				var invite = ReceivedInvites[i];
-				if (invite.playerId == playerId)
+				if (invite.invitedBy == playerId)
 				{
-					ReceivedInvites.Remove(invite);
 					await Context.Party.Join(invite.partyId);
 					FeatureControl.OpenPartyView();
 					return;
