@@ -47,6 +47,12 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 		[Header("Exposed Events"), Space] public UnityEvent BackButtonAction;
 		public UnityEvent TopButtonAction;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
+		
 		public virtual int GetEnrichOrder() => EnrichOrder;
 
 		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)

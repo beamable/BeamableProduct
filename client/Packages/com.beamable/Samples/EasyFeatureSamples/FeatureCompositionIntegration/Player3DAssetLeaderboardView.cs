@@ -22,6 +22,11 @@ namespace EasyFeaturesIntegrationExamples.FeatureCompositionIntegration
 
 		public Coroutine RotatingCoroutine;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
 		public int GetEnrichOrder() => int.MaxValue;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
