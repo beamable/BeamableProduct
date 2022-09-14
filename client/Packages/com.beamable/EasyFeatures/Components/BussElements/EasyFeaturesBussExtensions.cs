@@ -8,23 +8,23 @@ namespace EasyFeatures.Components
 	{
 		public static void SetButtonPrimary(this BussElement element)
 		{
-			element.UpdateClasses(new List<string> {"button", "primary"});
+			element.UpdateClasses(new List<string> { "button", "primary" });
 
 			BussElement labelBussElement = element.Children.First(child => child is TextMeshBussElement tmp);
 			if (labelBussElement != null)
 			{
-				labelBussElement.UpdateClasses(new List<string> {"button", "primary", "label"});
+				labelBussElement.UpdateClasses(new List<string> { "button", "primary", "label" });
 			}
 		}
-		
+
 		public static void SetButtonDisabled(this BussElement element)
 		{
-			element.UpdateClasses(new List<string> {"button", "disable"});
-			
+			element.UpdateClasses(new List<string> { "button", "disable" });
+
 			BussElement labelBussElement = element.Children.First(child => child is TextMeshBussElement tmp);
 			if (labelBussElement != null)
 			{
-				labelBussElement.UpdateClasses(new List<string> {"button", "disable", "label"});
+				labelBussElement.UpdateClasses(new List<string> { "button", "disable", "label" });
 			}
 		}
 

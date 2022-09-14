@@ -19,7 +19,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			public int CurrentPlayers;
 			public int MaxPlayers;
 		}
-	
+
 		public class PoolData : PoolableScrollView.IItem
 		{
 			public ViewData ViewData { get; set; }
@@ -43,8 +43,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			_onLobbySelected = onLobbySelected;
 
 			Button.onClick.ReplaceOrAddListener(OnClick);
-			FrameBussElement.UpdateClasses(new List<string> {"panel", "lobby"});
-			
+			FrameBussElement.UpdateClasses(new List<string> { "panel", "lobby" });
+
 			SetSelected(false);
 		}
 

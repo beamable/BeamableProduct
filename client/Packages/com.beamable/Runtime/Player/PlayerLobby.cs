@@ -52,7 +52,7 @@ namespace Beamable.Player
 				{
 					_notificationService.Unsubscribe(UpdateName(base.Value.lobbyId), OnRawUpdate);
 				}
-				
+
 				if (value != null)
 				{
 					_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
@@ -123,13 +123,13 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
 		public async Promise Create(string name,
-		                            LobbyRestriction restriction,
-		                            string gameTypeId,
-		                            string description = null,
-		                            List<Tag> playerTags = null,
-		                            int? maxPlayers = null,
-		                            int? passcodeLength = null,
-		                            List<string> statsToInclude = null)
+									LobbyRestriction restriction,
+									string gameTypeId,
+									string description = null,
+									List<Tag> playerTags = null,
+									int? maxPlayers = null,
+									int? passcodeLength = null,
+									List<string> statsToInclude = null)
 		{
 			Value = await _lobbyApi.CreateLobby(
 				name,
@@ -144,13 +144,13 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
 		public async Promise Create(string name,
-		                            LobbyRestriction restriction,
-		                            SimGameTypeRef gameTypeRef = null,
-		                            string description = null,
-		                            List<Tag> playerTags = null,
-		                            int? maxPlayers = null,
-		                            int? passcodeLength = null,
-		                            List<string> statsToInclude = null)
+									LobbyRestriction restriction,
+									SimGameTypeRef gameTypeRef = null,
+									string description = null,
+									List<Tag> playerTags = null,
+									int? maxPlayers = null,
+									int? passcodeLength = null,
+									List<string> statsToInclude = null)
 		{
 			Value = await _lobbyApi.CreateLobby(
 				name,
@@ -165,20 +165,20 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="ILobbyApi.UpdateLobby"/>
 		public async Promise Update(string lobbyId,
-		                            LobbyRestriction restriction,
-		                            string newHost,
-		                            string name = null,
-		                            string description = null,
-		                            string gameType = null,
-		                            int? maxPlayers = null)
+									LobbyRestriction restriction,
+									string newHost,
+									string name = null,
+									string description = null,
+									string gameType = null,
+									int? maxPlayers = null)
 		{
 			Value = await _lobbyApi.UpdateLobby(lobbyId,
-			                                    restriction,
-			                                    newHost,
-			                                    name,
-			                                    description,
-			                                    gameType,
-			                                    maxPlayers);
+												restriction,
+												newHost,
+												name,
+												description,
+												gameType,
+												maxPlayers);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.JoinLobby"/>
@@ -259,7 +259,7 @@ namespace Beamable.Player
 
 		protected override void ResetChangeData()
 		{
-			ChangeData = new ObservableChangeEvent<LobbyEvent, string> {Event = LobbyEvent.None, Data = String.Empty};
+			ChangeData = new ObservableChangeEvent<LobbyEvent, string> { Event = LobbyEvent.None, Data = String.Empty };
 		}
 
 		private ObservableChangeEvent<LobbyEvent, string> ParseEvent(object message)

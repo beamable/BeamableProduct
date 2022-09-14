@@ -13,13 +13,13 @@ namespace Beamable.EasyFeatures.BasicParty
 		public string PartyIdToJoin { get; set; }
 
 		private List<string> _players;
-		
+
 		public void Setup(List<string> players, int maxPlayers)
 		{
 			_players = players;
 			MaxPlayers = maxPlayers;
 		}
-		
+
 		private List<PartySlotPresenter.ViewData> BuildViewData()
 		{
 			PartySlotPresenter.ViewData[] data = new PartySlotPresenter.ViewData[_players.Count];
@@ -27,10 +27,11 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				data[i] = new PartySlotPresenter.ViewData
 				{
-					Avatar = AvatarConfiguration.Instance.Default.Sprite, PlayerId = _players[i]
+					Avatar = AvatarConfiguration.Instance.Default.Sprite,
+					PlayerId = _players[i]
 				};
 			}
-			
+
 			return data.ToList();
 		}
 
@@ -38,7 +39,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			return !string.IsNullOrWhiteSpace(PartyIdToJoin);
 		}
-		
+
 		public bool ValidateConfirmButton(int maxPlayers)
 		{
 			return maxPlayers > 0;
