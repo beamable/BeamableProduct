@@ -18,47 +18,79 @@ namespace Beamable.Experimental.Api.Lobbies
 		}
 
 		/// <inheritdoc cref="ILobbyApi.FindLobbies"/>
-		// TODO: This should also allow for all sorts of fun querying
 		public Promise<LobbyQueryResponse> FindLobbies()
 		{
 			return _requester.Request<LobbyQueryResponse>(
-			  Method.GET,
-			  $"/lobbies"
+				Method.GET,
+				$"/lobbies"
+			);
+		}
+		
+		/// <inheritdoc cref="ILobbyApi.FindLobbiesOfType"/>
+		public Promise<LobbyQueryResponse> FindLobbiesOfType(string matchType, int limit = 100, int skip = 0)
+		{
+			return _requester.Request<LobbyQueryResponse>(
+				Method.GET,
+				$"/lobbies",
+				new LobbyQueryRequest(skip, limit, matchType)
 			);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
-		public Promise<Lobby> CreateLobby(
-		  string name,
-		  LobbyRestriction restriction,
-		  SimGameTypeRef gameTypeRef = null,
-		  string description = null,
-		  List<Tag> playerTags = null,
-		  int? maxPlayers = null,
-		  int? passcodeLength = null,
-		  List<string> statsToInclude = null)
+		public Promise<Lobby> CreateLobby(string name,
+		                                  LobbyRestriction restriction,
+		                                  string gameTypeId = null,
+		                                  string description = null,
+		                                  List<Tag> playerTags = null,
+		                                  int? maxPlayers = null,
+		                                  int? passcodeLength = null,
+		                                  List<string> statsToInclude = null)
 		{
 			return _requester.Request<Lobby>(
-			  Method.POST,
-			  $"/lobbies",
-			  new CreateLobbyRequest(
-				name,
-				description,
-				restriction.ToString(),
-				gameTypeRef?.Id,
-				playerTags,
-				maxPlayers,
-				passcodeLength)
-			  );
+				Method.POST,
+				$"/lobbies",
+				new CreateLobbyRequest(
+					name,
+					description,
+					restriction.ToString(),
+					gameTypeId,
+					playerTags,
+					maxPlayers,
+					passcodeLength)
+			);
+		}
+
+		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
+		public Promise<Lobby> CreateLobby(string name,
+		                                  LobbyRestriction restriction,
+		                                  SimGameTypeRef gameTypeRef = null,
+		                                  string description = null,
+		                                  List<Tag> playerTags = null,
+		                                  int? maxPlayers = null,
+		                                  int? passcodeLength = null,
+		                                  List<string> statsToInclude = null)
+		{
+			return _requester.Request<Lobby>(
+				Method.POST,
+				$"/lobbies",
+				new CreateLobbyRequest(
+					name,
+					description,
+					restriction.ToString(),
+					gameTypeRef?.Id,
+					playerTags,
+					maxPlayers,
+					passcodeLength)
+			);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.JoinLobby"/>
 		public Promise<Lobby> JoinLobby(string lobbyId, List<Tag> playerTags = null)
 		{
 			return _requester.Request<Lobby>(
-			  Method.PUT,
-			  $"/lobbies/{lobbyId}",
-			  new JoinLobbyRequest(playerTags)
+				Method.PUT,
+				$"/lobbies/{lobbyId}",
+				new JoinLobbyRequest(playerTags)
 			);
 		}
 
@@ -66,9 +98,9 @@ namespace Beamable.Experimental.Api.Lobbies
 		public Promise<Lobby> JoinLobbyByPasscode(string passcode, List<Tag> playerTags = null)
 		{
 			return _requester.Request<Lobby>(
-			  Method.PUT,
-			  $"/lobbies/passcode",
-			  new JoinByPasscodeRequest(passcode, playerTags)
+				Method.PUT,
+				$"/lobbies/passcode",
+				new JoinByPasscodeRequest(passcode, playerTags)
 			);
 		}
 
@@ -76,8 +108,8 @@ namespace Beamable.Experimental.Api.Lobbies
 		public Promise<Lobby> GetLobby(string lobbyId)
 		{
 			return _requester.Request<Lobby>(
-			  Method.GET,
-			  $"/lobbies/{lobbyId}"
+				Method.GET,
+				$"/lobbies/{lobbyId}"
 			);
 		}
 
@@ -85,20 +117,23 @@ namespace Beamable.Experimental.Api.Lobbies
 		public Promise LeaveLobby(string lobbyId)
 		{
 			return _requester.Request<Unit>(
-			  Method.DELETE,
-			  $"/lobbies/{lobbyId}",
-			  new RemoveFromLobbyRequest(_userContext.UserId.ToString())
+				Method.DELETE,
+				$"/lobbies/{lobbyId}",
+				new RemoveFromLobbyRequest(_userContext.UserId.ToString())
 			).ToPromise();
 		}
 
 		/// <inheritdoc cref="ILobbyApi.AddPlayerTags"/>
-		public Promise<Lobby> AddPlayerTags(string lobbyId, List<Tag> tags, string playerId = null, bool replace = false)
+		public Promise<Lobby> AddPlayerTags(string lobbyId,
+		                                    List<Tag> tags,
+		                                    string playerId = null,
+		                                    bool replace = false)
 		{
 			playerId = playerId ?? _userContext.UserId.ToString();
 			return _requester.Request<Lobby>(
-			  Method.PUT,
-			  $"/lobbies/{lobbyId}/tags",
-			  new AddTagsRequest(playerId, tags, replace)
+				Method.PUT,
+				$"/lobbies/{lobbyId}/tags",
+				new AddTagsRequest(playerId, tags, replace)
 			);
 		}
 
@@ -107,20 +142,36 @@ namespace Beamable.Experimental.Api.Lobbies
 		{
 			playerId = playerId ?? _userContext.UserId.ToString();
 			return _requester.Request<Lobby>(
-			  Method.PUT,
-			  $"/lobbies/{lobbyId}/tags",
-			  new RemoveTagsRequest(playerId, tags)
+				Method.PUT,
+				$"/lobbies/{lobbyId}/tags",
+				new RemoveTagsRequest(playerId, tags)
 			);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.KickPlayer"/>
-		public Promise KickPlayer(string lobbyId, string playerId)
+		public Promise<Lobby> KickPlayer(string lobbyId, string playerId)
 		{
-			return _requester.Request<Unit>(
-			  Method.DELETE,
-			  $"/lobbies/{lobbyId}",
-			  new RemoveFromLobbyRequest(playerId)
-			).ToPromise();
+			return _requester.Request<Lobby>(
+				Method.DELETE,
+				$"/lobbies/{lobbyId}",
+				new RemoveFromLobbyRequest(playerId)
+			);
+		}
+
+		/// <inheritdoc cref="ILobbyApi.UpdateLobby"/>
+		public Promise<Lobby> UpdateLobby(string lobbyId,
+		                             LobbyRestriction restriction,
+		                             string newHost,
+		                             string name = null,
+		                             string description = null,
+		                             string gameType = null,
+		                             int? maxPlayers = null)
+		{
+			return _requester.Request<Lobby>(
+				Method.PUT,
+				$"/lobbies/{lobbyId}/metadata",
+				new UpdateLobbyRequest(name, description, restriction.ToString(), newHost, gameType, maxPlayers)
+			);
 		}
 	}
 }

@@ -57,7 +57,7 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class SimGameType : ContentObject
 	{
-		[Obsolete]
+		[Obsolete("Use `CalculateMaxPlayers` instead.")]
 		[IgnoreContentField]
 		[HideInInspector]
 		public int maxPlayers;
@@ -96,6 +96,17 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipRewardsPerRank1)]
 		public List<RewardsPerRank> rewards;
+
+		public int CalculateMaxPlayers()
+		{
+			int sum = 0;
+			foreach (var team in teams.listData)
+			{
+				sum += team.maxPlayers;
+			}
+
+			return sum;
+		}
 
 		public void OnBeforeSerialize()
 		{
