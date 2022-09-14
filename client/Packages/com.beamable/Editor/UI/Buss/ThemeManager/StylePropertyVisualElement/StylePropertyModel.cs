@@ -12,17 +12,16 @@ namespace Beamable.Editor.UI.Components
 	public class StylePropertyModel
 	{
 		public event Action Change;
-		
+
 		private readonly Action<string> _removePropertyAction;
-		private IBussProperty _cachedProperty;
-		
+
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
 		public VariableDatabase VariablesDatabase { get; }
 		public PropertySourceTracker PropertySourceTracker { get; }
 		public BussElement InlineStyleOwner { get; }
-		
+
 		public string Tooltip { get; set; }
 
 		public bool IsVariable => PropertyProvider.IsVariable;
@@ -57,7 +56,7 @@ namespace Beamable.Editor.UI.Components
 
 			List<GenericMenuCommand> commands = new List<GenericMenuCommand>
 			{
-				new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, ()=>
+				new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, () =>
 				{
 					_removePropertyAction?.Invoke(PropertyProvider.Key);
 				})
@@ -73,35 +72,29 @@ namespace Beamable.Editor.UI.Components
 
 			context.ShowAsContext();
 		}
-		
+
 		public void OnButtonClick()
 		{
-			 // if (_cachedProperty == null)
-			 // {
-				//  _cachedProperty = PropertyProvider.GetProperty();
-				//  PropertyProvider.SetProperty(new VariableProperty());   
-				//   //   HasVariableConnected
-			 // 		// ? BussStyle.GetDefaultValue(PropertyProvider.Key).CopyProperty()
-			 // 		// : new VariableProperty();
-			 // }
-			 // else
-			 // {
-				//  PropertyProvider.SetProperty(_cachedProperty);
-				//  _cachedProperty = null;
-			 // }
-			 
-			 // PropertyProvider.SetProperty(BussStyle.GetDefaultValue("backgroundColor"));
-			
-			 // var temp = _cachedProperty;
-			 // _cachedProperty = PropertyProvider.GetProperty();
-			 // PropertyProvider.SetProperty(temp);
-			 // if (StyleSheet != null)
-			 // {
-			 // 	// StyleSheet.TriggerChange();
-			 // }
+			if (StyleRule.TryGetCachedProperty(PropertyProvider.Key, out var property))
+			{
+				PropertyProvider.SetProperty(property);
+				StyleRule.RemoveCachedProperty(PropertyProvider.Key);
+			}
+			else
+			{
+				StyleRule.CacheProperty(PropertyProvider.Key, PropertyProvider.GetProperty());
+				PropertyProvider.SetProperty(new VariableProperty());
+			}
 
-			 AssetDatabase.SaveAssets();
-			//ConnectionChange?.Invoke();
+			// PropertyProvider.SetProperty(BussStyle.GetDefaultValue(PropertyProvider.Key));
+
+			if (StyleSheet != null)
+			{
+				StyleSheet.TriggerChange();
+			}
+			
+			AssetDatabase.SaveAssets();
+
 			Change?.Invoke();
 		}
 	}

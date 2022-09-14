@@ -13,8 +13,7 @@ namespace Beamable.UI.Buss
 		public static bool TryAddProperty(this BussStyleDescription target, string key, IBussProperty property)
 		{
 			var isKeyValid = BussStyle.IsKeyValid(key) || IsValidVariableName(key);
-			if (isKeyValid && !target.HasProperty(key) &&
-				BussStyle.GetBaseType(key).IsInstanceOfType(property))
+			if (isKeyValid && !target.HasProperty(key) && BussStyle.GetBaseType(key).IsInstanceOfType(property))
 			{
 				var propertyProvider = BussPropertyProvider.Create(key, property.CopyProperty());
 				target.Properties.Add(propertyProvider);
@@ -45,7 +44,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public static void AssignAssetReferencesFromReferenceList(this BussStyleDescription style,
-																  List<Object> assetReferences)
+		                                                          List<Object> assetReferences)
 		{
 			foreach (BussPropertyProvider propertyProvider in style.Properties)
 			{
@@ -53,7 +52,7 @@ namespace Beamable.UI.Buss
 				if (property is BaseAssetProperty assetProperty)
 				{
 					if (assetProperty.AssetSerializationKey >= 0 &&
-						assetProperty.AssetSerializationKey < assetReferences.Count)
+					    assetProperty.AssetSerializationKey < assetReferences.Count)
 					{
 						assetProperty.GenericAsset = assetReferences[assetProperty.AssetSerializationKey];
 					}
@@ -67,7 +66,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public static void PutAssetReferencesInReferenceList(this BussStyleDescription style,
-															 List<Object> assetReferences)
+		                                                     List<Object> assetReferences)
 		{
 			if (style == null || style.Properties == null)
 			{
