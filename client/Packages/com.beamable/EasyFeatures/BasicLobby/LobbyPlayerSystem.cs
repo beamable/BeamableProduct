@@ -15,7 +15,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public string Description => BeamContext.Lobby.Description;
 		public int MaxPlayers => BeamContext.Lobby.MaxPlayers;
 		public int? CurrentlySelectedPlayerIndex { get; set; }
-		public bool IsVisible { get; set; }
 		public bool IsPlayerAdmin => BeamContext.Lobby.Host == BeamContext.PlayerId.ToString();
 		public bool IsPlayerReady => BeamContext.Lobby.GetCurrentPlayer(BeamContext.PlayerId.ToString()).IsReady();
 		public bool IsMatchStarting => false;
@@ -36,7 +35,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			await BeamContext.Lobby.Leave();
 		}
 
-		public async Promise KickPlayer()
+		public virtual async Promise KickPlayer()
 		{
 			if (CurrentlySelectedPlayerIndex == null)
 			{
@@ -48,13 +47,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			CurrentlySelectedPlayerIndex = null;
 		}
 
-		public async void SetPlayerReady(bool value)
+		public virtual async void SetPlayerReady(bool value)
 		{
 			await BeamContext.Lobby.AddTags(
 				new List<Tag> {new Tag(LobbyExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
 		}
 
-		public async Promise PassLeadership()
+		public virtual async Promise PassLeadership()
 		{
 			if (CurrentlySelectedPlayerIndex != null)
 			{
@@ -63,7 +62,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		public void SetCurrentSelectedPlayer(int slotIndex)
+		public virtual void SetCurrentSelectedPlayer(int slotIndex)
 		{
 			LobbyPlayer player = BeamContext.Lobby.Players[slotIndex];
 
@@ -89,7 +88,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			                               description);
 		}
 
-		public async Promise StartMatch()
+		public virtual async Promise StartMatch()
 		{
 			// TODO: Implement match start here 
 			await Promise.Success.WaitForSeconds(3);
@@ -124,7 +123,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			readiness.AddRange(entries.Select(player => player.IsReady()));
 		}
 
-		private List<LobbySlotPresenter.ViewData> BuildViewData()
+		public virtual List<LobbySlotPresenter.ViewData> BuildViewData()
 		{
 			List<LobbySlotPresenter.ViewData> slotsData = new List<LobbySlotPresenter.ViewData>(MaxPlayers);
 

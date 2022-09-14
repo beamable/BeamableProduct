@@ -42,6 +42,7 @@
     margin-right: 2px;
     margin-left: 2px;
 }
+
 #contentManagerIcon{
     top: 4px;
     width: 10px;

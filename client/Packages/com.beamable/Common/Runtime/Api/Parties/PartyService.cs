@@ -110,5 +110,11 @@ namespace Beamable.Experimental.Api.Parties
 				$"/players/{_userContext.UserId}/parties/invites"
 			);
 		}
+		
+		public Promise KickPlayer(string partyId, long playerId) => KickPlayer(partyId, playerId.ToString());
+
+		public Promise PromoteToLeader(string partyId, long playerId) => PromoteToLeader(partyId, playerId.ToString());
+
+		public Promise InviteToParty(string partyId, long playerId) => InviteToParty(partyId, playerId.ToString());
 	}
 }

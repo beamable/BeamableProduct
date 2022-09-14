@@ -121,14 +121,17 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 		}
 
-		private void RefreshDefaultStyles()
+		public void RefreshDefaultStyles()
 		{
 			_defaultBeamableStyleSheets.Clear();
 			BussStyleSheet[] bussStyleSheets = Resources
 											   .LoadAll<BussStyleSheet>(
 												   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
 											   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
-			_defaultBeamableStyleSheets.AddRange(bussStyleSheets);
+
+			var orderedStyleSheets = bussStyleSheets.OrderBy(s => s.SortingOrder);
+
+			_defaultBeamableStyleSheets.AddRange(orderedStyleSheets);
 		}
 
 		private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)
