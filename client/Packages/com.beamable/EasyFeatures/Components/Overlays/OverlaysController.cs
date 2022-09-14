@@ -28,8 +28,8 @@ namespace Beamable.EasyFeatures.Components
 			{
 				LabelWithButton.Show(label, buttonLabel, () =>
 {
-HideOverlay();
-onClick?.Invoke();
+	HideOverlay();
+	onClick?.Invoke();
 });
 			});
 		}
