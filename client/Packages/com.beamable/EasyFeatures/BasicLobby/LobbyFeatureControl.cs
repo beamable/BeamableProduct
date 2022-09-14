@@ -113,7 +113,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OpenView(View.MainMenu);
 		}
 		
-		private View TypeToViewEnum(Type type)
+		protected virtual View TypeToViewEnum(Type type)
 		{
 			if (type == typeof(CreateLobbyView))
 			{
@@ -138,7 +138,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			throw new ArgumentException("View enum does not support provided type.");
 		}
 
-		private async void OpenView(View newView)
+		protected virtual async void OpenView(View newView)
 		{
 			if (_currentView != null)
 			{
@@ -152,7 +152,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LoadingIndicator.SetActive(false);
 		}
 
-		private async Promise<List<SimGameType>> FetchGameTypes()
+		public virtual async Promise<List<SimGameType>> FetchGameTypes()
 		{
 			Assert.IsTrue(GameTypesRefs.Count > 0, "Game types count configured in inspector must be greater than 0");
 
@@ -198,7 +198,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OpenView(View.InsideLobby);
 		}
 
-		private async void OnLobbyUpdated()
+		public virtual async void OnLobbyUpdated()
 		{
 			if (BeamContext.Lobby.ChangeData.Event == PlayerLobby.LobbyEvent.None)
 			{
@@ -321,7 +321,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		#region InsideLobbyView callbacks
 
-		public void StartMatchRequestSent()
+		public virtual void StartMatchRequestSent()
 		{
 			if (BeamContext.Lobby != null)
 			{
@@ -331,13 +331,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			ShowOverlayedLabel("Starting match...");
 		}
 
-		public void StartMatchResponseReceived()
+		public virtual void StartMatchResponseReceived()
 		{
 			HideOverlay();
 			OnMatchStarted?.Invoke();
 		}
 
-		public void AdminLeaveLobbyRequestSent()
+		public virtual void AdminLeaveLobbyRequestSent()
 		{
 			async void ConfirmAction()
 			{
@@ -365,7 +365,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			                  ConfirmAction);
 		}
 
-		public void PlayerLeaveLobbyRequestSent()
+		public virtual void PlayerLeaveLobbyRequestSent()
 		{
 			if (BeamContext.Lobby != null)
 			{
@@ -375,13 +375,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			ShowOverlayedLabel("Leaving lobby...");
 		}
 
-		public void LobbyLeft()
+		public virtual void LobbyLeft()
 		{
 			OpenJoinLobbyView();
 			HideOverlay();
 		}
 
-		public void KickPlayerClicked()
+		public virtual void KickPlayerClicked()
 		{
 			if (LobbyPlayerSystem.CurrentlySelectedPlayerIndex == null)
 			{
@@ -408,7 +408,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			ShowConfirmWindow("Are You sure You want to kick this player?", ConfirmAction);
 		}
 
-		public void PassLeadershipClicked()
+		public virtual void PassLeadershipClicked()
 		{
 			if (LobbyPlayerSystem.CurrentlySelectedPlayerIndex == null)
 			{
@@ -433,7 +433,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			ShowConfirmWindow("Are You sure You want to pass the leadership?", ConfirmAction);
 		}
 
-		public void SettingsButtonClicked()
+		public virtual void SettingsButtonClicked()
 		{
 			if (!LobbyPlayerSystem.IsPlayerAdmin)
 			{
@@ -451,7 +451,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		#endregion
 
-		public async void RebuildRequested()
+		public virtual async void RebuildRequested()
 		{
 			await ViewGroup.Enrich();
 		}

@@ -15,9 +15,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 		
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			var ctx = managedPlayers.GetSinglePlayerContext();
 		}
 	}
 }

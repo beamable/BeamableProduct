@@ -52,7 +52,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			BeamContext = beamContext;
 		}
 
-		public void Setup(List<SimGameType> gameTypes)
+		public virtual void Setup(List<SimGameType> gameTypes)
 		{
 			GameTypes = gameTypes;
 
@@ -172,7 +172,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			PerGameTypeLobbiesMaxPlayers.Remove(gameTypeId);
 		}
 
-		public void OnLobbySelected(int? lobbyIndex)
+		public virtual void OnLobbySelected(int? lobbyIndex)
 		{
 			SelectedLobbyIndex = lobbyIndex;
 			Passcode = string.Empty;
@@ -218,18 +218,18 @@ namespace Beamable.EasyFeatures.BasicLobby
 			RegisterLobbyData(GameTypes[SelectedGameTypeIndex], response.results);
 		}
 
-		public void ApplyPasscode(string passcode)
+		public virtual void ApplyPasscode(string passcode)
 		{
 			Passcode = passcode;
 			SelectedLobbyIndex = null;
 		}
 
-		public void ApplyFilter(string name)
+		public virtual void ApplyFilter(string name)
 		{
 			ApplyFilter(name, CurrentPlayers.Count, MaxPlayers.Count);
 		}
 
-		public void ApplyFilter(string name, int currentPlayers, int maxPlayers)
+		public virtual void ApplyFilter(string name, int currentPlayers, int maxPlayers)
 		{
 			NameFilter = name;
 			CurrentPlayersFilter = currentPlayers;

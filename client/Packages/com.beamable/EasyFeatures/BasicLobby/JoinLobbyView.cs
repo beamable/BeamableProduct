@@ -73,7 +73,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public async void EnrichWithContext(BeamContextGroup managedPlayers)
+		public virtual async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
@@ -117,7 +117,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			LobbiesList.RebuildPooledLobbiesEntries();
 		}
 
-		private void ValidateJoinButton()
+		public virtual void ValidateJoinButton()
 		{
 			bool canJoinLobby = System.CanJoinLobby();
 
@@ -133,7 +133,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		private async void JoinLobbyButtonClicked()
+		public virtual async void JoinLobbyButtonClicked()
 		{
 			try
 			{
@@ -154,7 +154,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		private async void OnGameTypeSelected(int optionId)
+		public virtual async void OnGameTypeSelected(int optionId)
 		{
 			if (optionId == System.SelectedGameTypeIndex)
 			{
@@ -192,25 +192,25 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OnBackButtonClicked?.Invoke();
 		}
 
-		private void OnLobbySelected(int? lobbyId)
+		public virtual void OnLobbySelected(int? lobbyId)
 		{
 			System.OnLobbySelected(lobbyId);
 			ValidateJoinButton();
 		}
 
-		private async void ClearButtonClicked()
+		public virtual async void ClearButtonClicked()
 		{
 			System.ApplyFilter(String.Empty);
 			await ViewGroup.Enrich();
 		}
 
-		private async void OnPasscodeEntered(string passcode)
+		public virtual async void OnPasscodeEntered(string passcode)
 		{
 			System.ApplyPasscode(passcode);
 			await ViewGroup.Enrich();
 		}
 
-		private async void OnFilterApplied(string filter)
+		public virtual async void OnFilterApplied(string filter)
 		{
 			System.ApplyFilter(filter);
 			await ViewGroup.Enrich();
