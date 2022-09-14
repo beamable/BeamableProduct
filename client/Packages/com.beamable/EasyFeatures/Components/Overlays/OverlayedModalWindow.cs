@@ -17,7 +17,7 @@ namespace Beamable.EasyFeatures.Components
 		public TextMeshProUGUI Content;
 		public Button CancelButton;
 		public Button ConfirmButton;
-		
+
 		public void Show(string content, Action confirmAction, Action closeAction, Mode mode = Mode.Default)
 		{
 			Content.text = content;

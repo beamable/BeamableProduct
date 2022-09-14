@@ -61,13 +61,13 @@ namespace Beamable.Common.Player
 				OnUpdated?.Invoke();
 			}
 		}
-		
+
 		/// <summary>
 		/// In case when some object looks for some additional data after <see cref="OnUpdated"/> was called this data
 		/// can be reseted in overriden method 
 		/// </summary>
 		protected virtual void ResetChangeData()
-		{}
+		{ }
 
 		/// <summary>
 		/// The broadcast checksum is a concept for change-detection.
@@ -419,12 +419,12 @@ namespace Beamable.Common.Player
 	public class ObservableReadonlyList<T> : AbsObservableReadonlyList<T>
 	{
 		private readonly Func<Promise<List<T>>> _refresh;
-		
+
 		public ObservableReadonlyList(Func<Promise<List<T>>> refreshFunction)
 		{
 			_refresh = refreshFunction;
 		}
-		
+
 		protected override async Promise PerformRefresh()
 		{
 			if (_refresh != null)

@@ -12,7 +12,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)

@@ -46,12 +46,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		private IBeamableView _currentView;
 		private readonly Dictionary<View, IBeamableView> views = new Dictionary<View, IBeamableView>();
-		
+
 		public bool RunOnEnable { get => _runOnEnable; set => _runOnEnable = value; }
 
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups
 		{
-			get => new[] {ViewGroup};
+			get => new[] { ViewGroup };
 			set => ViewGroup = value.FirstOrDefault();
 		}
 
@@ -104,7 +104,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			LobbyView insideLobbyView = ViewGroup.ManagedViews.OfType<LobbyView>().First();
 			insideLobbyView.OnError = ShowErrorWindow;
-			
+
 			foreach (var view in ViewGroup.ManagedViews)
 			{
 				views.Add(TypeToViewEnum(view.GetType()), view);
@@ -112,24 +112,24 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			OpenView(View.MainMenu);
 		}
-		
+
 		protected virtual View TypeToViewEnum(Type type)
 		{
 			if (type == typeof(CreateLobbyView))
 			{
 				return View.CreateLobby;
 			}
-			
+
 			if (type == typeof(LobbyView))
 			{
 				return View.InsideLobby;
 			}
-			
+
 			if (type == typeof(MainLobbyView))
 			{
 				return View.MainMenu;
 			}
-			
+
 			if (type == typeof(JoinLobbyView))
 			{
 				return View.JoinLobby;
@@ -142,12 +142,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			if (_currentView != null)
 			{
-				_currentView.IsVisible = false;	
+				_currentView.IsVisible = false;
 			}
-			
+
 			_currentView = views[newView];
 			_currentView.IsVisible = true;
-			
+
 			await ViewGroup.Enrich();
 			LoadingIndicator.SetActive(false);
 		}
@@ -362,7 +362,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 
 			ShowConfirmWindow("After leaving lobby it will be closed because You are an admin. Are You sure?",
-			                  ConfirmAction);
+							  ConfirmAction);
 		}
 
 		public virtual void PlayerLeaveLobbyRequestSent()
@@ -446,7 +446,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 
 			OverlaysController.ShowLobbySettings(LobbyPlayerSystem.Name, LobbyPlayerSystem.Description, ConfirmAction,
-			                                     BeamContext.Lobby.Passcode);
+												 BeamContext.Lobby.Passcode);
 		}
 
 		#endregion
