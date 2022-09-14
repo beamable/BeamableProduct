@@ -21,7 +21,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			int MaxPlayers { get; }
 			int CurrentPlayers { get; }
 			int? CurrentlySelectedPlayerIndex { get; set; }
-			bool IsVisible { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
 			bool IsMatchStarting { get; }
@@ -80,9 +79,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			var ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(System.IsVisible);
-
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}

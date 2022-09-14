@@ -18,7 +18,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			bool IsVisible { get; }
 			bool HasInitialData { get; set; }
 			bool IsLoading { get; set; }
 			int SelectedGameTypeIndex { get; set; }
@@ -79,10 +78,8 @@ namespace Beamable.EasyFeatures.BasicLobby
 			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(System.IsVisible);
-
 			// We don't need to perform anything in case if view is not visible. Visibility is controlled by a feature control script.
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}

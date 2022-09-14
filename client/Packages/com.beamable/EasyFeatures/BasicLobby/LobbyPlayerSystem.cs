@@ -15,7 +15,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public string Description => BeamContext.Lobby.Description;
 		public int MaxPlayers => BeamContext.Lobby.MaxPlayers;
 		public int? CurrentlySelectedPlayerIndex { get; set; }
-		public bool IsVisible { get; set; }
 		public bool IsPlayerAdmin => BeamContext.Lobby.Host == BeamContext.PlayerId.ToString();
 		public bool IsPlayerReady => BeamContext.Lobby.GetCurrentPlayer(BeamContext.PlayerId.ToString()).IsReady();
 		public bool IsMatchStarting => false;

@@ -10,7 +10,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		public BeamContext BeamContext { get; }
 
-		public bool IsVisible { get; set; }
 		public List<SimGameType> GameTypes { get; set; }
 		public int SelectedGameTypeIndex { get; set; }
 		public Dictionary<string, LobbyRestriction> AccessOptions { get; } = new Dictionary<string, LobbyRestriction>();

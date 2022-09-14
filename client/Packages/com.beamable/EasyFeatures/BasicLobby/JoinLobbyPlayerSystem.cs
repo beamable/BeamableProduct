@@ -11,7 +11,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		public BeamContext BeamContext { get; }
 		public List<SimGameType> GameTypes { get; set; } = new List<SimGameType>();
-		public bool IsVisible { get; set; }
 		public bool HasInitialData { get; set; }
 		public bool IsLoading { get; set; }
 		public int SelectedGameTypeIndex { get; set; }

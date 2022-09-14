@@ -3,7 +3,6 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
-using Beamable.Experimental.Api.Lobbies;
 using Beamable.Player;
 using System;
 using System.Collections.Generic;
@@ -41,12 +40,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		public BeamContext BeamContext;
 
-		protected View CurrentView = View.MainMenu;
-		protected MainLobbyPlayerSystem MainLobbyPlayerSystem;
 		protected CreateLobbyPlayerSystem CreateLobbyPlayerSystem;
 		protected LobbyPlayerSystem LobbyPlayerSystem;
 		protected JoinLobbyPlayerSystem JoinLobbyPlayerSystem;
 
+		private IBeamableView _currentView;
+		private readonly Dictionary<View, IBeamableView> views = new Dictionary<View, IBeamableView>();
+		
 		public bool RunOnEnable { get => _runOnEnable; set => _runOnEnable = value; }
 
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups
@@ -60,7 +60,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
-			builder.SetupUnderlyingSystemSingleton<MainLobbyPlayerSystem, MainLobbyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<JoinLobbyPlayerSystem, JoinLobbyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<CreateLobbyPlayerSystem, CreateLobbyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<LobbyPlayerSystem, LobbyView.IDependencies>();
@@ -88,7 +87,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			BeamContext = ViewGroup.AllPlayerContexts[0];
 			await BeamContext.OnReady;
 
-			MainLobbyPlayerSystem = BeamContext.ServiceProvider.GetService<MainLobbyPlayerSystem>();
 			JoinLobbyPlayerSystem = BeamContext.ServiceProvider.GetService<JoinLobbyPlayerSystem>();
 			CreateLobbyPlayerSystem = BeamContext.ServiceProvider.GetService<CreateLobbyPlayerSystem>();
 			LobbyPlayerSystem = BeamContext.ServiceProvider.GetService<LobbyPlayerSystem>();
@@ -106,24 +104,52 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 			LobbyView insideLobbyView = ViewGroup.ManagedViews.OfType<LobbyView>().First();
 			insideLobbyView.OnError = ShowErrorWindow;
+			
+			foreach (var view in ViewGroup.ManagedViews)
+			{
+				views.Add(TypeToViewEnum(view.GetType()), view);
+			}
 
-			OpenView(CurrentView);
+			OpenView(View.MainMenu);
+		}
+		
+		private View TypeToViewEnum(Type type)
+		{
+			if (type == typeof(CreateLobbyView))
+			{
+				return View.CreateLobby;
+			}
+			
+			if (type == typeof(LobbyView))
+			{
+				return View.InsideLobby;
+			}
+			
+			if (type == typeof(MainLobbyView))
+			{
+				return View.MainMenu;
+			}
+			
+			if (type == typeof(JoinLobbyView))
+			{
+				return View.JoinLobby;
+			}
+
+			throw new ArgumentException("View enum does not support provided type.");
 		}
 
 		private async void OpenView(View newView)
 		{
-			CurrentView = newView;
-			UpdateVisibility();
+			if (_currentView != null)
+			{
+				_currentView.IsVisible = false;	
+			}
+			
+			_currentView = views[newView];
+			_currentView.IsVisible = true;
+			
 			await ViewGroup.Enrich();
 			LoadingIndicator.SetActive(false);
-		}
-
-		private void UpdateVisibility()
-		{
-			MainLobbyPlayerSystem.IsVisible = CurrentView == View.MainMenu;
-			CreateLobbyPlayerSystem.IsVisible = CurrentView == View.CreateLobby;
-			JoinLobbyPlayerSystem.IsVisible = CurrentView == View.JoinLobby;
-			LobbyPlayerSystem.IsVisible = CurrentView == View.InsideLobby;
 		}
 
 		private async Promise<List<SimGameType>> FetchGameTypes()
