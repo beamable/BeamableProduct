@@ -31,21 +31,21 @@ namespace Beamable.EasyFeatures.BasicParty
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			Context = managedPlayers.GetSinglePlayerContext();
 			System = Context.ServiceProvider.GetService<IDependencies>();
-			
+
 			if (!IsVisible)
 			{
 				return;
 			}
-			
+
 			OnPartyIdValueChanged(PartyIdInputField.text);
-			
+
 			PartyIdInputField.onValueChanged.ReplaceOrAddListener(OnPartyIdValueChanged);
 			JoinButton.onClick.ReplaceOrAddListener(OnJoinButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);

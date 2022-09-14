@@ -49,7 +49,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button LeaveButton;
 
 		public BussElement StartButtonBussElement;
-		
+
 		[Header("Callbacks")]
 		public UnityEvent OnRebuildRequested;
 
@@ -71,7 +71,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -99,12 +99,12 @@ namespace Beamable.EasyFeatures.BasicLobby
 			SettingsButton.gameObject.SetActive(System.IsPlayerAdmin);
 			ReadyButton.gameObject.SetActive(!System.IsPlayerReady);
 			NotReadyButton.gameObject.SetActive(System.IsPlayerReady);
-			
+
 			ValidateStartButton();
 
 			LobbySlotsList.ClearPooledRankedEntries();
 			LobbySlotsList.Setup(System.SlotsData, System.IsPlayerAdmin, OnAdminButtonClicked, OnKickButtonClicked,
-			                     OnPassLeadershipButtonClicked);
+								 OnPassLeadershipButtonClicked);
 			LobbySlotsList.RebuildPooledLobbiesEntries();
 		}
 
@@ -112,7 +112,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			bool buttonValid = System.IsPlayerAdmin && System.IsServerReady();
 			StartButton.interactable = buttonValid;
-			
+
 			if (buttonValid)
 			{
 				StartButtonBussElement.SetButtonPrimary();
@@ -170,7 +170,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			System.SetPlayerReady(true);
 		}
 
@@ -180,7 +180,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			System.SetPlayerReady(false);
 		}
 
@@ -209,7 +209,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			if (System.IsPlayerAdmin)
 			{
 				OnAdminLeaveLobbyRequestSent?.Invoke();

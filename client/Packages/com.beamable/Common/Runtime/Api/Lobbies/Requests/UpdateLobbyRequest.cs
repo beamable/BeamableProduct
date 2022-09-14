@@ -42,11 +42,11 @@ namespace Beamable.Experimental.Api.Lobbies
 		public string newHost;
 
 		public UpdateLobbyRequest(string name,
-		                          string description,
-		                          string restriction,
-		                          string newHost,
-		                          string matchType,
-		                          int? maxPlayers)
+								  string description,
+								  string restriction,
+								  string newHost,
+								  string matchType,
+								  int? maxPlayers)
 		{
 			this.name = name;
 			this.description = description;

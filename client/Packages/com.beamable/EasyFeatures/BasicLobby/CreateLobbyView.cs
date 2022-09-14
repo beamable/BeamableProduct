@@ -41,14 +41,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ConfirmButton;
 		public Button CancelButton;
 		public Button BackButton;
-		
+
 		public BussElement ConfirmButtonBussElement;
 
 		[Header("Callbacks")]
 		public UnityEvent OnCreateLobbyRequestSent;
 		public UnityEvent OnCreateLobbyResponseReceived;
 		public UnityEvent OnCancelButtonClicked;
-		
+
 		public Action<string> OnError;
 
 		protected IDependencies System;
@@ -58,7 +58,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -75,7 +75,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			// Setting up all components
 			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected, System.SelectedGameTypeIndex);
 			AccessToggle.Setup(System.AccessOptions.Select(pair => pair.Key).ToList(), OnAccessOptionSelected,
-			                   System.SelectedAccessOption);
+							   System.SelectedAccessOption);
 
 			Name.SetTextWithoutNotify(System.Name);
 			Description.SetTextWithoutNotify(System.Description);
@@ -83,13 +83,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Name.onValueChanged.ReplaceOrAddListener(OnNameChanged);
 			Description.onValueChanged.ReplaceOrAddListener(OnDescriptionChanged);
 			ConfirmButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
-			
+
 			ValidateConfirmButton();
-			
+
 			CancelButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 		}
-		
+
 		public virtual void ValidateConfirmButton()
 		{
 			bool canJoinLobby = System.ValidateConfirmButton();
@@ -146,7 +146,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public virtual async void CreateLobbyButtonClicked()
 		{
 			OnCreateLobbyRequestSent?.Invoke();
-			
+
 			try
 			{
 				await System.CreateLobby();

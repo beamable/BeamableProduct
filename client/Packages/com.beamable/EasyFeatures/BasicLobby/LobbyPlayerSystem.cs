@@ -50,7 +50,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public virtual async void SetPlayerReady(bool value)
 		{
 			await BeamContext.Lobby.AddTags(
-				new List<Tag> {new Tag(LobbyExtensions.TAG_PLAYER_READY, value.ToString().ToLower())}, true);
+				new List<Tag> { new Tag(LobbyExtensions.TAG_PLAYER_READY, value.ToString().ToLower()) }, true);
 		}
 
 		public virtual async Promise PassLeadership()
@@ -58,7 +58,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			if (CurrentlySelectedPlayerIndex != null)
 			{
 				await BeamContext.Lobby.Update(BeamContext.Lobby.Id, BeamContext.Lobby.Restriction,
-				                               newHost: PlayerIds[CurrentlySelectedPlayerIndex.Value]);
+											   newHost: PlayerIds[CurrentlySelectedPlayerIndex.Value]);
 			}
 		}
 
@@ -85,7 +85,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public async void UpdateLobby(string name, string description, string host)
 		{
 			await BeamContext.Lobby.Update(BeamContext.Default.Lobby.Id, BeamContext.Default.Lobby.Restriction, host, name,
-			                               description);
+										   description);
 		}
 
 		public virtual async Promise StartMatch()

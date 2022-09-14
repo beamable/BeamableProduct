@@ -130,11 +130,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 		/// The actual data transformation function that converts lobbies entries into data that is relevant for our <see cref="JoinLobbyView.IDependencies"/>. 
 		/// </summary>
 		public virtual void BuildLobbiesClientData(List<Lobby> entries,
-		                                           ref List<string> ids,
-		                                           ref List<string> names,
-		                                           ref List<string> descriptions,
-		                                           ref List<List<LobbyPlayer>> currentPlayers,
-		                                           ref List<int> maxPlayers)
+												   ref List<string> ids,
+												   ref List<string> names,
+												   ref List<string> descriptions,
+												   ref List<List<LobbyPlayer>> currentPlayers,
+												   ref List<int> maxPlayers)
 		{
 			void GuaranteeInitList<T>(ref List<T> toInit)
 			{
@@ -191,7 +191,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 
 			return LobbiesData[SelectedLobbyIndex.Value].CurrentPlayers <
-			       LobbiesData[SelectedLobbyIndex.Value].MaxPlayers;
+				   LobbiesData[SelectedLobbyIndex.Value].MaxPlayers;
 		}
 
 		public async Promise JoinLobby()

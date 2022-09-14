@@ -10,10 +10,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		[Header("Prefabs")]
 		public LobbiesListEntryPresenter LobbyEntryPrefab;
-		
+
 		[Header("Components")]
 		public PoolableScrollView PoolableScrollView;
-		
+
 		private readonly List<LobbiesListEntryPresenter> _spawnedEntries = new List<LobbiesListEntryPresenter>();
 		private List<LobbiesListEntryPresenter.ViewData> _entriesList = new List<LobbiesListEntryPresenter.ViewData>();
 		private Action<int?> _onLobbySelected;
@@ -45,24 +45,26 @@ namespace Beamable.EasyFeatures.BasicLobby
 				LobbiesListEntryPresenter.ViewData data = _entriesList[i];
 				var rankEntryPoolData = new LobbiesListEntryPresenter.PoolData
 				{
-					ViewData = data, Index = i, Height = 100.0f // TODO: expose this somewhere in inspector
+					ViewData = data,
+					Index = i,
+					Height = 100.0f // TODO: expose this somewhere in inspector
 				};
 				items.Add(rankEntryPoolData);
 			}
 
 			PoolableScrollView.SetContent(items);
 		}
-		
+
 		public RectTransform Spawn(PoolableScrollView.IItem item, out int order)
 		{
 			// TODO: implement object pooling
 			LobbiesListEntryPresenter spawned = Instantiate(LobbyEntryPrefab);
 			_spawnedEntries.Add(spawned);
 			order = -1;
-			
+
 			LobbiesListEntryPresenter.PoolData poolData = item as LobbiesListEntryPresenter.PoolData;
 			Assert.IsTrue(poolData != null, "All items in this scroll view MUST be LobbiesListEntryPresenter");
-			
+
 			spawned.Setup(poolData.ViewData, (presenter) =>
 			{
 				if (_currentlySelectedLobby != null)
@@ -74,14 +76,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 				_currentlySelectedLobby.SetSelected(true);
 				_onLobbySelected.Invoke(poolData.Index);
 			});
-			
+
 			return spawned.GetComponent<RectTransform>();
 		}
 
 		public void Despawn(PoolableScrollView.IItem item, RectTransform rt)
 		{
 			if (rt == null) return;
-			
+
 			// TODO: implement object pooling
 			LobbiesListEntryPresenter rankEntryPresenter = rt.GetComponent<LobbiesListEntryPresenter>();
 			_spawnedEntries.Remove(rankEntryPresenter);

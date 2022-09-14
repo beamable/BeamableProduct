@@ -49,10 +49,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public async Promise CreateLobby()
 		{
 			await BeamContext.Lobby.Create(Name,
-			                               AccessOptions.ElementAt(SelectedAccessOption).Value,
-			                               GameTypes[SelectedGameTypeIndex].Id,
-			                               Description,
-			                               maxPlayers: GameTypes[SelectedGameTypeIndex].CalculateMaxPlayers());
+										   AccessOptions.ElementAt(SelectedAccessOption).Value,
+										   GameTypes[SelectedGameTypeIndex].Id,
+										   Description,
+										   maxPlayers: GameTypes[SelectedGameTypeIndex].CalculateMaxPlayers());
 		}
 	}
 }

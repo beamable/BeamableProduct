@@ -25,7 +25,7 @@ namespace Beamable.Experimental.Api.Lobbies
 				$"/lobbies"
 			);
 		}
-		
+
 		/// <inheritdoc cref="ILobbyApi.FindLobbiesOfType"/>
 		public Promise<LobbyQueryResponse> FindLobbiesOfType(string matchType, int limit = 100, int skip = 0)
 		{
@@ -38,13 +38,13 @@ namespace Beamable.Experimental.Api.Lobbies
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
 		public Promise<Lobby> CreateLobby(string name,
-		                                  LobbyRestriction restriction,
-		                                  string gameTypeId = null,
-		                                  string description = null,
-		                                  List<Tag> playerTags = null,
-		                                  int? maxPlayers = null,
-		                                  int? passcodeLength = null,
-		                                  List<string> statsToInclude = null)
+										  LobbyRestriction restriction,
+										  string gameTypeId = null,
+										  string description = null,
+										  List<Tag> playerTags = null,
+										  int? maxPlayers = null,
+										  int? passcodeLength = null,
+										  List<string> statsToInclude = null)
 		{
 			return _requester.Request<Lobby>(
 				Method.POST,
@@ -62,13 +62,13 @@ namespace Beamable.Experimental.Api.Lobbies
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
 		public Promise<Lobby> CreateLobby(string name,
-		                                  LobbyRestriction restriction,
-		                                  SimGameTypeRef gameTypeRef = null,
-		                                  string description = null,
-		                                  List<Tag> playerTags = null,
-		                                  int? maxPlayers = null,
-		                                  int? passcodeLength = null,
-		                                  List<string> statsToInclude = null)
+										  LobbyRestriction restriction,
+										  SimGameTypeRef gameTypeRef = null,
+										  string description = null,
+										  List<Tag> playerTags = null,
+										  int? maxPlayers = null,
+										  int? passcodeLength = null,
+										  List<string> statsToInclude = null)
 		{
 			return _requester.Request<Lobby>(
 				Method.POST,
@@ -125,9 +125,9 @@ namespace Beamable.Experimental.Api.Lobbies
 
 		/// <inheritdoc cref="ILobbyApi.AddPlayerTags"/>
 		public Promise<Lobby> AddPlayerTags(string lobbyId,
-		                                    List<Tag> tags,
-		                                    string playerId = null,
-		                                    bool replace = false)
+											List<Tag> tags,
+											string playerId = null,
+											bool replace = false)
 		{
 			playerId = playerId ?? _userContext.UserId.ToString();
 			return _requester.Request<Lobby>(
@@ -160,12 +160,12 @@ namespace Beamable.Experimental.Api.Lobbies
 
 		/// <inheritdoc cref="ILobbyApi.UpdateLobby"/>
 		public Promise<Lobby> UpdateLobby(string lobbyId,
-		                             LobbyRestriction restriction,
-		                             string newHost,
-		                             string name = null,
-		                             string description = null,
-		                             string gameType = null,
-		                             int? maxPlayers = null)
+									 LobbyRestriction restriction,
+									 string newHost,
+									 string name = null,
+									 string description = null,
+									 string gameType = null,
+									 int? maxPlayers = null)
 		{
 			return _requester.Request<Lobby>(
 				Method.PUT,

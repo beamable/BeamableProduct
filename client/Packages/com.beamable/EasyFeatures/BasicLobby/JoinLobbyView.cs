@@ -51,7 +51,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ClearFilterButton;
 		public Button JoinLobbyButton;
 		public Button BackButton;
-		
+
 		public BussElement JoinLobbyButtonBussElement;
 
 		[Header("Callbacks")]
@@ -70,7 +70,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public virtual async void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -83,11 +83,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 			{
 				return;
 			}
-			
+
 			// Setting up all components
 			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected,
-			                  System.SelectedGameTypeIndex);
-			
+							  System.SelectedGameTypeIndex);
+
 			if (!System.HasInitialData)
 			{
 				await System.GetLobbies();
@@ -146,7 +146,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 				System.ApplyPasscode(string.Empty);
 				OnLobbySelected(null);
 				await ViewGroup.Enrich();
-				
+
 				if (e is PlatformRequesterException pre)
 				{
 					OnError?.Invoke(pre.Error.error);

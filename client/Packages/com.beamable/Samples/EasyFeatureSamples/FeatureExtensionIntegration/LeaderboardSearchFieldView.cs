@@ -23,7 +23,7 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => int.MaxValue;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)

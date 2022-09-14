@@ -34,13 +34,13 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <param name="statsToInclude">Stat keys to include with Lobby requests.</param>
 		/// <returns>A <see cref="Promise{Lobby}"/> representing the created lobby.</returns>
 		Promise<Lobby> CreateLobby(string name,
-		                           LobbyRestriction restriction,
-		                           string gameTypeId = null,
-		                           string description = null,
-		                           List<Tag> playerTags = null,
-		                           int? maxPlayers = null,
-		                           int? passcodeLength = null,
-		                           List<string> statsToInclude = null);
+								   LobbyRestriction restriction,
+								   string gameTypeId = null,
+								   string description = null,
+								   List<Tag> playerTags = null,
+								   int? maxPlayers = null,
+								   int? passcodeLength = null,
+								   List<string> statsToInclude = null);
 
 		/// <summary>
 		/// Create a new <see cref="Lobby"/> with the current player as the host.
@@ -55,13 +55,13 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <param name="statsToInclude">Stat keys to include with Lobby requests.</param>
 		/// <returns>A <see cref="Promise{Lobby}"/> representing the created lobby.</returns>
 		Promise<Lobby> CreateLobby(string name,
-		                           LobbyRestriction restriction,
-		                           SimGameTypeRef gameTypeRef = null,
-		                           string description = null,
-		                           List<Tag> playerTags = null,
-		                           int? maxPlayers = null,
-		                           int? passcodeLength = null,
-		                           List<string> statsToInclude = null);
+								   LobbyRestriction restriction,
+								   SimGameTypeRef gameTypeRef = null,
+								   string description = null,
+								   List<Tag> playerTags = null,
+								   int? maxPlayers = null,
+								   int? passcodeLength = null,
+								   List<string> statsToInclude = null);
 
 		/// <summary>
 		/// Join a <see cref="Lobby"/> given its id.
@@ -130,11 +130,11 @@ namespace Beamable.Experimental.Api.Lobbies
 		/// <param name="maxPlayers">New max players value</param>
 		/// <param name="newHost">New lobby host</param>
 		Promise<Lobby> UpdateLobby(string lobbyId,
-		                           LobbyRestriction restriction,
-		                           string newHost,
-		                           string name = null,
-		                           string description = null,
-		                           string gameType = null,
-		                           int? maxPlayers = null);
+								   LobbyRestriction restriction,
+								   string newHost,
+								   string name = null,
+								   string description = null,
+								   string gameType = null,
+								   int? maxPlayers = null);
 	}
 }
