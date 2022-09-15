@@ -17,7 +17,7 @@ namespace Beamable.Platform.Tests.Mail
 
 			var mailSendEntry = new MailSendEntry();
 			Assert.AreEqual(null, mailSendEntry.expires);
-			
+
 			mailSendEntry.SetExpiration(isoDateString);
 			Assert.AreEqual(isoDateString, mailSendEntry.expires);
 
@@ -28,14 +28,14 @@ namespace Beamable.Platform.Tests.Mail
 			mailSendEntry.expires = null;
 			mailSendEntry.SetExpiration(expiresOffset);
 			Assert.AreEqual(isoDateString, mailSendEntry.expires);
-			
+
 			mailSendEntry.expires = null;
 			var now = DateTimeOffset.UtcNow;
 			mailSendEntry.SetExpiresIn(TimeSpan.FromHours(1.0));
 			var inAnHour = now.AddHours(1.0);
 			Assert.AreEqual(inAnHour.ToString(DateUtility.ISO_FORMAT), mailSendEntry.expires);
 		}
-		
+
 		[Test]
 		public void ValidUpdateMailExpiration()
 		{
@@ -45,7 +45,7 @@ namespace Beamable.Platform.Tests.Mail
 
 			var mailUpdate = new MailUpdate(1L, MailState.Read, true);
 			Assert.AreEqual(null, mailUpdate.expires);
-			
+
 			mailUpdate.SetExpiration(isoDateString);
 			Assert.AreEqual(isoDateString, mailUpdate.expires);
 
@@ -56,7 +56,7 @@ namespace Beamable.Platform.Tests.Mail
 			mailUpdate.expires = null;
 			mailUpdate.SetExpiration(expiresOffset);
 			Assert.AreEqual(isoDateString, mailUpdate.expires);
-			
+
 			mailUpdate.expires = null;
 			var now = DateTimeOffset.UtcNow;
 			mailUpdate.SetExpiresIn(TimeSpan.FromHours(1.0));
