@@ -1,6 +1,5 @@
 ﻿using Beamable.BSAT.Core.Models;
 using Beamable.BSAT.Core.Models.Descriptors;
-using Beamable.BSAT;
 using System;
 using TMPro;
 using UnityEngine;
@@ -27,7 +26,6 @@ namespace Beamable.BSAT.UI
         }
         private void UpdateData()
         {
-	        
             testNameText.SetText(_registeredTestScene.SceneName);
             titleText.SetText(_testDescriptor.Title);
             descriptionText.SetText(_testDescriptor.Description);
