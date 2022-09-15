@@ -17,14 +17,14 @@ The VSP package is built using a custom variant of the Unity Asset Store build t
 1. Make a regular UPM release, using Jenkins to build a package. When this happens, there will be an automatic `git` tag for the version. 
 2. On a developer machine, use `git` to checkout the release tag. 
 3. Click the `Asset Store Tools/Build` button in the Unity menu bar. This will open a build dialog. 
-4. In the build dialog, select the environment you want to target your build to. This should practically speaking ALWAY be `PROD`
+4. In the build dialog, select the environment you want to target your build to. This should practically speaking ALWAYS be `PROD`
 5. In the build dialog, select the version number you want to build. This should always align with a UPM package version. 
-6. In the build dialog, ensure the `VSP` checkbox is enabled. If this checkbox is not enabled, the resultant package won't emit analytics events. 
+6. In the build dialog, ensure the `VSP` checkbox is enabled. If this checkbox is not enabled, the resulting package won't emit analytics events. 
 7. Click the build button, and monitor the Unity log. You should see log output that guides the process. 
-8. After the build completes, there will be a file at `Assets/AssetStoreTooling/Build/Beamable.unitypackage` that represents the inclusion of the `com.beamable` and `com.beamable.server` packages. Rename this file this indicate the version number. 
+8. After the build completes, there will be a file at `Assets/AssetStoreTooling/Build/Beamable.unitypackage` that represents the inclusion of the `com.beamable` and `com.beamable.server` packages. Rename this file to indicate the version number. 
 9. **TEST IT!**. Make sure that you import the package into a fresh Unity project, and take it through a few trials. Specifically, make sure you try to create a Microservice and start it.
-10. Upload the file to Unity. As of this writing, we cannot do this yet, because we are still in the verification process. While in verification, we have been uploading the file to s3 directly for the Unity team to download and test. Upload the `.unitypackage` file to [S3](https://s3.console.aws.amazon.com/s3/buckets/beam-unity-asset-store-data?region=us-west-2&tab=objects). You can send the S3 link to Unity for verification. 
+10. Upload the file to Unity. As of this writing, we cannot do this yet, because we are still in the verification process. While in verification, we have been uploading the file to S3 directly for the Unity team to download and test. Upload the `.unitypackage` file to [S3](https://s3.console.aws.amazon.com/s3/buckets/beam-unity-asset-store-data?region=us-west-2&tab=objects). You can send the S3 link to Unity for verification. 
 11. Update the `vsp-meta.json` file on [S3](https://s3.console.aws.amazon.com/s3/buckets/beam-unity-asset-store-data?region=us-west-2&tab=objects) to indicate the latest version number that has been uploaded to Unity. This is not relevant for the verification process. The Beamable Toolbox fetches this data in VSP packages to check if it should show the update banner. 
 
 **IMPORTANT** 
-The VSP package needs to be able to download base images for the `com.beamable.server` package to work. This download uses a derived link, based on the environment type and version number selected during build. If you enter in the wrong version number or environment, then the resultant package won't be able to start a local Microservice. 
+The VSP package needs to be able to download base images for the `com.beamable.server` package to work. This download uses a derived link, based on the environment type and version number selected during build. If you enter in the wrong version number or environment, then the resulting package won't be able to start a local Microservice. 
