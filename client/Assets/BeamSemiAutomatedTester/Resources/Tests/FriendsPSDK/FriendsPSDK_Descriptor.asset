@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5014f7f3f12640f6aff5c849a2b50b0d, type: 3}
-  m_Name: BeamContextLifecycle_Descriptor
+  m_Name: FriendsPSDK_Descriptor
   m_EditorClassIdentifier: 
   _testDescriptor:
     _title: 
     _description: 
     _testRuleDescriptors:
-    - _testableName: BeamContextLifecycleScript
+    - _testableName: FriendsPSDKScript
       _title: 
       _description: 
       _testRuleMethodDescriptors:
@@ -32,10 +32,15 @@ MonoBehaviour:
       - _methodName: TestWithArgumentsAsync
         _title: 
         _description: 
-      - _methodName: DefaultBeamContextInitTest
-        _title: BeamContext initialization
-        _description: Test if default BeamContext initalizes correctly.
-      - _methodName: OtherBeamContextInitTest
-        _title: Other BeamContext initialization
-        _description: Test if other than default BeamContext initializes correctly
-          and has different player ID.
+      - _methodName: Setup
+        _title: Beamable setup
+        _description: This is going to set up 2 beam contexts, and then move to the
+          next step if everything works well...
+      - _methodName: Invite
+        _title: Invite
+        _description: Test if players can send and accept friend invites and also
+          unfriend.
+      - _methodName: Block
+        _title: Block players
+        _description: Test if players can block each other and if the block is actually
+          effective.
