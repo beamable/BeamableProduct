@@ -58,7 +58,6 @@ namespace Beamable.Common.Content
 	public class SimGameType : ContentObject
 	{
 		[Obsolete("Use `CalculateMaxPlayers` instead.")]
-		[Obsolete]
 		[IgnoreContentField]
 		[HideInInspector]
 		public int maxPlayers;
@@ -74,10 +73,6 @@ namespace Beamable.Common.Content
 		[CannotBeEmpty]
 		public TeamContentList teams;
 
-		[Tooltip(ContentObject.TooltipTeamContent1)]
-		[CannotBeEmpty]
-		public TeamContentList teams;
-		
 		[Tooltip(ContentObject.TooltipMatchmakingRule1)]
 		public List<NumericMatchmakingRule> numericRules;
 
@@ -101,6 +96,17 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipRewardsPerRank1)]
 		public List<RewardsPerRank> rewards;
+
+		public int CalculateMaxPlayers()
+		{
+			int sum = 0;
+			foreach (var team in teams.listData)
+			{
+				sum += team.maxPlayers;
+			}
+
+			return sum;
+		}
 
 		public void OnBeforeSerialize()
 		{
@@ -129,7 +135,8 @@ namespace Beamable.Common.Content
 		public List<TeamContent> listData = new List<TeamContent>();
 
 		protected override IList InternalList => listData;
-		public override string GetListPropertyPath() => nameof(listData);}
+		public override string GetListPropertyPath() => nameof(listData);
+	}
 
 	[Serializable]
 	public class TeamContent
