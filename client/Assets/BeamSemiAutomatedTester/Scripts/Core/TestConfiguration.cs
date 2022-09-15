@@ -46,12 +46,15 @@ namespace Beamable.BSAT.Core
 				};
 				data.Add(nestedData);
 			}
-			return Json.Serialize(new ArrayDict
+			var json = Json.Serialize(new ArrayDict
 			{
 				{ "ReportGenerateTimeUTC", DateTime.UtcNow.ToString("yyyy.MM.dd hh:mm:ss tt")},
 				{ "TestResult", TestResult },
 				{ "TestScenes", data }
 			}, new StringBuilder());
+
+			TestableDebug.Log(json);
+			return json;
 		}
 	}
 }
