@@ -3,6 +3,7 @@
 
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -16,7 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The default uncaught Promise handler no longer throws `IndexOutOfBounds` errors in high failure cases.
+
+
+## [1.3.5]
+### Added
+- Utility apis for setting expiration on Mail Update and Mail Send requests
+
+### Fixed
 - VSP Package Attribution now uses requester.Cid rather than requester.AccessToken.Cid (which can be null at editor time)
+- Game Type content has validation for minimum team sizes.
+- Adding items to Inventory after changing authorized user works.
 
 ## [1.3.4]
 ### Added
