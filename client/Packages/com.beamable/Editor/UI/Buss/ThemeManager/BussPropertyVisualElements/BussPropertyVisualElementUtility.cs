@@ -15,42 +15,25 @@ namespace Beamable.UI.Buss
 
 		public static BussPropertyVisualElement GetVisualElement(this IBussProperty property)
 		{
-			if (property is FloatBussProperty floatProperty)
+			switch (property)
 			{
-				return new FloatBussPropertyVisualElement(floatProperty);
+				case FloatBussProperty floatProperty:
+					return new FloatBussPropertyVisualElement(floatProperty);
+				case Vector2BussProperty vector2BussProperty:
+					return new Vector2BussPropertyVisualElement(vector2BussProperty);
+				case SingleColorBussProperty colorProperty:
+					return new ColorBussPropertyVisualElement(colorProperty);
+				case VertexColorBussProperty vertexColorProperty:
+					return new VertexColorBussPropertyVisualElement(vertexColorProperty);
+				case TextAlignmentOptionsBussProperty textAlignmentProperty:
+					return new TextAlignmentBussPropertyVisualElement(textAlignmentProperty);
+				case EnumBussProperty enumBussProperty:
+					return new EnumBussPropertyVisualElement(enumBussProperty);
+				case BaseAssetProperty assetProperty:
+					return new AssetBussPropertyVisualElement(assetProperty);
+				default:
+					return new NotImplementedBussPropertyVisualElement(property);
 			}
-
-			if (property is Vector2BussProperty vector2BussProperty)
-			{
-				return new Vector2BussPropertyVisualElement(vector2BussProperty);
-			}
-
-			if (property is SingleColorBussProperty colorProperty)
-			{
-				return new ColorBussPropertyVisualElement(colorProperty);
-			}
-
-			if (property is VertexColorBussProperty vertexColorProperty)
-			{
-				return new VertexColorBussPropertyVisualElement(vertexColorProperty);
-			}
-
-			if (property is TextAlignmentOptionsBussProperty textAlignmentProperty)
-			{
-				return new TextAlignmentBussPropertyVisualElement(textAlignmentProperty);
-			}
-
-			if (property is EnumBussProperty enumBussProperty)
-			{
-				return new EnumBussPropertyVisualElement(enumBussProperty);
-			}
-
-			if (property is BaseAssetProperty assetProperty)
-			{
-				return new AssetBussPropertyVisualElement(assetProperty);
-			}
-
-			return new NotImplementedBussPropertyVisualElement(property);
 		}
 
 		// private static readonly HashSet<string> _visitedVariables = new HashSet<string>();

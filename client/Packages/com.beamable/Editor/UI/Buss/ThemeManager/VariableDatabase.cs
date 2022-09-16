@@ -9,14 +9,8 @@ namespace Beamable.UI.Buss
 	{
 		public class VariableData
 		{
-			public readonly string Name;
-			public List<PropertyReference> Declarations = new List<PropertyReference>();
-			public List<PropertyReference> Usages = new List<PropertyReference>();
-
-			public VariableData(string name)
-			{
-				Name = name;
-			}
+			public readonly List<PropertyReference> Declarations = new List<PropertyReference>();
+			public readonly List<PropertyReference> Usages = new List<PropertyReference>();
 
 			public IEnumerable<PropertyReference> GetDeclarationsFrom(BussStyleSheet sheet)
 			{
@@ -44,11 +38,11 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public struct PropertyReference
+		public readonly struct PropertyReference
 		{
-			public BussStyleSheet StyleSheet;
-			public BussStyleRule StyleRule;
-			public BussPropertyProvider PropertyProvider;
+			public readonly BussStyleSheet StyleSheet;
+			public readonly BussStyleRule StyleRule;
+			public readonly BussPropertyProvider PropertyProvider;
 
 			public PropertyReference(BussStyleSheet styleSheet,
 			                         BussStyleRule styleRule,
@@ -65,25 +59,109 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		// public enum PropertyValueState
-		// {
-		// 	NoResult,
-		// 	SingleResult,
-		// 	MultipleResults,
-		// 	VariableLoopDetected
-		// }
+		public enum PropertyValueState
+		{
+			NoResult,
+			SingleResult,
+			MultipleResults,
+			VariableLoopDetected
+		}
 
 		private readonly ThemeManagerModel _model;
-		private readonly Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
-		private readonly HashSet<string> _variablesChecked = new HashSet<string>();
-		private List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
+		private readonly List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 
-		public bool ForceRefreshAll { get; private set; }
-		public HashSet<PropertyReference> DirtyProperties { get; } = new HashSet<PropertyReference>();
+		private readonly HashSet<string> _variablesChecked = new HashSet<string>();
+		private readonly Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
+
+		// public bool ForceRefreshAll { get; private set; }
+		// public HashSet<PropertyReference> DirtyProperties { get; } = new HashSet<PropertyReference>();
 
 		public VariableDatabase(ThemeManagerModel model)
 		{
 			_model = model;
+		}
+
+		// public void FlushDirtyMarkers()
+		// {
+		// 	ForceRefreshAll = false;
+		// 	DirtyProperties.Clear();
+		// }
+
+		public VariableData GetVariableData(string key)
+		{
+			if (_variables.TryGetValue(key, out var value))
+			{
+				return value;
+			}
+
+			var data = new VariableData();
+			_variables[key] = data;
+			return data;
+		}
+
+		public IEnumerable<string> GetVariableNames()
+		{
+			ReconsiderAllStyleSheets();
+			return _variables.Keys;
+		}
+
+		public void ReconsiderAllStyleSheets()
+		{
+			_variables.Clear();
+			_styleSheets.Clear();
+
+			foreach (BussStyleSheet sheet in _model.StyleSheets)
+			{
+				AddStyleSheet(sheet);
+			}
+		}
+
+		// public void ResetVariableLoopDetector() => _variablesChecked.Clear();
+		//
+		// public void SetCrushingChange() => ForceRefreshAll = true;
+
+		// public void SetPropertyDirty(BussStyleSheet styleSheet,
+		//                              BussStyleRule styleRule,
+		//                              BussPropertyProvider propertyProvider)
+		// {
+		// 	DirtyProperties.Add(new PropertyReference(styleSheet, styleRule, propertyProvider));
+		// }
+
+		// public void SetVariableDirty(string key)
+		// {
+		// 	var data = GetVariableData(key);
+		// 	foreach (PropertyReference declaration in data.Declarations)
+		// 	{
+		// 		DirtyProperties.Add(declaration);
+		// 	}
+		//
+		// 	foreach (PropertyReference usage in data.Usages)
+		// 	{
+		// 		DirtyProperties.Add(usage);
+		// 	}
+		// }
+
+		public PropertyValueState TryGetVariableValue(VariableProperty variableProperty,
+		                                              BussStyleRule styleRule,
+		                                              out IBussProperty result,
+		                                              Type expectedType)
+		{
+			if (expectedType == null)
+			{
+				expectedType = typeof(IBussProperty);
+			}
+
+			result = null;
+			var variableName = variableProperty.VariableName;
+
+			if (_variablesChecked.Contains(variableName))
+			{
+				return PropertyValueState.VariableLoopDetected;
+			}
+
+			_variablesChecked.Add(variableProperty.VariableName);
+
+			return TryGetVariableValueWithoutContext(variableProperty, styleRule, out result, expectedType);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -120,60 +198,6 @@ namespace Beamable.UI.Buss
 			_styleSheets.Add(sheet);
 		}
 
-		// public void FlushDirtyMarkers()
-		// {
-		// 	ForceRefreshAll = false;
-		// 	DirtyProperties.Clear();
-		// }
-
-		public VariableData GetVariableData(string key)
-		{
-			if (_variables.TryGetValue(key, out var value))
-			{
-				return value;
-			}
-
-			var data = new VariableData(key);
-			_variables[key] = data;
-			return data;
-		}
-
-		public IEnumerable<string> GetVariableNames()
-		{
-			return _variables.Keys;
-		}
-
-		// public void RemoveAllStyleSheets()
-		// {
-		// 	_variables.Clear();
-		// 	_styleSheets.Clear();
-		// }
-		//
-		// public void ReconsiderStyleSheet(BussStyleSheet sheet)
-		// {
-		// 	RemoveStyleSheet(sheet);
-		// 	AddStyleSheet(sheet);
-		// }
-
-		public void ReconsiderAllStyleSheets()
-		{
-			// _variables.Clear();
-			// var styleSheets = _styleSheets;
-			// _styleSheets = new List<BussStyleSheet>();
-			// foreach (BussStyleSheet sheet in styleSheets)
-			// {
-			// 	AddStyleSheet(sheet);
-			// }
-
-			_variables.Clear();
-			_styleSheets.Clear();
-
-			foreach (BussStyleSheet sheet in _model.StyleSheets)
-			{
-				AddStyleSheet(sheet);
-			}
-		}
-
 		private void RemoveStyleSheet(BussStyleSheet sheet)
 		{
 			foreach (VariableData variableData in _variables.Values)
@@ -185,84 +209,35 @@ namespace Beamable.UI.Buss
 			_styleSheets.Remove(sheet);
 		}
 
-		// public void ResetVariableLoopDetector() => _variablesChecked.Clear();
-		//
-		// public void SetCrushingChange() => ForceRefreshAll = true;
-
-		public void SetPropertyDirty(BussStyleSheet styleSheet,
-		                             BussStyleRule styleRule,
-		                             BussPropertyProvider propertyProvider)
+		private PropertyValueState TryGetVariableValueWithoutContext(VariableProperty variableProperty,
+		                                                             BussStyleRule styleRule,
+		                                                             out IBussProperty result,
+		                                                             Type expectedType)
 		{
-			DirtyProperties.Add(new PropertyReference(styleSheet, styleRule, propertyProvider));
-		}
-
-		public void SetVariableDirty(string key)
-		{
-			var data = GetVariableData(key);
-			foreach (PropertyReference declaration in data.Declarations)
+			result = null;
+			if (styleRule.HasProperty(variableProperty.VariableName))
 			{
-				DirtyProperties.Add(declaration);
+				result = styleRule.GetProperty(variableProperty.VariableName);
+				return PropertyValueState.SingleResult;
 			}
 
-			foreach (PropertyReference usage in data.Usages)
+			var variableData = GetVariableData(variableProperty.VariableName);
+			var declarations = variableData.Declarations.Where(
+				r => expectedType.IsInstanceOfType(r.PropertyProvider.GetProperty()));
+			IEnumerable<PropertyReference> propertyReferences = declarations.ToList();
+			var declarationsCount = propertyReferences.Count();
+			if (declarationsCount == 1)
 			{
-				DirtyProperties.Add(usage);
+				result = propertyReferences.First().PropertyProvider.GetProperty();
+				return PropertyValueState.SingleResult;
 			}
+
+			if (declarationsCount == 0)
+			{
+				return PropertyValueState.NoResult;
+			}
+
+			return PropertyValueState.MultipleResults;
 		}
-
-		// public PropertyValueState TryGetVariableValue(VariableProperty variableProperty,
-		//                                               BussStyleRule styleRule,
-		//                                               out IBussProperty result,
-		//                                               BussElement context,
-		//                                               Type expectedType)
-		// {
-		// 	if (expectedType == null)
-		// 	{
-		// 		expectedType = typeof(IBussProperty);
-		// 	}
-		//
-		// 	result = null;
-		// 	var variableName = variableProperty.VariableName;
-		//
-		// 	if (_variablesChecked.Contains(variableName))
-		// 	{
-		// 		return PropertyValueState.VariableLoopDetected;
-		// 	}
-		//
-		// 	_variablesChecked.Add(variableProperty.VariableName);
-		//
-		// 	//TODO: add different behaviour when context exists
-		// 	return TryGetVariableValueWithoutContext(variableProperty, styleRule, out result, expectedType);
-		// }
-
-		// private PropertyValueState TryGetVariableValueWithoutContext(VariableProperty variableProperty,
-		//                                                              BussStyleRule styleRule,
-		//                                                              out IBussProperty result,
-		//                                                              Type expectedType)
-		// {
-		// 	result = null;
-		// 	if (styleRule.HasProperty(variableProperty.VariableName))
-		// 	{
-		// 		result = styleRule.GetProperty(variableProperty.VariableName);
-		// 		return PropertyValueState.SingleResult;
-		// 	}
-		//
-		// 	var variableData = GetVariableData(variableProperty.VariableName);
-		// 	var declarations = variableData.Declarations.Where(
-		// 		r => expectedType.IsInstanceOfType(r.PropertyProvider.GetProperty()));
-		// 	var declarationsCount = declarations.Count();
-		// 	if (declarationsCount == 1)
-		// 	{
-		// 		result = declarations.First().PropertyProvider.GetProperty();
-		// 		return PropertyValueState.SingleResult;
-		// 	}
-		//
-		// 	if (declarationsCount == 0)
-		// 	{
-		// 		return PropertyValueState.NoResult;
-		// 	}
-		//
-		// 	return PropertyValueState.MultipleResults;
-		// }
 	}
 }

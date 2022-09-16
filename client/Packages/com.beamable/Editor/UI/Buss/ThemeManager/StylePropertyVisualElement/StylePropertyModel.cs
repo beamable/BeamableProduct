@@ -3,6 +3,7 @@ using Beamable.Editor.Common;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -18,17 +19,18 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
-		public VariableDatabase VariablesDatabase { get; }
-		public PropertySourceTracker PropertySourceTracker { get; }
+		private VariableDatabase VariablesDatabase { get; }
+		private PropertySourceTracker PropertySourceTracker { get; }
 		public BussElement InlineStyleOwner { get; }
-
 		public string Tooltip { get; set; }
+		public int VariableDropdownOptionIndex => GetOptionIndex();
+		public List<string> DropdownOptions => GetDropdownOptions();
 
 		public bool IsVariable => PropertyProvider.IsVariable;
 		public bool IsInStyle => IsInline || (StyleRule != null && StyleRule.Properties.Contains(PropertyProvider));
 		public bool IsWritable => IsInline || (StyleSheet != null && StyleSheet.IsWritable);
 		private bool IsInline => InlineStyleOwner != null;
-		public bool HasVariableConnected => PropertyProvider.GetProperty() is VariableProperty;
+		public bool HasVariableConnected => PropertyProvider.HasVariableReference;
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
 		                          BussStyleRule styleRule,
@@ -45,6 +47,32 @@ namespace Beamable.Editor.UI.Components
 			VariablesDatabase = variablesDatabase;
 			PropertySourceTracker = propertySourceTracker;
 			InlineStyleOwner = inlineStyleOwner;
+		}
+
+		public VariableDatabase.PropertyValueState GetResult(out PropertySourceTracker propertySourceTracker,
+		                                                     out IBussProperty bussProperty,
+		                                                     out VariableDatabase.PropertyReference propertyReference)
+		{
+			PropertySourceTracker context = null;
+			if (PropertySourceTracker != null && PropertySourceTracker.Element != null)
+			{
+				if (StyleRule?.Selector?.CheckMatch(PropertySourceTracker.Element) ?? false)
+				{
+					context = PropertySourceTracker;
+				}
+			}
+
+			VariableDatabase.PropertyValueState result =
+				StylePropertyVisualElementUtility.TryGetProperty(PropertyProvider, StyleRule, VariablesDatabase,
+				                                                 context, out IBussProperty property,
+				                                                 out VariableDatabase.PropertyReference
+					                                                 variableSource);
+
+			propertySourceTracker = context;
+			bussProperty = property;
+			propertyReference = variableSource;
+
+			return result;
 		}
 
 		public void LabelClicked(MouseDownEvent evt)
@@ -86,16 +114,62 @@ namespace Beamable.Editor.UI.Components
 				PropertyProvider.SetProperty(new VariableProperty());
 			}
 
-			// PropertyProvider.SetProperty(BussStyle.GetDefaultValue(PropertyProvider.Key));
-
 			if (StyleSheet != null)
 			{
 				StyleSheet.TriggerChange();
 			}
-			
-			AssetDatabase.SaveAssets();
 
+			AssetDatabase.SaveAssets();
 			Change?.Invoke();
+		}
+
+		public void OnVariableSelected(int index)
+		{
+			if (HasVariableConnected)
+			{
+				var option = DropdownOptions[index];
+
+				((VariableProperty)PropertyProvider.GetProperty()).VariableName =
+					option == Constants.Features.Buss.MenuItems.NONE ? "" : option;
+
+				if (StyleSheet != null)
+				{
+					StyleSheet.TriggerChange();
+				}
+
+				AssetDatabase.SaveAssets();
+			}
+			
+			Change?.Invoke();
+		}
+
+		private List<string> GetDropdownOptions()
+		{
+			var baseType = BussStyle.GetBaseType(PropertyProvider.Key);
+			var options = new List<string>();
+
+			options.Clear();
+			options.Add(Constants.Features.Buss.MenuItems.NONE);
+			options.AddRange(VariablesDatabase.GetVariableNames()
+			                                  .Where(key => VariablesDatabase.GetVariableData(key)
+			                                                                 .HasTypeDeclared(baseType)));
+
+			return options;
+		}
+
+		private int GetOptionIndex()
+		{
+			List<string> options = GetDropdownOptions();
+
+			string variableName = string.Empty;
+			if (HasVariableConnected)
+			{
+				variableName = ((VariableProperty)PropertyProvider.GetProperty()).VariableName;
+			}
+			
+			var value = options.FindIndex(option => option.Equals(variableName));
+			value = Mathf.Clamp(value, 0, options.Count - 1);
+			return value;
 		}
 	}
 }

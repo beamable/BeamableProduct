@@ -158,7 +158,6 @@ namespace Beamable.Editor.UI.Buss
 		private void OnStyleSheetChanged()
 		{
 			VariableDatabase.ReconsiderAllStyleSheets();
-			// Change?.Invoke();
 		}
 
 		private void OnSelectionChanged()

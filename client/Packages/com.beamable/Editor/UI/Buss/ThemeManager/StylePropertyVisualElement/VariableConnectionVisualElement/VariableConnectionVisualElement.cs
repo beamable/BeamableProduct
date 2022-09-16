@@ -1,8 +1,6 @@
-﻿using Beamable.Common;
-using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
-using System.Collections.Generic;
-using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -13,8 +11,6 @@ namespace Beamable.Editor.UI.Components
 		private Button _button;
 		private IBussProperty _cachedProperty;
 		private DropdownVisualElement _dropdown;
-
-		private readonly List<string> _dropdownOptions = new List<string>();
 		private VisualElement _mainElement;
 
 		private readonly StylePropertyModel _model;
@@ -24,7 +20,6 @@ namespace Beamable.Editor.UI.Components
 			$"{nameof(VariableConnectionVisualElement)}/{nameof(VariableConnectionVisualElement)}.uss")
 		{
 			_model = model;
-			_model.Change += Refresh;
 		}
 
 		public override void Init()
@@ -43,6 +38,8 @@ namespace Beamable.Editor.UI.Components
 			_dropdown.Refresh();
 			_dropdown.Q("valueContainer").style.SetWidth(_dropdown.Q("valueContainer").style.GetWidth() - 30f);
 			_mainElement.Add(_dropdown);
+			
+			_model.Change += Refresh;
 		}
 
 		protected override void OnDestroy()
@@ -53,51 +50,14 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
+			Debug.Log("Refresh from VariableConnectionVisualElement");
+			
 			_button.EnableInClassList("whenConnected", _model.HasVariableConnected);
-
-			var baseType = BussStyle.GetBaseType(_model.PropertyProvider.Key);
-			_dropdownOptions.Clear();
-			_dropdownOptions.Add(Constants.Features.Buss.MenuItems.NONE);
-			_dropdownOptions.AddRange(_model.VariablesDatabase.GetVariableNames()
-			                                .Where(key => _model.VariablesDatabase.GetVariableData(key)
-			                                                    .HasTypeDeclared(baseType)));
-
 			_dropdown.visible = _model.HasVariableConnected;
-			_dropdown.Setup(_dropdownOptions, OnVariableSelected, false);
+			_dropdown.Setup(_model.DropdownOptions, _model.OnVariableSelected, _model.VariableDropdownOptionIndex,
+			                false);
 
-			// if (_model.PropertyProvider.GetProperty() is VariableProperty property)
-			// {
-			// 	var index = _dropdownOptions.IndexOf(property.VariableName);
-			// 	if (index < 0)
-			// 	{
-			// 		index = 0;
-			// 	}
-			//
-			// 	_dropdown.Set(index);
-			// }
-			// else
-			// {
-			// 	_dropdown.Set(0);
-			// }
-		}
-
-		private void OnVariableSelected(int index)
-		{
-			if (_model.PropertyProvider.GetProperty() is VariableProperty variableProperty)
-			{
-				var option = _dropdownOptions[index];
-
-				variableProperty.VariableName = option == Constants.Features.Buss.MenuItems.NONE ? "" : option;
-
-				// _variableDatabase.SetPropertyDirty(_styleSheet, _styleRule, _propertyProvider);
-
-				if (_model.StyleSheet != null)
-				{
-					_model.StyleSheet.TriggerChange();
-				}
-
-				// ConnectionChange?.Invoke();
-			}
+			// _model.ForceRefresh();
 		}
 	}
 }

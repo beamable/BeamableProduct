@@ -8,29 +8,27 @@ namespace Beamable.Editor.UI.Components
 	{
 		private static readonly HashSet<string> UsedVariableNames = new HashSet<string>();
 
-		public static PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
-														BussStyleDescription styleRule,
-														VariableDatabase variableDatabase,
-														PropertySourceTracker context,
-														out IBussProperty result,
-														out VariableDatabase.PropertyReference variablePropertyReference)
+		public static VariableDatabase.PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
+		                                                                 BussStyleDescription styleRule,
+		                                                                 VariableDatabase variableDatabase,
+		                                                                 PropertySourceTracker context,
+		                                                                 out IBussProperty result,
+		                                                                 out VariableDatabase.PropertyReference variablePropertyReference)
 		{
 			if (!basePropertyProvider.HasVariableReference)
 			{
 				variablePropertyReference = new VariableDatabase.PropertyReference(null, null, null);
 				result = basePropertyProvider.GetProperty();
-				return PropertyValueState.SingleResult;
+				return VariableDatabase.PropertyValueState.SingleResult;
 			}
-			else
+
+			if (context != null)
 			{
-				if (context != null)
-				{
-					return FindVariableEndValueWithContext((VariableProperty)basePropertyProvider.GetProperty(),
-														   context, BussStyle.GetBaseType(basePropertyProvider.Key), out result, out variablePropertyReference);
-				}
-				return FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-					styleRule, variableDatabase, out result, out variablePropertyReference);
+				return FindVariableEndValueWithContext((VariableProperty)basePropertyProvider.GetProperty(),
+				                                       context, BussStyle.GetBaseType(basePropertyProvider.Key), out result, out variablePropertyReference);
 			}
+			return FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
+			                            styleRule, variableDatabase, out result, out variablePropertyReference);
 		}
 
 		/// <summary>
@@ -40,7 +38,7 @@ namespace Beamable.Editor.UI.Components
 		/// Otherwise returns null.
 		/// It can search for end value recursively.
 		/// </summary>
-		private static PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
+		private static VariableDatabase.PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
 															   BussStyleDescription styleRule,
 															   VariableDatabase variableDatabase,
 															   out IBussProperty result,
@@ -48,19 +46,19 @@ namespace Beamable.Editor.UI.Components
 		{
 			result = null;
 			propertyReference = new VariableDatabase.PropertyReference(null, null, null);
-			PropertyValueState state;
+			VariableDatabase.PropertyValueState state;
 
 			if (UsedVariableNames.Contains(variableProperty.VariableName)) // check if we are not in infinite loop
 			{
 				UsedVariableNames.Clear();
-				return PropertyValueState.VariableLoopDetected;
+				return VariableDatabase.PropertyValueState.VariableLoopDetected;
 			}
 
 			UsedVariableNames.Add(variableProperty.VariableName);
 
 			if (styleRule.HasProperty(variableProperty.VariableName))
 			{
-				state = PropertyValueState.SingleResult;
+				state = VariableDatabase.PropertyValueState.SingleResult;
 				result = styleRule.GetProperty(variableProperty.VariableName);
 			}
 			else
@@ -68,15 +66,15 @@ namespace Beamable.Editor.UI.Components
 				var variableData = variableDatabase.GetVariableData(variableProperty.VariableName);
 				if (variableData.Declarations.Count == 1)
 				{
-					state = PropertyValueState.SingleResult;
+					state = VariableDatabase.PropertyValueState.SingleResult;
 					propertyReference = variableData.Declarations[0];
 					result = propertyReference.PropertyProvider.GetProperty();
 				}
 				else
 				{
 					state = (variableData.Declarations.Count == 0
-						? PropertyValueState.NoResult
-						: PropertyValueState.MultipleResults);
+						? VariableDatabase.PropertyValueState.NoResult
+						: VariableDatabase.PropertyValueState.MultipleResults);
 				}
 			}
 
@@ -90,7 +88,7 @@ namespace Beamable.Editor.UI.Components
 			return state;
 		}
 
-		private static PropertyValueState FindVariableEndValueWithContext(VariableProperty variableProperty,
+		private static VariableDatabase.PropertyValueState FindVariableEndValueWithContext(VariableProperty variableProperty,
 																		  PropertySourceTracker context,
 																		  Type expectedType,
 																		  out IBussProperty result,
@@ -108,7 +106,7 @@ namespace Beamable.Editor.UI.Components
 				if (propertyProvider == null)
 				{
 					UsedVariableNames.Clear();
-					return PropertyValueState.NoResult;
+					return VariableDatabase.PropertyValueState.NoResult;
 				}
 				if (propertyProvider.HasVariableReference)
 				{
@@ -119,20 +117,12 @@ namespace Beamable.Editor.UI.Components
 					propertyReference = usedPropertyReference;
 					result = propertyProvider.GetProperty();
 					UsedVariableNames.Clear();
-					return PropertyValueState.SingleResult;
+					return VariableDatabase.PropertyValueState.SingleResult;
 				}
 			}
 
 			UsedVariableNames.Clear();
-			return PropertyValueState.VariableLoopDetected;
-		}
-
-		public enum PropertyValueState
-		{
-			NoResult,
-			SingleResult,
-			MultipleResults,
-			VariableLoopDetected
+			return VariableDatabase.PropertyValueState.VariableLoopDetected;
 		}
 	}
 }

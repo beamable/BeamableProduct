@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -50,9 +51,43 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
+			Debug.Log("Refresh from StylePropertyVisualElement");
 			_labelComponent.text = _model.PropertyProvider.Key;
 
-			SetupEditableField();
+			if (_model.HasVariableConnected)
+			{
+				string variableName = ((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName;
+
+				if (variableName == String.Empty)
+				{
+					CreateMessageField(VariableDatabase.PropertyValueState.NoResult);
+				}
+				else
+				{
+					var result = _model.GetResult(out PropertySourceTracker propertySourceTracker,
+					                              out IBussProperty property,
+					                              out VariableDatabase.PropertyReference variableSource);
+					CreateEditableField(property);
+					SetVariableSource(variableSource);
+					SetOverridenClass(propertySourceTracker, result);
+				}
+
+				// if (result == VariableDatabase.PropertyValueState.SingleResult)
+				// {
+				// 	CreateEditableField(property);
+				// 	SetVariableSource(variableSource);
+				// 	SetOverridenClass(propertySourceTracker, result);
+				// }
+				// else
+				// {
+				// 	CreateMessageField(result);
+				// }
+			}
+			else
+			{
+				CreateEditableField(_model.PropertyProvider.GetProperty());
+			}
+
 			SetupVariableConnection();
 			CheckIfIsReadOnly();
 		}
@@ -78,6 +113,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void CreateEditableField(IBussProperty property)
 		{
+			// TODO: probably we won't need this check and invoke
 			if (_propertyVisualElement != null)
 			{
 				DestroyEditableField();
@@ -88,23 +124,23 @@ namespace Beamable.Editor.UI.Components
 			if (_propertyVisualElement != null)
 			{
 				_propertyVisualElement.UpdatedStyleSheet = _model.IsInStyle ? _model.StyleSheet : null;
-				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Init();
+				_valueParent.Add(_propertyVisualElement);
 			}
 		}
 
-		private void CreateMessageField(StylePropertyVisualElementUtility.PropertyValueState result)
+		private void CreateMessageField(VariableDatabase.PropertyValueState result)
 		{
 			string text;
 			switch (result)
 			{
-				case StylePropertyVisualElementUtility.PropertyValueState.MultipleResults:
+				case VariableDatabase.PropertyValueState.MultipleResults:
 					text = "Multiple possible values.";
 					break;
-				case StylePropertyVisualElementUtility.PropertyValueState.NoResult:
-					text = "No possible value.";
+				case VariableDatabase.PropertyValueState.NoResult:
+					text = "Select variable.";
 					break;
-				case StylePropertyVisualElementUtility.PropertyValueState.VariableLoopDetected:
+				case VariableDatabase.PropertyValueState.VariableLoopDetected:
 					text = "Variable loop-reference detected.";
 					break;
 				default:
@@ -112,11 +148,7 @@ namespace Beamable.Editor.UI.Components
 					break;
 			}
 
-			if (_propertyVisualElement != null)
-			{
-				DestroyEditableField();
-			}
-
+			_valueParent.Clear();
 			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
 			_valueParent.Add(_propertyVisualElement);
 			_propertyVisualElement.Init();
@@ -130,60 +162,15 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement = null;
 		}
 
-		private void SetOverridenClass(PropertySourceTracker context,
-		                               StylePropertyVisualElementUtility.PropertyValueState result)
+		private void SetOverridenClass(PropertySourceTracker context, VariableDatabase.PropertyValueState result)
 		{
 			bool overriden = false;
-			if (context != null && result == StylePropertyVisualElementUtility.PropertyValueState.SingleResult)
+			if (context != null && result == VariableDatabase.PropertyValueState.SingleResult)
 			{
 				overriden = _model.PropertyProvider != context.GetUsedPropertyProvider(_model.PropertyProvider.Key);
 			}
 
 			EnableInClassList("overriden", overriden);
-		}
-
-		private void SetupEditableField()
-		{
-			PropertySourceTracker context = null;
-			if (_model.PropertySourceTracker != null && _model.PropertySourceTracker.Element != null)
-			{
-				if (_model.StyleRule?.Selector?.CheckMatch(_model.PropertySourceTracker.Element) ?? false)
-				{
-					context = _model.PropertySourceTracker;
-				}
-			}
-
-			StylePropertyVisualElementUtility.PropertyValueState result =
-				StylePropertyVisualElementUtility.TryGetProperty(_model.PropertyProvider, _model.StyleRule,
-				                                                 _model.VariablesDatabase, context,
-				                                                 out IBussProperty property,
-				                                                 out VariableDatabase.PropertyReference
-					                                                 variableSource);
-
-			SetVariableSource(variableSource);
-
-			SetOverridenClass(context, result);
-
-			if (result != StylePropertyVisualElementUtility.PropertyValueState.SingleResult)
-			{
-				CreateMessageField(result);
-				return;
-			}
-
-			if (_propertyVisualElement == null)
-			{
-				CreateEditableField(property);
-				return;
-			}
-
-			if (property == _propertyVisualElement.BaseProperty)
-			{
-				_propertyVisualElement.OnPropertyChangedExternally();
-			}
-			else
-			{
-				CreateEditableField(property);
-			}
 		}
 
 		private void SetupVariableConnection()
@@ -195,8 +182,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				_variableConnection = new VariableConnectionVisualElement(_model);
 				_variableConnection.Init();
-				_variableParent.Add(_variableConnection);
 				_variableConnection.Refresh();
+				_variableParent.Add(_variableConnection);
 			}
 		}
 
