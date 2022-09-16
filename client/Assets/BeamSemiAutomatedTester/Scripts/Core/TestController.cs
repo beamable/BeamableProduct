@@ -2,6 +2,7 @@ using Beamable.BSAT.Core.Models;
 using Beamable.BSAT.Extensions;
 using System;
 using System.Collections;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -29,7 +30,7 @@ namespace Beamable.BSAT.Core
 					if (TestConfiguration == null)
 					{
 						TestableDebug.LogError("Cannot load test configuration file!");
-						Debug.Break();
+						UnityEngine.Debug.Break();
 					}
 				}
 				return _testConfiguration;
@@ -45,6 +46,7 @@ namespace Beamable.BSAT.Core
 		private int _currentTestIndex = 0, _currentOrderIndex = 0, _currentCaseIndex = 0;
 
 		private Coroutine _coroutine;
+		private Stopwatch _watch = new Stopwatch();
 		
 		private void Awake()
 		{
@@ -138,7 +140,11 @@ namespace Beamable.BSAT.Core
 		}
 		private async void HandleTestReadyToInvoke()
 		{
+			_watch.Restart();
 			var result = await CurrentTestRuleMethod.InvokeTest(displayLogs, _currentOrderIndex, _currentCaseIndex - 1);
+			_watch.Stop();
+			CurrentTestRuleMethod.ElapsedTime = _watch.Elapsed;
+			
 			if (stopOnFirstFailed && result == TestResult.Failed)
 			{
 				TestableDebug.Log($"Testing tool stopped due to failed test.");
