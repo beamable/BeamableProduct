@@ -18,6 +18,8 @@ namespace Beamable.BSAT.Core.Models
 				TestResult.NotSet;
 		public List<RegisteredTest> RegisteredTests => _registeredTests;
 
+		public TimeSpan ElapsedTime => new TimeSpan(RegisteredTests.Sum(x => x.ElapsedTime.Ticks));
+		
 		[SerializeField] private string _sceneName;
 		[SerializeField] private TestResult _testResult;
 		[SerializeField, HideInInspector] private TestSceneDescriptor _testSceneDescriptor;
@@ -56,6 +58,7 @@ namespace Beamable.BSAT.Core.Models
 			return new ArrayDict
 			{
 				{ "TestResult", TestResult},
+				{ "TimeStamp", ElapsedTime.ToString("g") },
 				{ "Title", TestSceneDescriptor.GetTestDescriptor().Title },
 				{ "Description", TestSceneDescriptor.GetTestDescriptor().Description },
 				{ "Tests", data }

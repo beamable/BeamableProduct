@@ -57,6 +57,8 @@ namespace Beamable.BSAT.Core.Models
 				return _methodInfo;
 			}
 		}
+		public TimeSpan ElapsedTime { get; set; } = TimeSpan.Zero;
+		
 		private MethodInfo _methodInfo;
 		public object[] Arguments => TestHelper.ConvertStringToObject(_argumentsRaw);
 		public string[] ArgumentsRaw => _argumentsRaw;
@@ -95,6 +97,7 @@ namespace Beamable.BSAT.Core.Models
 			return new ArrayDict
 			{
 				{ "TestResult", TestResult},
+				{ "TimeStamp", ElapsedTime.ToString("g") },
 				{ "Arguments", ArgumentsRaw }
 			};
 		}
