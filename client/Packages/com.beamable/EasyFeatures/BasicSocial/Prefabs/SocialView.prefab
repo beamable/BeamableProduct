@@ -1305,8 +1305,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2372437496078871115}
   - component: {fileID: 4876529475000046997}
-  - component: {fileID: 3642271064357363028}
   - component: {fileID: 7093623596647324149}
+  - component: {fileID: 1197960002579081253}
   - component: {fileID: 3857626464978710476}
   - component: {fileID: 4558814885514653264}
   m_Layer: 0
@@ -1359,22 +1359,6 @@ MonoBehaviour:
   _trackLastElement: 0
   _trackSpeedFactor: 4
   _childAlignment: 1
---- !u!114 &3642271064357363028
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5905898955218457772}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9243f1cf570411d4fa5099e03b8c53d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  PartySlotPrefab: {fileID: 556094659948562150, guid: 3aa3e0df0a39db54b952a6b221ce60f9,
-    type: 3}
-  ScrollView: {fileID: 4876529475000046997}
-  DefaultElementHeight: 150
 --- !u!222 &7093623596647324149
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1383,6 +1367,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5905898955218457772}
   m_CullTransparentMesh: 0
+--- !u!114 &1197960002579081253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5905898955218457772}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a44bf56fa498a14408b257d64fa2a913, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  FriendSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
+    type: 3}
+  ScrollView: {fileID: 4876529475000046997}
+  DefaultElementHeight: 120
 --- !u!114 &3857626464978710476
 MonoBehaviour:
   m_ObjectHideFlags: 0

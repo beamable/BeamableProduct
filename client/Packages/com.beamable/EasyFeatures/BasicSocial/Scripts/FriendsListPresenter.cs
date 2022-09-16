@@ -25,10 +25,9 @@ namespace Beamable.EasyFeatures.BasicSocial
 			for (int i = 0; i < players.Count; i++)
 			{
 				var stats = await Context.Api.Stats.GetStats("client", "public", "player", players[i]);
-				string name;
-				if (!stats.TryGetValue("alias", out name))
+				if (!stats.TryGetValue("alias", out string playerName))
 				{
-					name = players[i].ToString();
+					playerName = players[i].ToString();
 				}
 
 				Sprite avatar = AvatarConfiguration.Instance.Default.Sprite;
@@ -43,8 +42,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 				viewData[i] = new FriendSlotPresenter.ViewData
 				{
-					PlayerId = players[i].ToString(),
-					PlayerName = name,
+					PlayerName = playerName,
 					Avatar = avatar,
 					Description = "Description"
 				};
@@ -92,6 +90,8 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 			var data = item as FriendSlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be FriendSlotPresenter");
+			
+			spawned.Setup(data, null);
 			
 			return spawned.GetComponent<RectTransform>();
 		}
