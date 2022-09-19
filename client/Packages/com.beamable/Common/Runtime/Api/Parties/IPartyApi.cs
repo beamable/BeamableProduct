@@ -62,5 +62,27 @@ namespace Beamable.Experimental.Api.Parties
 		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
 		/// <param name="playerId">The id of the player to invite.</param>
 		Promise InviteToParty(string partyId, string playerId);
+		
+		/// <summary>
+		/// Send a request to the given <see cref="Party"/> to remove the player with the given playerId.
+		/// If the requesting player doesn't have the capability to boot players, this will throw an exception.
+		/// </summary>
+		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
+		/// <param name="playerId">The id of the player to remove.</param>
+		Promise KickPlayer(string partyId, long playerId);
+
+		/// <summary>
+		/// Send a request to the given <see cref="Party"/> to promote the player with the given playerId to leader.
+		/// </summary>
+		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
+		/// <param name="playerId">The id of the player to promote.</param>
+		Promise PromoteToLeader(string partyId, long playerId);
+
+		/// <summary>
+		/// Send a request to the given <see cref="Party"/> to invite the player with the given playerId.
+		/// </summary>
+		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
+		/// <param name="playerId">The id of the player to invite.</param>
+		Promise InviteToParty(string partyId, long playerId);
 	}
 }

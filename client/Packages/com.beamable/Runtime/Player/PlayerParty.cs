@@ -253,6 +253,17 @@ namespace Beamable.Player
 
 			await _partyApi.InviteToParty(State.id, playerId);
 		}
+		
+		/// <inheritdoc cref="IPartyApi.InviteToParty"/>
+		public async Promise Invite(long playerId)
+		{
+			if (State == null)
+			{
+				return;
+			}
+
+			await _partyApi.InviteToParty(State.id, playerId);
+		}
 
 		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
 		public async Promise Promote(string playerId)
@@ -264,9 +275,31 @@ namespace Beamable.Player
 
 			await _partyApi.PromoteToLeader(State.id, playerId);
 		}
+		
+		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
+		public async Promise Promote(long playerId)
+		{
+			if (State == null)
+			{
+				return;
+			}
+
+			await _partyApi.PromoteToLeader(State.id, playerId);
+		}
 
 		/// <inheritdoc cref="IPartyApi.KickPlayer"/>
 		public async Promise Kick(string playerId)
+		{
+			if (State == null)
+			{
+				return;
+			}
+
+			await _partyApi.KickPlayer(State.id, playerId);
+		}
+		
+		/// <inheritdoc cref="IPartyApi.KickPlayer"/>
+		public async Promise Kick(long playerId)
 		{
 			if (State == null)
 			{
