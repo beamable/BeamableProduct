@@ -369,7 +369,7 @@ namespace Beamable.Server.Editor
 			return true;
 		}
 		
-		private static Promise CleanupRunningContainers()
+		private static Task CleanupRunningContainers()
 		{
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 
@@ -398,7 +398,7 @@ namespace Beamable.Server.Editor
 				}
 			}
 			
-			return Promise.Success;
+			return Task.CompletedTask;
 		}
 
 		public static MicroserviceDescriptor GetGeneratorDescriptor(IDescriptor service)
