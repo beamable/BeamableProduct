@@ -19,9 +19,11 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
+	// TODO: TD000003
 	public class SelectedBussElementVisualElement : BeamableBasicVisualElement
 	{
-		private const float BASE_COMPONENT_HEIGHT = 179.0f;
+		private const float MIN_CONTENT_HEIGHT = 120.0f;
+		private const float SINGLE_CLASS_ENTRY_HEIGHT = 24.0f;
 
 		private LabeledTextField _idField;
 		private LabeledObjectField _currentStyleSheet;
@@ -29,6 +31,7 @@ namespace Beamable.Editor.UI.Components
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private BussElement _currentBussElement;
 		private int? _selectedClassListIndex;
+		private VisualElement _contentContainer;
 
 		public SelectedBussElementVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss")
@@ -38,6 +41,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_navigationWindow = navigationWindow;
 			_navigationWindow.SelectionChanged += OnBussElementChanged;
+			_navigationWindow.SelectionCleared += OnSelectionCleared;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Init();
 		}
@@ -48,30 +52,47 @@ namespace Beamable.Editor.UI.Components
 
 			VisualElement header = new VisualElement();
 			header.AddToClassList("header");
+
+			Image foldIcon = new Image { name = "foldIcon" };
+			foldIcon.AddToClassList("unfolded");
+			header.Add(foldIcon);
+
 			TextElement label = new TextElement();
 			label.AddToClassList("headerLabel");
 			label.text = "Selected Buss Element";
 			header.Add(label);
+
+			header.RegisterCallback<MouseDownEvent>(evt =>
+			{
+				_contentContainer.ToggleInClassList("hidden");
+				foldIcon.ToggleInClassList("unfolded");
+				foldIcon.ToggleInClassList("folded");
+				RefreshHeight();
+			});
+
 			Root.Add(header);
+
+			_contentContainer = new VisualElement();
 
 			_idField = new LabeledTextField();
 			_idField.Setup("Id", String.Empty, OnValueChanged, true);
 			_idField.Refresh();
-			Root.Add(_idField);
+			_contentContainer.Add(_idField);
 
 			Label classesLabel = new Label("Classes");
 			classesLabel.AddToClassList("classesLabel");
-			Root.Add(classesLabel);
+			_contentContainer.Add(classesLabel);
 
 			_classesList = CreateClassesList();
 			_classesList.RefreshPolyfill();
-			Root.Add(_classesList);
+			_contentContainer.Add(_classesList);
 
 			CreateButtons();
 
 			_currentStyleSheet = new LabeledObjectField();
 			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), OnStylesheetChanged);
-			Root.Add(_currentStyleSheet);
+			_contentContainer.Add(_currentStyleSheet);
+			Root.Add(_contentContainer);
 
 			RefreshHeight();
 		}
@@ -90,7 +111,7 @@ namespace Beamable.Editor.UI.Components
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
 
-			Root.Add(buttonsContainer);
+			_contentContainer.Add(buttonsContainer);
 		}
 
 		private void AddClassButtonClicked(MouseDownEvent evt)
@@ -113,7 +134,14 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
-			_currentBussElement.RemoveClass((string)_classesList.itemsSource[(int)_selectedClassListIndex]);
+			string className = (string)_classesList.itemsSource[(int)_selectedClassListIndex];
+
+			if (className.StartsWith("."))
+			{
+				className = className.Remove(0, 1);
+			}
+
+			_currentBussElement.RemoveClass(className);
 			RefreshClassesList();
 			RefreshHeight();
 			_navigationWindow.RefreshSelectedLabel();
@@ -146,6 +174,16 @@ namespace Beamable.Editor.UI.Components
 			RefreshHeight();
 		}
 
+		private void OnSelectionCleared()
+		{
+			_currentBussElement = null;
+			_selectedClassListIndex = null;
+			_idField.Value = null;
+			_currentStyleSheet.Reset();
+			RefreshClassesList();
+			RefreshHeight();
+		}
+
 		private void OnStylesheetChanged(Object styleSheet)
 		{
 			BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
@@ -160,17 +198,23 @@ namespace Beamable.Editor.UI.Components
 		{
 			_classesList.style.SetHeight(0.0f);
 
-			float height = BASE_COMPONENT_HEIGHT;
+			float height = MIN_CONTENT_HEIGHT;
+
+			if (_contentContainer.ClassListContains("hidden"))
+			{
+				_contentContainer.style.SetHeight(0.0f);
+				return;
+			}
 
 			if (_currentBussElement != null)
 			{
-				float allClassesHeight = 24 * _currentBussElement.Classes.Count();
+				float allClassesHeight = SINGLE_CLASS_ENTRY_HEIGHT * _currentBussElement.Classes.Count();
 				height += allClassesHeight;
 
 				_classesList.style.SetHeight(allClassesHeight);
 			}
 
-			Root.style.SetHeight(height);
+			_contentContainer.style.SetHeight(height);
 		}
 
 		private ListView CreateClassesList()
@@ -222,13 +266,14 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement CreateListViewElement()
 		{
 			VisualElement classElement = new VisualElement { name = "classElement" };
+			classElement.Add(new VisualElement { name = "space" });
 			classElement.Add(new TextField());
 			return classElement;
 		}
 
 		private void BindListViewElement(VisualElement element, int index)
 		{
-			TextField textField = (TextField)element.Children().ToList()[0];
+			TextField textField = (TextField)element.Children().ToList()[1];
 			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
 			textField.isDelayed = true;
 
@@ -266,6 +311,7 @@ namespace Beamable.Editor.UI.Components
 			if (_navigationWindow != null)
 			{
 				_navigationWindow.SelectionChanged -= OnBussElementChanged;
+				_navigationWindow.SelectionCleared -= OnSelectionCleared;
 			}
 
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;

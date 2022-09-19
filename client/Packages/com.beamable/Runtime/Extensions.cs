@@ -17,6 +17,13 @@ namespace Beamable
 				rawImage.texture = texture;
 			return rawImage;
 		}
+
+		public static void ReplaceOrAddListener(this UnityEvent eventBase, UnityAction action)
+		{
+			eventBase.RemoveListener(action);
+			eventBase.AddListener(action);
+		}
+
 		public static void ReplaceOrAddListener<T0>(this UnityEvent<T0> eventBase, UnityAction<T0> action)
 		{
 			eventBase.RemoveListener(action);

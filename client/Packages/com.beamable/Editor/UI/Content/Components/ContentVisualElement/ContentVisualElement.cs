@@ -192,6 +192,7 @@ namespace Beamable.Editor.Content.Components
 		/// </summary>
 		public void RenameGestureBegin()
 		{
+			if (ContentItemDescriptor == null) return;
 			// can only rename if we have local data.
 			if (ContentItemDescriptor.LocalStatus != HostStatus.AVAILABLE) return;
 

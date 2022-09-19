@@ -8,7 +8,7 @@ echo $VERSION_PREFIX
 echo $VERSION_SUFFIX
 export SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
 echo $SUFFIX
-unset VERSION
+echo $VERSION
 if [ -z "$SUFFIX" ]
 then 
     dotnet pack --configuration Release /p:VersionPrefix=$VERSION_PREFIX
@@ -30,5 +30,5 @@ then
     echo "Not running due to dry run."
     exit $?
 else
-    dotnet nuget push ./nupkg/Beamable.Tools.${VERSION_PREFIX}-${SUFFIX}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push ./nupkg/Beamable.Tools.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 fi

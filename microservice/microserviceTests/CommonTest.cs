@@ -189,6 +189,7 @@ public class CommonTest
 			expectedCount);
 	}
 
+	protected void AssetBadInputError() => AssertBadLogCountContains<BadInputException>();
 	protected void AssertMissingScopeError(int expectedCount = 1) =>
 		AssertBadLogCountContains<MissingScopesException>();
 

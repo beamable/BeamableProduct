@@ -87,7 +87,6 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task TryToStop()
 		{
-			if (!IsRunning) return;
 			if (_isStopping) return;
 
 			_isStopping = true;

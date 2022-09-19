@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Common.Api.Payments;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,12 +25,11 @@ namespace Beamable.Api.Payments
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class PaymentService
+	public class PaymentService : PaymentsApi
 	{
 		private IPlatformService _platform;
-		private IPlatformRequester _requester;
 
-		public PaymentService(IPlatformService platform, IPlatformRequester requester)
+		public PaymentService(IPlatformService platform, IPlatformRequester requester) : base(requester)
 		{
 			_platform = platform;
 			_requester = requester;

@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Player;
 using Beamable.Experimental.Api.Parties;
@@ -15,14 +16,16 @@ namespace Beamable.Player
 	{
 		private readonly IPartyApi _partyApi;
 		private readonly INotificationService _notificationService;
+		private readonly IUserContext _userContext;
 		private Party _state;
 		private Action<object> _onPlayerJoined;
 		private Action<object> _onPlayerLeft;
 
-		public PlayerParty(IPartyApi partyApi, INotificationService notificationService)
+		public PlayerParty(IPartyApi partyApi, INotificationService notificationService, IUserContext userContext)
 		{
 			_partyApi = partyApi;
 			_notificationService = notificationService;
+			_userContext = userContext;
 			Members = new ObservableReadonlyList<string>(RefreshMembersList);
 		}
 
@@ -100,7 +103,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// Checks if the player is in a party.
 		/// </summary>
-		public bool IsInParty => State != null;
+		public bool IsInParty => State != null && Value != null;
 
 		/// <inheritdoc cref="Party.id"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
@@ -113,6 +116,11 @@ namespace Beamable.Player
 		/// <inheritdoc cref="Party.leader"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
 		public string Leader => SafeAccess(State?.leader);
+
+		/// <summary>
+		/// This property checks if the current player is a party leader.
+		/// </summary>
+		public bool IsLeader => SafeAccess(State?.leader).Equals(_userContext.UserId.ToString());
 
 		/// <inheritdoc cref="Party.members"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
@@ -128,19 +136,25 @@ namespace Beamable.Player
 			return value;
 		}
 
+		public void RegisterCallbacks(Action<object> onPlayerJoined, Action<object> onPlayerLeft)
+		{
+			_onPlayerJoined = onPlayerJoined;
+			_onPlayerLeft = onPlayerLeft;
+		}
+
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
 		public async Promise Create(PartyRestriction restriction, Action<object> onPlayerJoined = null, Action<object> onPlayerLeft = null)
 		{
 			State = await _partyApi.CreateParty(restriction);
 			await Members.Refresh();
-			_onPlayerJoined = onPlayerJoined;
-			_onPlayerLeft = onPlayerLeft;
+			RegisterCallbacks(onPlayerJoined, onPlayerLeft);
 		}
 
 		/// <inheritdoc cref="IPartyApi.JoinParty"/>
 		public async Promise Join(string partyId)
 		{
 			State = await _partyApi.JoinParty(partyId);
+			await Members.Refresh();
 		}
 
 		/// <inheritdoc cref="IPartyApi.LeaveParty"/>
@@ -172,6 +186,9 @@ namespace Beamable.Player
 			await _partyApi.InviteToParty(State.id, playerId);
 		}
 
+		/// <inheritdoc cref="IPartyApi.InviteToParty"/>
+		public async Promise Invite(long playerId) => await Invite(playerId.ToString());
+
 		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
 		public async Promise Promote(string playerId)
 		{
@@ -182,6 +199,9 @@ namespace Beamable.Player
 
 			await _partyApi.PromoteToLeader(State.id, playerId);
 		}
+
+		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
+		public async Promise Promote(long playerId) => await Promote(playerId.ToString());
 
 		public void Dispose()
 		{

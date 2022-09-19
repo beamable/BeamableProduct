@@ -29,8 +29,9 @@ namespace Beamable.Editor.UI.Model
 		public List<MongoStorageModel> localStorages = new List<MongoStorageModel>();
 		public List<RemoteMongoStorageModel> remoteStorages = new List<RemoteMongoStorageModel>();
 
-		public int AllServiceCount =>
-			localServices.Count + remoteServices.Count + localStorages.Count + remoteStorages.Count;
+		public int AllUnarchivedServiceCount =>
+			localServices.Count(model => !model.IsArchived) + localStorages.Count(model => !model.IsArchived) +
+			remoteServices.Count(model => !model.IsArchived) + remoteStorages.Count(model => !model.IsArchived);
 
 		public IReadOnlyList<IBeamableService> AllLocalServices
 		{
@@ -166,9 +167,9 @@ namespace Beamable.Editor.UI.Model
 
 					var model = RemoteMicroserviceModel.CreateNew(descriptor, this);
 					model.Dependencies = singleManifest.dependencies
-					                                   .Select(d => remoteStorages.FirstOrDefault(s => s.Name.Equals(d.id)))
-					                                   .Cast<MongoStorageModel>()
-					                                   .ToList();
+													   .Select(d => remoteStorages.FirstOrDefault(s => s.Name.Equals(d.id)))
+													   .Cast<MongoStorageModel>()
+													   .ToList();
 					remoteServices.Add(model);
 				}
 
