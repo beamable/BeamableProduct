@@ -54,10 +54,7 @@ namespace Beamable.Server.Editor
 
 	// ReSharper disable once ClassNeverInstantiated.Global
 	public class BeamServicesCodeWatcher : IBeamHintSystem
-	{
-		private const string CLEANUP_CONTAINERS_TIME_PREFS_KEY = "CleanupContainersTime";
-		private const int CLEANUP_CONTAINERS_TIMEOUT = 30;
-		
+	{		
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
 
