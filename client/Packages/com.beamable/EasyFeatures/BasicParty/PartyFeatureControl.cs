@@ -3,7 +3,6 @@ using Beamable.EasyFeatures.Components;
 using Beamable.Experimental.Api.Parties;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicParty
@@ -79,15 +78,14 @@ namespace Beamable.EasyFeatures.BasicParty
 			OpenView(View.Create);
 		}
 
-		private async void OnPlayerInvitedToParty(object partyId, object invitingPlayerId)
+		private async void OnPlayerInvitedToParty(PartyInviteNotification inviteNotification)
 		{
 			if (_currentView == views[View.Join])
 			{
 				await PartyViewGroup.Enrich();
 			}
 			
-			OverlaysController.ShowConfirm($"{invitingPlayerId} invited you to a party. Would you like to join?",
-			                               () => AcceptPartyInvite(partyId.ToString()));
+			OverlaysController.ShowConfirm($"{inviteNotification.invitingPlayerId} invited you to a party. Would you like to join?", () => AcceptPartyInvite(inviteNotification.partyId));
 		}
 
 		private async void AcceptPartyInvite(string partyId)

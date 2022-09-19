@@ -62,7 +62,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			await InvitesList.Setup(playerIds, false, OnInviteAccepted, null, null, null);
 		}
 
-		private async void OnPlayerInvited(object partyId, object invitedById)
+		private async void OnPlayerInvited(PartyInviteNotification notification)
 		{
 			await RefreshInvitesList();
 		}
