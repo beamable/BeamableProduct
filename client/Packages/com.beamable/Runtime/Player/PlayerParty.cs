@@ -6,7 +6,6 @@ using Beamable.Experimental.Api.Parties;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -16,7 +15,7 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerParty : Observable<Party>, IDisposable
 	{
-		public Action<object, object> onPlayerInvited;
+		public Action<PartyInviteNotification> onPlayerInvited;
 		
 		private readonly IPartyApi _partyApi;
 		private readonly INotificationService _notificationService;
@@ -28,13 +27,15 @@ namespace Beamable.Player
 		private Action<object, object> _onPlayerPromoted;
 		private Action<object, object> _onPlayerKicked;
 
+		
+		
 		public PlayerParty(IPartyApi partyApi, INotificationService notificationService, IUserContext userContext)
 		{
 			_partyApi = partyApi;
 			_notificationService = notificationService;
 			_userContext = userContext;
 			Members = new ObservableReadonlyList<string>(RefreshMembersList);
-			_notificationService.Subscribe(PlayerInvitedName(), PlayerInvited);
+			_notificationService.Subscribe(PlayerInvitedName(), (Action<PartyInviteNotification>)PlayerInvited);
 		}
 
 		private static string PlayersLeftName(string partyId) => $"party.players_left.{partyId}";
@@ -87,8 +88,6 @@ namespace Beamable.Player
 
 		private async void PlayerJoined(object data)
 		{
-			Debug.LogWarning("PLAYER JOINED");
-			
 			await Refresh();
 			
 			object partyId = null, playerId = null;
@@ -103,8 +102,6 @@ namespace Beamable.Player
 
 		private async void PlayerLeft(object data)
 		{
-			Debug.LogWarning("PLAYER LEFT");
-			
 			await Refresh();
 			
 			object partyId = null, playerId = null;
@@ -117,24 +114,13 @@ namespace Beamable.Player
 			_onPlayerLeft?.Invoke(partyId, playerId);
 		}
 
-		private void PlayerInvited(object data)
+		private void PlayerInvited(PartyInviteNotification data)
 		{
-			Debug.LogWarning("PLAYER INVITED");
-			
-			object partyId = null, playerId = null;
-			if (data is ArrayDict dict)
-			{
-				partyId = dict["partyId"];
-				playerId = dict["invitingPlayerId"];
-			}
-			
-			onPlayerInvited?.Invoke(partyId, playerId);
+			onPlayerInvited?.Invoke(data);
 		}
 
 		private async void PartyUpdated(object data)
 		{
-			Debug.LogWarning("PARTY UPDATED");
-			
 			await Refresh();
 			
 			object partyId = null;
@@ -154,8 +140,6 @@ namespace Beamable.Player
 
 		private async void PlayerPromoted(object data)
 		{
-			Debug.LogWarning("PLAYER PROMOTED");
-			
 			await Refresh();
 
 			object partyId = null, playerId = null;
@@ -170,8 +154,6 @@ namespace Beamable.Player
 
 		private async void PlayerKicked(object data)
 		{
-			Debug.LogWarning("PLAYER KICKED");
-			
 			await Refresh();
 			
 			object partyId = null, playerId = null;
@@ -343,7 +325,7 @@ namespace Beamable.Player
 
 		public void Dispose()
 		{
-			_notificationService.Unsubscribe(PlayerInvitedName(), PlayerInvited);
+			_notificationService.Unsubscribe(PlayerInvitedName(), (Action<PartyInviteNotification>)PlayerInvited);
 			_state = null;
 		}
 	}
