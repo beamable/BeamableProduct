@@ -69,23 +69,14 @@ namespace Beamable.UI.Buss
 
 		private readonly ThemeManagerModel _model;
 		private readonly List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
-
-		private readonly HashSet<string> _variablesChecked = new HashSet<string>();
 		private readonly Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
 
-		// public bool ForceRefreshAll { get; private set; }
-		// public HashSet<PropertyReference> DirtyProperties { get; } = new HashSet<PropertyReference>();
+		private readonly HashSet<string> _variablesChecked = new HashSet<string>();
 
 		public VariableDatabase(ThemeManagerModel model)
 		{
 			_model = model;
 		}
-
-		// public void FlushDirtyMarkers()
-		// {
-		// 	ForceRefreshAll = false;
-		// 	DirtyProperties.Clear();
-		// }
 
 		public VariableData GetVariableData(string key)
 		{

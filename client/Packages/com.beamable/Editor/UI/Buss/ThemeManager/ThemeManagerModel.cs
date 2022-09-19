@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -13,11 +12,9 @@ namespace Beamable.Editor.UI.Buss
 	public class ThemeManagerModel
 	{
 		public event Action Change;
-		// public event Action StyleSheetChange;
-
-		private readonly BussCardFilter _filter;
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
+		private readonly BussCardFilter _filter;
 
 		public List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
 
@@ -56,6 +53,75 @@ namespace Beamable.Editor.UI.Buss
 			VariableDatabase = new VariableDatabase(this);
 
 			OnHierarchyChanged();
+		}
+
+		public void AddInlineProperty()
+		{
+			if (SelectedElement == null)
+			{
+				return;
+			}
+
+			var keys = new HashSet<string>();
+			foreach (BussPropertyProvider propertyProvider in SelectedElement.InlineStyle.Properties)
+			{
+				keys.Add(propertyProvider.Key);
+			}
+
+			IOrderedEnumerable<string> sorted = BussStyle.Keys.OrderBy(k => k);
+			var context = new GenericMenu();
+
+			foreach (string key in sorted)
+			{
+				if (keys.Contains(key)) continue;
+				Type baseType = BussStyle.GetBaseType(key);
+				SerializableValueImplementationHelper.ImplementationData data =
+					SerializableValueImplementationHelper.Get(baseType);
+				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
+				                                                   t != typeof(FractionFloatBussProperty)).ToList();
+				foreach (Type type in types)
+				{
+					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
+					context.AddItem(new GUIContent(label), false, () =>
+					{
+						if (SelectedElement.InlineStyle.TryAddProperty(
+							    key, (IBussProperty)Activator.CreateInstance(type)))
+						{
+							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
+							EditorUtility.SetDirty(SelectedElement);
+							SelectedElement.RecalculateStyle();
+							VariableDatabase.ReconsiderAllStyleSheets();
+							Change?.Invoke();
+						}
+					});
+				}
+			}
+
+			context.ShowAsContext();
+		}
+
+		public void AddInlineVariable()
+		{
+			if (SelectedElement == null)
+			{
+				return;
+			}
+
+			NewVariableWindow window = NewVariableWindow.ShowWindow();
+			if (window != null)
+			{
+				window.Init(SelectedElement.InlineStyle, (key, property) =>
+				{
+					if (SelectedElement.InlineStyle.TryAddProperty(key, property))
+					{
+						// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
+						EditorUtility.SetDirty(SelectedElement);
+						SelectedElement.RecalculateStyle();
+						VariableDatabase.ReconsiderAllStyleSheets();
+						Change?.Invoke();
+					}
+				});
+			}
 		}
 
 		public void Clear()
@@ -118,6 +184,27 @@ namespace Beamable.Editor.UI.Buss
 			Change?.Invoke();
 		}
 
+		public void RemoveInlineProperty(string value)
+		{
+			if (SelectedElement == null)
+			{
+				return;
+			}
+
+			var propertyProvider = SelectedElement.InlineStyle.Properties.Find(property => property.Key == value);
+
+			if (propertyProvider != null)
+			{
+				SelectedElement.InlineStyle.Properties.Remove(propertyProvider);
+
+				// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
+				EditorUtility.SetDirty(SelectedElement);
+				SelectedElement.RecalculateStyle();
+				VariableDatabase.ReconsiderAllStyleSheets();
+				Change?.Invoke();
+			}
+		}
+
 		private void BussElementClicked(BussElement element)
 		{
 			SelectedElement = element;
@@ -155,11 +242,6 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
-		private void OnStyleSheetChanged()
-		{
-			VariableDatabase.ReconsiderAllStyleSheets();
-		}
-
 		private void OnSelectionChanged()
 		{
 			if (Selection.activeGameObject != null)
@@ -171,6 +253,11 @@ namespace Beamable.Editor.UI.Buss
 			{
 				BussElementClicked(null);
 			}
+		}
+
+		private void OnStyleSheetChanged()
+		{
+			VariableDatabase.ReconsiderAllStyleSheets();
 		}
 
 		private void Traverse(GameObject gameObject, int currentLevel)
@@ -288,95 +375,5 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		#endregion
-
-		public void AddInlineVariable()
-		{
-			if (SelectedElement == null)
-			{
-				return;
-			}
-
-			NewVariableWindow window = NewVariableWindow.ShowWindow();
-			if (window != null)
-			{
-				window.Init(SelectedElement.InlineStyle, (key, property) =>
-				{
-					if (SelectedElement.InlineStyle.TryAddProperty(key, property))
-					{
-						// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
-						EditorUtility.SetDirty(SelectedElement);
-						SelectedElement.RecalculateStyle();
-						VariableDatabase.ReconsiderAllStyleSheets();
-						Change?.Invoke();
-					}
-				});
-			}
-		}
-
-		public void AddInlineProperty()
-		{
-			if (SelectedElement == null)
-			{
-				return;
-			}
-
-			var keys = new HashSet<string>();
-			foreach (BussPropertyProvider propertyProvider in SelectedElement.InlineStyle.Properties)
-			{
-				keys.Add(propertyProvider.Key);
-			}
-
-			IOrderedEnumerable<string> sorted = BussStyle.Keys.OrderBy(k => k);
-			var context = new GenericMenu();
-
-			foreach (string key in sorted)
-			{
-				if (keys.Contains(key)) continue;
-				Type baseType = BussStyle.GetBaseType(key);
-				SerializableValueImplementationHelper.ImplementationData data =
-					SerializableValueImplementationHelper.Get(baseType);
-				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                                   t != typeof(FractionFloatBussProperty)).ToList();
-				foreach (Type type in types)
-				{
-					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
-					context.AddItem(new GUIContent(label), false, () =>
-					{
-						if (SelectedElement.InlineStyle.TryAddProperty(
-							    key, (IBussProperty)Activator.CreateInstance(type)))
-						{
-							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
-							EditorUtility.SetDirty(SelectedElement);
-							SelectedElement.RecalculateStyle();
-							VariableDatabase.ReconsiderAllStyleSheets();
-							Change?.Invoke();
-						}
-					});
-				}
-			}
-
-			context.ShowAsContext();
-		}
-
-		public void RemoveInlineProperty(string value)
-		{
-			if (SelectedElement == null)
-			{
-				return;
-			}
-
-			var propertyProvider = SelectedElement.InlineStyle.Properties.Find(property => property.Key == value);
-
-			if (propertyProvider != null)
-			{
-				SelectedElement.InlineStyle.Properties.Remove(propertyProvider);
-				
-				// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
-				EditorUtility.SetDirty(SelectedElement);
-				SelectedElement.RecalculateStyle();
-				VariableDatabase.ReconsiderAllStyleSheets();
-				Change?.Invoke();
-			}
-		}
 	}
 }

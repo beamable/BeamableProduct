@@ -12,9 +12,8 @@ namespace Beamable.Editor.UI.Components
 {
 	public class StylePropertyModel
 	{
-		public event Action Change;
-
 		private readonly Action<string> _removePropertyAction;
+		private readonly Action _globalRefresh;
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -38,9 +37,11 @@ namespace Beamable.Editor.UI.Components
 		                          VariableDatabase variablesDatabase,
 		                          PropertySourceTracker propertySourceTracker,
 		                          BussElement inlineStyleOwner,
-		                          Action<string> removePropertyAction)
+		                          Action<string> removePropertyAction,
+		                          Action globalRefresh)
 		{
 			_removePropertyAction = removePropertyAction;
+			_globalRefresh = globalRefresh;
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
 			PropertyProvider = propertyProvider;
@@ -54,6 +55,7 @@ namespace Beamable.Editor.UI.Components
 		                                                     out VariableDatabase.PropertyReference propertyReference)
 		{
 			PropertySourceTracker context = null;
+			
 			if (PropertySourceTracker != null && PropertySourceTracker.Element != null)
 			{
 				if (StyleRule?.Selector?.CheckMatch(PropertySourceTracker.Element) ?? false)
@@ -120,27 +122,28 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			AssetDatabase.SaveAssets();
-			Change?.Invoke();
+			_globalRefresh?.Invoke();
 		}
 
 		public void OnVariableSelected(int index)
 		{
-			if (HasVariableConnected)
+			if (!HasVariableConnected)
 			{
-				var option = DropdownOptions[index];
-
-				((VariableProperty)PropertyProvider.GetProperty()).VariableName =
-					option == Constants.Features.Buss.MenuItems.NONE ? "" : option;
-
-				if (StyleSheet != null)
-				{
-					StyleSheet.TriggerChange();
-				}
-
-				AssetDatabase.SaveAssets();
+				return;
 			}
-			
-			Change?.Invoke();
+
+			var option = DropdownOptions[index];
+
+			((VariableProperty)PropertyProvider.GetProperty()).VariableName =
+				option == Constants.Features.Buss.MenuItems.NONE ? "" : option;
+
+			if (StyleSheet != null)
+			{
+				StyleSheet.TriggerChange();
+			}
+
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
 		}
 
 		private List<string> GetDropdownOptions()

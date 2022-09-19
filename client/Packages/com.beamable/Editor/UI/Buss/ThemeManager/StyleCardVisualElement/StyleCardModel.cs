@@ -39,6 +39,7 @@ namespace Beamable.Editor.UI.Components
 		public event Action Change;
 
 		private readonly PropertyComparer _propertyComparer = new PropertyComparer();
+		private readonly Action _globalRefresh;
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -59,7 +60,8 @@ namespace Beamable.Editor.UI.Components
 		                      bool isSelected,
 		                      VariableDatabase variablesDatabase,
 		                      PropertySourceDatabase propertiesDatabase,
-		                      IEnumerable<BussStyleSheet> writableStyleSheets)
+		                      IEnumerable<BussStyleSheet> writableStyleSheets,
+		                      Action globalRefresh)
 		{
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
@@ -69,6 +71,8 @@ namespace Beamable.Editor.UI.Components
 			VariablesDatabase = variablesDatabase;
 			PropertiesDatabase = propertiesDatabase;
 			WritableStyleSheets = writableStyleSheets;
+
+			_globalRefresh = globalRefresh;
 		}
 
 		public void AddRuleButtonClicked(MouseDownEvent evt)
@@ -235,7 +239,7 @@ namespace Beamable.Editor.UI.Components
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
 				                                                  PropertiesDatabase.GetTracker(SelectedElement),
-				                                                  null, RemovePropertyClicked);
+				                                                  null, RemovePropertyClicked, _globalRefresh);
 
 				models.Add(model);
 			}
@@ -262,7 +266,7 @@ namespace Beamable.Editor.UI.Components
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
 				                                   PropertiesDatabase.GetTracker(SelectedElement), null,
-				                                   RemovePropertyClicked);
+				                                   RemovePropertyClicked, _globalRefresh);
 				variables.Add(model);
 			}
 

@@ -11,7 +11,6 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	// TODO: TD000003
 	public class InlineStyleVisualElement : BeamableBasicVisualElement
 	{
 		private VisualElement _variableContainer;
@@ -94,7 +93,7 @@ namespace Beamable.Editor.UI.Components
 				StylePropertyModel model = new StylePropertyModel(selectedElement.StyleSheet, null,
 				                                                  property, _model.VariableDatabase,
 				                                                  propertySourceTracker, selectedElement,
-				                                                  _model.RemoveInlineProperty);
+				                                                  _model.RemoveInlineProperty, null);
 
 				var element = new StylePropertyVisualElement(model);
 				element.Init();

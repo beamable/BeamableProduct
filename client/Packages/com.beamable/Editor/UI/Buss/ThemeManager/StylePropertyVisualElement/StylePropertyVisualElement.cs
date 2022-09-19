@@ -1,7 +1,6 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -44,14 +43,11 @@ namespace Beamable.Editor.UI.Components
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
 
-			_model.Change += Refresh;
-
 			Refresh();
 		}
 
 		public override void Refresh()
 		{
-			Debug.Log("Refresh from StylePropertyVisualElement");
 			_labelComponent.text = _model.PropertyProvider.Key;
 
 			if (_model.HasVariableConnected)
@@ -71,17 +67,6 @@ namespace Beamable.Editor.UI.Components
 					SetVariableSource(variableSource);
 					SetOverridenClass(propertySourceTracker, result);
 				}
-
-				// if (result == VariableDatabase.PropertyValueState.SingleResult)
-				// {
-				// 	CreateEditableField(property);
-				// 	SetVariableSource(variableSource);
-				// 	SetOverridenClass(propertySourceTracker, result);
-				// }
-				// else
-				// {
-				// 	CreateMessageField(result);
-				// }
 			}
 			else
 			{
@@ -94,8 +79,6 @@ namespace Beamable.Editor.UI.Components
 
 		protected override void OnDestroy()
 		{
-			_model.Change -= Refresh;
-
 			if (_propertyVisualElement != null)
 			{
 				_labelComponent.UnregisterCallback<MouseDownEvent>(_model.LabelClicked);
@@ -108,17 +91,12 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement?.SetEnabled(_model.IsWritable);
 			_variableConnection?.SetEnabled(_model.IsWritable);
 
-			// TODO: set tooltip text 
+			// TODO: maybe add more details??
+			_model.Tooltip = "Overriden";
 		}
 
 		private void CreateEditableField(IBussProperty property)
 		{
-			// TODO: probably we won't need this check and invoke
-			if (_propertyVisualElement != null)
-			{
-				DestroyEditableField();
-			}
-
 			_propertyVisualElement = property.GetVisualElement();
 
 			if (_propertyVisualElement != null)
@@ -152,14 +130,6 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
 			_valueParent.Add(_propertyVisualElement);
 			_propertyVisualElement.Init();
-		}
-
-		private void DestroyEditableField()
-		{
-			if (_propertyVisualElement == null) return;
-			_propertyVisualElement.RemoveFromHierarchy();
-			_propertyVisualElement.Destroy();
-			_propertyVisualElement = null;
 		}
 
 		private void SetOverridenClass(PropertySourceTracker context, VariableDatabase.PropertyValueState result)

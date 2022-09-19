@@ -8,7 +8,6 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
-	// TODO: TD000003
 	public class ThemeManager : BeamEditorWindow<ThemeManager>
 	{
 		private BeamablePopupWindow _confirmationPopup;
