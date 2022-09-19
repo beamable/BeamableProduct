@@ -269,6 +269,7 @@ namespace Beamable.Server.Editor
 		[DidReloadScripts]
 		private static void WatchMicroserviceFiles()
 		{
+			EditorApplication.wantsToQuit -= WantsToQuit;
 			EditorApplication.wantsToQuit += WantsToQuit;
 			
 			// If we are not initialized, delay the call until we are.
@@ -351,78 +352,53 @@ namespace Beamable.Server.Editor
 		{
 			try
 			{
-				CleanupRunningContainers().Then(val => {
-					EditorApplication.Exit(0);
-				});
+				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+				int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
+				if (allDesc > 0)
+				{
+					Task task = Task.Run(async () => { await CleanupRunningContainers(); });
+					task.Wait();
+				}
 			}
 			catch
 			{
 				Debug.LogError("Failed to clean up running docker containers");
-				EditorApplication.Exit(0);
 			}
 
-			return false;
+			return true;
 		}
 		
-		private static async Promise CleanupRunningContainers()
+		private static Promise CleanupRunningContainers()
 		{
-			void DrawProgressBar(string name, float progress)
-			{
-				EditorUtility.DisplayProgressBar("Docker", $"Cleanup Running Containers... [{name}]", progress);
-			}
-			
-			void UpdateForceCloseTime()
-			{
-				EditorPrefs.SetInt(CLEANUP_CONTAINERS_TIME_PREFS_KEY, (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds() + (CLEANUP_CONTAINERS_TIMEOUT * 1000)));
-			}
-
-			void ForceCloseDelayCheck()
-			{
-				int lastCachedTime = EditorPrefs.GetInt(CLEANUP_CONTAINERS_TIME_PREFS_KEY);
-				int currentTime = (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds());
-				
-				bool forceClose = currentTime > lastCachedTime;
-			
-				if (forceClose)
-					EditorApplication.Exit(0);
-			}
-
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 
 			int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
-			int killed = 0;
-			
+
 			if (allDesc > 0)
 			{
-				UpdateForceCloseTime();
-			
-				EditorApplication.update -= ForceCloseDelayCheck;
-				EditorApplication.update += ForceCloseDelayCheck;
-				
 				foreach (var service in registry.Descriptors)
 				{
-					DrawProgressBar(service.Name, (float)killed / allDesc);
 					var generatorDesc = GetGeneratorDescriptor(service);
 
-					var kill = new StopImageCommand(service);
-					var killGenerator = new StopImageCommand(generatorDesc);
-					await kill.Start();
-					await killGenerator.Start();
-					killed++;
-					UpdateForceCloseTime();
+					var kill = new StopImageCommand(service, true);
+					var killGenerator = new StopImageCommand(generatorDesc, true); 
+					
+					kill.Start();
+					killGenerator.Start();
 				}
 
 				foreach (var storage in registry.StorageDescriptors)
 				{
-					DrawProgressBar(storage.Name, (float)killed / allDesc);
-					var kill = new StopImageCommand(storage);
-					var killTool = new StopImageCommand(storage.LocalToolContainerName);
-					await kill.Start();
-					await killTool.Start();
-					killed++;
-					UpdateForceCloseTime();
+					var kill = new StopImageCommand(storage, true);
+					var killTool = new StopImageCommand(storage.LocalToolContainerName, true);
+
+					kill.Start();
+					killTool.Start();
 				}
 			}
+			
+			return Promise.Success;
 		}
 
 		public static MicroserviceDescriptor GetGeneratorDescriptor(IDescriptor service)
