@@ -1,4 +1,5 @@
 ﻿using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Parties;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,11 +80,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			SetupPartyList();
 		}
 
-		private void OnPartyUpdated(object partyId,
-		                            long oldMaxSize,
-		                            long newMaxSize,
-		                            string oldRestriction,
-		                            string newRestriction)
+		private void OnPartyUpdated(PartyUpdatedNotification notification)
 		{
 			RefreshView();
 		}
@@ -97,12 +94,12 @@ namespace Beamable.EasyFeatures.BasicParty
 			                OnPromoteButtonClicked, OnAddMember, Context.Party.MaxSize);
 		}
 
-		protected virtual void OnPlayerJoined(object partyId, object joinedPlayerId)
+		protected virtual void OnPlayerJoined(PlayerJoinedNotification notification)
 		{
 			RefreshView();
 		}
 
-		protected virtual void OnPlayerLeft(object partyId, object leftPlayerId)
+		protected virtual void OnPlayerLeft(PlayerLeftNotification notification)
 		{
 			RefreshView();
 		}
@@ -129,11 +126,11 @@ namespace Beamable.EasyFeatures.BasicParty
 			await Context.Party.Promote(id);
 		}
 
-		private void OnPlayerPromoted(object partyId, object promotedPlayerId)
+		private void OnPlayerPromoted(PlayerPromotedNotification notification)
 		{
 			RefreshView();
 
-			if (promotedPlayerId.Equals(Context.PlayerId.ToString()))
+			if (notification.playerPromotedId.Equals(Context.PlayerId.ToString()))
 			{
 				FeatureControl.OverlaysController.ShowInform("You have been promoted to a party leader.", null);
 			}
@@ -150,9 +147,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			await Context.Party.Kick(id);
 		}
 
-		private void OnPlayerKicked(object partyId, object kickedPlayerId)
+		private void OnPlayerKicked(PlayerKickedNotification notification)
 		{
-			if (kickedPlayerId.Equals(Context.PlayerId.ToString()))
+			if (notification.kickedPlayerId.Equals(Context.PlayerId.ToString()))
 			{
 				FeatureControl.OpenJoinView();
 				FeatureControl.OverlaysController.ShowInform("You have been kicked out from the party.", null);
