@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The default uncaught Promise handler no longer throws `IndexOutOfBounds` errors in high failure cases.
-
+- Fixed sending custom analytic events using `AnalyticsTracker.TrackEvent`
 
 ## [1.3.5]
 ### Added
