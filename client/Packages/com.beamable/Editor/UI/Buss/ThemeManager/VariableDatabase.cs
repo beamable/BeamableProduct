@@ -68,10 +68,9 @@ namespace Beamable.UI.Buss
 		}
 
 		private readonly ThemeManagerModel _model;
+		private readonly HashSet<string> _usedVariableNames = new HashSet<string>();
 		private readonly List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private readonly Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
-
-		private readonly HashSet<string> _variablesChecked = new HashSet<string>();
 
 		public VariableDatabase(ThemeManagerModel model)
 		{
@@ -107,52 +106,29 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		// public void ResetVariableLoopDetector() => _variablesChecked.Clear();
-		//
-		// public void SetCrushingChange() => ForceRefreshAll = true;
-
-		// public void SetPropertyDirty(BussStyleSheet styleSheet,
-		//                              BussStyleRule styleRule,
-		//                              BussPropertyProvider propertyProvider)
-		// {
-		// 	DirtyProperties.Add(new PropertyReference(styleSheet, styleRule, propertyProvider));
-		// }
-
-		// public void SetVariableDirty(string key)
-		// {
-		// 	var data = GetVariableData(key);
-		// 	foreach (PropertyReference declaration in data.Declarations)
-		// 	{
-		// 		DirtyProperties.Add(declaration);
-		// 	}
-		//
-		// 	foreach (PropertyReference usage in data.Usages)
-		// 	{
-		// 		DirtyProperties.Add(usage);
-		// 	}
-		// }
-
-		public PropertyValueState TryGetVariableValue(VariableProperty variableProperty,
-		                                              BussStyleRule styleRule,
-		                                              out IBussProperty result,
-		                                              Type expectedType)
+		public PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
+		                                         BussStyleDescription styleRule,
+		                                         VariableDatabase variableDatabase,
+		                                         PropertySourceTracker context,
+		                                         out IBussProperty result,
+		                                         out PropertyReference variablePropertyReference)
 		{
-			if (expectedType == null)
+			if (!basePropertyProvider.HasVariableReference)
 			{
-				expectedType = typeof(IBussProperty);
+				variablePropertyReference = new PropertyReference(null, null, null);
+				result = basePropertyProvider.GetProperty();
+				return PropertyValueState.SingleResult;
 			}
 
-			result = null;
-			var variableName = variableProperty.VariableName;
-
-			if (_variablesChecked.Contains(variableName))
+			if (context != null)
 			{
-				return PropertyValueState.VariableLoopDetected;
+				return FindVariableEndValueWithContext((VariableProperty)basePropertyProvider.GetProperty(),
+				                                       context, BussStyle.GetBaseType(basePropertyProvider.Key),
+				                                       out result, out variablePropertyReference);
 			}
 
-			_variablesChecked.Add(variableProperty.VariableName);
-
-			return TryGetVariableValueWithoutContext(variableProperty, styleRule, out result, expectedType);
+			return FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
+			                            styleRule, variableDatabase, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -189,6 +165,103 @@ namespace Beamable.UI.Buss
 			_styleSheets.Add(sheet);
 		}
 
+		/// <summary>
+		/// Searches for the variable value without context.
+		/// If there is a variable in the same StyleRule, then it is returned.
+		/// If there is only one declaration of a variable in variable database, it returns the value of it.
+		/// Otherwise returns null.
+		/// It can search for end value recursively.
+		/// </summary>
+		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
+		                                                BussStyleDescription styleRule,
+		                                                VariableDatabase variableDatabase,
+		                                                out IBussProperty result,
+		                                                out PropertyReference propertyReference)
+		{
+			result = null;
+			propertyReference = new PropertyReference(null, null, null);
+			PropertyValueState state;
+
+			if (_usedVariableNames.Contains(variableProperty.VariableName)) // check if we are not in infinite loop
+			{
+				_usedVariableNames.Clear();
+				return PropertyValueState.VariableLoopDetected;
+			}
+
+			_usedVariableNames.Add(variableProperty.VariableName);
+
+			if (styleRule.HasProperty(variableProperty.VariableName))
+			{
+				state = PropertyValueState.SingleResult;
+				result = styleRule.GetProperty(variableProperty.VariableName);
+			}
+			else
+			{
+				var variableData = variableDatabase.GetVariableData(variableProperty.VariableName);
+				if (variableData.Declarations.Count == 1)
+				{
+					state = PropertyValueState.SingleResult;
+					propertyReference = variableData.Declarations[0];
+					result = propertyReference.PropertyProvider.GetProperty();
+				}
+				else
+				{
+					state = (variableData.Declarations.Count == 0
+						? PropertyValueState.NoResult
+						: PropertyValueState.MultipleResults);
+				}
+			}
+
+			if (result != null && result is VariableProperty nestedVariableProperty)
+			{
+				state = FindVariableEndValue(nestedVariableProperty, styleRule, variableDatabase, out result,
+				                             out propertyReference);
+			}
+
+			_usedVariableNames.Clear();
+
+			return state;
+		}
+
+		private PropertyValueState FindVariableEndValueWithContext(VariableProperty variableProperty,
+		                                                           PropertySourceTracker propertySourceTracker,
+		                                                           Type expectedType,
+		                                                           out IBussProperty result,
+		                                                           out PropertyReference
+			                                                           propertyReference)
+		{
+			result = null;
+			propertyReference = new PropertyReference(null, null, null);
+
+			while (variableProperty != null && !_usedVariableNames.Contains(variableProperty.VariableName))
+			{
+				_usedVariableNames.Add(variableProperty.VariableName);
+				var usedPropertyReference =
+					propertySourceTracker.GetUsedPropertyReference(variableProperty.VariableName, expectedType);
+				var propertyProvider = usedPropertyReference.PropertyProvider;
+				if (propertyProvider == null)
+				{
+					_usedVariableNames.Clear();
+					return PropertyValueState.NoResult;
+				}
+
+				if (propertyProvider.HasVariableReference)
+				{
+					variableProperty = propertyProvider.GetProperty() as VariableProperty;
+				}
+				else
+				{
+					propertyReference = usedPropertyReference;
+					result = propertyProvider.GetProperty();
+					_usedVariableNames.Clear();
+					return PropertyValueState.SingleResult;
+				}
+			}
+
+			_usedVariableNames.Clear();
+			return PropertyValueState.VariableLoopDetected;
+		}
+
 		private void RemoveStyleSheet(BussStyleSheet sheet)
 		{
 			foreach (VariableData variableData in _variables.Values)
@@ -198,37 +271,6 @@ namespace Beamable.UI.Buss
 			}
 
 			_styleSheets.Remove(sheet);
-		}
-
-		private PropertyValueState TryGetVariableValueWithoutContext(VariableProperty variableProperty,
-		                                                             BussStyleRule styleRule,
-		                                                             out IBussProperty result,
-		                                                             Type expectedType)
-		{
-			result = null;
-			if (styleRule.HasProperty(variableProperty.VariableName))
-			{
-				result = styleRule.GetProperty(variableProperty.VariableName);
-				return PropertyValueState.SingleResult;
-			}
-
-			var variableData = GetVariableData(variableProperty.VariableName);
-			var declarations = variableData.Declarations.Where(
-				r => expectedType.IsInstanceOfType(r.PropertyProvider.GetProperty()));
-			IEnumerable<PropertyReference> propertyReferences = declarations.ToList();
-			var declarationsCount = propertyReferences.Count();
-			if (declarationsCount == 1)
-			{
-				result = propertyReferences.First().PropertyProvider.GetProperty();
-				return PropertyValueState.SingleResult;
-			}
-
-			if (declarationsCount == 0)
-			{
-				return PropertyValueState.NoResult;
-			}
-
-			return PropertyValueState.MultipleResults;
 		}
 	}
 }

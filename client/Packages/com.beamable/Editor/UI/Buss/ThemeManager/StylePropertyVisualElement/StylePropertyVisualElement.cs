@@ -63,6 +63,7 @@ namespace Beamable.Editor.UI.Components
 					var result = _model.GetResult(out PropertySourceTracker propertySourceTracker,
 					                              out IBussProperty property,
 					                              out VariableDatabase.PropertyReference variableSource);
+					
 					CreateEditableField(property);
 					SetVariableSource(variableSource);
 					SetOverridenClass(propertySourceTracker, result);

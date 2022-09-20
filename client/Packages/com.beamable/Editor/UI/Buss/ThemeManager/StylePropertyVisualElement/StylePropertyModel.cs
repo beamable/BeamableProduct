@@ -55,7 +55,7 @@ namespace Beamable.Editor.UI.Components
 		                                                     out VariableDatabase.PropertyReference propertyReference)
 		{
 			PropertySourceTracker context = null;
-			
+
 			if (PropertySourceTracker != null && PropertySourceTracker.Element != null)
 			{
 				if (StyleRule?.Selector?.CheckMatch(PropertySourceTracker.Element) ?? false)
@@ -64,11 +64,10 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			VariableDatabase.PropertyValueState result =
-				StylePropertyVisualElementUtility.TryGetProperty(PropertyProvider, StyleRule, VariablesDatabase,
-				                                                 context, out IBussProperty property,
-				                                                 out VariableDatabase.PropertyReference
-					                                                 variableSource);
+			VariableDatabase.PropertyValueState result = VariablesDatabase.TryGetProperty(
+				PropertyProvider, StyleRule, VariablesDatabase,
+				context, out IBussProperty property,
+				out VariableDatabase.PropertyReference variableSource);
 
 			propertySourceTracker = context;
 			bussProperty = property;
@@ -169,7 +168,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				variableName = ((VariableProperty)PropertyProvider.GetProperty()).VariableName;
 			}
-			
+
 			var value = options.FindIndex(option => option.Equals(variableName));
 			value = Mathf.Clamp(value, 0, options.Count - 1);
 			return value;
