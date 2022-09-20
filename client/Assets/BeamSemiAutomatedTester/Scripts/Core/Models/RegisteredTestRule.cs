@@ -20,6 +20,8 @@ namespace Beamable.BSAT.Core.Models
 				TestResult.NotSet;
 		
 		public List<RegisteredTestRuleMethod> RegisteredTestRuleMethods => _registeredTestRuleMethods;
+		
+		public TimeSpan ElapsedTime => new TimeSpan(RegisteredTestRuleMethods.Sum(x => x.ElapsedTime.Ticks));
 
 		[SerializeField] private string _testMethodName;
 		[SerializeField] private int _order;
@@ -66,6 +68,7 @@ namespace Beamable.BSAT.Core.Models
 			return new ArrayDict
 			{
 				{ "TestResult", TestResult},
+				{ "TimeStamp", ElapsedTime.ToString("g") },
 				{ "Title", _registeredTestRuleMethods[0].Title },
 				{ "Description", _registeredTestRuleMethods[0].Description },
 				{ "TestRuleMethods", data },

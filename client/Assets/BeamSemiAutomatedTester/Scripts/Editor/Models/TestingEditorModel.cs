@@ -59,7 +59,6 @@ namespace Beamable.BSAT.Editor.Models
 				writer.Close();
 			}
 			
-			TestableDebug.Log(json);
 			AssetDatabase.Refresh();
 			if (EditorUtility.DisplayDialog("Report Generator", $"Report has been generated at path=[{pathToFile}].",
 			                                "Ok"))
