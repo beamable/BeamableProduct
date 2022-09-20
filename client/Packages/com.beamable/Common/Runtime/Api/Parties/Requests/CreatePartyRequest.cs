@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Common.Content;
+using System;
 
 namespace Beamable.Experimental.Api.Parties
 {
@@ -18,13 +19,19 @@ namespace Beamable.Experimental.Api.Parties
 		/// <summary>
 		/// Maximum allowed number of players in the party.
 		/// </summary>
-		public int maxSize;
+		public Optional<int> maxSize;
 
 		public CreatePartyRequest(string restriction, string leader, int maxSize)
 		{
 			this.restriction = restriction;
 			this.leader = leader;
 			this.maxSize = maxSize;
+		}
+
+		public CreatePartyRequest(string restriction, string leader)
+		{
+			this.restriction = restriction;
+			this.leader = leader;
 		}
 	}
 }

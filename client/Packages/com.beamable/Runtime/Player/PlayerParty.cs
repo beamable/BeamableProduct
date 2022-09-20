@@ -194,7 +194,7 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
 		public async Promise Create(PartyRestriction restriction,
-		                            int maxSize,
+		                            int maxSize = 0,
 		                            Action<PlayerJoinedNotification> onPlayerJoined = null,
 		                            Action<PlayerLeftNotification> onPlayerLeft = null,
 		                            Action<PartyUpdatedNotification> onPartyUpdated = null,
@@ -207,7 +207,8 @@ namespace Beamable.Player
 			                  onPlayerKicked);
 		}
 
-		public async Promise Update(PartyRestriction restriction, int maxSize)
+		/// <inheritdoc cref="IPartyApi.UpdateParty"/>
+		public async Promise Update(PartyRestriction restriction, int maxSize = 0)
 		{
 			if (State == null)
 			{
