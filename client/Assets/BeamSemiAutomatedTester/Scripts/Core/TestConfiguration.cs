@@ -17,6 +17,8 @@ namespace Beamable.BSAT.Core
 			RegisteredTestScenes.All(x => x.TestResult == TestResult.Passed) ? TestResult.Passed :
 			TestResult.NotSet;
 		
+		public TimeSpan ElapsedTime => new TimeSpan(RegisteredTestScenes.Sum(x => x.ElapsedTime.Ticks));
+		
 		public KeyCode ToggleTestUIKey => toggleTestUIKey;
 
 		[SerializeField] private KeyCode toggleTestUIKey = KeyCode.Semicolon;
@@ -46,12 +48,19 @@ namespace Beamable.BSAT.Core
 				};
 				data.Add(nestedData);
 			}
-			return Json.Serialize(new ArrayDict
+			var json = Json.Serialize(new ArrayDict
 			{
 				{ "ReportGenerateTimeUTC", DateTime.UtcNow.ToString("yyyy.MM.dd hh:mm:ss tt")},
+				{ "TargetPlatform", Application.platform },
+				{ "UnityVersion", Application.unityVersion },
+				{ "BeamableVersion", BeamableEnvironment.SdkVersion },
 				{ "TestResult", TestResult },
+				{ "TimeStamp", ElapsedTime.ToString("g") },
 				{ "TestScenes", data }
 			}, new StringBuilder());
+
+			TestableDebug.Log(json);
+			return json;
 		}
 	}
 }
