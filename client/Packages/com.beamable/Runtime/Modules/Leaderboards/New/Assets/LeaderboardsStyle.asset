@@ -16,15 +16,10 @@ MonoBehaviour:
   - _properties:
     - _key: backgroundColor
       _property:
-        _type: Beamable.UI.Buss.VariableProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        _json: '{"_variableName":""}'
-    _cachedProperties:
-    - _key: backgroundColor
-      _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_color":{"r":0.9716981053352356,"g":0.596721887588501,"b":0.07791920006275177,"a":1.0}}'
+    _cachedProperties: []
     _selector: '#leaderboardsBackground'
   - _properties:
     - _key: backgroundColor

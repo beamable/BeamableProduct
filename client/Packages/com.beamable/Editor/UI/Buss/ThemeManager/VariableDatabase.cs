@@ -9,40 +9,42 @@ namespace Beamable.UI.Buss
 	{
 		public class VariableData
 		{
-			public readonly List<PropertyReference> Declarations = new List<PropertyReference>();
+			public PropertyReference Declaration;
 			public readonly List<PropertyReference> Usages = new List<PropertyReference>();
 
-			public IEnumerable<PropertyReference> GetDeclarationsFrom(BussStyleSheet sheet)
-			{
-				return Declarations.Where(pr => pr.StyleSheet == sheet);
-			}
+			// public IEnumerable<PropertyReference> GetDeclarationsFrom(BussStyleSheet sheet)
+			// {
+			// 	return Declarations.Where(pr => pr.StyleSheet == sheet);
+			// }
+			//
+			// public PropertyReference GetDeclarationsFrom(BussStyleRule rule)
+			// {
+			// 	return Declarations.FirstOrDefault(pr => pr.StyleRule == rule);
+			// }
 
-			public PropertyReference GetDeclarationsFrom(BussStyleRule rule)
-			{
-				return Declarations.FirstOrDefault(pr => pr.StyleRule == rule);
-			}
-
-			public PropertyReference GetUsageFrom(BussStyleRule rule)
-			{
-				return Usages.FirstOrDefault(pr => pr.StyleRule == rule);
-			}
-
-			public IEnumerable<PropertyReference> GetUsagesFrom(BussStyleSheet sheet)
-			{
-				return Usages.Where(pr => pr.StyleSheet == sheet);
-			}
+			// public PropertyReference GetUsageFrom(BussStyleRule rule)
+			// {
+			// 	return Usages.FirstOrDefault(pr => pr.StyleRule == rule);
+			// }
+			//
+			// public IEnumerable<PropertyReference> GetUsagesFrom(BussStyleSheet sheet)
+			// {
+			// 	return Usages.Where(pr => pr.StyleSheet == sheet);
+			// }
 
 			public bool HasTypeDeclared(Type type)
 			{
-				return Declarations.Any(pr => type.IsInstanceOfType(pr.PropertyProvider.GetProperty()));
+				return Declaration != null && type.IsInstanceOfType(Declaration.PropertyProvider.GetProperty());
 			}
 		}
 
-		public readonly struct PropertyReference
+		public class PropertyReference
 		{
 			public readonly BussStyleSheet StyleSheet;
 			public readonly BussStyleRule StyleRule;
 			public readonly BussPropertyProvider PropertyProvider;
+
+			public PropertyReference() { }
 
 			public PropertyReference(BussStyleSheet styleSheet,
 			                         BussStyleRule styleRule,
@@ -89,6 +91,13 @@ namespace Beamable.UI.Buss
 			return data;
 		}
 
+		public IBussProperty GetVariable(string key)
+		{
+			ReconsiderAllStyleSheets();
+			var variableData = GetVariableData(key);
+			return variableData.Declaration.PropertyProvider.GetProperty();
+		}
+
 		public IEnumerable<string> GetVariableNames()
 		{
 			ReconsiderAllStyleSheets();
@@ -107,9 +116,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
-		                                         BussStyleDescription styleRule,
-		                                         VariableDatabase variableDatabase,
-		                                         PropertySourceTracker context,
+		                                         BussStyleDescription styleRule, 
 		                                         out IBussProperty result,
 		                                         out PropertyReference variablePropertyReference)
 		{
@@ -120,15 +127,8 @@ namespace Beamable.UI.Buss
 				return PropertyValueState.SingleResult;
 			}
 
-			if (context != null)
-			{
-				return FindVariableEndValueWithContext((VariableProperty)basePropertyProvider.GetProperty(),
-				                                       context, BussStyle.GetBaseType(basePropertyProvider.Key),
-				                                       out result, out variablePropertyReference);
-			}
-
 			return FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-			                            styleRule, variableDatabase, out result, out variablePropertyReference);
+			                            styleRule, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -137,7 +137,7 @@ namespace Beamable.UI.Buss
 
 			if (_styleSheets.Contains(sheet))
 			{
-				RemoveStyleSheet(sheet);
+				return;
 			}
 
 			foreach (BussStyleRule rule in sheet.Styles)
@@ -147,8 +147,8 @@ namespace Beamable.UI.Buss
 					var property = propertyProvider.GetProperty();
 					if (BussStyleSheetUtility.IsValidVariableName(propertyProvider.Key))
 					{
-						GetVariableData(propertyProvider.Key).Declarations
-						                                     .Add(new PropertyReference(sheet, rule, propertyProvider));
+						GetVariableData(propertyProvider.Key).Declaration =
+							new PropertyReference(sheet, rule, propertyProvider);
 					}
 
 					if (property is VariableProperty variableProperty &&
@@ -174,7 +174,6 @@ namespace Beamable.UI.Buss
 		/// </summary>
 		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
 		                                                BussStyleDescription styleRule,
-		                                                VariableDatabase variableDatabase,
 		                                                out IBussProperty result,
 		                                                out PropertyReference propertyReference)
 		{
@@ -197,80 +196,28 @@ namespace Beamable.UI.Buss
 			}
 			else
 			{
-				var variableData = variableDatabase.GetVariableData(variableProperty.VariableName);
-				if (variableData.Declarations.Count == 1)
+				var variableData = GetVariableData(variableProperty.VariableName);
+
+				if (variableData.Declaration != null)
 				{
 					state = PropertyValueState.SingleResult;
-					propertyReference = variableData.Declarations[0];
+					propertyReference = variableData.Declaration;
 					result = propertyReference.PropertyProvider.GetProperty();
 				}
 				else
 				{
-					state = (variableData.Declarations.Count == 0
-						? PropertyValueState.NoResult
-						: PropertyValueState.MultipleResults);
+					state = PropertyValueState.NoResult;
 				}
 			}
 
 			if (result != null && result is VariableProperty nestedVariableProperty)
 			{
-				state = FindVariableEndValue(nestedVariableProperty, styleRule, variableDatabase, out result,
-				                             out propertyReference);
+				state = FindVariableEndValue(nestedVariableProperty, styleRule, out result, out propertyReference);
 			}
 
 			_usedVariableNames.Clear();
 
 			return state;
-		}
-
-		private PropertyValueState FindVariableEndValueWithContext(VariableProperty variableProperty,
-		                                                           PropertySourceTracker propertySourceTracker,
-		                                                           Type expectedType,
-		                                                           out IBussProperty result,
-		                                                           out PropertyReference
-			                                                           propertyReference)
-		{
-			result = null;
-			propertyReference = new PropertyReference(null, null, null);
-
-			while (variableProperty != null && !_usedVariableNames.Contains(variableProperty.VariableName))
-			{
-				_usedVariableNames.Add(variableProperty.VariableName);
-				var usedPropertyReference =
-					propertySourceTracker.GetUsedPropertyReference(variableProperty.VariableName, expectedType);
-				var propertyProvider = usedPropertyReference.PropertyProvider;
-				if (propertyProvider == null)
-				{
-					_usedVariableNames.Clear();
-					return PropertyValueState.NoResult;
-				}
-
-				if (propertyProvider.HasVariableReference)
-				{
-					variableProperty = propertyProvider.GetProperty() as VariableProperty;
-				}
-				else
-				{
-					propertyReference = usedPropertyReference;
-					result = propertyProvider.GetProperty();
-					_usedVariableNames.Clear();
-					return PropertyValueState.SingleResult;
-				}
-			}
-
-			_usedVariableNames.Clear();
-			return PropertyValueState.VariableLoopDetected;
-		}
-
-		private void RemoveStyleSheet(BussStyleSheet sheet)
-		{
-			foreach (VariableData variableData in _variables.Values)
-			{
-				variableData.Declarations.RemoveAll(pr => pr.StyleSheet == sheet);
-				variableData.Usages.RemoveAll(pr => pr.StyleSheet == sheet);
-			}
-
-			_styleSheets.Remove(sheet);
 		}
 	}
 }

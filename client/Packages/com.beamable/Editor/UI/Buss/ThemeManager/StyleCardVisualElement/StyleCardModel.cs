@@ -128,7 +128,7 @@ namespace Beamable.Editor.UI.Components
 					AssetDatabase.SaveAssets();
 					StyleSheet.TriggerChange();
 					Change?.Invoke();
-				});
+				}, VariablesDatabase);
 			}
 		}
 

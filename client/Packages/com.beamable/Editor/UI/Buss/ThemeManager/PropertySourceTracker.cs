@@ -59,7 +59,7 @@ namespace Beamable.UI.Buss
 			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key));
 		}
 
-		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType, bool allowVariableProperty = true)
+		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType)
 		{
 			if (_sources.ContainsKey(key))
 			{
@@ -80,7 +80,7 @@ namespace Beamable.UI.Buss
 			return GetUsedPropertyReference(key, BussStyle.GetBaseType(key));
 		}
 
-		public PropertyReference GetUsedPropertyReference(string key, Type baseType, bool allowVariableProperty = true)
+		public PropertyReference GetUsedPropertyReference(string key, Type baseType)
 		{
 			if (_sources.ContainsKey(key))
 			{

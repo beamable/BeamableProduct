@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Buss
 			SelectedElement != null ? BussNameUtility.AsIdSelector(SelectedElement.Id) : String.Empty;
 
 		public BussStyleSheet SelectedElementStyleSheet => SelectedElement != null ? SelectedElement.StyleSheet : null;
-		public VariableDatabase VariableDatabase { get; }
+		public VariableDatabase VariablesDatabase { get; }
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public ThemeManagerModel()
@@ -50,7 +50,7 @@ namespace Beamable.Editor.UI.Buss
 			Selection.selectionChanged += OnSelectionChanged;
 
 			_filter = new BussCardFilter();
-			VariableDatabase = new VariableDatabase(this);
+			VariablesDatabase = new VariableDatabase(this);
 
 			OnHierarchyChanged();
 		}
@@ -90,7 +90,7 @@ namespace Beamable.Editor.UI.Buss
 							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 							EditorUtility.SetDirty(SelectedElement);
 							SelectedElement.RecalculateStyle();
-							VariableDatabase.ReconsiderAllStyleSheets();
+							VariablesDatabase.ReconsiderAllStyleSheets();
 							Change?.Invoke();
 						}
 					});
@@ -117,10 +117,10 @@ namespace Beamable.Editor.UI.Buss
 						// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 						EditorUtility.SetDirty(SelectedElement);
 						SelectedElement.RecalculateStyle();
-						VariableDatabase.ReconsiderAllStyleSheets();
+						VariablesDatabase.ReconsiderAllStyleSheets();
 						Change?.Invoke();
 					}
-				});
+				}, VariablesDatabase);
 			}
 		}
 
@@ -200,7 +200,7 @@ namespace Beamable.Editor.UI.Buss
 				// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 				EditorUtility.SetDirty(SelectedElement);
 				SelectedElement.RecalculateStyle();
-				VariableDatabase.ReconsiderAllStyleSheets();
+				VariablesDatabase.ReconsiderAllStyleSheets();
 				Change?.Invoke();
 			}
 		}
@@ -257,7 +257,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnStyleSheetChanged()
 		{
-			VariableDatabase.ReconsiderAllStyleSheets();
+			VariablesDatabase.ReconsiderAllStyleSheets();
 		}
 
 		private void Traverse(GameObject gameObject, int currentLevel)

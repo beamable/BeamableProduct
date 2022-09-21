@@ -54,22 +54,19 @@ namespace Beamable.Editor.UI.Components
 		                                                     out IBussProperty bussProperty,
 		                                                     out VariableDatabase.PropertyReference propertyReference)
 		{
-			PropertySourceTracker context = null;
+			propertySourceTracker = null;
 
 			if (PropertySourceTracker != null && PropertySourceTracker.Element != null)
 			{
 				if (StyleRule?.Selector?.CheckMatch(PropertySourceTracker.Element) ?? false)
 				{
-					context = PropertySourceTracker;
+					propertySourceTracker = PropertySourceTracker;
 				}
 			}
 
-			VariableDatabase.PropertyValueState result = VariablesDatabase.TryGetProperty(
-				PropertyProvider, StyleRule, VariablesDatabase,
-				context, out IBussProperty property,
-				out VariableDatabase.PropertyReference variableSource);
+			VariableDatabase.PropertyValueState result = VariablesDatabase.TryGetProperty(PropertyProvider,
+				StyleRule, out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
 
-			propertySourceTracker = context;
 			bussProperty = property;
 			propertyReference = variableSource;
 
