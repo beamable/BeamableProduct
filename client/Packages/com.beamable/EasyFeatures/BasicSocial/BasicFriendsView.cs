@@ -12,6 +12,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			set => gameObject.SetActive(value);
 		}
 
+		public SocialFeatureControl FeatureControl;
 		public int EnrichOrder = 0;
 
 		public FriendsListPresenter FriendsListPresenter;
@@ -37,7 +38,27 @@ namespace Beamable.EasyFeatures.BasicSocial
 				friends.Add(friend.playerId);
 			}
 
-			await FriendsListPresenter.Setup(friends);
+			await FriendsListPresenter.Setup(friends, OnPlayerPressed);
+		}
+
+		private async void OnPlayerPressed(long playerId)
+		{
+			await FeatureControl.OpenInfoPopup(playerId, DeleteFriend, BlockPlayer, SendMessageTo);
+		}
+
+		private void SendMessageTo(long playerId)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		private async void BlockPlayer(long playerId)
+		{
+			await Context.Social.BlockPlayer(playerId);
+		}
+
+		private async void DeleteFriend(long playerId)
+		{
+			await Context.Social.Unfriend(playerId);
 		}
 	}
 }

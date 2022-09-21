@@ -38,7 +38,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 				blockedPlayers.Add(blocked.playerId);
 			}
 
-			await BlockedListPresenter.Setup(blockedPlayers, UnblockPlayer);
+			await BlockedListPresenter.Setup(blockedPlayers, onButtonPressed: UnblockPlayer, buttonText: "Unblock");
 		}
 
 		private async void UnblockPlayer(long playerId)

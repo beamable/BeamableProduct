@@ -29,6 +29,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public Toggle FriendsTab;
 		public Toggle InvitesTab;
 		public Toggle BlockedTab;
+		public FriendInfoPopup InfoPopup;
 
 		protected BeamContext Context;
 
@@ -114,6 +115,11 @@ namespace Beamable.EasyFeatures.BasicSocial
 			_currentView.IsVisible = true;
 			
 			await ViewGroup.Enrich();
+		}
+
+		public async Promise OpenInfoPopup(long playerId, Action<long> onDeleteButton, Action<long> onBlockButton, Action<long> onMessageButton)
+		{
+			await InfoPopup.Setup(playerId, onDeleteButton, onBlockButton, onMessageButton);
 		}
 	}
 }

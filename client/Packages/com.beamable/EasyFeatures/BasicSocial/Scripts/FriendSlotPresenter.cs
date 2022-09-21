@@ -12,6 +12,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public TextMeshProUGUI UsernameText;
 		public TextMeshProUGUI DescriptionText;
 		public Button ConfirmButton;
+		public Button MainButton;
 		public TextMeshProUGUI ConfirmButtonText;
 		public Image PresenceDot;
 		public Color OnlineColor = Color.green;
@@ -37,7 +38,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			public float Height { get; set; }
 		}
 
-		public void Setup(PoolData item, Action<long> onConfirmPressed, string buttonText = "Confirm")
+		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onConfirmPressed, string buttonText = "Confirm")
 		{
 			AvatarImage.sprite = item.ViewData.Avatar;
 			UsernameText.text = item.ViewData.PlayerName;
@@ -46,6 +47,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			ConfirmButton.onClick.ReplaceOrAddListener(() => onConfirmPressed?.Invoke(item.ViewData.PlayerId));
 			ConfirmButton.gameObject.SetActive(onConfirmPressed != null);
 			ConfirmButtonText.text = buttonText;
+			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 		}
 
 		public void SetOnlineState(bool online)
