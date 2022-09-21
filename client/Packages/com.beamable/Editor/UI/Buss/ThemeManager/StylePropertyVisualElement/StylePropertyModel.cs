@@ -3,7 +3,6 @@ using Beamable.Editor.Common;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -149,9 +148,7 @@ namespace Beamable.Editor.UI.Components
 
 			options.Clear();
 			options.Add(Constants.Features.Buss.MenuItems.NONE);
-			options.AddRange(VariablesDatabase.GetVariableNames()
-			                                  .Where(key => VariablesDatabase.GetVariableData(key)
-			                                                                 .HasTypeDeclared(baseType)));
+			options.AddRange(VariablesDatabase.GetVariablesNamesOfType(baseType));
 
 			return options;
 		}

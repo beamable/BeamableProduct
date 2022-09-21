@@ -9,8 +9,8 @@ namespace Beamable.UI.Buss
 	{
 		public class VariableData
 		{
-			public PropertyReference Declaration;
 			public readonly List<PropertyReference> Usages = new List<PropertyReference>();
+			public PropertyReference Declaration;
 
 			// public IEnumerable<PropertyReference> GetDeclarationsFrom(BussStyleSheet sheet)
 			// {
@@ -40,9 +40,9 @@ namespace Beamable.UI.Buss
 
 		public class PropertyReference
 		{
-			public readonly BussStyleSheet StyleSheet;
-			public readonly BussStyleRule StyleRule;
 			public readonly BussPropertyProvider PropertyProvider;
+			public readonly BussStyleRule StyleRule;
+			public readonly BussStyleSheet StyleSheet;
 
 			public PropertyReference() { }
 
@@ -70,13 +70,20 @@ namespace Beamable.UI.Buss
 		}
 
 		private readonly ThemeManagerModel _model;
-		private readonly HashSet<string> _usedVariableNames = new HashSet<string>();
 		private readonly List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
+		private readonly HashSet<string> _usedVariableNames = new HashSet<string>();
 		private readonly Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
 
 		public VariableDatabase(ThemeManagerModel model)
 		{
 			_model = model;
+		}
+
+		public IBussProperty GetVariable(string key)
+		{
+			ReconsiderAllStyleSheets();
+			var variableData = GetVariableData(key);
+			return variableData.Declaration.PropertyProvider.GetProperty();
 		}
 
 		public VariableData GetVariableData(string key)
@@ -91,17 +98,25 @@ namespace Beamable.UI.Buss
 			return data;
 		}
 
-		public IBussProperty GetVariable(string key)
-		{
-			ReconsiderAllStyleSheets();
-			var variableData = GetVariableData(key);
-			return variableData.Declaration.PropertyProvider.GetProperty();
-		}
-
 		public IEnumerable<string> GetVariableNames()
 		{
 			ReconsiderAllStyleSheets();
 			return _variables.Keys;
+		}
+
+		public IEnumerable<string> GetVariablesNamesOfType(Type baseType)
+		{
+			List<string> variablesNames = new List<string>();
+
+			foreach (var pair in _variables)
+			{
+				if (pair.Value.HasTypeDeclared(baseType))
+				{
+					variablesNames.Add(pair.Key);
+				}
+			}
+
+			return variablesNames;
 		}
 
 		public void ReconsiderAllStyleSheets()
@@ -116,7 +131,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
-		                                         BussStyleDescription styleRule, 
+		                                         BussStyleDescription styleRule,
 		                                         out IBussProperty result,
 		                                         out PropertyReference variablePropertyReference)
 		{
