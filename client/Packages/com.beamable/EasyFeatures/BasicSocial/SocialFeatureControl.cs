@@ -58,6 +58,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			foreach (var view in ViewGroup.ManagedViews)
 			{
 				views.Add(TypeToViewEnum(view.GetType()), view);
+				view.IsVisible = false;
 			}
 			
 			FriendsTab.onValueChanged.ReplaceOrAddListener(isOn => TabPicked(isOn, View.Friends));

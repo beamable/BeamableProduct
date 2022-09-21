@@ -17,8 +17,10 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		protected List<FriendSlotPresenter> SpawnedEntries = new List<FriendSlotPresenter>();
 		protected List<FriendSlotPresenter.ViewData> Slots;
+		protected Action<long> onButtonPressed;
+		protected string buttonText;
 
-		public async Promise Setup(List<long> players)
+		public async Promise Setup(List<long> players, Action<long> onButtonPressed = null, string buttonText = "Confirm")
 		{
 			var Context = BeamContext.Default;
 			FriendSlotPresenter.ViewData[] viewData = new FriendSlotPresenter.ViewData[players.Count];
@@ -42,12 +44,16 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 				viewData[i] = new FriendSlotPresenter.ViewData
 				{
+					PlayerId = players[i],
 					PlayerName = playerName,
 					Avatar = avatar,
 					Description = "Description"
 				};
 			}
 
+			this.onButtonPressed = onButtonPressed;
+			this.buttonText = buttonText;
+			
 			Slots = viewData.ToList();
 			ScrollView.SetContentProvider(this);
 			
@@ -91,7 +97,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			var data = item as FriendSlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be FriendSlotPresenter");
 			
-			spawned.Setup(data, null);
+			spawned.Setup(data, onButtonPressed, buttonText);
 			
 			return spawned.GetComponent<RectTransform>();
 		}

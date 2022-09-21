@@ -390,7 +390,7 @@ GameObject:
   - component: {fileID: 3218590239896620686}
   - component: {fileID: 4140691090509514966}
   m_Layer: 0
-  m_Name: FriendsListPresenter
+  m_Name: BlockedListPresenter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -779,7 +779,7 @@ MonoBehaviour:
   onValueChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_IsOn: 0
+  m_IsOn: 1
 --- !u!1 &1807366823246468478
 GameObject:
   m_ObjectHideFlags: 0
@@ -1518,7 +1518,7 @@ GameObject:
   - component: {fileID: 4035852334471027483}
   - component: {fileID: 720108533787941904}
   m_Layer: 0
-  m_Name: FriendsListPresenter
+  m_Name: InvitesListPresenter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1883,6 +1883,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b50be52b74469804dab745a8401caca0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BlockedListPresenter: {fileID: 5636319073668671460}
 --- !u!1 &5105843503281940755
 GameObject:
   m_ObjectHideFlags: 0
