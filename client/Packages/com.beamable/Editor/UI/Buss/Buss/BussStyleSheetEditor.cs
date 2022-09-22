@@ -2,13 +2,7 @@
 using Beamable.UI.Buss;
 using System;
 using UnityEditor;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -24,13 +18,14 @@ namespace Beamable.Editor.UI.Buss
 		{
 			_styleSheet = (BussStyleSheet)target;
 			VisualElement root = new VisualElement();
-			
+
 			if (!_styleSheet.IsWritable)
 			{
 				return root;
 			}
 
-			//_list = new BussStyleListVisualElement {StyleSheets = new[] {_styleSheet}};
+			_list = new BussStyleListVisualElement(new ThemeManagerModel(BussCardFilter.Mode.SingleStyleSheet) { SelectedStyleSheet = _styleSheet });
+			_list.Init();
 
 #if BEAMABLE_DEVELOPER
 			LabeledCheckboxVisualElement readonlyCheckbox = new LabeledCheckboxVisualElement("Readonly");
@@ -54,14 +49,12 @@ namespace Beamable.Editor.UI.Buss
 			return root;
 		}
 
-
-
 #if BEAMABLE_DEVELOPER
 		private void OnReadonlyValueChanged(bool value)
 		{
 			_styleSheet.SetReadonly(value);
 		}
-		
+
 		private void OnSortingOrderChanged()
 		{
 			_styleSheet.SetSortingOrder(_sortingOrder.Value);

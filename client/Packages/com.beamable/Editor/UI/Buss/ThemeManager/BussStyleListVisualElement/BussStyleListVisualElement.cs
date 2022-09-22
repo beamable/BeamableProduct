@@ -17,6 +17,10 @@ namespace Beamable.Editor.UI.Buss
 
 		private bool _inStyleSheetChangedLoop;
 
+		public BussStyleListVisualElement() : base(
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
+			false) { }
+
 		public BussStyleListVisualElement(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
 			false)
@@ -33,9 +37,9 @@ namespace Beamable.Editor.UI.Buss
 		protected override void OnDestroy()
 		{
 			_model.Change -= Refresh;
-			
+
 			ClearCards();
-			
+
 			_model.PropertyDatabase.Discard();
 		}
 
@@ -43,7 +47,9 @@ namespace Beamable.Editor.UI.Buss
 		{
 			bool isSelected = _model.SelectedElement != null && styleRule.Selector.CheckMatch(_model.SelectedElement);
 			StyleCardModel model =
-				new StyleCardModel(styleSheet, styleRule, undoAction, _model.SelectedElement,  isSelected, _model.VariablesDatabase, _model.PropertyDatabase, _model.WritableStyleSheets, _model.ForceRefresh);
+				new StyleCardModel(styleSheet, styleRule, undoAction, _model.SelectedElement, isSelected,
+				                   _model.VariablesDatabase, _model.PropertyDatabase, _model.WritableStyleSheets,
+				                   _model.ForceRefresh);
 			StyleCardVisualElement styleCard = new StyleCardVisualElement(model);
 			styleCard.Refresh();
 

@@ -7,12 +7,37 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class BussCardFilter
 	{
-		public string CurrentFilter { get; set; } = String.Empty;
+		public enum Mode
+		{
+			Normal,
+			SingleStyleSheet,
+		}
 
-		public Dictionary<BussStyleRule, BussStyleSheet> FilteredAlt(List<BussStyleSheet> styleSheets, BussElement selectedElement)
+		public string CurrentFilter { get; set; } = String.Empty;
+		public Mode FilterMode { get; }
+
+		public BussCardFilter(Mode mode)
+		{
+			FilterMode = mode;
+		}
+
+		public Dictionary<BussStyleRule, BussStyleSheet> GetFiltered(BussStyleSheet styleSheet)
 		{
 			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
-			
+
+			foreach (var rule in styleSheet.Styles)
+			{
+				rules.Add(rule, styleSheet);
+			}
+
+			return rules;
+		}
+
+		public Dictionary<BussStyleRule, BussStyleSheet> GetFiltered(List<BussStyleSheet> styleSheets,
+		                                                             BussElement selectedElement)
+		{
+			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
+
 			foreach (var styleSheet in styleSheets)
 			{
 				foreach (var rule in styleSheet.Styles)

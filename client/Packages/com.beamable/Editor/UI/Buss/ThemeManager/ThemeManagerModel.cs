@@ -12,16 +12,14 @@ namespace Beamable.Editor.UI.Buss
 	public class ThemeManagerModel
 	{
 		public event Action Change;
+		private readonly BussCardFilter _filter;
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
-		private readonly BussCardFilter _filter;
+		public BussStyleSheet SelectedStyleSheet { get; set; }
 
 		public List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
 
-		public Dictionary<BussStyleRule, BussStyleSheet> FilteredRules =>
-			_filter != null
-				? _filter.FilteredAlt(StyleSheets, SelectedElement)
-				: new Dictionary<BussStyleRule, BussStyleSheet>();
+		public Dictionary<BussStyleRule, BussStyleSheet> FilteredRules => GetFilteredRules();
 
 		public IEnumerable<BussStyleSheet> WritableStyleSheets
 		{
@@ -44,12 +42,12 @@ namespace Beamable.Editor.UI.Buss
 		public VariableDatabase VariablesDatabase => BussConfiguration.OptionalInstance.Value.VariableDatabase;
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
-		public ThemeManagerModel()
+		public ThemeManagerModel(BussCardFilter.Mode filterMode = BussCardFilter.Mode.Normal)
 		{
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Selection.selectionChanged += OnSelectionChanged;
 
-			_filter = new BussCardFilter();
+			_filter = new BussCardFilter(filterMode);
 
 			OnHierarchyChanged();
 		}
@@ -208,6 +206,19 @@ namespace Beamable.Editor.UI.Buss
 		{
 			SelectedElement = element;
 			Change?.Invoke();
+		}
+
+		private Dictionary<BussStyleRule, BussStyleSheet> GetFilteredRules()
+		{
+			switch (_filter.FilterMode)
+			{
+				case BussCardFilter.Mode.Normal:
+					return _filter.GetFiltered(StyleSheets, SelectedElement);
+				case BussCardFilter.Mode.SingleStyleSheet:
+					return _filter.GetFiltered(SelectedStyleSheet);
+				default:
+					return new Dictionary<BussStyleRule, BussStyleSheet>();
+			}
 		}
 
 		private void OnHierarchyChanged()
