@@ -7,6 +7,7 @@ PluginImporter:
   executionOrder: {}
   defineConstraints:
   - UNITY_EDITOR
+  - '!BEAMABLE_DISABLE_SYSTEM_COMPILERSERVICES'
   isPreloaded: 0
   isOverridable: 1
   isExplicitlyReferenced: 1
