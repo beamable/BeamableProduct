@@ -3,20 +3,15 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
-using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
-using UnityEngine.UIElements;
-#endif
 
-namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
+namespace Beamable.UI.Buss
 {
-	public class BussConfiguration : ModuleConfigurationObject
+	public class BussConfiguration : ModuleConfigurationObject, IVariablesProvider
 	{
 		private static BussConfiguration Instance => Get<BussConfiguration>();
 
@@ -50,6 +45,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
 		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
 		public List<BussElement> RootBussElements => _rootBussElements;
+		public List<BussStyleSheet> StyleSheets { get; set; }
+
+		// private VariableDatabase _variableDatabase;
 
 #if UNITY_EDITOR
 		static BussConfiguration()
@@ -168,6 +166,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			{
 				ApplyStyleSheet(element, styleSheet);
 			}
+
+			StyleSheets = new List<BussStyleSheet>(element.AllStyleSheets);
 
 			foreach (BussStyleSheet styleSheet in element.AllStyleSheets)
 			{

@@ -38,9 +38,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public IEnumerable<string> Classes => _classes;
-		// public IEnumerable<string> PseudoClasses => _pseudoClasses;
 		public string TypeName => GetType().Name;
-		// public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
 		public BussStyleDescription InlineStyle => _inlineStyle;
 
 		public BussStyleSheet StyleSheet

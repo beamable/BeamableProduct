@@ -9,7 +9,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
-	public class ThemeManagerModel
+	public class ThemeManagerModel : IVariablesProvider 
 	{
 		public event Action Change;
 

@@ -113,9 +113,6 @@ namespace Beamable.Editor.UI.Components
 			string text;
 			switch (result)
 			{
-				case VariableDatabase.PropertyValueState.MultipleResults:
-					text = "Multiple possible values.";
-					break;
 				case VariableDatabase.PropertyValueState.NoResult:
 					text = "Select variable.";
 					break;
