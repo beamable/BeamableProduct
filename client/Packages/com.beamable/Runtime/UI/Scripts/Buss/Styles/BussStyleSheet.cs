@@ -2,7 +2,6 @@
 using Beamable.UI.Sdf;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 using static Beamable.Common.Constants.MenuItems.Assets;
@@ -151,6 +150,11 @@ namespace Beamable.UI.Buss
 		[SerializeField] protected List<BussPropertyProvider> _cachedProperties = new List<BussPropertyProvider>();
 		public List<BussPropertyProvider> Properties => _properties;
 
+		public bool HasProperty(string key)
+		{
+			return _properties.Find(prop => prop.Key == key) != null;
+		}
+		
 		public bool TryGetCachedProperty(string key, out IBussProperty property)
 		{
 			BussPropertyProvider provider = _cachedProperties.Find(prop => prop.Key == key);
