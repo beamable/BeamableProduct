@@ -9,7 +9,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
-	public class ThemeManagerModel : IVariablesProvider 
+	public class ThemeManagerModel
 	{
 		public event Action Change;
 
@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Buss
 			SelectedElement != null ? BussNameUtility.AsIdSelector(SelectedElement.Id) : String.Empty;
 
 		public BussStyleSheet SelectedElementStyleSheet => SelectedElement != null ? SelectedElement.StyleSheet : null;
-		public VariableDatabase VariablesDatabase { get; }
+		public VariableDatabase VariablesDatabase => BussConfiguration.OptionalInstance.Value.VariableDatabase;
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public ThemeManagerModel()
@@ -50,7 +50,6 @@ namespace Beamable.Editor.UI.Buss
 			Selection.selectionChanged += OnSelectionChanged;
 
 			_filter = new BussCardFilter();
-			VariablesDatabase = new VariableDatabase(this);
 
 			OnHierarchyChanged();
 		}

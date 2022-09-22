@@ -13,6 +13,14 @@ namespace Beamable.UI.Buss
 {
 	public class BussConfiguration : ModuleConfigurationObject, IVariablesProvider
 	{
+		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
+
+		private static VariableDatabase _variableDatabase;
+
+		[SerializeField] private List<BussStyleSheet> _globalStyleSheets = new List<BussStyleSheet>();
+
+		private readonly List<BussStyleSheet> _defaultBeamableStyleSheets = new List<BussStyleSheet>();
+		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 		private static BussConfiguration Instance => Get<BussConfiguration>();
 
 		public static Optional<BussConfiguration> OptionalInstance
@@ -30,46 +38,17 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
+		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
+		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
+		public List<BussElement> RootBussElements => _rootBussElements;
+
+		public VariableDatabase VariableDatabase => _variableDatabase;
+		public List<BussStyleSheet> StyleSheets { get; private set; }
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);
 		}
-
-		[SerializeField] private List<BussStyleSheet> _globalStyleSheets = new List<BussStyleSheet>();
-
-		private readonly List<BussStyleSheet> _defaultBeamableStyleSheets = new List<BussStyleSheet>();
-		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
-
-		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
-		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
-		public List<BussElement> RootBussElements => _rootBussElements;
-		public List<BussStyleSheet> StyleSheets { get; set; }
-
-		private static VariableDatabase _variableDatabase;
-
-#if UNITY_EDITOR
-		static BussConfiguration()
-		{
-			// temporary solution to refresh the list of BussElements on scene change
-			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
-			EditorSceneManager.sceneClosed += scene => UseConfig(config => config.RefreshBussElements());
-		}
-
-		void RefreshBussElements()
-		{
-			_rootBussElements.Clear();
-			foreach (BussElement element in FindObjectsOfType<BussElement>())
-			{
-				element.CheckParent();
-			}
-
-			EditorUtility.SetDirty(this);
-
-			RefreshDefaultStyles();
-		}
-#endif
 
 		public void AddGlobalStyleSheet(BussStyleSheet styleSheet)
 		{
@@ -148,12 +127,36 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+#if UNITY_EDITOR
+		static BussConfiguration()
+		{
+			// temporary solution to refresh the list of BussElements on scene change
+			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
+			EditorSceneManager.sceneClosed += scene => UseConfig(config => config.RefreshBussElements());
+		}
+
+		void RefreshBussElements()
+		{
+			_rootBussElements.Clear();
+			foreach (BussElement element in FindObjectsOfType<BussElement>())
+			{
+				element.CheckParent();
+			}
+
+			EditorUtility.SetDirty(this);
+
+			RefreshDefaultStyles();
+		}
+#endif
+
 		#region Styles parsing
 
 		public void RecalculateStyle(BussElement element)
 		{
 			Weights.Clear();
 			element.Style.Clear();
+
+			ReconsiderVariables(element);
 
 			// Applying default bemable styles
 			foreach (BussStyleSheet styleSheet in _defaultBeamableStyleSheets)
@@ -167,10 +170,6 @@ namespace Beamable.UI.Buss
 				ApplyStyleSheet(element, styleSheet);
 			}
 
-			_variableDatabase = new VariableDatabase(this);
-			StyleSheets = new List<BussStyleSheet>(element.AllStyleSheets);
-			_variableDatabase.ReconsiderAllStyleSheets();
-
 			foreach (BussStyleSheet styleSheet in element.AllStyleSheets)
 			{
 				if (styleSheet != null)
@@ -182,6 +181,20 @@ namespace Beamable.UI.Buss
 			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
 
 			element.ApplyStyle();
+		}
+
+		private void ReconsiderVariables(BussElement element)
+		{
+			if (_variableDatabase == null)
+			{
+				_variableDatabase = new VariableDatabase(this);
+			}
+
+			StyleSheets.Clear();
+			StyleSheets.AddRange(_defaultBeamableStyleSheets);
+			StyleSheets.AddRange(_globalStyleSheets);
+			StyleSheets.AddRange(element.AllStyleSheets);
+			_variableDatabase.ReconsiderAllStyleSheets();
 		}
 
 		private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
