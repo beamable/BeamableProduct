@@ -190,7 +190,7 @@ namespace Beamable.UI.Buss
 				_variableDatabase = new VariableDatabase(this);
 			}
 
-			StyleSheets.Clear();
+			StyleSheets = new List<BussStyleSheet>();
 			StyleSheets.AddRange(_defaultBeamableStyleSheets);
 			StyleSheets.AddRange(_globalStyleSheets);
 			StyleSheets.AddRange(element.AllStyleSheets);
