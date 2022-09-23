@@ -16,9 +16,15 @@ namespace Beamable.Experimental.Api.Parties
 
 		public Promise<Party> CreateParty(PartyRestriction restriction, int maxSize = 0)
 		{
-			var request = maxSize == 0
-				? new CreatePartyRequest(restriction.ToString(), _userContext.UserId.ToString())
-				: new CreatePartyRequest(restriction.ToString(), _userContext.UserId.ToString(), maxSize);
+			object request;
+			if (maxSize == 0)
+			{
+				request = new CreateDefaultPartyRequest(restriction.ToString(), _userContext.UserId.ToString());
+			}
+			else
+			{
+				request = new CreatePartyRequest(restriction.ToString(), _userContext.UserId.ToString(), maxSize);
+			}
 			
 			return _requester.Request<Party>(
 				Method.POST,
@@ -29,9 +35,15 @@ namespace Beamable.Experimental.Api.Parties
 
 		public Promise<Party> UpdateParty(string partyId, PartyRestriction restriction, int maxSize = 0)
 		{
-			var request = maxSize == 0
-				? new UpdatePartyRequest(restriction.ToString())
-				: new UpdatePartyRequest(restriction.ToString(), maxSize);
+			object request;
+			if (maxSize == 0)
+			{
+				request = new UpdateDefaultPartyRequest(restriction.ToString());
+			}
+			else
+			{
+				request = new UpdatePartyRequest(restriction.ToString(), maxSize);
+			}
 			
 			return _requester.Request<Party>(
 				Method.PUT,
