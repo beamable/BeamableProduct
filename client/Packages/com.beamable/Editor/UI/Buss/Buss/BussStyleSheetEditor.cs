@@ -13,6 +13,7 @@ namespace Beamable.Editor.UI.Buss
 		private BussStyleListVisualElement _list;
 		private BussStyleSheet _styleSheet;
 		private LabeledIntegerField _sortingOrder;
+		private ThemeInspectorModel _model;
 
 		public override VisualElement CreateInspectorGUI()
 		{
@@ -24,8 +25,12 @@ namespace Beamable.Editor.UI.Buss
 				return root;
 			}
 
-			_list = new BussStyleListVisualElement(new ThemeManagerModel(BussCardFilter.Mode.SingleStyleSheet) { SelectedStyleSheet = _styleSheet });
+			_model = new ThemeInspectorModel(_styleSheet);
+			_list = new BussStyleListVisualElement(_model);
 			_list.Init();
+			_list.Refresh();
+
+			_styleSheet.Change += _list.Refresh;
 
 #if BEAMABLE_DEVELOPER
 			LabeledCheckboxVisualElement readonlyCheckbox = new LabeledCheckboxVisualElement("Readonly");
@@ -42,7 +47,7 @@ namespace Beamable.Editor.UI.Buss
 
 			if (!_styleSheet.IsReadOnly)
 			{
-				AddSelectorButton(root, _list);
+				AddSelectorButton(root);
 			}
 
 			root.Add(_list);
@@ -61,10 +66,10 @@ namespace Beamable.Editor.UI.Buss
 		}
 #endif
 
-		private void AddSelectorButton(VisualElement parent, BussStyleListVisualElement list)
+		private void AddSelectorButton(VisualElement parent)
 		{
 			AddStyleButton button = new AddStyleButton();
-			//button.Setup(list, _ => list.RefreshStyleCards());
+			button.Setup(_model.OnAddStyleButtonClicked);
 			button.CheckEnableState();
 			parent.Add(button);
 		}

@@ -10,18 +10,14 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class BussStyleListVisualElement : BeamableBasicVisualElement
 	{
-		private readonly ThemeManagerModel _model;
+		private readonly ThemeModel _model;
 
 		private readonly List<StyleCardVisualElement> _styleCardsVisualElements =
 			new List<StyleCardVisualElement>();
 
 		private bool _inStyleSheetChangedLoop;
 
-		public BussStyleListVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
-			false) { }
-
-		public BussStyleListVisualElement(ThemeManagerModel model) : base(
+		public BussStyleListVisualElement(ThemeModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
 			false)
 		{

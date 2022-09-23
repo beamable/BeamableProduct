@@ -7,19 +7,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class BussCardFilter
 	{
-		public enum Mode
-		{
-			Normal,
-			SingleStyleSheet,
-		}
-
 		public string CurrentFilter { get; set; } = String.Empty;
-		public Mode FilterMode { get; }
-
-		public BussCardFilter(Mode mode)
-		{
-			FilterMode = mode;
-		}
 
 		public Dictionary<BussStyleRule, BussStyleSheet> GetFiltered(BussStyleSheet styleSheet)
 		{
