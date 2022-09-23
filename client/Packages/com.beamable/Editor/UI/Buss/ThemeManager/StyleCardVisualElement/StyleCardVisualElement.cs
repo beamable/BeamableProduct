@@ -1,11 +1,5 @@
-using System.Collections.Generic;
 using System.Linq;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 using static Beamable.Common.Constants;
 
@@ -15,7 +9,6 @@ namespace Beamable.Editor.UI.Components
 	{
 		private readonly StyleCardModel _model;
 
-		// private readonly List<StylePropertyVisualElement> _spawnedProperties = new List<StylePropertyVisualElement>();
 		private VisualElement _addRuleButton;
 		private VisualElement _addVariableButton;
 		private VisualElement _cleanAllButton;

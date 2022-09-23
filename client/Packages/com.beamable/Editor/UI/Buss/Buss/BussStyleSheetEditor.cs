@@ -9,7 +9,6 @@ namespace Beamable.Editor.UI.Buss
 	[CustomEditor(typeof(BussStyleSheet))]
 	public class BussStyleSheetEditor : UnityEditor.Editor
 	{
-#if UNITY_2019_1_OR_NEWER
 		private BussStyleListVisualElement _list;
 		private BussStyleSheet _styleSheet;
 		private LabeledIntegerField _sortingOrder;
@@ -70,7 +69,6 @@ namespace Beamable.Editor.UI.Buss
 		{
 			AddStyleButton button = new AddStyleButton();
 			button.Setup(_model.OnAddStyleButtonClicked);
-			button.CheckEnableState();
 			parent.Add(button);
 		}
 
@@ -82,18 +80,5 @@ namespace Beamable.Editor.UI.Buss
 				_list = null;
 			}
 		}
-#else
-		public override void OnInspectorGUI()
-		{
-			var rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight * 3f);
-			if (GUI.Button(rect, "Open Editor"))
-			{
-				BussStyleSheetEditorWindow.Open((BussStyleSheet)target);
-			}
-#if BEAMABLE_DEVELOPER
-			base.OnInspectorGUI();
-#endif
-		}
-#endif
 	}
 }
