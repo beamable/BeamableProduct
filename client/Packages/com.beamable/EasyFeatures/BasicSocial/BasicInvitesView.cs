@@ -42,7 +42,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			SentListToggle.onValueChanged.AddListener(isOn => TabPicked(isOn, SentListPresenter));
 			PlayerIdInputField.onEndEdit.AddListener(SendInvite);
 			
-			OpenTab(PendingListPresenter);
+			await OpenTab(PendingListPresenter);
 		}
 
 		private async void SendInvite(string playerId)
@@ -56,14 +56,14 @@ namespace Beamable.EasyFeatures.BasicSocial
 			await Context.Social.Invite(id);
 		}
 
-		private void TabPicked(bool isOn, FriendsListPresenter list)
+		private async void TabPicked(bool isOn, FriendsListPresenter list)
 		{
 			if (!isOn)
 			{
 				return;
 			}
 			
-			OpenTab(list);
+			await OpenTab(list);
 		}
 
 		private async Promise OpenTab(FriendsListPresenter tab)

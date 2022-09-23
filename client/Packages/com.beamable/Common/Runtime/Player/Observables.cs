@@ -61,13 +61,6 @@ namespace Beamable.Common.Player
 				OnUpdated?.Invoke();
 			}
 		}
-		
-		/// <summary>
-		/// In case when some object looks for some additional data after <see cref="OnUpdated"/> was called this data
-		/// can be reseted in overriden method 
-		/// </summary>
-		protected virtual void ResetChangeData()
-		{}
 
 		/// <summary>
 		/// In case when some object looks for some additional data after <see cref="OnUpdated"/> was called this data
