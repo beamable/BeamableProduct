@@ -21,37 +21,8 @@ namespace Beamable.EasyFeatures.BasicSocial
 		protected Action<long> onEntryPressed;
 		protected string buttonText;
 
-		public async Promise Setup(List<long> players, Action<long> onEntryPressed = null, Action<long> onButtonPressed = null, string buttonText = "Confirm")
+		public void Setup(List<FriendSlotPresenter.ViewData> viewData, Action<long> onEntryPressed = null, Action<long> onButtonPressed = null, string buttonText = "Confirm")
 		{
-			var Context = BeamContext.Default;
-			FriendSlotPresenter.ViewData[] viewData = new FriendSlotPresenter.ViewData[players.Count];
-			for (int i = 0; i < players.Count; i++)
-			{
-				var stats = await Context.Api.Stats.GetStats("client", "public", "player", players[i]);
-				if (!stats.TryGetValue("alias", out string playerName))
-				{
-					playerName = players[i].ToString();
-				}
-
-				Sprite avatar = AvatarConfiguration.Instance.Default.Sprite;
-				if (stats.TryGetValue("avatar", out string avatarName))
-				{
-					var accountAvatar = AvatarConfiguration.Instance.Avatars.Find(av => av.Name == avatarName);
-					if (accountAvatar != null)
-					{
-						avatar = accountAvatar.Sprite;
-					}
-				}
-
-				viewData[i] = new FriendSlotPresenter.ViewData
-				{
-					PlayerId = players[i],
-					PlayerName = playerName,
-					Avatar = avatar,
-					Description = "Description"
-				};
-			}
-
 			this.onButtonPressed = onButtonPressed;
 			this.buttonText = buttonText;
 			this.onEntryPressed = onEntryPressed;

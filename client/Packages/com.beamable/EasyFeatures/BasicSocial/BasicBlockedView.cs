@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Player;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,9 +7,16 @@ namespace Beamable.EasyFeatures.BasicSocial
 {
 	public class BasicBlockedView : MonoBehaviour, IAsyncBeamableView
 	{
+		public interface IDependencies : IBeamableViewDeps
+		{
+			BeamContext Context { get; set; }
+			List<long> GetPlayersIds(BlockedPlayerList list);
+			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
+		}
+		
 		public FriendsListPresenter BlockedListPresenter;
 
-		protected BeamContext Context;
+		protected IDependencies System;
 		
 		public bool IsVisible
 		{
@@ -23,27 +31,26 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		public async Promise EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			Context = managedPlayers.GetSinglePlayerContext();
-
+			var context = managedPlayers.GetSinglePlayerContext();
+			System = context.ServiceProvider.GetService<IDependencies>();
+			System.Context = context;
+			
 			if (!IsVisible)
 			{
 				return;
 			}
 
-			await Context.Social.OnReady;
+			await System.Context.Social.OnReady;
 
-			List<long> blockedPlayers = new List<long>(Context.Social.Blocked.Count);
-			foreach (var blocked in Context.Social.Blocked)
-			{
-				blockedPlayers.Add(blocked.playerId);
-			}
+			List<long> blockedPlayers = System.GetPlayersIds(System.Context.Social.Blocked);
+			var viewData = await System.GetPlayersViewData(blockedPlayers);
 
-			await BlockedListPresenter.Setup(blockedPlayers, onButtonPressed: UnblockPlayer, buttonText: "Unblock");
+			BlockedListPresenter.Setup(viewData, onButtonPressed: UnblockPlayer, buttonText: "Unblock");
 		}
 
 		private async void UnblockPlayer(long playerId)
 		{
-			await Context.Social.UnblockPlayer(playerId);
+			await System.Context.Social.UnblockPlayer(playerId);
 		}
 	}
 }

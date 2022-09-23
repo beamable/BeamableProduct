@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Player;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,6 +7,13 @@ namespace Beamable.EasyFeatures.BasicSocial
 {
 	public class BasicFriendsView : MonoBehaviour, IAsyncBeamableView
 	{
+		public interface IDependencies : IBeamableViewDeps
+		{
+			BeamContext Context { get; set; }
+			List<long> GetPlayersIds(PlayerFriendList list);
+			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
+		}
+		
 		public bool IsVisible
 		{
 			get => gameObject.activeSelf;
@@ -16,29 +24,28 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public int EnrichOrder = 0;
 
 		public FriendsListPresenter FriendsListPresenter;
+
+		protected IDependencies System;
 		
 		public int GetEnrichOrder() => EnrichOrder;
 
-		protected BeamContext Context;
-
 		public async Promise EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			Context = managedPlayers.GetSinglePlayerContext();
-
+			var context = managedPlayers.GetSinglePlayerContext();
+			System = context.ServiceProvider.GetService<IDependencies>();
+			System.Context = context;
+			
 			if (!IsVisible)
 			{
 				return;
 			}
 
-			await Context.Social.OnReady;
+			await System.Context.Social.OnReady;
 
-			List<long> friends = new List<long>(Context.Social.Friends.Count);
-			foreach (var friend in Context.Social.Friends)
-			{
-				friends.Add(friend.playerId);
-			}
+			List<long> friends = System.GetPlayersIds(System.Context.Social.Friends);
+			var viewData = await System.GetPlayersViewData(friends);
 
-			await FriendsListPresenter.Setup(friends, OnPlayerPressed);
+			FriendsListPresenter.Setup(viewData, OnPlayerPressed);
 		}
 
 		private async void OnPlayerPressed(long playerId)
@@ -53,12 +60,12 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		private async void BlockPlayer(long playerId)
 		{
-			await Context.Social.BlockPlayer(playerId);
+			await System.Context.Social.BlockPlayer(playerId);
 		}
 
 		private async void DeleteFriend(long playerId)
 		{
-			await Context.Social.Unfriend(playerId);
+			await System.Context.Social.Unfriend(playerId);
 		}
 	}
 }

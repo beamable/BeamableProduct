@@ -1,4 +1,8 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Player;
+using Beamable.Player;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +11,14 @@ namespace Beamable.EasyFeatures.BasicSocial
 {
 	public class BasicInvitesView : MonoBehaviour, IAsyncBeamableView
 	{
+		public interface IDependencies : IBeamableViewDeps
+		{
+			BeamContext Context { get; set; }
+			List<long> GetPlayersIds(ReceivedFriendInviteList list);
+			List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list);
+			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
+		}
+		
 		public TextMeshProUGUI PlayerIdText;
 		public TMP_InputField PlayerIdInputField;
 		public Toggle PendingListToggle;
@@ -14,7 +26,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public FriendsListPresenter PendingListPresenter;
 		public FriendsListPresenter SentListPresenter;
 
-		protected BeamContext Context;
+		protected IDependencies System;
 		
 		private FriendsListPresenter _currentListView;
 		
@@ -30,11 +42,13 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		public async Promise EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			Context = managedPlayers.GetSinglePlayerContext();
+			var context = managedPlayers.GetSinglePlayerContext();
+			System = context.ServiceProvider.GetService<IDependencies>();
+			System.Context = context;
+			
+			await System.Context.Social.OnReady;
 
-			await Context.Social.OnReady;
-
-			PlayerIdText.text = $"#{Context.PlayerId}";
+			PlayerIdText.text = $"#{context.PlayerId}";
 			PendingListPresenter.gameObject.SetActive(false);
 			SentListPresenter.gameObject.SetActive(false);
 			
@@ -53,7 +67,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 				return;
 			}
 			
-			await Context.Social.Invite(id);
+			await System.Context.Social.Invite(id);
 		}
 
 		private async void TabPicked(bool isOn, FriendsListPresenter list)
@@ -76,9 +90,19 @@ namespace Beamable.EasyFeatures.BasicSocial
 			_currentListView = tab;
 			_currentListView.gameObject.SetActive(true);
 
+			if (_currentListView == PendingListPresenter)
+			{
+				
+			}
+			else
+			{
+				
+			}
+
+			var blockedPlayers = System.GetPlayersIds(System.Context.Social.Blocked);
+			var viewData = await System.GetPlayersViewData(blockedPlayers);
 			
-			
-			await _currentListView.Setup(null);
+			_currentListView.Setup(viewData);
 		}
 	}
 }

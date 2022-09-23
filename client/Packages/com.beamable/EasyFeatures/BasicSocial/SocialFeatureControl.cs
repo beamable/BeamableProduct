@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,6 +38,14 @@ namespace Beamable.EasyFeatures.BasicSocial
 		private readonly Dictionary<View, IBeamableView> views = new Dictionary<View, IBeamableView>();
 		private readonly Dictionary<View, Toggle> viewTabs = new Dictionary<View, Toggle>();
 
+		[RegisterBeamableDependencies]
+		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
+		{
+			builder.SetupUnderlyingSystemSingleton<BasicSocialPlayerSystem, BasicFriendsView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<BasicSocialPlayerSystem, BasicBlockedView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<BasicSocialPlayerSystem, BasicInvitesView.IDependencies>();
+		}
+		
 		public void OnEnable()
 		{
 			ViewGroup.RebuildManagedViews();
