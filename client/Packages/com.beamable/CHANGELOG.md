@@ -3,6 +3,7 @@
 
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -12,15 +13,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
+- Expanded/Collapsed state represented by icons in `Theme Manager`
 
 ### Fixed
 - The default uncaught Promise handler no longer throws `IndexOutOfBounds` errors in high failure cases.
+
+## [1.3.6]
+### Fixed
+- Fixed sending custom analytic events using `AnalyticsTracker.TrackEvent`
+
+## [1.3.5]
+### Added
+- Utility apis for setting expiration on Mail Update and Mail Send requests
+
+### Fixed
+- VSP Package Attribution now uses requester.Cid rather than requester.AccessToken.Cid (which can be null at editor time)
+- Game Type content has validation for minimum team sizes.
+- Adding items to Inventory after changing authorized user works.
+
+## [1.3.4]
+### Added
+- Support for nullable types in Content serialization.
+
+### Fixed
+- Fixed issue with windows not refreshing after login to Beamable.
 
 ### Changed
 - Beamable requests have a 15 second application level timeout.
 
 ## [1.3.3]
-
 ### Added
 - `ClearCaches` function on `StatsApi` to force invalidate stats cache.
 - Beamable version number is displayed in Login Window's footer.
