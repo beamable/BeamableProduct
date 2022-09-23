@@ -86,10 +86,12 @@ namespace Beamable.Api.Analytics
 			byte[] batchPayload = Encoding.UTF8.GetBytes(batchJson);
 			AnalyticsLogger.LogFormat("AnalyticsService.AnalyticsEventBatchRequest: Sending batch of {0} to uri: {1}", eventBatch.Count, uri);
 
-			using (var request = _requester.BuildWebRequest(Method.POST, uri, "application/json", batchPayload))
+			var request = _requester.BuildWebRequest(Method.POST, uri, "application/json", batchPayload);
+			var op = request.SendWebRequest();
+			op.completed += _ =>
 			{
-				request.SendWebRequest();
-			}
+				request.Dispose();
+			};
 		}
 	}
 

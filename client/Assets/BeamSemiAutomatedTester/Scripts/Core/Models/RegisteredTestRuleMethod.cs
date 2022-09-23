@@ -2,6 +2,7 @@
 using Beamable.BSAT;
 using Beamable.BSAT.Extensions;
 using Beamable.Common;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -56,6 +57,8 @@ namespace Beamable.BSAT.Core.Models
 				return _methodInfo;
 			}
 		}
+		public TimeSpan ElapsedTime { get; set; } = TimeSpan.Zero;
+		
 		private MethodInfo _methodInfo;
 		public object[] Arguments => TestHelper.ConvertStringToObject(_argumentsRaw);
 		public string[] ArgumentsRaw => _argumentsRaw;
@@ -88,5 +91,15 @@ namespace Beamable.BSAT.Core.Models
 					: (TestResult)MethodInfo.Invoke(obj, Arguments);
 		}
 		public void Reset() => TestResult = TestResult.NotSet;
+
+		public ArrayDict GenerateReport()
+		{
+			return new ArrayDict
+			{
+				{ "TestResult", TestResult},
+				{ "TimeStamp", ElapsedTime.ToString("g") },
+				{ "Arguments", ArgumentsRaw }
+			};
+		}
 	}
 }

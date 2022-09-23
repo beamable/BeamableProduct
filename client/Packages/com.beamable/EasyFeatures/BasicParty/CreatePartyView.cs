@@ -50,7 +50,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -116,7 +116,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				System.MaxPlayers = 0;
 			}
-			
+
 			ValidateNextButton();
 		}
 
@@ -136,7 +136,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				FeatureControl.OpenJoinView();
 			}
-			
+
 			FeatureControl.OpenPartyView();
 		}
 
@@ -151,7 +151,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				// show loading
 				await Context.Party.Create(System.PartyRestriction);
 			}
-			
+
 			FeatureControl.OpenPartyView();
 		}
 	}

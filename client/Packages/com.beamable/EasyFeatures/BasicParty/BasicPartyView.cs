@@ -43,7 +43,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -55,7 +55,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				return;
 			}
-			
+
 			PartyIdText.text = Context.Party.Id;
 			SetupPlayerCountText();
 
@@ -73,10 +73,10 @@ namespace Beamable.EasyFeatures.BasicParty
 			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
 			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft);
-			
+
 			SetupPartyList();
 		}
-		
+
 		private void SetupPlayerCountText() => PlayerCountText.text = $"{Context.Party.Members.Count}/{System.MaxPlayers}";
 
 		private void SetupPartyList()
@@ -89,7 +89,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			SetupPartyList();
 			SetupPlayerCountText();
 		}
-		
+
 		protected virtual void OnPlayerLeft(object playerId)
 		{
 			SetupPartyList();

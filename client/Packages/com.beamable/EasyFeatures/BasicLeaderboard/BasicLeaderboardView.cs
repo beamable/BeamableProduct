@@ -52,7 +52,7 @@ namespace Beamable.EasyFeatures.BasicLeaderboard
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public virtual int GetEnrichOrder() => EnrichOrder;
 
 		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)

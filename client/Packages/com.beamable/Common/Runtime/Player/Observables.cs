@@ -70,6 +70,13 @@ namespace Beamable.Common.Player
 		{}
 
 		/// <summary>
+		/// In case when some object looks for some additional data after <see cref="OnUpdated"/> was called this data
+		/// can be reseted in overriden method 
+		/// </summary>
+		protected virtual void ResetChangeData()
+		{ }
+
+		/// <summary>
 		/// The broadcast checksum is a concept for change-detection.
 		/// <para>
 		/// An observable may have a complex data structure, and detecting changes can be very context specific.

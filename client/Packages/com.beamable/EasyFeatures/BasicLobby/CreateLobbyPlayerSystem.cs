@@ -10,7 +10,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		public BeamContext BeamContext { get; }
 
-		public bool IsVisible { get; set; }
 		public List<SimGameType> GameTypes { get; set; }
 		public int SelectedGameTypeIndex { get; set; }
 		public Dictionary<string, LobbyRestriction> AccessOptions { get; } = new Dictionary<string, LobbyRestriction>();
@@ -50,10 +49,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public async Promise CreateLobby()
 		{
 			await BeamContext.Lobby.Create(Name,
-			                               AccessOptions.ElementAt(SelectedAccessOption).Value,
-			                               GameTypes[SelectedGameTypeIndex].Id,
-			                               Description,
-			                               maxPlayers: GameTypes[SelectedGameTypeIndex].CalculateMaxPlayers());
+										   AccessOptions.ElementAt(SelectedAccessOption).Value,
+										   GameTypes[SelectedGameTypeIndex].Id,
+										   Description,
+										   maxPlayers: GameTypes[SelectedGameTypeIndex].CalculateMaxPlayers());
 		}
 	}
 }

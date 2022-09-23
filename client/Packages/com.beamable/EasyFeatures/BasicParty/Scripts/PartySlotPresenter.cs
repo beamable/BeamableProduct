@@ -28,26 +28,26 @@ namespace Beamable.EasyFeatures.BasicParty
 			public string PlayerId;
 			public Sprite Avatar;
 		}
-		
+
 		public class PoolData : PoolableScrollView.IItem
 		{
 			public ViewData ViewData { get; set; }
 			public int Index { get; set; }
 			public float Height { get; set; }
 		}
-		
+
 		public void Setup(PoolData item,
-		                  PlayersListPresenter listPresenter,
-		                  bool isExpandable,
-		                  Action<string> onAcceptButton,
-		                  Action<string> onAskToLeaveButton,
-		                  Action<string> onPromoteButton,
-		                  Action onAddMemberButton)
+						  PlayersListPresenter listPresenter,
+						  bool isExpandable,
+						  Action<string> onAcceptButton,
+						  Action<string> onAskToLeaveButton,
+						  Action<string> onPromoteButton,
+						  Action onAddMemberButton)
 		{
 			bool isSlotOccupied = !string.IsNullOrWhiteSpace(item.ViewData.PlayerId);
 			OccupiedSlotGroup.SetActive(isSlotOccupied);
 			AddMemberButton.gameObject.SetActive(!isSlotOccupied);
-			
+
 			AvatarImage.sprite = item.ViewData.Avatar;
 			PlayerNameText.text = item.ViewData.PlayerId;
 			AcceptButton.gameObject.SetActive(onAcceptButton != null);
@@ -67,7 +67,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				return;
 			}
-			
+
 			ExpandableButtons.SetActive(!ExpandableButtons.activeSelf);
 			StartCoroutine(UpdateItemHeight());
 		}

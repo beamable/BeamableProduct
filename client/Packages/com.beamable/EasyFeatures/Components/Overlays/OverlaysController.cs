@@ -24,11 +24,14 @@ namespace Beamable.EasyFeatures.Components
 
 		public void ShowLabelWithButton(string label, string buttonLabel, Action onClick)
 		{
-			Show(LabelWithButton, () => { LabelWithButton.Show(label, buttonLabel, ()=>
+			Show(LabelWithButton, () =>
 			{
-				HideOverlay();
-				onClick?.Invoke();
-			}); });
+				LabelWithButton.Show(label, buttonLabel, () =>
+{
+	HideOverlay();
+	onClick?.Invoke();
+});
+			});
 		}
 
 		public void ShowError(string message)

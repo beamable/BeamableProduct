@@ -14,7 +14,7 @@ namespace Beamable.EasyFeatures.Components
 			gameObject.SetActive(true);
 			StartCoroutine(HideAfterDelay(durationSeconds));
 		}
-		
+
 		public void Hide()
 		{
 			gameObject.SetActive(false);

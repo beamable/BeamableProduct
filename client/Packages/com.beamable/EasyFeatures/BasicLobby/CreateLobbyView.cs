@@ -19,7 +19,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
-			bool IsVisible { get; set; }
 			List<SimGameType> GameTypes { get; }
 			int SelectedGameTypeIndex { get; set; }
 			Dictionary<string, LobbyRestriction> AccessOptions { get; } // TODO: remove this dependency
@@ -42,14 +41,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button ConfirmButton;
 		public Button CancelButton;
 		public Button BackButton;
-		
+
 		public BussElement ConfirmButtonBussElement;
 
 		[Header("Callbacks")]
 		public UnityEvent OnCreateLobbyRequestSent;
 		public UnityEvent OnCreateLobbyResponseReceived;
 		public UnityEvent OnCancelButtonClicked;
-		
+
 		public Action<string> OnError;
 
 		protected IDependencies System;
@@ -59,18 +58,16 @@ namespace Beamable.EasyFeatures.BasicLobby
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			BeamContext ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(System.IsVisible);
-
 			// We don't need to perform anything in case if view is not visible. Visibility is controlled by a feature control script.
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}
@@ -78,7 +75,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			// Setting up all components
 			TypesToggle.Setup(System.GameTypes.Select(gameType => gameType.name).ToList(), OnGameTypeSelected, System.SelectedGameTypeIndex);
 			AccessToggle.Setup(System.AccessOptions.Select(pair => pair.Key).ToList(), OnAccessOptionSelected,
-			                   System.SelectedAccessOption);
+							   System.SelectedAccessOption);
 
 			Name.SetTextWithoutNotify(System.Name);
 			Description.SetTextWithoutNotify(System.Description);
@@ -86,14 +83,14 @@ namespace Beamable.EasyFeatures.BasicLobby
 			Name.onValueChanged.ReplaceOrAddListener(OnNameChanged);
 			Description.onValueChanged.ReplaceOrAddListener(OnDescriptionChanged);
 			ConfirmButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
-			
+
 			ValidateConfirmButton();
-			
+
 			CancelButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(CancelButtonClicked);
 		}
-		
-		private void ValidateConfirmButton()
+
+		public virtual void ValidateConfirmButton()
 		{
 			bool canJoinLobby = System.ValidateConfirmButton();
 
@@ -115,18 +112,18 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OnCancelButtonClicked?.Invoke();
 		}
 
-		private void OnNameChanged(string value)
+		public virtual void OnNameChanged(string value)
 		{
 			System.Name = value;
 			ValidateConfirmButton();
 		}
 
-		private void OnDescriptionChanged(string value)
+		public virtual void OnDescriptionChanged(string value)
 		{
 			System.Description = value;
 		}
 
-		private void OnAccessOptionSelected(int optionId)
+		public virtual void OnAccessOptionSelected(int optionId)
 		{
 			if (optionId == System.SelectedAccessOption)
 			{
@@ -136,7 +133,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 			System.SelectedAccessOption = optionId;
 		}
 
-		private void OnGameTypeSelected(int optionId)
+		public virtual void OnGameTypeSelected(int optionId)
 		{
 			if (optionId == System.SelectedGameTypeIndex)
 			{
@@ -146,10 +143,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 			System.SelectedGameTypeIndex = optionId;
 		}
 
-		private async void CreateLobbyButtonClicked()
+		public virtual async void CreateLobbyButtonClicked()
 		{
 			OnCreateLobbyRequestSent?.Invoke();
-			
+
 			try
 			{
 				await System.CreateLobby();

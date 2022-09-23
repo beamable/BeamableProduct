@@ -12,7 +12,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public TMP_InputField _descriptionField;
 		public TextMeshProUGUI _passwordLabel;
 		public GameObject _passwordGroup;
-		
+
 		public Button CancelButton;
 		public Button ConfirmButton;
 
@@ -20,10 +20,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			_nameField.SetTextWithoutNotify(lobbyName);
 			_descriptionField.SetTextWithoutNotify(description);
-			
+
 			_passwordGroup.SetActive(password != string.Empty);
 			_passwordLabel.text = password;
-			
+
 			CancelButton.onClick.ReplaceOrAddListener(closeAction.Invoke);
 			ConfirmButton.onClick.ReplaceOrAddListener(() =>
 			{
