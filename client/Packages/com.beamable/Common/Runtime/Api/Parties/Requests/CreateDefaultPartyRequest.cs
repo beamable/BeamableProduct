@@ -1,10 +1,9 @@
-﻿using Beamable.Common.Content;
-using System;
+﻿using System;
 
 namespace Beamable.Experimental.Api.Parties
 {
 	[Serializable]
-	public class UpdatePartyRequest
+	public class CreateDefaultPartyRequest
 	{
 		/// <summary>
 		/// Stringified version of the <see cref="PartyRestriction"/>
@@ -12,14 +11,14 @@ namespace Beamable.Experimental.Api.Parties
 		public string restriction;
 
 		/// <summary>
-		/// Maximum allowed number of players in the party.
+		/// Player id of a party leader.
 		/// </summary>
-		public int maxSize;
+		public string leader;
 
-		public UpdatePartyRequest(string restriction, int maxSize)
+		public CreateDefaultPartyRequest(string restriction, string leader)
 		{
 			this.restriction = restriction;
-			this.maxSize = maxSize;
+			this.leader = leader;
 		}
 	}
 }
