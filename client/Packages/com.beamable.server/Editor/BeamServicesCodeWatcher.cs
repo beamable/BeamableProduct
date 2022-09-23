@@ -267,6 +267,12 @@ namespace Beamable.Server.Editor
 				{
 					var _ = RebootContainer(service);
 				}
+				
+				if (dirtyServices.Count > 0)
+				{
+					EditorUtility.SetDirty(microserviceConfiguration);
+					AssetDatabase.SaveAssets();
+				}
 			}
 			else
 			{
