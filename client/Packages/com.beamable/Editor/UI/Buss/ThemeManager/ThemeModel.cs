@@ -11,11 +11,19 @@ namespace Beamable.Editor.UI.Buss
 {
 	public abstract class ThemeModel
 	{
+		public enum PropertyDisplayFilter
+		{
+			All,
+			IgnoreOverridden
+		}
+
 		public event Action Change;
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
 
 		protected BussCardFilter Filter;
+
+		public PropertyDisplayFilter DisplayFilter { get; set; }
 
 		public abstract BussElement SelectedElement { get; set; }
 
