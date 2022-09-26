@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace cli;
 
-public class AccountMeCommandArgs : CommandArgs {}
+public class AccountMeCommandArgs : CommandArgs { }
 
 public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
 {

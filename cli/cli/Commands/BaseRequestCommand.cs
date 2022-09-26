@@ -11,7 +11,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 	protected abstract Method Method { get; }
 	private readonly CliRequester _requester;
 
-	protected BaseRequestCommand(CliRequester requester, string name, string description) : base( name, description)
+	protected BaseRequestCommand(CliRequester requester, string name, string description) : base(name, description)
 	{
 		_requester = requester;
 	}
