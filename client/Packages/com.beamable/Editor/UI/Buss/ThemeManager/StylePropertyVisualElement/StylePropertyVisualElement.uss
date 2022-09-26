@@ -65,7 +65,6 @@
 }
 
 .overrideIndicator{
-
     height: 2px;
     width: auto;
     position: relative;

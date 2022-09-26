@@ -76,6 +76,7 @@ namespace Beamable.Editor.UI.Buss
 
 				string undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
 				UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
+				
 				AddStyleCard(styleSheet, styleRule, () =>
 				{
 					UndoSystem<BussStyleRule>.Undo(undoKey);

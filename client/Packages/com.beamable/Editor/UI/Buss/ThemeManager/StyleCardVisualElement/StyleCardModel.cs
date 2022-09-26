@@ -236,7 +236,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
-
+ 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
 																  PropertiesDatabase.GetTracker(SelectedElement),
 																  null, RemovePropertyClicked, _globalRefresh);
