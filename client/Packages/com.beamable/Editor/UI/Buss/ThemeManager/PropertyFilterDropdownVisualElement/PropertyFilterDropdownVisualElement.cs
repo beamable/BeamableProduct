@@ -38,7 +38,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			var propertyFilterButton = new Button();
 			propertyFilterButton.text = _bussBreadcrumbsVisualElement.GetPropertyDisplayFilterText(filter);
-			propertyFilterButton.SetEnabled(_bussBreadcrumbsVisualElement.Filter != filter);
+			propertyFilterButton.SetEnabled(_bussBreadcrumbsVisualElement.Model.PropertyDisplayFilter != filter);
 			propertyFilterButton.clickable.clicked += () => OnNewPropertyDisplayFilterSelected?.Invoke(filter);
 			_listRoot.Add(propertyFilterButton);
 		}
