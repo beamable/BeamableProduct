@@ -1,25 +1,20 @@
 ﻿using Beamable.Editor.UI.Buss;
 using System;
-using System.Collections.Generic;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 
 namespace Beamable.Editor.UI.Components
 {
 	public class PropertyFilterDropdownVisualElement : ThemeManagerComponent
 	{
-		public event Action<PropertyDisplayFilter> OnNewPropertyDisplayFilterSelected;
+		public event Action<ThemeModel.PropertyDisplayFilter> OnNewPropertyDisplayFilterSelected;
 
 		private VisualElement _listRoot;
 
-		private ThemeManagerBreadcrumbsVisualElement _themeManagerBreadcrumbsVisualElement;
+		private readonly ThemeManagerBreadcrumbsVisualElement _themeManagerBreadcrumbsVisualElement;
 
-		public PropertyFilterDropdownVisualElement(ThemeManagerBreadcrumbsVisualElement themeManagerBreadcrumbsVisualElement) : base(nameof(PropertyFilterDropdownVisualElement))
+		public PropertyFilterDropdownVisualElement(
+			ThemeManagerBreadcrumbsVisualElement themeManagerBreadcrumbsVisualElement) : base(
+			nameof(PropertyFilterDropdownVisualElement))
 		{
 			_themeManagerBreadcrumbsVisualElement = themeManagerBreadcrumbsVisualElement;
 		}
@@ -30,15 +25,16 @@ namespace Beamable.Editor.UI.Components
 			_listRoot = Root.Q<VisualElement>("popupContent");
 			_listRoot.Clear();
 
-			foreach (var propertyDisplayFilter in (PropertyDisplayFilter[])Enum.GetValues(typeof(PropertyDisplayFilter)))
+			foreach (var propertyDisplayFilter in (ThemeModel.PropertyDisplayFilter[])Enum.GetValues(
+						 typeof(ThemeModel.PropertyDisplayFilter)))
 				AddButton(propertyDisplayFilter);
 		}
 
-		private void AddButton(PropertyDisplayFilter filter)
+		private void AddButton(ThemeModel.PropertyDisplayFilter filter)
 		{
 			var propertyFilterButton = new Button();
 			propertyFilterButton.text = _themeManagerBreadcrumbsVisualElement.GetPropertyDisplayFilterText(filter);
-			propertyFilterButton.SetEnabled(_themeManagerBreadcrumbsVisualElement.Model.PropertyDisplayFilter != filter);
+			propertyFilterButton.SetEnabled(_themeManagerBreadcrumbsVisualElement.Model.DisplayFilter != filter);
 			propertyFilterButton.clickable.clicked += () => OnNewPropertyDisplayFilterSelected?.Invoke(filter);
 			_listRoot.Add(propertyFilterButton);
 		}

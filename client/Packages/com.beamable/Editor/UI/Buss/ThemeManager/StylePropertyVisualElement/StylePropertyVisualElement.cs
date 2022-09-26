@@ -36,9 +36,13 @@ namespace Beamable.Editor.UI.Components
 			_variableParent = new VisualElement { name = "globalVariable" };
 			Root.Add(_variableParent);
 
+			var overrideIndicatorParent = new VisualElement { name = "overrideIndicatorParent" };
+			overrideIndicatorParent.AddToClassList("overrideIndicatorParent");
+			Root.Add(overrideIndicatorParent);
+
 			var overrideIndicator = new VisualElement();
 			overrideIndicator.AddToClassList("overrideIndicator");
-			Root.Add(overrideIndicator);
+			overrideIndicatorParent.Add(overrideIndicator);
 
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
@@ -50,6 +54,8 @@ namespace Beamable.Editor.UI.Components
 		{
 			_labelComponent.text = _model.PropertyProvider.Key;
 
+
+
 			if (_model.HasVariableConnected)
 			{
 				string variableName = ((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName;
@@ -60,22 +66,20 @@ namespace Beamable.Editor.UI.Components
 				}
 				else
 				{
-					var result = _model.GetResult(out PropertySourceTracker propertySourceTracker,
-												  out IBussProperty property,
-												  out VariableDatabase.PropertyReference variableSource);
-
+					_model.GetResult(out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
 					CreateEditableField(property);
 					SetVariableSource(variableSource);
-					SetOverridenClass(propertySourceTracker, result);
 				}
+
+				SetupVariableConnection();
 			}
 			else
 			{
 				CreateEditableField(_model.PropertyProvider.GetProperty());
 			}
 
-			SetupVariableConnection();
 			CheckIfIsReadOnly();
+			EnableInClassList("overriden", _model.IsOverriden);
 		}
 
 		protected override void OnDestroy()
@@ -91,9 +95,6 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent?.SetEnabled(_model.IsWritable);
 			_propertyVisualElement?.SetEnabled(_model.IsWritable);
 			_variableConnection?.SetEnabled(_model.IsWritable);
-
-			// TODO: maybe add more details??
-			_model.Tooltip = "Overriden";
 		}
 
 		private void CreateEditableField(IBussProperty property)
@@ -128,17 +129,6 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
 			_valueParent.Add(_propertyVisualElement);
 			_propertyVisualElement.Init();
-		}
-
-		private void SetOverridenClass(PropertySourceTracker context, VariableDatabase.PropertyValueState result)
-		{
-			bool overriden = false;
-			if (context != null && result == VariableDatabase.PropertyValueState.SingleResult)
-			{
-				overriden = _model.PropertyProvider != context.GetUsedPropertyProvider(_model.PropertyProvider.Key);
-			}
-
-			EnableInClassList("overriden", overriden);
 		}
 
 		private void SetupVariableConnection()

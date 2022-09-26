@@ -26,3 +26,7 @@ BussStylePropertyVisualElement.doesntExists {
 #removeButton {
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove_Dark.png");
 }
+
+.overrideIndicator {
+    background-color: #646464;
+}

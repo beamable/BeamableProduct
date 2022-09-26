@@ -45,7 +45,7 @@ namespace Beamable.Editor.UI.Buss
 			StyleCardModel model =
 				new StyleCardModel(styleSheet, styleRule, undoAction, _model.SelectedElement, isSelected,
 								   _model.VariablesDatabase, _model.PropertyDatabase, _model.WritableStyleSheets,
-								   _model.ForceRefresh);
+								   _model.ForceRefresh, _model.DisplayFilter);
 			StyleCardVisualElement styleCard = new StyleCardVisualElement(model);
 			styleCard.Refresh();
 
@@ -76,6 +76,7 @@ namespace Beamable.Editor.UI.Buss
 
 				string undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
 				UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
+
 				AddStyleCard(styleSheet, styleRule, () =>
 				{
 					UndoSystem<BussStyleRule>.Undo(undoKey);

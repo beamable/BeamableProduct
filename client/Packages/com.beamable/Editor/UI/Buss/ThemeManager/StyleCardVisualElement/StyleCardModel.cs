@@ -40,6 +40,7 @@ namespace Beamable.Editor.UI.Components
 
 		private readonly PropertyComparer _propertyComparer = new PropertyComparer();
 		private readonly Action _globalRefresh;
+		private readonly ThemeModel.PropertyDisplayFilter _currentDisplayFilter;
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -61,7 +62,8 @@ namespace Beamable.Editor.UI.Components
 							  VariableDatabase variablesDatabase,
 							  PropertySourceDatabase propertiesDatabase,
 							  IEnumerable<BussStyleSheet> writableStyleSheets,
-							  Action globalRefresh)
+							  Action globalRefresh,
+							  ThemeModel.PropertyDisplayFilter currentDisplayFilter)
 		{
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
@@ -73,6 +75,7 @@ namespace Beamable.Editor.UI.Components
 			WritableStyleSheets = writableStyleSheets;
 
 			_globalRefresh = globalRefresh;
+			_currentDisplayFilter = currentDisplayFilter;
 		}
 
 		public void AddRuleButtonClicked(MouseDownEvent evt)
@@ -238,10 +241,13 @@ namespace Beamable.Editor.UI.Components
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-																  PropertiesDatabase.GetTracker(SelectedElement),
-																  null, RemovePropertyClicked, _globalRefresh);
+												   PropertiesDatabase.GetTracker(SelectedElement),
+												   null, RemovePropertyClicked, _globalRefresh);
 
-				models.Add(model);
+				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
+				{
+					models.Add(model);
+				}
 			}
 
 			if (sort)
