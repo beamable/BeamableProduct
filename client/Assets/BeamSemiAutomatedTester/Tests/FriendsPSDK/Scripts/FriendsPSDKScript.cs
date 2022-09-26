@@ -47,7 +47,7 @@ namespace Beamable.BSAT.Test.FriendsPSDK
 
 				await Until(
 					() => ctx2.Social.ReceivedInvites.Any(
-						invite => invite.invitingPlayerId == plr1Id && invite.mailId != 0),
+						invite => invite.PlayerId == plr1Id && invite.mailId != 0),
 					$"Invite from player {plr1Id} was not received within {TIMEOUT_MS}ms");
 
 				await ctx2.Social.AcceptInviteFrom(plr1Id);

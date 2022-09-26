@@ -21,7 +21,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		protected Action<long> onEntryPressed;
 		protected string buttonText;
 
-		public void Setup(List<FriendSlotPresenter.ViewData> viewData, Action<long> onEntryPressed = null, Action<long> onButtonPressed = null, string buttonText = "Confirm")
+		public void Setup(List<FriendSlotPresenter.ViewData> viewData, Action<long> onButtonPressed = null, string buttonText = "Confirm", Action<long> onEntryPressed = null)
 		{
 			this.onButtonPressed = onButtonPressed;
 			this.buttonText = buttonText;

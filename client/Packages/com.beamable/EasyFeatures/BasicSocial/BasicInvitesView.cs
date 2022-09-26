@@ -1,8 +1,8 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Player;
 using Beamable.Player;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,27 +14,27 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
-			List<long> GetPlayersIds(ReceivedFriendInviteList list);
-			List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list);
+			List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list) where T : IPlayerId;
 			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
 		}
-		
+
 		public TextMeshProUGUI PlayerIdText;
 		public TMP_InputField PlayerIdInputField;
 		public Toggle PendingListToggle;
 		public Toggle SentListToggle;
-		public FriendsListPresenter PendingListPresenter;
+		public FriendsListPresenter ReceivedListPresenter;
 		public FriendsListPresenter SentListPresenter;
 
 		protected IDependencies System;
-		
+
 		private FriendsListPresenter _currentListView;
-		
+
 		public bool IsVisible
 		{
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
+
 		public int GetEnrichOrder()
 		{
 			return 0;
@@ -45,18 +45,18 @@ namespace Beamable.EasyFeatures.BasicSocial
 			var context = managedPlayers.GetSinglePlayerContext();
 			System = context.ServiceProvider.GetService<IDependencies>();
 			System.Context = context;
-			
+
 			await System.Context.Social.OnReady;
 
 			PlayerIdText.text = $"#{context.PlayerId}";
-			PendingListPresenter.gameObject.SetActive(false);
+			ReceivedListPresenter.gameObject.SetActive(false);
 			SentListPresenter.gameObject.SetActive(false);
-			
-			PendingListToggle.onValueChanged.AddListener(isOn => TabPicked(isOn, PendingListPresenter));
+
+			PendingListToggle.onValueChanged.AddListener(isOn => TabPicked(isOn, ReceivedListPresenter));
 			SentListToggle.onValueChanged.AddListener(isOn => TabPicked(isOn, SentListPresenter));
 			PlayerIdInputField.onEndEdit.AddListener(SendInvite);
-			
-			await OpenTab(PendingListPresenter);
+
+			await OpenTab(ReceivedListPresenter);
 		}
 
 		private async void SendInvite(string playerId)
@@ -66,7 +66,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 				Debug.LogError($"Provided id '{playerId}' is invalid");
 				return;
 			}
-			
+
 			await System.Context.Social.Invite(id);
 		}
 
@@ -76,7 +76,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			{
 				return;
 			}
-			
+
 			await OpenTab(list);
 		}
 
@@ -90,19 +90,30 @@ namespace Beamable.EasyFeatures.BasicSocial
 			_currentListView = tab;
 			_currentListView.gameObject.SetActive(true);
 
-			if (_currentListView == PendingListPresenter)
+			List<long> ids;
+			Action<long> buttonAction;
+			string buttonText;
+			if (_currentListView == ReceivedListPresenter)
 			{
-				
+				ids = System.GetPlayersIds(System.Context.Social.ReceivedInvites);
+				buttonAction = AcceptInviteFrom;
+				buttonText = "Accept";
 			}
 			else
 			{
-				
+				ids = System.GetPlayersIds(System.Context.Social.SentInvites);
+				buttonAction = null;
+				buttonText = "";
 			}
 
-			var blockedPlayers = System.GetPlayersIds(System.Context.Social.Blocked);
-			var viewData = await System.GetPlayersViewData(blockedPlayers);
-			
-			_currentListView.Setup(viewData);
+			var viewData = await System.GetPlayersViewData(ids);
+
+			_currentListView.Setup(viewData, buttonAction, buttonText);
+		}
+
+		private async void AcceptInviteFrom(long invitingPlayerId)
+		{
+			await System.Context.Social.AcceptInviteFrom(invitingPlayerId);
 		}
 	}
 }

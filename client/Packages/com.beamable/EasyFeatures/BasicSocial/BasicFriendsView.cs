@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Player;
 using Beamable.Player;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +11,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
-			List<long> GetPlayersIds(PlayerFriendList list);
+			List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list) where T : IPlayerId;
 			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
 		}
 		
@@ -45,7 +46,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			List<long> friends = System.GetPlayersIds(System.Context.Social.Friends);
 			var viewData = await System.GetPlayersViewData(friends);
 
-			FriendsListPresenter.Setup(viewData, OnPlayerPressed);
+			FriendsListPresenter.Setup(viewData, onEntryPressed: OnPlayerPressed);
 		}
 
 		private async void OnPlayerPressed(long playerId)

@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicSocial
 {
+	[BeamContextSystem]
 	public class SocialFeatureControl : MonoBehaviour, IBeamableFeatureControl
 	{
 		private enum View
@@ -78,7 +79,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			viewTabs.Add(View.Invites, InvitesTab);
 			viewTabs.Add(View.Blocked, BlockedTab);
 
-			await OpenView(View.Invites);
+			await OpenView(View.Friends);
 		}
 
 		private async void TabPicked(bool isOn, View view)

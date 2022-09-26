@@ -12,57 +12,19 @@ namespace Beamable.EasyFeatures.BasicSocial
 	{
 		public BeamContext Context { get; set; }
 
-		public List<long> GetPlayersIds(BlockedPlayerList list)
+		public List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list) where T : IPlayerId
 		{
-			List<long> blockedPlayers = new List<long>(list.Count);
+			List<long> ids = new List<long>(list.Count);
 			foreach (var player in list)
 			{
-				blockedPlayers.Add(player.playerId);
+				ids.Add(player.PlayerId);
 			}
-
-			return blockedPlayers;
-		}
-
-		public List<long> GetPlayersIds(PlayerFriendList list)
-		{
-			List<long> friendsIds = new List<long>(list.Count);
-			foreach (var player in list)
-			{
-				friendsIds.Add(player.playerId);
-			}
-
-			return friendsIds;
-		}
-
-		public List<long> GetPlayersIds(ReceivedFriendInviteList list)
-		{
-			throw new System.NotImplementedException();
-		}
-
-		public List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list)
-		{
-			throw new System.NotImplementedException();
-		}
-
-		// public List<long> GetPlayersIds<PlayerId>(ObservableReadonlyList<PlayerId> list)
-		// {
-		// 	List<long> friendsIds = new List<long>(list.Count);
-		// 	foreach (var player in list)
-		// 	{
-		// 		friendsIds.Add(player.playerId);
-		// 	}
-		//
-		// 	return friendsIds;
-		// }
-
-		public List<long> GetPlayersIds(SentFriendInviteList list)
-		{
-			throw new System.NotImplementedException();
+		
+			return ids;
 		}
 
 		public async Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds)
 		{
-			var Context = BeamContext.Default;
 			FriendSlotPresenter.ViewData[] viewData = new FriendSlotPresenter.ViewData[playerIds.Count];
 			for (int i = 0; i < playerIds.Count; i++)
 			{
