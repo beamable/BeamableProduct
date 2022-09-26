@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 namespace Beamable.UI.Buss
 {
 	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style",
-					 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	                 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
@@ -113,7 +113,6 @@ namespace Beamable.UI.Buss
 		public void SetSortingOrder(int order)
 		{
 			_sortingOrder = order;
-			
 			BussConfiguration.OptionalInstance.Value.RefreshDefaultStyles();
 		}
 #endif
@@ -122,12 +121,7 @@ namespace Beamable.UI.Buss
 	[Serializable]
 	public class BussStyleRule : BussStyleDescription
 	{
-#pragma warning disable CS0649
-		// TODO: can we remove that FormerlySerializedAs attribute before release??
-		[FormerlySerializedAs("_name")]
-		[SerializeField]
-		private string _selector;
-#pragma warning restore CS0649
+		[SerializeField] private string _selector;
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
 
@@ -139,7 +133,7 @@ namespace Beamable.UI.Buss
 
 		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
 		{
-			return new BussStyleRule { _selector = selector, _properties = properties };
+			return new BussStyleRule {_selector = selector, _properties = properties};
 		}
 
 		public bool RemoveProperty(IBussProperty bussProperty)
@@ -152,42 +146,103 @@ namespace Beamable.UI.Buss
 	[Serializable]
 	public class BussStyleDescription
 	{
-#pragma warning disable CS0649
 		[SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
-#pragma warning restore CS0649
+		[SerializeField] protected List<BussPropertyProvider> _cachedProperties = new List<BussPropertyProvider>();
 		public List<BussPropertyProvider> Properties => _properties;
+
+		public bool HasProperty(string key)
+		{
+			return _properties.Find(prop => prop.Key == key) != null;
+		}
+		
+		public bool TryGetCachedProperty(string key, out IBussProperty property)
+		{
+			BussPropertyProvider provider = _cachedProperties.Find(prop => prop.Key == key);
+			property = provider?.GetProperty();
+			return property != null;
+		}
+
+		public bool CacheProperty(string key, IBussProperty property)
+		{
+			if (TryGetCachedProperty(key, out _))
+			{
+				return false;
+			}
+
+			BussPropertyProvider provider = BussPropertyProvider.Create(key, property.CopyProperty());
+			_cachedProperties.Add(provider);
+			
+			CleanupCachedProperties();
+			
+			return true;
+		}
+
+		public void RemoveCachedProperty(string key)
+		{
+			var cachedProperty = _cachedProperties.Find(prop => prop.Key == key);
+			_cachedProperties.Remove(cachedProperty);
+			
+			CleanupCachedProperties();
+		}
+
+		private void CleanupCachedProperties()
+		{
+			var indexesToRemove = new List<int>();
+
+			for (int index = 0; index < _cachedProperties.Count; index++)
+			{
+				BussPropertyProvider cachedProperty = _cachedProperties[index];
+				if (cachedProperty.Key == String.Empty)
+				{
+					indexesToRemove.Add(index);
+				}
+			}
+
+			for (int index = _cachedProperties.Count - 1; index >= 0; index--)
+			{
+				if (indexesToRemove.Contains(index))
+				{
+					_cachedProperties.RemoveAt(index);
+				}
+			}
+		}
 	}
 
 	[Serializable]
 	public class BussPropertyProvider
 	{
-#pragma warning disable CS0649
-		[SerializeField] private string key;
+		[SerializeField, FormerlySerializedAs("key")]
+		private string _key;
 
-		[SerializeField, SerializableValueImplements(typeof(IBussProperty))]
-		private SerializableValueObject property;
-#pragma warning restore CS0649
+		[SerializeField, SerializableValueImplements(typeof(IBussProperty)), FormerlySerializedAs("property")]
+		private SerializableValueObject _property;
 
-		public string Key => key;
+		public string Key => _key;
 
 		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
 		public bool HasVariableReference => GetProperty() is VariableProperty;
 
-		public static BussPropertyProvider Create(string key, IBussProperty property)
+		public static BussPropertyProvider Create(string key, IBussProperty property, bool forceSerialization = false)
 		{
 			var propertyProvider = new SerializableValueObject();
 			propertyProvider.Set(property);
-			return new BussPropertyProvider { key = key, property = propertyProvider };
+
+			if (forceSerialization)
+			{
+				propertyProvider.ForceSerialization();
+			}
+
+			return new BussPropertyProvider {_key = key, _property = propertyProvider};
 		}
 
 		public IBussProperty GetProperty()
 		{
-			return property.Get<IBussProperty>();
+			return _property.Get<IBussProperty>();
 		}
 
 		public void SetProperty(IBussProperty bussProperty)
 		{
-			property.Set(bussProperty);
+			_property.Set(bussProperty);
 		}
 
 		public bool IsPropertyOfType(Type type)
