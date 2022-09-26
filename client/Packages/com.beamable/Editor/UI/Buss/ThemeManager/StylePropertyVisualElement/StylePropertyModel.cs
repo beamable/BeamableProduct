@@ -35,13 +35,13 @@ namespace Beamable.Editor.UI.Components
 			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key);
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
-		                          BussStyleRule styleRule,
-		                          BussPropertyProvider propertyProvider,
-		                          VariableDatabase variablesDatabase,
-		                          PropertySourceTracker propertySourceTracker,
-		                          BussElement inlineStyleOwner,
-		                          Action<string> removePropertyAction,
-		                          Action globalRefresh)
+								  BussStyleRule styleRule,
+								  BussPropertyProvider propertyProvider,
+								  VariableDatabase variablesDatabase,
+								  PropertySourceTracker propertySourceTracker,
+								  BussElement inlineStyleOwner,
+								  Action<string> removePropertyAction,
+								  Action globalRefresh)
 		{
 			_removePropertyAction = removePropertyAction;
 			_globalRefresh = globalRefresh;
@@ -56,8 +56,8 @@ namespace Beamable.Editor.UI.Components
 		public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
 		{
 			VariablesDatabase.TryGetProperty(PropertyProvider,
-			                                 StyleRule, out IBussProperty property,
-			                                 out VariableDatabase.PropertyReference variableSource);
+											 StyleRule, out IBussProperty property,
+											 out VariableDatabase.PropertyReference variableSource);
 
 			bussProperty = property;
 			propertyReference = variableSource;
