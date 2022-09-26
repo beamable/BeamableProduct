@@ -96,9 +96,6 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent?.SetEnabled(_model.IsWritable);
 			_propertyVisualElement?.SetEnabled(_model.IsWritable);
 			_variableConnection?.SetEnabled(_model.IsWritable);
-
-			// TODO: maybe add more details??
-			_model.Tooltip = "Overriden";
 		}
 
 		private void CreateEditableField(IBussProperty property)
@@ -140,9 +137,6 @@ namespace Beamable.Editor.UI.Components
 			bool overriden = false;
 			if (context != null && result == VariableDatabase.PropertyValueState.SingleResult)
 			{
-				var modelPropertyProvider = _model.PropertyProvider;
-				var usedPropertyProvider = context.GetUsedPropertyProvider(_model.PropertyProvider.Key);
-
 				overriden = _model.PropertyProvider != context.GetUsedPropertyProvider(_model.PropertyProvider.Key);
 			}
 
