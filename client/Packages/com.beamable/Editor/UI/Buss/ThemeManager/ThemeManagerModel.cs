@@ -1,4 +1,5 @@
-﻿using Beamable.UI.Buss;
+﻿using Beamable.Editor.UI.Components;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,8 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class ThemeManagerModel : ThemeModel
 	{
+		public PropertyDisplayFilter PropertyDisplayFilter { get; set; }
+		
 		public override BussElement SelectedElement { get; set; }
 
 		public string SelectedElementId =>
