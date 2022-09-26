@@ -28,7 +28,7 @@ namespace Beamable.Api.Connectivity
 		/// <summary>
 		/// true when Beamable thinks the current device has an internet connection.
 		/// This property will update automatically as the device goes on and off line.
-		/// You can sue the <see cref="OnConnectivityChanged"/> event to listen for changes in this property.
+		/// You can use the <see cref="OnConnectivityChanged"/> event to listen for changes in this property.
 		/// </summary>
 		bool HasConnectivity { get; }
 
