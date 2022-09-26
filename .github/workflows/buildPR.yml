@@ -118,13 +118,13 @@ jobs:
           - 2021.3.2f1
         include:
           - unityVersion: 2020.3.19f1
-            unityEmailOverride: ${{ secrets.UNITY_EMAIL_DEVOPS }}
-            unityPasswordOverride: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
-            unitySerialOverride: ${{ secrets.UNITY_SERIAL_DEVOPS }}
+            unityEmailOverride: UNITY_EMAIL_DEVOPS
+            unityPasswordOverride: UNITY_PASSWORD_DEVOPS
+            unitySerialOverride: UNITY_SERIAL_DEVOPS
           - unityVersion: 2021.3.2f1
-            unityEmailOverride: ${{ secrets.UNITY_EMAIL_BUILD }}
-            unityPasswordOverride: ${{ secrets.UNITY_PASSWORD_BUILD }}
-            unitySerialOverride: ${{ secrets.UNITY_SERIAL_BUILD }}
+            unityEmailOverride: UNITY_EMAIL_BUILD
+            unityPasswordOverride: UNITY_PASSWORD_BUILD
+            unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
       - uses: actions/checkout@v2
       - name: Login to Docker Hub
@@ -163,9 +163,9 @@ jobs:
         id: tests
         timeout-minutes: 30
         env:
-          UNITY_EMAIL: ${{ matrix.unityEmailOverride || secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ matrix.unityPasswordOverride || secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ matrix.unitySerialOverride || secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           customParameters: -warnaserror+
           projectPath: ${{ matrix.projectPath }}
@@ -209,13 +209,13 @@ jobs:
           - client
         include:
           - targetPlatform: Android
-            unityEmailOverride: ${{ secrets.UNITY_EMAIL_DEVOPS }}
-            unityPasswordOverride: ${{ secrets.UNITY_PASSWORD_DEVOPS }}
-            unitySerialOverride: ${{ secrets.UNITY_SERIAL_DEVOPS }}
+            unityEmailOverride: UNITY_EMAIL_DEVOPS
+            unityPasswordOverride: UNITY_PASSWORD_DEVOPS
+            unitySerialOverride: UNITY_SERIAL_DEVOPS
           - targetPlatform: StandaloneOSX
-            unityEmailOverride: ${{ secrets.UNITY_EMAIL_BUILD }}
-            unityPasswordOverride: ${{ secrets.UNITY_PASSWORD_BUILD }}
-            unitySerialOverride: ${{ secrets.UNITY_SERIAL_BUILD }}
+            unityEmailOverride: UNITY_EMAIL_BUILD
+            unityPasswordOverride: UNITY_PASSWORD_BUILD
+            unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
       - uses: actions/checkout@v2
         with:
@@ -274,9 +274,9 @@ jobs:
       - uses: game-ci/unity-builder@v2.0.4
         timeout-minutes: 30
         env:
-          UNITY_EMAIL: ${{ matrix.unityEmailOverride || secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ matrix.unityPasswordOverride || secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ matrix.unitySerialOverride || secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
