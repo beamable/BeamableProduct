@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Components
 			_listRoot.Clear();
 
 			foreach (var propertyDisplayFilter in (ThemeModel.PropertyDisplayFilter[])Enum.GetValues(
-				         typeof(ThemeModel.PropertyDisplayFilter)))
+						 typeof(ThemeModel.PropertyDisplayFilter)))
 				AddButton(propertyDisplayFilter);
 		}
 
