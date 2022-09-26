@@ -5,10 +5,12 @@ using Beamable.Editor.UI;
 using Beamable.Editor.UI.Common;
 using Beamable.BSAT.Core.Models;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
 using ActionBarVisualElement = Beamable.BSAT.Editor.UI.Components.ActionBarVisualElement;
 
 using static Beamable.BSAT.Constants.TestConstants.General;
+using static Beamable.BSAT.Constants.TestConstants.Paths;
 
 namespace Beamable.BSAT.Editor.UI
 {
@@ -100,6 +102,9 @@ namespace Beamable.BSAT.Editor.UI
 
 			_actionBarVisualElement.OnGenerateReportButtonPressed -= HandleGenerateReportButton;
 			_actionBarVisualElement.OnGenerateReportButtonPressed += HandleGenerateReportButton;
+			
+			_actionBarVisualElement.OnOpenMainMenuSceneButtonPressed -= HandleOpenMainMenuSceneButton;
+			_actionBarVisualElement.OnOpenMainMenuSceneButtonPressed += HandleOpenMainMenuSceneButton;
 
 			_actionBarVisualElement.Refresh();
 
@@ -212,6 +217,12 @@ namespace Beamable.BSAT.Editor.UI
 		}
 
 		private void HandleGenerateReportButton() => TestingEditorModel.GenerateReport();
+
+		private void HandleOpenMainMenuSceneButton()
+		{
+			EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+			EditorSceneManager.OpenScene(GetPathToMainMenuTestScene());
+		}
 
 		private void ResetList(VisualElement ve, ref ExtendedListView elv)
 		{

@@ -10,6 +10,7 @@
 			public const string SCRIPT_TEMPLATE_NAME = "TestableTemplate";
 			public const string SCRIPT_TEMPLATE_NAMESPACE_NAME = "TestableNamespaceTemplate";
 			public const string CONFIGURATION_FILE_NAME = "TestConfiguration";
+			public const string MAIN_MENU_TEST_SCENE_NAME = "TestMainMenu";
 			public static string GetReportFileName(string reportName) => $"Report_{reportName}";
 		}
 		public static class Paths
@@ -27,6 +28,7 @@
 			public static string GetPathToTest(string sceneName) => $"{PATH_TO_TEST_SCENES}/{sceneName}";
 			public static string GetPathToTestScene(string sceneName) => $"{GetPathToTest(sceneName)}/{sceneName}.unity";
 			public static string GetPathToTestScripts(string sceneName) => $"{GetPathToTest(sceneName)}/Scripts";
+			public static string GetPathToMainMenuTestScene() => $"{PATH_TO_TESTING_TOOL}/{General.MAIN_MENU_TEST_SCENE_NAME}.unity";
 		}
 		public static class SessionState
 		{

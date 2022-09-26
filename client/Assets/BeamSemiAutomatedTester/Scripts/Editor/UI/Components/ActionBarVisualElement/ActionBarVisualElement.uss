@@ -1,6 +1,7 @@
 ﻿#mainVisualElement {
     height: 35px;
     flex-direction: row;
+    min-width: 450px;
 }
 
 #leftContentVisualElement {
@@ -107,4 +108,19 @@
 #createTestScene > Label,
 #deleteTestScene > Label {
     top: -2px;
+}
+
+#openMainMenuScene {
+    width: 76px;
+}
+
+#openMainMenuSceneIcon {
+    top: 6px;
+    width: 10px;
+    height: 12px;
+    align-self: center;
+}
+
+#openMainMenuScene > Label {
+    top: 7px;
 }
