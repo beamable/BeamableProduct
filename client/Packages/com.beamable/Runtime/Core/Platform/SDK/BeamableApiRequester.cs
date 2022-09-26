@@ -82,7 +82,7 @@ namespace Core.Platform.SDK
 			return MakeRequest<T>(method, uri, body, includeAuthHeader)
 			       .FlatMap(res =>
 			       {
-				       return _connectivityService?.SetHasInternet(true).Map(_ => res);
+				       return _connectivityService?.SetHasInternet(true).Recover(_ => PromiseBase.Unit).Map(_ => res);
 			       })
 				.RecoverWith(error =>
 			{
