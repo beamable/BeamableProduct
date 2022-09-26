@@ -4,6 +4,6 @@ namespace Beamable.UI.Buss
 {
 	public interface IVariablesProvider
 	{
-		List<BussStyleSheet> StyleSheets { get; } 
+		List<BussStyleSheet> StyleSheets { get; }
 	}
 }

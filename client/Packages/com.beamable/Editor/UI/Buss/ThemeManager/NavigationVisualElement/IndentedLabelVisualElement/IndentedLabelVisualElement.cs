@@ -29,14 +29,15 @@ namespace Beamable.Editor.UI.Components
 		private bool _selected;
 
 		public IndentedLabelVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(NavigationVisualElement)}/{nameof(IndentedLabelVisualElement)}/{nameof(IndentedLabelVisualElement)}.uss") { }
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(NavigationVisualElement)}/{nameof(IndentedLabelVisualElement)}/{nameof(IndentedLabelVisualElement)}.uss")
+		{ }
 
 		public void Setup(BussElement bussElement,
-		                  string label,
-		                  Action<BussElement> onMouseClicked,
-		                  int level,
-		                  float width,
-		                  bool selected)
+						  string label,
+						  Action<BussElement> onMouseClicked,
+						  int level,
+						  float width,
+						  bool selected)
 		{
 			_bussElement = bussElement;
 			_onMouseClicked = onMouseClicked;
@@ -51,9 +52,9 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_container = new VisualElement {name = "indentedLabelContainer"};
+			_container = new VisualElement { name = "indentedLabelContainer" };
 
-			_labelComponent = new TextElement {name = "indentedLabel", text = _label};
+			_labelComponent = new TextElement { name = "indentedLabel", text = _label };
 			_container.SetSelected(_selected);
 
 			float width = (_singleIndentWidth * _level) + _singleIndentWidth;

@@ -25,19 +25,19 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_mainElement = new VisualElement {name = "variableConnectionElement"};
+			_mainElement = new VisualElement { name = "variableConnectionElement" };
 			_mainElement.style.SetFlexDirection(FlexDirection.Row);
 			Root.Add(_mainElement);
 
-			_button = new Button {name = "button"};
+			_button = new Button { name = "button" };
 			_button.clickable.clicked += _model.OnButtonClick;
 			_mainElement.Add(_button);
 
-			_dropdown = new DropdownVisualElement {name = "dropdown"};
+			_dropdown = new DropdownVisualElement { name = "dropdown" };
 			_dropdown.Refresh();
 			_dropdown.Q("valueContainer").style.SetWidth(_dropdown.Q("valueContainer").style.GetWidth() - 30f);
 			_mainElement.Add(_dropdown);
-			
+
 			Refresh();
 		}
 
@@ -51,7 +51,7 @@ namespace Beamable.Editor.UI.Components
 			_button.EnableInClassList("whenConnected", _model.HasVariableConnected);
 			_dropdown.visible = _model.HasVariableConnected;
 			_dropdown.Setup(_model.DropdownOptions, _model.OnVariableSelected, _model.VariableDropdownOptionIndex,
-			                false);
+							false);
 		}
 	}
 }

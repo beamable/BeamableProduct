@@ -79,9 +79,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(List<string> labels,
-		                  Action<int> onOptionSelected,
-		                  int initialIndex = 0,
-		                  bool invokeOnStart = true)
+						  Action<int> onOptionSelected,
+						  int initialIndex = 0,
+						  bool invokeOnStart = true)
 		{
 			_optionModels.Clear();
 			_onSelection = onOptionSelected;
@@ -131,17 +131,17 @@ namespace Beamable.Editor.UI.Components
 			foreach (DropdownSingleOption option in _optionModels)
 			{
 				allOptions.Add(new DropdownSingleOptionVisualElement().Setup(option.Label,
-				                                                             option.OnClick, _root.localBound.width,
-				                                                             _root.localBound.height));
+																			 option.OnClick, _root.localBound.width,
+																			 _root.localBound.height));
 			}
 
 			DropdownOptionsVisualElement optionsWindow =
 				new DropdownOptionsVisualElement().Setup(allOptions, OnOptionsClosed);
 
 			_optionsPopup = await BeamablePopupWindow.ShowDropdownAsync("", popupWindowRect,
-			                                                            new Vector2(
-				                                                            _root.localBound.width,
-				                                                            optionsWindow.GetHeight()), optionsWindow);
+																		new Vector2(
+																			_root.localBound.width,
+																			optionsWindow.GetHeight()), optionsWindow);
 		}
 
 		private void OnOptionsClosed()

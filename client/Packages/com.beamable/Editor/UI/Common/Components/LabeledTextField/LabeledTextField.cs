@@ -20,10 +20,11 @@ namespace Beamable.Editor.UI.Components
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
-			readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription {name = "value"};
+			readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription { name = "value" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -63,7 +64,8 @@ namespace Beamable.Editor.UI.Components
 		public bool IsMultiline { get; set; }
 
 		public LabeledTextField() : base(
-			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}") { }
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+		{ }
 
 		public void OverrideLabelWidth(float width)
 		{
@@ -85,10 +87,10 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(string label,
-		                  string value,
-		                  Action<string> onValueChanged,
-		                  bool isDelayed = false,
-		                  bool isMultiline = false)
+						  string value,
+						  Action<string> onValueChanged,
+						  bool isDelayed = false,
+						  bool isMultiline = false)
 		{
 			Label = label;
 			Value = value;
