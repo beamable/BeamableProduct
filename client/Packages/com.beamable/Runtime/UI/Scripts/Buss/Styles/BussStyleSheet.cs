@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 namespace Beamable.UI.Buss
 {
 	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style",
-	                 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+					 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
@@ -133,7 +133,7 @@ namespace Beamable.UI.Buss
 
 		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
 		{
-			return new BussStyleRule {_selector = selector, _properties = properties};
+			return new BussStyleRule { _selector = selector, _properties = properties };
 		}
 
 		public bool RemoveProperty(IBussProperty bussProperty)
@@ -154,7 +154,7 @@ namespace Beamable.UI.Buss
 		{
 			return _properties.Find(prop => prop.Key == key) != null;
 		}
-		
+
 		public bool TryGetCachedProperty(string key, out IBussProperty property)
 		{
 			BussPropertyProvider provider = _cachedProperties.Find(prop => prop.Key == key);
@@ -171,9 +171,9 @@ namespace Beamable.UI.Buss
 
 			BussPropertyProvider provider = BussPropertyProvider.Create(key, property.CopyProperty());
 			_cachedProperties.Add(provider);
-			
+
 			CleanupCachedProperties();
-			
+
 			return true;
 		}
 
@@ -181,7 +181,7 @@ namespace Beamable.UI.Buss
 		{
 			var cachedProperty = _cachedProperties.Find(prop => prop.Key == key);
 			_cachedProperties.Remove(cachedProperty);
-			
+
 			CleanupCachedProperties();
 		}
 
@@ -232,7 +232,7 @@ namespace Beamable.UI.Buss
 				propertyProvider.ForceSerialization();
 			}
 
-			return new BussPropertyProvider {_key = key, _property = propertyProvider};
+			return new BussPropertyProvider { _key = key, _property = propertyProvider };
 		}
 
 		public IBussProperty GetProperty()

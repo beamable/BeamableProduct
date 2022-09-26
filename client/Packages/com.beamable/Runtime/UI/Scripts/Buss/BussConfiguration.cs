@@ -29,7 +29,7 @@ namespace Beamable.UI.Buss
 			{
 				try
 				{
-					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
+					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -102,9 +102,9 @@ namespace Beamable.UI.Buss
 		{
 			_defaultBeamableStyleSheets.Clear();
 			BussStyleSheet[] bussStyleSheets = Resources
-			                                   .LoadAll<BussStyleSheet>(
-				                                   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
-			                                   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
+											   .LoadAll<BussStyleSheet>(
+												   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
+											   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
 
 			var orderedStyleSheets = bussStyleSheets.OrderBy(s => s.SortingOrder);
 
@@ -223,7 +223,7 @@ namespace Beamable.UI.Buss
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				if (!Weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
-				    weight.CompareTo(currentWeight) >= 0)
+					weight.CompareTo(currentWeight) >= 0)
 				{
 					IBussProperty prop = property.GetProperty();
 
@@ -244,16 +244,16 @@ namespace Beamable.UI.Buss
 		}
 
 		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-		                                                   string pseudoClass,
-		                                                   BussStyleDescription descriptor,
-		                                                   SelectorWeight weight)
+														   string pseudoClass,
+														   BussStyleDescription descriptor,
+														   SelectorWeight weight)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				string weightKey = pseudoClass + property.Key;
 				if (!Weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
-				    weight.CompareTo(currentWeight) >= 0)
+					weight.CompareTo(currentWeight) >= 0)
 				{
 					element.Style[pseudoClass, property.Key] = property.GetProperty();
 					Weights[weightKey] = weight;

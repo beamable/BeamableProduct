@@ -31,9 +31,9 @@ namespace Beamable.Editor.UI.Components
 		public override void Init()
 		{
 			base.Init();
-			
-			VisualElement header = new VisualElement {name = "header"};
-			TextElement label = new TextElement {name = "headerLabel", text = "Navigation"};
+
+			VisualElement header = new VisualElement { name = "header" };
+			TextElement label = new TextElement { name = "headerLabel", text = "Navigation" };
 			header.Add(label);
 
 			header.RegisterCallback<MouseDownEvent>(evt =>
@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 
 			Root.Add(header);
 
-			_hierarchyContainer = new ScrollView {name = "elementsContainer"};
+			_hierarchyContainer = new ScrollView { name = "elementsContainer" };
 			Root.Add(_hierarchyContainer);
 
 			_model.Change += Refresh;
@@ -60,12 +60,12 @@ namespace Beamable.Editor.UI.Components
 
 			_spawnedLabels.Clear();
 			_hierarchyContainer.Clear();
-			
-			foreach (KeyValuePair<BussElement,int> pair in _model.FoundElements)
+
+			foreach (KeyValuePair<BussElement, int> pair in _model.FoundElements)
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
 				label.Setup(pair.Key, BussNameUtility.GetFormattedLabel(pair.Key), _model.NavigationElementClicked,
-				            pair.Value, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH, pair.Key == _model.SelectedElement);
+							pair.Value, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH, pair.Key == _model.SelectedElement);
 				label.Init();
 				_spawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);

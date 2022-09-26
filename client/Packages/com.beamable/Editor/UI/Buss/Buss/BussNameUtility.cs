@@ -46,7 +46,7 @@ namespace Beamable.Editor.UI.Buss
 			finalList.AddRange(list.Select(CleanString));
 			return finalList;
 		}
-		
+
 		public static string GetFormattedLabel(BussElement element)
 		{
 			return GetLabel(element).Replace(" ", "");

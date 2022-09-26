@@ -36,8 +36,8 @@ namespace Beamable.Editor.UI.Buss
 		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
 
 		public NewVariableVisualElement(BussStyleDescription styleRule,
-		                                Action<string, IBussProperty> onPropertyCreated,
-		                                VariableDatabase variablesDatabase) : base(
+										Action<string, IBussProperty> onPropertyCreated,
+										VariableDatabase variablesDatabase) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
 			_styleRule = styleRule;

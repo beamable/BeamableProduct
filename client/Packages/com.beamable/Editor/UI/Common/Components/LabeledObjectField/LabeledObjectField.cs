@@ -24,17 +24,18 @@ namespace Beamable.Editor.UI.Components
 		private Type Type { get; set; }
 
 		public LabeledObjectField() : base(
-			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledObjectField)}/{nameof(LabeledObjectField)}.uss") { }
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledObjectField)}/{nameof(LabeledObjectField)}.uss")
+		{ }
 
 		public override void Init()
 		{
 			base.Init();
 
-			_labelComponent = new Label(Label) {name = "label"};
+			_labelComponent = new Label(Label) { name = "label" };
 			Root.Add(_labelComponent);
 
 			_objectFieldComponent =
-				new ObjectField {name = "objectField", objectType = Type, allowSceneObjects = false};
+				new ObjectField { name = "objectField", objectType = Type, allowSceneObjects = false };
 			_objectFieldComponent.SetValueWithoutNotify(_initialValue);
 			_objectFieldComponent.RegisterValueChangedCallback(ValueChanged);
 			Root.Add(_objectFieldComponent);
@@ -46,7 +47,7 @@ namespace Beamable.Editor.UI.Components
 			Type = type;
 			_onValueChanged = onValueChanged;
 			_initialValue = initialValue;
-			
+
 			Init();
 		}
 

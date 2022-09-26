@@ -161,14 +161,14 @@ namespace Beamable.Editor.UI.Buss
 				SerializableValueImplementationHelper.ImplementationData data =
 					SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                                   t != typeof(FractionFloatBussProperty)).ToList();
+																   t != typeof(FractionFloatBussProperty)).ToList();
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						if (SelectedElement.InlineStyle.TryAddProperty(
-							    key, (IBussProperty)Activator.CreateInstance(type)))
+								key, (IBussProperty)Activator.CreateInstance(type)))
 						{
 							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 							EditorUtility.SetDirty(SelectedElement);

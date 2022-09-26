@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine.UIElements;
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -87,7 +87,7 @@ namespace Beamable.Editor.UI.Components
 				var currentCount = _propertiesParent.Children().Count();
 				_propertiesParent.RemoveAt(currentCount - 1);
 			}
-			
+
 			while (_variablesParent.Children().Count() > 1)
 			{
 				var currentCount = _variablesParent.Children().Count();
