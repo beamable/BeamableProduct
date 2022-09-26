@@ -17,11 +17,11 @@ namespace Beamable.Editor.UI.Components
 		
 		private VisualElement _listRoot;
 		
-		private BussBreadcrumbsVisualElement _bussBreadcrumbsVisualElement;
+		private ThemeManagerBreadcrumbsVisualElement _themeManagerBreadcrumbsVisualElement;
 		
-		public PropertyFilterDropdownVisualElement(BussBreadcrumbsVisualElement bussBreadcrumbsVisualElement) : base(nameof(PropertyFilterDropdownVisualElement))
+		public PropertyFilterDropdownVisualElement(ThemeManagerBreadcrumbsVisualElement themeManagerBreadcrumbsVisualElement) : base(nameof(PropertyFilterDropdownVisualElement))
 		{
-			_bussBreadcrumbsVisualElement = bussBreadcrumbsVisualElement;
+			_themeManagerBreadcrumbsVisualElement = themeManagerBreadcrumbsVisualElement;
 		}
 
 		public override void Refresh()
@@ -37,8 +37,8 @@ namespace Beamable.Editor.UI.Components
 		private void AddButton(PropertyDisplayFilter filter)
 		{
 			var propertyFilterButton = new Button();
-			propertyFilterButton.text = _bussBreadcrumbsVisualElement.GetPropertyDisplayFilterText(filter);
-			propertyFilterButton.SetEnabled(_bussBreadcrumbsVisualElement.Model.PropertyDisplayFilter != filter);
+			propertyFilterButton.text = _themeManagerBreadcrumbsVisualElement.GetPropertyDisplayFilterText(filter);
+			propertyFilterButton.SetEnabled(_themeManagerBreadcrumbsVisualElement.Model.PropertyDisplayFilter != filter);
 			propertyFilterButton.clickable.clicked += () => OnNewPropertyDisplayFilterSelected?.Invoke(filter);
 			_listRoot.Add(propertyFilterButton);
 		}

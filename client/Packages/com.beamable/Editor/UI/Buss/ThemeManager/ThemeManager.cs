@@ -15,7 +15,7 @@ namespace Beamable.Editor.UI.Buss
 		private LabeledCheckboxVisualElement _hideOverridenToggle;
 		private bool _inStyleSheetChangedLoop;
 		private NavigationVisualElement _navigationWindow;
-		private BussBreadcrumbsVisualElement _breadcrumbs;
+		private ThemeManagerBreadcrumbsVisualElement _breadcrumbs;
 		private ScrollView _scrollView;
 		private SelectedElementVisualElement _selectedElement;
 		private BussStyleListVisualElement _stylesGroup;
@@ -86,7 +86,7 @@ namespace Beamable.Editor.UI.Buss
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
 
-			_breadcrumbs = new BussBreadcrumbsVisualElement(_model) { name = "breadcrumbs" };
+			_breadcrumbs = new ThemeManagerBreadcrumbsVisualElement(_model) { name = "breadcrumbs" };
 			_breadcrumbs.Refresh();
 			mainVisualElement.Add(_breadcrumbs);
 

@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussBreadcrumbsVisualElement : ThemeManagerComponent
+	public class ThemeManagerBreadcrumbsVisualElement : ThemeManagerComponent
 	{
 		public ThemeManagerModel Model { get; }
 
@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Components
 				{PropertyDisplayFilter.IgnoreOverridden, "Ignore Overriden"}
 			};
 
-		public BussBreadcrumbsVisualElement(ThemeManagerModel model) : base(nameof(BussBreadcrumbsVisualElement))
+		public ThemeManagerBreadcrumbsVisualElement(ThemeManagerModel model) : base(nameof(ThemeManagerBreadcrumbsVisualElement))
 		{
 			Model = model;
 			Model.Change += Refresh;
