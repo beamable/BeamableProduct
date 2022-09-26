@@ -12,7 +12,7 @@ namespace Beamable.Editor.UI.Buss
 	public class ThemeManagerModel : ThemeModel
 	{
 		public PropertyDisplayFilter PropertyDisplayFilter { get; set; }
-		
+
 		public override BussElement SelectedElement { get; set; }
 
 		public string SelectedElementId =>
