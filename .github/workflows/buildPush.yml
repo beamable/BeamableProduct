@@ -265,7 +265,7 @@ jobs:
         if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/index.html)
+          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/index.html)
 
   ios:
     name: Build iOS .ipa and upload to Testflight
