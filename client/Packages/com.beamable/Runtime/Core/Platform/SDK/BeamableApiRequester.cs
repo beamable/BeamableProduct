@@ -78,10 +78,20 @@ namespace Core.Platform.SDK
 		  bool includeAuthHeader
 		)
 		{
-			return MakeRequest<T>(method, uri, body, includeAuthHeader).RecoverWith(error =>
+
+			return MakeRequest<T>(method, uri, body, includeAuthHeader)
+			       .FlatMap(res =>
+			       {
+				       return _connectivityService?.SetHasInternet(true).Map(_ => res);
+			       })
+				.RecoverWith(error =>
 			{
 				switch (error)
 				{
+					case PlatformRequesterException noInternet when noInternet.Status == 0:
+					case NoConnectivityException _:
+						_connectivityService?.ReportInternetLoss();
+						return Promise<T>.Failed(new NoConnectivityException(uri + " requires internet connectivity. Internet connection lost."));
 					case PlatformRequesterException e when e.Status == 401:
 						var authBody = new BeamableApiTokenRequest
 						{
@@ -108,6 +118,11 @@ namespace Core.Platform.SDK
 		  byte[] body,
 		  bool includeAuthHeader)
 		{
+			if (Application.internetReachability == NetworkReachability.NotReachable)
+			{
+				return Promise<T>.Failed(new NoConnectivityException("Internet is not reachable"));
+			}
+
 			var result = new Promise<T>();
 			var request = BuildWebRequest(method, uri, body, includeAuthHeader);
 			var op = request.SendWebRequest();
@@ -126,7 +141,7 @@ namespace Core.Platform.SDK
 
 			try
 			{
-				if (request.IsNetworkError())
+				if (request.responseCode == 0 || request.IsNetworkError())
 				{
 					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. apirequester. status=[{request.responseCode}] error=[{request.error}]"));
 				}

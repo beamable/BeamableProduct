@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
 - Expanded/Collapsed state represented by icons in `Theme Manager`
 
+### Changed
+- Connectivity events are sourced from the `Heartbeat` every 5 seconds, instead of from the `ConnectivityService` every 3 seconds.
+
 ### Fixed
 - The default uncaught Promise handler no longer throws `IndexOutOfBounds` errors in high failure cases.
 
