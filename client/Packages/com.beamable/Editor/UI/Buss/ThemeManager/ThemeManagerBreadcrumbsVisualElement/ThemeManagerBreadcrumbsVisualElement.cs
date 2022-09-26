@@ -24,11 +24,11 @@ namespace Beamable.Editor.UI.Components
 			Model = model;
 			Model.Change += Refresh;
 		}
-		
+
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			_propertiesFilter = Root.Q<Button>("propertiesFilter");
 			_propertiesFilterLabel = _propertiesFilter.Q<Label>();
 			_propertiesFilter.clickable.clicked -= HandlePropertiesFilterButton;
@@ -36,9 +36,9 @@ namespace Beamable.Editor.UI.Components
 			UpdateServicesFilterText(Model.PropertyDisplayFilter);
 		}
 
-		private void UpdateServicesFilterText(PropertyDisplayFilter filter) 
+		private void UpdateServicesFilterText(PropertyDisplayFilter filter)
 			=> _propertiesFilterLabel.text = GetPropertyDisplayFilterText(filter);
-		
+
 		private void HandlePropertiesFilterButton()
 			=> HandlePropertiesFilterButton(_propertiesFilter.worldBound);
 
@@ -55,13 +55,13 @@ namespace Beamable.Editor.UI.Components
 				Model.ForceRefresh();
 			};
 		}
-		
-		public string GetPropertyDisplayFilterText(PropertyDisplayFilter propertyDisplayFilter) 
-			=> !_propertyDisplayFilterTexts.ContainsKey(propertyDisplayFilter) 
-				? propertyDisplayFilter.ToString() 
+
+		public string GetPropertyDisplayFilterText(PropertyDisplayFilter propertyDisplayFilter)
+			=> !_propertyDisplayFilterTexts.ContainsKey(propertyDisplayFilter)
+				? propertyDisplayFilter.ToString()
 				: _propertyDisplayFilterTexts[propertyDisplayFilter];
 	}
-	
+
 	public enum PropertyDisplayFilter
 	{
 		All,
