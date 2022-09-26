@@ -23,12 +23,12 @@
 			public static readonly string PATH_TO_SCENE_TEMPLATE = $"{PATH_TO_TEMPLATES}/{General.SCENE_TEMPLATE_NAME}";
 			public static readonly string PATH_TO_SCRIPT_TEMPLATE = $"{PATH_TO_TEMPLATES}/{General.SCRIPT_TEMPLATE_NAME}";
 			public static readonly string PATH_TO_REPORTS = $"{PATH_TO_TESTING_TOOL}/Reports";
+			public static readonly string PATH_TO_MAIN_MENU_TEST_SCENE = $"{PATH_TO_TESTING_TOOL}/{General.MAIN_MENU_TEST_SCENE_NAME}.unity";
 
 			public static string GetPathToTestResources(string sceneName) => $"{PATH_TO_RESOURCES}/Tests/{sceneName}";
 			public static string GetPathToTest(string sceneName) => $"{PATH_TO_TEST_SCENES}/{sceneName}";
 			public static string GetPathToTestScene(string sceneName) => $"{GetPathToTest(sceneName)}/{sceneName}.unity";
 			public static string GetPathToTestScripts(string sceneName) => $"{GetPathToTest(sceneName)}/Scripts";
-			public static string GetPathToMainMenuTestScene() => $"{PATH_TO_TESTING_TOOL}/{General.MAIN_MENU_TEST_SCENE_NAME}.unity";
 		}
 		public static class SessionState
 		{

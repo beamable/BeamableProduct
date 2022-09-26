@@ -221,7 +221,7 @@ namespace Beamable.BSAT.Editor.UI
 		private void HandleOpenMainMenuSceneButton()
 		{
 			EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
-			EditorSceneManager.OpenScene(GetPathToMainMenuTestScene());
+			EditorSceneManager.OpenScene(PATH_TO_MAIN_MENU_TEST_SCENE);
 		}
 
 		private void ResetList(VisualElement ve, ref ExtendedListView elv)
