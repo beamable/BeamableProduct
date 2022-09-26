@@ -7,8 +7,8 @@ namespace Beamable.UI.Buss
 {
 	public class PropertySourceTracker
 	{
+		private readonly Dictionary<string, SourceData> _sources = new Dictionary<string, SourceData>();
 		public BussElement Element { get; }
-		private Dictionary<string, SourceData> _sources = new Dictionary<string, SourceData>();
 
 		public PropertySourceTracker(BussElement element)
 		{
@@ -51,7 +51,7 @@ namespace Beamable.UI.Buss
 		public bool IsUsed(string key, BussStyleRule styleRule)
 		{
 			var data = _sources[key];
-			return data.Properties.First().styleRule == styleRule;
+			return data.Properties.First().StyleRule == styleRule;
 		}
 
 		public BussPropertyProvider GetUsedPropertyProvider(string key)
@@ -59,15 +59,15 @@ namespace Beamable.UI.Buss
 			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key));
 		}
 
-		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType, bool allowVariableProperty = true)
+		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType)
 		{
 			if (_sources.ContainsKey(key))
 			{
 				foreach (var reference in _sources[key].Properties)
 				{
-					if (reference.propertyProvider.IsPropertyOfType(baseType) || reference.propertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					if (reference.PropertyProvider.IsPropertyOfType(baseType) || reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
-						return reference.propertyProvider;
+						return reference.PropertyProvider;
 					}
 				}
 			}
@@ -80,13 +80,13 @@ namespace Beamable.UI.Buss
 			return GetUsedPropertyReference(key, BussStyle.GetBaseType(key));
 		}
 
-		public PropertyReference GetUsedPropertyReference(string key, Type baseType, bool allowVariableProperty = true)
+		public PropertyReference GetUsedPropertyReference(string key, Type baseType)
 		{
 			if (_sources.ContainsKey(key))
 			{
 				foreach (var reference in _sources[key].Properties)
 				{
-					if (reference.propertyProvider.IsPropertyOfType(baseType) || reference.propertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					if (reference.PropertyProvider.IsPropertyOfType(baseType) || reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
 						return reference;
 					}
@@ -120,8 +120,7 @@ namespace Beamable.UI.Buss
 		{
 			var key = propertyProvider.Key;
 			var propertyReference = new PropertyReference(styleSheet, styleRule, propertyProvider);
-			SourceData sourceData;
-			if (!_sources.TryGetValue(key, out sourceData))
+			if (!_sources.TryGetValue(key, out SourceData sourceData))
 			{
 				_sources[key] = sourceData = new SourceData(key);
 			}
@@ -131,7 +130,7 @@ namespace Beamable.UI.Buss
 		public class SourceData
 		{
 			public readonly string key;
-			public List<PropertyReference> Properties = new List<PropertyReference>();
+			public readonly List<PropertyReference> Properties = new List<PropertyReference>();
 
 			public SourceData(string key)
 			{
