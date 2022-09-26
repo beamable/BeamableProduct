@@ -14,11 +14,11 @@ namespace Beamable.Editor.UI.Components
 	public class PropertyFilterDropdownVisualElement : ThemeManagerComponent
 	{
 		public event Action<PropertyDisplayFilter> OnNewPropertyDisplayFilterSelected;
-		
+
 		private VisualElement _listRoot;
-		
+
 		private ThemeManagerBreadcrumbsVisualElement _themeManagerBreadcrumbsVisualElement;
-		
+
 		public PropertyFilterDropdownVisualElement(ThemeManagerBreadcrumbsVisualElement themeManagerBreadcrumbsVisualElement) : base(nameof(PropertyFilterDropdownVisualElement))
 		{
 			_themeManagerBreadcrumbsVisualElement = themeManagerBreadcrumbsVisualElement;
@@ -29,8 +29,8 @@ namespace Beamable.Editor.UI.Components
 			base.Refresh();
 			_listRoot = Root.Q<VisualElement>("popupContent");
 			_listRoot.Clear();
-			
-			foreach (var propertyDisplayFilter in (PropertyDisplayFilter[]) Enum.GetValues(typeof(PropertyDisplayFilter)))
+
+			foreach (var propertyDisplayFilter in (PropertyDisplayFilter[])Enum.GetValues(typeof(PropertyDisplayFilter)))
 				AddButton(propertyDisplayFilter);
 		}
 
