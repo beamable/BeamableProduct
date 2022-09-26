@@ -50,7 +50,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		if (args.saveToFile && !string.IsNullOrWhiteSpace(response.refresh_token))
 		{
 			BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
-			                   " do not add it to control version system. It should be used only locally.");
+							   " do not add it to control version system. It should be used only locally.");
 			_configService.SaveTokenToFile(response);
 		}
 
