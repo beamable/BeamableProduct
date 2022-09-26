@@ -12,17 +12,14 @@ namespace Beamable.UI.Buss
 
 		public static bool TryAddProperty(this BussStyleDescription target, string key, IBussProperty property)
 		{
-			BussPropertyProvider propertyProvider;
 			var isKeyValid = BussStyle.IsKeyValid(key) || IsValidVariableName(key);
-			if (isKeyValid && !target.HasProperty(key) &&
-				BussStyle.GetBaseType(key).IsInstanceOfType(property))
+			if (isKeyValid && !target.HasProperty(key) && BussStyle.GetBaseType(key).IsInstanceOfType(property))
 			{
-				propertyProvider = BussPropertyProvider.Create(key, property.CopyProperty());
+				var propertyProvider = BussPropertyProvider.Create(key, property.CopyProperty());
 				target.Properties.Add(propertyProvider);
 				return true;
 			}
 
-			propertyProvider = null;
 			return false;
 		}
 

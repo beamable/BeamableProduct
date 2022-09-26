@@ -1,0 +1,105 @@
+﻿#root {
+    flex-grow: 1;
+    margin-bottom: 10px;
+}
+
+.header {
+    padding-left: 5px;
+    padding-right: 20px;
+    height: 30px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+}
+
+.headerLabel {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    font-size: 12px;
+    padding-left: 5px;
+}
+
+.classesLabel {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    font-size: 12px;
+    padding-left: 20px;
+}
+
+#classesList {
+    margin-top: 5px;
+    margin-left: 20px;
+    margin-right: 20px;
+    align-items: flex-end;
+}
+
+#space {
+    width: 160px;
+}
+
+#classElement {
+    justify-content: flex-start;
+    flex-direction: row;
+}
+
+#classElement > TextField {
+    width: 160px;
+    flex-grow: 1;
+}
+
+#buttonsContainer {
+    margin-left: 20px;
+    margin-right: 20px;
+    flex-direction: row-reverse;
+}
+
+#addButton {
+    width: 30px;
+    height:30px;
+}
+
+#removeButton {
+    width: 30px;
+    height:30px;
+}
+
+.button:hover {
+    background-color: rgb(120,120,120);
+}
+
+#elementsContainer {
+    flex-grow: 1;
+}
+
+LabeledTextField {
+    margin-top: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+LabeledTextField #label {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    font-size: 12px;
+    width: 160px;
+}
+
+LabeledObjectField {
+    margin-left: 20px;
+    margin-right: 20px;
+    flex-direction: row;
+    align-items: center;
+}
+
+LabeledObjectField #label {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    font-size: 12px;
+    width: 160px;
+}
+
+.hidden{
+    display: none;
+}
+
+

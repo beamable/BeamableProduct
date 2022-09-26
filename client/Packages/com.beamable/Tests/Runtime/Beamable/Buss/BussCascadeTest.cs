@@ -31,7 +31,7 @@ namespace Beamable.Tests.Buss
 
 		private void InitStyleSheets()
 		{
-			styleSheetA = BussStyleSheet.CreateInstance<BussStyleSheet>();
+			styleSheetA = ScriptableObject.CreateInstance<BussStyleSheet>();
 			styleSheetA.Styles.Add(BussStyleRule.Create("#A", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(10f)),
@@ -45,7 +45,7 @@ namespace Beamable.Tests.Buss
 				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(20f)),
 			}.ToList()));
 
-			styleSheetB = BussStyleSheet.CreateInstance<BussStyleSheet>();
+			styleSheetB = ScriptableObject.CreateInstance<BussStyleSheet>();
 			styleSheetB.Styles.Add(BussStyleRule.Create("*", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.BorderWidth.Key, new FloatBussProperty(44f)),
