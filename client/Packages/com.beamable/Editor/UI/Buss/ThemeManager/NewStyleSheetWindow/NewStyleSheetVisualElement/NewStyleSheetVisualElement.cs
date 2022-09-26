@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -46,10 +47,10 @@ namespace Beamable.Editor.UI.Buss
 			GenericButtonVisualElement cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += NewStyleSheetWindow.CloseWindow;
 
-			OnValidate();
+			OnValidate(String.Empty);
 		}
 
-		private void OnValidate()
+		private void OnValidate(string value)
 		{
 			if (!IsNameValid(out string message))
 			{
