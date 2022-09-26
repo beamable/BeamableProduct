@@ -1,7 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Auth;
 using cli.Utils;
-using Spectre.Console;
 using System.CommandLine;
 
 namespace cli;
@@ -11,7 +11,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 	protected abstract Method Method { get; }
 	private readonly CliRequester _requester;
 
-	protected BaseRequestCommand(CliRequester requester, string name, string description) : base(name, description)
+	protected BaseRequestCommand(CliRequester requester, string name, string description) : base( name, description)
 	{
 		_requester = requester;
 	}
@@ -22,7 +22,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 		AddArgument(uri, (args, i) => args.uri = i);
 		AddOption(new HeaderOption(), (args, i) => args.customHeaders.AddRange(i));
 		AddOption(new BodyPathOption(), (args, i) => args.bodyPath = i);
-		AddOption(new CustomerScopedOption(), (args, i) => args.customerScoped = i);
+		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 	}
 
 	public override async Task Handle(BaseRequestArgs args)
@@ -52,5 +52,5 @@ public class BaseRequestArgs : CommandArgs
 	public List<string> customHeaders = new();
 	public string uri;
 	public string bodyPath;
-	public bool customerScoped = false;
+	public bool customerScoped;
 }
