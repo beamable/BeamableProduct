@@ -27,11 +27,11 @@ namespace Beamable.BSAT.Editor.UI.Components
 			base.Refresh();
 
 			_title = Root.Q<LabeledTextField>("title");
-			_title.Setup(TITLE_LABEL, string.Empty, UpdateData);
+			_title.Setup(TITLE_LABEL, string.Empty, s => UpdateData(s));
 			_title.Refresh();
 			
 			_description = Root.Q<LabeledTextField>("description");
-			_description.Setup(DESCRIPTION_LABEL, string.Empty, UpdateData, isMultiline: true);
+			_description.Setup(DESCRIPTION_LABEL, string.Empty, s => UpdateData(s), isMultiline: true);
 			_description.Refresh();
 			
 			Root.Q("methodInvocationsBody").SetEnabled(false);
@@ -67,7 +67,7 @@ namespace Beamable.BSAT.Editor.UI.Components
 			RegisteredTestRuleMethod = null;
 			SetEnabled(false);
 		}
-		private void UpdateData()
+		private void UpdateData(string value)
 		{
 			RegisteredTestRuleMethod.Title = _title.Value;
 			RegisteredTestRuleMethod.Description = _description.Value;

@@ -1,249 +1,93 @@
-﻿using Beamable.Common;
-using Beamable.Editor.Common;
+﻿using Beamable.Editor.Common;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
 	public class BussStyleListVisualElement : BeamableBasicVisualElement
 	{
-		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
-			new List<BussStyleCardVisualElement>();
+		private readonly ThemeModel _model;
 
-		public VariableDatabase VariableDatabase { get; } = new VariableDatabase();
-		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
+		private readonly List<StyleCardVisualElement> _styleCardsVisualElements =
+			new List<StyleCardVisualElement>();
 
 		private bool _inStyleSheetChangedLoop;
 
-		private IEnumerable<BussStyleSheet> _styleSheets;
-		private BussElement _currentSelected;
-		private string _currentFilter;
-		private readonly BussCardFilter _filter;
-
-		public IEnumerable<BussStyleSheet> StyleSheets
-		{
-			get => _styleSheets;
-			set
-			{
-				ClearStyleSheets();
-				_styleSheets = value;
-				RefreshStyleSheets();
-			}
-		}
-
-		public IEnumerable<BussStyleSheet> WritableStyleSheets
-		{
-			get
-			{
-#if BEAMABLE_DEVELOPER
-				return _styleSheets ?? Enumerable.Empty<BussStyleSheet>();
-#else
-				return _styleSheets?.Where(s => !s.IsReadOnly) ?? Enumerable.Empty<BussStyleSheet>();
-#endif
-			}
-		}
-
-		public BussStyleListVisualElement() : base(
+		public BussStyleListVisualElement(ThemeModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss",
 			false)
 		{
-			Init();
-
-			_filter = new BussCardFilter();
-
-			Selection.selectionChanged += OnSelectionChange;
+			_model = model;
+			_model.Change += Refresh;
 		}
 
-		private void RefreshStyleSheets()
+		public override void Refresh()
 		{
-			VariableDatabase.RemoveAllStyleSheets();
-
-			foreach (BussStyleSheet styleSheet in StyleSheets)
-			{
-				VariableDatabase.AddStyleSheet(styleSheet);
-				styleSheet.Change += OnStyleSheetChanged;
-			}
-
-			RefreshStyleCards();
-		}
-
-		private void ClearStyleSheets()
-		{
-			if (StyleSheets != null)
-			{
-				foreach (BussStyleSheet styleSheet in StyleSheets)
-				{
-					styleSheet.Change -= OnStyleSheetChanged;
-				}
-
-				_styleSheets = null;
-			}
-		}
-
-		public void RefreshStyleCards()
-		{
-			UndoSystem<BussStyleRule>.Update();
-
-			BussStyleRule[] rulesToDraw = StyleSheets.SelectMany(ss => ss.Styles).ToArray();
-
-			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements
-														 .Where(card => !rulesToDraw.Contains(card.StyleRule))
-														 .ToArray();
-
-			foreach (BussStyleCardVisualElement card in cardsToRemove)
-			{
-				RemoveStyleCard(card);
-			}
-
-			foreach (BussStyleSheet styleSheet in StyleSheets)
-			{
-				foreach (BussStyleRule rule in styleSheet.Styles)
-				{
-					BussStyleCardVisualElement spawned =
-						_styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
-					if (spawned != null)
-					{
-						spawned.RefreshProperties();
-						spawned.RefreshButtons();
-						spawned.RefreshWritableStyleSheets(WritableStyleSheets);
-					}
-					else
-					{
-						string undoKey = $"{styleSheet.name}-{rule.SelectorString}";
-						UndoSystem<BussStyleRule>.AddRecord(rule, undoKey);
-						AddStyleCard(styleSheet, rule, () =>
-						{
-							UndoSystem<BussStyleRule>.Undo(undoKey);
-							RefreshStyleCards();
-						});
-					}
-				}
-			}
-
-			FilterCards();
-		}
-
-		private void FilterCards()
-		{
-			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
-			{
-				bool isVisible = _filter.CardFilter(styleCardVisualElement.StyleRule,
-													_currentSelected);
-
-				styleCardVisualElement.SetHidden(!isVisible);
-			}
-		}
-
-		public float GetSelectedElementPosInScroll()
-		{
-			if (_currentSelected == null)
-				return 0;
-
-			int selectedIndex = -1;
-			float selectedHeight = 0;
-
-			for (int i = 0; i < _styleCardsVisualElements.Count; i++)
-			{
-				bool isMatch = _styleCardsVisualElements[i].StyleRule.Selector?.CheckMatch(_currentSelected) ?? false;
-
-				if (selectedIndex != -1)
-					continue;
-
-				if (isMatch)
-					selectedIndex = i;
-				else
-					selectedHeight += _styleCardsVisualElements[i].contentRect.height;
-			}
-
-			return selectedHeight;
-		}
-
-		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
-		{
-			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, VariableDatabase, PropertyDatabase, callback, WritableStyleSheets);
-			_styleCardsVisualElements.Add(styleCard);
-			Root.Add(styleCard);
-		}
-
-		private void RemoveStyleCard(BussStyleCardVisualElement card)
-		{
-			_styleCardsVisualElements.Remove(card);
-			card.RemoveFromHierarchy();
-			card.Destroy();
-		}
-
-		private void OnStyleSheetChanged()
-		{
-			if (_inStyleSheetChangedLoop) return;
-
-			_inStyleSheetChangedLoop = true;
-
-			try
-			{
-				VariableDatabase.ReconsiderAllStyleSheets();
-
-				if (VariableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
-					VariableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
-				{
-					RefreshStyleCards();
-				}
-				else
-				{
-					foreach (VariableDatabase.PropertyReference reference in VariableDatabase.DirtyProperties)
-					{
-						var card = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == reference.styleRule);
-						if (card != null)
-						{
-							card.RefreshPropertyByReference(reference);
-						}
-					}
-				}
-
-				VariableDatabase.FlushDirtyMarkers();
-			}
-			catch (Exception e)
-			{
-				BeamableLogger.LogException(e);
-			}
-
-			_inStyleSheetChangedLoop = false;
-		}
-
-		private void OnSelectionChange()
-		{
-			_currentSelected = null;
-			var gameObject = Selection.activeGameObject;
-			if (gameObject != null)
-			{
-				_currentSelected = gameObject.GetComponent<BussElement>();
-			}
-
-			foreach (var styleCard in _styleCardsVisualElements)
-			{
-				styleCard.OnBussElementSelected(_currentSelected);
-			}
-
-			FilterCards();
+			RefreshCards();
 		}
 
 		protected override void OnDestroy()
 		{
-			Selection.selectionChanged -= OnSelectionChange;
-			PropertyDatabase.Discard();
+			_model.Change -= Refresh;
+
+			ClearCards();
+
+			_model.PropertyDatabase.Discard();
 		}
 
-		public void SetFilter(string value)
+		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action undoAction)
 		{
-			_filter.CurrentFilter = value;
-			FilterCards();
+			bool isSelected = _model.SelectedElement != null && styleRule.Selector.CheckMatch(_model.SelectedElement);
+			StyleCardModel model =
+				new StyleCardModel(styleSheet, styleRule, undoAction, _model.SelectedElement, isSelected,
+								   _model.VariablesDatabase, _model.PropertyDatabase, _model.WritableStyleSheets,
+								   _model.ForceRefresh);
+			StyleCardVisualElement styleCard = new StyleCardVisualElement(model);
+			styleCard.Refresh();
+
+			_styleCardsVisualElements.Add(styleCard);
+			Root.Add(styleCard);
+		}
+
+		private void ClearCards()
+		{
+			foreach (var element in _styleCardsVisualElements)
+			{
+				RemoveStyleCard(element);
+			}
+
+			_styleCardsVisualElements.Clear();
+		}
+
+		private void RefreshCards()
+		{
+			UndoSystem<BussStyleRule>.Update();
+
+			ClearCards();
+
+			foreach (var pair in _model.FilteredRules)
+			{
+				var styleSheet = pair.Value;
+				var styleRule = pair.Key;
+
+				string undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
+				UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
+				AddStyleCard(styleSheet, styleRule, () =>
+				{
+					UndoSystem<BussStyleRule>.Undo(undoKey);
+					RefreshCards(); // TODO: check if we need this refresh here
+				});
+			}
+		}
+
+		private void RemoveStyleCard(StyleCardVisualElement card)
+		{
+			card.RemoveFromHierarchy();
+			card.Destroy();
 		}
 	}
 }

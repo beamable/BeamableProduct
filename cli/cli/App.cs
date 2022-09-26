@@ -62,13 +62,12 @@ public class App
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
-			root.AddOption(provider.GetRequiredService<DryRunOption>());
-			root.AddOption(provider.GetRequiredService<CidOption>());
-			root.AddOption(provider.GetRequiredService<PidOption>());
-			root.AddOption(provider.GetRequiredService<PlatformOption>());
-			root.AddOption(provider.GetRequiredService<AccessTokenOption>());
-			root.AddOption(provider.GetRequiredService<RefreshTokenOption>());
-			root.AddOption(provider.GetRequiredService<LogOption>());
+			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
+			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PlatformOption>());
+			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
+			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});

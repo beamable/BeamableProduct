@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - ActionBarVisualElement buttons behaviour is fixed when Docker is not running.
 
+## [1.3.6]
+### Added
+- Allow disabling `System.Runtime.CompilerServices.Unsafe.dll` inclusion by using `BEAMABLE_DISABLE_SYSTEM_COMPILERSERVICES` define symbol
+
 ## [1.3.5]
 no changes
 
