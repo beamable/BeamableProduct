@@ -67,7 +67,7 @@ namespace Beamable.Editor.UI.Components
 
 			_currentStyleSheet = new LabeledObjectField();
 			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), _model.SelectedElementStyleSheet,
-			                         _model.OnStyleSheetSelected);
+									 _model.OnStyleSheetSelected);
 			_contentContainer.Add(_currentStyleSheet);
 			Root.Add(_contentContainer);
 
@@ -87,21 +87,21 @@ namespace Beamable.Editor.UI.Components
 
 		private void CreateButtons()
 		{
-			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
+			VisualElement buttonsContainer = new VisualElement { name = "buttonsContainer" };
 
-			VisualElement removeButton = new VisualElement {name = "removeButton"};
+			VisualElement removeButton = new VisualElement { name = "removeButton" };
 			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
 
-			VisualElement addButton = new VisualElement {name = "addButton"};
+			VisualElement addButton = new VisualElement { name = "addButton" };
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
 
 			_contentContainer.Add(buttonsContainer);
 		}
-		
+
 		private void AddClassButtonClicked(MouseDownEvent evt)
 		{
 			if (_model.SelectedElement == null)
@@ -112,7 +112,7 @@ namespace Beamable.Editor.UI.Components
 			_model.SelectedElement.AddClass("");
 			RefreshClassesList();
 			RefreshHeight();
-			
+
 			EditorUtility.SetDirty(_model.SelectedElement);
 			_model.ForceRefresh();
 		}
@@ -134,7 +134,7 @@ namespace Beamable.Editor.UI.Components
 			_model.SelectedElement.RemoveClass(className);
 			RefreshClassesList();
 			RefreshHeight();
-			
+
 			EditorUtility.SetDirty(_model.SelectedElement);
 			_model.ForceRefresh();
 		}
@@ -210,8 +210,8 @@ namespace Beamable.Editor.UI.Components
 
 		private VisualElement CreateListViewElement()
 		{
-			VisualElement classElement = new VisualElement {name = "classElement"};
-			classElement.Add(new VisualElement {name = "space"});
+			VisualElement classElement = new VisualElement { name = "classElement" };
+			classElement.Add(new VisualElement { name = "space" });
 			classElement.Add(new TextField());
 			return classElement;
 		}

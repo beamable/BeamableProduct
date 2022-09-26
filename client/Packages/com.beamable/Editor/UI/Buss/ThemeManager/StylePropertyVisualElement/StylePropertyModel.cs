@@ -31,13 +31,13 @@ namespace Beamable.Editor.UI.Components
 		public bool HasVariableConnected => PropertyProvider.HasVariableReference;
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
-		                          BussStyleRule styleRule,
-		                          BussPropertyProvider propertyProvider,
-		                          VariableDatabase variablesDatabase,
-		                          PropertySourceTracker propertySourceTracker,
-		                          BussElement inlineStyleOwner,
-		                          Action<string> removePropertyAction,
-		                          Action globalRefresh)
+								  BussStyleRule styleRule,
+								  BussPropertyProvider propertyProvider,
+								  VariableDatabase variablesDatabase,
+								  PropertySourceTracker propertySourceTracker,
+								  BussElement inlineStyleOwner,
+								  Action<string> removePropertyAction,
+								  Action globalRefresh)
 		{
 			_removePropertyAction = removePropertyAction;
 			_globalRefresh = globalRefresh;
@@ -50,8 +50,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public VariableDatabase.PropertyValueState GetResult(out PropertySourceTracker propertySourceTracker,
-		                                                     out IBussProperty bussProperty,
-		                                                     out VariableDatabase.PropertyReference propertyReference)
+															 out IBussProperty bussProperty,
+															 out VariableDatabase.PropertyReference propertyReference)
 		{
 			propertySourceTracker = null;
 

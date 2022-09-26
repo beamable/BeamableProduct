@@ -14,8 +14,8 @@ namespace Beamable.UI.Buss
 			public PropertyReference() { }
 
 			public PropertyReference(BussStyleSheet styleSheet,
-			                         BussStyleRule styleRule,
-			                         BussPropertyProvider propertyProvider)
+									 BussStyleRule styleRule,
+									 BussPropertyProvider propertyProvider)
 			{
 				StyleSheet = styleSheet;
 				StyleRule = styleRule;
@@ -102,9 +102,9 @@ namespace Beamable.UI.Buss
 		}
 
 		public PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
-		                                         BussStyleDescription styleRule,
-		                                         out IBussProperty result,
-		                                         out PropertyReference variablePropertyReference)
+												 BussStyleDescription styleRule,
+												 out IBussProperty result,
+												 out PropertyReference variablePropertyReference)
 		{
 			if (!basePropertyProvider.HasVariableReference)
 			{
@@ -114,7 +114,7 @@ namespace Beamable.UI.Buss
 			}
 
 			return FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-			                            styleRule, out result, out variablePropertyReference);
+										styleRule, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -151,9 +151,9 @@ namespace Beamable.UI.Buss
 		/// It can search for end value recursively.
 		/// </summary>
 		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-		                                                BussStyleDescription styleRule,
-		                                                out IBussProperty result,
-		                                                out PropertyReference propertyReference)
+														BussStyleDescription styleRule,
+														out IBussProperty result,
+														out PropertyReference propertyReference)
 		{
 			result = null;
 			propertyReference = new PropertyReference(null, null, null);

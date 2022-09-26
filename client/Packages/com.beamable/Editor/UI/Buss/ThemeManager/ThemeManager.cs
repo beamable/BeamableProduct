@@ -1,8 +1,8 @@
-using UnityEngine.UIElements;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using UnityEditor;
+using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -78,13 +78,14 @@ namespace Beamable.Editor.UI.Buss
 
 			BussThemeManagerActionBarVisualElement actionBar =
 				new BussThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
-				                                           _model.ForceRefresh, _model.OnDocsButtonClicked,
-				                                           _model.OnSearch) {name = "actionBar"};
+														   _model.ForceRefresh, _model.OnDocsButtonClicked,
+														   _model.OnSearch)
+				{ name = "actionBar" };
 
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
 
-			VisualElement navigationGroup = new VisualElement {name = "navigationGroup"};
+			VisualElement navigationGroup = new VisualElement { name = "navigationGroup" };
 			mainVisualElement.Add(navigationGroup);
 
 			_navigationWindow = new NavigationVisualElement(_model);
@@ -95,8 +96,8 @@ namespace Beamable.Editor.UI.Buss
 			_selectedElement.Init();
 			mainVisualElement.Add(_selectedElement);
 
-			_scrollView = new ScrollView {name = "themeManagerContainerScrollView"};
-			_stylesGroup = new BussStyleListVisualElement(_model) {name = "stylesGroup"};
+			_scrollView = new ScrollView { name = "themeManagerContainerScrollView" };
+			_stylesGroup = new BussStyleListVisualElement(_model) { name = "stylesGroup" };
 			_stylesGroup.Init();
 			_scrollView.Add(_stylesGroup);
 

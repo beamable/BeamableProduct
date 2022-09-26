@@ -13,7 +13,7 @@ namespace Beamable.UI.Buss
 			get => _variableName;
 			set => _variableName = value;
 		}
-		
+
 		public VariableProperty() { }
 
 		public VariableProperty(string variableName)

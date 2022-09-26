@@ -11,7 +11,8 @@ namespace Beamable.Editor.UI.Components
 		private Action _onButtonClicked;
 
 		public AddStyleButton() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(AddStyleButton)}/{nameof(AddStyleButton)}.uss") { }
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(AddStyleButton)}/{nameof(AddStyleButton)}.uss")
+		{ }
 
 		public void Setup(Action onButtonClicked)
 		{
@@ -23,7 +24,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_addStyleButton = new VisualElement {name = "addStyleButton"};
+			_addStyleButton = new VisualElement { name = "addStyleButton" };
 			_addStyleButton.AddToClassList("button");
 			_addStyleButton.Add(new Label(ADD_STYLE_BUTTON_LABEL));
 

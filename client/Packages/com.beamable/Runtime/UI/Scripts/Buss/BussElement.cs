@@ -12,7 +12,7 @@ namespace Beamable.UI.Buss
 	{
 		public event Action Change;
 		public event Action StyleRecalculated;
-		
+
 #pragma warning disable CS0649
 		[SerializeField, BussId] private string _id;
 		[SerializeField, BussClass] private List<string> _classes = new List<string>();

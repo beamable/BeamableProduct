@@ -23,13 +23,13 @@ namespace Beamable.Editor.UI.Components
 					Debug.LogWarning("PropertyComparer:Compare: one of compared elements is null");
 					return 0;
 				}
-				
+
 				int comparison = (y.IsInStyle).CompareTo(x.IsInStyle);
 
 				if (comparison == 0)
 				{
 					comparison = string.Compare(x.PropertyProvider.Key, y.PropertyProvider.Key,
-					                            StringComparison.Ordinal);
+												StringComparison.Ordinal);
 				}
 
 				return comparison;
@@ -54,14 +54,14 @@ namespace Beamable.Editor.UI.Components
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(BussStyleSheet styleSheet,
-		                      BussStyleRule styleRule,
-		                      Action onUndoAction,
-		                      BussElement selectedElement,
-		                      bool isSelected,
-		                      VariableDatabase variablesDatabase,
-		                      PropertySourceDatabase propertiesDatabase,
-		                      IEnumerable<BussStyleSheet> writableStyleSheets,
-		                      Action globalRefresh)
+							  BussStyleRule styleRule,
+							  Action onUndoAction,
+							  BussElement selectedElement,
+							  bool isSelected,
+							  VariableDatabase variablesDatabase,
+							  PropertySourceDatabase propertiesDatabase,
+							  IEnumerable<BussStyleSheet> writableStyleSheets,
+							  Action globalRefresh)
 		{
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
@@ -93,7 +93,7 @@ namespace Beamable.Editor.UI.Components
 				SerializableValueImplementationHelper.ImplementationData data =
 					SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                                   t != typeof(FractionFloatBussProperty)).ToList();
+																   t != typeof(FractionFloatBussProperty)).ToList();
 
 				foreach (Type type in types)
 				{
@@ -181,25 +181,25 @@ namespace Beamable.Editor.UI.Components
 				foreach (BussStyleSheet targetStyleSheet in writableStyleSheets)
 				{
 					commands.Add(new GenericMenuCommand(
-						             $"{Constants.Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}",
-						             () =>
-						             {
-							             BussStyleSheetUtility.CopySingleStyle(
-								             targetStyleSheet, StyleRule);
-						             }));
+									 $"{Constants.Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}",
+									 () =>
+									 {
+										 BussStyleSheetUtility.CopySingleStyle(
+											 targetStyleSheet, StyleRule);
+									 }));
 				}
 			}
 			else
 			{
 				commands.Add(new GenericMenuCommand($"{Constants.Features.Buss.MenuItems.COPY_INTO_NEW_STYLE_SHEET}",
-				                                    () =>
-				                                    {
-					                                    NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
-					                                    if (window != null)
-					                                    {
-						                                    window.Init(new List<BussStyleRule> {StyleRule});
-					                                    }
-				                                    }));
+													() =>
+													{
+														NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
+														if (window != null)
+														{
+															window.Init(new List<BussStyleRule> { StyleRule });
+														}
+													}));
 			}
 
 			if (IsWritable)
@@ -235,11 +235,11 @@ namespace Beamable.Editor.UI.Components
 			foreach (string key in BussStyle.Keys)
 			{
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
-				                       BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
+									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-				                                                  PropertiesDatabase.GetTracker(SelectedElement),
-				                                                  null, RemovePropertyClicked, _globalRefresh);
+																  PropertiesDatabase.GetTracker(SelectedElement),
+																  null, RemovePropertyClicked, _globalRefresh);
 
 				models.Add(model);
 			}
@@ -256,7 +256,7 @@ namespace Beamable.Editor.UI.Components
 		private List<StylePropertyModel> GetVariables()
 		{
 			var variables = new List<StylePropertyModel>();
-			
+
 			foreach (var propertyProvider in StyleRule.Properties)
 			{
 				if (!propertyProvider.IsVariable)
@@ -265,8 +265,8 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-				                                   PropertiesDatabase.GetTracker(SelectedElement), null,
-				                                   RemovePropertyClicked, _globalRefresh);
+												   PropertiesDatabase.GetTracker(SelectedElement), null,
+												   RemovePropertyClicked, _globalRefresh);
 				variables.Add(model);
 			}
 
