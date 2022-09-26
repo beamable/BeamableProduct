@@ -29,7 +29,7 @@ namespace Beamable.Editor.UI.Components
 				if (comparison == 0)
 				{
 					comparison = string.Compare(x.PropertyProvider.Key, y.PropertyProvider.Key,
-												StringComparison.Ordinal);
+					                            StringComparison.Ordinal);
 				}
 
 				return comparison;
@@ -40,6 +40,7 @@ namespace Beamable.Editor.UI.Components
 
 		private readonly PropertyComparer _propertyComparer = new PropertyComparer();
 		private readonly Action _globalRefresh;
+		private readonly ThemeModel.PropertyDisplayFilter _currentDisplayFilter;
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -54,14 +55,15 @@ namespace Beamable.Editor.UI.Components
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(BussStyleSheet styleSheet,
-							  BussStyleRule styleRule,
-							  Action onUndoAction,
-							  BussElement selectedElement,
-							  bool isSelected,
-							  VariableDatabase variablesDatabase,
-							  PropertySourceDatabase propertiesDatabase,
-							  IEnumerable<BussStyleSheet> writableStyleSheets,
-							  Action globalRefresh)
+		                      BussStyleRule styleRule,
+		                      Action onUndoAction,
+		                      BussElement selectedElement,
+		                      bool isSelected,
+		                      VariableDatabase variablesDatabase,
+		                      PropertySourceDatabase propertiesDatabase,
+		                      IEnumerable<BussStyleSheet> writableStyleSheets,
+		                      Action globalRefresh,
+		                      ThemeModel.PropertyDisplayFilter currentDisplayFilter)
 		{
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
@@ -73,6 +75,7 @@ namespace Beamable.Editor.UI.Components
 			WritableStyleSheets = writableStyleSheets;
 
 			_globalRefresh = globalRefresh;
+			_currentDisplayFilter = currentDisplayFilter;
 		}
 
 		public void AddRuleButtonClicked(MouseDownEvent evt)
@@ -93,7 +96,7 @@ namespace Beamable.Editor.UI.Components
 				SerializableValueImplementationHelper.ImplementationData data =
 					SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-																   t != typeof(FractionFloatBussProperty)).ToList();
+				                                                   t != typeof(FractionFloatBussProperty)).ToList();
 
 				foreach (Type type in types)
 				{
@@ -181,25 +184,25 @@ namespace Beamable.Editor.UI.Components
 				foreach (BussStyleSheet targetStyleSheet in writableStyleSheets)
 				{
 					commands.Add(new GenericMenuCommand(
-									 $"{Constants.Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}",
-									 () =>
-									 {
-										 BussStyleSheetUtility.CopySingleStyle(
-											 targetStyleSheet, StyleRule);
-									 }));
+						             $"{Constants.Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}",
+						             () =>
+						             {
+							             BussStyleSheetUtility.CopySingleStyle(
+								             targetStyleSheet, StyleRule);
+						             }));
 				}
 			}
 			else
 			{
 				commands.Add(new GenericMenuCommand($"{Constants.Features.Buss.MenuItems.COPY_INTO_NEW_STYLE_SHEET}",
-													() =>
-													{
-														NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
-														if (window != null)
-														{
-															window.Init(new List<BussStyleRule> { StyleRule });
-														}
-													}));
+				                                    () =>
+				                                    {
+					                                    NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
+					                                    if (window != null)
+					                                    {
+						                                    window.Init(new List<BussStyleRule> {StyleRule});
+					                                    }
+				                                    }));
 			}
 
 			if (IsWritable)
@@ -235,13 +238,16 @@ namespace Beamable.Editor.UI.Components
 			foreach (string key in BussStyle.Keys)
 			{
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
-									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
- 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-																  PropertiesDatabase.GetTracker(SelectedElement),
-																  null, RemovePropertyClicked, _globalRefresh);
+				                       BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
-				models.Add(model);
+				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
+				                                   PropertiesDatabase.GetTracker(SelectedElement),
+				                                   null, RemovePropertyClicked, _globalRefresh);
+
+				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
+				{
+					models.Add(model);
+				}
 			}
 
 			if (sort)
@@ -265,8 +271,8 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-												   PropertiesDatabase.GetTracker(SelectedElement), null,
-												   RemovePropertyClicked, _globalRefresh);
+				                                   PropertiesDatabase.GetTracker(SelectedElement), null,
+				                                   RemovePropertyClicked, _globalRefresh);
 				variables.Add(model);
 			}
 

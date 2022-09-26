@@ -54,9 +54,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_labelComponent.text = _model.PropertyProvider.Key;
 
-			var result = _model.GetResult(out PropertySourceTracker propertySourceTracker,
-			                              out IBussProperty property,
-			                              out VariableDatabase.PropertyReference variableSource);
+
 
 			if (_model.HasVariableConnected)
 			{
@@ -68,6 +66,7 @@ namespace Beamable.Editor.UI.Components
 				}
 				else
 				{
+					_model.GetResult(out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
 					CreateEditableField(property);
 					SetVariableSource(variableSource);
 				}
@@ -80,7 +79,7 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			CheckIfIsReadOnly();
-			SetOverridenClass(propertySourceTracker, result);
+			EnableInClassList("overriden", _model.IsOverriden);
 		}
 
 		protected override void OnDestroy()
@@ -130,17 +129,6 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
 			_valueParent.Add(_propertyVisualElement);
 			_propertyVisualElement.Init();
-		}
-
-		private void SetOverridenClass(PropertySourceTracker context, VariableDatabase.PropertyValueState result)
-		{
-			bool overriden = false;
-			if (context != null && result == VariableDatabase.PropertyValueState.SingleResult)
-			{
-				overriden = _model.PropertyProvider != context.GetUsedPropertyProvider(_model.PropertyProvider.Key);
-			}
-
-			EnableInClassList("overriden", overriden);
 		}
 
 		private void SetupVariableConnection()
