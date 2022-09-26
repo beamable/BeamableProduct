@@ -13,10 +13,10 @@ namespace Beamable.Editor.UI.Components
 		private Label _propertiesFilterLabel;
 
 		// Helper dict for custom names
-		private Dictionary<PropertyDisplayFilter, string> _propertyDisplayFilterTexts =
-			new Dictionary<PropertyDisplayFilter, string>
+		private readonly Dictionary<ThemeModel.PropertyDisplayFilter, string> _propertyDisplayFilterTexts =
+			new Dictionary<ThemeModel.PropertyDisplayFilter, string>
 			{
-				{PropertyDisplayFilter.IgnoreOverridden, "Ignore Overriden"}
+				{ThemeModel.PropertyDisplayFilter.IgnoreOverridden, "Ignore Overriden"}
 			};
 
 		public ThemeManagerBreadcrumbsVisualElement(ThemeManagerModel model) : base(nameof(ThemeManagerBreadcrumbsVisualElement))
@@ -33,10 +33,10 @@ namespace Beamable.Editor.UI.Components
 			_propertiesFilterLabel = _propertiesFilter.Q<Label>();
 			_propertiesFilter.clickable.clicked -= HandlePropertiesFilterButton;
 			_propertiesFilter.clickable.clicked += HandlePropertiesFilterButton;
-			UpdateServicesFilterText(Model.PropertyDisplayFilter);
+			UpdateServicesFilterText(Model.DisplayFilter);
 		}
 
-		private void UpdateServicesFilterText(PropertyDisplayFilter filter)
+		private void UpdateServicesFilterText(ThemeModel.PropertyDisplayFilter filter)
 			=> _propertiesFilterLabel.text = GetPropertyDisplayFilterText(filter);
 
 		private void HandlePropertiesFilterButton()
@@ -51,20 +51,16 @@ namespace Beamable.Editor.UI.Components
 			content.OnNewPropertyDisplayFilterSelected += filter =>
 			{
 				wnd.Close();
-				Model.PropertyDisplayFilter = filter;
+				Model.DisplayFilter = filter;
 				Model.ForceRefresh();
 			};
 		}
 
-		public string GetPropertyDisplayFilterText(PropertyDisplayFilter propertyDisplayFilter)
+		public string GetPropertyDisplayFilterText(ThemeModel.PropertyDisplayFilter propertyDisplayFilter)
 			=> !_propertyDisplayFilterTexts.ContainsKey(propertyDisplayFilter)
 				? propertyDisplayFilter.ToString()
 				: _propertyDisplayFilterTexts[propertyDisplayFilter];
 	}
 
-	public enum PropertyDisplayFilter
-	{
-		All,
-		IgnoreOverridden
-	}
+
 }

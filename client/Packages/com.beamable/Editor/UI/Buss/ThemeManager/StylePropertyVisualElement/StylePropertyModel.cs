@@ -30,14 +30,18 @@ namespace Beamable.Editor.UI.Components
 		private bool IsInline => InlineStyleOwner != null;
 		public bool HasVariableConnected => PropertyProvider.HasVariableReference;
 
+		public bool IsOverriden =>
+			PropertySourceTracker != null && PropertySourceTracker != null &
+			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key);
+
 		public StylePropertyModel(BussStyleSheet styleSheet,
-								  BussStyleRule styleRule,
-								  BussPropertyProvider propertyProvider,
-								  VariableDatabase variablesDatabase,
-								  PropertySourceTracker propertySourceTracker,
-								  BussElement inlineStyleOwner,
-								  Action<string> removePropertyAction,
-								  Action globalRefresh)
+		                          BussStyleRule styleRule,
+		                          BussPropertyProvider propertyProvider,
+		                          VariableDatabase variablesDatabase,
+		                          PropertySourceTracker propertySourceTracker,
+		                          BussElement inlineStyleOwner,
+		                          Action<string> removePropertyAction,
+		                          Action globalRefresh)
 		{
 			_removePropertyAction = removePropertyAction;
 			_globalRefresh = globalRefresh;
@@ -49,27 +53,14 @@ namespace Beamable.Editor.UI.Components
 			InlineStyleOwner = inlineStyleOwner;
 		}
 
-		public VariableDatabase.PropertyValueState GetResult(out PropertySourceTracker propertySourceTracker,
-															 out IBussProperty bussProperty,
-															 out VariableDatabase.PropertyReference propertyReference)
+		public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
 		{
-			propertySourceTracker = null;
-
-			if (PropertySourceTracker != null && PropertySourceTracker.Element != null)
-			{
-				if (StyleRule?.Selector?.CheckMatch(PropertySourceTracker.Element) ?? false)
-				{
-					propertySourceTracker = PropertySourceTracker;
-				}
-			}
-
-			VariableDatabase.PropertyValueState result = VariablesDatabase.TryGetProperty(PropertyProvider,
-				StyleRule, out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
+			VariablesDatabase.TryGetProperty(PropertyProvider,
+			                                 StyleRule, out IBussProperty property,
+			                                 out VariableDatabase.PropertyReference variableSource);
 
 			bussProperty = property;
 			propertyReference = variableSource;
-
-			return result;
 		}
 
 		public void LabelClicked(MouseDownEvent evt)
