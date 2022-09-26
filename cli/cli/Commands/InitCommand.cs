@@ -33,6 +33,9 @@ public class InitCommand : AppCommand<InitCommandArgs>
 	{
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
+		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
+		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
+		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 	}
 
 	public override async Task Handle(InitCommandArgs args)

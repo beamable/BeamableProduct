@@ -4,6 +4,7 @@ public static class Constants
 {
 	public const string CONFIG_FOLDER = ".beamable";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "config-defaults.json";
+	public const string CONFIG_TOKEN_FILE_NAME = "user-token.json";
 
 	public const string PLATFORM_DEV = "https://dev.api.beamable.com";
 	public const string PLATFORM_STAGING = "https://staging.api.beamable.com";
