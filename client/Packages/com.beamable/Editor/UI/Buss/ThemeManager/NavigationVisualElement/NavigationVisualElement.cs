@@ -26,11 +26,11 @@ namespace Beamable.Editor.UI.Components
 			base.Init();
 
 			VisualElement header = new VisualElement { name = "header" };
-			
-			Image foldIcon = new Image {name = "foldIcon"};
+
+			Image foldIcon = new Image { name = "foldIcon" };
 			foldIcon.AddToClassList("unfolded");
 			header.Add(foldIcon);
-			
+
 			TextElement label = new TextElement { name = "headerLabel", text = "Navigation" };
 			header.Add(label);
 
