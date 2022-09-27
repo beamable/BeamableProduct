@@ -76,6 +76,7 @@ loadtests/
 /templates/templates/nupkg/
 /templates/templates/obj/
 /templates/templates/.idea/
+/templates/Data/
 /templates/BeamService/bin/
 /templates/BeamService/obj/
 /templates/BeamService/.idea/
