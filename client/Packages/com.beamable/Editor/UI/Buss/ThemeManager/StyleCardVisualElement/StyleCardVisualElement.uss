@@ -131,4 +131,4 @@ BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.does
 .hidden .showAllProperties BussStylePropertyVisualElement.doesntExists, .hidden BussStylePropertyVisualElement.exists {
      display: none;
      visibility: hidden;
- }
+}
