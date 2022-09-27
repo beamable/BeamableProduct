@@ -26,17 +26,17 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_labelComponent = new TextElement { name = "propertyLabel", tooltip = _model.Tooltip };
+			_labelComponent = new TextElement {name = "propertyLabel", tooltip = _model.Tooltip};
 			_labelComponent.RegisterCallback<MouseDownEvent>(_model.LabelClicked);
 			Root.Add(_labelComponent);
 
-			_valueParent = new VisualElement { name = "value" };
+			_valueParent = new VisualElement {name = "value"};
 			Root.Add(_valueParent);
 
-			_variableParent = new VisualElement { name = "globalVariable" };
+			_variableParent = new VisualElement {name = "globalVariable"};
 			Root.Add(_variableParent);
 
-			var overrideIndicatorParent = new VisualElement { name = "overrideIndicatorParent" };
+			var overrideIndicatorParent = new VisualElement {name = "overrideIndicatorParent"};
 			overrideIndicatorParent.AddToClassList("overrideIndicatorParent");
 			Root.Add(overrideIndicatorParent);
 
@@ -52,9 +52,27 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			_labelComponent.text = _model.PropertyProvider.Key;
+			string FormatKey(string input)
+			{
+				for (int i = input.Length - 1; i >= 0; i--)
+				{
+					char currentChar = input[i];
 
+					if (i == 0)
+					{
+						input = Char.ToUpperInvariant(currentChar) + input.Substring(1);
+					}
 
+					if (char.IsUpper(currentChar))
+					{
+						input = input.Insert(i, " ");
+					}
+				}
+
+				return input;
+			}
+
+			_labelComponent.text = FormatKey(_model.PropertyProvider.Key);
 
 			if (_model.HasVariableConnected)
 			{
@@ -70,14 +88,13 @@ namespace Beamable.Editor.UI.Components
 					CreateEditableField(property);
 					SetVariableSource(variableSource);
 				}
-
-				SetupVariableConnection();
 			}
 			else
 			{
 				CreateEditableField(_model.PropertyProvider.GetProperty());
 			}
 
+			SetupVariableConnection();
 			CheckIfIsReadOnly();
 			EnableInClassList("overriden", _model.IsOverriden);
 		}
@@ -152,13 +169,13 @@ namespace Beamable.Editor.UI.Components
 				if (variableSource.StyleSheet == null)
 				{
 					_model.Tooltip = $"Variable: {variableSource.PropertyProvider.Key}\n" +
-									 "Declared in inline style.";
+					                 "Declared in inline style.";
 				}
 				else
 				{
 					_model.Tooltip = $"Variable: {variableSource.PropertyProvider.Key}\n" +
-									 $"Selector: {variableSource.StyleRule.SelectorString}\n" +
-									 $"Style sheet: {variableSource.StyleSheet.name}";
+					                 $"Selector: {variableSource.StyleRule.SelectorString}\n" +
+					                 $"Style sheet: {variableSource.StyleSheet.name}";
 				}
 			}
 			else
