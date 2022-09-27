@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Beamable</Authors>
+    <Description>dotnet new templates for Beamable</Description>
+    <PackageTags>template dotnet Beamable service</PackageTags>
+    <PackageLicense></PackageLicense>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>

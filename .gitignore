@@ -69,6 +69,7 @@ loadtests/
 /cli/tests/.idea/
 /cli/*.sln.DotSettings.*
 
+/templates/artifacts/
 /templates/bin/
 /templates/obj
 /templates/.idea/
@@ -76,7 +77,7 @@ loadtests/
 /templates/templates/nupkg/
 /templates/templates/obj/
 /templates/templates/.idea/
-/templates/Data/
+/templates/templates/Data/
 /templates/BeamService/bin/
 /templates/BeamService/obj/
 /templates/BeamService/.idea/
