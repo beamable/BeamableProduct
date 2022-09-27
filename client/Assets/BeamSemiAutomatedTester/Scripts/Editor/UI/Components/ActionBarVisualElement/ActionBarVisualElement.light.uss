@@ -27,3 +27,7 @@
 #generateReportIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Config_dark.png");
 }
+
+#openMainMenuSceneIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_dark.png");
+}
