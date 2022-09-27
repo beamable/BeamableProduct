@@ -69,6 +69,18 @@ loadtests/
 /cli/tests/.idea/
 /cli/*.sln.DotSettings.*
 
+/templates/bin/
+/templates/obj
+/templates/.idea/
+/templates/templates/bin/
+/templates/templates/nupkg/
+/templates/templates/obj/
+/templates/templates/.idea/
+/templates/BeamService/bin/
+/templates/BeamService/obj/
+/templates/BeamService/.idea/
+/templates/*.sln.DotSettings.*
+
 # Server generated files.
 /server/tmp/
 /server/coverage/
