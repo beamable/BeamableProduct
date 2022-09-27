@@ -33,7 +33,7 @@ namespace Beamable.BSAT.Editor.UI.Components
 			base.Refresh();
 			
 			_testNameInput = Root.Q<LabeledTextField>("testNameInput");
-			_testNameInput.Setup("Test name", string.Empty, HandleInputChanged);
+			_testNameInput.Setup("Test name", string.Empty, s => HandleInputChanged(s));
 			_testNameInput.Refresh();
 
 			_create = Root.Q<Button>("create");
@@ -44,11 +44,11 @@ namespace Beamable.BSAT.Editor.UI.Components
 			_cancel.clickable.clicked -= HandleCancelButton;
 			_cancel.clickable.clicked += HandleCancelButton;
 
-			HandleInputChanged();
+			HandleInputChanged(String.Empty);
 		}
 		private void HandleCreateButton() => OnCreateButtonPressed?.Invoke(_testNameInput.Value);
 		private void HandleCancelButton() => OnCloseButtonPressed?.Invoke();
-		private void HandleInputChanged()
+		private void HandleInputChanged(string value)
 		{
 			_create.parent.tooltip = !IsValid(out var errorMessage) ? errorMessage : string.Empty;
 			_create.SetEnabled(string.IsNullOrWhiteSpace(errorMessage));

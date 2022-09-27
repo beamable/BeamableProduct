@@ -36,6 +36,7 @@ namespace Beamable.Common
 					public const string COPY_TO = "Copy to";
 					public const string COPY_INTO_NEW_STYLE_SHEET = "Copy into new style sheet";
 					public const string REMOVE = "Remove";
+					public const string NONE = "None";
 				}
 
 				public static partial class Paths
