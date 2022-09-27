@@ -12,6 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6247d5345dc64f2a82f4f42e7d63e89, type: 3}
   m_Name: BussConfiguration
   m_EditorClassIdentifier: 
-  _globalStyleSheet: {fileID: 0}
-  _globalStyleSheets:
-  - {fileID: 11400000, guid: d38b58a191138be449a3eb5307db7da9, type: 2}
+  FallbackSheet: {fileID: 11400000, guid: e6e7b9cf9a0734f8d926ffb8e740bf13, type: 2}
+  DefaultSheets: []

@@ -30,39 +30,25 @@ namespace Beamable.Experimental.Api.Parties
 
 		public Promise<Party> CreateParty(PartyRestriction restriction, int maxSize = 0)
 		{
-			object request;
-			if (maxSize == 0)
-			{
-				request = new CreateDefaultPartyRequest(restriction.ToString(), _userContext.UserId.ToString());
-			}
-			else
-			{
-				request = new CreatePartyRequest(restriction.ToString(), _userContext.UserId.ToString(), maxSize);
-			}
+			var request = new CreatePartyRequest(restriction.ToString(), _userContext.UserId.ToString(), maxSize);
+			var json = Serialization.JsonSerializable.ToJson(request);
 			
 			return _requester.Request<Party>(
 				Method.POST,
 				"/parties",
-				request
+				json
 			);
 		}
 
 		public Promise<Party> UpdateParty(string partyId, PartyRestriction restriction, int maxSize = 0)
 		{
-			object request;
-			if (maxSize == 0)
-			{
-				request = new UpdateDefaultPartyRequest(restriction.ToString());
-			}
-			else
-			{
-				request = new UpdatePartyRequest(restriction.ToString(), maxSize);
-			}
+			var request = new UpdatePartyRequest(restriction.ToString(), maxSize);
+			var json = Serialization.JsonSerializable.ToJson(request);
 			
 			return _requester.Request<Party>(
 				Method.PUT,
 				$"/parties/{partyId}/metadata",
-				request
+				json
 			);
 		}
 

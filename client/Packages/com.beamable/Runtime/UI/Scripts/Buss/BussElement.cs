@@ -10,6 +10,9 @@ namespace Beamable.UI.Buss
 	[ExecuteAlways, DisallowMultipleComponent]
 	public class BussElement : MonoBehaviour, ISerializationCallbackReceiver
 	{
+		public event Action Change;
+		public event Action StyleRecalculated;
+
 #pragma warning disable CS0649
 		[SerializeField, BussId] private string _id;
 		[SerializeField, BussClass] private List<string> _classes = new List<string>();
@@ -24,10 +27,6 @@ namespace Beamable.UI.Buss
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
-		public event Action StyleSheetsChanged;
-		public event Action StyleRecalculated;
-		public event Action Validate;
-
 		public string Id
 		{
 			get => _id;
@@ -39,9 +38,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public IEnumerable<string> Classes => _classes;
-		public IEnumerable<string> PseudoClasses => _pseudoClasses;
 		public string TypeName => GetType().Name;
-		public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
 		public BussStyleDescription InlineStyle => _inlineStyle;
 
 		public BussStyleSheet StyleSheet
@@ -76,10 +73,7 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public virtual void ApplyStyle()
-		{
-			// TODO: common style implementation for BUSS Elements, so: applying all properties that affect RectTransform
-		}
+		public virtual void ApplyStyle() { }
 
 		#region Unity Callbacks
 
@@ -105,7 +99,6 @@ namespace Beamable.UI.Buss
 
 			CheckParent();
 			OnStyleChanged();
-			Validate?.Invoke();
 		}
 
 		private void OnTransformParentChanged()
@@ -155,9 +148,9 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetClass(string className, bool enabled)
+		public void SetClass(string className, bool isEnabled)
 		{
-			if (enabled)
+			if (isEnabled)
 			{
 				AddClass(className);
 			}
@@ -167,10 +160,10 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetPseudoClass(string className, bool enabled)
+		public void SetPseudoClass(string className, bool isEnabled)
 		{
 			var changed = false;
-			if (enabled)
+			if (isEnabled)
 			{
 				if (!_pseudoClasses.Contains(className))
 				{
@@ -186,7 +179,7 @@ namespace Beamable.UI.Buss
 			if (changed)
 			{
 				Style.SetStyleAnimatedListener(ApplyStyle);
-				Style.SetPseudoStyle(className, enabled);
+				Style.SetPseudoStyle(className, isEnabled);
 			}
 		}
 
@@ -209,7 +202,7 @@ namespace Beamable.UI.Buss
 			AddParentStyleSheets(this);
 			if (hash != GetStyleSheetHash())
 			{
-				StyleSheetsChanged?.Invoke();
+				Change?.Invoke();
 			}
 		}
 
@@ -262,7 +255,8 @@ namespace Beamable.UI.Buss
 
 		public void CheckParent()
 		{
-			var foundParent = (transform == null || transform.parent == null)
+			var mysTransform = transform;
+			var foundParent = (mysTransform == null || mysTransform.parent == null)
 				? null
 				: transform.parent.GetComponentInParent<BussElement>();
 

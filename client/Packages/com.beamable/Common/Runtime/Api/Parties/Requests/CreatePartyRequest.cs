@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Beamable.Serialization;
+using System;
 
 namespace Beamable.Experimental.Api.Parties
 {
 	[Serializable]
-	public class CreatePartyRequest
+	public class CreatePartyRequest : JsonSerializable.ISerializable
 	{
 		/// <summary>
 		/// Stringified version of the <see cref="PartyRestriction"/>
@@ -20,11 +21,21 @@ namespace Beamable.Experimental.Api.Parties
 		/// </summary>
 		public int maxSize;
 
-		public CreatePartyRequest(string restriction, string leader, int maxSize)
+		public CreatePartyRequest(string restriction, string leader, int maxSize = 0)
 		{
 			this.restriction = restriction;
 			this.leader = leader;
 			this.maxSize = maxSize;
+		}
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize("restriction", ref restriction);
+			s.Serialize("leader", ref leader);
+			if (maxSize > 0)
+			{
+				s.Serialize("maxSize", ref maxSize);
+			}
 		}
 	}
 }
