@@ -10,6 +10,7 @@
 			public const string SCRIPT_TEMPLATE_NAME = "TestableTemplate";
 			public const string SCRIPT_TEMPLATE_NAMESPACE_NAME = "TestableNamespaceTemplate";
 			public const string CONFIGURATION_FILE_NAME = "TestConfiguration";
+			public const string MAIN_MENU_TEST_SCENE_NAME = "TestMainMenu";
 			public static string GetReportFileName(string reportName) => $"Report_{reportName}";
 		}
 		public static class Paths
@@ -22,6 +23,7 @@
 			public static readonly string PATH_TO_SCENE_TEMPLATE = $"{PATH_TO_TEMPLATES}/{General.SCENE_TEMPLATE_NAME}";
 			public static readonly string PATH_TO_SCRIPT_TEMPLATE = $"{PATH_TO_TEMPLATES}/{General.SCRIPT_TEMPLATE_NAME}";
 			public static readonly string PATH_TO_REPORTS = $"{PATH_TO_TESTING_TOOL}/Reports";
+			public static readonly string PATH_TO_MAIN_MENU_TEST_SCENE = $"{PATH_TO_TESTING_TOOL}/{General.MAIN_MENU_TEST_SCENE_NAME}.unity";
 
 			public static string GetPathToTestResources(string sceneName) => $"{PATH_TO_RESOURCES}/Tests/{sceneName}";
 			public static string GetPathToTest(string sceneName) => $"{PATH_TO_TEST_SCENES}/{sceneName}";
