@@ -1,7 +1,11 @@
 #button {
     width: 30px;
     height: 30px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
+    -unity-text-align: middle-center;
+    align-self: center;
+    margin-left: 3px;
+    flex-shrink: 0;
+    justify-content: center;
 }
 
 DropdownVisualElement{

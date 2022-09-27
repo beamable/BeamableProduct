@@ -7,7 +7,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public class VariableConnectionVisualElement : BeamableBasicVisualElement
 	{
-		private Button _button;
+		private VisualElement _button;
 		private IBussProperty _cachedProperty;
 		private DropdownVisualElement _dropdown;
 		private VisualElement _mainElement;
@@ -29,8 +29,8 @@ namespace Beamable.Editor.UI.Components
 			_mainElement.style.SetFlexDirection(FlexDirection.Row);
 			Root.Add(_mainElement);
 
-			_button = new Button { name = "button" };
-			_button.clickable.clicked += _model.OnButtonClick;
+			_button = new VisualElement { name = "button" };
+			_button.RegisterCallback<MouseDownEvent>(_model.OnButtonClick);
 			_mainElement.Add(_button);
 
 			_dropdown = new DropdownVisualElement { name = "dropdown" };
@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 
 		protected override void OnDestroy()
 		{
-			_button.clickable.clicked -= _model.OnButtonClick;
+			_button.UnregisterCallback<MouseDownEvent>(_model.OnButtonClick);
 		}
 
 		public override void Refresh()

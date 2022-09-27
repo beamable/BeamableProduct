@@ -89,7 +89,7 @@ namespace Beamable.Editor.UI.Components
 			context.ShowAsContext();
 		}
 
-		public void OnButtonClick()
+		public void OnButtonClick(MouseDownEvent mouseDownEvent)
 		{
 			if (StyleRule.TryGetCachedProperty(PropertyProvider.Key, out var property))
 			{
