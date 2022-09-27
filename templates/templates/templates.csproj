@@ -5,15 +5,22 @@
         <TargetFramework>net6.0</TargetFramework>
         <PackageId>Beamable.Templates</PackageId>
         <Title>Beamable dotnet-new-templates</Title>
+
+        <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+        
         <IncludeContentInPack>true</IncludeContentInPack>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <ContentTargetFolders>content</ContentTargetFolders>
         <NoWarn>$(NoWarn);NU5128</NoWarn>
         <NoDefaultExcludes>true</NoDefaultExcludes>
     </PropertyGroup>
+    
+    <PropertyGroup>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="Data/BeamService/**" Exclude="Data/BeamService/bin/**;Data/BeamService/obj/**;"/>
+        <Content Include="Data/BeamService/**" Exclude="Data/BeamService/bin/**;Data/BeamService/obj/**;" />
         <Compile Remove="**/*" />
     </ItemGroup>
 

@@ -1,4 +1,17 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿using Beamable.Server;
+using System.Reflection;
 
-var beamService = "hello";
-Console.WriteLine("Hello, World!! from BeamService" + beamService);
+namespace Beamable.BeamService
+{
+	public class Program
+	{
+		public static void Main(string[] _)
+		{
+			Console.Out.WriteLine("Hello world: " + Assembly.GetEntryAssembly().GetName().Version);
+		}
+		// public static async Task Main(string[] _)
+		// {
+		// 	await MicroserviceBootstrapper.Start<BeamService>();
+		// }
+	}
+}

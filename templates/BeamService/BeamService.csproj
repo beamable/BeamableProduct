@@ -1,14 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
-
-    <!-- <ItemGroup>
-      <Content Include=".template.config\template.json" />
-    </ItemGroup> -->
-
+    
+    <Target Name="UpdateBeamable">
+        <Message Text="Updating Beamable Runtime Nuget Package..." />
+        <Exec Command="dotnet add package Beamable.Microservice.Runtime" />
+        <Message Text="Updating Beamable Local CLI Tool..." />
+        <Exec Command="dotnet tool update Beamable.Tools --local" />
+        <Message Text="Done updating Beamable!" />
+    </Target>
+    
+    <ItemGroup>
+      <PackageReference Include="Beamable.Microservice.Runtime" Version="1.3.6" />
+    </ItemGroup>
 </Project>

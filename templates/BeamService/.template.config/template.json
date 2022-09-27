@@ -16,5 +16,12 @@
         { "exclude": [ ".vs/**", ".template_config/**", "[Content_Types].xml" ,"_rels/**"] }
       ]
     }
-  ]
+  ],
+  "symbols": {
+    "TemplateVersion": {
+      "replaces": "TemplateVersion",
+      "type": "bind",
+      "binding": "Version"
+    }
+  }
 }
