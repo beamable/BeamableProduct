@@ -50,6 +50,7 @@ namespace Beamable.Editor.UI.Components
 		private PropertySourceDatabase PropertiesDatabase { get; }
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
 		public bool IsWritable => StyleSheet.IsWritable;
+		public bool IsFolded => StyleRule.Folded;
 		public bool ShowAll { get; private set; }
 		private bool Sorted { get; set; }
 		private BussElement SelectedElement { get; }
@@ -316,6 +317,13 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			Change?.Invoke();
+		}
+
+		public void FoldButtonClicked(MouseDownEvent evt)
+		{
+			StyleRule.SetFolded(!StyleRule.Folded);
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
 		}
 	}
 }
