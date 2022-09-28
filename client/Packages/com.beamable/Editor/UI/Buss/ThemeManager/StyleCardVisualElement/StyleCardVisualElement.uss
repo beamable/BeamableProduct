@@ -19,12 +19,14 @@
     justify-content: center;
 }
 
-#colorBlock {
-    margin-top: 5px;
-    margin-bottom: 5px;
+#foldIconParent {
+    justify-content: center;
     margin-left:10px;
-    width: 5px;
-    background-color: rgb(144, 144, 144);
+}
+
+#foldIcon {
+    height: 7px;
+    width: 7px;
 }
 
 #colorBlock.active {
@@ -101,8 +103,7 @@
 }
 
 .hidden {
-    visibility: hidden;
-    height: 0;
+    display: none;
 }
 
 #removeButtonContainer {
