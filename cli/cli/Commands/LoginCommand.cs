@@ -41,7 +41,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	{
 		var username = GetUserName(args);
 		var password = GetPassword(args);
-		var response = await _authApi.Login(username, password, true, args.customerScoped).ShowLoading("Authorizing...");
+		var response = await _authApi.Login(username, password, false, args.customerScoped).ShowLoading("Authorizing...");
 		if (args.saveToEnvironment && !string.IsNullOrWhiteSpace(response.refresh_token))
 		{
 			BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
