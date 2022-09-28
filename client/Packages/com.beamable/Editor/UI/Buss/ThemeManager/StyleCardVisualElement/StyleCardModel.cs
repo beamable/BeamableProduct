@@ -173,6 +173,7 @@ namespace Beamable.Editor.UI.Components
 				commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.DUPLICATE, () =>
 				{
 					BussStyleSheetUtility.CopySingleStyle(StyleSheet, StyleRule);
+					_globalRefresh.Invoke();
 				}));
 			}
 
@@ -187,8 +188,8 @@ namespace Beamable.Editor.UI.Components
 									 $"{Constants.Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}",
 									 () =>
 									 {
-										 BussStyleSheetUtility.CopySingleStyle(
-											 targetStyleSheet, StyleRule);
+										 BussStyleSheetUtility.CopySingleStyle(targetStyleSheet, StyleRule);
+										 _globalRefresh.Invoke();
 									 }));
 				}
 			}
