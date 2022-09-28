@@ -14,40 +14,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _styles:
   - _properties:
-    - key: backgroundColor
-      property:
+    - _key: backgroundColor
+      _property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
     _selector: .panel
   - _properties:
-    - key: fontSize
-      property:
+    - _key: fontSize
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":100.0}'
-    - key: textAlignment
-      property:
+    - _key: textAlignment
+      _property:
         type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
           Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         json: '{"Enum":514}'
-    - key: font
-      property:
+    - _key: font
+      _property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"AssetSerializationKey":0}'
-    - key: borderColor
-      property:
+    - _key: borderColor
+      _property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":0.0,"b":0.0,"a":1.0}}'
-    - key: borderWidth
-      property:
+    - _key: borderWidth
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":0.10000000149011612}'
-    - key: fontColor
-      property:
+    - _key: fontColor
+      _property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'

@@ -107,8 +107,7 @@ public class CliRequester : IBeamableRequester
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
-
-		client.DefaultRequestHeaders.Add("X-DE-SCOPED", customerScoped ? cid : $"{cid}.{pid}");
+		client.DefaultRequestHeaders.Add("X-DE-SCOPE", customerScoped ? cid : $"{cid}.{pid}");
 
 		if (includeAuthHeader && !string.IsNullOrWhiteSpace(token?.Token))
 		{

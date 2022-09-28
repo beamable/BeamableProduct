@@ -1,6 +1,7 @@
 using Beamable.Common.Leaderboards;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Common.Api.Leaderboards
 {
@@ -164,6 +165,13 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <param name="boardId"></param>
 		/// <returns></returns>
 		Promise<LeaderBoardView> GetFriendRanks(string boardId);
+
+		/// <summary>
+		/// Freeze given leaderboard which in effect will block submitting new scores.
+		/// </summary>
+		/// <param name="boardId"></param>
+		/// <returns></returns>
+		Promise<EmptyResponse> FreezeLeaderboard(string boardId);
 	}
 
 	[Serializable]
@@ -272,6 +280,11 @@ namespace Beamable.Common.Api.Leaderboards
 	public class LeaderBoardView
 	{
 		/// <summary>
+		/// The user id
+		/// </summary>
+		public long userId;
+
+		/// <summary>
 		/// The leaderboard id
 		/// </summary>
 		public string lbId;
@@ -284,7 +297,17 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <summary>
 		/// The <see cref="RankEntry"/> of the current player
 		/// </summary>
-		public RankEntry rankgt;
+		public RankEntry rankgt
+		{
+			get
+			{
+				if (_rankgt == null || _rankgt.gt == 0)
+					_rankgt = rankings?.FirstOrDefault(y => y.gt == userId);
+				return _rankgt;
+			}
+			set => _rankgt = value;
+		}
+		private RankEntry _rankgt;
 
 		/// <summary>
 		/// A set of <see cref="RankEntry"/>s that represent this section of the leaderboard view.

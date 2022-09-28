@@ -47,6 +47,7 @@ namespace Beamable.Common
 					: text;
 
 				public const string GENERATOR_SUFFIX = "_generator";
+				public const string DOTNET_COMPILE_ERROR_SYMBOL = "error CS";
 
 				public static class Logs
 				{

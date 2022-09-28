@@ -3,6 +3,7 @@
 
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -10,6 +11,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
+- Expanded/Collapsed state represented by icons in `Theme Manager`
+
+### Fixed
+- The default uncaught Promise handler no longer throws `IndexOutOfBounds` errors in high failure cases.
+
+## [1.3.6]
+### Fixed
+- Fixed sending custom analytic events using `AnalyticsTracker.TrackEvent`
+
+## [1.3.5]
+### Added
+- Utility apis for setting expiration on Mail Update and Mail Send requests
+
+### Fixed
+- VSP Package Attribution now uses requester.Cid rather than requester.AccessToken.Cid (which can be null at editor time)
+- Game Type content has validation for minimum team sizes.
+- Adding items to Inventory after changing authorized user works.
+
+## [1.3.4]
+### Added
+- Support for nullable types in Content serialization.
+
+### Fixed
+- Fixed issue with windows not refreshing after login to Beamable.
+
+### Changed
+- Beamable requests have a 15 second application level timeout.
+
+## [1.3.3]
+### Added
+- `ClearCaches` function on `StatsApi` to force invalidate stats cache.
+- Beamable version number is displayed in Login Window's footer.
+- Added `GetCloudDataContent` method in `ICloudDataApi` to simplify getting cloud data.
+
+### Changed
+- `UnityWebRequest` respect a 10 second timeout before reporting `NoConnectivityException`
+
+### Fixed
+- fixed issue with ChangeAuthorizedUser that cause the BeamContext to enter a bad state with respect to its MonoBehaviour systems
+
+## [1.3.2]
+
+### Added
+- `PaymentsService` now supports receipt verification through the `VerifyReceipt` method.
+
+## [1.3.1]
+### Added
+- A leaderboard can now be frozen using `LeaderboardService.FreezeLeaderboard` method to prevent additional scores to be submitted.
+
+### Changed
+- Editor tooling for `SerializableDictionaryStringToSomething<T>` now supports all subtypes
+
+### Fixed
+- iOS builds will no longer overwrite the Beamable user language preference.
+- An expired token will no longer cause an unintended realm changes in rare cases.
+- Logging into the editor will automatically put you in the realm (PID) defined in your `config-defaults.txt` file instead of incorrectly resetting you to your default realm. 
+- Correctly exposed `GetCurrentProject` method in `IAuthApi` to retrieve CID, PID and the project name. This functionality was already exposed in the `AuthService` class; we just moved it to the interface level to make it easier to access via `BeamContext.Api`.
+- Microservices Manager window will now render correctly after importing the microservices module.
+
+## [1.3.0]
 ### Added
 - `StopListeningForUpdates` and `ResumeListeningForUpdates` methods in `ContentService` to manual control content refresh on ClientManifest deployment.
 - `BeamableDispatcher` for editor scenarios to manage registering callbacks on the Unity Editor thread without needing an editor render frame.
@@ -42,18 +105,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BeamConsole accepts events after RESET command
 - Too many `EventSystem` components on startup
 - Fixed Beamable login error for archived & not existing realms
+- In Events and Listings schedule windows calendar buttons with days earlier than today can't be clicked
+- The `RankEntry` for current player is now mapped correctly in `LeaderBoardView` 
+
+## [1.2.10]
+no changes
+
+## [1.2.9]
+no changes
 
 ## [1.2.8]
 ### Added
-- SetLanguage function for IAuthApi
+- `SetLanguage` function for `IAuthApi`
 
 ### Changed
-- The Language field on the IPlatformRequester is no obsolete
+- The `Language` field on the `IPlatformRequester` is no obsolete
 - Beamable no longer sends "Accept-Language" headers
 
 ## [1.2.7]
 ### Changed
-- New players will now get a locale and a location stat based on the Unity Application.language field.
+- New players will now get a locale and a location stat based on the Unity `Application.language` field.
 
 ## [1.2.6]
 no changes

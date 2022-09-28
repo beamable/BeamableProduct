@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Api;
+using Beamable.Common.Api.Auth;
 
 namespace cli;
 

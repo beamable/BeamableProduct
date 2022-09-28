@@ -20,6 +20,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: 2db33de77fb01404da22d77fcbe1eefe, type: 3}
     Prefab: {fileID: 1879866759196870545, guid: 28d63d278d26a754eaec42724a1334d7,
       type: 3}
+    Support: 0
   - Name: Currency HUD
     Description: UI for virtual currency
     OrientationSupport: -1
@@ -27,6 +28,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: e520ea44a62554d0f9b599a5579c2053, type: 3}
     Prefab: {fileID: 1538361852517479061, guid: bbbde9ef3c8224fe69016a84827690c6,
       type: 3}
+    Support: 0
   - Name: Account HUD
     Description: UI to open login flow
     OrientationSupport: -1
@@ -34,6 +36,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: e0beda923141747a8ad026b647eb5ec5, type: 3}
     Prefab: {fileID: 2453450058678432510, guid: a14607bd54ddb49458fbc1125c8f8f10,
       type: 3}
+    Support: 0
   - Name: Account Management Flow
     Description: Allows users to manage account
     OrientationSupport: 1
@@ -41,6 +44,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: 94635fee32c4e435ebb24c0a0979ff3d, type: 3}
     Prefab: {fileID: 5536497098831726557, guid: 5fc060f5d55695249ae78906f8db96b3,
       type: 3}
+    Support: 0
   - Name: Leaderboard Flow
     Description: Allow user to manage leaderboard
     OrientationSupport: 1
@@ -48,6 +52,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: 1d8c576d1706445ea82c8614c8267f17, type: 3}
     Prefab: {fileID: 5960774261714958974, guid: 1b85b3a11dfa349b0933bc289d82af9f,
       type: 3}
+    Support: 0
   - Name: Leaderboard Flow (New)
     Description: Allow user to manage leaderboard
     OrientationSupport: 1
@@ -55,6 +60,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: 1d8c576d1706445ea82c8614c8267f17, type: 3}
     Prefab: {fileID: 5688538833308535119, guid: 31dc8b01b472b434ea905e42443d6073,
       type: 3}
+    Support: 0
   - Name: Announcements Flow
     Description: Allow user to manage announcements
     OrientationSupport: 1
@@ -62,6 +68,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: 5a4948df2012d462e957745cbccc795d, type: 3}
     Prefab: {fileID: 1348922302504892013, guid: 617a55c3b68a545d2a49b29556460894,
       type: 3}
+    Support: 1
   - Name: Inventory Flow
     Description: Allow user to manage inventory
     OrientationSupport: 1
@@ -69,6 +76,7 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: 723bac90340fc48c3bd1cd68a3d77dd4, type: 3}
     Prefab: {fileID: 1855707606240579186, guid: a48fff1d8103e4de9bbbca24b1ec16d3,
       type: 3}
+    Support: 1
   - Name: Tournament Flow
     Description: Allow user set up a recurring tournament
     OrientationSupport: 2
@@ -76,10 +84,18 @@ MonoBehaviour:
     Icon: {fileID: 2800000, guid: 7b745bd36546542fb9ce9c62a3cbcad8, type: 3}
     Prefab: {fileID: 8036622181152675863, guid: 6b1f10e6922a243ea8c5023fbc64881e,
       type: 3}
+    Support: 1
   - Name: Store Flow
     Description: 'Allow user to shop '
     OrientationSupport: 1
     Tags: 9
     Icon: {fileID: 2800000, guid: b1a79b87bea824d73b2f9ccee427d075, type: 3}
     Prefab: {fileID: 3430546881456503221, guid: a97507b4b127e4f88ab7dedd815fa760,
+      type: 3}
+  - Name: Lobby flow (BUSS variant)
+    Description: Allow user to match with players with lobbies
+    OrientationSupport: 1
+    Tags: 9
+    Icon: {fileID: 2800000, guid: b1a79b87bea824d73b2f9ccee427d075, type: 3}
+    Prefab: {fileID: 5679227975823887877, guid: 08f0fa3e933bd854dbbba5b53d9d7ba0,
       type: 3}

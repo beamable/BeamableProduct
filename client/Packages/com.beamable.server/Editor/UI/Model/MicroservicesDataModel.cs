@@ -29,6 +29,10 @@ namespace Beamable.Editor.UI.Model
 		public List<MongoStorageModel> localStorages = new List<MongoStorageModel>();
 		public List<RemoteMongoStorageModel> remoteStorages = new List<RemoteMongoStorageModel>();
 
+		public int AllUnarchivedServiceCount =>
+			localServices.Count(model => !model.IsArchived) + localStorages.Count(model => !model.IsArchived) +
+			remoteServices.Count(model => !model.IsArchived) + remoteStorages.Count(model => !model.IsArchived);
+
 		public IReadOnlyList<IBeamableService> AllLocalServices
 		{
 			get
@@ -136,6 +140,21 @@ namespace Beamable.Editor.UI.Model
 					storage.EnrichWithRemoteReference(remoteStorage);
 				}
 
+				foreach (var singleStorageManifest in ServerManifest.storageReference)
+				{
+					if (ContainsRemoteOnlyModel(singleStorageManifest.id))
+						continue;
+
+
+					var entry = MicroserviceConfiguration.Instance.GetStorageEntry(singleStorageManifest.id);
+					var descriptor = new StorageObjectDescriptor
+					{
+						Name = singleStorageManifest.id
+					};
+
+					remoteStorages.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
+				}
+
 				foreach (var singleManifest in ServerManifest.manifest)
 				{
 					if (ContainsRemoteOnlyModel(singleManifest.serviceName))
@@ -146,21 +165,15 @@ namespace Beamable.Editor.UI.Model
 						Name = singleManifest.serviceName
 					};
 
-					remoteServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
+					var model = RemoteMicroserviceModel.CreateNew(descriptor, this);
+					model.Dependencies = singleManifest.dependencies
+													   .Select(d => remoteStorages.FirstOrDefault(s => s.Name.Equals(d.id)))
+													   .Cast<MongoStorageModel>()
+													   .ToList();
+					remoteServices.Add(model);
 				}
 
-				foreach (var singleStorageManifest in ServerManifest.storageReference)
-				{
-					if (ContainsRemoteOnlyModel(singleStorageManifest.id))
-						continue;
 
-					var descriptor = new StorageObjectDescriptor
-					{
-						Name = singleStorageManifest.id
-					};
-
-					remoteStorages.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
-				}
 
 				OnServerManifestUpdated?.Invoke(manifest);
 			});
@@ -225,8 +238,9 @@ namespace Beamable.Editor.UI.Model
 			{
 				var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(storage);
 				var name = configEntry.StorageName;
+				var remotely = storageStatus?.Find(status => storage.Equals(name)) != null;
 				if (!result.ContainsKey(name))
-					result.Add(name, getServiceStatus(ContainsModel(name), configEntry.Enabled));
+					result.Add(name, getServiceStatus(ContainsModel(name), remotely));
 			}
 
 			return result;
@@ -255,9 +269,6 @@ namespace Beamable.Editor.UI.Model
 
 		public bool ContainsRemoteOnlyModel(string serviceName) => AllRemoteOnlyServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 		public bool ContainsModel(string serviceName) => AllLocalServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
-
-		public bool IsArchived(string serviceName) =>
-			AllLocalServices.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName))?.IsArchived ?? false;
 
 		public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
 		   GetModel<T>(descriptor.Name);
@@ -290,7 +301,7 @@ namespace Beamable.Editor.UI.Model
 
 		}
 
-		protected async Promise RefreshState()
+		public async Promise RefreshState()
 		{
 			remoteServices.Clear();
 			remoteStorages.Clear();

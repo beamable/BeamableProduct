@@ -239,6 +239,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					[(uint)config.DebugData.SshPort] = 2222
 				};
 			}
+			MapDotnetCompileErrors();
 		}
 
 	}
@@ -261,13 +262,13 @@ namespace Beamable.Server.Editor.DockerCommands
 				 * On windows, the surrounding quotes aren't required, and in fact, cause it to fail.
 				 */
 
-				var includeOuterQuotes = true;
-#if UNITY_EDITOR_WIN
-				includeOuterQuotes = false;
+				var includeOuterQuotes = false;
+#if BEAMABLE_ENABLE_MOUNT_SINGLE_QUOTE
+				includeOuterQuotes = true;
 #endif
 				var quoteStr = includeOuterQuotes ? "'" : "";
-				var optionStr = $"{(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst={dst}";
-				return $"--mount {quoteStr}{optionStr}{quoteStr}";
+				var optionStr = $"\"{src}\":{dst}{(isReadOnly ? ":ro" : "")}";
+				return $"-v {quoteStr}{optionStr}{quoteStr}";
 			}
 		}
 
@@ -303,7 +304,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		protected override void HandleStandardOut(string data)
 		{
 			HandleAutoPrune(data);
-			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardOutProcessors))
 			{
 				base.HandleStandardOut(data);
 			}
@@ -336,7 +337,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void HandleStandardErr(string data)
 		{
-			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data))
+			if (_descriptor == null || data == null || !MicroserviceLogHelper.HandleLog(_descriptor, UnityLogLabel, data, logProcessor: _standardErrProcessors))
 			{
 				base.HandleStandardErr(data);
 			}
