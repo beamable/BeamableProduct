@@ -21,6 +21,19 @@ dotnet build -t:updatebeamable
 ## FAQ
 
 #### How do I run the service?
+```shell
+
+# give it a name, Xyz
+# path to docker build context
+# path to docker file
+dotnet beam services register
+
+# pass in ids
+dotnet beam services deploy 
+
+```
+
+
 
 #### How do I publish the service?
 
