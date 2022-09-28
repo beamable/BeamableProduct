@@ -38,7 +38,7 @@ namespace Beamable.Editor.UI.Components
 			_variablesParent = Root.Q<VisualElement>("variables");
 			_propertiesParent = Root.Q<VisualElement>("properties");
 			_colorBlock = Root.Q<VisualElement>("foldIconParent");
-			
+
 			_foldIcon = new Image { name = "foldIcon" };
 			_colorBlock.Add(_foldIcon);
 
