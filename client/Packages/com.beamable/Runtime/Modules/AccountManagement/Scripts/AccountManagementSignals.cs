@@ -155,19 +155,22 @@ namespace Beamable.AccountManagement
 
 		public static bool ToggleState => _toggleState;
 
+		BeamContext Context => BeamContext.Default;
+		private Promise<ApiServices> Services => Context.OnReady.Map(_ => Context.Api); 
+
 		protected override void OnAfterDisable()
 		{
-			API.Instance.Then(de =>
+			Services.Then(de =>
 			{
 				de.OnUserLoggingOut -= OnUserLoggingOut;
 				de.OnUserChanged -= TriggerUserLoggedIn;
-				BeamContext.Default.OnShutdownComplete -= ScheduleRestart;
+				Context.OnShutdownComplete -= ScheduleRestart;
 			});
 		}
 
 		protected override void OnAfterEnable()
 		{
-			API.Instance.Then(ListenToApi);
+			Services.Then(ListenToApi);
 		}
 
 		private void ListenToApi(IBeamableAPI api)
@@ -176,17 +179,17 @@ namespace Beamable.AccountManagement
 			api.OnUserChanged -= TriggerUserLoggedIn;
 			api.OnUserLoggingOut += OnUserLoggingOut;
 			api.OnUserChanged += TriggerUserLoggedIn;
-			BeamContext.Default.OnShutdownComplete -= ScheduleRestart;
-			BeamContext.Default.OnShutdownComplete += ScheduleRestart;
+			Context.OnShutdownComplete -= ScheduleRestart;
+			Context.OnShutdownComplete += ScheduleRestart;
 		}
 
-		private void ScheduleRestart() => BeamContext.Default.CoroutineService.StartCoroutine(Restart());
+		private void ScheduleRestart() => Context.CoroutineService.StartCoroutine(Restart());
 
 		private IEnumerator Restart()
 		{
-			yield return BeamContext.Default.OnReady.ToYielder();
-			ListenToApi(BeamContext.Default.Api);
-			TriggerUserLoggedIn(BeamContext.Default.AuthorizedUser.Value);
+			yield return Context.OnReady.ToYielder();
+			ListenToApi(Context.Api);
+			TriggerUserLoggedIn(Context.AuthorizedUser.Value);
 		}
 
 		private void OnUserLoggingOut(User user)
@@ -220,7 +223,7 @@ namespace Beamable.AccountManagement
 
 		public void CheckSignedInUser()
 		{
-			WithLoading("Fetching Account...", API.Instance.FlatMap(de =>
+			WithLoading("Fetching Account...", Services.FlatMap(de =>
 			{
 				var activeUser = de.User;
 				if (activeUser.HasAnyCredentials())
@@ -271,7 +274,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Checking Account...", API.Instance.Then(api => api.IsEmailRegistered(_currentEmail).Then(registered =>
+			WithLoading("Checking Account...", Services.Then(api => api.IsEmailRegistered(_currentEmail).Then(registered =>
 			{
 				if (registered)
 				{
@@ -325,7 +328,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Logging In...", API.Instance.FlatMap(de =>
+			WithLoading("Logging In...", Services.FlatMap(de =>
 			{
 				return de.GetDeviceUsers().FlatMap(deviceUsers =>
 				{
@@ -385,13 +388,13 @@ namespace Beamable.AccountManagement
 
 		public void BecomeAnonymous()
 		{
-			API.Instance.Then(de =>
+			Services.Then(de =>
 			{
 				WithCriticalLoading("New Account...", de.AuthService.CreateUser().Then(newToken =>
 				{
 					de.ApplyToken(newToken).Then(_ =>
 					{
-						BeamContext.Default.OnReady.Then(_ =>
+						Context.OnReady.Then(_ =>
 						{
 							CheckSignedInUser();
 						});
@@ -402,7 +405,7 @@ namespace Beamable.AccountManagement
 
 		public void ForgetUser(TokenReference reference)
 		{
-			API.Instance.Then(de =>
+			Services.Then(de =>
 			{
 				if (reference.Bundle.User.id == de.User.id)
 				{
@@ -436,7 +439,7 @@ namespace Beamable.AccountManagement
 
 		public void ConfirmForgotPassword(string email, string code, string password)
 		{
-			API.Instance.Then(de =>
+			Services.Then(de =>
 			{
 				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
 			 {
@@ -457,7 +460,7 @@ namespace Beamable.AccountManagement
 					"There was no account switch available. This can only be run after a login as been attempted, that links to another account");
 			}
 
-			API.Instance.Then(de =>
+			Services.Then(de =>
 			{
 				WithCriticalLoading("Switching Account...", de.ApplyToken(_pendingToken))
 					.Error(HandleError);
@@ -467,7 +470,7 @@ namespace Beamable.AccountManagement
 		private Promise<User> StartThirdPartyLogin(ThirdPartyLoginResponse thirdPartyResponse,
 												   AuthThirdParty thirdParty)
 		{
-			return API.Instance.FlatMap(api => ThirdPartyLogin(api, thirdPartyResponse, thirdParty));
+			return Services.FlatMap(api => ThirdPartyLogin(api, thirdPartyResponse, thirdParty));
 		}
 
 		Promise<User> ThirdPartyLogin(IBeamableAPI beamableAPI,
@@ -585,7 +588,7 @@ namespace Beamable.AccountManagement
 
 		private void OfferSwitch(User user)
 		{
-			API.Instance.Then(api =>
+			Services.Then(api =>
 			{
 				if (api.User.id == user.id)
 				{
