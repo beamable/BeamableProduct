@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -99,6 +100,7 @@ namespace Beamable.Server
 			_assemblies = assemblies.ToDictionary(a => a.Name);
 		}
 
+		
 		public AssemblyDefinitionInfo Find(string assemblyName)
 		{
 			const string guidPrefix = "GUID:";
@@ -400,7 +402,7 @@ namespace Beamable.Server
 			return isUnityAssembly;
 		}
 
-		private static bool IsStubbed(AssemblyDefinitionInfoCollection assemblies, string serviceName,
+		private static bool IsStubbed(AssemblyDefinitionInfoCollection assemblies,
 			string assemblyName)
 		{
 			// TODO: maybe don't rebuild this every check?
@@ -417,15 +419,7 @@ namespace Beamable.Server
                 assemblies.Find<BsonType>(), // Server Mocks
 
             };
-			
-			var entry = MicroserviceConfiguration.Instance.GetEntry(serviceName);
 
-			
-			if (entry?.ReferencesToStub.Value != null && entry.ReferencesToStub.Value.Contains(assemblyName))
-			{
-				return true; // this assembly is okay... user stubbed it from selected Service
-			}
-			
 			if (assemblyName.Equals("Unity.Addressables"))
 			{
 				return true; // this assembly is okay... We couldn't search for it above because the user may not even have it installed :/
@@ -504,7 +498,7 @@ namespace Beamable.Server
 			{
 				var curr = unityAssembliesToExpand.Dequeue();
 				if (curr == null) continue;
-				if (IsStubbed(unityAssemblies, descriptor.Name, curr.Name ))
+				if (IsStubbed(unityAssemblies, curr.Name))
 				{
 					stubbedAssemblies.Add(curr);
 					continue;
@@ -524,15 +518,21 @@ namespace Beamable.Server
 					{
 						totalDllReferences.Add(dllReference);
 					}
-
+					
+					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
+					var info = asset.ConvertToInfo();
+					
 					foreach (var referenceName in curr.References)
 					{
 						try
 						{
-							var referencedAssembly = unityAssemblies.Find(referenceName);
-							unityAssembliesToExpand.Enqueue(referencedAssembly);
+							if (info.References == null || info.References.Contains(referenceName)) // check reference is not removed by user
+							{
+								var referencedAssembly = unityAssemblies.Find(referenceName);
+								unityAssembliesToExpand.Enqueue(referencedAssembly);
+							}
 						}
-						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, descriptor.Name, referenceName))
+						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, referenceName))
 						{
 							Debug.LogWarning($"Skipping {referenceName} because it is a stubbed package. You should still install the package for general safety.");
 						}

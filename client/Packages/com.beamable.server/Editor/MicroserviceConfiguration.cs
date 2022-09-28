@@ -409,9 +409,6 @@ namespace Beamable.Server.Editor
 
 		public MicroserviceConfigurationDebugEntry DebugData;
 
-		[Tooltip("This assembly reference names will be not included during dependency resolver check.")]
-		public OptionalStringArray ReferencesToStub = new OptionalStringArray();
-
 		[HideInInspector] public string LastBuiltCheckSum;
 
 		[HideInInspector]
