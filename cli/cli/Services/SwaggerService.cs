@@ -16,33 +16,26 @@ public class SwaggerService
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
 		// these are currently broken...
-		// BeamableApis.BasicService("beamo"),
-		// BeamableApis.BasicService("trails"),
 		// BeamableApis.BasicService("content"),
-		// BeamableApis.ObjectService("event-players"),
+		// BeamableApis.BasicService("trails"),
 
-		// produces a bad fileName...
-		// BeamableApis.ObjectService("group-users"),
-
-		BeamableApis.BasicService("inventory"),
-		BeamableApis.ObjectService("inventory"),
-
-		BeamableApis.BasicService("leaderboards"),
-		BeamableApis.ObjectService("leaderboards"),
-
-		BeamableApis.BasicService("accounts"),
-		BeamableApis.ObjectService("accounts"),
-
-		BeamableApis.BasicService("stats"),
-		BeamableApis.ObjectService("stats"),
-		//
+		// behold the list of Beamable Apis
+		BeamableApis.BasicService("beamo"),
+		BeamableApis.ObjectService("event-players"),
 		BeamableApis.BasicService("events"),
 		BeamableApis.ObjectService("events"),
-		//
+		BeamableApis.ObjectService("group-users"),
+		BeamableApis.ObjectService("groups"),
+		BeamableApis.BasicService("inventory"),
+		BeamableApis.ObjectService("inventory"),
+		BeamableApis.BasicService("leaderboards"),
+		BeamableApis.ObjectService("leaderboards"),
+		BeamableApis.BasicService("accounts"),
+		BeamableApis.ObjectService("accounts"),
+		BeamableApis.BasicService("stats"),
+		BeamableApis.ObjectService("stats"),
 		BeamableApis.BasicService("tournaments"),
 		BeamableApis.ObjectService("tournaments"),
-		//
-		//
 		BeamableApis.BasicService("auth"),
 		BeamableApis.BasicService("cloudsaving"),
 		BeamableApis.BasicService("payments"),
@@ -51,10 +44,8 @@ public class SwaggerService
 		BeamableApis.BasicService("notification"),
 		BeamableApis.BasicService("realms"),
 		BeamableApis.BasicService("social"),
-		//
 		BeamableApis.ObjectService("chatV2"),
 		BeamableApis.ObjectService("matchmaking"),
-		BeamableApis.ObjectService("groups"),
 		BeamableApis.BasicService("commerce"),
 		BeamableApis.ObjectService("commerce"),
 		BeamableApis.ObjectService("calendars"),
@@ -119,7 +110,7 @@ public class SwaggerService
 
 	public async Task<IEnumerable<OpenApiDocumentResult>> DownloadBeamableApis(BeamableApiFilter filter)
 	{
-		var selected = Apis.Where(filter.Accepts);
+		var selected = Apis.Where(filter.Accepts).ToList();
 		return await DownloadOpenApis(_downloader, selected).ToPromise();//.ShowLoading("fetching swagger docs...");
 	}
 
@@ -201,14 +192,43 @@ public class BeamableApiDescriptor
 	public BeamableApiSource Source;
 	public string RelativeUrl;
 	public string Service;
+	public string FileName => $"{BeamableApiSourceExtensions.ToDisplay(Source)}_{Service}.json";
 }
 
 public class BeamableApiFilter : DefaultQuery
 {
-	// TODO: add service type filtering...
+	public bool HasApiTypeConstraint;
+	public BeamableApiSource ApiTypeConstraint;
+
 	public bool Accepts(BeamableApiDescriptor descriptor)
 	{
-		return AcceptIdContains(descriptor.Service);
+		return AcceptIdContains(descriptor.Service) && AcceptsApiType(descriptor.Source);
+	}
+
+	public bool AcceptsApiType(BeamableApiSource apiType)
+	{
+		if (!HasApiTypeConstraint) return true;
+		return apiType.ContainsAllFlags(ApiTypeConstraint);
+	}
+
+	private static void ApplyApiTypeRule(string raw, BeamableApiFilter query)
+	{
+		query.HasApiTypeConstraint = false;
+		if (BeamableApiSourceExtensions.TryParse(raw, out var apiCons))
+		{
+			query.HasApiTypeConstraint = true;
+			query.ApiTypeConstraint = apiCons;
+		}
+	}
+	private static bool SerializeApiTypeRule(BeamableApiFilter query, out string str)
+	{
+		str = string.Empty;
+		if (query.HasApiTypeConstraint)
+		{
+			str = $"t:{query.ApiTypeConstraint.Serialize()}";
+			return true;
+		}
+		return false;
 	}
 
 	public static BeamableApiFilter Parse(string text)
@@ -218,8 +238,9 @@ public class BeamableApiFilter : DefaultQuery
 
 	protected static readonly Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>> StandardRules = new Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>>
 	{
-		// {"t", ApplyTypeParse},
 		{"id", DefaultQueryParser.ApplyIdParse},
+		{"t", ApplyApiTypeRule},
+
 		// {"tag", ApplyTagParse},
 	};
 }
@@ -257,11 +278,77 @@ public static class BeamableApis
 	}
 }
 
+[Flags]
 public enum BeamableApiSource
 {
-	PLAT_THOR_OBJECT,
-	PLAT_THOR_BASIC,
-	PLAT_PROTO
+	PLAT_THOR_OBJECT = 1,
+	PLAT_THOR_BASIC = 2,
+	PLAT_PROTO = 4
+}
+
+public static class BeamableApiSourceExtensions
+{
+	static Dictionary<BeamableApiSource, string> enumToString = new Dictionary<BeamableApiSource, string>
+	{
+		{BeamableApiSource.PLAT_PROTO, "proto"},
+		{BeamableApiSource.PLAT_THOR_BASIC, "basic"},
+		{BeamableApiSource.PLAT_THOR_OBJECT, "object"},
+	};
+	static Dictionary<string, BeamableApiSource> stringToEnum = new Dictionary<string, BeamableApiSource>();
+	static BeamableApiSourceExtensions()
+	{
+		foreach (var kvp in enumToString)
+		{
+			stringToEnum.Add(kvp.Value, kvp.Key);
+		}
+	}
+	public static bool TryParse(string str, out BeamableApiSource status)
+	{
+		var parts = str.Split(new[] { ' ' }, StringSplitOptions.None);
+		status = BeamableApiSource.PLAT_THOR_BASIC;
+
+		var any = false;
+		foreach (var part in parts)
+		{
+			if (stringToEnum.TryGetValue(part, out var subStatus))
+			{
+				if (!any)
+				{
+					status = subStatus;
+				}
+				else
+				{
+					status |= subStatus;
+				}
+				any = true;
+			}
+		}
+		return any;
+	}
+	public static string Serialize(this BeamableApiSource self)
+	{
+		var str = self.ToString();
+		foreach (var kvp in stringToEnum)
+		{
+			str = str.Replace(kvp.Value.ToString(), kvp.Key);
+		}
+		str = str.Replace(",", "");
+		return str;
+	}
+
+	public static string ToDisplay(BeamableApiSource source)
+	{
+		switch (source)
+		{
+			case BeamableApiSource.PLAT_PROTO: return "proto";
+			case BeamableApiSource.PLAT_THOR_BASIC: return "basic";
+			case BeamableApiSource.PLAT_THOR_OBJECT: return "object";
+		}
+
+		return "unknown";
+	}
+
+
 }
 
 public class GeneratedFileDescriptor

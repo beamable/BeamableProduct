@@ -1,29 +1,18 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using Beamable.Common;
-using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
 	public abstract class BussPropertyVisualElement : BeamableBasicVisualElement
 	{
-		public Action OnValueChanged;
 		public BussStyleSheet UpdatedStyleSheet;
 		protected bool IsTriggeringStyleSheetChange { get; private set; }
 
-		public abstract IBussProperty BaseProperty
-		{
-			get;
-		}
+		public abstract IBussProperty BaseProperty { get; }
 
 		protected BussPropertyVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss", false)
@@ -47,7 +36,6 @@ namespace Beamable.Editor.UI.Components
 			IsTriggeringStyleSheetChange = true;
 			try
 			{
-				OnValueChanged?.Invoke();
 				if (UpdatedStyleSheet != null)
 				{
 					UpdatedStyleSheet.TriggerChange();
@@ -70,7 +58,7 @@ namespace Beamable.Editor.UI.Components
 			get;
 		}
 
-		protected BussPropertyVisualElement(T property) : base()
+		protected BussPropertyVisualElement(T property)
 		{
 			Property = property;
 		}

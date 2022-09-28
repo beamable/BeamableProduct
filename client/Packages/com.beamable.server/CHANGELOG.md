@@ -5,17 +5,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### [Unreleased]
+### Added
+- Added `long` PlayerId version of `InviteToParty`, `PromoteToLeader` and `KickPlayer` methods of the `IPartyApi` interface.
+- Utility apis for setting expiration on Mail Update and Mail Send requests
 
+### Fixed
+- ActionBarVisualElement buttons behaviour is fixed when Docker is not running.
+- DependencyResolver allows possibility to remove asmdef reference by user.
+
+## [1.3.6]
+### Added
+- Allow disabling `System.Runtime.CompilerServices.Unsafe.dll` inclusion by using `BEAMABLE_DISABLE_SYSTEM_COMPILERSERVICES` define symbol
+
+## [1.3.5]
+no changes
+
+## [1.3.4]
+no changes
+
+## [1.3.3]
+### Changed
+- Changed service name validation in `Microservice Manager` to keep names unique
+
+### [1.3.2]
 ### Added
 - Added `Services.Payments` which allows receipt verification.
-- Added `long` PlayerId version of `InviteToParty`, `PromoteToLeader` and `KickPlayer` methods of the `IPartyApi` interface.
-- Logs improvements in Requesters. 
-- Added possibility of stub assembly reference for DependencyResolver from `MicroserviceConfiguration'
+- Added `DeleteProtectedPlayerStats` and `DeleteStats` methods to `IMicroserviceStatsApi`.
 
 ### Fixed
 - Manually adding a `StorageObject` Assembly Definition as a dependency of a `Microservice`'s Assembly Definition now correctly sets up all the necessary Mongo DLLs for the `StorageObject` to be usable inside the Microservice. You can disable this behaviour by setting `MicroserviceConfiguration.EnsureMongoAssemblyDependencies = false`. The recommended way to do set service dependencies is still to use the Dependency button of the Microservice Manager Window.
-- Skip microservices client code auto-generation if Docker is not running
-
 
 ## [1.3.1]
 ### Added
@@ -23,7 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A leaderboard can now be frozen using `Services.Leaderboards.FreezeLeaderboard` method to prevent additional scores to be submitted.
 - Microservice can include a `CsProjFragment.xml` file as a `.csproj` `<ItemGroup>` property block of nuget references that the microservice will use to resolve.
 - Added `GetAccountId` method to `IMicroserviceAuthApi` that returns the requesting user's AccountId as opposed to their GamerTag.
-- Added `DeleteProtectedPlayerStats` and `DeleteStats` methods to `IMicroserviceStatsApi`.
 
 ### Fixed
 - Publish doesn't fail if there is an unused StorageObject entry in the MicroserviceConfiguration
