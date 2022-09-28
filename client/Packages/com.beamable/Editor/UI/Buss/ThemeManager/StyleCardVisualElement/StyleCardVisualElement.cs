@@ -9,19 +9,20 @@ namespace Beamable.Editor.UI.Components
 	{
 		private readonly StyleCardModel _model;
 
+		private BussSelectorLabelVisualElement _selectorLabelComponent;
 		private VisualElement _addRuleButton;
 		private VisualElement _addVariableButton;
 		private VisualElement _cleanAllButton;
 		private VisualElement _colorBlock;
 		private VisualElement _optionsButton;
 		private VisualElement _propertiesParent;
-		private BussSelectorLabelVisualElement _selectorLabelComponent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _showAllButton;
 		private TextElement _showAllButtonText;
 		private VisualElement _sortButton;
 		private VisualElement _undoButton;
 		private VisualElement _variablesParent;
+		private Image _foldIcon;
 
 		public StyleCardVisualElement(StyleCardModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(StyleCardVisualElement)}/{nameof(StyleCardVisualElement)}")
@@ -36,7 +37,10 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent = Root.Q<VisualElement>("selectorLabelParent");
 			_variablesParent = Root.Q<VisualElement>("variables");
 			_propertiesParent = Root.Q<VisualElement>("properties");
-			_colorBlock = Root.Q<VisualElement>("colorBlock");
+			_colorBlock = Root.Q<VisualElement>("foldIconParent");
+
+			_foldIcon = new Image { name = "foldIcon" };
+			_colorBlock.Add(_foldIcon);
 
 			_optionsButton = Root.Q<VisualElement>("optionsButton");
 			_optionsButton.tooltip = Tooltips.Buss.OPTIONS;
@@ -59,8 +63,25 @@ namespace Beamable.Editor.UI.Components
 			RefreshProperties();
 			UpdateShowAllStatus();
 			RefreshButtons();
+			SetFold();
+
 			_colorBlock.EnableInClassList("active", _model.IsSelected);
 			_model.Change += OnChange;
+
+			_colorBlock.RegisterCallback<MouseDownEvent>(_model.FoldButtonClicked);
+		}
+
+		private void SetFold()
+		{
+			_foldIcon.ToggleInClassList(_model.IsFolded ? "folded" : "unfolded");
+
+			if (!_model.IsFolded)
+			{
+				return;
+			}
+
+			_variablesParent.AddToClassList("hidden");
+			_propertiesParent.AddToClassList("hidden");
 		}
 
 		protected override void OnDestroy()

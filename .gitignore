@@ -68,6 +68,7 @@ loadtests/
 /cli/tests/obj/
 /cli/tests/.idea/
 /cli/*.sln.DotSettings.*
+cli/cli/beamoLocalRuntime.json
 
 /templates/artifacts/
 /templates/bin/

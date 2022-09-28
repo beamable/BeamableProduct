@@ -2,14 +2,6 @@
     color: rgb(255, 255, 255);
 }
 
-#colorBlock {
-    background-color: rgb(144,144,144);
-}
-
-#colorBlock.active {
-    background-color: rgb(0,145,255);
-}
-
 #sectionHeader {
     color: rgb(255,255,255);
     background-color: rgb(89,89,89);
@@ -65,4 +57,12 @@
 
 .cleanAll {
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+}
+
+.unfolded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_light.png");
+}
+
+.folded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_light.png");
 }
