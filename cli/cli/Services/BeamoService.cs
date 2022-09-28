@@ -1,0 +1,333 @@
+﻿using Beamable.Common;
+using Beamable.Common.Api;
+
+namespace cli.Services;
+
+public class BeamoService
+{
+	public const string SERVICE = "/basic/beamo";
+	public IBeamableRequester Requester { get; }
+
+	public BeamoService(IBeamableRequester requester)
+	{
+		Requester = requester;
+	}
+
+	public Promise<ServiceManifest> GetCurrentManifest()
+	{
+		return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest/current", "{}")
+			.Map(res => res.manifest)
+			.RecoverFrom40x(_ => new ServiceManifest());
+	}
+
+	public Promise<ServiceManifest> GetManifest(long id)
+	{
+		return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest?id={id}")
+			.Map(res => res.manifest);
+	}
+
+	public Promise<List<ServiceManifest>> GetManifests()
+	{
+		return Requester.Request<GetManifestsResponse>(Method.GET, $"{SERVICE}/manifests")
+			.Map(res => res.manifests)
+			.RecoverFrom40x(_ => new List<ServiceManifest>());
+	}
+
+	public Promise<Unit> Deploy(ServiceManifest manifest)
+	{
+		var post = new PostManifestRequest { comments = manifest.comments, manifest = manifest.manifest, storageReferences = manifest.storageReference };
+		return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE}/manifest", post).ToUnit();
+	}
+
+	public Promise<GetStatusResponse> GetStatus()
+	{
+		return Requester.Request<GetStatusResponse>(Method.GET, $"{SERVICE}/status")
+			.RecoverFrom40x(_ => new GetStatusResponse { isCurrent = false, services = new List<ServiceStatus>() });
+	}
+
+	/// <summary>
+	/// TODO: Move this somewhere else...
+	/// </summary>
+	public Task<string> GetRealmSecret()
+	{
+		// TODO this will only work if the current user is an admin (developer).
+		return Task.Run(async () =>
+		{
+			var str = await Requester.Request<CustomerResponse>(Method.GET, "/basic/realms/admin/customer").Map(resp =>
+			{
+				var matchingProject = resp.customer.projects.FirstOrDefault(p => p.name.Equals(Requester.Pid));
+				return matchingProject?.secret ?? "";
+			});
+
+			return str;
+		});
+	}
+
+	public Promise<List<ServiceTemplate>> GetTemplates()
+	{
+		return Requester.Request<GetTemplatesResponse>(Method.GET, $"{SERVICE}/templates")
+			.Map(res => res.templates)
+			.RecoverFrom40x(_ => new List<ServiceTemplate>());
+	}
+
+	public Promise<string> GetDockerImageRegistry()
+	{
+		return Requester.Request<GetElasticContainerRegistryURIResponse>(Method.GET, $"{SERVICE}/registry")
+			.Map(res => res.uri)
+			.RecoverFrom40x(_ => string.Empty);
+	}
+
+	public Promise<string> GetUploadApi()
+	{
+		return Requester.Request<GetLambdaURI>(Method.GET, $"{SERVICE}/uploadAPI")
+			.Map(res => res.uri)
+			.RecoverFrom40x(_ => string.Empty);
+	}
+
+	public Promise<GetSignedUrlResponse> GetLogsUrl(string serviceBeamoId)
+	{
+		var post = new GetLogsUrlRequest()
+		{
+			serviceName = serviceBeamoId,
+			startTime = null,
+			endTime = null,
+			nextToken = null,
+			filter = null,
+		};
+		return Requester.Request<GetSignedUrlResponse>(Method.POST, $"{SERVICE}/logsUrl", post);
+	}
+
+	public Promise<GetSignedUrlResponse> GetMetricsUrl(string serviceBeamoId, string metricName)
+	{
+		var post = new GetMetricsUrlRequest()
+		{
+			serviceName = serviceBeamoId,
+			startTime = null,
+			endTime = null,
+			period = null,
+			metricName = metricName,
+		};
+		return Requester.Request<GetSignedUrlResponse>(Method.POST, $"{SERVICE}/metricsUrl", post);
+	}
+
+	public Promise<string> GetStorageConnectionString()
+	{
+		return Requester.Request<ConnectionString>(Method.GET, $"{SERVICE}/storage/connection")
+			.Map(res => res.connectionString)
+			.RecoverFrom40x(_ => string.Empty);
+	}
+
+	/// <summary>
+	/// TODO: Sort this out later...
+	/// </summary>
+	/// <param name="embeddedMongoBeamoId"></param>
+	/// <returns></returns>
+	public Promise<string> GetStoragePerformanceString(string embeddedMongoBeamoId)
+	{
+		var get = new DatabasePerformanceRequest()
+		{
+			storageObjectName = embeddedMongoBeamoId,
+			startDate = DateTime.Now.Subtract(TimeSpan.FromHours(2)).Ticks.ToString(),
+			endDate = DateTime.Now.Ticks.ToString(),
+			period = null,
+			granularity = "PT10M", // Seems to be some atlas specific magic...
+		};
+		return Requester.Request(Method.GET, $"{SERVICE}/storage/performance", get, parser: res => res)
+			.RecoverFrom40x(_ => string.Empty);
+	}
+
+	public Promise<ManifestChecksums> Promote(string sourcePid)
+	{
+		var get = new PromoteRequest { sourceRealmPid = sourcePid, };
+		return Requester.Request<ManifestChecksums>(Method.POST, $"{SERVICE}/manifest/pull", get)
+			.RecoverFrom40x(_ => new ManifestChecksums { manifests = new List<ManifestChecksum>() });
+	}
+}
+
+[Serializable]
+public class GetManifestResponse
+{
+	public ServiceManifest manifest;
+}
+
+[Serializable]
+public class GetManifestsResponse
+{
+	public List<ServiceManifest> manifests;
+}
+
+[Serializable]
+public class PostManifestRequest
+{
+	public string comments;
+	public List<ServiceReference> manifest;
+	public List<ServiceStorageReference> storageReferences;
+}
+
+[Serializable]
+public class ServiceManifest
+{
+	public string id;
+	public long created;
+	public List<ServiceReference> manifest = new List<ServiceReference>();
+	public List<ServiceStorageReference> storageReference = new List<ServiceStorageReference>();
+	public long createdByAccountId;
+	public string comments;
+}
+
+[Serializable]
+public class ServiceReference
+{
+	public string serviceName;
+	public string checksum;
+	public bool enabled;
+	public string imageId;
+	public string templateId;
+	public string comments;
+	public List<ServiceDependency> dependencies;
+	public long containerHealthCheckPort = 6565;
+}
+
+[Serializable]
+public class ServiceStorageReference
+{
+	public string id;
+	public string storageType;
+	public bool enabled;
+	public string templateId;
+	public string checksum;
+}
+
+[Serializable]
+public class ServiceDependency
+{
+	public string storageType;
+	public string id;
+}
+
+[Serializable]
+public class GetStatusResponse
+{
+	public bool isCurrent;
+	public List<ServiceStatus> services;
+}
+
+[Serializable]
+public class ServiceStatus
+{
+	public string serviceName;
+	public string imageId;
+	public bool running;
+	public bool isCurrent;
+}
+
+[Serializable]
+public class GetLogsResponse
+{
+	public string serviceName;
+	public List<LogMessage> logs;
+}
+
+[Serializable]
+public class LogMessage
+{
+	public string level;
+	public long timestamp;
+	public string message;
+}
+
+[Serializable]
+public class GetTemplatesResponse
+{
+	public List<ServiceTemplate> templates;
+}
+
+[Serializable]
+public class ServiceTemplate
+{
+	public string id;
+}
+
+[Serializable]
+public class GetElasticContainerRegistryURIResponse
+{
+	public string uri;
+}
+
+[Serializable]
+public class GetLambdaURI
+{
+	public string uri;
+}
+
+[Serializable]
+public class GetLogsUrlRequest
+{
+	public string serviceName;
+	public long? endTime;
+	public long? startTime;
+	public string nextToken;
+	public string filter;
+}
+
+[Serializable]
+public class GetMetricsUrlRequest
+{
+	public string serviceName;
+	public long? endTime;
+	public long? startTime;
+	public int? period;
+	public string metricName;
+}
+
+[Serializable]
+public class GetSignedUrlResponse
+{
+	public List<GetLogsUrlHeader> headers;
+	public string url;
+	public string body;
+	public string method;
+}
+
+[Serializable]
+public class GetLogsUrlHeader
+{
+	public string key;
+	public string value;
+}
+
+[Serializable]
+public class ConnectionString
+{
+	public string connectionString;
+}
+
+[Serializable]
+public class DatabasePerformanceRequest
+{
+	public string storageObjectName;
+	public string period;
+	public string startDate;
+	public string endDate;
+	public string granularity;
+}
+
+[Serializable]
+public class PromoteRequest
+{
+	public string sourceRealmPid;
+}
+
+[Serializable]
+public class ManifestChecksum
+{
+	public string id;
+	public string checksum;
+	public long createdAt;
+}
+
+[Serializable]
+public class ManifestChecksums
+{
+	public List<ManifestChecksum> manifests;
+}

@@ -56,8 +56,8 @@ public class DefaultAppContext : IAppContext
 	public LogEventLevel LogLevel { get; private set; }
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
-									AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
-							 ConfigService configService, CliEnvironment environment)
+		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
+		ConfigService configService, CliEnvironment environment)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -82,7 +82,13 @@ public class DefaultAppContext : IAppContext
 			else if (!string.IsNullOrEmpty(_environment.LogLevel))
 				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), _environment.LogLevel, true);
 			else
-				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Warning;
+			{
+#if BEAMABLE_DEVELOPER
+				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Debug;
+#else
+				App.LogLevel.MinimumLevel = LogLevel = = LogEventLevel.Warning
+#endif
+			}
 		}
 
 		WorkingDirectory = Directory.GetCurrentDirectory();
@@ -98,6 +104,7 @@ public class DefaultAppContext : IAppContext
 
 		if (!TryGetSetting(out _host, bindingContext, _platformOption))
 		{
+			_host = Constants.DEFAULT_PLATFORM;
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
