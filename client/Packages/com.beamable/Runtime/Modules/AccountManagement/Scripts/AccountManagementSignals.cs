@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
 using Beamable.Platform.SDK.Auth;
+using Beamable.Player;
 using Beamable.Signals;
 using Beamable.UI.Scripts;
 using System;
@@ -160,16 +161,32 @@ namespace Beamable.AccountManagement
 			{
 				de.OnUserLoggingOut -= OnUserLoggingOut;
 				de.OnUserChanged -= TriggerUserLoggedIn;
+				BeamContext.Default.OnShutdownComplete -= ScheduleRestart;
 			});
 		}
 
 		protected override void OnAfterEnable()
 		{
-			API.Instance.Then(de =>
-			{
-				de.OnUserLoggingOut += OnUserLoggingOut;
-				de.OnUserChanged += TriggerUserLoggedIn;
-			});
+			API.Instance.Then(ListenToApi);
+		}
+
+		private void ListenToApi(IBeamableAPI api)
+		{
+			api.OnUserLoggingOut -= OnUserLoggingOut;
+			api.OnUserChanged -= TriggerUserLoggedIn;
+			api.OnUserLoggingOut += OnUserLoggingOut;
+			api.OnUserChanged += TriggerUserLoggedIn;
+			BeamContext.Default.OnShutdownComplete -= ScheduleRestart;
+			BeamContext.Default.OnShutdownComplete += ScheduleRestart;
+		}
+
+		private void ScheduleRestart() => BeamContext.Default.CoroutineService.StartCoroutine(Restart());
+
+		private IEnumerator Restart()
+		{
+			yield return BeamContext.Default.OnReady.ToYielder();
+			ListenToApi(BeamContext.Default.Api);
+			TriggerUserLoggedIn(BeamContext.Default.AuthorizedUser.Value);
 		}
 
 		private void OnUserLoggingOut(User user)
@@ -372,7 +389,13 @@ namespace Beamable.AccountManagement
 			{
 				WithCriticalLoading("New Account...", de.AuthService.CreateUser().Then(newToken =>
 				{
-					de.ApplyToken(newToken).Then(_ => { CheckSignedInUser(); });
+					de.ApplyToken(newToken).Then(_ =>
+					{
+						BeamContext.Default.OnReady.Then(_ =>
+						{
+							CheckSignedInUser();
+						});
+					});
 				}));
 			}).Error(HandleError);
 		}
