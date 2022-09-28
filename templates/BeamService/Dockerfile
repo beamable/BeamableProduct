@@ -1,18 +1,14 @@
-﻿FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
-WORKDIR /app
+﻿
+FROM beamservice AS build-env
+RUN dotnet --version
+WORKDIR /subapp
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /src
-COPY ["BeamService/BeamService.csproj", "BeamService/"]
-RUN dotnet restore "BeamService/BeamService.csproj"
-COPY . .
-WORKDIR "/src/BeamService"
-RUN dotnet build "BeamService.csproj" -c Release -o /app/build
+COPY BeamService.csproj .
 
-FROM build AS publish
-RUN dotnet publish "BeamService.csproj" -c Release -o /app/publish
+RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "BeamService.dll"]
+EXPOSE 6565
+ENV BEAMABLE_SDK_VERSION_EXECUTION=0.0.0
+ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+RUN dotnet restore .
+ENTRYPOINT ["dotnet", "watch"]
