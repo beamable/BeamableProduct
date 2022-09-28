@@ -148,7 +148,7 @@ namespace Beamable.UI.Buss
 	{
 		// Style card state related data
 		[SerializeField] private bool _folded;
-		
+
 		[SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
 		[SerializeField] protected List<BussPropertyProvider> _cachedProperties = new List<BussPropertyProvider>();
 		public List<BussPropertyProvider> Properties => _properties;
