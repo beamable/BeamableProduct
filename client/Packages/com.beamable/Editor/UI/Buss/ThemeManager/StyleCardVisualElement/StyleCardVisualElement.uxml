@@ -7,7 +7,7 @@
 
     <engine:VisualElement name="cardContainer">
         <engine:VisualElement name="cardHeader">
-            <engine:VisualElement name="colorBlock"/>
+            <engine:VisualElement name="foldIconParent"/>
             <engine:VisualElement name="selectorLabelParent"/>
             <engine:VisualElement name="optionsButton" class="button smallButton edit"/>
             <engine:VisualElement name="undoButton" class="button smallButton undo"/>
