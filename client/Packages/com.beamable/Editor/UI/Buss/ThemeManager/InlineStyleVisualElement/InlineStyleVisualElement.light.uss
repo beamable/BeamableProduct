@@ -1,0 +1,24 @@
+.header {
+    background-color: rgba(144, 144, 144, 1);
+}
+
+.subheader{
+    color: #000000;
+    background-color: rgba(180, 180, 180, 1);
+}
+
+.subheaderLabel {
+    color: #000000;
+}
+
+LabeledTextField #label {
+    color: #000000;
+}
+
+LabeledObjectField #label {
+    color: #000000;
+}
+
+.addButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewDark.png");
+}
