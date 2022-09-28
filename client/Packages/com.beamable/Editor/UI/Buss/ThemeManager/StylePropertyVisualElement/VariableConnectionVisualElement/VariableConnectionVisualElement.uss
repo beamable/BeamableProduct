@@ -1,0 +1,35 @@
+#button {
+    width: 30px;
+    height: 30px;
+    -unity-text-align: middle-center;
+    align-self: center;
+    margin-left: 3px;
+    flex-shrink: 0;
+    justify-content: center;
+}
+
+DropdownVisualElement{
+    margin: 5px;
+}
+
+DropdownVisualElement #mainVisualElement{
+    width: 100px;
+}
+
+DropdownVisualElement #mainContainer{
+    min-height: 0px;
+    height: 24px;
+}
+
+DropdownVisualElement #button{
+    height: 20px;
+}
+
+#value{
+    min-width: 0px;
+    max-width: 10000px;
+}
+
+#button:hover {
+    -unity-background-image-tint-color: #808080;
+}

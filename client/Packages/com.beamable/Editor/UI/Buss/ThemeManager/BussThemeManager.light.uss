@@ -1,7 +1,0 @@
-#navigationGroup {
-    background-color: #B4B4B4;
-}
-
-#filterToggle > TemplateContainer > #mainVisualElement> Label {
-    color: #090909;
-}

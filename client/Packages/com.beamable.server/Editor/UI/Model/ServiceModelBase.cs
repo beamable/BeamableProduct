@@ -53,6 +53,8 @@ namespace Beamable.Editor.UI.Model
 				OnSelectionChanged?.Invoke(value);
 			}
 		}
+
+		[SerializeField]
 		private bool _isSelected;
 
 		public bool IsCollapsed

@@ -1,0 +1,73 @@
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+
+namespace Beamable.BSAT.Editor.UI.Components
+{
+	public class ActionBarVisualElement : TestingToolComponent
+	{
+		public event Action OnScanButtonPressed;
+		public event Action OnCreateNewTestSceneButtonPressed;
+		public event Action OnDeleteTestSceneButtonPressed;
+		public event Action OnGenerateReportButtonPressed;
+		public event Action OnOpenMainMenuSceneButtonPressed;
+
+		private Button _scanButton;
+		private Button _createTestSceneButton;
+		private Button _deleteTestSceneButton;
+		private Button _generateReportButton;
+		private Button _openMainMenuSceneButton;
+
+		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits> { }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{ name = "custom-text", defaultValue = "nada" };
+
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get { yield break; }
+			}
+
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ActionBarVisualElement;
+			}
+		}
+
+		public ActionBarVisualElement() : base(nameof(ActionBarVisualElement)) { }
+
+		public override void Refresh()
+		{
+			base.Refresh();
+
+			_scanButton = Root.Q<Button>("scan");
+			_scanButton.clickable.clicked -= HandleScanButtonPressed;
+			_scanButton.clickable.clicked += HandleScanButtonPressed;
+			
+			_createTestSceneButton = Root.Q<Button>("createTestScene");
+			_createTestSceneButton.clickable.clicked -= HandleCreateTestSceneButton;
+			_createTestSceneButton.clickable.clicked += HandleCreateTestSceneButton;
+			
+			_deleteTestSceneButton = Root.Q<Button>("deleteTestScene");
+			_deleteTestSceneButton.clickable.clicked -= HandleDeleteTestSceneButton;
+			_deleteTestSceneButton.clickable.clicked += HandleDeleteTestSceneButton;
+
+			_generateReportButton = Root.Q<Button>("generateReport");
+			_generateReportButton.clickable.clicked -= HandleReportGenerateButton;
+			_generateReportButton.clickable.clicked += HandleReportGenerateButton;
+			
+			_openMainMenuSceneButton = Root.Q<Button>("openMainMenuScene");
+			_openMainMenuSceneButton.clickable.clicked -= HandleOpenMainMenuSceneButton;
+			_openMainMenuSceneButton.clickable.clicked += HandleOpenMainMenuSceneButton;
+		}
+
+		private void HandleScanButtonPressed() => OnScanButtonPressed?.Invoke();
+		private void HandleCreateTestSceneButton() => OnCreateNewTestSceneButtonPressed?.Invoke();
+		private void HandleDeleteTestSceneButton() => OnDeleteTestSceneButtonPressed?.Invoke();
+		private void HandleReportGenerateButton() => OnGenerateReportButtonPressed?.Invoke();
+		private void HandleOpenMainMenuSceneButton() => OnOpenMainMenuSceneButtonPressed?.Invoke();
+	}
+}

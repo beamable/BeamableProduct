@@ -105,7 +105,7 @@ namespace Beamable.Editor.Toolbox.Components
 			RefreshWidgetElements(_gridContainer);
 		}
 
-		private void RefreshWidgetElements(VisualElement gridRoot, string filter = null)
+		private void RefreshWidgetElements(VisualElement gridRoot)
 		{
 			gridRoot.Clear();
 
@@ -134,7 +134,7 @@ namespace Beamable.Editor.Toolbox.Components
 			for (var i = 0; i < ExtraElementCount; i++)
 			{
 				var widgetElement = new ToolboxFeatureVisualElement();
-				widgetElement.AddToClassList("invisible");
+				widgetElement.AddToClassList("toolbox-invisible-element");
 				widgetElement.Refresh();
 				_extraElements.Add(widgetElement);
 				_gridContainer.Add(widgetElement);

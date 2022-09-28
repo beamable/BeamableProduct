@@ -78,6 +78,7 @@ namespace Beamable.Editor.UI.Components
 				TotalSteps = _children.Sum(lb => lb.TotalSteps);
 			}
 			Succeeded = _children.All(lb => lb.Succeeded || lb.Killed);
+			Succeeded |= Step > TotalSteps;
 			var errors = _children.Count(lb => lb.GotError);
 			GotError = errors > 0;
 
