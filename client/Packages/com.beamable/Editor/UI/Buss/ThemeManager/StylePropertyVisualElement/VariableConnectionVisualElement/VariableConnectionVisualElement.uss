@@ -1,3 +1,7 @@
+#root {
+    flex-grow: 1;
+}
+
 #button {
     width: 30px;
     height: 30px;
@@ -8,12 +12,17 @@
     justify-content: center;
 }
 
+#variableConnectionElement {
+    flex-grow: 1;
+}
+
 DropdownVisualElement{
     margin: 5px;
+    flex-grow: 1;
 }
 
 DropdownVisualElement #mainVisualElement{
-    width: 100px;
+    width: auto;
 }
 
 DropdownVisualElement #mainContainer{

@@ -25,6 +25,7 @@ CustomMessageBussPropertyVisualElement > Label {
 
 #globalVariable {
     width: 140px;
+    flex-grow: 1;
 }
 
 .dropdown {
