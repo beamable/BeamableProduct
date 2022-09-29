@@ -113,7 +113,6 @@ namespace Beamable.UI.Buss
 		public void SetSortingOrder(int order)
 		{
 			_sortingOrder = order;
-			BussConfiguration.OptionalInstance.Value.RefreshDefaultStyles();
 		}
 #endif
 	}

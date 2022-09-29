@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: LeaderboardsStyle
   m_EditorClassIdentifier: 
   _styles:
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -21,7 +22,8 @@ MonoBehaviour:
         _json: '{"_color":{"r":0.9716981053352356,"g":0.596721887588501,"b":0.07791920006275177,"a":1.0}}'
     _cachedProperties: []
     _selector: '#leaderboardsBackground'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -54,7 +56,8 @@ MonoBehaviour:
         _json: '{"_floatValue":2.0}'
     _cachedProperties: []
     _selector: '#leaderboardMainFrame'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -102,7 +105,8 @@ MonoBehaviour:
         _json: '{"_color":{"r":0.650943398475647,"g":0.4057691693305969,"b":0.13203097879886628,"a":0.8156862854957581}}'
     _cachedProperties: []
     _selector: '#leaderboardHeader'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -153,4 +157,4 @@ MonoBehaviour:
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   _isReadOnly: 1
-  _sortingOrder: 0
+  _sortingOrder: 100

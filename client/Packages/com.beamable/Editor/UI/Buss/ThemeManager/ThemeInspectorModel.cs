@@ -6,13 +6,14 @@ namespace Beamable.Editor.UI.Buss
 	public class ThemeInspectorModel : ThemeModel
 	{
 		public override BussElement SelectedElement { get; set; }
-		protected sealed override List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
-		public override Dictionary<BussStyleRule, BussStyleSheet> FilteredRules => Filter.GetFiltered(StyleSheets[0]);
+		protected sealed override List<BussStyleSheet> SceneStyleSheets { get; } = new List<BussStyleSheet>();
+		public override Dictionary<BussStyleRule, BussStyleSheet> FilteredRules => Filter.GetFiltered(SceneStyleSheets[0]);
+		public override List<BussStyleSheet> WritableStyleSheets => SceneStyleSheets;
 
 		public ThemeInspectorModel(BussStyleSheet styleSheet)
 		{
 			Filter = new BussCardFilter();
-			StyleSheets.Add(styleSheet);
+			SceneStyleSheets.Add(styleSheet);
 		}
 	}
 }

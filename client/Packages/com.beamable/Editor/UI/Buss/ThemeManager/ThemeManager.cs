@@ -64,7 +64,7 @@ namespace Beamable.Editor.UI.Buss
 		{
 			_model = new ThemeManagerModel();
 
-			minSize = THEME_MANAGER_WINDOW_SIZE;
+			minSize = ThemeManagerWindowSize;
 
 			VisualElement root = this.GetRootVisualContainer();
 			root.Clear();
