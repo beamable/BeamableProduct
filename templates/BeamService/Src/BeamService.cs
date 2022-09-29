@@ -8,7 +8,6 @@ namespace Beamable.BeamService
 		[ClientCallable]
 		public int Add(int a, int b)
 		{
-			var x = "BEAMABLE_VERSION";
 			return a + b;
 		}
 	}
