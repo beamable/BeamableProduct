@@ -263,7 +263,7 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
-			await Cleanup();
+			await ClearPlayerAndDisposeScope();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
 
@@ -276,7 +276,7 @@ namespace Beamable
 			return ctx;
 		}
 
-		private async Promise Cleanup()
+		private async Promise ClearPlayerAndDisposeScope()
 		{
 			if(_requester is PlatformRequester apiRequester)
 			{
