@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Api.Auth;
+﻿using Beamable.Common;
+using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
 using Beamable.UI.Scripts;
 using System.Collections;
@@ -11,20 +12,22 @@ namespace Beamable.AccountManagement
 	public class AccountManagementBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;
-
 		public AccountManagementConfiguration Configuration => AccountManagementConfiguration.Instance;
 
 		// Start is called before the first frame update
 		void Start()
 		{
-
-			API.Instance.Then(de => { Configuration.Overrides.HandleUserChange(MenuManager, de.User); });
+			BeamContext.Default.OnReady.Then(de => { 
+				BeamContext.Default.OnShutdownComplete -= HandleShutdown;
+				BeamContext.Default.OnShutdownComplete += HandleShutdown;
+				Configuration.Overrides.HandleUserChange(MenuManager, BeamContext.Default.AuthorizedUser.Value); 
+			});
 		}
 
-		// Update is called once per frame
-		void Update()
+		private void HandleShutdown()
 		{
-
+			BeamContext.Default.OnReady.Then(
+				_ => Start());
 		}
 
 		public void Toggle(bool accountDesiredState)
@@ -48,7 +51,7 @@ namespace Beamable.AccountManagement
 		public void ShowLoggedInAccount(User user)
 		{
 			if (!MenuManager) return;
-			AccountManagementConfiguration.Instance.Overrides.HandleUserChange(MenuManager, user);
+			Configuration.Overrides.HandleUserChange(MenuManager, user);
 		}
 
 		public void ShowLoading(LoadingArg arg)
