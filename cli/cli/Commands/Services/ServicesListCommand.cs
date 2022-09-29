@@ -41,7 +41,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 		// //await _remoteBeamo.GetMetricsUrl("test", "cpu");
 		// var templates = await _remoteBeamo.Promote(_ctx.Pid);
 		// Console.WriteLine($"{string.Join("", JsonConvert.SerializeObject(templates))}");
-		
+
 		var titleText = !args.Remote ? "Local Services Status" : "Remote Services Status";
 		AnsiConsole.MarkupLine($"[lightskyblue1]{titleText}[/]");
 

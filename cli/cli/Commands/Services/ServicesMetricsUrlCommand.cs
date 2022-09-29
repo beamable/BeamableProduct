@@ -16,7 +16,7 @@ public class ServicesMetricsUrlCommandArgs : LoginCommandArgs
 public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArgs>
 {
 	public static readonly Option<string> METRIC_NAME_OPTION_ID = new("--metric", "'cpu' or 'memory'");
-	
+
 	private readonly BeamoLocalSystem _localBeamo;
 	private readonly BeamoService _remoteBeamo;
 
@@ -32,7 +32,7 @@ public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArg
 	public override void Configure()
 	{
 		AddOption(ServicesRegisterCommand.BEAM_SERVICE_OPTION_ID, (args, s) => args.BeamoId = s);
-		
+
 		AddOption(METRIC_NAME_OPTION_ID, (args, s) => args.MetricName = s);
 	}
 
@@ -49,7 +49,7 @@ public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArg
 		// If we don't have a metric, default to CPU
 		if (string.IsNullOrEmpty(args.MetricName))
 			args.MetricName = "cpu";
-		
+
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>

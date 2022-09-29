@@ -14,7 +14,7 @@ public static class Constants
 	public const string DOCKER_REGISTRY_DEV = "https://dev-microservices.beamable.com/v2/";
 	public const string DOCKER_REGISTRY_STAGING = "https://staging-microservices.beamable.com/v2/";
 	public const string DOCKER_REGISTRY_PRODUCTION = "https://microservices.beamable.com/v2/";
-	
+
 	public const string CONFIG_CID = "cid";
 	public const string CONFIG_PID = "pid";
 	public const string CONFIG_PLATFORM = "host";

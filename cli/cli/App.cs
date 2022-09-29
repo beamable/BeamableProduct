@@ -85,7 +85,8 @@ public class App
 		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		Services.AddSingleton<IAuthApi, AuthApi>();
 		Services.AddSingleton<ConfigService>();
-		Services.AddSingleton<BeamoService>();		Services.AddSingleton<BeamoLocalSystem>();
+		Services.AddSingleton<BeamoService>();
+		Services.AddSingleton<BeamoLocalSystem>();
 		Services.AddSingleton<CliEnvironment>();
 		Services.AddSingleton<SwaggerService>();
 		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();

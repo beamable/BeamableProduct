@@ -18,7 +18,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 {
 	public static readonly Option<string> BEAM_SERVICE_OPTION_ID = new("--id", "The Unique Id for this service within this Beamable CLI context.");
 	public static readonly Option<bool> BEAM_SERVICE_OPTION_ENABLE_ON_REMOTE_DEPLOY = new("--enabled", "Whether or not we should try and run the service when we deploy remotely.");
-	public static readonly Option<bool?> BEAM_SERVICE_OPTION_IGNORE_DEPENDENCIES = new("--no-deps",  () => null, "Propagates the change to the services dependencies. When disabling, this is true by default.");
+	public static readonly Option<bool?> BEAM_SERVICE_OPTION_IGNORE_DEPENDENCIES = new("--no-deps", () => null, "Propagates the change to the services dependencies. When disabling, this is true by default.");
 
 	private readonly BeamoLocalSystem _localBeamo;
 
@@ -61,7 +61,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		if (serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice)
 		{
 			AnsiConsole.WriteException(new ArgumentOutOfRangeException(nameof(args.BeamoId), "You cannot enable/disable non-HttpMicroservice Services directly." +
-			                                                                                 " Please make this service a dependency of a HttpMicroservice and then enable/disable that service instead."));
+																							 " Please make this service a dependency of a HttpMicroservice and then enable/disable that service instead."));
 			return;
 		}
 

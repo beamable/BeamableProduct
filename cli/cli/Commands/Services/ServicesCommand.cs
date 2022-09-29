@@ -34,6 +34,6 @@ public class ServicesCommand : AppCommand<ServicesCommandArgs>
 
 	public override async Task Handle(ServicesCommandArgs args)
 	{
-		
+
 	}
 }

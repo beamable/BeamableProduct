@@ -7,7 +7,7 @@ namespace cli;
 public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
 {
 	private readonly BeamoService _beamoService;
-	
+
 	public ServicesManifestsCommand(BeamoService beamoService) : base("manifests", "outputs manifests json to console")
 	{
 		_beamoService = beamoService;
@@ -21,11 +21,11 @@ public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
 	public override async Task Handle(ServicesManifestsArgs args)
 	{
 		var response = await AnsiConsole.Status()
-		                                .Spinner(Spinner.Known.Default)
-		                                .StartAsync("Sending Request...", async ctx =>
+										.Spinner(Spinner.Known.Default)
+										.StartAsync("Sending Request...", async ctx =>
 
-			                                            await _beamoService.GetManifests()
-		                                );
+														await _beamoService.GetManifests()
+										);
 		response = response.Skip(args.skip).Take(args.limit > 0 ? args.limit : int.MaxValue).ToList();
 		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
 	}

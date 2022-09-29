@@ -16,7 +16,7 @@ public class ServicesPromoteCommandArgs : LoginCommandArgs
 public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 {
 	public static readonly Option<string> SOURCE_PID_OPTION = new("--sourcePid", "The PID for the realm from which you wish to pull the manifest from. " +
-	                                                                             "\nThe current realm you are signed into will be updated to match the manifest in the given realm.");
+																				 "\nThe current realm you are signed into will be updated to match the manifest in the given realm.");
 
 	private readonly IAppContext _ctx;
 	private readonly IRealmsApi _realms;

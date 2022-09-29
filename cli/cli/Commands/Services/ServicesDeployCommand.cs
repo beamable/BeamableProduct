@@ -34,10 +34,10 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 	public override void Configure()
 	{
 		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services." +
-		                                        "If '--remote' option is set, these are the ids that'll become enabled by Beam-O once it receives the updated manifest.")
-			{
-				AllowMultipleArgumentsPerToken = true
-			},
+												"If '--remote' option is set, these are the ids that'll become enabled by Beam-O once it receives the updated manifest.")
+		{
+			AllowMultipleArgumentsPerToken = true
+		},
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 
 		AddOption(new Option<bool>("--remote", () => false, $"If this option is set, we publish the manifest instead."),
@@ -50,10 +50,10 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 			(args, i) => args.RemoteComment = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Requires --remote flag. Any number of 'BeamoId::Comment' strings. " +
-		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal.")
-			{
-				AllowMultipleArgumentsPerToken = true
-			},
+																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal.")
+		{
+			AllowMultipleArgumentsPerToken = true
+		},
 			(args, i) => args.RemoteServiceComments = i);
 	}
 
