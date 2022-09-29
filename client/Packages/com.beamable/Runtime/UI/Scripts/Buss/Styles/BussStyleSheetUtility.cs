@@ -138,7 +138,7 @@ namespace Beamable.UI.Buss
 				CopySingleStyle(newStyleSheet, styleRule);
 			}
 
-			BussConfiguration.OptionalInstance.Value.AddGlobalStyleSheet(newStyleSheet);
+			BussConfiguration.OptionalInstance.Value.AddDeveloperStyleSheet(newStyleSheet);
 
 #if UNITY_EDITOR
 			AssetDatabase.CreateAsset(newStyleSheet, $"Assets/Resources/{fileName}.asset");

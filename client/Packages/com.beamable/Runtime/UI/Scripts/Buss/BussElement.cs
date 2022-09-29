@@ -195,7 +195,7 @@ namespace Beamable.UI.Buss
 			RecalculateStyle();
 		}
 
-		public void RecalculateStyleSheets()
+		private void RecalculateStyleSheets()
 		{
 			var hash = GetStyleSheetHash();
 			AllStyleSheets.Clear();
