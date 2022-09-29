@@ -36,20 +36,19 @@ your Beamable login credentials, and configure the project with Docker.
 dotnet build -t:beam-init
 ```
 
+Now you can run your service locally.
+```shell
+# run the service for development
+dotnet build -t:beam-dev
+```
+
 
 ## FAQ
 
 #### How do I run the service?
 ```shell
-
-# give it a name, Xyz
-# path to docker build context
-# path to docker file
-dotnet beam services register
-
-# pass in ids
-dotnet beam services deploy 
-
+# Run the local service
+dotnet build -t:beam-dev
 ```
 
 #### What is the /Src folder?
@@ -58,9 +57,15 @@ Build time configurations and documentation may exist outside the `/src` folder,
 else should exist in the `/src`, otherwise it won't be used. 
 
 #### How do I publish the service?
+TODO
 
 #### How do I configure the service?
+TODO
 
 #### How do I update Beamable?
-Update the version number in `./config/dotnet-tools.json`
-Update the version number in `./BeamService.csproj`
+Run the following command, which will update the version number in `./config/dotnet-tools.json`
+and the version number in `./BeamService.csproj`.
+```shell
+# update Beamable SDK and Tools
+dotnet build -t:beam-update
+```

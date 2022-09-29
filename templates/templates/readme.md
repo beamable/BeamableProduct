@@ -9,6 +9,12 @@ so that we didn't have to have duplicated source.
 
 scratch
 
+
+```shell
+# Install beam CLI from local build (you need to run ./install.sh in the cli project first)
+dotnet tool install beamable.tools --version 0.0.0 --add-source ../../cli/cli/nupkg/
+```
+
 ```json
 "postActions": [
     {

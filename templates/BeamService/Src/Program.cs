@@ -1,16 +1,16 @@
 ﻿using Beamable.Server;
-using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Beamable.BeamService
 {
 	public class Program
 	{
-		// public static void Main(string[] _)
-		// {
-		// 	Console.Out.WriteLine("Hello world: " + Assembly.GetEntryAssembly().GetName().Version);
-		// }
-		public static async Task Main(string[] _)
+		/// <summary>
+		/// The entry point for the microservice.
+		/// </summary>
+		public static async Task Main()
 		{
+			// run the Microservice code
 			await MicroserviceBootstrapper.Start<BeamService>();
 		}
 	}
