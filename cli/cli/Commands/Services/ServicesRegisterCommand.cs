@@ -373,7 +373,9 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 
 				localProtocol.BindSrcForHotReloading = new DockerBindMount()
 				{
-					IsReadOnly = true, LocalPath = httpArgs.LocalHotReloadingConfig[2], InContainerPath = httpArgs.LocalHotReloadingConfig[3]
+					IsReadOnly = true,
+					LocalPath = httpArgs.LocalHotReloadingConfig[2],
+					InContainerPath = httpArgs.LocalHotReloadingConfig[3]
 				};
 			}
 

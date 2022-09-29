@@ -91,10 +91,10 @@ public class CliRequester : IBeamableRequester
 		{
 			switch (error)
 			{
-					// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
+				// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
 				case RequesterException e when e.RequestError.error == "InvalidTokenError" || e.RequestError.error == "ExpiredTokenError":
 
-					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because "+ e.RequestError.error);
+					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
 						{
@@ -106,7 +106,7 @@ public class CliRequester : IBeamableRequester
 			}
 
 			return Promise<T>.Failed(error);
-		});;
+		}); ;
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string? basePath, string uri, object body = null)
