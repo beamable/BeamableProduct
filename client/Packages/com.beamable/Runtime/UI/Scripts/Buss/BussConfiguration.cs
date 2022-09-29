@@ -17,9 +17,10 @@ namespace Beamable.UI.Buss
 
 		private static VariableDatabase _variableDatabase;
 
-		[SerializeField] private List<BussStyleSheet> _globalStyleSheets = new List<BussStyleSheet>();
+		[SerializeField] private List<BussStyleSheet> _developerStyleSheets = new List<BussStyleSheet>();
 
-		private readonly List<BussStyleSheet> _defaultBeamableStyleSheets = new List<BussStyleSheet>();
+		private readonly List<BussStyleSheet> _factoryStyleSheets = new List<BussStyleSheet>();
+		
 		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 		private static BussConfiguration Instance => Get<BussConfiguration>();
 
@@ -38,11 +39,11 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
-		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
+		public List<BussStyleSheet> FactoryStyleSheetSheets => _factoryStyleSheets;
+		public List<BussStyleSheet> DeveloperStyleSheets => _developerStyleSheets;
 		public List<BussElement> RootBussElements => _rootBussElements;
-
 		public VariableDatabase VariableDatabase => _variableDatabase;
+		
 		public List<BussStyleSheet> StyleSheets { get; private set; }
 
 		public static void UseConfig(Action<BussConfiguration> callback)
@@ -50,13 +51,15 @@ namespace Beamable.UI.Buss
 			OptionalInstance.DoIfExists(callback);
 		}
 
-		public void AddGlobalStyleSheet(BussStyleSheet styleSheet)
+		public void AddDeveloperStyleSheet(BussStyleSheet styleSheet)
 		{
-			if (!GlobalStyleSheets.Contains(styleSheet))
+			if (DeveloperStyleSheets.Contains(styleSheet))
 			{
-				GlobalStyleSheets.Add(styleSheet);
-				UpdateStyleSheet(styleSheet);
+				return;
 			}
+
+			DeveloperStyleSheets.Add(styleSheet);
+			UpdateStyleSheet(styleSheet);
 		}
 
 		public void RegisterObserver(BussElement bussElement)
@@ -82,7 +85,7 @@ namespace Beamable.UI.Buss
 
 			RefreshDefaultStyles();
 
-			if (_defaultBeamableStyleSheets.Contains(styleSheet) || _globalStyleSheets.Contains(styleSheet))
+			if (_factoryStyleSheets.Contains(styleSheet) || _developerStyleSheets.Contains(styleSheet))
 			{
 				foreach (BussElement bussElement in _rootBussElements)
 				{
@@ -98,9 +101,19 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		public void ForceRefresh()
+		{
+			RefreshDefaultStyles();
+			
+			foreach (var element in _rootBussElements)
+			{
+				element.OnStyleChanged();
+			}
+		}
+
 		public void RefreshDefaultStyles()
 		{
-			_defaultBeamableStyleSheets.Clear();
+			_factoryStyleSheets.Clear();
 			BussStyleSheet[] bussStyleSheets = Resources
 											   .LoadAll<BussStyleSheet>(
 												   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
@@ -108,7 +121,7 @@ namespace Beamable.UI.Buss
 
 			var orderedStyleSheets = bussStyleSheets.OrderBy(s => s.SortingOrder);
 
-			_defaultBeamableStyleSheets.AddRange(orderedStyleSheets);
+			_factoryStyleSheets.AddRange(orderedStyleSheets);
 		}
 
 		private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)
@@ -159,13 +172,13 @@ namespace Beamable.UI.Buss
 			ReconsiderVariables(element);
 
 			// Applying default bemable styles
-			foreach (BussStyleSheet styleSheet in _defaultBeamableStyleSheets)
+			foreach (BussStyleSheet styleSheet in _factoryStyleSheets)
 			{
 				ApplyStyleSheet(element, styleSheet);
 			}
 
 			// Applying developer styles
-			foreach (BussStyleSheet styleSheet in _globalStyleSheets)
+			foreach (BussStyleSheet styleSheet in _developerStyleSheets)
 			{
 				ApplyStyleSheet(element, styleSheet);
 			}
@@ -191,8 +204,8 @@ namespace Beamable.UI.Buss
 			}
 
 			StyleSheets = new List<BussStyleSheet>();
-			StyleSheets.AddRange(_defaultBeamableStyleSheets);
-			StyleSheets.AddRange(_globalStyleSheets);
+			StyleSheets.AddRange(_factoryStyleSheets);
+			StyleSheets.AddRange(_developerStyleSheets);
 			StyleSheets.AddRange(element.AllStyleSheets);
 			_variableDatabase.ReconsiderAllStyleSheets();
 		}

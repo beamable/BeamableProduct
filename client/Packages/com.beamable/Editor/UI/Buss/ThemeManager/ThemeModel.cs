@@ -121,7 +121,7 @@ namespace Beamable.Editor.UI.Buss
 					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
 					if (window != null)
 					{
-						window.Init(styleSheet.Styles, ForceRefresh);
+						window.Init(styleSheet.Styles);
 					}
 				});
 			}
