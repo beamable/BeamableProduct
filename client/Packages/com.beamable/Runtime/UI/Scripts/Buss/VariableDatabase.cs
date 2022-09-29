@@ -14,8 +14,8 @@ namespace Beamable.UI.Buss
 			public PropertyReference() { }
 
 			public PropertyReference(BussStyleSheet styleSheet,
-									 BussStyleRule styleRule,
-									 BussPropertyProvider propertyProvider)
+			                         BussStyleRule styleRule,
+			                         BussPropertyProvider propertyProvider)
 			{
 				StyleSheet = styleSheet;
 				StyleRule = styleRule;
@@ -35,14 +35,15 @@ namespace Beamable.UI.Buss
 			VariableLoopDetected
 		}
 
-		private readonly IVariablesProvider _model;
 		private readonly List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private readonly HashSet<string> _usedVariableNames = new HashSet<string>();
 		private readonly Dictionary<string, PropertyReference> _variables = new Dictionary<string, PropertyReference>();
 
-		public VariableDatabase(IVariablesProvider model)
+		private readonly IVariablesProvider _variablesProvider;
+
+		public VariableDatabase(IVariablesProvider variablesProvider)
 		{
-			_model = model;
+			_variablesProvider = variablesProvider;
 		}
 
 		public IBussProperty GetVariable(string key)
@@ -62,11 +63,6 @@ namespace Beamable.UI.Buss
 			var data = new PropertyReference();
 			_variables[key] = data;
 			return data;
-		}
-
-		public bool HasVariable(string key)
-		{
-			return _variables.TryGetValue(key, out _);
 		}
 
 		public IEnumerable<string> GetVariableNames()
@@ -90,31 +86,36 @@ namespace Beamable.UI.Buss
 			return variablesNames;
 		}
 
+		public bool HasVariable(string key)
+		{
+			return _variables.TryGetValue(key, out _);
+		}
+
 		public void ReconsiderAllStyleSheets()
 		{
 			_variables.Clear();
 			_styleSheets.Clear();
 
-			foreach (BussStyleSheet sheet in _model.StyleSheets)
+			foreach (BussStyleSheet sheet in _variablesProvider.GetStylesheets())
 			{
 				AddStyleSheet(sheet);
 			}
 		}
 
-		public PropertyValueState TryGetProperty(BussPropertyProvider basePropertyProvider,
-												 BussStyleDescription styleRule,
-												 out IBussProperty result,
-												 out PropertyReference variablePropertyReference)
+		public void TryGetProperty(BussPropertyProvider basePropertyProvider,
+		                           BussStyleDescription styleRule,
+		                           out IBussProperty result,
+		                           out PropertyReference variablePropertyReference)
 		{
 			if (!basePropertyProvider.HasVariableReference)
 			{
 				variablePropertyReference = new PropertyReference(null, null, null);
 				result = basePropertyProvider.GetProperty();
-				return PropertyValueState.SingleResult;
+				return;
 			}
 
-			return FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-										styleRule, out result, out variablePropertyReference);
+			FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
+			                     styleRule, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -151,9 +152,9 @@ namespace Beamable.UI.Buss
 		/// It can search for end value recursively.
 		/// </summary>
 		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-														BussStyleDescription styleRule,
-														out IBussProperty result,
-														out PropertyReference propertyReference)
+		                                                BussStyleDescription styleRule,
+		                                                out IBussProperty result,
+		                                                out PropertyReference propertyReference)
 		{
 			result = null;
 			propertyReference = new PropertyReference(null, null, null);

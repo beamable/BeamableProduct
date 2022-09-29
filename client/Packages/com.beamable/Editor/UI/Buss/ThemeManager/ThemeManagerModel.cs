@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Buss
 
 		protected override List<BussStyleSheet> SceneStyleSheets { get; } = new List<BussStyleSheet>();
 
-		public List<BussStyleSheet> StyleSheets
+		private List<BussStyleSheet> GlobalStyleSheets
 		{
 			get
 			{
@@ -28,7 +28,7 @@ namespace Beamable.Editor.UI.Buss
 				List<BussStyleSheet> list = new List<BussStyleSheet>();
 				if (configuration != null)
 				{
-					list.AddRange(configuration.FactoryStyleSheetSheets);
+					list.AddRange(configuration.FactoryStyleSheets);
 					list.AddRange(configuration.DeveloperStyleSheets);
 				}
 
@@ -36,12 +36,12 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
-		public List<BussStyleSheet> AllStyleSheets
+		private List<BussStyleSheet> AllStyleSheets
 		{
 			get
 			{
 				List<BussStyleSheet> list = new List<BussStyleSheet>();
-				list.AddRange(StyleSheets);
+				list.AddRange(GlobalStyleSheets);
 				list.AddRange(SceneStyleSheets);
 				return list;
 			}

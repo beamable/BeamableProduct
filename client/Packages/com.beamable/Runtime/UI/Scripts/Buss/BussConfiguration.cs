@@ -13,24 +13,13 @@ namespace Beamable.UI.Buss
 {
 	public class BussConfiguration : ModuleConfigurationObject, IVariablesProvider
 	{
-		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
-
-		private static VariableDatabase _variableDatabase;
-
-		[SerializeField] private List<BussStyleSheet> _developerStyleSheets = new List<BussStyleSheet>();
-
-		private readonly List<BussStyleSheet> _factoryStyleSheets = new List<BussStyleSheet>();
-		
-		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
-		private static BussConfiguration Instance => Get<BussConfiguration>();
-
 		public static Optional<BussConfiguration> OptionalInstance
 		{
 			get
 			{
 				try
 				{
-					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
+					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -38,13 +27,30 @@ namespace Beamable.UI.Buss
 				}
 			}
 		}
+		private static BussConfiguration Instance => Get<BussConfiguration>();
+		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
+		private static VariableDatabase _variableDatabase;
+		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
-		public List<BussStyleSheet> FactoryStyleSheetSheets => _factoryStyleSheets;
-		public List<BussStyleSheet> DeveloperStyleSheets => _developerStyleSheets;
+		public List<BussStyleSheet> FactoryStyleSheets
+		{
+			get
+			{
+				BussStyleSheet[] bussStyleSheets = Resources
+				                                   .LoadAll<BussStyleSheet>(
+					                                   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
+				                                   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
+
+				return bussStyleSheets.OrderBy(s => s.SortingOrder).ToList();
+			}
+		}
+
+		public List<BussStyleSheet> DeveloperStyleSheets =>
+			Resources.LoadAll<BussStyleSheet>("")
+			         .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
+
 		public List<BussElement> RootBussElements => _rootBussElements;
 		public VariableDatabase VariableDatabase => _variableDatabase;
-		
-		public List<BussStyleSheet> StyleSheets { get; private set; }
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
@@ -83,9 +89,7 @@ namespace Beamable.UI.Buss
 			// This should happen only in editor
 			if (styleSheet == null) return;
 
-			RefreshDefaultStyles();
-
-			if (_factoryStyleSheets.Contains(styleSheet) || _developerStyleSheets.Contains(styleSheet))
+			if (FactoryStyleSheets.Contains(styleSheet) || DeveloperStyleSheets.Contains(styleSheet))
 			{
 				foreach (BussElement bussElement in _rootBussElements)
 				{
@@ -103,25 +107,10 @@ namespace Beamable.UI.Buss
 
 		public void ForceRefresh()
 		{
-			RefreshDefaultStyles();
-			
 			foreach (var element in _rootBussElements)
 			{
 				element.OnStyleChanged();
 			}
-		}
-
-		public void RefreshDefaultStyles()
-		{
-			_factoryStyleSheets.Clear();
-			BussStyleSheet[] bussStyleSheets = Resources
-											   .LoadAll<BussStyleSheet>(
-												   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
-											   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
-
-			var orderedStyleSheets = bussStyleSheets.OrderBy(s => s.SortingOrder);
-
-			_factoryStyleSheets.AddRange(orderedStyleSheets);
 		}
 
 		private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)
@@ -157,8 +146,6 @@ namespace Beamable.UI.Buss
 			}
 
 			EditorUtility.SetDirty(this);
-
-			RefreshDefaultStyles();
 		}
 #endif
 
@@ -168,17 +155,22 @@ namespace Beamable.UI.Buss
 		{
 			Weights.Clear();
 			element.Style.Clear();
+			
+			if (_variableDatabase == null)
+			{
+				_variableDatabase = new VariableDatabase(this);
+			}
 
-			ReconsiderVariables(element);
+			_variableDatabase.ReconsiderAllStyleSheets();
 
 			// Applying default bemable styles
-			foreach (BussStyleSheet styleSheet in _factoryStyleSheets)
+			foreach (BussStyleSheet styleSheet in FactoryStyleSheets)
 			{
 				ApplyStyleSheet(element, styleSheet);
 			}
 
 			// Applying developer styles
-			foreach (BussStyleSheet styleSheet in _developerStyleSheets)
+			foreach (BussStyleSheet styleSheet in DeveloperStyleSheets)
 			{
 				ApplyStyleSheet(element, styleSheet);
 			}
@@ -194,20 +186,6 @@ namespace Beamable.UI.Buss
 			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
 
 			element.ApplyStyle();
-		}
-
-		private void ReconsiderVariables(BussElement element)
-		{
-			if (_variableDatabase == null)
-			{
-				_variableDatabase = new VariableDatabase(this);
-			}
-
-			StyleSheets = new List<BussStyleSheet>();
-			StyleSheets.AddRange(_factoryStyleSheets);
-			StyleSheets.AddRange(_developerStyleSheets);
-			StyleSheets.AddRange(element.AllStyleSheets);
-			_variableDatabase.ReconsiderAllStyleSheets();
 		}
 
 		private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
@@ -236,7 +214,7 @@ namespace Beamable.UI.Buss
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				if (!Weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
+				    weight.CompareTo(currentWeight) >= 0)
 				{
 					IBussProperty prop = property.GetProperty();
 
@@ -257,16 +235,16 @@ namespace Beamable.UI.Buss
 		}
 
 		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-														   string pseudoClass,
-														   BussStyleDescription descriptor,
-														   SelectorWeight weight)
+		                                                   string pseudoClass,
+		                                                   BussStyleDescription descriptor,
+		                                                   SelectorWeight weight)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				string weightKey = pseudoClass + property.Key;
 				if (!Weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
+				    weight.CompareTo(currentWeight) >= 0)
 				{
 					element.Style[pseudoClass, property.Key] = property.GetProperty();
 					Weights[weightKey] = weight;
@@ -275,5 +253,13 @@ namespace Beamable.UI.Buss
 		}
 
 		#endregion
+
+		public List<BussStyleSheet> GetStylesheets()
+		{
+			var list = new List<BussStyleSheet>();
+			list.AddRange(FactoryStyleSheets);
+			list.AddRange(DeveloperStyleSheets);
+			return list;
+		}
 	}
 }
