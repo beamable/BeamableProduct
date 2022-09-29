@@ -263,7 +263,7 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
-			await ClearPlayerAndStop();
+			await Cleanup();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
 
@@ -276,6 +276,18 @@ namespace Beamable
 			return ctx;
 		}
 
+		private async Promise Cleanup()
+		{
+			if(_requester is PlatformRequester apiRequester)
+			{
+				apiRequester.Dispose(); // lets ignore started requests
+			}
+			_requester.DeleteToken();
+			_isStopped = true;
+
+			OnShutdown?.Invoke();
+			await StopServices();
+		}
 
 		/// <summary>
 		/// Using the authorization associated with the current context, observe the public data of another player
@@ -672,7 +684,6 @@ namespace Beamable
 		/// </summary>
 		public static BeamContext Default => Instantiate();
 
-
 		/// <summary>
 		/// Find the first <see cref="BeamableBehaviour.Context"/> in the parent lineage of the current component, or <see cref="BeamContext.Default"/> if no <see cref="BeamableBehaviour"/> components exist
 		/// </summary>
@@ -731,14 +742,19 @@ namespace Beamable
 			OnUserLoggedIn = null;
 			OnUserLoggingOut = null;
 
+			await StopServices();
+
+			OnShutdownComplete?.Invoke();
+			OnShutdownComplete = null;
+		}
+
+		private async Promise StopServices()
+		{
 			await _serviceScope.Dispose();
 
 			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
-
-			OnShutdownComplete?.Invoke();
-			OnShutdownComplete = null;
 		}
 
 
