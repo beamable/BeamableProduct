@@ -1,5 +1,4 @@
-﻿using Beamable.Editor.UI.Components;
-using Beamable.UI.Buss;
+﻿using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,10 +17,50 @@ namespace Beamable.Editor.UI.Buss
 
 		public BussStyleSheet SelectedElementStyleSheet => SelectedElement != null ? SelectedElement.StyleSheet : null;
 
-		protected override List<BussStyleSheet> StyleSheets { get; } = new List<BussStyleSheet>();
+		protected override List<BussStyleSheet> SceneStyleSheets { get; } = new List<BussStyleSheet>();
+
+		public List<BussStyleSheet> StyleSheets
+		{
+			get
+			{
+				var configuration = BussConfiguration.OptionalInstance.Value;
+
+				List<BussStyleSheet> list = new List<BussStyleSheet>();
+				if (configuration != null)
+				{
+					list.AddRange(configuration.FactoryStyleSheetSheets);
+					list.AddRange(configuration.DeveloperStyleSheets);
+				}
+
+				return list;
+			}
+		}
+
+		public List<BussStyleSheet> AllStyleSheets
+		{
+			get
+			{
+				List<BussStyleSheet> list = new List<BussStyleSheet>();
+				list.AddRange(StyleSheets);
+				list.AddRange(SceneStyleSheets);
+				return list;
+			}
+		}
 
 		public override Dictionary<BussStyleRule, BussStyleSheet> FilteredRules =>
-			Filter.GetFiltered(StyleSheets, SelectedElement);
+			Filter.GetFiltered(AllStyleSheets, SelectedElement);
+
+		public override List<BussStyleSheet> WritableStyleSheets
+		{
+			get
+			{
+#if BEAMABLE_DEVELOPER
+				return AllStyleSheets ?? new List<BussStyleSheet>();
+#else
+				return AllStyleSheets?.Where(s => !s.IsReadOnly).ToList() ?? new List<BussStyleSheet>();
+#endif
+			}
+		}
 
 		public ThemeManagerModel()
 		{
@@ -88,9 +127,9 @@ namespace Beamable.Editor.UI.Buss
 
 			if (styleSheet == null) return;
 
-			if (!StyleSheets.Contains(styleSheet))
+			if (!SceneStyleSheets.Contains(styleSheet))
 			{
-				StyleSheets.Add(styleSheet);
+				SceneStyleSheets.Add(styleSheet);
 				styleSheet.Change += OnStyleSheetChanged;
 			}
 		}
@@ -100,12 +139,12 @@ namespace Beamable.Editor.UI.Buss
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			Selection.selectionChanged -= OnSelectionChanged;
 
-			foreach (var styleSheet in StyleSheets)
+			foreach (var styleSheet in SceneStyleSheets)
 			{
 				styleSheet.Change -= OnStyleSheetChanged;
 			}
 
-			StyleSheets.Clear();
+			SceneStyleSheets.Clear();
 
 			foreach (var element in FoundElements)
 			{
@@ -162,14 +201,14 @@ namespace Beamable.Editor.UI.Buss
 				SerializableValueImplementationHelper.ImplementationData data =
 					SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-																   t != typeof(FractionFloatBussProperty)).ToList();
+				                                                   t != typeof(FractionFloatBussProperty)).ToList();
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						if (SelectedElement.InlineStyle.TryAddProperty(
-								key, (IBussProperty)Activator.CreateInstance(type)))
+							    key, (IBussProperty)Activator.CreateInstance(type)))
 						{
 							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 							EditorUtility.SetDirty(SelectedElement);
@@ -223,13 +262,13 @@ namespace Beamable.Editor.UI.Buss
 
 		public void OnStyleSheetSelected(Object styleSheet)
 		{
-			if (SelectedElement == null)
+			if (SelectedElement != null)
 			{
-				return;
+				BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
+				SelectedElement.StyleSheet = newStyleSheet;
 			}
 
-			BussStyleSheet newStyleSheet = (BussStyleSheet)styleSheet;
-			SelectedElement.StyleSheet = newStyleSheet;
+			BussConfiguration.OptionalInstance.Value.ForceRefresh();
 			ForceRefresh();
 		}
 

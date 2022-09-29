@@ -27,21 +27,11 @@ namespace Beamable.Editor.UI.Buss
 
 		public abstract BussElement SelectedElement { get; set; }
 
-		protected abstract List<BussStyleSheet> StyleSheets { get; }
+		protected abstract List<BussStyleSheet> SceneStyleSheets { get; }
 
 		public abstract Dictionary<BussStyleRule, BussStyleSheet> FilteredRules { get; }
 
-		public IEnumerable<BussStyleSheet> WritableStyleSheets
-		{
-			get
-			{
-#if BEAMABLE_DEVELOPER
-				return StyleSheets ?? Enumerable.Empty<BussStyleSheet>();
-#else
-				return StyleSheets?.Where(s => !s.IsReadOnly) ?? Enumerable.Empty<BussStyleSheet>();
-#endif
-			}
-		}
+		public abstract List<BussStyleSheet> WritableStyleSheets { get; }
 
 		public VariableDatabase VariablesDatabase => BussConfiguration.OptionalInstance.Value.VariableDatabase;
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
@@ -115,7 +105,7 @@ namespace Beamable.Editor.UI.Buss
 
 		public void OnCopyButtonClicked()
 		{
-			List<BussStyleSheet> readonlyStyles = StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
+			List<BussStyleSheet> readonlyStyles = SceneStyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
 			OpenCopyMenu(readonlyStyles);
 		}
 
@@ -131,7 +121,7 @@ namespace Beamable.Editor.UI.Buss
 					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
 					if (window != null)
 					{
-						window.Init(styleSheet.Styles);
+						window.Init(styleSheet.Styles, ForceRefresh);
 					}
 				});
 			}

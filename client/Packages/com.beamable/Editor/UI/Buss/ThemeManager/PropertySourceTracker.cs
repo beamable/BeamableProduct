@@ -25,12 +25,12 @@ namespace Beamable.UI.Buss
 				var config = BussConfiguration.OptionalInstance.Value;
 				if (config != null)
 				{
-					foreach (BussStyleSheet styleSheet in config.DefaultBeamableStyleSheetSheets)
+					foreach (BussStyleSheet styleSheet in config.FactoryStyleSheetSheets)
 					{
 						AddStyleSheet(styleSheet);
 					}
 
-					foreach (BussStyleSheet styleSheet in config.GlobalStyleSheets)
+					foreach (BussStyleSheet styleSheet in config.DeveloperStyleSheets)
 					{
 						AddStyleSheet(styleSheet);
 					}
