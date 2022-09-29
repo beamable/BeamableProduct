@@ -1,5 +1,8 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+#if BEAMABLE_DEVELOPER
+using System;
+#endif
 using UnityEditor;
 using UnityEngine.UIElements;
 
