@@ -4,6 +4,7 @@ using Beamable.BSAT.Editor.UI.Components;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Common;
 using Beamable.BSAT.Core.Models;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
@@ -105,6 +106,9 @@ namespace Beamable.BSAT.Editor.UI
 			
 			_actionBarVisualElement.OnOpenMainMenuSceneButtonPressed -= HandleOpenMainMenuSceneButton;
 			_actionBarVisualElement.OnOpenMainMenuSceneButtonPressed += HandleOpenMainMenuSceneButton;
+			
+			_actionBarVisualElement.OnSetupBuildSettingsButtonPressed -= HandleSetupTestScenesButton;
+			_actionBarVisualElement.OnSetupBuildSettingsButtonPressed += HandleSetupTestScenesButton;
 
 			_actionBarVisualElement.Refresh();
 
@@ -222,6 +226,27 @@ namespace Beamable.BSAT.Editor.UI
 		{
 			EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
 			EditorSceneManager.OpenScene(PATH_TO_MAIN_MENU_TEST_SCENE);
+		}
+
+		private void HandleSetupTestScenesButton()
+		{
+			if (!EditorUtility.DisplayDialog(
+				    "Build settings configurator",
+				    "This process will override current Build Settings. Continue?",
+				    "Continue",
+				    "Cancel"))
+			{
+				return;
+			}
+			
+			var registeredTestScenes = TestingEditorModel.TestConfiguration.RegisteredTestScenes;
+			var testScenes = new EditorBuildSettingsScene[registeredTestScenes.Count + 1];
+			testScenes[0] = new EditorBuildSettingsScene(PATH_TO_MAIN_MENU_TEST_SCENE, true);
+			registeredTestScenes
+					.Select(x => new EditorBuildSettingsScene(GetPathToTestScene(x.SceneName), true))
+					.ToArray()
+					.CopyTo(testScenes, 1);
+			EditorBuildSettings.scenes = testScenes;
 		}
 
 		private void ResetList(VisualElement ve, ref ExtendedListView elv)
