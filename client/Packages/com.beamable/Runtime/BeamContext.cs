@@ -266,12 +266,7 @@ namespace Beamable
 			await ClearPlayerAndDisposeScope();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
-
-			// await InitStep_SaveToken();
-			await InitStep_GetUser();
-			await InitStep_StartNewSession();
-
-			OnReloadUser?.Invoke();
+			await _initPromise;
 
 			return ctx;
 		}

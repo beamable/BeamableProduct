@@ -120,21 +120,14 @@ namespace Beamable.Api
 			notificationService.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
 
 			var platform = provider.GetService<IPlatformService>();
-			platform.OnReady.Then(_ => { platform.TimeOverrideChanged += OnTimeOverride; });
-
-			platform.OnShutdown += () => { platform.TimeOverrideChanged -= OnTimeOverride; };
-
-			platform.OnReloadUser += () =>
-			{
-				this.connectivityService = provider.GetService<IConnectivityService>();
-				this.notificationService = provider.GetService<INotificationService>();
-				this.userContext = provider.GetService<IUserContext>();
-				this.coroutineService = provider.GetService<CoroutineService>();
-				this.requester = provider.GetService<IBeamableRequester>();
-
+			platform.OnReady.Then(_ => { 
+				platform.TimeOverrideChanged += OnTimeOverride;
 				Reset();
 				Refresh();
-			};
+				
+			});
+
+			platform.OnShutdown += () => { platform.TimeOverrideChanged -= OnTimeOverride; };
 		}
 
 		public void UnsubscribeAllNotifications()
