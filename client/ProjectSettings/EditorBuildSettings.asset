@@ -11,6 +11,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/BeamSemiAutomatedTester/Tests/BeamContextLifecycle/BeamContextLifecycle.unity
     guid: 93b5d15484a52fe408efa44472276cb0
+  - enabled: 1
+    path: Assets/BeamSemiAutomatedTester/Tests/FriendsPSDK/FriendsPSDK.unity
+    guid: d7b42fa753dda4c3bbd26e40f9ebbf96
+  - enabled: 1
+    path: Assets/BeamSemiAutomatedTester/Tests/Inventory/Inventory.unity
+    guid: 719961af9c7a6834e9c3ecc3db6969e3
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 52f274da26cb73a49ac06b8a1df87e85,
       type: 2}
