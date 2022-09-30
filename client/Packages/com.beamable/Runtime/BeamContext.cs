@@ -259,8 +259,16 @@ namespace Beamable
 		/// <returns>New instance of the <see cref="BeamContext"/></returns>
 		public static BeamContext CreateAuthorizedContext(string playerCode, TokenResponse token)
 		{
-			if (_playerCodeToContext.ContainsKey(playerCode))
+			bool isDefault = string.IsNullOrWhiteSpace(playerCode);
+			if (isDefault || _playerCodeToContext.ContainsKey(playerCode))
 			{
+#if UNITY_EDITOR
+				const string log =
+					@"<b>BeamContext</b> with id <b>{0}</b> already exists. " +
+					"In order to update existing BeamContext it is recommended to use <b>" + 
+					nameof(ChangeAuthorizedPlayer) + "</b> method instead.";
+				Debug.LogError(string.Format(log, isDefault ? "Default" : playerCode));
+#endif
 				throw new BeamContextInitException(_playerCodeToContext[playerCode], 
 				                                   new []{new Exception($"BeamContext with \"{playerCode}\" prefix already exist.")});
 			}
