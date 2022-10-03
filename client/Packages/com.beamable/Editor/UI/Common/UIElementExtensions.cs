@@ -203,6 +203,46 @@ namespace Beamable.Editor
 			constraint.OnValidate += check;
 			return constraint;
 		}
+		
+		public static FormConstraint AddErrorLabel(this LabeledTextField self, string name, FormErrorCheckWithInput checker, double debounceTime = .25)
+		{
+			var constraint = new FormConstraint
+			{
+				ErrorCheck = (out string err) =>
+				{
+					err = checker(self.TextFieldComponent.value);
+					return !string.IsNullOrEmpty(err);
+				},
+				Name = name
+			};
+
+			var nextCheckTime = 0.0;
+
+			void Debounce()
+			{
+				var time = EditorApplication.timeSinceStartup;
+				if (time < nextCheckTime)
+				{
+					EditorApplication.delayCall += Debounce;
+					return;
+				}
+
+				constraint.Check();
+			}
+
+			void StartDebounce()
+			{
+				// wait up to .25 seconds.
+				var time = EditorApplication.timeSinceStartup;
+				nextCheckTime = time + debounceTime;
+				Debounce();
+			}
+
+			self.TextFieldComponent.RegisterValueChangedCallback(evt => StartDebounce());
+			var check = AddErrorLabel(self.TextFieldComponent, constraint);
+			constraint.OnValidate += check;
+			return constraint;
+		}
 
 		public static FormConstraint AddErrorLabel(this Toggle self, string name, FormBoolErrorCheckWithInput checker)
 		{
