@@ -42,10 +42,10 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
+		public TextField TextFieldComponent{ get; private set; }
+		
 		private Label _labelComponent;
-
 		private Action<string> _onValueChanged;
-		private TextField _textFieldComponent;
 		private string _value;
 
 		public string Value
@@ -54,7 +54,7 @@ namespace Beamable.Editor.UI.Components
 			set
 			{
 				_value = value;
-				_textFieldComponent?.SetValueWithoutNotify(_value);
+				TextFieldComponent?.SetValueWithoutNotify(_value);
 				_onValueChanged?.Invoke(_value);
 			}
 		}
@@ -79,11 +79,11 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent = Root.Q<Label>("label");
 			_labelComponent.text = Label;
 
-			_textFieldComponent = Root.Q<TextField>("textField");
-			_textFieldComponent.value = Value;
-			_textFieldComponent.isDelayed = IsDelayed;
-			_textFieldComponent.multiline = IsMultiline;
-			_textFieldComponent.RegisterValueChangedCallback(ValueChanged);
+			TextFieldComponent = Root.Q<TextField>("textField");
+			TextFieldComponent.value = Value;
+			TextFieldComponent.isDelayed = IsDelayed;
+			TextFieldComponent.multiline = IsMultiline;
+			TextFieldComponent.RegisterValueChangedCallback(ValueChanged);
 		}
 
 		public void Setup(string label,
@@ -102,12 +102,12 @@ namespace Beamable.Editor.UI.Components
 		public void SetWithoutNotify(string value)
 		{
 			_value = value;
-			_textFieldComponent?.SetValueWithoutNotify(value);
+			TextFieldComponent?.SetValueWithoutNotify(value);
 		}
 
 		protected override void OnDestroy()
 		{
-			_textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
+			TextFieldComponent.UnregisterValueChangedCallback(ValueChanged);
 		}
 
 		private void ValueChanged(ChangeEvent<string> evt)

@@ -93,6 +93,10 @@ DropdownVisualElement > TemplateContainer > #mainVisualElement > #mainContainer 
     padding-right: 10px;
 }
 
+.beamableErrorLabel {
+    left: 29%;
+}
+
 #propertyValue {
     flex-grow: 1;
 }
