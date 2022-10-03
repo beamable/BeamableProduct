@@ -96,7 +96,7 @@ namespace Beamable.Editor.UI.Components
 
 			SetupVariableConnection();
 			CheckIfIsReadOnly();
-			EnableInClassList("overriden", _model.IsOverriden);
+			EnableInClassList("overriden", _model.IsOverriden && _model.IsInStyle);
 		}
 
 		protected override void OnDestroy()

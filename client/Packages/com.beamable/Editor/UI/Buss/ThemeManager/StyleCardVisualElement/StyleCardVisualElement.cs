@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
@@ -39,7 +40,7 @@ namespace Beamable.Editor.UI.Components
 			_propertiesParent = Root.Q<VisualElement>("properties");
 			_colorBlock = Root.Q<VisualElement>("foldIconParent");
 
-			_foldIcon = new Image { name = "foldIcon" };
+			_foldIcon = new Image {name = "foldIcon"};
 			_colorBlock.Add(_foldIcon);
 
 			_optionsButton = Root.Q<VisualElement>("optionsButton");
@@ -151,7 +152,7 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (StylePropertyModel model in _model.GetProperties())
 			{
-				if (!_model.ShowAll && (_model.ShowAll || !model.IsInStyle))
+				if (!_model.ShowAll && !model.IsInStyle)
 				{
 					continue;
 				}
@@ -176,7 +177,7 @@ namespace Beamable.Editor.UI.Components
 		private void UpdateShowAllStatus()
 		{
 			EnableInClassList("showAllProperties", _model.ShowAll);
-			_showAllButtonText.text = _model.ShowAll ? "Hide All" : "Show All";
+			_showAllButtonText.text = _model.ShowAll ? TOGGLE_HIDE_ALL : TOGGLE_SHOW_ALL;
 		}
 	}
 }
