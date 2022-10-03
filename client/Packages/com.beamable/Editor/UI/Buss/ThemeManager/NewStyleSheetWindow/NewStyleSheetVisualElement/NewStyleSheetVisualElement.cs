@@ -75,13 +75,13 @@ namespace Beamable.Editor.UI.Buss
 
 			if (string.IsNullOrWhiteSpace(variableName))
 			{
-				message = "Variable name can't be empty";
+				message = "Steel sheet name can't be empty";
 				return false;
 			}
 
 			if (!Regex.IsMatch(variableName, VARIABLE_NAME_REGEX))
 			{
-				message = "Variable name can contain only letters";
+				message = "Steel sheet name can contain only letters";
 				return false;
 			}
 
