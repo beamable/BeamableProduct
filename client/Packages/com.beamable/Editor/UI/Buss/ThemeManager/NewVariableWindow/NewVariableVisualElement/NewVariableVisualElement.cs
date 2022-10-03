@@ -87,7 +87,8 @@ namespace Beamable.Editor.UI.Buss
 
 			_selectType = Root.Q<LabeledDropdownVisualElement>("selectType");
 			_selectType.Setup(_typesDict.Keys.ToList(), HandleTypeSwitchProperty);
-			_variableName.AddErrorLabel(null, _ => {
+			_variableName.AddErrorLabel(null, _ =>
+			{
 
 				IsNameValid(out var msg);
 				return msg;

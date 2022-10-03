@@ -42,8 +42,8 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		public TextField TextFieldComponent{ get; private set; }
-		
+		public TextField TextFieldComponent { get; private set; }
+
 		private Label _labelComponent;
 		private Action<string> _onValueChanged;
 		private string _value;
