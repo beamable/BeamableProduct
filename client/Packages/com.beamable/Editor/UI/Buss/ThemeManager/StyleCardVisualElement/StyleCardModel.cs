@@ -325,6 +325,11 @@ namespace Beamable.Editor.UI.Components
 			{
 				IBussProperty bussProperty = propertyModel.PropertyProvider.GetProperty();
 				propertyModel.StyleSheet.RemoveStyleProperty(bussProperty, propertyModel.StyleRule);
+
+#if UNITY_EDITOR
+				EditorUtility.SetDirty(propertyModel.StyleSheet);
+#endif
+				AssetDatabase.SaveAssets();
 			}
 
 			Change?.Invoke();
