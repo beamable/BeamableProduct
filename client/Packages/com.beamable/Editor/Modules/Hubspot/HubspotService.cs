@@ -1,7 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Spew;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Editor.Modules.Hubspot
 {
@@ -28,6 +30,12 @@ namespace Beamable.Editor.Modules.Hubspot
 		/// <param name="alias">the developer's new studio name / alias</param>
 		public async Promise SubmitRegistrationEvent(string email, string alias)
 		{
+			if (!BeamableEnvironment.IsProduction)
+			{
+				PlatformLogger.Log($"<b>[Hubspot] ignoring registration event because this is not production.");
+				return;
+			}
+
 			if (string.IsNullOrEmpty(email))
 			{
 				throw new ArgumentNullException(nameof(email));
@@ -44,6 +52,7 @@ namespace Beamable.Editor.Modules.Hubspot
 				email = email
 			};
 			var req = builder.Build();
+			PlatformLogger.Log($"<b>[Hubspot] {req.GetFieldString()}");
 			await _requester.ManualRequest<EmptyResponse>(Method.POST, HUBSPOT_REGISTRATION_FORM_URL, req);
 		}
 	}
@@ -74,16 +83,21 @@ namespace Beamable.Editor.Modules.Hubspot
 
 		public FormSubmissionRequest Build()
 		{
+			var sourceValue = BeamableEnvironment.IsUnityVsp
+				? FIELD_SOURCE_VSP_VALUE
+				: FIELD_SOURCE_SDK_VALUE;
+			if (!BeamableEnvironment.IsProduction)
+			{
+				sourceValue += $" ({BeamableEnvironment.Environment})";
+			}
+
 			var req = new FormSubmissionRequest {fields = new List<FormField>
 			{
 				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_EMAIL, value = email},
 				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_ALIAS, value = alias},
 
 				// the source must always be sent, but will either be VSP or not-VSP.
-				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_SOURCE, value = BeamableEnvironment.IsUnityVsp
-					? FIELD_SOURCE_VSP_VALUE
-					: FIELD_SOURCE_SDK_VALUE
-				},
+				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_SOURCE, value = sourceValue},
 
 				// must send terms of service
 				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_LICENSE, value = FIELD_LICENSE_VALUE},
@@ -106,6 +120,10 @@ namespace Beamable.Editor.Modules.Hubspot
 	{
 		public List<FormField> fields;
 
+		public string GetFieldString()
+		{
+			return string.Join(",", fields?.Select(f => $"{f.name}={f.value}") ?? Array.Empty<string>());
+		}
 	}
 
 	[Serializable]
