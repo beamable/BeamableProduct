@@ -210,7 +210,7 @@ namespace Beamable.Editor
 			{
 				ErrorCheck = (out string err) =>
 				{
-					err = checker(self.GetTextFieldComponent().value);
+					err = checker(self.TextFieldComponent.value);
 					return !string.IsNullOrEmpty(err);
 				},
 				Name = name
@@ -238,8 +238,8 @@ namespace Beamable.Editor
 				Debounce();
 			}
 
-			self.GetTextFieldComponent().RegisterValueChangedCallback(evt => StartDebounce());
-			var check = AddErrorLabel(self.GetTextFieldComponent(), constraint);
+			self.TextFieldComponent.RegisterValueChangedCallback(evt => StartDebounce());
+			var check = AddErrorLabel(self.TextFieldComponent, constraint);
 			constraint.OnValidate += check;
 			return constraint;
 		}
