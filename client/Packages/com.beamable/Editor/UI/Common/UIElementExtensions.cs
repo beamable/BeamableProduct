@@ -203,7 +203,7 @@ namespace Beamable.Editor
 			constraint.OnValidate += check;
 			return constraint;
 		}
-		
+
 		public static FormConstraint AddErrorLabel(this LabeledTextField self, string name, FormErrorCheckWithInput checker, double debounceTime = .25)
 		{
 			var constraint = new FormConstraint
