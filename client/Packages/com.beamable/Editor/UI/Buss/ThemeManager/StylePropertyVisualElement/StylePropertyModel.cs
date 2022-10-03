@@ -35,13 +35,13 @@ namespace Beamable.Editor.UI.Components
 			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key);
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
-								  BussStyleRule styleRule,
-								  BussPropertyProvider propertyProvider,
-								  VariableDatabase variablesDatabase,
-								  PropertySourceTracker propertySourceTracker,
-								  BussElement inlineStyleOwner,
-								  Action<string> removePropertyAction,
-								  Action globalRefresh)
+		                          BussStyleRule styleRule,
+		                          BussPropertyProvider propertyProvider,
+		                          VariableDatabase variablesDatabase,
+		                          PropertySourceTracker propertySourceTracker,
+		                          BussElement inlineStyleOwner,
+		                          Action<string> removePropertyAction,
+		                          Action globalRefresh)
 		{
 			_removePropertyAction = removePropertyAction;
 			_globalRefresh = globalRefresh;
@@ -55,9 +55,8 @@ namespace Beamable.Editor.UI.Components
 
 		public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
 		{
-			VariablesDatabase.TryGetProperty(PropertyProvider,
-											 StyleRule, out IBussProperty property,
-											 out VariableDatabase.PropertyReference variableSource);
+			VariablesDatabase.TryGetProperty(PropertyProvider, StyleRule, out IBussProperty property,
+			                                 out VariableDatabase.PropertyReference variableSource);
 
 			bussProperty = property;
 			propertyReference = variableSource;
@@ -157,6 +156,23 @@ namespace Beamable.Editor.UI.Components
 			var value = options.FindIndex(option => option.Equals(variableName));
 			value = Mathf.Clamp(value, 0, options.Count - 1);
 			return value;
+		}
+
+		public void OnPropertyChanged(IBussProperty property)
+		{
+			if (!StyleRule.HasProperty(PropertyProvider.Key))
+			{
+				StyleRule.TryAddProperty(PropertyProvider.Key, property);
+			}
+			else
+			{
+				StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
+			}
+
+#if UNITY_EDITOR
+			EditorUtility.SetDirty(StyleSheet);
+			AssetDatabase.SaveAssets();
+#endif
 		}
 	}
 }

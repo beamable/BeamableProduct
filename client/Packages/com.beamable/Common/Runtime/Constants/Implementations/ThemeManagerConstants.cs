@@ -28,6 +28,9 @@ namespace Beamable.Common
 
 					public const string DUPLICATE_STYLESHEET_BUTTON_LABEL = "Duplicate factory stylesheet";
 					public const string DUPLICATE_STYLESHEET_OPTIONS_HEADER = "Select source stylesheet";
+
+					public const string TOGGLE_SHOW_ALL = "Show All";
+					public const string TOGGLE_HIDE_ALL = "Hide All";
 				}
 
 				public static partial class MenuItems
