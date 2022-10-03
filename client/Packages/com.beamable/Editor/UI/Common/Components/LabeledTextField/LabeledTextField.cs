@@ -105,6 +105,11 @@ namespace Beamable.Editor.UI.Components
 			_textFieldComponent?.SetValueWithoutNotify(value);
 		}
 
+		public TextField GetTextFieldComponent()
+		{
+			return _textFieldComponent;
+		}
+
 		protected override void OnDestroy()
 		{
 			_textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
