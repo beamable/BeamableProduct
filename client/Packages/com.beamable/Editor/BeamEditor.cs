@@ -961,7 +961,7 @@ namespace Beamable
 				try
 				{
 					await ServiceScope.GetService<HubspotService>()
-					                  .SubmitRegistrationEvent(email, alias);
+									  .SubmitRegistrationEvent(email, alias);
 				}
 				catch (Exception hubspotError)
 				{
