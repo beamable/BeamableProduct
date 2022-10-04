@@ -62,7 +62,7 @@ namespace Beamable.Editor.UI.Buss
 
 			foreach (string className in element.Classes)
 			{
-				label += " " + AsClassSelector(className);
+				label += AsClassSelector(className);
 			}
 
 			return label;
