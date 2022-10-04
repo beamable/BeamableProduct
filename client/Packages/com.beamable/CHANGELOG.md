@@ -16,9 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded/Collapsed state represented by icons in `Theme Manager`
 - New customer registrations will send an analytic event to Beamable
 
+### Changed
+- Connectivity events are sourced from the `Heartbeat` every 5 seconds, instead of from the `ConnectivityService` every 3 seconds.
+
 ### Fixed
 - The default uncaught Promise handler no longer throws `IndexOutOfBounds` errors in high failure cases.
 - Unity Asset Store releases will show correct version number in Unity Package Manager.  
+
+### Removed
+- `connectivityRoute` option in `config-defaults` no longer has any effect. All connectivity checks happen as part of the heart beat cycle every 5 seconds.
 
 ## [1.3.6]
 ### Fixed
