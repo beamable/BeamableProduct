@@ -91,7 +91,9 @@ namespace Beamable.Editor.Modules.Hubspot
 				sourceValue += $" ({BeamableEnvironment.Environment})";
 			}
 
-			var req = new FormSubmissionRequest {fields = new List<FormField>
+			var req = new FormSubmissionRequest
+			{
+				fields = new List<FormField>
 			{
 				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_EMAIL, value = email},
 				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_ALIAS, value = alias},
@@ -109,7 +111,8 @@ namespace Beamable.Editor.Modules.Hubspot
 				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_LAST_NAME, value = FIELD_LAST_NAME_VALUE},
 				new FormField{ objectTypeId = FIELD_OBJECT_TYPE_ID, name = FIELD_FEATURES, value = FIELD_FEATURES_VALUE},
 
-			}};
+			}
+			};
 
 			return req;
 		}
