@@ -104,7 +104,7 @@ namespace Beamable.Editor.Config
 					ConfigManager.Initialize(); // re-initialize every time the window is activated, so that we make sure the SO's always exist.
 
 					List<SettingsProvider> providers = new List<SettingsProvider>();
-					
+
 					foreach (BaseModuleConfigurationObject config in ConfigManager.ConfigObjects)
 					{
 						var options = ConfigManager.GenerateOptions(config);
@@ -113,7 +113,7 @@ namespace Beamable.Editor.Config
 						{
 							continue;
 						}
-						
+
 						var settingsProvider = new SettingsProvider($"Project/Beamable/{options[0].Module}", SettingsScope.Project)
 						{
 							activateHandler = (searchContext, rootElement) =>
