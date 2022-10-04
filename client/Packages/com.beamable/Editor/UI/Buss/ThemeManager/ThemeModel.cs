@@ -46,11 +46,6 @@ namespace Beamable.Editor.UI.Buss
 			Selection.activeGameObject = Selection.activeGameObject == element.gameObject ? null : element.gameObject;
 		}
 
-		public void OnFocus()
-		{
-			Change?.Invoke();
-		}
-
 		#region Action bar buttons' actions
 
 		public void OnAddStyleButtonClicked()
