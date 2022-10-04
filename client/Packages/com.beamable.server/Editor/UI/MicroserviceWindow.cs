@@ -70,11 +70,11 @@ namespace Beamable.Editor.Microservice.UI
 				});
 			});
 		}
-		
+
 		async Promise<bool> PerformCheck()
 		{
 			var result = await new CheckDockerCommand().StartAsync();
-			
+
 			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
 			{
 				result |= await DockerCommand.CheckDockerAppRunning();
