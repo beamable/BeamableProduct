@@ -395,7 +395,7 @@ namespace Beamable.Server.Editor.DockerCommands
 #if UNITY_EDITOR_WIN
 						const string procName = "docker desktop";
 #else
-							const string procName = "docker";
+						const string procName = "docker";
 #endif
 						if (procList[i].ProcessName.ToLower().Contains(procName))
 						{
