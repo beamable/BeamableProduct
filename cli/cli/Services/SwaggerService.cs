@@ -1,7 +1,10 @@
 using Beamable.Common;
 using cli.Utils;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi.Writers;
 using Serilog;
 
 namespace cli;
@@ -102,7 +105,103 @@ public class SwaggerService
 			}
 		}
 
-		// TODO: there may be duplicate schemas when we are getting lots of documents... we can just de-dupe based on name, but technically, that could be wrong if the server has namespaces...
+		var groups = list.GroupBy(s => s.Name).ToList();
+
+		string SerializeSchema(OpenApiSchema schema)
+		{
+			using var sw = new StringWriter();
+			var writer = new OpenApiJsonWriter(sw);
+			schema.SerializeAsV3WithoutReference(writer);
+			return sw.ToString();
+		}
+
+		foreach (var group in groups)
+		{
+			if (group.Count() <= 1) continue;
+
+			// found dupe...
+			var elements = group.ToList();
+
+			var uniqueElementGroups = elements.GroupBy(e => SerializeSchema(e.Schema)).ToList();
+			if (uniqueElementGroups.Count > 1)
+			{
+				/*
+				 * There are multiple serializations of the model, which means we need to re-wire each of them to point to
+				 * their own specific implementation :(
+				 */
+				foreach (var variant in uniqueElementGroups.ToList())
+				{
+					foreach (var instance in variant)
+					{
+						var serviceTitle = string.Concat(instance.Document.Info.Title
+							.Split(' ')
+							.Select(w => char.ToUpper(w[0]) + w.Substring(1)));
+						var newName = serviceTitle + instance.Name;
+						var oldName = instance.Name;
+						instance.Name = newName;
+
+
+						void RewireSchema(OpenApiSchema schema)
+						{
+							if (schema.Reference?.Id == oldName)
+							{
+								schema.Reference.Id = newName;
+							}
+							if (schema.AdditionalProperties?.Reference?.Id == oldName)
+							{
+								schema.AdditionalProperties.Reference.Id = newName;
+							}
+
+							if (schema.Items?.Reference?.Id == oldName)
+							{
+								schema.Items.Reference.Id = newName;
+							}
+							foreach (var property in schema.Properties)
+							{
+								if (property.Value.Reference?.Id == oldName)
+								{
+									property.Value.Reference.Id = newName;
+								}
+							}
+						}
+						// any reference to the old name in the document needs to be re-mapped.
+						//
+
+						foreach (var path in instance.Document.Paths)
+						{
+							foreach (var op in path.Value.Operations)
+							{
+								foreach (var res in op.Value.Responses)
+								{
+									foreach (var content in res.Value.Content)
+									{
+										RewireSchema(content.Value.Schema);
+									}
+								}
+							}
+						}
+						foreach (var res in instance.Document.Components.Responses.Values)
+						{
+							if (res.Reference?.Id == oldName)
+							{
+								res.Reference.Id = newName;
+							}
+
+							foreach (var content in res.Content)
+							{
+								RewireSchema(content.Value.Schema);
+							}
+						}
+
+						foreach (var schema in instance.Document.Components.Schemas.Values)
+						{
+							RewireSchema(schema);
+						}
+					}
+				}
+			}
+		}
+
 		list = list.DistinctBy(x => x.Name).ToList();
 
 		return list;
@@ -393,4 +492,9 @@ public class NamedOpenApiSchema
 	/// The openAPI schema itself
 	/// </summary>
 	public OpenApiSchema Schema;
+
+	/// <summary>
+	/// A combination of the <see cref="Document"/>'s title, and <see cref="Name"/>
+	/// </summary>
+	public string UniqueName => $"{Document.Info.Title}-{Name}";
 }
