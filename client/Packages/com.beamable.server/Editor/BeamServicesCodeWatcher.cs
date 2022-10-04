@@ -55,6 +55,8 @@ namespace Beamable.Server.Editor
 	// ReSharper disable once ClassNeverInstantiated.Global
 	public class BeamServicesCodeWatcher : IBeamHintSystem
 	{		
+		private const int CLEANUP_CONTAINERS_TIMEOUT = 3;
+		
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
 
@@ -396,7 +398,8 @@ namespace Beamable.Server.Editor
 				if (allDesc > 0)
 				{
 					Task task = Task.Run(async () => { await CleanupRunningContainers(); });
-					task.Wait();
+					TimeSpan timeout = TimeSpan.FromSeconds(CLEANUP_CONTAINERS_TIMEOUT);
+					task.Wait(timeout);
 				}
 			}
 			catch
