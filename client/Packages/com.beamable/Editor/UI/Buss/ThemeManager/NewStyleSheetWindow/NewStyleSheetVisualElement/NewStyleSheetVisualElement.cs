@@ -97,7 +97,7 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			BussStyleSheetUtility.CreateNewStyleSheetWithInitialRules(_styleSheetName.Value, _initialRule);
-
+			BussConfiguration.OptionalInstance.Value.ForceRefresh();
 			NewStyleSheetWindow.CloseWindow();
 		}
 

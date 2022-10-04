@@ -46,7 +46,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnFocus()
 		{
-			_model?.OnFocus();
+			_model?.ForceRefresh();
 		}
 
 		[MenuItem(
