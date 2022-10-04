@@ -180,7 +180,7 @@ namespace Test
 		public InvitationDirection foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
-			s.SerializeEnum(""foo"", ref foo, InvitationDirectionExtensions.ToString, InvitationDirectionExtensions.FromString);
+			s.SerializeEnum(""foo"", ref foo, InvitationDirectionExtensions.ToEnumString, InvitationDirectionExtensions.FromEnumString);
 		}
 	}
 }
