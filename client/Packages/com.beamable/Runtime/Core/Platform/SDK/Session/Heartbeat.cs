@@ -1,9 +1,6 @@
 using Beamable.Api.Connectivity;
-using Beamable.Common;
-using Beamable.Common.Api;
 using Beamable.Common.Api.Presence;
 using Beamable.Coroutines;
-using System;
 using System.Collections;
 using UnityEngine;
 
@@ -93,25 +90,14 @@ namespace Beamable.Api.Sessions
 		private IEnumerator SendHeartbeat(int intervalSeconds)
 		{
 			var wait = new WaitForSeconds(intervalSeconds);
-
 			while (true)
 			{
-				try
+				if (_connectivityService.HasConnectivity)
 				{
-					_presenceApi.SendHeartbeat().Error(_ =>
-					{
-						// let it go!
-					});
+					_presenceApi.SendHeartbeat();
 				}
-				catch
-				{
-					// Let it Gooo!
-					// because we want the heartbeat to go forever...
-				}
-
 				yield return wait;
 			}
 		}
-
 	}
 }
