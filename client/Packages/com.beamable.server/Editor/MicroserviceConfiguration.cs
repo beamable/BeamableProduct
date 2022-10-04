@@ -299,9 +299,7 @@ namespace Beamable.Server.Editor
 					var value = Microservices[currentIndex];
 					Microservices.RemoveAt(currentIndex);
 					Microservices.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
+					Save();
 				}
 			}
 			else
@@ -315,11 +313,16 @@ namespace Beamable.Server.Editor
 					var value = StorageObjects[currentIndex];
 					StorageObjects.RemoveAt(currentIndex);
 					StorageObjects.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
+					Save();
 				}
 			}
+		}
+
+		public void Save()
+		{
+			EditorUtility.SetDirty(this);
+			AssetDatabase.SaveAssets();
+			AssetDatabase.Refresh();
 		}
 
 		public void MoveIndex(string serviceName, int offset, ServiceType serviceType)
