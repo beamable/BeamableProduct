@@ -1,4 +1,5 @@
 using cli;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using NUnit.Framework;
 using System.CodeDom;
@@ -140,6 +141,52 @@ namespace Test
 }
 ");
 	}
+
+
+	[Test]
+	public void EnumField()
+	{
+		var type = UnityHelper.GenerateModelDecl("Tuna", new OpenApiSchema
+		{
+			Type = "object",
+			Properties = new Dictionary<string, OpenApiSchema>
+			{
+				["foo"] = new OpenApiSchema
+				{
+					Type = "string",
+					Enum = new List<IOpenApiAny>{ new OpenApiString("incoming"), new OpenApiString("outgoing")},
+					Reference = new OpenApiReference
+					{
+						Type = ReferenceType.Schema,
+						Id = "InvitationDirection"
+					}
+				}
+			},
+			Required = new HashSet<string> { "foo" }
+		});
+
+		Assert.IsNotNull(type);
+		var unit = new CodeCompileUnit();
+		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
+		var src = UnityHelper.GenerateCsharp(unit);
+
+		src.AssertSrc(@"
+namespace Test
+{
+    
+	[System.SerializableAttribute()]
+	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	{
+		public InvitationDirection foo;
+        public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
+        {
+			s.SerializeEnum(""foo"", ref foo, InvitationDirectionExtensions.ToString, InvitationDirectionExtensions.FromString);
+		}
+	}
+}
+");
+	}
+
 
 	[Test]
 	public void StringField()

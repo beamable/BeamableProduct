@@ -42,14 +42,16 @@ public class Tests
 			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("accounts"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.AccountObjectOpenApi));
 
-
 			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("object") && x.Contains("event-players"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.EventPlayersObjectApi));
+
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("social"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SocialBasicOpenApi));
 
 
 			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
 
-		}, "oapi", "generate", "--filter", "accounts,t:object");
+		}, "oapi", "generate", "--filter", "social,t:basic");
 		Assert.AreEqual(0, status);
 	}
 
