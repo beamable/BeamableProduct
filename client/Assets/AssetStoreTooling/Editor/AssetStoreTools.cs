@@ -15,8 +15,11 @@ using UnityEngine;
 public static class AssetStoreTools
 {
 	private static readonly string[] Packages = new[] {"Packages/com.beamable", "Packages/com.beamable.server"};
+	private const string PackageJsonFileName = "package.json";
 	private const string BuildDirectory = "Assets/AssetStoreTooling/Build";
 	private const string TempDirectory = "Assets/AssetStoreTooling/~";
+
+	private const string EmptyVersionJson = @"""version"": ""0.0.0""";
 
 	public enum EnvironmentType
 	{
@@ -58,19 +61,22 @@ public static class AssetStoreTools
 			var fullZipPath = Path.GetFullPath(buildZipPath);
 			var fullTempPath = Path.GetFullPath(Path.Combine(TempDirectory, "temp"));
 
-			Debug.Log("[1/5] Exporting package...");
+			Debug.Log("[1/6] Exporting package...");
 			AssetDatabase.ExportPackage(Packages, unityPackagePath, ExportPackageOptions.Recurse);
 
-			Debug.Log("[2/5] Extracting contents...");
+			Debug.Log("[2/6] Extracting contents...");
 			ExtractZip(fullUnityPackagePack, fullTempPath);
 
-			Debug.Log("[3/5] Overwriting env-defaults...");
+			Debug.Log("[3/6] Overwriting env-defaults...");
 			OverwriteEnvDefaults();
 
-			Debug.Log("[4/5] Writing final package file...");
+			Debug.Log("[4/6] Overwriting package.json files...");
+			OverwritePackageJson();
+
+			Debug.Log("[5/6] Writing final package file...");
 			WriteZip(fullZipPath, fullTempPath);
 
-			Debug.Log("[5/5] Cleaning intermediate files...");
+			Debug.Log("[6/6] Cleaning intermediate files...");
 			Directory.Delete(TempDirectory, true);
 			AssetDatabase.Refresh();
 		}
@@ -90,6 +96,19 @@ public static class AssetStoreTools
 		sourceEnv = sourceEnv.Replace(Constants.Environment.BUILD__SDK__VERSION__STRING, VersionString);
 		sourceEnv = sourceEnv.Replace(Constants.Environment.UNITY__VSP__UID, Vsp ? "true" : "false");
 		File.WriteAllText(Path.GetFullPath(Path.Combine(TempDirectory, "temp", guid, "asset")),sourceEnv);
+	}
+
+	private static void OverwritePackageJson()
+	{
+		foreach (var package in Packages)
+		{
+			var packagePath = Path.Combine(package, PackageJsonFileName);
+			var guid = AssetDatabase.AssetPathToGUID(packagePath);
+			var outputPath = Path.Combine(TempDirectory, "temp", guid, "asset");
+			var content = File.ReadAllText(outputPath);
+			content = content.Replace(EmptyVersionJson, $@"""version"": ""{VersionString}""");
+			File.WriteAllText(outputPath, content);
+		}
 	}
 
 	private static void ExtractZip(string fullBuildPath, string fullTempPath)
