@@ -12,3 +12,9 @@
     flex-grow: 1;
     flex-shrink: 1;
 }
+
+.beamableErrorLabel {
+    position: absolute;
+    width: 0;
+    top: 150%;
+}

@@ -26,10 +26,21 @@
             <engine:Button name="generateReport" class="boundedButton">
                 <engine:Image name="generateReportIcon"/>
                 <engine:Label class="buttonText" text="Generate Report"/>
+            </engine:Button>            
+            
+            <engine:Button name="setupBuildSetting" class="boundedButton">
+                <engine:Image name="setupBuildSettingIcon"/>
+                <engine:Label class="buttonText" text="Setup build settings"/>
             </engine:Button>
 
         </engine:VisualElement>
 
+        <engine:VisualElement name="rightContentVisualElement">
+            <engine:Button name="openMainMenuScene" class="boundedButton">
+                <engine:Image name="openMainMenuSceneIcon"/>
+                <engine:Label class="buttonText" text="Open Main Menu"/>
+            </engine:Button>
+        </engine:VisualElement>
 
     </engine:VisualElement>
 
