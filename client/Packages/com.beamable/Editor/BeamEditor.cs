@@ -21,6 +21,7 @@ using Beamable.Editor.Content;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
+using Beamable.Editor.Modules.Hubspot;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.Toolbox.Models;
@@ -86,6 +87,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
 			DependencyBuilder.AddSingleton<BeamableVsp>();
+			DependencyBuilder.AddSingleton<HubspotService>();
 			DependencyBuilder.AddSingleton<BeamableDispatcher>();
 
 			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
@@ -956,6 +958,16 @@ namespace Beamable
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
 											tokenResponse.refresh_token, tokenResponse.expires_in);
 				CurrentRealm = null; // erase the current realm; if there is one..
+				try
+				{
+					await ServiceScope.GetService<HubspotService>()
+					                  .SubmitRegistrationEvent(email, alias);
+				}
+				catch (Exception hubspotError)
+				{
+					Debug.LogWarning($"Hubspot registration event failed. type=[{hubspotError?.GetType()}] message=[{hubspotError?.Message}]");
+				}
+
 				await Login(token, pid);
 				await DoSilentContentPublish(true);
 			}
