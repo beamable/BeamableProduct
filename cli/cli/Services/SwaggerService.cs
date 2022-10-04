@@ -132,9 +132,35 @@ public class SwaggerService
 				/*
 				 * There are multiple serializations of the model, which means we need to re-wire each of them to point to
 				 * their own specific implementation :(
+				 *
+				 * But if there is one variant that has distinctly _more_ references, we should assume it is a common one.
 				 */
-				foreach (var variant in uniqueElementGroups.ToList())
+
+				// find the variant with the most entries...
+				var variants = uniqueElementGroups.ToList();
+				IGrouping<string, NamedOpenApiSchema> highest = null;
+				foreach (var variant in variants)
 				{
+					var size = variant.Count();
+					if (highest == null || size > highest.Count())
+					{
+						highest = variant;
+					}
+				}
+
+				// if any other variant has the name number of entries as the highest, then there is no "highest"
+				foreach (var variant in variants)
+				{
+					if (variant != highest && variant.Count() == highest.Count())
+					{
+						highest = null;
+						break;
+					}
+				}
+
+				foreach (var variant in variants)
+				{
+					if (variant == highest) continue; // if this is the variant with the most entries, then it wins the naming war and doesn't need to change name.
 					foreach (var instance in variant)
 					{
 						var serviceTitle = string.Concat(instance.Document.Info.Title
