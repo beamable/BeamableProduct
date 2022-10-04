@@ -28,7 +28,7 @@ namespace Beamable.Api.Connectivity
 		/// <summary>
 		/// true when Beamable thinks the current device has an internet connection.
 		/// This property will update automatically as the device goes on and off line.
-		/// You can sue the <see cref="OnConnectivityChanged"/> event to listen for changes in this property.
+		/// You can use the <see cref="OnConnectivityChanged"/> event to listen for changes in this property.
 		/// </summary>
 		bool HasConnectivity { get; }
 
@@ -136,21 +136,6 @@ namespace Beamable.Api.Connectivity
 	/// </summary>
 	public class ConnectivityService : IConnectivityService
 	{
-
-
-		private const float _secondsBeforeTimeout = 5.0f;
-		private const float _secondsBetweenCheck = 3;
-
-		private const string PLATFORM_CONFIG_KEY = "platform";
-		private const string HEALTH_ROUTE_CONFIG_KEY = "connectivityRoute";
-		private const string DEFAULT_HEALTH_PATH = "/health";
-
-		private float _pingStartDateTime;
-		private UnityWebRequest _request;
-		private WaitForSeconds _delay;
-		private readonly string _host;
-		private CoroutineService _coroutineService;
-
 		public bool HasConnectivity { get; private set; } = true;
 
 		private bool _forceDisabled;
@@ -163,75 +148,12 @@ namespace Beamable.Api.Connectivity
 
 		public bool Disabled => _forceDisabled || IConnectivityServiceExtensions.GlobalForceDisabled;
 
-		public string ConnectivityRoute { get; private set; }
 		private bool _first = true;
 
 		public event Action<bool> OnConnectivityChanged;
 
 		private event Action OnReconnection;
 
-		public ConnectivityService(CoroutineService coroutineService)
-		{
-			_delay = new WaitForSeconds(_secondsBetweenCheck);
-			_host = ConfigDatabase.GetString(PLATFORM_CONFIG_KEY);
-			_coroutineService = coroutineService;
-
-			if (!ConfigDatabase.TryGetString(HEALTH_ROUTE_CONFIG_KEY, out var route))
-			{
-				route = DEFAULT_HEALTH_PATH;
-			}
-			ConnectivityRoute = route.Contains("://") ? route : $"{_host}{route}";
-			_coroutineService.StartCoroutine(MonitorConnectivity());
-		}
-
-		private UnityWebRequest BuildWebRequest()
-		{
-			// Prepare the request
-			var request = new UnityWebRequest(ConnectivityRoute)
-			{
-				downloadHandler = new DownloadHandlerBuffer(),
-				method = Method.GET.ToString()
-			};
-			return request;
-		}
-
-		private IEnumerator MonitorConnectivity()
-		{
-			yield return new PromiseYieldInstruction(SetHasInternet(true));
-			while (true)
-			{
-				yield return _delay; // don't spam the internet checking...
-				_pingStartDateTime = Time.time;
-
-				using (_request = BuildWebRequest())
-				{
-					if (Application.internetReachability == NetworkReachability.NotReachable)
-					{
-						yield return new PromiseYieldInstruction(SetHasInternet(false));
-						continue;
-					}
-
-					_request.SendWebRequest();
-
-					var isTimeout = false;
-					while (!_request.isDone && !isTimeout)
-					{
-						isTimeout = Time.time - _pingStartDateTime > _secondsBeforeTimeout;
-						yield return null;
-					}
-
-
-					if (isTimeout || _request.IsNetworkError())
-					{
-						yield return new PromiseYieldInstruction(SetHasInternet(false));
-					}
-					else
-					{
-						yield return new PromiseYieldInstruction(SetHasInternet(true));
-					}
-				}
-			}
-		}
 
 		public async Promise SetHasInternet(bool hasInternet)
 		{
