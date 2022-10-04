@@ -39,7 +39,7 @@ namespace Beamable.Api.CloudSaving
 		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
 		private IEnumerator _fileWatchingRoutine;
 		private IEnumerator _fileWebRequestRoutine;
-		private IConnectivityService _connectivityService;
+		private ConnectivityService _connectivityService;
 		private List<Func<Promise<Unit>>> _ProcessFilesPromiseList = new List<Func<Promise<Unit>>>();
 		private string _manifestPath => Path.Combine(localCloudDataPath.manifestPath, "cloudDataManifest.json");
 		private LocalCloudDataPath localCloudDataPath => new LocalCloudDataPath(_platform);
@@ -75,7 +75,7 @@ namespace Beamable.Api.CloudSaving
 			_platform = platform;
 			_requester = requester;
 			_coroutineService = coroutineService;
-			_connectivityService = provider.GetService<IConnectivityService>();
+			_connectivityService = new ConnectivityService(_coroutineService);
 		}
 
 		/// <summary>
