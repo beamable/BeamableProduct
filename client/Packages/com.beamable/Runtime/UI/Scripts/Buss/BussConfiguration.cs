@@ -19,7 +19,7 @@ namespace Beamable.UI.Buss
 			{
 				try
 				{
-					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
+					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -27,6 +27,7 @@ namespace Beamable.UI.Buss
 				}
 			}
 		}
+
 		private static BussConfiguration Instance => Get<BussConfiguration>();
 		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
 		private static VariableDatabase _variableDatabase;
@@ -37,9 +38,9 @@ namespace Beamable.UI.Buss
 			get
 			{
 				BussStyleSheet[] bussStyleSheets = Resources
-												   .LoadAll<BussStyleSheet>(
-													   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
-												   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
+				                                   .LoadAll<BussStyleSheet>(
+					                                   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
+				                                   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
 
 				return bussStyleSheets.OrderBy(s => s.SortingOrder).ToList();
 			}
@@ -47,7 +48,7 @@ namespace Beamable.UI.Buss
 
 		public List<BussStyleSheet> DeveloperStyleSheets =>
 			Resources.LoadAll<BussStyleSheet>("")
-					 .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
+			         .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
 
 		public List<BussElement> RootBussElements => _rootBussElements;
 		public VariableDatabase VariableDatabase => _variableDatabase;
@@ -55,17 +56,6 @@ namespace Beamable.UI.Buss
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);
-		}
-
-		public void AddDeveloperStyleSheet(BussStyleSheet styleSheet)
-		{
-			if (DeveloperStyleSheets.Contains(styleSheet))
-			{
-				return;
-			}
-
-			DeveloperStyleSheets.Add(styleSheet);
-			UpdateStyleSheet(styleSheet);
 		}
 
 		public void RegisterObserver(BussElement bussElement)
@@ -214,7 +204,7 @@ namespace Beamable.UI.Buss
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				if (!Weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
+				    weight.CompareTo(currentWeight) >= 0)
 				{
 					IBussProperty prop = property.GetProperty();
 
@@ -235,16 +225,16 @@ namespace Beamable.UI.Buss
 		}
 
 		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-														   string pseudoClass,
-														   BussStyleDescription descriptor,
-														   SelectorWeight weight)
+		                                                   string pseudoClass,
+		                                                   BussStyleDescription descriptor,
+		                                                   SelectorWeight weight)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (BussPropertyProvider property in descriptor.Properties)
 			{
 				string weightKey = pseudoClass + property.Key;
 				if (!Weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
+				    weight.CompareTo(currentWeight) >= 0)
 				{
 					element.Style[pseudoClass, property.Key] = property.GetProperty();
 					Weights[weightKey] = weight;
