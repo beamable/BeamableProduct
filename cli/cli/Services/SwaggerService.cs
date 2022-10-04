@@ -110,9 +110,13 @@ public class SwaggerService
 		string SerializeSchema(OpenApiSchema schema)
 		{
 			using var sw = new StringWriter();
+			var oldTitle = schema.Title;
+			schema.Title = string.Empty;
 			var writer = new OpenApiJsonWriter(sw);
 			schema.SerializeAsV3WithoutReference(writer);
-			return sw.ToString();
+			var json = sw.ToString();
+			schema.Title = oldTitle;
+			return json;
 		}
 
 		foreach (var group in groups)
@@ -139,7 +143,6 @@ public class SwaggerService
 						var newName = serviceTitle + instance.Name;
 						var oldName = instance.Name;
 						instance.Name = newName;
-
 
 						void RewireSchema(OpenApiSchema schema)
 						{
