@@ -115,7 +115,7 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);
 			root.Add(_windowRoot);
-			
+
 			_model.ForceRefresh();
 		}
 	}
