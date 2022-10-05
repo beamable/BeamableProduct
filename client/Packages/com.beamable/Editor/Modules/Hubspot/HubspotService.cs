@@ -36,6 +36,12 @@ namespace Beamable.Editor.Modules.Hubspot
 				return;
 			}
 
+			if (BeamableEnvironment.SdkVersion.IsReleaseCandidate)
+			{
+				PlatformLogger.Log($"<b>[Hubspot] ignoring registration event because this is a release candidate.");
+				return;
+			}
+
 			if (string.IsNullOrEmpty(email))
 			{
 				throw new ArgumentNullException(nameof(email));
