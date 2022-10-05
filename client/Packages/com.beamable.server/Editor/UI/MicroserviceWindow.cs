@@ -60,7 +60,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		public void RefreshWindowContent()
 		{
-			checkDockerPromise = new CheckDockerCommand().StartAsync().Then(_ =>
+			checkDockerPromise = PerformCheck().Then(_ =>
 			{
 				Model.RefreshState().Then(__ =>
 				{
@@ -69,6 +69,18 @@ namespace Beamable.Editor.Microservice.UI
 					_microserviceContentVisualElement?.Refresh();
 				});
 			});
+		}
+
+		async Promise<bool> PerformCheck()
+		{
+			var result = await new CheckDockerCommand().StartAsync();
+
+			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
+			{
+				result |= await DockerCommand.CheckDockerAppRunning();
+			}
+
+			return result;
 		}
 
 		protected override async void Build()

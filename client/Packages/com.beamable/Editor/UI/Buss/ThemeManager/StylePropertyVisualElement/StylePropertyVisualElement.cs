@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
+using UnityEditor;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -96,7 +97,7 @@ namespace Beamable.Editor.UI.Components
 
 			SetupVariableConnection();
 			CheckIfIsReadOnly();
-			EnableInClassList("overriden", _model.IsOverriden);
+			EnableInClassList("overriden", _model.IsOverriden && _model.IsInStyle);
 		}
 
 		protected override void OnDestroy()
@@ -118,12 +119,16 @@ namespace Beamable.Editor.UI.Components
 		{
 			_propertyVisualElement = property.GetVisualElement();
 
-			if (_propertyVisualElement != null)
+			if (_propertyVisualElement == null)
 			{
-				_propertyVisualElement.UpdatedStyleSheet = _model.IsInStyle ? _model.StyleSheet : null;
-				_propertyVisualElement.Init();
-				_valueParent.Add(_propertyVisualElement);
+				return;
 			}
+
+			_propertyVisualElement.OnValueChanged = _model.OnPropertyChanged;
+
+			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
+			_propertyVisualElement.Init();
+			_valueParent.Add(_propertyVisualElement);
 		}
 
 		private void CreateMessageField(VariableDatabase.PropertyValueState result)

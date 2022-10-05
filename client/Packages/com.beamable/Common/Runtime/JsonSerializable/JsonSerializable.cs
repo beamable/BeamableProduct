@@ -282,6 +282,32 @@ namespace Beamable.Serialization
 			return c;
 		}
 
+		public delegate string EnumToStringer<T>(T enumValue);
+		public delegate T EnumFromStringer<T>(string strValue);
+
+		public static bool SerializeEnum<T>(this JsonSerializable.IStreamSerializer s, string key, ref T value, EnumToStringer<T> toStringer, EnumFromStringer<T> fromStringer)
+		{
+			if (s.isLoading)
+			{
+				if (s.HasKey(key))
+				{
+					if (!(s.GetValue(key) is string current))
+					{
+						return false;
+					}
+
+					value = fromStringer(current);
+					return true;
+				}
+			}
+			else if (s.isSaving)
+			{
+				var strVal = toStringer(value);
+				return s.Serialize(key, ref strVal);
+			}
+			return false;
+		}
+
 		// if this was in the main interface, AOT compiler would try to JIT compile the types..
 		public static bool SerializeEnum<T>(this JsonSerializable.IStreamSerializer s, string key, ref T value)
 		{

@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: RankEntryStyle
   m_EditorClassIdentifier: 
   _styles:
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -41,7 +42,8 @@ MonoBehaviour:
         _json: '{"_floatValue":4.0}'
     _cachedProperties: []
     _selector: '#rankEntry'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -54,7 +56,8 @@ MonoBehaviour:
         _json: '{"_floatValue":5.0}'
     _cachedProperties: []
     _selector: '#scoreBox'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -67,7 +70,8 @@ MonoBehaviour:
         _json: '{"_floatValue":5.0}'
     _cachedProperties: []
     _selector: '#rankBox'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -75,7 +79,8 @@ MonoBehaviour:
         _json: '{"_colorRect":{"BottomLeftColor":{"r":1.0,"g":0.7568627595901489,"b":0.0,"a":1.0},"BottomRightColor":{"r":1.0,"g":0.7568627595901489,"b":0.0,"a":1.0},"TopLeftColor":{"r":1.0,"g":0.9444069862365723,"b":0.8443396091461182,"a":1.0},"TopRightColor":{"r":1.0,"g":0.9444069862365723,"b":0.8443396091461182,"a":1.0},"_drawerMode":3}}'
     _cachedProperties: []
     _selector: .firstPlace
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -83,7 +88,8 @@ MonoBehaviour:
         _json: '{"_colorRect":{"BottomLeftColor":{"r":0.3294117748737335,"g":0.3294117748737335,"b":0.3294117748737335,"a":1.0},"BottomRightColor":{"r":0.3294117748737335,"g":0.3294117748737335,"b":0.3294117748737335,"a":1.0},"TopLeftColor":{"r":0.9764705896377564,"g":0.9843137264251709,"b":0.9803921580314636,"a":1.0},"TopRightColor":{"r":0.9764705896377564,"g":0.9843137264251709,"b":0.9803921580314636,"a":1.0},"_drawerMode":3}}'
     _cachedProperties: []
     _selector: .secondPlace
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -91,7 +97,8 @@ MonoBehaviour:
         _json: '{"_colorRect":{"BottomLeftColor":{"r":1.0,"g":0.4431372880935669,"b":0.0,"a":1.0},"BottomRightColor":{"r":1.0,"g":0.4431372880935669,"b":0.0,"a":1.0},"TopLeftColor":{"r":1.0,"g":0.7763621807098389,"b":0.5801886916160584,"a":1.0},"TopRightColor":{"r":1.0,"g":0.7763621807098389,"b":0.5801886916160584,"a":1.0},"_drawerMode":3}}'
     _cachedProperties: []
     _selector: .thirdPlace
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -119,7 +126,8 @@ MonoBehaviour:
         _json: '{"Enum":0}'
     _cachedProperties: []
     _selector: '#avatarFrame'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -132,7 +140,8 @@ MonoBehaviour:
         _json: '{"AssetSerializationKey":0}'
     _cachedProperties: []
     _selector: '#avatarImage'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -180,7 +189,8 @@ MonoBehaviour:
         _json: '{"_floatValue":8.0}'
     _cachedProperties: []
     _selector: '#scoreBox'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: borderWidth
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -208,7 +218,8 @@ MonoBehaviour:
         _json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}'
     _cachedProperties: []
     _selector: .currentPlayer
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: fontSize
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -236,7 +247,8 @@ MonoBehaviour:
         _json: '{"_color":{"r":0.34117648005485537,"g":0.13333334028720857,"b":0.0,"a":1.0}}'
     _cachedProperties: []
     _selector: '#playerNameLabel'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: borderColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -274,7 +286,8 @@ MonoBehaviour:
         _json: '{"Enum":4098}'
     _cachedProperties: []
     _selector: '#rankValueLabel'
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: fontSize
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -307,4 +320,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8731414c3f69f42c78336ca4aaa22544, type: 2}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   _isReadOnly: 1
-  _sortingOrder: 0
+  _sortingOrder: 300

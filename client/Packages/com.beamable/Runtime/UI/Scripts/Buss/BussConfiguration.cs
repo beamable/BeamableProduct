@@ -13,16 +13,6 @@ namespace Beamable.UI.Buss
 {
 	public class BussConfiguration : ModuleConfigurationObject, IVariablesProvider
 	{
-		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
-
-		private static VariableDatabase _variableDatabase;
-
-		[SerializeField] private List<BussStyleSheet> _globalStyleSheets = new List<BussStyleSheet>();
-
-		private readonly List<BussStyleSheet> _defaultBeamableStyleSheets = new List<BussStyleSheet>();
-		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
-		private static BussConfiguration Instance => Get<BussConfiguration>();
-
 		public static Optional<BussConfiguration> OptionalInstance
 		{
 			get
@@ -38,25 +28,34 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
-		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
-		public List<BussElement> RootBussElements => _rootBussElements;
+		private static BussConfiguration Instance => Get<BussConfiguration>();
+		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
+		private static VariableDatabase _variableDatabase;
+		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
+		public List<BussStyleSheet> FactoryStyleSheets
+		{
+			get
+			{
+				BussStyleSheet[] bussStyleSheets = Resources
+												   .LoadAll<BussStyleSheet>(
+													   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
+												   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
+
+				return bussStyleSheets.OrderBy(s => s.SortingOrder).ToList();
+			}
+		}
+
+		public List<BussStyleSheet> DeveloperStyleSheets =>
+			Resources.LoadAll<BussStyleSheet>("")
+					 .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
+
+		public List<BussElement> RootBussElements => _rootBussElements;
 		public VariableDatabase VariableDatabase => _variableDatabase;
-		public List<BussStyleSheet> StyleSheets { get; private set; }
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);
-		}
-
-		public void AddGlobalStyleSheet(BussStyleSheet styleSheet)
-		{
-			if (!GlobalStyleSheets.Contains(styleSheet))
-			{
-				GlobalStyleSheets.Add(styleSheet);
-				UpdateStyleSheet(styleSheet);
-			}
 		}
 
 		public void RegisterObserver(BussElement bussElement)
@@ -80,9 +79,7 @@ namespace Beamable.UI.Buss
 			// This should happen only in editor
 			if (styleSheet == null) return;
 
-			RefreshDefaultStyles();
-
-			if (_defaultBeamableStyleSheets.Contains(styleSheet) || _globalStyleSheets.Contains(styleSheet))
+			if (FactoryStyleSheets.Contains(styleSheet) || DeveloperStyleSheets.Contains(styleSheet))
 			{
 				foreach (BussElement bussElement in _rootBussElements)
 				{
@@ -98,17 +95,12 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void RefreshDefaultStyles()
+		public void ForceRefresh()
 		{
-			_defaultBeamableStyleSheets.Clear();
-			BussStyleSheet[] bussStyleSheets = Resources
-											   .LoadAll<BussStyleSheet>(
-												   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
-											   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
-
-			var orderedStyleSheets = bussStyleSheets.OrderBy(s => s.SortingOrder);
-
-			_defaultBeamableStyleSheets.AddRange(orderedStyleSheets);
+			foreach (var element in _rootBussElements)
+			{
+				element.OnStyleChanged();
+			}
 		}
 
 		private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)
@@ -144,8 +136,6 @@ namespace Beamable.UI.Buss
 			}
 
 			EditorUtility.SetDirty(this);
-
-			RefreshDefaultStyles();
 		}
 #endif
 
@@ -156,16 +146,21 @@ namespace Beamable.UI.Buss
 			Weights.Clear();
 			element.Style.Clear();
 
-			ReconsiderVariables(element);
+			if (_variableDatabase == null)
+			{
+				_variableDatabase = new VariableDatabase(this);
+			}
+
+			_variableDatabase.ReconsiderAllStyleSheets();
 
 			// Applying default bemable styles
-			foreach (BussStyleSheet styleSheet in _defaultBeamableStyleSheets)
+			foreach (BussStyleSheet styleSheet in FactoryStyleSheets)
 			{
 				ApplyStyleSheet(element, styleSheet);
 			}
 
 			// Applying developer styles
-			foreach (BussStyleSheet styleSheet in _globalStyleSheets)
+			foreach (BussStyleSheet styleSheet in DeveloperStyleSheets)
 			{
 				ApplyStyleSheet(element, styleSheet);
 			}
@@ -181,20 +176,6 @@ namespace Beamable.UI.Buss
 			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
 
 			element.ApplyStyle();
-		}
-
-		private void ReconsiderVariables(BussElement element)
-		{
-			if (_variableDatabase == null)
-			{
-				_variableDatabase = new VariableDatabase(this);
-			}
-
-			StyleSheets = new List<BussStyleSheet>();
-			StyleSheets.AddRange(_defaultBeamableStyleSheets);
-			StyleSheets.AddRange(_globalStyleSheets);
-			StyleSheets.AddRange(element.AllStyleSheets);
-			_variableDatabase.ReconsiderAllStyleSheets();
 		}
 
 		private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
@@ -262,5 +243,13 @@ namespace Beamable.UI.Buss
 		}
 
 		#endregion
+
+		public List<BussStyleSheet> GetStylesheets()
+		{
+			var list = new List<BussStyleSheet>();
+			list.AddRange(FactoryStyleSheets);
+			list.AddRange(DeveloperStyleSheets);
+			return list;
+		}
 	}
 }

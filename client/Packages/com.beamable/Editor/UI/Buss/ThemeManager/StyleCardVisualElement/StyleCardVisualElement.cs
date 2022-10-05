@@ -151,7 +151,7 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (StylePropertyModel model in _model.GetProperties())
 			{
-				if (!_model.ShowAll && (_model.ShowAll || !model.IsInStyle))
+				if (!_model.ShowAll && !model.IsInStyle)
 				{
 					continue;
 				}
@@ -176,7 +176,7 @@ namespace Beamable.Editor.UI.Components
 		private void UpdateShowAllStatus()
 		{
 			EnableInClassList("showAllProperties", _model.ShowAll);
-			_showAllButtonText.text = _model.ShowAll ? "Hide All" : "Show All";
+			_showAllButtonText.text = _model.ShowAll ? TOGGLE_HIDE_ALL : TOGGLE_SHOW_ALL;
 		}
 	}
 }

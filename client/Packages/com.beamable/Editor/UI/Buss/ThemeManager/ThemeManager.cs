@@ -46,7 +46,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnFocus()
 		{
-			_model?.OnFocus();
+			_model?.ForceRefresh();
 		}
 
 		[MenuItem(
@@ -54,13 +54,17 @@ namespace Beamable.Editor.UI.Buss
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.THEME_MANAGER,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
-		public static async void Init() => await GetFullyInitializedWindow();
+		public static void Init()
+		{
+			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+			GetWindow<ThemeManager>(MenuItems.Windows.Names.THEME_MANAGER, true, inspector);
+		}
 
 		protected override void Build()
 		{
 			_model = new ThemeManagerModel();
 
-			minSize = THEME_MANAGER_WINDOW_SIZE;
+			minSize = ThemeManagerWindowSize;
 
 			VisualElement root = this.GetRootVisualContainer();
 			root.Clear();
@@ -111,6 +115,8 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);
 			root.Add(_windowRoot);
+
+			_model.ForceRefresh();
 		}
 	}
 }
