@@ -522,15 +522,12 @@ namespace Beamable.Server
 					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
 					var info = asset.ConvertToInfo();
 					
-					foreach (var referenceName in curr.References)
+					foreach (var referenceName in info.References)
 					{
 						try
 						{
-							if (info.References == null || info.References.Contains(referenceName)) // check reference is not removed by user
-							{
-								var referencedAssembly = unityAssemblies.Find(referenceName);
-								unityAssembliesToExpand.Enqueue(referencedAssembly);
-							}
+							var referencedAssembly = unityAssemblies.Find(referenceName);
+							unityAssembliesToExpand.Enqueue(referencedAssembly);
 						}
 						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, referenceName))
 						{
