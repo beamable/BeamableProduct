@@ -287,7 +287,10 @@ public static class UnityHelper
 		var requiredParams = new List<CodeParameterDeclarationExpression>();
 		var optionalParams = new List<CodeParameterDeclarationExpression>();
 
-		foreach (var param in operation.Value.Parameters)
+		var parameters = operation.Value.Parameters.ToList();
+		parameters.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+
+		foreach (var param in parameters)
 		{
 			var genSchema = new GenSchema(param.Schema);
 
@@ -854,7 +857,10 @@ public static class UnityHelper
 		serializeMethod.Attributes = MemberAttributes.Public;
 		type.Members.Add(serializeMethod);
 
-		foreach (var property in schema.Properties)
+		var props = schema.Properties.ToList();
+		props.Sort( (a, b) => string.Compare(a.Key, b.Key, StringComparison.Ordinal));
+
+		foreach (var property in props)
 		{
 			// construct some primitive information about this field.
 			var fieldApiName = property.Key;
