@@ -23,3 +23,15 @@
 #deleteTestSceneIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/server-delete.png");
 }
+
+#generateReportIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Config_dark.png");
+}
+
+#openMainMenuSceneIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_dark.png");
+}
+
+#setupBuildSettingIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Module_dark.png");
+}

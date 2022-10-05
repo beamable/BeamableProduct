@@ -1,4 +1,3 @@
-using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -104,9 +103,17 @@ namespace Beamable.Editor.Config
 				{
 					ConfigManager.Initialize(); // re-initialize every time the window is activated, so that we make sure the SO's always exist.
 
-					var providers = ConfigManager.ConfigObjects.Select(config =>
+					List<SettingsProvider> providers = new List<SettingsProvider>();
+
+					foreach (BaseModuleConfigurationObject config in ConfigManager.ConfigObjects)
 					{
 						var options = ConfigManager.GenerateOptions(config);
+
+						if (options.Count == 0)
+						{
+							continue;
+						}
+
 						var settingsProvider = new SettingsProvider($"Project/Beamable/{options[0].Module}", SettingsScope.Project)
 						{
 							activateHandler = (searchContext, rootElement) =>
@@ -120,10 +127,10 @@ namespace Beamable.Editor.Config
 							keywords = new HashSet<string>(options.Select(o => o.Name))
 						};
 
-						return settingsProvider;
-					}).ToArray();
+						providers.Add(settingsProvider);
+					}
 
-					provider = providers;
+					provider = providers.ToArray();
 				}
 				catch (Exception ex)
 				{

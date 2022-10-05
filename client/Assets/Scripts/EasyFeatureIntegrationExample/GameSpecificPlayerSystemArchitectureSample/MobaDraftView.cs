@@ -10,6 +10,12 @@ public class MobaDraftView : MonoBehaviour, ISyncBeamableView
 {
 	public MobaDraftPlayerSystem CurrentRenderingSystem;
 	
+	public bool IsVisible
+	{
+		get => gameObject.activeSelf;
+		set => gameObject.SetActive(value);
+	}
+	
 	public int GetEnrichOrder() => int.MaxValue - 1;
 
 	public void EnrichWithContext(BeamContextGroup managedPlayers)

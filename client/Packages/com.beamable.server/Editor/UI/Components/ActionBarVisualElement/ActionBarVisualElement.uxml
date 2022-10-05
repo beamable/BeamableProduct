@@ -21,7 +21,7 @@
             <engine:Button name="createNew" class="boundedButton">
                 <engine:VisualElement class="mainPart">
                     <engine:Image name="createNewIcon"/>
-                    <engine:Label class="buttonText" text="Create New" />
+                    <engine:Label class="buttonText" text="Create New"/>
                 </engine:VisualElement>
                 <engine:Image name="dropDownImg" class="--image-scale-to-fit">
                 </engine:Image>

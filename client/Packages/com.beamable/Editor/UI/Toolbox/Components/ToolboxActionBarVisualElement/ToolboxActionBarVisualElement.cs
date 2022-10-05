@@ -73,7 +73,7 @@ namespace Beamable.Editor.Toolbox.Components
 			contentButton.tooltip = Tooltips.Toolbox.CONTENT;
 
 			var skinningButton = Root.Q<Button>("skinning");
-			skinningButton.clickable.clicked += BussThemeManager.Init;
+			skinningButton.clickable.clicked += ThemeManager.Init;
 			skinningButton.tooltip = Tooltips.Toolbox.THEME_MANAGER;
 
 			var globalConfigButton = Root.Q<Button>("globalConfig");

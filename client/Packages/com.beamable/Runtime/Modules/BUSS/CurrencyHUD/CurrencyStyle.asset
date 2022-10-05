@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _styles:
   - _properties:
-    - key: backgroundColor
-      property:
+    - _key: backgroundColor
+      _property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
-    - key: roundCorners
-      property:
+    - _key: roundCorners
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":10.0}'
@@ -28,18 +28,18 @@ MonoBehaviour:
     _editMode: 0
     _showAllMode: 0
   - _properties:
-    - key: font
-      property:
+    - _key: font
+      _property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"AssetSerializationKey":-1}'
-    - key: fontSize
-      property:
+    - _key: fontSize
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":36.0}'
-    - key: backgroundColor
-      property:
+    - _key: backgroundColor
+      _property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":1.0}}'

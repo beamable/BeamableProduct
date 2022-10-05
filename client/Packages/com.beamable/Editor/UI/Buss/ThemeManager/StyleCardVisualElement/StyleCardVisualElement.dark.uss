@@ -1,0 +1,68 @@
+#cardHeader {
+    color: rgb(255, 255, 255);
+}
+
+#sectionHeader {
+    color: rgb(255,255,255);
+    background-color: rgb(89,89,89);
+}
+
+#sectionLabel {
+    color: rgb(255,255,255);
+}
+
+#properties {
+    background-color: rgb(77,77,77);
+}
+
+#variables {
+    background-color: rgb(77,77,77);
+}
+
+.button {
+    background-color: rgb(100,100,100);
+}
+
+.button > TextElement {
+    color: rgb(255,255,255);
+}
+
+.button:hover {
+    background-color: rgb(120,120,120);
+}
+
+.headerButton {
+    background-color: rgb(142,142,142);
+}
+
+.headerButton:hover {
+    background-color: rgb(162,162,162);
+}
+
+.add {
+    background-color: rgb(89,89,89);
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
+}
+.edit {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/edit.png");
+}
+
+.wizard {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard.png");
+}
+
+.undo {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo.png");
+}
+
+.cleanAll {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+}
+
+.unfolded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_light.png");
+}
+
+.folded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_light.png");
+}

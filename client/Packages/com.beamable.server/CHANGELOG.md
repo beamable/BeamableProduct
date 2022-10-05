@@ -5,26 +5,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### [Unreleased]
-
 ### Added
 - Added `long` PlayerId version of `InviteToParty`, `PromoteToLeader` and `KickPlayer` methods of the `IPartyApi` interface.
+- Utility apis for setting expiration on Mail Update and Mail Send requests
+
+### Fixed
+- ActionBarVisualElement buttons behaviour is fixed when Docker is not running.
+- Fixed issue with MS rebuild/stop on entering to Playmode.
+- Fixed Microservices stop at Unity Exit.
+
+## [1.3.6]
+### Added
+- Allow disabling `System.Runtime.CompilerServices.Unsafe.dll` inclusion by using `BEAMABLE_DISABLE_SYSTEM_COMPILERSERVICES` define symbol
+
+## [1.3.5]
+no changes
+
+## [1.3.4]
+no changes
 
 ## [1.3.3]
-
 ### Changed
 - Changed service name validation in `Microservice Manager` to keep names unique
 
 ### [1.3.2]
-
 ### Added
 - Added `Services.Payments` which allows receipt verification.
 - Added `DeleteProtectedPlayerStats` and `DeleteStats` methods to `IMicroserviceStatsApi`.
 
 ### Fixed
 - Manually adding a `StorageObject` Assembly Definition as a dependency of a `Microservice`'s Assembly Definition now correctly sets up all the necessary Mongo DLLs for the `StorageObject` to be usable inside the Microservice. You can disable this behaviour by setting `MicroserviceConfiguration.EnsureMongoAssemblyDependencies = false`. The recommended way to do set service dependencies is still to use the Dependency button of the Microservice Manager Window.
-- Skip microservices client code auto-generation if Docker is not running
-
-
 
 ## [1.3.1]
 ### Added

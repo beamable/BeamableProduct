@@ -1,6 +1,7 @@
 ﻿#mainVisualElement {
     height: 35px;
     flex-direction: row;
+    min-width: 500px;
 }
 
 #leftContentVisualElement {
@@ -74,10 +75,6 @@
     border-radius: 0px;
 }
 
-#scan {
-    width: 72px;
-}
-
 #scanIcon {
     top: 2px;
     width: 18px;
@@ -92,7 +89,50 @@
     align-self: center;
 }
 
+#generateReportIcon {
+    top: 2px;
+    width: 12px;
+    height: 12px;
+    align-self: center;
+}
+
+#generateReport {
+    width: 78px;
+    justify-content: center;
+}
+
+#generateReport > Label {
+    top: 3px;
+}
+
 #createTestScene > Label,
-#deleteTestScene > Label {
+#deleteTestScene > Label,
+#setupBuildSetting > Label {
     top: -2px;
+}
+
+#openMainMenuScene {
+    width: 76px;
+}
+
+#openMainMenuSceneIcon {
+    top: 6px;
+    width: 10px;
+    height: 12px;
+    align-self: center;
+}
+
+#openMainMenuScene > Label {
+    top: 7px;
+}
+
+#setupBuildSetting {
+    width: 85px;
+}
+
+#setupBuildSettingIcon {
+    top: 2px;
+    width: 25px;
+    height: 40px;
+    align-self: center;
 }

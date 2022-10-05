@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
 			Property.FloatValue = evt.newValue;
+			OnValueChanged?.Invoke(Property);
 			_isCallingOnChange = true;
 			try
 			{
@@ -46,7 +47,6 @@ namespace Beamable.Editor.UI.Components
 		public override void OnPropertyChangedExternally()
 		{
 			if (_isCallingOnChange) return;
-
 			_field.value = Property.FloatValue;
 		}
 	}
