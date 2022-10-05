@@ -154,7 +154,7 @@ namespace Test
 				["foo"] = new OpenApiSchema
 				{
 					Type = "string",
-					Enum = new List<IOpenApiAny>{ new OpenApiString("incoming"), new OpenApiString("outgoing")},
+					Enum = new List<IOpenApiAny> { new OpenApiString("incoming"), new OpenApiString("outgoing") },
 					Reference = new OpenApiReference
 					{
 						Type = ReferenceType.Schema,
