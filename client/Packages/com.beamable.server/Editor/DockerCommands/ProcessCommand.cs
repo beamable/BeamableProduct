@@ -52,6 +52,8 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		public virtual bool DockerRequired => true;
+		
+		protected bool _skipDockerCheck = false;
 
 		private Process _process;
 		private TaskCompletionSource<int> _status, _standardOutComplete;
@@ -141,7 +143,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public virtual void Start()
 		{
-			if (DockerRequired && DockerNotInstalled)
+			if (!_skipDockerCheck && DockerRequired && DockerNotInstalled)
 			{
 				throw new DockerNotInstalledException();
 			}
