@@ -1,36 +1,37 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+#if BEAMABLE_DEVELOPER
 using System;
-using UnityEditor;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
-using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
+using UnityEditor;
+using UnityEngine.UIElements;
 
 namespace Beamable.Editor.UI.Buss
 {
 	[CustomEditor(typeof(BussStyleSheet))]
 	public class BussStyleSheetEditor : UnityEditor.Editor
 	{
-#if UNITY_2019_1_OR_NEWER
 		private BussStyleListVisualElement _list;
 		private BussStyleSheet _styleSheet;
 		private LabeledIntegerField _sortingOrder;
+		private ThemeInspectorModel _model;
 
 		public override VisualElement CreateInspectorGUI()
 		{
 			_styleSheet = (BussStyleSheet)target;
 			VisualElement root = new VisualElement();
-			
+
 			if (!_styleSheet.IsWritable)
 			{
 				return root;
 			}
 
-			_list = new BussStyleListVisualElement {StyleSheets = new[] {_styleSheet}};
+			_model = new ThemeInspectorModel(_styleSheet);
+			_list = new BussStyleListVisualElement(_model);
+			_list.Init();
+			_list.Refresh();
+
+			_styleSheet.Change += _list.Refresh;
 
 #if BEAMABLE_DEVELOPER
 			LabeledCheckboxVisualElement readonlyCheckbox = new LabeledCheckboxVisualElement("Readonly");
@@ -47,32 +48,29 @@ namespace Beamable.Editor.UI.Buss
 
 			if (!_styleSheet.IsReadOnly)
 			{
-				AddSelectorButton(root, _list);
+				AddSelectorButton(root);
 			}
 
 			root.Add(_list);
 			return root;
 		}
 
-
-
 #if BEAMABLE_DEVELOPER
 		private void OnReadonlyValueChanged(bool value)
 		{
 			_styleSheet.SetReadonly(value);
 		}
-		
+
 		private void OnSortingOrderChanged()
 		{
 			_styleSheet.SetSortingOrder(_sortingOrder.Value);
 		}
 #endif
 
-		private void AddSelectorButton(VisualElement parent, BussStyleListVisualElement list)
+		private void AddSelectorButton(VisualElement parent)
 		{
 			AddStyleButton button = new AddStyleButton();
-			button.Setup(list, _ => list.RefreshStyleCards());
-			button.CheckEnableState();
+			button.Setup(_model.OnAddStyleButtonClicked);
 			parent.Add(button);
 		}
 
@@ -84,18 +82,5 @@ namespace Beamable.Editor.UI.Buss
 				_list = null;
 			}
 		}
-#else
-		public override void OnInspectorGUI()
-		{
-			var rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight * 3f);
-			if (GUI.Button(rect, "Open Editor"))
-			{
-				BussStyleSheetEditorWindow.Open((BussStyleSheet)target);
-			}
-#if BEAMABLE_DEVELOPER
-			base.OnInspectorGUI();
-#endif
-		}
-#endif
 	}
 }
