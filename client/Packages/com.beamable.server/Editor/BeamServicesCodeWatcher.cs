@@ -253,14 +253,14 @@ namespace Beamable.Server.Editor
 					{
 						return true;
 					}
-
-					var existingChecksum = microserviceConfiguration.ServiceDependencyChecksums.FirstOrDefault(
+					
+					var existingChecksum = MicroservicesDataModel.Instance.ServiceDependencyChecksums.FirstOrDefault(
 						service => service.ServiceName == desc.Name);
 
 					return !string.Equals(existingChecksum.Checksum, currentDependency.Checksum);
 				}).ToList();
 
-				microserviceConfiguration.ServiceDependencyChecksums =
+				MicroservicesDataModel.Instance.ServiceDependencyChecksums =
 					ServiceToChecksum.Select(kvp => kvp.Value).ToList();
 
 				foreach (var service in dirtyServices)
