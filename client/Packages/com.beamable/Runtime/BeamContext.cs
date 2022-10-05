@@ -269,14 +269,14 @@ namespace Beamable
 					nameof(ChangeAuthorizedPlayer) + "</b> method instead.";
 				Debug.LogError(string.Format(log, isDefault ? "Default" : playerCode));
 #endif
-				throw new BeamContextInitException(_playerCodeToContext[playerCode], 
-				                                   new []{new Exception($"BeamContext with \"{playerCode}\" prefix already exist.")});
+				throw new BeamContextInitException(_playerCodeToContext[playerCode],
+												   new[] { new Exception($"BeamContext with \"{playerCode}\" prefix already exist.") });
 			}
 			string cid = ConfigDatabase.GetString("cid");
 			string pid = ConfigDatabase.GetString("pid");
 
 			var accessToken = new AccessToken(new AccessTokenStorage(playerCode), cid, pid, token.access_token,
-			                                  token.refresh_token, token.expires_in);
+											  token.refresh_token, token.expires_in);
 			accessToken.Save();
 			return ForPlayer(playerCode);
 		}
