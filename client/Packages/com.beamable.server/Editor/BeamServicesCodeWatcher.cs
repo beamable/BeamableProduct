@@ -253,7 +253,7 @@ namespace Beamable.Server.Editor
 					{
 						return true;
 					}
-					
+
 					var existingChecksum = MicroservicesDataModel.Instance.ServiceDependencyChecksums.FirstOrDefault(
 						service => service.ServiceName == desc.Name);
 
