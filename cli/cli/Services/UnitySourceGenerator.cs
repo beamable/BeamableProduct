@@ -858,7 +858,7 @@ public static class UnityHelper
 		type.Members.Add(serializeMethod);
 
 		var props = schema.Properties.ToList();
-		props.Sort( (a, b) => string.Compare(a.Key, b.Key, StringComparison.Ordinal));
+		props.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.Ordinal));
 
 		foreach (var property in props)
 		{
