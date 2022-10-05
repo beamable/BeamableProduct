@@ -9,7 +9,16 @@ public class GenerateSdkCommandArgs : CommandArgs
 	public string? OutputPath;
 
 	public string Filter;
+	public GenerateSdkConflictResolutionStrategy ResolutionStrategy;
 }
+
+public enum GenerateSdkConflictResolutionStrategy
+{
+	None,
+	RenameAllConflicts,
+	RenameUncommonConflicts
+}
+
 public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 {
 	private readonly SwaggerService _swagger;
@@ -31,12 +40,16 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 		AddOption(new Option<string>("--filter", () => null,
 			"a string to filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
+
+		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy", () => GenerateSdkConflictResolutionStrategy.None,
+			"when multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved."),
+			(args, val) => args.ResolutionStrategy = val);
 	}
 
 	public override async Task Handle(GenerateSdkCommandArgs args)
 	{
 		var filter = BeamableApiFilter.Parse(args.Filter);
-		var output = await _swagger.Generate(filter);
+		var output = await _swagger.Generate(filter, args.ResolutionStrategy);
 
 		var outputData = !string.IsNullOrEmpty(args.OutputPath);
 		// TODO: rewrite as a pattern match

@@ -27,7 +27,7 @@ jobs:
           dotnet build ./cli/cli 
       - name: Generate API
         run: |
-          dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
+          dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
       - name: Format files
         id: format
         run: dotnet-format -f ./client/Packages/com.beamable/Common/Runtime/OpenApi
