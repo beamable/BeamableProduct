@@ -1,29 +1,35 @@
 ﻿using Beamable.BSAT.Core;
 using Beamable.BSAT.Core.Models;
-using Beamable.BSAT.Extensions;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
+using UnityEngine.UI;
 using static Beamable.BSAT.Constants.TestConstants.General;
-using static Beamable.BSAT.Constants.TestConstants.Paths;
 
 namespace Beamable.BSAT.UI
 {
     public class MainMenuTestController : MonoBehaviour
     {
+	    [SerializeField] private Button generateReportButton;
         [SerializeField] private GameObject sceneButton;
         [SerializeField] private Transform scrollViewContent;
         
-        private TestConfiguration TestConfiguration
-        {
-	        get
-	        {
-		        if (_testConfiguration == null)
-			        _testConfiguration = TestExtensions.LoadScriptableObject<TestConfiguration>(CONFIGURATION_FILE_NAME, string.Empty, PATH_TO_RESOURCES);
-		        return _testConfiguration;
-	        }
-        }
+        public TestConfiguration TestConfiguration
+		{
+			get
+			{
+				if (_testConfiguration == null)
+				{
+					_testConfiguration = Resources.Load<TestConfiguration>(CONFIGURATION_FILE_NAME);
+					if (TestConfiguration == null)
+					{
+						TestableDebug.LogError("Cannot load test configuration file!");
+						Debug.Break();
+					}
+				}
+				return _testConfiguration;
+			}
+		}
         private TestConfiguration _testConfiguration;
         private readonly List<MainMenuTestSceneButton> _testSceneButtons = new List<MainMenuTestSceneButton>();
 
@@ -32,6 +38,8 @@ namespace Beamable.BSAT.UI
         {
 	        foreach (var testScene in TestConfiguration.RegisteredTestScenes)
 		        _testSceneButtons.Add(CreateTestSceneButton(testScene));
+	        
+	        generateReportButton.onClick.AddListener(() => TestConfiguration.GenerateReport());
         }
 
         private MainMenuTestSceneButton CreateTestSceneButton(RegisteredTestScene registeredTestScene)
@@ -40,7 +48,8 @@ namespace Beamable.BSAT.UI
             button.Init(registeredTestScene, LoadTestScene);
             return button;
         }
-        private void LoadTestScene(RegisteredTestScene registeredTestScene) 
+
+        private void LoadTestScene(RegisteredTestScene registeredTestScene)
 	        => SceneManager.LoadScene(registeredTestScene.SceneName);
     }
 }

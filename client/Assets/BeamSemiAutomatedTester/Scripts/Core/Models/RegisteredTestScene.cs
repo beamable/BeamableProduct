@@ -1,7 +1,9 @@
 ﻿using Beamable.BSAT.Core.Models.Descriptors;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace Beamable.BSAT.Core.Models
@@ -16,6 +18,8 @@ namespace Beamable.BSAT.Core.Models
 				TestResult.NotSet;
 		public List<RegisteredTest> RegisteredTests => _registeredTests;
 
+		public TimeSpan ElapsedTime => new TimeSpan(RegisteredTests.Sum(x => x.ElapsedTime.Ticks));
+		
 		[SerializeField] private string _sceneName;
 		[SerializeField] private TestResult _testResult;
 		[SerializeField, HideInInspector] private TestSceneDescriptor _testSceneDescriptor;
@@ -39,5 +43,26 @@ namespace Beamable.BSAT.Core.Models
 		}
 		private void HandleTestResultChange()
 			=> OnTestResultChanged?.Invoke();
+
+		public ArrayDict GenerateReport()
+		{
+			var data = new List<ArrayDict>();
+			foreach (var registeredTest in _registeredTests)
+			{
+				var nestedData = new ArrayDict
+				{
+					{ registeredTest.TestClassName, registeredTest.GenerateReport() }
+				};
+				data.Add(nestedData);
+			}
+			return new ArrayDict
+			{
+				{ "TestResult", TestResult},
+				{ "TimeStamp", ElapsedTime.ToString("g") },
+				{ "Title", TestSceneDescriptor.GetTestDescriptor().Title },
+				{ "Description", TestSceneDescriptor.GetTestDescriptor().Description },
+				{ "Tests", data }
+			};
+		}
 	}
 }

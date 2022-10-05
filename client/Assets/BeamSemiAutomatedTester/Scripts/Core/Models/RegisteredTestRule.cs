@@ -1,4 +1,5 @@
 ﻿using Beamable.BSAT.Core.Models.Descriptors;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,8 @@ namespace Beamable.BSAT.Core.Models
 				TestResult.NotSet;
 		
 		public List<RegisteredTestRuleMethod> RegisteredTestRuleMethods => _registeredTestRuleMethods;
+		
+		public TimeSpan ElapsedTime => new TimeSpan(RegisteredTestRuleMethods.Sum(x => x.ElapsedTime.Ticks));
 
 		[SerializeField] private string _testMethodName;
 		[SerializeField] private int _order;
@@ -48,5 +51,28 @@ namespace Beamable.BSAT.Core.Models
 		}
 		private void HandleTestResultChange()
 			=> OnTestResultChanged?.Invoke();
+
+		public ArrayDict GenerateReport()
+		{
+			var data = new List<ArrayDict>();
+			for (int index = 0; index < _registeredTestRuleMethods.Count; index++)
+			{
+				var registeredTestRuleMethod = _registeredTestRuleMethods[index];
+				var nestedData = new ArrayDict
+				{
+					{$"{index}", registeredTestRuleMethod.GenerateReport()}
+				};
+				data.Add(nestedData);
+			}
+
+			return new ArrayDict
+			{
+				{ "TestResult", TestResult},
+				{ "TimeStamp", ElapsedTime.ToString("g") },
+				{ "Title", _registeredTestRuleMethods[0].Title },
+				{ "Description", _registeredTestRuleMethods[0].Description },
+				{ "TestRuleMethods", data },
+			};
+		}
 	}
 }
