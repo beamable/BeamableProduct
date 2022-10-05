@@ -4519,4 +4519,596 @@ public static class OpenApiFixtures
 }";
 
 	#endregion
+
+	#region social basic
+
+	public const string SocialBasicOpenApi = @"{
+    ""info"": {
+        ""title"": ""social basic"",
+        ""version"": ""1.0"",
+        ""contact"": {
+            ""name"": ""Beamable Support"",
+            ""url"": ""https://api.beamable.com"",
+            ""email"": ""support@beamable.com""
+        }
+    },
+    ""servers"": [
+        {
+            ""url"": ""https://api.beamable.com""
+        }
+    ],
+    ""paths"": {
+        ""/basic/social/my"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/Social""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/social/friends/invite"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/EmptyResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/SendFriendRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            },
+            ""delete"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/EmptyResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/SendFriendRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/social/friends"": {
+            ""delete"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/EmptyResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/PlayerIdRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/social/friends/import"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/EmptyResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/ImportFriendsRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/social/friends/make"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/CommonResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/MakeFriendshipRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/social/"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/GetSocialStatusesResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""playerIds"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""array"",
+                            ""items"": {
+                                ""type"": ""string"",
+                                ""format"": ""blah""
+                            }
+                        },
+                        ""required"": true
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/social/blocked"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/FriendshipStatus""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/PlayerIdRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            },
+            ""delete"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/FriendshipStatus""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/PlayerIdRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        }
+    },
+    ""components"": {
+        ""schemas"": {
+            ""InvitationDirection"": {
+                ""type"": ""string"",
+                ""enum"": [
+                    ""incoming"",
+                    ""outgoing""
+                ]
+            },
+            ""FriendSource"": {
+                ""type"": ""string"",
+                ""enum"": [
+                    ""native"",
+                    ""facebook""
+                ]
+            },
+            ""Player"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""playerId"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""required"": [
+                    ""playerId""
+                ]
+            },
+            ""CommonResponse"": {
+                ""properties"": {
+                    ""result"": {
+                        ""type"": ""string""
+                    },
+                    ""data"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Common Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""result"",
+                    ""data""
+                ]
+            },
+            ""Friend"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""playerId"": {
+                        ""type"": ""string""
+                    },
+                    ""source"": {
+                        ""$ref"": ""#/components/schemas/FriendSource""
+                    }
+                },
+                ""required"": [
+                    ""playerId"",
+                    ""source""
+                ]
+            },
+            ""Invite"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""playerId"": {
+                        ""type"": ""string""
+                    },
+                    ""direction"": {
+                        ""$ref"": ""#/components/schemas/InvitationDirection""
+                    }
+                },
+                ""required"": [
+                    ""playerId"",
+                    ""direction""
+                ]
+            },
+            ""Social"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""playerId"": {
+                        ""type"": ""string""
+                    },
+                    ""friends"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/Friend""
+                        }
+                    },
+                    ""blocked"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/Player""
+                        }
+                    },
+                    ""invites"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/Invite""
+                        }
+                    }
+                },
+                ""required"": [
+                    ""playerId"",
+                    ""friends"",
+                    ""blocked"",
+                    ""invites""
+                ]
+            },
+            ""GetSocialStatusesResponse"": {
+                ""properties"": {
+                    ""statuses"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/Social""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Social Statuses Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""statuses""
+                ]
+            },
+            ""PlayerIdRequest"": {
+                ""properties"": {
+                    ""playerId"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Player Id Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""playerId""
+                ]
+            },
+            ""EmptyResponse"": {
+                ""properties"": {
+                    ""result"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Empty Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""result""
+                ]
+            },
+            ""FriendshipStatus"": {
+                ""properties"": {
+                    ""playerId"": {
+                        ""type"": ""string""
+                    },
+                    ""friendId"": {
+                        ""type"": ""string""
+                    },
+                    ""isBlocked"": {
+                        ""type"": ""boolean""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Friendship Status"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""playerId"",
+                    ""friendId"",
+                    ""isBlocked""
+                ]
+            },
+            ""MakeFriendshipRequest"": {
+                ""properties"": {
+                    ""gamerTag"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Make Friendship Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""gamerTag""
+                ]
+            },
+            ""GetSocialStatusesRequest"": {
+                ""properties"": {
+                    ""playerIds"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Social Statuses Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""playerIds""
+                ]
+            },
+            ""ImportFriendsRequest"": {
+                ""properties"": {
+                    ""source"": {
+                        ""type"": ""string""
+                    },
+                    ""token"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Import Friends Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""source"",
+                    ""token""
+                ]
+            },
+            ""SendFriendRequest"": {
+                ""properties"": {
+                    ""gamerTag"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Send Friend Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""gamerTag""
+                ]
+            }
+        },
+        ""securitySchemes"": {
+            ""userRequired"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-GAMERTAG"",
+                ""in"": ""header"",
+                ""description"": ""Gamer Tag of the player.""
+            },
+            ""scope"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-SCOPE"",
+                ""in"": ""header"",
+                ""description"": ""Customer and project scope. This should contain the '<customer-id>.<project-id>'.""
+            },
+            ""api"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-SIGNATURE"",
+                ""in"": ""header"",
+                ""description"": ""Signed Request authentication using project secret key.""
+            },
+            ""user"": {
+                ""type"": ""http"",
+                ""description"": ""Bearer authentication with an player access token in the Authorization header."",
+                ""scheme"": ""bearer"",
+                ""bearerFormat"": ""Bearer <Access Token>""
+            }
+        }
+    },
+    ""security"": [],
+    ""externalDocs"": {
+        ""description"": ""Beamable Documentation"",
+        ""url"": ""https://docs.beamable.com""
+    },
+    ""openapi"": ""3.0.2""
+}";
+
+	#endregion
 }
