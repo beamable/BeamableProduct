@@ -790,7 +790,7 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": false
+                        ""required"": true
                     }
                 ],
                 ""security"": [
@@ -824,13 +824,14 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": false
+                        ""required"": true
                     },
                     {
                         ""name"": ""page"",
                         ""in"": ""query"",
                         ""schema"": {
-                            ""type"": ""integer""
+                            ""type"": ""integer"",
+                            ""format"": ""int32""
                         },
                         ""required"": true
                     },
@@ -838,7 +839,8 @@ public static class OpenApiFixtures
                         ""name"": ""pagesize"",
                         ""in"": ""query"",
                         ""schema"": {
-                            ""type"": ""integer""
+                            ""type"": ""integer"",
+                            ""format"": ""int32""
                         },
                         ""required"": true
                     }
@@ -943,7 +945,7 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": false
+                        ""required"": true
                     },
                     {
                         ""name"": ""token"",
@@ -951,7 +953,7 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": false
+                        ""required"": true
                     }
                 ],
                 ""security"": [
@@ -1136,7 +1138,7 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": false
+                        ""required"": true
                     }
                 ],
                 ""security"": [
@@ -1171,7 +1173,7 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": false
+                        ""required"": true
                     }
                 ],
                 ""security"": [
@@ -1205,144 +1207,12 @@ public static class OpenApiFixtures
                         ""schema"": {
                             ""type"": ""string""
                         },
-                        ""required"": false
+                        ""required"": true
                     }
                 ],
                 ""security"": [
                     {
                         ""scope"": []
-                    }
-                ]
-            }
-        },
-        ""/basic/accounts/admin/new"": {
-            ""post"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""requestBody"": {
-                    ""content"": {
-                        ""application/json"": {
-                            ""schema"": {
-                                ""$ref"": ""#/components/schemas/AddAccountRequest""
-                            }
-                        }
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            }
-        },
-        ""/basic/accounts/"": {
-            ""get"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""parameters"": [
-                    {
-                        ""name"": ""email"",
-                        ""in"": ""query"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": false
-                    },
-                    {
-                        ""name"": ""gamerTag"",
-                        ""in"": ""query"",
-                        ""schema"": {
-                            ""type"": ""integer""
-                        },
-                        ""required"": false
-                    },
-                    {
-                        ""name"": ""thirdPartyAssoc"",
-                        ""in"": ""query"",
-                        ""schema"": {
-                            ""type"": ""unknown""
-                        },
-                        ""required"": false
-                    },
-                    {
-                        ""name"": ""withRealmMigration"",
-                        ""in"": ""query"",
-                        ""schema"": {
-                            ""type"": ""boolean""
-                        },
-                        ""required"": false
-                    },
-                    {
-                        ""name"": ""customerScoped"",
-                        ""in"": ""query"",
-                        ""schema"": {
-                            ""type"": ""boolean""
-                        },
-                        ""required"": false
-                    },
-                    {
-                        ""name"": ""deviceId"",
-                        ""in"": ""query"",
-                        ""schema"": {
-                            ""type"": ""string""
-                        },
-                        ""required"": false
-                    }
-                ],
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
-                    }
-                ]
-            },
-            ""post"": {
-                ""responses"": {
-                    ""200"": {
-                        ""description"": """",
-                        ""content"": {
-                            ""application/json"": {
-                                ""schema"": {
-                                    ""$ref"": ""#/components/schemas/Account""
-                                }
-                            }
-                        }
-                    },
-                    ""400"": {
-                        ""description"": ""Bad Request""
-                    }
-                },
-                ""security"": [
-                    {
-                        ""scope"": [],
-                        ""user"": []
                     }
                 ]
             }
@@ -1397,7 +1267,11 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Password Update Confirmation"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""code"",
+                    ""newPassword""
+                ]
             },
             ""DeviceIdAvailableRequest"": {
                 ""properties"": {
@@ -1407,7 +1281,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Device Id Available Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""deviceId""
+                ]
             },
             ""AccountUpdate"": {
                 ""properties"": {
@@ -1454,7 +1331,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Email Update Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""newEmail""
+                ]
             },
             ""ThirdPartyAssociation"": {
                 ""type"": ""object"",
@@ -1474,12 +1354,20 @@ public static class OpenApiFixtures
                     },
                     ""meta"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
                     },
                     ""appId"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""name"",
+                    ""appId"",
+                    ""userAppId"",
+                    ""meta""
+                ]
             },
             ""DeleteDevicesRequest"": {
                 ""properties"": {
@@ -1507,7 +1395,11 @@ public static class OpenApiFixtures
                             ""$ref"": ""#/components/schemas/ItemProperty""
                         }
                     }
-                }
+                },
+                ""required"": [
+                    ""contentId"",
+                    ""properties""
+                ]
             },
             ""AccountPersonallyIdentifiableInformationResponse"": {
                 ""properties"": {
@@ -1526,7 +1418,12 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Account Personally Identifiable Information Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""account"",
+                    ""stats"",
+                    ""paymentAudits""
+                ]
             },
             ""InFlightMessage"": {
                 ""type"": ""object"",
@@ -1542,7 +1439,8 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""gamerTag"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""shard"": {
                         ""type"": ""string""
@@ -1553,7 +1451,14 @@ public static class OpenApiFixtures
                     ""id"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""service"",
+                    ""id"",
+                    ""method"",
+                    ""path"",
+                    ""body""
+                ]
             },
             ""AccountPortalView"": {
                 ""type"": ""object"",
@@ -1572,7 +1477,8 @@ public static class OpenApiFixtures
                         }
                     },
                     ""id"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""language"": {
                         ""type"": ""string""
@@ -1591,7 +1497,9 @@ public static class OpenApiFixtures
                     }
                 },
                 ""required"": [
-                    ""id""
+                    ""id"",
+                    ""scopes"",
+                    ""thirdPartyAppAssociations""
                 ]
             },
             ""SearchAccountsRequest"": {
@@ -1600,16 +1508,19 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""page"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
                     },
                     ""pagesize"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
                     }
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Search Accounts Request"",
                 ""type"": ""object"",
                 ""required"": [
+                    ""query"",
                     ""page"",
                     ""pagesize""
                 ]
@@ -1625,7 +1536,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Password Update Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""email""
+                ]
             },
             ""PaymentAuditEntryViewModel"": {
                 ""type"": ""object"",
@@ -1641,7 +1555,8 @@ public static class OpenApiFixtures
                         }
                     },
                     ""txid"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""providername"": {
                         ""type"": ""string""
@@ -1659,7 +1574,8 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""updated"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""obtainCurrency"": {
                         ""type"": ""array"",
@@ -1680,15 +1596,23 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""gt"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""created"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     }
                 },
                 ""required"": [
                     ""gt"",
-                    ""txid""
+                    ""txid"",
+                    ""providername"",
+                    ""details"",
+                    ""providerid"",
+                    ""txstate"",
+                    ""history"",
+                    ""entitlements""
                 ]
             },
             ""AccountPlayerView"": {
@@ -1709,7 +1633,8 @@ public static class OpenApiFixtures
                         }
                     },
                     ""id"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""language"": {
                         ""type"": ""string""
@@ -1725,7 +1650,10 @@ public static class OpenApiFixtures
                 ""title"": ""Account Player View"",
                 ""type"": ""object"",
                 ""required"": [
-                    ""id""
+                    ""id"",
+                    ""scopes"",
+                    ""thirdPartyAppAssociations"",
+                    ""deviceIds""
                 ]
             },
             ""PaymentHistoryEntryViewModel"": {
@@ -1741,7 +1669,10 @@ public static class OpenApiFixtures
                     ""timestamp"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""change""
+                ]
             },
             ""AccountAvailableResponse"": {
                 ""properties"": {
@@ -1761,14 +1692,17 @@ public static class OpenApiFixtures
                 ""additionalProperties"": false,
                 ""properties"": {
                     ""quantity"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
                     },
                     ""claimWindow"": {
                         ""$ref"": ""#/components/schemas/EntitlementClaimWindow""
                     },
                     ""params"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
                     },
                     ""symbol"": {
                         ""type"": ""string""
@@ -1779,22 +1713,30 @@ public static class OpenApiFixtures
                     ""action"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""symbol"",
+                    ""action""
+                ]
             },
             ""StatsResponse"": {
                 ""type"": ""object"",
                 ""additionalProperties"": false,
                 ""properties"": {
                     ""id"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""stats"": {
                         ""type"": ""object"",
-                        ""additionalProperties"": true
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
                     }
                 },
                 ""required"": [
-                    ""id""
+                    ""id"",
+                    ""stats""
                 ]
             },
             ""RoleMapping"": {
@@ -1807,7 +1749,11 @@ public static class OpenApiFixtures
                     ""role"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""projectId"",
+                    ""role""
+                ]
             },
             ""AccountRegistration"": {
                 ""properties"": {
@@ -1820,7 +1766,11 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Account Registration"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""email"",
+                    ""password""
+                ]
             },
             ""EmailUpdateConfirmation"": {
                 ""properties"": {
@@ -1833,32 +1783,11 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Email Update Confirmation"",
-                ""type"": ""object""
-            },
-            ""GetAccountRequest"": {
-                ""properties"": {
-                    ""email"": {
-                        ""type"": ""string""
-                    },
-                    ""gamerTag"": {
-                        ""type"": ""integer""
-                    },
-                    ""thirdPartyAssoc"": {
-                        ""$ref"": ""#/components/schemas/ThirdPartyAssociation""
-                    },
-                    ""withRealmMigration"": {
-                        ""type"": ""boolean""
-                    },
-                    ""customerScoped"": {
-                        ""type"": ""boolean""
-                    },
-                    ""deviceId"": {
-                        ""type"": ""string""
-                    }
-                },
-                ""additionalProperties"": false,
-                ""title"": ""Get Account Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""code"",
+                    ""password""
+                ]
             },
             ""GetAdminsResponse"": {
                 ""properties"": {
@@ -1871,7 +1800,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Get Admins Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""accounts""
+                ]
             },
             ""PaymentDetailsEntryViewModel"": {
                 ""type"": ""object"",
@@ -1884,13 +1816,15 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""quantity"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
                     },
                     ""sku"": {
                         ""type"": ""string""
                     },
                     ""price"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
                     },
                     ""subcategory"": {
                         ""type"": ""string""
@@ -1913,7 +1847,12 @@ public static class OpenApiFixtures
                 },
                 ""required"": [
                     ""price"",
-                    ""quantity""
+                    ""quantity"",
+                    ""name"",
+                    ""reference"",
+                    ""gameplace"",
+                    ""sku"",
+                    ""providerProductId""
                 ]
             },
             ""CurrencyChange"": {
@@ -1924,13 +1863,16 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""amount"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""originalAmount"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     }
                 },
                 ""required"": [
+                    ""symbol"",
                     ""amount""
                 ]
             },
@@ -1945,17 +1887,22 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Add Account Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""email""
+                ]
             },
             ""EntitlementClaimWindow"": {
                 ""type"": ""object"",
                 ""additionalProperties"": false,
                 ""properties"": {
                     ""open"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""close"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     }
                 },
                 ""required"": [
@@ -1971,10 +1918,12 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""gamerTag"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     }
                 },
                 ""required"": [
+                    ""projectId"",
                     ""gamerTag""
                 ]
             },
@@ -1986,7 +1935,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Empty Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""result""
+                ]
             },
             ""ItemProperty"": {
                 ""type"": ""object"",
@@ -1998,7 +1950,11 @@ public static class OpenApiFixtures
                     ""value"": {
                         ""type"": ""string""
                     }
-                }
+                },
+                ""required"": [
+                    ""name"",
+                    ""value""
+                ]
             },
             ""ThirdPartyAvailableRequest"": {
                 ""properties"": {
@@ -2011,7 +1967,11 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Third Party Available Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""thirdParty"",
+                    ""token""
+                ]
             },
             ""AccountSearchResponse"": {
                 ""properties"": {
@@ -2024,7 +1984,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Account Search Response"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""accounts""
+                ]
             },
             ""ListAuditResponse"": {
                 ""type"": ""object"",
@@ -2036,7 +1999,10 @@ public static class OpenApiFixtures
                             ""$ref"": ""#/components/schemas/PaymentAuditEntryViewModel""
                         }
                     }
-                }
+                },
+                ""required"": [
+                    ""audits""
+                ]
             },
             ""AccountAvailableRequest"": {
                 ""properties"": {
@@ -2046,7 +2012,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Account Available Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""email""
+                ]
             },
             ""FindAccountRequest"": {
                 ""properties"": {
@@ -2056,7 +2025,10 @@ public static class OpenApiFixtures
                 },
                 ""additionalProperties"": false,
                 ""title"": ""Find Account Request"",
-                ""type"": ""object""
+                ""type"": ""object"",
+                ""required"": [
+                    ""query""
+                ]
             },
             ""Account"": {
                 ""type"": ""object"",
@@ -2069,7 +2041,8 @@ public static class OpenApiFixtures
                         }
                     },
                     ""createdTimeMillis"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""realmId"": {
                         ""type"": ""string""
@@ -2096,7 +2069,8 @@ public static class OpenApiFixtures
                         ""type"": ""boolean""
                     },
                     ""id"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""gamerTags"": {
                         ""type"": ""array"",
@@ -2114,7 +2088,8 @@ public static class OpenApiFixtures
                         }
                     },
                     ""updatedTimeMillis"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""thirdParties"": {
                         ""type"": ""array"",
@@ -2129,7 +2104,8 @@ public static class OpenApiFixtures
                         ""type"": ""string""
                     },
                     ""heartbeat"": {
-                        ""type"": ""integer""
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
                     },
                     ""password"": {
                         ""type"": ""string""
@@ -2137,6 +2113,8 @@ public static class OpenApiFixtures
                 },
                 ""required"": [
                     ""id"",
+                    ""gamerTags"",
+                    ""thirdParties"",
                     ""createdTimeMillis"",
                     ""updatedTimeMillis"",
                     ""privilegedAccount""
