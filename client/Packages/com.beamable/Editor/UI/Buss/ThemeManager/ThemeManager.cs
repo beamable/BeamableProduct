@@ -46,7 +46,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnFocus()
 		{
-			_model?.OnFocus();
+			_model?.ForceRefresh();
 		}
 
 		[MenuItem(
@@ -115,6 +115,8 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);
 			root.Add(_windowRoot);
+
+			_model.ForceRefresh();
 		}
 	}
 }

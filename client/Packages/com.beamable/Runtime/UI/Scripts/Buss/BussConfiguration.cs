@@ -27,6 +27,7 @@ namespace Beamable.UI.Buss
 				}
 			}
 		}
+
 		private static BussConfiguration Instance => Get<BussConfiguration>();
 		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
 		private static VariableDatabase _variableDatabase;
@@ -55,17 +56,6 @@ namespace Beamable.UI.Buss
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);
-		}
-
-		public void AddDeveloperStyleSheet(BussStyleSheet styleSheet)
-		{
-			if (DeveloperStyleSheets.Contains(styleSheet))
-			{
-				return;
-			}
-
-			DeveloperStyleSheets.Add(styleSheet);
-			UpdateStyleSheet(styleSheet);
 		}
 
 		public void RegisterObserver(BussElement bussElement)

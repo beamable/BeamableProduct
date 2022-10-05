@@ -40,8 +40,9 @@ namespace Beamable.Editor.UI.Buss
 			_styleSheetName.Setup("Style sheet name", string.Empty, OnValidate);
 			_styleSheetName.Refresh();
 			_styleSheetName.OverrideLabelWidth(LABEL_WIDTH);
-			
-			_styleSheetName.AddErrorLabel(null, _ => {
+
+			_styleSheetName.AddErrorLabel(null, _ =>
+			{
 
 				IsNameValid(out var msg);
 				return msg;
@@ -97,7 +98,7 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			BussStyleSheetUtility.CreateNewStyleSheetWithInitialRules(_styleSheetName.Value, _initialRule);
-
+			BussConfiguration.OptionalInstance.Value.ForceRefresh();
 			NewStyleSheetWindow.CloseWindow();
 		}
 
