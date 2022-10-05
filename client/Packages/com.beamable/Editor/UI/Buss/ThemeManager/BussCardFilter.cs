@@ -30,7 +30,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				foreach (var rule in styleSheet.Styles)
 				{
-					if (CardFilter(rule, selectedElement) && !rules.ContainsKey(rule))
+					if (CardFilter(rule, selectedElement))
 					{
 						rules.Add(rule, styleSheet);
 					}
