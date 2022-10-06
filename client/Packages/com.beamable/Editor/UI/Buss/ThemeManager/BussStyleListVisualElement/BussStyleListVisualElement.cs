@@ -76,7 +76,7 @@ namespace Beamable.Editor.UI.Buss
 				var styleRule = pair.Key;
 
 				string undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
-				
+
 				// TODO: restore while doing BEAM-3122
 				// UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
 
@@ -84,7 +84,7 @@ namespace Beamable.Editor.UI.Buss
 				{
 					// TODO: restore while doing BEAM-3122
 					// UndoSystem<BussStyleRule>.Undo(undoKey);
-				
+
 					RefreshCards(); // TODO: check if we need this refresh here
 				});
 			}
