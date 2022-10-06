@@ -12,7 +12,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		}
 
-		public StopImageReturnableCommand(string containerName,  bool skipDockerCheck = false)
+		public StopImageReturnableCommand(string containerName, bool skipDockerCheck = false)
 		{
 			ContainerName = containerName;
 			UnityLogLabel = "STOP";
