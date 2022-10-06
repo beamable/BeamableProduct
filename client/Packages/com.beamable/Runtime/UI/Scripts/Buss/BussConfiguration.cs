@@ -51,7 +51,7 @@ namespace Beamable.UI.Buss
 					 .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
 
 		public List<BussElement> RootBussElements => _rootBussElements;
-		public VariableDatabase VariableDatabase => _variableDatabase;
+		public VariableDatabase VariableDatabase => _variableDatabase ?? (_variableDatabase = new VariableDatabase(this));
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
@@ -146,12 +146,7 @@ namespace Beamable.UI.Buss
 			Weights.Clear();
 			element.Style.Clear();
 
-			if (_variableDatabase == null)
-			{
-				_variableDatabase = new VariableDatabase(this);
-			}
-
-			_variableDatabase.ReconsiderAllStyleSheets();
+			VariableDatabase.ReconsiderAllStyleSheets();
 
 			// Applying default bemable styles
 			foreach (BussStyleSheet styleSheet in FactoryStyleSheets)
