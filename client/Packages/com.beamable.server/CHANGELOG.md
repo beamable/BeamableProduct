@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ActionBarVisualElement buttons behaviour is fixed when Docker is not running.
 - Fixed issue with MS rebuild/stop on entering to Playmode.
 - Fixed Microservices stop at Unity Exit.
+- DependencyResolver allows possibility to remove asmdef reference by user.
 
 ## [1.3.6]
 ### Added
