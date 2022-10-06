@@ -52,7 +52,6 @@ namespace Beamable.Editor.UI.Components
 		public bool IsWritable => StyleSheet.IsWritable;
 		public bool IsFolded => StyleRule.Folded;
 		public bool ShowAll { get; private set; }
-		private bool Sorted { get; set; }
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(BussStyleSheet styleSheet,
@@ -230,17 +229,12 @@ namespace Beamable.Editor.UI.Components
 			Change?.Invoke();
 		}
 
-		public void SortButtonClicked(MouseDownEvent evt)
-		{
-			Sorted = !Sorted;
-			Change?.Invoke();
-		}
-
-		public void UndoButtonClicked(MouseDownEvent evt)
-		{
-			UndoAction?.Invoke();
-			Change?.Invoke();
-		}
+		// TODO: restore while doing BEAM-3122
+		// public void UndoButtonClicked(MouseDownEvent evt)
+		// {
+		// 	UndoAction?.Invoke();
+		// 	Change?.Invoke();
+		// }
 
 		public List<StylePropertyModel> GetProperties(bool sort = true)
 		{

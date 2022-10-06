@@ -65,7 +65,8 @@ namespace Beamable.Editor.UI.Buss
 
 		private void RefreshCards()
 		{
-			UndoSystem<BussStyleRule>.Update();
+			// TODO: restore while doing BEAM-3122
+			// UndoSystem<BussStyleRule>.Update();
 
 			ClearCards();
 
@@ -75,11 +76,15 @@ namespace Beamable.Editor.UI.Buss
 				var styleRule = pair.Key;
 
 				string undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
-				UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
+				
+				// TODO: restore while doing BEAM-3122
+				// UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
 
 				AddStyleCard(styleSheet, styleRule, () =>
 				{
-					UndoSystem<BussStyleRule>.Undo(undoKey);
+					// TODO: restore while doing BEAM-3122
+					// UndoSystem<BussStyleRule>.Undo(undoKey);
+				
 					RefreshCards(); // TODO: check if we need this refresh here
 				});
 			}

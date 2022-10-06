@@ -41,7 +41,8 @@ namespace Beamable.Editor.UI.Buss
 			_selectedElement?.Destroy();
 			_model?.Clear();
 
-			UndoSystem<BussStyleRule>.DeleteAllRecords();
+			// TODO: restore while doing BEAM-3122
+			// UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
 
 		private void OnFocus()
