@@ -11,6 +11,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -297,13 +298,13 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
-			await ClearPlayerAndStop();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
 
 			// await InitStep_SaveToken();
 			await InitStep_GetUser();
 			await InitStep_StartNewSession();
+			await InitStep_StartPubnub();
 
 			OnReloadUser?.Invoke();
 
