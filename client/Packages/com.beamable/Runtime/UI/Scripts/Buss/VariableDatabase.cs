@@ -7,16 +7,19 @@ namespace Beamable.UI.Buss
 	{
 		public class PropertyReference
 		{
+			public readonly string Key;
 			public readonly BussPropertyProvider PropertyProvider;
 			public readonly BussStyleRule StyleRule;
 			public readonly BussStyleSheet StyleSheet;
 
 			public PropertyReference() { }
 
-			public PropertyReference(BussStyleSheet styleSheet,
-									 BussStyleRule styleRule,
-									 BussPropertyProvider propertyProvider)
+			public PropertyReference(string key,
+			                         BussStyleSheet styleSheet,
+			                         BussStyleRule styleRule,
+			                         BussPropertyProvider propertyProvider)
 			{
+				Key = key;
 				StyleSheet = styleSheet;
 				StyleRule = styleRule;
 				PropertyProvider = propertyProvider;
@@ -32,12 +35,13 @@ namespace Beamable.UI.Buss
 		{
 			NoResult,
 			SingleResult,
+			MultipleResults,
 			VariableLoopDetected
 		}
 
 		private readonly List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private readonly HashSet<string> _usedVariableNames = new HashSet<string>();
-		private readonly Dictionary<string, PropertyReference> _variables = new Dictionary<string, PropertyReference>();
+		private readonly List<PropertyReference> _variables = new List<PropertyReference>();
 
 		private readonly IVariablesProvider _variablesProvider;
 
@@ -46,49 +50,44 @@ namespace Beamable.UI.Buss
 			_variablesProvider = variablesProvider;
 		}
 
-		public IBussProperty GetVariable(string key)
-		{
-			ReconsiderAllStyleSheets();
-			var variableData = GetVariableData(key);
-			return variableData.PropertyProvider.GetProperty();
-		}
+		// public IBussProperty GetVariable(string key)
+		// {
+		// 	ReconsiderAllStyleSheets();
+		// 	
+		// 	// FindVariableEndValue()
+		// 	// var variableData = GetVariableData(key);
+		// 	// return variableData.PropertyProvider.GetProperty();
+		// }
 
-		public PropertyReference GetVariableData(string key)
+		public List<PropertyReference> GetVariableData(string key)
 		{
-			if (_variables.TryGetValue(key, out var value))
+			List<PropertyReference> propertyReferences = _variables.FindAll(prop => prop.Key == key);
+
+			if (propertyReferences.Count != 0)
 			{
-				return value;
+				return propertyReferences;
 			}
 
-			var data = new PropertyReference();
-			_variables[key] = data;
-			return data;
-		}
+			var data = new PropertyReference(key, null, null, null);
+			_variables.Add(data);
+			GetVariableData(key);
 
-		public IEnumerable<string> GetVariableNames()
-		{
-			ReconsiderAllStyleSheets();
-			return _variables.Keys;
+			return propertyReferences;
 		}
-
+		
 		public IEnumerable<string> GetVariablesNamesOfType(Type baseType)
 		{
 			List<string> variablesNames = new List<string>();
 
-			foreach (var pair in _variables)
+			foreach (var propertyReference in _variables)
 			{
-				if (baseType.IsInstanceOfType(pair.Value.PropertyProvider.GetProperty()))
+				if (baseType.IsInstanceOfType(propertyReference.PropertyProvider.GetProperty()))
 				{
-					variablesNames.Add(pair.Key);
+					variablesNames.Add(propertyReference.Key);
 				}
 			}
 
 			return variablesNames;
-		}
-
-		public bool HasVariable(string key)
-		{
-			return _variables.TryGetValue(key, out _);
 		}
 
 		public void ReconsiderAllStyleSheets()
@@ -103,19 +102,19 @@ namespace Beamable.UI.Buss
 		}
 
 		public void TryGetProperty(BussPropertyProvider basePropertyProvider,
-								   BussStyleDescription styleRule,
-								   out IBussProperty result,
-								   out PropertyReference variablePropertyReference)
+		                           BussStyleDescription styleRule,
+		                           out IBussProperty result,
+		                           out PropertyReference variablePropertyReference)
 		{
 			if (!basePropertyProvider.HasVariableReference)
 			{
-				variablePropertyReference = new PropertyReference(null, null, null);
+				variablePropertyReference = new PropertyReference(string.Empty, null, null, null);
 				result = basePropertyProvider.GetProperty();
 				return;
 			}
 
 			FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-								 styleRule, out result, out variablePropertyReference);
+			                                                               styleRule, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -135,7 +134,7 @@ namespace Beamable.UI.Buss
 					{
 						if (propertyProvider.IsVariable)
 						{
-							_variables.Add(propertyProvider.Key, new PropertyReference(sheet, rule, propertyProvider));
+							_variables.Add(new PropertyReference(propertyProvider.Key, sheet, rule, propertyProvider));
 						}
 					}
 				}
@@ -152,12 +151,12 @@ namespace Beamable.UI.Buss
 		/// It can search for end value recursively.
 		/// </summary>
 		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-														BussStyleDescription styleRule,
-														out IBussProperty result,
-														out PropertyReference propertyReference)
+		                                                BussStyleDescription styleRule,
+		                                                out IBussProperty result,
+		                                                out PropertyReference propertyReference)
 		{
 			result = null;
-			propertyReference = new PropertyReference(null, null, null);
+			propertyReference = new PropertyReference(string.Empty, null, null, null);
 			PropertyValueState state;
 
 			if (_usedVariableNames.Contains(variableProperty.VariableName)) // check if we are not in infinite loop
@@ -177,16 +176,31 @@ namespace Beamable.UI.Buss
 			{
 				var variableData = GetVariableData(variableProperty.VariableName);
 
-				if (variableData != null)
+				if (variableData.Count == 1)
 				{
 					state = PropertyValueState.SingleResult;
-					propertyReference = variableData;
+					propertyReference = variableData[0];
 					result = propertyReference.PropertyProvider.GetProperty();
+				}
+				else if (variableData.Count > 1)
+				{
+					state = PropertyValueState.MultipleResults;
 				}
 				else
 				{
 					state = PropertyValueState.NoResult;
 				}
+
+				// if (variableData != null)
+				// {
+				// 	state = PropertyValueState.SingleResult;
+				// 	propertyReference = variableData;
+				// 	result = propertyReference.PropertyProvider.GetProperty();
+				// }
+				// else
+				// {
+				// 	state = PropertyValueState.NoResult;
+				// }
 			}
 
 			if (result != null && result is VariableProperty nestedVariableProperty)

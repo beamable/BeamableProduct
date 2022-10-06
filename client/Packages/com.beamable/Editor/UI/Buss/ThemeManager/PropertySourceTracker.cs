@@ -119,7 +119,7 @@ namespace Beamable.UI.Buss
 		private void AddPropertySource(BussStyleSheet styleSheet, BussStyleRule styleRule, BussPropertyProvider propertyProvider)
 		{
 			var key = propertyProvider.Key;
-			var propertyReference = new PropertyReference(styleSheet, styleRule, propertyProvider);
+			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
 			if (!_sources.TryGetValue(key, out SourceData sourceData))
 			{
 				_sources[key] = sourceData = new SourceData(key);

@@ -126,7 +126,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (window != null)
 			{
-				window.Init(StyleRule, (key, property) =>
+				window.Init((key, property) =>
 				{
 					if (!StyleRule.TryAddProperty(key, property))
 					{

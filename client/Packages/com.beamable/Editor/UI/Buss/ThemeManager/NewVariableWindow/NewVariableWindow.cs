@@ -7,12 +7,10 @@ namespace Beamable.Editor.UI.Buss
 	public class NewVariableWindow : WindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
 		private Action<string, IBussProperty> _onPropertyCreated;
-		private BussStyleDescription _styleRule;
 		private VariableDatabase _variablesDatabase;
 
-		public void Init(BussStyleDescription styleRule, Action<string, IBussProperty> onPropertyCreated, VariableDatabase variablesDatabase)
+		public void Init(Action<string, IBussProperty> onPropertyCreated, VariableDatabase variablesDatabase)
 		{
-			_styleRule = styleRule;
 			_onPropertyCreated = onPropertyCreated;
 			_variablesDatabase = variablesDatabase;
 
@@ -23,6 +21,6 @@ namespace Beamable.Editor.UI.Buss
 
 			Refresh();
 		}
-		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_styleRule, _onPropertyCreated, _variablesDatabase);
+		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_onPropertyCreated, _variablesDatabase);
 	}
 }

@@ -17,8 +17,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
-		private BussStyleDescription _styleRule;
-		private Action<string, IBussProperty> _onPropertyCreated;
+		private readonly Action<string, IBussProperty> _onPropertyCreated;
 
 		private LabeledTextField _variableName;
 		private Label _propertyLabel;
@@ -35,14 +34,12 @@ namespace Beamable.Editor.UI.Buss
 		// Numbers and special characters are not valid
 		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
 
-		public NewVariableVisualElement(BussStyleDescription styleRule,
-										Action<string, IBussProperty> onPropertyCreated,
+		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated,
 										VariableDatabase variablesDatabase) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
-			_styleRule = styleRule;
 			_onPropertyCreated = onPropertyCreated;
-			_variablesDatabase = variablesDatabase;
+			// _variablesDatabase = variablesDatabase;
 		}
 
 		private readonly Dictionary<string, IBussProperty> _typesDict = new Dictionary<string, IBussProperty>
@@ -68,8 +65,8 @@ namespace Beamable.Editor.UI.Buss
 		};
 
 		private PrimaryButtonVisualElement _confirmButton;
-		private List<string> _reservedVariableNames = new List<string>();
-		private readonly VariableDatabase _variablesDatabase;
+		// private List<string> _reservedVariableNames = new List<string>();
+		// private readonly VariableDatabase _variablesDatabase;
 
 		public override void Refresh()
 		{
@@ -102,7 +99,7 @@ namespace Beamable.Editor.UI.Buss
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += NewVariableWindow.CloseWindow;
 
-			_reservedVariableNames = _variablesDatabase.GetVariableNames().Select(x => x.Substring(2)).ToList();
+			// _reservedVariableNames = _variablesDatabase.GetVariableNames().Select(x => x.Substring(2)).ToList();
 
 			OnValidate(String.Empty);
 		}
@@ -136,17 +133,17 @@ namespace Beamable.Editor.UI.Buss
 				return false;
 			}
 
-			if (_reservedVariableNames.Count != 0)
-			{
-				if (variableName.StartsWith("--"))
-					variableName = variableName.Substring(2);
-
-				if (_reservedVariableNames.Contains(variableName))
-				{
-					message = "Variable with same name already exists";
-					return false;
-				}
-			}
+			// if (_reservedVariableNames.Count != 0)
+			// {
+			// 	if (variableName.StartsWith("--"))
+			// 		variableName = variableName.Substring(2);
+			//
+			// 	if (_reservedVariableNames.Contains(variableName))
+			// 	{
+			// 		message = "Variable with same name already exists";
+			// 		return false;
+			// 	}
+			// }
 
 			return true;
 		}
