@@ -54,9 +54,9 @@ namespace Beamable.Server.Editor
 
 	// ReSharper disable once ClassNeverInstantiated.Global
 	public class BeamServicesCodeWatcher : IBeamHintSystem
-	{		
+	{
 		private const int CLEANUP_CONTAINERS_TIMEOUT = 3;
-		
+
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
 
@@ -255,7 +255,7 @@ namespace Beamable.Server.Editor
 					{
 						return true;
 					}
-					
+
 					var existingChecksum = MicroservicesDataModel.Instance.ServiceDependencyChecksums.FirstOrDefault(
 						service => service.ServiceName == desc.Name);
 
@@ -299,7 +299,7 @@ namespace Beamable.Server.Editor
 		{
 			EditorApplication.wantsToQuit -= WantsToQuit;
 			EditorApplication.wantsToQuit += WantsToQuit;
-			
+
 			// If we are not initialized, delay the call until we are.
 			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 			{
@@ -316,7 +316,7 @@ namespace Beamable.Server.Editor
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
 			}
-			
+
 			// Check for the hint regarding local changes that are not deployed to your local docker environment
 			codeWatcher.CheckForLocalChangesNotYetDeployed();
 			codeWatcher.CheckForMissingMongoDependenciesOnMicroservices();
@@ -409,7 +409,7 @@ namespace Beamable.Server.Editor
 
 			return true;
 		}
-		
+
 		private static Task CleanupRunningContainers()
 		{
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
@@ -423,8 +423,8 @@ namespace Beamable.Server.Editor
 					var generatorDesc = GetGeneratorDescriptor(service);
 
 					var kill = new StopImageCommand(service, true);
-					var killGenerator = new StopImageCommand(generatorDesc, true); 
-					
+					var killGenerator = new StopImageCommand(generatorDesc, true);
+
 					kill.Start();
 					killGenerator.Start();
 				}
@@ -438,7 +438,7 @@ namespace Beamable.Server.Editor
 					killTool.Start();
 				}
 			}
-			
+
 			return Task.CompletedTask;
 		}
 
