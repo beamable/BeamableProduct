@@ -875,15 +875,19 @@ public static class UnityHelper
 		var enumType = new CodeTypeReference(SanitizeClassName(name));
 
 		var toStringMethod = new CodeMemberMethod
-			{
-				Name = "ToEnumString", Attributes = MemberAttributes.Static | MemberAttributes.Public, ReturnType = new CodeTypeReference(typeof(string))
-			};
+		{
+			Name = "ToEnumString",
+			Attributes = MemberAttributes.Static | MemberAttributes.Public,
+			ReturnType = new CodeTypeReference(typeof(string))
+		};
 		toStringMethod.Parameters.Add(new CodeParameterDeclarationExpression(enumType, "val"));
 
 		var fromStringMethod = new CodeMemberMethod
-			{
-				Name = "FromEnumString", Attributes = MemberAttributes.Static | MemberAttributes.Public, ReturnType = enumType
-			};
+		{
+			Name = "FromEnumString",
+			Attributes = MemberAttributes.Static | MemberAttributes.Public,
+			ReturnType = enumType
+		};
 		fromStringMethod.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "str"));
 
 
@@ -956,7 +960,7 @@ public static class UnityHelper
 		type.Members.Add(serializeMethod);
 
 		var props = schema.Properties.ToList();
-		props.Sort( (a, b) => string.Compare(a.Key, b.Key, StringComparison.Ordinal));
+		props.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.Ordinal));
 
 		foreach (var property in props)
 		{
@@ -1155,8 +1159,8 @@ public static class UnityHelper
 					nameof(ISerializableExtension.SerializeEnum));
 
 				var extensionClass = new CodeTypeReferenceExpression($"{schema.Reference.Id}Extensions");
-				parameters.Add(new CodeMethodReferenceExpression(extensionClass,"ToEnumString"));
-				parameters.Add(new CodeMethodReferenceExpression(extensionClass,"FromEnumString"));
+				parameters.Add(new CodeMethodReferenceExpression(extensionClass, "ToEnumString"));
+				parameters.Add(new CodeMethodReferenceExpression(extensionClass, "FromEnumString"));
 
 				return true;
 			case "object" when schema.AdditionalPropertiesAllowed:
@@ -1180,7 +1184,7 @@ public static class UnityHelper
 
 				method.TypeArguments.Add(elemType);
 
-				methodExpr= method;
+				methodExpr = method;
 				return true;
 			case "array":
 				// use the array serialization

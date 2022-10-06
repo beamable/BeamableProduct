@@ -40,7 +40,7 @@ namespace Beamable.UI.Buss
 		private readonly Dictionary<string, PropertyReference> _variables = new Dictionary<string, PropertyReference>();
 
 		private readonly IVariablesProvider _variablesProvider;
-		
+
 		public VariableDatabase(IVariablesProvider variablesProvider)
 		{
 			_variablesProvider = variablesProvider;

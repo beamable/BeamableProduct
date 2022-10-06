@@ -52,7 +52,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		public virtual bool DockerRequired => true;
-		
+
 		protected bool _skipDockerCheck = false;
 
 		private Process _process;
