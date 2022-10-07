@@ -8,6 +8,9 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
+#if UNITY_2017_1_OR_NEWER && !UNITY_2019_3_OR_NEWER
+using System.Reflection;
+#endif
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -22,6 +25,7 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Toolbox.Components
 {
+	// TODO: TD213896
 	public class ToolboxActionBarVisualElement : ToolboxComponent
 	{
 		public new class UxmlFactory : UxmlFactory<ToolboxActionBarVisualElement, UxmlTraits> { }
@@ -69,7 +73,7 @@ namespace Beamable.Editor.Toolbox.Components
 			contentButton.tooltip = Tooltips.Toolbox.CONTENT;
 
 			var skinningButton = Root.Q<Button>("skinning");
-			skinningButton.clickable.clicked += BussThemeManager.Init;
+			skinningButton.clickable.clicked += ThemeManager.Init;
 			skinningButton.tooltip = Tooltips.Toolbox.THEME_MANAGER;
 
 			var globalConfigButton = Root.Q<Button>("globalConfig");
@@ -88,6 +92,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_microservicesButton.tooltip = Tooltips.Toolbox.MICROSERVICE;
 
 			var filterBox = Root.Q<SearchBarVisualElement>();
+			filterBox.SetValueWithoutNotify(Model.FilterText);
 			filterBox.OnSearchChanged += FilterBox_OnTextChanged;
 			Model.OnQueryChanged += () => { filterBox.SetValueWithoutNotify(Model.FilterText); };
 
@@ -164,6 +169,20 @@ namespace Beamable.Editor.Toolbox.Components
 				content.OnDone += () =>
 				{
 					EditorApplication.delayCall += BeamablePackages.ShowServerWindow;
+					// recompile scripts after import to make MMV2 window refresh properly
+#if UNITY_2019_3_OR_NEWER
+					EditorApplication.delayCall += UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation;
+#elif UNITY_2017_1_OR_NEWER
+					void RecompileScripts()
+					{
+						var editorAssembly = Assembly.GetAssembly(typeof(UnityEditor.Editor));
+						var editorCompilationInterfaceType = editorAssembly.GetType("UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface");
+						var dirtyAllScriptsMethod = editorCompilationInterfaceType.GetMethod("DirtyAllScripts", BindingFlags.Static | BindingFlags.Public);
+						dirtyAllScriptsMethod.Invoke(editorCompilationInterfaceType, null);
+					}
+
+					EditorApplication.delayCall += RecompileScripts;
+#endif
 					wnd.Close();
 				};
 				content.Refresh();

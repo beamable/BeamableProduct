@@ -19,14 +19,16 @@ namespace Beamable.Editor.UI.Components
 		private bool _pendingChange;
 		public string Value => _textField.value;
 		public event Action<string> OnSearchChanged;
-		public new class UxmlFactory : UxmlFactory<SearchBarVisualElement, UxmlTraits>
-		{
-		}
+
+		public new class UxmlFactory : UxmlFactory<SearchBarVisualElement, UxmlTraits> { }
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
+			{
+				name = "custom-text",
+				defaultValue = "nada"
+			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -40,7 +42,8 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		public SearchBarVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")
+		public SearchBarVisualElement() : base(
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")
 		{
 			Refresh();
 			RegisterCallback<AttachToPanelEvent>(evt =>
@@ -60,7 +63,6 @@ namespace Beamable.Editor.UI.Components
 			base.Refresh();
 			_textField = Root.Q<TextField>();
 			_textField.RegisterValueChangedCallback(Textfield_ValueChanged);
-
 		}
 
 		private void OnEditorUpdate()
@@ -69,7 +71,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				_pendingChange = false;
 				OnSearchChanged?.Invoke(_textField.value);
-
 			}
 		}
 
@@ -77,7 +78,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			_pendingChange = true;
 			_lastChangedTime = EditorApplication.timeSinceStartup;
-
 		}
 
 		public void SetValueWithoutNotify(string value)

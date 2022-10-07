@@ -65,6 +65,8 @@ namespace Beamable.Editor.UI.Model
 		public Action<ServiceManifest> OnServerManifestUpdated;
 		public Action<GetStatusResponse> OnStatusUpdated;
 
+		public List<ServiceDependencyChecksum> ServiceDependencyChecksums = new List<ServiceDependencyChecksum>();
+
 		public Promise FinishedLoading { get; private set; } = new Promise();
 
 		[NonSerialized]

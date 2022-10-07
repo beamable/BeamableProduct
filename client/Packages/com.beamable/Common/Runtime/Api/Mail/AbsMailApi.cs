@@ -1,9 +1,11 @@
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
 using Beamable.Common.Pooling;
+using Beamable.Content.Utility;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Beamable.Common.Api.Mail
 {
@@ -353,6 +355,56 @@ namespace Beamable.Common.Api.Mail
 		public string body;
 		public string expires;
 		public MailRewards rewards;
+
+		/// <summary>
+		/// Sets the mail expiration based on the iso date time format (yyyy-MM-ddTHH:mm:ssZ)
+		/// </summary>
+		/// <param name="expirationIsoDateTime"></param>
+		/// <returns></returns>
+		public MailSendEntry SetExpiration(string expirationIsoDateTime)
+		{
+			if (expirationIsoDateTime != null)
+			{
+				var date = DateTimeOffset.ParseExact(expirationIsoDateTime, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
+													 DateTimeStyles.None);
+				expires = date.ToUniversalTime().ToString(DateUtility.ISO_FORMAT);
+			}
+
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the mail expiration based on a specified unix timestamp (milliseconds)
+		/// </summary>
+		/// <param name="expirationTimestampMillis"></param>
+		/// <returns></returns>
+		public MailSendEntry SetExpiration(long expirationTimestampMillis)
+		{
+			expires = DateTimeOffset.FromUnixTimeMilliseconds(expirationTimestampMillis).ToString(DateUtility.ISO_FORMAT);
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the mail expiration based on a specified Date Time (UTC)
+		/// </summary>
+		/// <param name="expirationDateTime"></param>
+		/// <returns></returns>
+		public MailSendEntry SetExpiration(DateTimeOffset expirationDateTime)
+		{
+			expires = expirationDateTime.ToUniversalTime().ToString(DateUtility.ISO_FORMAT);
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the mail expiration based on a timespan relative to the current date time (e.g. in 10 minutes)
+		/// </summary>
+		/// <param name="expiresInTimespan"></param>
+		/// <returns></returns>
+		public MailSendEntry SetExpiresIn(TimeSpan expiresInTimespan)
+		{
+			expires = DateTimeOffset.UtcNow.Add(expiresInTimespan).ToString(DateUtility.ISO_FORMAT);
+			return this;
+		}
 	}
 
 	[Serializable]
@@ -389,6 +441,63 @@ namespace Beamable.Common.Api.Mail
 			this.acceptAttachments = acceptAttachments;
 			this.expires = expires;
 		}
+
+		public MailUpdate(long mailId, MailState state, bool acceptAttachments)
+		{
+			this.mailId = mailId;
+			this.state = state.ToString();
+			this.acceptAttachments = acceptAttachments;
+		}
+
+		/// <summary>
+		/// Sets the mail expiration based on the iso date time format (yyyy-MM-ddTHH:mm:ssZ)
+		/// </summary>
+		/// <param name="expirationIsoDateTime"></param>
+		/// <returns></returns>
+		public MailUpdate SetExpiration(string expirationIsoDateTime)
+		{
+			if (expirationIsoDateTime != null)
+			{
+				var date = DateTimeOffset.ParseExact(expirationIsoDateTime, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
+													 DateTimeStyles.None);
+				expires = date.ToUniversalTime().ToString(DateUtility.ISO_FORMAT);
+			}
+
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the mail expiration based on a specified unix timestamp (milliseconds)
+		/// </summary>
+		/// <param name="expirationTimestampMillis"></param>
+		/// <returns></returns>
+		public MailUpdate SetExpiration(long expirationTimestampMillis)
+		{
+			expires = DateTimeOffset.FromUnixTimeMilliseconds(expirationTimestampMillis).ToString(DateUtility.ISO_FORMAT);
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the mail expiration based on a specified Date Time (UTC)
+		/// </summary>
+		/// <param name="expirationDateTimeOffset"></param>
+		/// <returns></returns>
+		public MailUpdate SetExpiration(DateTimeOffset expirationDateTimeOffset)
+		{
+			expires = expirationDateTimeOffset.ToUniversalTime().ToString(DateUtility.ISO_FORMAT);
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the mail expiration based on a timespan relative to the current date time (e.g. in 10 minutes)
+		/// </summary>
+		/// <param name="expiresInTimespan"></param>
+		/// <returns></returns>
+		public MailUpdate SetExpiresIn(TimeSpan expiresInTimespan)
+		{
+			expires = DateTimeOffset.UtcNow.Add(expiresInTimespan).ToString(DateUtility.ISO_FORMAT);
+			return this;
+		}
 	}
 
 	[Serializable]
@@ -403,15 +512,35 @@ namespace Beamable.Common.Api.Mail
 	{
 		public List<MailUpdateEntry> updateMailRequests = new List<MailUpdateEntry>();
 
+		public MailUpdateRequest Add(long id, MailUpdate mailUpdate)
+		{
+			updateMailRequests.Add(new MailUpdateEntry { id = id, update = mailUpdate });
+			return this;
+		}
+
+		public MailUpdateRequest Add(long id, MailState state, bool acceptAttachments)
+		{
+			return Add(id, new MailUpdate(id, state, acceptAttachments));
+		}
+
 		public MailUpdateRequest Add(long id, MailState state, bool acceptAttachments, string expires)
 		{
-			var entry = new MailUpdateEntry
-			{
-				id = id,
-				update = new MailUpdate(id, state, acceptAttachments, expires)
-			};
-			updateMailRequests.Add(entry);
-			return this;
+			return Add(id, new MailUpdate(id, state, acceptAttachments).SetExpiration(expires));
+		}
+
+		public MailUpdateRequest Add(long id, MailState state, bool acceptAttachments, long expirationTimestampMillis)
+		{
+			return Add(id, new MailUpdate(id, state, acceptAttachments).SetExpiration(expirationTimestampMillis));
+		}
+
+		public MailUpdateRequest Add(long id, MailState state, bool acceptAttachments, DateTimeOffset expirationDateTimeOffset)
+		{
+			return Add(id, new MailUpdate(id, state, acceptAttachments).SetExpiration(expirationDateTimeOffset));
+		}
+
+		public MailUpdateRequest Add(long id, MailState state, bool acceptAttachments, TimeSpan expiresIn)
+		{
+			return Add(id, new MailUpdate(id, state, acceptAttachments).SetExpiresIn(expiresIn));
 		}
 	}
 

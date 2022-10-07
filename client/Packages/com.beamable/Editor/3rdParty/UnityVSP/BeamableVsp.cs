@@ -23,7 +23,7 @@ namespace UnityEditor.VspAttribution.Beamable
 			if (!BeamableEnvironment.IsUnityVsp) return;
 			if (string.IsNullOrEmpty(action)) return;
 
-			var cid = _requester?.AccessToken?.Cid;
+			var cid = _requester?.Cid;
 			if (string.IsNullOrEmpty(cid)) return;
 
 			VspAttribution.SendAttributionEvent(

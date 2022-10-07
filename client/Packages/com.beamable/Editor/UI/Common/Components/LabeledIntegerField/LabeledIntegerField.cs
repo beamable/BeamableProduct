@@ -90,11 +90,11 @@ namespace Beamable.Editor.UI.Components
 
 		public void Setup(string label, int value, Action onValueChanged, int minValue, int maxValue)
 		{
+			_minValue = minValue;
+			_maxValue = maxValue;
 			Label = label;
 			Value = value;
 			_onValueChanged = onValueChanged;
-			_minValue = minValue;
-			_maxValue = maxValue;
 
 			Refresh();
 		}

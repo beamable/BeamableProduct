@@ -1,6 +1,4 @@
-﻿using Beamable.UI.Buss;
-
-namespace Beamable.Editor.UI.Components
+﻿namespace Beamable.Editor.UI.Components
 {
 	public class CustomMessageBussPropertyVisualElement : MessageBussPropertyVisualElement
 	{

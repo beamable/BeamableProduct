@@ -18,6 +18,7 @@ namespace Beamable.Editor.UI.Components
 		private Label _labelComponent;
 		private ObjectField _objectFieldComponent;
 		private Type _value;
+		private Object _initialValue;
 
 		private string Label { get; set; }
 		private Type Type { get; set; }
@@ -33,18 +34,19 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent = new Label(Label) { name = "label" };
 			Root.Add(_labelComponent);
 
-			_objectFieldComponent = new ObjectField { name = "objectField" };
-			_objectFieldComponent.objectType = Type;
-			_objectFieldComponent.allowSceneObjects = false;
+			_objectFieldComponent =
+				new ObjectField { name = "objectField", objectType = Type, allowSceneObjects = false };
+			_objectFieldComponent.SetValueWithoutNotify(_initialValue);
 			_objectFieldComponent.RegisterValueChangedCallback(ValueChanged);
 			Root.Add(_objectFieldComponent);
 		}
 
-		public void Setup(string label, Type type, Action<Object> onValueChanged)
+		public void Setup(string label, Type type, Object initialValue, Action<Object> onValueChanged)
 		{
 			Label = label;
 			Type = type;
 			_onValueChanged = onValueChanged;
+			_initialValue = initialValue;
 
 			Init();
 		}
@@ -61,12 +63,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void SetValue(Object newObject)
 		{
-			_objectFieldComponent.value = newObject;
-		}
-
-		public void Reset()
-		{
-			_objectFieldComponent.value = null;
+			_objectFieldComponent.SetValueWithoutNotify(newObject);
 		}
 	}
 }

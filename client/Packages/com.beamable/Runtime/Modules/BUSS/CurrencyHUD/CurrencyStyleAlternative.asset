@@ -14,23 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _styles:
   - _properties:
-    - key: backgroundColor
-      property:
+    - _key: backgroundColor
+      _property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":0.9802927374839783,"b":0.023529410362243654,"a":1.0}}'
-    - key: roundCorners
-      property:
+    - _key: roundCorners
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":15.0}'
-    - key: shadowSoftness
-      property:
+    - _key: shadowSoftness
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":1.0}'
-    - key: shadowThreshold
-      property:
+    - _key: shadowThreshold
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":5.0}'
@@ -38,18 +38,18 @@ MonoBehaviour:
     _editMode: 0
     _showAllMode: 0
   - _properties:
-    - key: backgroundColor
-      property:
+    - _key: backgroundColor
+      _property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.023529410362243654,"g":0.1390523612499237,"b":1.0,"a":1.0}}'
-    - key: font
-      property:
+    - _key: font
+      _property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"AssetSerializationKey":-1}'
-    - key: fontSize
-      property:
+    - _key: fontSize
+      _property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":22.0}'

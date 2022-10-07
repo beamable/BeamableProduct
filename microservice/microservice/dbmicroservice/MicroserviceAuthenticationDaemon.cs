@@ -34,6 +34,11 @@ public class MicroserviceAuthenticationDaemon
 	private ulong _OutgoingRequestProcessedCounter = 0;
 
 	/// <summary>
+	/// A non thread safe utility boolean that tells us if the auth daemon is currently performing auth, or SHOULD perform auth.
+	/// </summary>
+	public bool NoPendingOrInProgressAuth => AuthorizationCounter == 0;
+
+	/// <summary>
 	/// Bumps the <see cref="_OutgoingRequestCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

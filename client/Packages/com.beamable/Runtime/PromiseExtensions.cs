@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Runtime.Collections;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
@@ -11,11 +12,11 @@ namespace Beamable
 {
 	public static class PromiseExtensions
 	{
+		private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
 
-		private static HashSet<Task> _uncaughtTasks = new HashSet<Task>();
 		public static async Task WaitForAllUncaughtHandlers()
 		{
-			var tasks = _uncaughtTasks.Where(t => t != null).ToArray();
+			var tasks = _uncaughtTasks.Select(k => k.Value).Where(t => t != null).ToArray();
 			await Task.WhenAll(tasks);
 		}
 
@@ -29,20 +30,27 @@ namespace Beamable
 
 		private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
 		{
+			var id = promise.GetHashCode();
 			// we need to wait one frame before logging anything.
 			async Task DelayedCheck()
 			{
-				await Task.Yield();
-				// await Task.Delay(10);
+				var startFrame = Time.frameCount;
+				var maxIter = 3; // TODO: really, we need a none BeamContext specific coroutine service to run this on, but then in Editor we need to proxy... Complicated...
+				while (maxIter-- > 0 && Time.frameCount == startFrame)
+				{
+					await Task.Yield();
+				}
+
 				// execute check.
 				if (!promise.HadAnyErrbacks)
 				{
 					Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
 				}
+
+				_uncaughtTasks.Remove(id);
 			}
-			var t = DelayedCheck(); // we don't want to await this call.
-			_uncaughtTasks.Add(t);
-			t.ContinueWith(_ => _uncaughtTasks.Remove(t));
+			var task = DelayedCheck(); // we don't want to await this call.
+			_uncaughtTasks.TryAdd(id, task);
 		}
 
 		/// <summary>
@@ -90,7 +98,7 @@ namespace Beamable
 
 		/// <summary>
 		/// Returns a promise configured to be attempted multiple times --- waiting for the amount of seconds defined by <paramref name="falloffSeconds"/> for each attempt. If <paramref name="maxRetries"/>
-		/// is greater than the number of items in <paramref name="falloffSeconds"/>, it will reuse the final item of the array for every attempt over the array's size.  
+		/// is greater than the number of items in <paramref name="falloffSeconds"/>, it will reuse the final item of the array for every attempt over the array's size.
 		/// </summary>
 		/// <param name="promise">The promise to recover from in case of failure.</param>
 		/// <param name="callback">A callback that returns a promise based on which attempt you are making and the error that happened in the previous attempt or original promise.</param>

@@ -1,13 +1,14 @@
-
 #mainVisualElement {
     flex-grow: 1;
     flex-direction: row;
 }
+
 #refreshButtonImg {
     width: 30px;
     height: 30px;
     align-self: center;
 }
+
 #refreshButton{
     justify-content: center;
 }
@@ -35,7 +36,6 @@
     flex-grow: 1;
 }
 
-
 /* Different button class selectors. Possibly used multiple times */
 
 .unboundedButton {
@@ -60,6 +60,7 @@
     cursor: pan;
     border-radius: 0px;
 }
+
 .unboundedButtonLabel {
     margin-top: -5px;
     margin-left: 0px;
@@ -112,25 +113,27 @@
     padding-left: 0px;
 }
 
-
 /* Different button name selectors. Used one time each */
-
 
 #dropDownImg{
     right: 0px;
     width: 18px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_dark.png")
 }
+
 #dropDownImg.hidden {
     position: absolute;
     right: 10000px;
 }
+
 #createNewButton #dropDownImg {
     height: 16px;
 }
+
 #publishButton #dropDownImg {
     align-self: stretch;
 }
+
 #publishButton {
     justify-content: center;
 }
@@ -146,6 +149,7 @@
     height: 15px;
     align-self: center;
 }
+
 Button.unity-button,
 Button {
     background-color: rgba(0,0,0,0);

@@ -6,10 +6,10 @@ on:
       - 'main'
       - 'staging'
       - 'production'
-    paths:
-      - 'client/**'
-      - 'microservice/**'
-      - 'cli/**'
+    # paths:
+    #   - 'client/**'
+    #   - 'microservice/**'
+    #   - 'cli/**'
 
 jobs:
   baseNuget:
@@ -116,6 +116,15 @@ jobs:
           - 2019.4.30f1
           - 2020.3.19f1
           - 2021.3.2f1
+        include:
+          - unityVersion: 2020.3.19f1
+            unityEmailOverride: UNITY_EMAIL_DEVOPS
+            unityPasswordOverride: UNITY_PASSWORD_DEVOPS
+            unitySerialOverride: UNITY_SERIAL_DEVOPS
+          - unityVersion: 2021.3.2f1
+            unityEmailOverride: UNITY_EMAIL_BUILD
+            unityPasswordOverride: UNITY_PASSWORD_BUILD
+            unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
       - uses: actions/checkout@v2
       - name: Login to Docker Hub
@@ -154,9 +163,9 @@ jobs:
         id: tests
         timeout-minutes: 30
         env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           customParameters: -warnaserror+
           projectPath: ${{ matrix.projectPath }}
@@ -198,6 +207,15 @@ jobs:
           - 2021.3.2f1
         projectPath:
           - client
+        include:
+          - targetPlatform: Android
+            unityEmailOverride: UNITY_EMAIL_DEVOPS
+            unityPasswordOverride: UNITY_PASSWORD_DEVOPS
+            unitySerialOverride: UNITY_SERIAL_DEVOPS
+          - targetPlatform: StandaloneOSX
+            unityEmailOverride: UNITY_EMAIL_BUILD
+            unityPasswordOverride: UNITY_PASSWORD_BUILD
+            unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
       - uses: actions/checkout@v2
         with:
@@ -256,9 +274,9 @@ jobs:
       - uses: game-ci/unity-builder@v2.0.4
         timeout-minutes: 30
         env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
@@ -285,9 +303,9 @@ jobs:
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}} --acl public-read
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
         if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/index.html)
+          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/index.html)

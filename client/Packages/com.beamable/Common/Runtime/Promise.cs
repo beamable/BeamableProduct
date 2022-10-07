@@ -1099,7 +1099,7 @@ namespace Beamable.Common
 		public PromiseBase Promise { get; }
 
 		public UncaughtPromiseException(PromiseBase promise, Exception ex) : base(
-		   $"Uncaught promise innerMsg=[{ex.Message}] ", ex)
+		   $"Uncaught promise innerMsg=[{ex.Message}] innerType=[{ex?.GetType()?.Name}] ", ex)
 		{
 			Promise = promise;
 		}
