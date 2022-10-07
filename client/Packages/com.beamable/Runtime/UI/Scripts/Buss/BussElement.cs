@@ -160,28 +160,30 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetPseudoClass(string className, bool isEnabled)
-		{
-			var changed = false;
-			if (isEnabled)
-			{
-				if (!_pseudoClasses.Contains(className))
-				{
-					_pseudoClasses.Add(className);
-					changed = true;
-				}
-			}
-			else
-			{
-				changed = _pseudoClasses.Remove(className);
-			}
-
-			if (changed)
-			{
-				Style.SetStyleAnimatedListener(ApplyStyle);
-				Style.SetPseudoStyle(className, isEnabled);
-			}
-		}
+		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// public void SetPseudoClass(string className, bool isEnabled)
+		// {
+		// 	var changed = false;
+		// 	if (isEnabled)
+		// 	{
+		// 		if (!_pseudoClasses.Contains(className))
+		// 		{
+		// 			_pseudoClasses.Add(className);
+		// 			changed = true;
+		// 		}
+		// 	}
+		// 	else
+		// 	{
+		// 		changed = _pseudoClasses.Remove(className);
+		// 	}
+		//
+		// 	if (changed)
+		// 	{
+		// 		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// 		//Style.SetStyleAnimatedListener(ApplyStyle);
+		// 		//Style.SetPseudoStyle(className, isEnabled);
+		// 	}
+		// }
 
 		#endregion
 
