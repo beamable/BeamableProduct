@@ -4,11 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [Unreleased]
+### [1.4.0]
 ### Added
 - Added `long` PlayerId version of `InviteToParty`, `PromoteToLeader` and `KickPlayer` methods of the `IPartyApi` interface.
-- Utility apis for setting expiration on Mail Update and Mail Send requests
-- `SearchStats` method can now accept criteria values for `int`, `long`, `double`, `bool`, `string`, and their associated `List<T>` types.
+- Utility APIs for setting expiration on `MailUpdate` and `MailSend` requests
 
 ### Fixed
 - ActionBarVisualElement buttons behaviour is fixed when Docker is not running.
