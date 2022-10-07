@@ -232,13 +232,6 @@ namespace Beamable.Editor.UI.Components
 			Change?.Invoke();
 		}
 
-		// TODO: restore while doing BEAM-3122
-		// public void UndoButtonClicked(MouseDownEvent evt)
-		// {
-		// 	UndoAction?.Invoke();
-		// 	Change?.Invoke();
-		// }
-
 		public List<StylePropertyModel> GetProperties(bool sort = true)
 		{
 			var models = new List<StylePropertyModel>();
