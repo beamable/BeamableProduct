@@ -20,9 +20,11 @@ namespace Beamable.UI.Buss
 		}
 
 		/// <summary>
-		/// Set all the styles in the current instance to the values from the given style.
+		/// Set all the styles in the current instance to the inheritable values from the given style.
 		/// If the current style already has assigned properties that don't exist in the next given style,
 		/// then the those properties will be removed.
+		///
+		/// https://www.w3.org/TR/CSS21/propidx.html
 		/// </summary>
 		/// <param name="other">Some other <see cref="BussStyle"/> element. </param>
 		public void Inherit(BussStyle other)
@@ -32,7 +34,11 @@ namespace Beamable.UI.Buss
 
 			foreach (var kvp in other._properties)
 			{
-				this[kvp.Key] = kvp.Value;
+				if (!BussStyle.TryGetBinding(kvp.Key, out var binding)) continue; // invalid property;
+				if (binding.Inheritable)
+				{
+					this[kvp.Key] = kvp.Value;
+				}
 			}
 			// TODO: how to clone pseudo styles?
 		}
