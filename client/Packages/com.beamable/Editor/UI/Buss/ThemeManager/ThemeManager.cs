@@ -1,6 +1,4 @@
-using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
-using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
@@ -10,17 +8,17 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class ThemeManager : BeamEditorWindow<ThemeManager>
 	{
+		private ThemeManagerBreadcrumbsVisualElement _breadcrumbs;
 		private BeamablePopupWindow _confirmationPopup;
 		private LabeledCheckboxVisualElement _filterToggle;
 		private LabeledCheckboxVisualElement _hideOverridenToggle;
 		private bool _inStyleSheetChangedLoop;
+		private ThemeManagerModel _model;
 		private NavigationVisualElement _navigationWindow;
-		private ThemeManagerBreadcrumbsVisualElement _breadcrumbs;
 		private ScrollView _scrollView;
 		private SelectedElementVisualElement _selectedElement;
 		private BussStyleListVisualElement _stylesGroup;
 		private VisualElement _windowRoot;
-		private ThemeManagerModel _model;
 
 		static ThemeManager()
 		{
@@ -71,7 +69,8 @@ namespace Beamable.Editor.UI.Buss
 			root.Clear();
 
 			VisualTreeAsset uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uxml");
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+					$"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uxml");
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			_windowRoot.name = nameof(_windowRoot);
@@ -84,18 +83,17 @@ namespace Beamable.Editor.UI.Buss
 
 			ThemeManagerActionBarVisualElement actionBar =
 				new ThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
-														   _model.ForceRefresh, _model.OnDocsButtonClicked,
-														   _model.OnSearch)
-				{ name = "actionBar" };
+				                                       _model.ForceRefresh, _model.OnDocsButtonClicked,
+				                                       _model.OnSearch) {name = "actionBar"};
 
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
 
-			_breadcrumbs = new ThemeManagerBreadcrumbsVisualElement(_model) { name = "breadcrumbs" };
+			_breadcrumbs = new ThemeManagerBreadcrumbsVisualElement(_model) {name = "breadcrumbs"};
 			_breadcrumbs.Refresh();
 			mainVisualElement.Add(_breadcrumbs);
 
-			VisualElement navigationGroup = new VisualElement { name = "navigationGroup" };
+			VisualElement navigationGroup = new VisualElement {name = "navigationGroup"};
 			mainVisualElement.Add(navigationGroup);
 
 			_navigationWindow = new NavigationVisualElement(_model);
@@ -106,8 +104,8 @@ namespace Beamable.Editor.UI.Buss
 			_selectedElement.Init();
 			mainVisualElement.Add(_selectedElement);
 
-			_scrollView = new ScrollView { name = "themeManagerContainerScrollView" };
-			_stylesGroup = new BussStyleListVisualElement(_model) { name = "stylesGroup" };
+			_scrollView = new ScrollView {name = "themeManagerContainerScrollView"};
+			_stylesGroup = new BussStyleListVisualElement(_model) {name = "stylesGroup"};
 			_stylesGroup.Init();
 			_scrollView.Add(_stylesGroup);
 
