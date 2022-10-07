@@ -83,17 +83,18 @@ namespace Beamable.Editor.UI.Buss
 
 			ThemeManagerActionBarVisualElement actionBar =
 				new ThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
-				                                       _model.ForceRefresh, _model.OnDocsButtonClicked,
-				                                       _model.OnSearch) {name = "actionBar"};
+													   _model.ForceRefresh, _model.OnDocsButtonClicked,
+													   _model.OnSearch)
+				{ name = "actionBar" };
 
 			actionBar.Init();
 			mainVisualElement.Add(actionBar);
 
-			_breadcrumbs = new ThemeManagerBreadcrumbsVisualElement(_model) {name = "breadcrumbs"};
+			_breadcrumbs = new ThemeManagerBreadcrumbsVisualElement(_model) { name = "breadcrumbs" };
 			_breadcrumbs.Refresh();
 			mainVisualElement.Add(_breadcrumbs);
 
-			VisualElement navigationGroup = new VisualElement {name = "navigationGroup"};
+			VisualElement navigationGroup = new VisualElement { name = "navigationGroup" };
 			mainVisualElement.Add(navigationGroup);
 
 			_navigationWindow = new NavigationVisualElement(_model);
@@ -104,8 +105,8 @@ namespace Beamable.Editor.UI.Buss
 			_selectedElement.Init();
 			mainVisualElement.Add(_selectedElement);
 
-			_scrollView = new ScrollView {name = "themeManagerContainerScrollView"};
-			_stylesGroup = new BussStyleListVisualElement(_model) {name = "stylesGroup"};
+			_scrollView = new ScrollView { name = "themeManagerContainerScrollView" };
+			_stylesGroup = new BussStyleListVisualElement(_model) { name = "stylesGroup" };
 			_stylesGroup.Init();
 			_scrollView.Add(_stylesGroup);
 
