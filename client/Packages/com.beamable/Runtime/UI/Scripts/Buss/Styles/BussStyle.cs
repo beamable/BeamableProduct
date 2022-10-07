@@ -10,6 +10,33 @@ namespace Beamable.UI.Buss
 		private Action _styleAnimatedAction;
 		private Dictionary<string, BussPseudoStyle> PseudoStyles { get; set; }
 
+
+		public BussStyle Copy()
+		{
+			var clone = new BussStyle();
+			clone.Inherit(this);
+
+			return clone;
+		}
+
+		/// <summary>
+		/// Set all the styles in the current instance to the values from the given style.
+		/// If the current style already has assigned properties that don't exist in the next given style,
+		/// then the those properties will be removed.
+		/// </summary>
+		/// <param name="other">Some other <see cref="BussStyle"/> element. </param>
+		public void Inherit(BussStyle other)
+		{
+			Clear(); // always clear out the style so that we start clean.
+			if (other == null) return;
+
+			foreach (var kvp in other._properties)
+			{
+				this[kvp.Key] = kvp.Value;
+			}
+			// TODO: how to clone pseudo styles?
+		}
+
 		public IBussProperty this[string key]
 		{
 			get

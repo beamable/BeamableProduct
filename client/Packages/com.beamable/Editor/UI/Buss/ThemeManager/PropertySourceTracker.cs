@@ -101,7 +101,7 @@ namespace Beamable.UI.Buss
 			if (styleSheet == null) return;
 			foreach (BussStyleRule styleRule in styleSheet.Styles)
 			{
-				if (styleRule.Selector?.CheckMatch(Element) ?? false)
+				if (styleRule.Selector?.IsElementIncludedInSelector(Element) ?? false)
 				{
 					AddStyleDescription(styleSheet, styleRule);
 				}
