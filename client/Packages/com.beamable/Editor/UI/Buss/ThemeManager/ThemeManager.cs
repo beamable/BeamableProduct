@@ -82,8 +82,8 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
 
-			BussThemeManagerActionBarVisualElement actionBar =
-				new BussThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
+			ThemeManagerActionBarVisualElement actionBar =
+				new ThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
 														   _model.ForceRefresh, _model.OnDocsButtonClicked,
 														   _model.OnSearch)
 				{ name = "actionBar" };
