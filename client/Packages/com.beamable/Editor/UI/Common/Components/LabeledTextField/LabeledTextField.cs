@@ -14,17 +14,17 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledTextField : ValidableVisualElement<string>
 	{
-		public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
-		{
-		}
+		public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits> { }
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-			{ name = "label", defaultValue = "Label" };
+			{
+				name = "label",
+				defaultValue = "Label"
+			};
 
-			readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
-			{ name = "value" };
+			readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription { name = "value" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -42,10 +42,10 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
+		public TextField TextFieldComponent { get; private set; }
 
-		private Action _onValueChanged;
 		private Label _labelComponent;
-		private TextField _textFieldComponent;
+		private Action<string> _onValueChanged;
 		private string _value;
 
 		public string Value
@@ -54,17 +54,22 @@ namespace Beamable.Editor.UI.Components
 			set
 			{
 				_value = value;
-				_textFieldComponent?.SetValueWithoutNotify(_value);
-				_onValueChanged?.Invoke();
+				TextFieldComponent?.SetValueWithoutNotify(_value);
+				_onValueChanged?.Invoke(_value);
 			}
 		}
 
 		private string Label { get; set; }
 		public bool IsDelayed { get; set; }
+		public bool IsMultiline { get; set; }
 
 		public LabeledTextField() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+		{ }
+
+		public void OverrideLabelWidth(float width)
 		{
+			_labelComponent?.style.SetWidth(width);
 		}
 
 		public override void Refresh()
@@ -74,40 +79,41 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent = Root.Q<Label>("label");
 			_labelComponent.text = Label;
 
-			_textFieldComponent = Root.Q<TextField>("textField");
-			_textFieldComponent.value = Value;
-			_textFieldComponent.isDelayed = IsDelayed;
-			_textFieldComponent.RegisterValueChangedCallback(ValueChanged);
+			TextFieldComponent = Root.Q<TextField>("textField");
+			TextFieldComponent.value = Value;
+			TextFieldComponent.isDelayed = IsDelayed;
+			TextFieldComponent.multiline = IsMultiline;
+			TextFieldComponent.RegisterValueChangedCallback(ValueChanged);
 		}
 
-		public void Setup(string label, string value, Action onValueChanged, bool isDelayed = false)
+		public void Setup(string label,
+						  string value,
+						  Action<string> onValueChanged,
+						  bool isDelayed = false,
+						  bool isMultiline = false)
 		{
 			Label = label;
 			Value = value;
 			IsDelayed = isDelayed;
+			IsMultiline = isMultiline;
 			_onValueChanged = onValueChanged;
+		}
+
+		public void SetWithoutNotify(string value)
+		{
+			_value = value;
+			TextFieldComponent?.SetValueWithoutNotify(value);
 		}
 
 		protected override void OnDestroy()
 		{
-			_textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
+			TextFieldComponent.UnregisterValueChangedCallback(ValueChanged);
 		}
 
 		private void ValueChanged(ChangeEvent<string> evt)
 		{
 			Value = evt.newValue;
 			InvokeValidationCheck(Value);
-		}
-
-		public void OverrideLabelWidth(float width)
-		{
-			_labelComponent?.style.SetWidth(width);
-		}
-
-		public void SetWithoutNotify(string value)
-		{
-			_value = value;
-			_textFieldComponent?.SetValueWithoutNotify(value);
 		}
 	}
 }

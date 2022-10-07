@@ -1,72 +1,82 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.UI.Sdf
 {
 	[Serializable]
 	public class SerializableValueObject : ISerializationCallbackReceiver
 	{
-		private object value;
-		[SerializeField]
-		private string type;
-		[SerializeField]
-		private string json;
+		private object _value;
 
-		public void Set(object value)
+		[SerializeField, FormerlySerializedAs("type")]
+		private string _type;
+
+		[SerializeField, FormerlySerializedAs("json")]
+		private string _json;
+
+		public void Set(object newValue)
 		{
-			this.value = value;
+			_value = newValue;
 		}
 
 		public object Get()
 		{
-			return value;
+			return _value;
 		}
 
 		public T Get<T>()
 		{
-			return (T)value;
+			return (T)_value;
 		}
 
 		public void OnBeforeSerialize()
 		{
-			if (value == null)
+			if (_value == null)
 			{
-				type = json = string.Empty;
+				_type = _json = string.Empty;
 			}
 			else
 			{
-				type = value.GetType().AssemblyQualifiedName;
-				json = JsonUtility.ToJson(value);
+				_type = _value.GetType().AssemblyQualifiedName;
+				_json = JsonUtility.ToJson(_value);
 			}
 		}
 
 		public void OnAfterDeserialize()
 		{
-			if (string.IsNullOrWhiteSpace(type) || string.IsNullOrWhiteSpace(json))
+			if (string.IsNullOrWhiteSpace(_type) || string.IsNullOrWhiteSpace(_json))
 			{
-				value = null;
+				_value = null;
 			}
-			var sysType = Type.GetType(type, false);
+
+			var sysType = Type.GetType(_type, false);
 			if (sysType == null)
 			{
-				value = null;
+				_value = null;
 				return;
 			}
+
 			try
 			{
-				if (value != null && value.GetType() == sysType)
+				if (_value != null && _value.GetType() == sysType)
 				{
-					JsonUtility.FromJsonOverwrite(json, value);
+					JsonUtility.FromJsonOverwrite(_json, _value);
 				}
 				else
 				{
-					value = JsonUtility.FromJson(json, sysType);
+					_value = JsonUtility.FromJson(_json, sysType);
 				}
 			}
 			catch (Exception)
 			{
-				value = null;
+				_value = null;
 			}
+		}
+
+		public void ForceSerialization()
+		{
+			OnBeforeSerialize();
 		}
 	}
 }

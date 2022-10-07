@@ -250,6 +250,40 @@ namespace Beamable
 		}
 
 		/// <summary>
+		/// A <see cref="BeamContext"/> is configured for one authorized user. 
+		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
+		///
+		/// This method will <i>create</i> new <see cref="BeamContext"/> instance using <see cref="TokenResponse"/> values
+		/// </summary>
+		/// <param name="playerCode">id for the <see cref="BeamContext"/></param>
+		/// <param name="token">Authorization token</param>
+		/// <returns>New instance of the <see cref="BeamContext"/></returns>
+		public static BeamContext CreateAuthorizedContext(string playerCode, TokenResponse token)
+		{
+			bool isDefault = string.IsNullOrWhiteSpace(playerCode);
+			if (isDefault || _playerCodeToContext.ContainsKey(playerCode))
+			{
+#if UNITY_EDITOR
+				const string log =
+					@"<b>BeamContext</b> with id <b>{0}</b> already exists. " +
+					"In order to update existing BeamContext it is recommended to use <b>" + 
+					nameof(ChangeAuthorizedPlayer) + "</b> method instead.";
+				Debug.LogError(string.Format(log, isDefault ? "Default" : playerCode));
+#endif
+				throw new BeamContextInitException(_playerCodeToContext[playerCode],
+												   new[] { new Exception($"BeamContext with \"{playerCode}\" prefix already exist.") });
+			}
+			string cid = ConfigDatabase.GetString("cid");
+			string pid = ConfigDatabase.GetString("pid");
+
+			var accessToken = new AccessToken(new AccessTokenStorage(playerCode), cid, pid, token.access_token,
+											  token.refresh_token, token.expires_in);
+			accessToken.Save();
+			return ForPlayer(playerCode);
+		}
+
+
+		/// <summary>
 		/// A <see cref="BeamContext"/> is configured for one authorized user. If you wish to change the user, you need to give it a new token.
 		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
 		///
@@ -270,6 +304,7 @@ namespace Beamable
 			// await InitStep_SaveToken();
 			await InitStep_GetUser();
 			await InitStep_StartNewSession();
+			await InitStep_StartPubnub();
 
 			OnReloadUser?.Invoke();
 
@@ -771,6 +806,8 @@ namespace Beamable
 			if (GameObject)
 			{
 				UnityEngine.Object.Destroy(GameObject);
+				_behaviour = null;
+				_gob = null;
 			}
 
 
