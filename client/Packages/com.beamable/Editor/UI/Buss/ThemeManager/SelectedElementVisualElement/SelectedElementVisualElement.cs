@@ -228,12 +228,7 @@ namespace Beamable.Editor.UI.Components
 			TextField textField = (TextField)element.Children().ToList()[1];
 			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
 			textField.isDelayed = true;
-
-#if UNITY_2018
-			textField.OnValueChanged(ClassValueChanged);
-#elif UNITY_2019_1_OR_NEWER
 			textField.RegisterValueChangedCallback(ClassValueChanged);
-#endif
 
 			void ClassValueChanged(ChangeEvent<string> evt)
 			{
@@ -241,6 +236,7 @@ namespace Beamable.Editor.UI.Components
 				_classesList.itemsSource[index] = newValue;
 				textField.SetValueWithoutNotify(newValue);
 				_model.SelectedElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
+				EditorUtility.SetDirty(_model.SelectedElement);
 				_model.ForceRefresh();
 			}
 		}
