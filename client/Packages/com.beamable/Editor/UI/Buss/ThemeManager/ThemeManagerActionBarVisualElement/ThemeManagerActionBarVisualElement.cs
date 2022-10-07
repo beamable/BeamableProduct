@@ -7,7 +7,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 namespace Beamable.Editor.UI.Buss
 {
 	// TODO: TD213896
-	public class BussThemeManagerActionBarVisualElement : BeamableBasicVisualElement
+	public class ThemeManagerActionBarVisualElement : BeamableBasicVisualElement
 	{
 		private readonly Action _onAddStyle;
 		private readonly Action _onCopy;
@@ -15,12 +15,12 @@ namespace Beamable.Editor.UI.Buss
 		private readonly Action _onDocs;
 		private readonly Action<string> _onSearch;
 
-		public BussThemeManagerActionBarVisualElement(Action onAddStyle,
+		public ThemeManagerActionBarVisualElement(Action onAddStyle,
 													  Action onCopy,
 													  Action onRefresh,
 													  Action onDocs,
 													  Action<string> onSearch) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManagerActionBarVisualElement)}/{nameof(BussThemeManagerActionBarVisualElement)}.uss")
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManagerActionBarVisualElement)}/{nameof(ThemeManagerActionBarVisualElement)}.uss")
 		{
 			_onAddStyle = onAddStyle;
 			_onCopy = onCopy;

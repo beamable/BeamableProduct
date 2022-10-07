@@ -1,7 +1,7 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using UnityEditor;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -53,27 +53,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			string FormatKey(string input)
-			{
-				for (int i = input.Length - 1; i >= 0; i--)
-				{
-					char currentChar = input[i];
-
-					if (i == 0)
-					{
-						input = Char.ToUpperInvariant(currentChar) + input.Substring(1);
-					}
-
-					if (char.IsUpper(currentChar))
-					{
-						input = input.Insert(i, " ");
-					}
-				}
-
-				return input;
-			}
-
-			_labelComponent.text = FormatKey(_model.PropertyProvider.Key);
+			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			if (_model.HasVariableConnected)
 			{

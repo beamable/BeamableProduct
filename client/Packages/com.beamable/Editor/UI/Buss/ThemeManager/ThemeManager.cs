@@ -1,6 +1,4 @@
-using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
-using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
@@ -10,17 +8,17 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class ThemeManager : BeamEditorWindow<ThemeManager>
 	{
+		private ThemeManagerBreadcrumbsVisualElement _breadcrumbs;
 		private BeamablePopupWindow _confirmationPopup;
 		private LabeledCheckboxVisualElement _filterToggle;
 		private LabeledCheckboxVisualElement _hideOverridenToggle;
 		private bool _inStyleSheetChangedLoop;
+		private ThemeManagerModel _model;
 		private NavigationVisualElement _navigationWindow;
-		private ThemeManagerBreadcrumbsVisualElement _breadcrumbs;
 		private ScrollView _scrollView;
 		private SelectedElementVisualElement _selectedElement;
 		private BussStyleListVisualElement _stylesGroup;
 		private VisualElement _windowRoot;
-		private ThemeManagerModel _model;
 
 		static ThemeManager()
 		{
@@ -40,9 +38,6 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow?.Destroy();
 			_selectedElement?.Destroy();
 			_model?.Clear();
-
-			// TODO: restore while doing BEAM-3122
-			// UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
 
 		private void OnFocus()
@@ -71,7 +66,8 @@ namespace Beamable.Editor.UI.Buss
 			root.Clear();
 
 			VisualTreeAsset uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uxml");
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+					$"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uxml");
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			_windowRoot.name = nameof(_windowRoot);
@@ -82,10 +78,10 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
 
-			BussThemeManagerActionBarVisualElement actionBar =
-				new BussThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
-														   _model.ForceRefresh, _model.OnDocsButtonClicked,
-														   _model.OnSearch)
+			ThemeManagerActionBarVisualElement actionBar =
+				new ThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
+													   _model.ForceRefresh, _model.OnDocsButtonClicked,
+													   _model.OnSearch)
 				{ name = "actionBar" };
 
 			actionBar.Init();

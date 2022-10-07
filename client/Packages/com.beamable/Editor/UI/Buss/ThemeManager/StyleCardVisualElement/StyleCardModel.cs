@@ -100,7 +100,10 @@ namespace Beamable.Editor.UI.Components
 
 				foreach (Type type in types)
 				{
-					GUIContent label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
+					GUIContent label = new GUIContent(types.Count() > 1
+														  ? ThemeManagerHelper.FormatKey(key) + "/" +
+															ThemeManagerHelper.FormatKey(type.Name)
+														  : ThemeManagerHelper.FormatKey(key));
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						StyleRule.Properties.Add(
@@ -228,13 +231,6 @@ namespace Beamable.Editor.UI.Components
 			ShowAll = !ShowAll;
 			Change?.Invoke();
 		}
-
-		// TODO: restore while doing BEAM-3122
-		// public void UndoButtonClicked(MouseDownEvent evt)
-		// {
-		// 	UndoAction?.Invoke();
-		// 	Change?.Invoke();
-		// }
 
 		public List<StylePropertyModel> GetProperties(bool sort = true)
 		{

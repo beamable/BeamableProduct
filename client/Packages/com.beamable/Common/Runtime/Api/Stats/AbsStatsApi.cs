@@ -2,6 +2,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -122,7 +123,7 @@ namespace Beamable.Common.Api.Stats
 			  {
 				  {"stat", criteria.Stat},
 				  {"rel", criteria.Rel},
-				  {"value", criteria.Value}
+				  {"value", criteria.RawValue}
 			  };
 			}
 
@@ -161,6 +162,8 @@ namespace Beamable.Common.Api.Stats
 		public long[] ids;
 	}
 
+
+
 	/// <summary>
 	/// A definition of a comparison (<see cref="Rel"/>) to be run against the specified <see cref="Stat"/>.
 	/// </summary>
@@ -189,17 +192,116 @@ namespace Beamable.Common.Api.Stats
 		/// <summary>
 		/// The RHS of the comparison.
 		/// </summary>
-		public string Value { get; }
+		[Obsolete("Value will assume that you passed a string as the value. Use the correct type accessor instead.")]
+		public string Value => TextValue;
+
+		public long LongValue => RawValue is long ? (long)RawValue : 0;
+		public bool BoolValue => RawValue is bool ? (bool)RawValue : false;
+		public double DoubleValue => RawValue is double ? (double)RawValue : 0;
+		public int IntValue => RawValue is int ? (int)RawValue : 0;
+		public string TextValue => RawValue as string;
+		public List<long> LongListValue => RawValue as List<long>;
+		public List<bool> BoolListValue => RawValue as List<bool>;
+		public List<double> DoubleListValue => RawValue as List<double>;
+		public List<int> IntListValue => RawValue as List<int>;
+		public List<string> TextListValue => RawValue as List<string>;
+
+		/// <summary>
+		/// The RHS of the comparison. This is the raw value. Use one of the following to get the typed version.
+		/// <see cref="TextValue"/>,
+		/// <see cref="DoubleValue"/>,
+		/// <see cref="BoolValue"/>,
+		/// <see cref="IntValue"/>,
+		/// <see cref="LongValue"/>,
+		/// <see cref="TextListValue"/>,
+		/// <see cref="DoubleListValue"/>,
+		/// <see cref="BoolListValue"/>,
+		/// <see cref="IntListValue"/>,
+		/// <see cref="LongListValue"/>,
+		/// </summary>
+		public object RawValue { get; }
 
 
-		/// <param name="stat"><see cref="Stat"/></param>
+		/// <param name="stat"><inheritdoc cref="Stat"/></param>
 		/// <param name="rel"><see cref="Rel"/></param>
 		/// <param name="value"><see cref="Value"/></param>
 		public Criteria(string stat, string rel, string value)
 		{
 			Stat = stat;
 			Rel = rel;
-			Value = value;
+			RawValue = value;
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, long value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value;
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, int value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value;
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, double value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value;
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, bool value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value;
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, IEnumerable<bool> value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value.ToList();
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, IEnumerable<int> value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value.ToList();
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, IEnumerable<long> value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value.ToList();
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, IEnumerable<double> value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value.ToList();
+		}
+
+		/// <inheritdoc cref="Criteria(string, string, string)"/>
+		public Criteria(string stat, string rel, IEnumerable<string> value)
+		{
+			Stat = stat;
+			Rel = rel;
+			RawValue = value.ToList();
 		}
 	}
 }

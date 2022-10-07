@@ -1,8 +1,0 @@
-#navigationGroup {
-    background-color: rgb(77, 77, 77);
-}
-
-#filterToggle > TemplateContainer > #mainVisualElement> Label {
-    font-size: 12px;
-    margin-right: 0px;
-}

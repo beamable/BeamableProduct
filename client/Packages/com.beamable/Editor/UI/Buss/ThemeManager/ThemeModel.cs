@@ -11,13 +11,13 @@ namespace Beamable.Editor.UI.Buss
 {
 	public abstract class ThemeModel
 	{
+		public event Action Change;
+
 		public enum PropertyDisplayFilter
 		{
 			All,
 			IgnoreOverridden
 		}
-
-		public event Action Change;
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
 
@@ -96,32 +96,6 @@ namespace Beamable.Editor.UI.Buss
 			AssetDatabase.SaveAssets();
 
 			Change?.Invoke();
-		}
-
-		public void OnCopyButtonClicked()
-		{
-			List<BussStyleSheet> readonlyStyles = SceneStyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
-			OpenCopyMenu(readonlyStyles);
-		}
-
-		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
-		{
-			GenericMenu context = new GenericMenu();
-			context.AddItem(new GUIContent(DUPLICATE_STYLESHEET_OPTIONS_HEADER), false, () => { });
-			context.AddSeparator(string.Empty);
-			foreach (BussStyleSheet styleSheet in bussStyleSheets)
-			{
-				context.AddItem(new GUIContent(styleSheet.name), false, () =>
-				{
-					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
-					if (window != null)
-					{
-						window.Init(styleSheet.Styles);
-					}
-				});
-			}
-
-			context.ShowAsContext();
 		}
 
 		public void OnDocsButtonClicked()

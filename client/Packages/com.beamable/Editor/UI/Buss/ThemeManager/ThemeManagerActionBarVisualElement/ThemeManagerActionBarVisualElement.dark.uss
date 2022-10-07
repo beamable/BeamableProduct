@@ -1,0 +1,23 @@
+﻿#root {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
+
+.boundedButton {
+    border-color: #383838;
+}
+
+#addStyleIcon{
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/add_stylesheet_light.png");
+}
+
+#duplicateStylesheetIcon{
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/edit_stylesheet_light.png");
+}
+
+#refreshIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/refresh_light.png");
+}
+
+#docIcon{
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/question_mark_light.png");
+}
