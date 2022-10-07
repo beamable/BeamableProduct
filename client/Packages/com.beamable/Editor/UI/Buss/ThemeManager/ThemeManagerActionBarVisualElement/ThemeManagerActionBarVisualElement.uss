@@ -60,21 +60,21 @@
     font-size: 9px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-center;
-    top: 6px;
+    top: 5px;
     margin-right: 2px;
     margin-left: 2px;
 }
 
 .iconLabelButton{
-    top: 4px;
-    width: 10px;
-    height: 12px;
+    top: 3px;
+    width: 15px;
+    height: 15px;
     align-self: center;
 }
 
 .iconButton {
     top: 8px;
-    width: 8px;
+    width: 15px;
     height: 15px;
     align-self: center;
 }
