@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -72,112 +73,6 @@ namespace Beamable.Editor.UI.Buss
 			OnHierarchyChanged();
 		}
 
-		public void OnSearch(string value)
-		{
-			Filter.CurrentFilter = value;
-			ForceRefresh();
-		}
-
-		private void OnHierarchyChanged()
-		{
-			FoundElements.Clear();
-
-			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
-			{
-				GameObject gameObject = (GameObject)foundObject;
-				if (gameObject.transform.parent == null)
-				{
-					Traverse(gameObject, 0);
-				}
-			}
-
-			ForceRefresh();
-		}
-
-		private void Traverse(GameObject gameObject, int currentLevel)
-		{
-			if (!gameObject) return;
-
-			BussElement foundComponent = gameObject.GetComponent<BussElement>();
-
-			if (foundComponent != null)
-			{
-				FoundElements.Add(foundComponent, currentLevel);
-				OnObjectRegistered(foundComponent);
-
-				foreach (Transform child in gameObject.transform)
-				{
-					Traverse(child.gameObject, currentLevel + 1);
-				}
-			}
-			else
-			{
-				foreach (Transform child in gameObject.transform)
-				{
-					Traverse(child.gameObject, currentLevel);
-				}
-			}
-		}
-
-		private void OnObjectRegistered(BussElement registeredObject)
-		{
-			registeredObject.Change += OnStyleSheetChanged;
-
-			BussStyleSheet styleSheet = registeredObject.StyleSheet;
-
-			if (styleSheet == null) return;
-
-			if (!SceneStyleSheets.Contains(styleSheet))
-			{
-				SceneStyleSheets.Add(styleSheet);
-				styleSheet.Change += OnStyleSheetChanged;
-			}
-		}
-
-		public void Clear()
-		{
-			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
-			Selection.selectionChanged -= OnSelectionChanged;
-
-			foreach (var styleSheet in SceneStyleSheets)
-			{
-				styleSheet.Change -= OnStyleSheetChanged;
-			}
-
-			SceneStyleSheets.Clear();
-
-			foreach (var element in FoundElements)
-			{
-				element.Key.Change -= OnStyleSheetChanged;
-			}
-
-			FoundElements.Clear();
-		}
-
-		private void OnStyleSheetChanged()
-		{
-			VariablesDatabase.ReconsiderAllStyleSheets();
-		}
-
-		private void OnSelectionChanged()
-		{
-			if (Selection.activeGameObject != null)
-			{
-				BussElement bussElement = Selection.activeGameObject.GetComponent<BussElement>();
-				BussElementClicked(bussElement);
-			}
-			else
-			{
-				BussElementClicked(null);
-			}
-		}
-
-		private void BussElementClicked(BussElement element)
-		{
-			SelectedElement = element;
-			ForceRefresh();
-		}
-
 		public void AddInlineProperty()
 		{
 			if (SelectedElement == null)
@@ -201,14 +96,14 @@ namespace Beamable.Editor.UI.Buss
 				SerializableValueImplementationHelper.ImplementationData data =
 					SerializableValueImplementationHelper.Get(baseType);
 				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-																   t != typeof(FractionFloatBussProperty)).ToList();
+				                                                   t != typeof(FractionFloatBussProperty)).ToList();
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						if (SelectedElement.InlineStyle.TryAddProperty(
-								key, (IBussProperty)Activator.CreateInstance(type)))
+							    key, (IBussProperty)Activator.CreateInstance(type)))
 						{
 							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 							EditorUtility.SetDirty(SelectedElement);
@@ -247,6 +142,32 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
+		public void Clear()
+		{
+			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+			Selection.selectionChanged -= OnSelectionChanged;
+
+			foreach (var styleSheet in SceneStyleSheets)
+			{
+				styleSheet.Change -= OnStyleSheetChanged;
+			}
+
+			SceneStyleSheets.Clear();
+
+			foreach (var element in FoundElements)
+			{
+				element.Key.Change -= OnStyleSheetChanged;
+			}
+
+			FoundElements.Clear();
+		}
+
+		public void OnCopyButtonClicked()
+		{
+			List<BussStyleSheet> readonlyStyles = AllStyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
+			OpenCopyMenu(readonlyStyles);
+		}
+
 		public void OnIdChanged(string value)
 		{
 			if (SelectedElement == null)
@@ -257,6 +178,12 @@ namespace Beamable.Editor.UI.Buss
 			SelectedElement.Id = BussNameUtility.CleanString(value);
 
 			EditorUtility.SetDirty(SelectedElement);
+			ForceRefresh();
+		}
+
+		public void OnSearch(string value)
+		{
+			Filter.CurrentFilter = value;
 			ForceRefresh();
 		}
 
@@ -290,6 +217,106 @@ namespace Beamable.Editor.UI.Buss
 				SelectedElement.RecalculateStyle();
 				VariablesDatabase.ReconsiderAllStyleSheets();
 				ForceRefresh();
+			}
+		}
+
+		private void BussElementClicked(BussElement element)
+		{
+			SelectedElement = element;
+			ForceRefresh();
+		}
+
+		private void OnHierarchyChanged()
+		{
+			FoundElements.Clear();
+
+			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
+			{
+				GameObject gameObject = (GameObject)foundObject;
+				if (gameObject.transform.parent == null)
+				{
+					Traverse(gameObject, 0);
+				}
+			}
+
+			ForceRefresh();
+		}
+
+		private void OnObjectRegistered(BussElement registeredObject)
+		{
+			registeredObject.Change += OnStyleSheetChanged;
+
+			BussStyleSheet styleSheet = registeredObject.StyleSheet;
+
+			if (styleSheet == null) return;
+
+			if (!SceneStyleSheets.Contains(styleSheet))
+			{
+				SceneStyleSheets.Add(styleSheet);
+				styleSheet.Change += OnStyleSheetChanged;
+			}
+		}
+
+		private void OnSelectionChanged()
+		{
+			if (Selection.activeGameObject != null)
+			{
+				BussElement bussElement = Selection.activeGameObject.GetComponent<BussElement>();
+				BussElementClicked(bussElement);
+			}
+			else
+			{
+				BussElementClicked(null);
+			}
+		}
+
+		private void OnStyleSheetChanged()
+		{
+			VariablesDatabase.ReconsiderAllStyleSheets();
+		}
+
+		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
+		{
+			GenericMenu context = new GenericMenu();
+			context.AddItem(new GUIContent(DUPLICATE_STYLESHEET_OPTIONS_HEADER), false, () => { });
+			context.AddSeparator(string.Empty);
+			foreach (BussStyleSheet styleSheet in bussStyleSheets)
+			{
+				context.AddItem(new GUIContent(styleSheet.name), false, () =>
+				{
+					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
+					if (window != null)
+					{
+						window.Init(styleSheet.Styles);
+					}
+				});
+			}
+
+			context.ShowAsContext();
+		}
+
+		private void Traverse(GameObject gameObject, int currentLevel)
+		{
+			if (!gameObject) return;
+
+			BussElement foundComponent = gameObject.GetComponent<BussElement>();
+
+			if (foundComponent != null)
+			{
+				FoundElements.Add(foundComponent, currentLevel);
+				OnObjectRegistered(foundComponent);
+
+				foreach (Transform child in gameObject.transform)
+				{
+					Traverse(child.gameObject, currentLevel + 1);
+				}
+			}
+			else
+			{
+				foreach (Transform child in gameObject.transform)
+				{
+					Traverse(child.gameObject, currentLevel);
+				}
 			}
 		}
 	}
