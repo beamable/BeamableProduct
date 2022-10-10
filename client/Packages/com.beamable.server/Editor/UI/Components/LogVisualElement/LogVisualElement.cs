@@ -262,17 +262,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void UpdateSelectedMessageText()
 		{
-			// List<string> SplitStringIntoParts(string str, int chunkSize)
-			// {
-			// 	if (string.IsNullOrWhiteSpace(str))
-			// 		return new List<string>();
-			// 	
-			// 	var result = Enumerable.Range(0, str.Length / chunkSize)
-			// 	                       .Select(i => str.Substring(i * chunkSize, chunkSize))
-			// 	                       .ToList();
-			// 	return !result.Any() ? new List<string> {str} : result;
-			// }
-			//
 			var detailText = string.Empty;
 			_paginationIndex = 0;
 			

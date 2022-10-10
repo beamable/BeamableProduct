@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Editor
 {
@@ -25,10 +26,14 @@ namespace Beamable.Editor
 		{
 			if (string.IsNullOrWhiteSpace(str))
 				return new List<string>();
-				
-			var result = Enumerable.Range(0, str.Length / chunkSize)
+
+			var fullDataChunksCount = str.Length / chunkSize;
+			var lastDataChunkSize = str.Length - (chunkSize * fullDataChunksCount);
+			var result = Enumerable.Range(0, fullDataChunksCount)
 			                       .Select(i => str.Substring(i * chunkSize, chunkSize))
 			                       .ToList();
+			
+			result.Add(str.Substring(chunkSize * fullDataChunksCount, lastDataChunkSize));
 			return !result.Any() ? new List<string> {str} : result;
 		}
 	}
