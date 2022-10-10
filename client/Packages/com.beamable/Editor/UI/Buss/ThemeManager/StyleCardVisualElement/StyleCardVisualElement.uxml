@@ -7,10 +7,11 @@
 
     <engine:VisualElement name="cardContainer">
         <engine:VisualElement name="cardHeader">
-            <engine:VisualElement name="colorBlock"/>
+            <engine:VisualElement name="foldIconParent"/>
             <engine:VisualElement name="selectorLabelParent"/>
             <engine:VisualElement name="optionsButton" class="button smallButton edit"/>
-            <engine:VisualElement name="undoButton" class="button smallButton undo"/>
+<!--            TODO: restore while doing BEAM-3122-->
+<!--            <engine:VisualElement name="undoButton" class="button smallButton undo"/>-->
             <engine:VisualElement name="cleanAllButton" class="button smallButton cleanAll"/>
         </engine:VisualElement>
 
@@ -28,9 +29,6 @@
                 <engine:VisualElement name="divider"/>
                 <engine:VisualElement name="showAllButton" class="button mediumButton headerButton">
                     <engine:TextElement text="Show All" name="showAllButtonText"/>
-                </engine:VisualElement>
-                <engine:VisualElement name="sortButton" class="button mediumButton headerButton">
-                    <engine:TextElement text="Sort"/>
                 </engine:VisualElement>
                 <engine:VisualElement name="addRuleButton" class="button smallButton add"/>
             </engine:VisualElement>

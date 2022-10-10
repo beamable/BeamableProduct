@@ -54,12 +54,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1072217791954784297}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: -765806418, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -72,6 +73,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &2036638261228961075
 GameObject:
   m_ObjectHideFlags: 0
@@ -134,6 +136,7 @@ MonoBehaviour:
   m_Material: {fileID: 2100000, guid: 025c4eae80abaa6448977ea4cdf0d0fc, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -146,7 +149,9 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
   imageType: 0
+  nineSliceSource: 0
   mode: 0
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
@@ -156,7 +161,7 @@ MonoBehaviour:
     _drawerMode: 1
   threshold: 0
   rounding: 0
-  backgroundSprite: {fileID: 0}
+  secondaryTexture: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
   outlineWidth: 0
@@ -176,6 +181,7 @@ MonoBehaviour:
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
+  isBackgroundTexMain: 0
 --- !u!114 &2516669601012151872
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -191,7 +197,9 @@ MonoBehaviour:
   _id: rankBox
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -257,6 +265,7 @@ MonoBehaviour:
   m_Material: {fileID: 2100000, guid: 025c4eae80abaa6448977ea4cdf0d0fc, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -269,7 +278,9 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
   imageType: 0
+  nineSliceSource: 0
   mode: 0
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
@@ -279,7 +290,7 @@ MonoBehaviour:
     _drawerMode: 1
   threshold: 0
   rounding: 0
-  backgroundSprite: {fileID: 0}
+  secondaryTexture: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
   outlineWidth: 0
@@ -299,6 +310,7 @@ MonoBehaviour:
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
+  isBackgroundTexMain: 0
 --- !u!114 &128048127508573319
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -314,7 +326,9 @@ MonoBehaviour:
   _id: avatarFrame
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -368,7 +382,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3615916778075815345}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: -405508275, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
@@ -382,6 +396,8 @@ MonoBehaviour:
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 1
   m_ChildControlHeight: 1
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
 --- !u!1 &7807890347717446292
 GameObject:
   m_ObjectHideFlags: 0
@@ -444,6 +460,7 @@ MonoBehaviour:
   m_Material: {fileID: 2100000, guid: 025c4eae80abaa6448977ea4cdf0d0fc, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -456,7 +473,9 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
   imageType: 0
+  nineSliceSource: 0
   mode: 0
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
@@ -466,7 +485,7 @@ MonoBehaviour:
     _drawerMode: 1
   threshold: 0
   rounding: 0
-  backgroundSprite: {fileID: 0}
+  secondaryTexture: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
   outlineWidth: 0
@@ -486,6 +505,7 @@ MonoBehaviour:
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
+  isBackgroundTexMain: 0
 --- !u!114 &7301680694132205621
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -501,7 +521,9 @@ MonoBehaviour:
   _id: scoreBox
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -567,6 +589,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -677,7 +700,9 @@ MonoBehaviour:
   _id: rankValueLabel
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -743,6 +768,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -853,7 +879,9 @@ MonoBehaviour:
   _id: playerNameLabel
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -913,7 +941,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 9045432837586729715}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1679637790, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
@@ -1009,6 +1037,7 @@ MonoBehaviour:
   m_Material: {fileID: 2100000, guid: 025c4eae80abaa6448977ea4cdf0d0fc, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1021,7 +1050,9 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
   imageType: 0
+  nineSliceSource: 0
   mode: 0
   colorRect:
     BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
@@ -1031,7 +1062,7 @@ MonoBehaviour:
     _drawerMode: 1
   threshold: 0
   rounding: 5
-  backgroundSprite: {fileID: 0}
+  secondaryTexture: {fileID: 0}
   backgroundMode: 0
   meshFrame: 2
   outlineWidth: 0
@@ -1051,6 +1082,7 @@ MonoBehaviour:
   shadowThreshold: 0
   shadowSoftness: 4
   shadowMode: 0
+  isBackgroundTexMain: 0
 --- !u!114 &4648977866180375479
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1066,11 +1098,21 @@ MonoBehaviour:
   _id: rankEntry
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
   _parent: {fileID: 0}
-  _children: []
+  _children:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!114 &8172603869501750570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1080,7 +1122,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 9045432837593568319}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1679637790, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
@@ -1147,7 +1189,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 9045432837609113087}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1679637790, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
@@ -1213,7 +1255,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 9045432837838692513}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1679637790, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
@@ -1285,6 +1327,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1395,7 +1438,9 @@ MonoBehaviour:
   _id: scoreValueLabel
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -1463,6 +1508,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1573,7 +1619,9 @@ MonoBehaviour:
   _id: 
   _classes: []
   _inlineStyle:
+    _folded: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -1587,7 +1635,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 9045432838653577710}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1679637790, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
@@ -1658,6 +1706,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []

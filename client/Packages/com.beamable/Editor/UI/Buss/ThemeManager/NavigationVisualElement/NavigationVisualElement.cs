@@ -2,15 +2,8 @@
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-#endif
-
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
-
 
 namespace Beamable.Editor.UI.Components
 {
@@ -33,12 +26,19 @@ namespace Beamable.Editor.UI.Components
 			base.Init();
 
 			VisualElement header = new VisualElement { name = "header" };
+
+			Image foldIcon = new Image { name = "foldIcon" };
+			foldIcon.AddToClassList("unfolded");
+			header.Add(foldIcon);
+
 			TextElement label = new TextElement { name = "headerLabel", text = "Navigation" };
 			header.Add(label);
 
 			header.RegisterCallback<MouseDownEvent>(evt =>
 			{
 				_hierarchyContainer.ToggleInClassList("hidden");
+				foldIcon.ToggleInClassList("unfolded");
+				foldIcon.ToggleInClassList("folded");
 			});
 
 			Root.Add(header);

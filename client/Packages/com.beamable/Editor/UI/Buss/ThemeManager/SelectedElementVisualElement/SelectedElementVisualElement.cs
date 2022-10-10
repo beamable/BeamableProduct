@@ -35,6 +35,11 @@ namespace Beamable.Editor.UI.Components
 
 			VisualElement header = new VisualElement();
 			header.AddToClassList("header");
+
+			Image foldIcon = new Image { name = "foldIcon" };
+			foldIcon.AddToClassList("unfolded");
+			header.Add(foldIcon);
+
 			TextElement label = new TextElement();
 			label.AddToClassList("headerLabel");
 			label.text = "Selected Element";
@@ -43,6 +48,8 @@ namespace Beamable.Editor.UI.Components
 			header.RegisterCallback<MouseDownEvent>(evt =>
 			{
 				_contentContainer.ToggleInClassList("hidden");
+				foldIcon.ToggleInClassList("unfolded");
+				foldIcon.ToggleInClassList("folded");
 				RefreshHeight();
 			});
 
@@ -221,12 +228,7 @@ namespace Beamable.Editor.UI.Components
 			TextField textField = (TextField)element.Children().ToList()[1];
 			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
 			textField.isDelayed = true;
-
-#if UNITY_2018
-			textField.OnValueChanged(ClassValueChanged);
-#elif UNITY_2019_1_OR_NEWER
 			textField.RegisterValueChangedCallback(ClassValueChanged);
-#endif
 
 			void ClassValueChanged(ChangeEvent<string> evt)
 			{
@@ -234,6 +236,7 @@ namespace Beamable.Editor.UI.Components
 				_classesList.itemsSource[index] = newValue;
 				textField.SetValueWithoutNotify(newValue);
 				_model.SelectedElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
+				EditorUtility.SetDirty(_model.SelectedElement);
 				_model.ForceRefresh();
 			}
 		}

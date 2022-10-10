@@ -91,11 +91,13 @@ namespace Beamable.UI.Buss
 																	  TextAlignmentOptions.TopLeft));
 
 		// Transitions
-		public static readonly PropertyBinding<IFloatBussProperty> TransitionDuration =
-			new PropertyBinding<IFloatBussProperty>("transitionDuration", new FloatBussProperty(0f));
+		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// public static readonly PropertyBinding<IFloatBussProperty> TransitionDuration =
+		// 	new PropertyBinding<IFloatBussProperty>("transitionDuration", new FloatBussProperty(0f));
 
-		public static readonly PropertyBinding<EasingBussProperty> TransitionEasing =
-			new PropertyBinding<EasingBussProperty>("transitionEasing", new EasingBussProperty(Easing.InOutQuad));
+		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// public static readonly PropertyBinding<EasingBussProperty> TransitionEasing =
+		// 	new PropertyBinding<EasingBussProperty>("transitionEasing", new EasingBussProperty(Easing.InOutQuad));
 
 		#endregion
 

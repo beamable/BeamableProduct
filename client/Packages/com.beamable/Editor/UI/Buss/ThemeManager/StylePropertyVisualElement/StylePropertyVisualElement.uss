@@ -13,6 +13,10 @@
     height: 20px;
 }
 
+CustomMessageBussPropertyVisualElement > Label {
+    font-size: 12px;
+}
+
 #value {
     justify-content: center;
     min-width: 200px;
@@ -21,6 +25,7 @@
 
 #globalVariable {
     width: 140px;
+    flex-grow: 1;
 }
 
 .dropdown {

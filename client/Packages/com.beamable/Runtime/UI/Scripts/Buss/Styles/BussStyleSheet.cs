@@ -113,7 +113,6 @@ namespace Beamable.UI.Buss
 		public void SetSortingOrder(int order)
 		{
 			_sortingOrder = order;
-			BussConfiguration.OptionalInstance.Value.RefreshDefaultStyles();
 		}
 #endif
 	}
@@ -146,9 +145,14 @@ namespace Beamable.UI.Buss
 	[Serializable]
 	public class BussStyleDescription
 	{
+		// Style card state related data
+		[SerializeField] private bool _folded;
+
 		[SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
 		[SerializeField] protected List<BussPropertyProvider> _cachedProperties = new List<BussPropertyProvider>();
 		public List<BussPropertyProvider> Properties => _properties;
+
+		public bool Folded => _folded;
 
 		public bool HasProperty(string key)
 		{
@@ -205,6 +209,11 @@ namespace Beamable.UI.Buss
 					_cachedProperties.RemoveAt(index);
 				}
 			}
+		}
+
+		public void SetFolded(bool value)
+		{
+			_folded = value;
 		}
 	}
 

@@ -50,8 +50,8 @@ namespace Beamable.Editor.UI.Components
 		private PropertySourceDatabase PropertiesDatabase { get; }
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
 		public bool IsWritable => StyleSheet.IsWritable;
+		public bool IsFolded => StyleRule.Folded;
 		public bool ShowAll { get; private set; }
-		private bool Sorted { get; set; }
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(BussStyleSheet styleSheet,
@@ -100,14 +100,21 @@ namespace Beamable.Editor.UI.Components
 
 				foreach (Type type in types)
 				{
-					GUIContent label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
+					GUIContent label = new GUIContent(types.Count() > 1
+														  ? ThemeManagerHelper.FormatKey(key) + "/" +
+															ThemeManagerHelper.FormatKey(type.Name)
+														  : ThemeManagerHelper.FormatKey(key));
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						StyleRule.Properties.Add(
 							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
+#if UNITY_EDITOR
+						EditorUtility.SetDirty(StyleSheet);
+#endif
 						AssetDatabase.SaveAssets();
 						StyleSheet.TriggerChange();
 						Change?.Invoke();
+						_globalRefresh?.Invoke();
 					});
 				}
 			}
@@ -128,6 +135,10 @@ namespace Beamable.Editor.UI.Components
 						return;
 					}
 
+#if UNITY_EDITOR
+					EditorUtility.SetDirty(StyleSheet);
+#endif
+
 					AssetDatabase.SaveAssets();
 					StyleSheet.TriggerChange();
 					Change?.Invoke();
@@ -144,6 +155,7 @@ namespace Beamable.Editor.UI.Components
 				() =>
 				{
 					StyleSheet.RemoveAllProperties(StyleRule);
+					_globalRefresh?.Invoke();
 				},
 				BeamablePopupWindow.CloseConfirmationWindow
 			);
@@ -173,6 +185,7 @@ namespace Beamable.Editor.UI.Components
 				commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.DUPLICATE, () =>
 				{
 					BussStyleSheetUtility.CopySingleStyle(StyleSheet, StyleRule);
+					_globalRefresh.Invoke();
 				}));
 			}
 
@@ -187,8 +200,8 @@ namespace Beamable.Editor.UI.Components
 									 $"{Constants.Features.Buss.MenuItems.COPY_TO}/{targetStyleSheet.name}",
 									 () =>
 									 {
-										 BussStyleSheetUtility.CopySingleStyle(
-											 targetStyleSheet, StyleRule);
+										 BussStyleSheetUtility.CopySingleStyle(targetStyleSheet, StyleRule);
+										 _globalRefresh.Invoke();
 									 }));
 				}
 			}
@@ -216,18 +229,6 @@ namespace Beamable.Editor.UI.Components
 		public void ShowAllButtonClicked(MouseDownEvent evt)
 		{
 			ShowAll = !ShowAll;
-			Change?.Invoke();
-		}
-
-		public void SortButtonClicked(MouseDownEvent evt)
-		{
-			Sorted = !Sorted;
-			Change?.Invoke();
-		}
-
-		public void UndoButtonClicked(MouseDownEvent evt)
-		{
-			UndoAction?.Invoke();
 			Change?.Invoke();
 		}
 
@@ -288,6 +289,7 @@ namespace Beamable.Editor.UI.Components
 				() =>
 				{
 					BussStyleSheetUtility.RemoveSingleStyle(StyleSheet, StyleRule);
+					_globalRefresh?.Invoke();
 				},
 				BeamablePopupWindow.CloseConfirmationWindow
 			);
@@ -313,9 +315,26 @@ namespace Beamable.Editor.UI.Components
 			{
 				IBussProperty bussProperty = propertyModel.PropertyProvider.GetProperty();
 				propertyModel.StyleSheet.RemoveStyleProperty(bussProperty, propertyModel.StyleRule);
+
+#if UNITY_EDITOR
+				EditorUtility.SetDirty(propertyModel.StyleSheet);
+#endif
+				AssetDatabase.SaveAssets();
 			}
 
 			Change?.Invoke();
+			_globalRefresh?.Invoke();
+		}
+
+		public void FoldButtonClicked(MouseDownEvent evt)
+		{
+#if UNITY_EDITOR
+			EditorUtility.SetDirty(StyleSheet);
+#endif
+
+			StyleRule.SetFolded(!StyleRule.Folded);
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
 		}
 	}
 }
