@@ -60,8 +60,8 @@ namespace Beamable.Editor.UI.Buss
 			using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
 			{
 				pooledBuilder.Builder.Append(string.IsNullOrWhiteSpace(element.Id)
-					                             ? element.GetType().Name
-					                             : AsIdSelector(element.Id));
+												 ? element.GetType().Name
+												 : AsIdSelector(element.Id));
 
 				foreach (string className in element.Classes)
 				{
