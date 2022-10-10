@@ -21,7 +21,7 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
 }
 
-#detailWindow, #logWindowHeader, #white, #clearContainer, #logListRoot {
+#detailWindow, #detailWindowBottomBar, #logWindowHeader, #white, #clearContainer, #logListRoot {
     border-color: #383838;
 }
 

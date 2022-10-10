@@ -38,6 +38,8 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     flex-direction: row;
     height: 30px;
     flex-shrink: 0;
+    margin-right: 1px;
+    margin-left: 1px;
 }
 
 #logHeader > .leftArea,

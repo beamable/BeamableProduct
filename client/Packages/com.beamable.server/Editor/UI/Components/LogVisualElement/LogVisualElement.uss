@@ -383,6 +383,9 @@ ListView ConsoleLogVisualElement:selected {
     max-height: 20px;
     padding-left: 10px;
     align-items: center;
+    margin-left: -2px;
+    margin-right: -2px;
+    border-top-width: 1px;
 }
 
 #detailWindowBottomBar > #copyTextBtn {

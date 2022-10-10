@@ -85,7 +85,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		protected override async void Build()
 		{
-			minSize = new Vector2(380, 200);
+			minSize = new Vector2(550, 200);
 
 			checkDockerPromise = new CheckDockerCommand().StartAsync();
 			await checkDockerPromise;

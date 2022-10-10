@@ -27,7 +27,7 @@
     background-color: #c3c3c3;
 }
 
-#detailWindow, #logWindowHeader, #white, #clearContainer, #logListRoot {
+#detailWindow, #detailWindowBottomBar, #logWindowHeader, #white, #clearContainer, #logListRoot {
     border-color: #9b9b9b;
 }
 
