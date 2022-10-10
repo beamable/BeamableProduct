@@ -140,6 +140,8 @@ namespace Beamable.UI.Buss
 			BussPropertyProvider provider = _properties.Find(property => property.GetProperty() == bussProperty);
 			return _properties.Remove(provider);
 		}
+
+
 	}
 
 	[Serializable]
@@ -147,13 +149,15 @@ namespace Beamable.UI.Buss
 	{
 		// Style card state related data
 		[SerializeField] private bool _folded;
+		[SerializeField] private bool _showAll;
 
 		[SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
 		[SerializeField] protected List<BussPropertyProvider> _cachedProperties = new List<BussPropertyProvider>();
 		public List<BussPropertyProvider> Properties => _properties;
 
 		public bool Folded => _folded;
-
+		public bool ShowAll => _showAll;
+		
 		public bool HasProperty(string key)
 		{
 			return _properties.Find(prop => prop.Key == key) != null;
@@ -214,6 +218,11 @@ namespace Beamable.UI.Buss
 		public void SetFolded(bool value)
 		{
 			_folded = value;
+		}
+		
+		public void SetShowAll(bool value)
+		{
+			_showAll = value;
 		}
 	}
 

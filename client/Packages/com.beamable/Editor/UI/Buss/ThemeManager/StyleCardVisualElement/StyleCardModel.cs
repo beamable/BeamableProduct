@@ -51,12 +51,11 @@ namespace Beamable.Editor.UI.Components
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
 		public bool IsWritable => StyleSheet.IsWritable;
 		public bool IsFolded => StyleRule.Folded;
-		public bool ShowAll { get; private set; }
+		public bool ShowAll => StyleRule.ShowAll;
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(BussStyleSheet styleSheet,
 							  BussStyleRule styleRule,
-							  Action onUndoAction,
 							  BussElement selectedElement,
 							  bool isSelected,
 							  VariableDatabase variablesDatabase,
@@ -67,7 +66,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
-			UndoAction = onUndoAction;
 			SelectedElement = selectedElement;
 			IsSelected = isSelected;
 			VariablesDatabase = variablesDatabase;
@@ -228,8 +226,13 @@ namespace Beamable.Editor.UI.Components
 
 		public void ShowAllButtonClicked(MouseDownEvent evt)
 		{
-			ShowAll = !ShowAll;
-			Change?.Invoke();
+#if UNITY_EDITOR
+			EditorUtility.SetDirty(StyleSheet);
+#endif
+
+			StyleRule.SetShowAll(!StyleRule.ShowAll);
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
 		}
 
 		public List<StylePropertyModel> GetProperties(bool sort = true)
