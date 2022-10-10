@@ -35,6 +35,14 @@
     border-color: rgba(141, 141, 141, 0);
 }
 
+#openDocsBtn > #btnIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local swagger doc dark.png");
+}
+
+#openScriptBtn > #btnIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/read doc dark.png");
+}
+
 #buildImage {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");
 }
@@ -78,3 +86,28 @@
 #leftDashLine, #rightDashLine {
     background-color: #4A4A4A;
 }
+
+#logHeader {
+    background-color: #dedede;
+}
+
+#logContainer {
+    background-color: #c8c8c8;
+}
+
+.MicroService_localStopped {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning light.png");
+}
+
+.MicroService_localRunning, .MicroService_localBuilding {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS running light.png");
+}
+
+.StorageObject_localStopped {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running light.png");
+}
+
+.StorageObject_localRunning, .StorageObject_localBuilding {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO running light.png");
+}
+

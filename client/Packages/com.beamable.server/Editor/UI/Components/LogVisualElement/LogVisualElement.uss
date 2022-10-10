@@ -399,10 +399,8 @@ ListView ConsoleLogVisualElement:selected {
 #paginationRange {
     width: 50px;
     -unity-text-align: middle-center;
-    color: #FFFFFF;
 }
 
 #leftArrow, #rightArrow {
     min-width: 20px;
-    
 }

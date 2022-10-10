@@ -13,8 +13,8 @@
             <engine:TextField name="nameTextField"/>
         </engine:VisualElement>
         <engine:VisualElement name="buttonsSection">
-            <beamable:PrimaryButtonVisualElement name="createBtn" text="CREATE"/>
-            <beamable:PrimaryButtonVisualElement name="cancelBtn" text="CANCEL"/>
+            <beamable:PrimaryButtonVisualElement name="createBtn" text="Create"/>
+            <beamable:PrimaryButtonVisualElement name="cancelBtn" text="Cancel"/>
         </engine:VisualElement>
     </engine:VisualElement>
     
