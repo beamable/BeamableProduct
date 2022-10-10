@@ -29,8 +29,8 @@
 }
 
 .confirmBtn {
-    border-color: #838383;
-    background-color: #383838;
+    border-color: #5d5d5d;
+    background-color: #5d5d5d;
 }
 
 .separator {
@@ -77,6 +77,14 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable L.png");
 }
 
+#openDocsBtn > #btnIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local swagger doc light.png");
+}
+
+#openScriptBtn > #btnIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/read doc light.png");
+}
+
 #buildImage {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
@@ -97,4 +105,12 @@
 
 #leftDashLine, #rightDashLine {
     background-color: #4A4A4A;
+}
+
+#logHeader {
+    background-color: #414141;
+}
+
+#logContainer {
+    background-color: #545454;
 }

@@ -375,3 +375,34 @@ ListView ConsoleLogVisualElement:selected {
     -unity-text-align: middle-left;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
+
+#detailWindowBottomBar {
+    flex-grow: 1;
+    flex-direction: row-reverse;
+    min-height: 20px;
+    max-height: 20px;
+    padding-left: 10px;
+    align-items: center;
+}
+
+#detailWindowBottomBar > #copyTextBtn {
+    min-width: 20px;
+    min-height: 20px;
+}
+
+#pagination {
+    flex-grow: 1;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#paginationRange {
+    width: 50px;
+    -unity-text-align: middle-center;
+    color: #FFFFFF;
+}
+
+#leftArrow, #rightArrow {
+    min-width: 20px;
+    
+}

@@ -3,14 +3,3 @@ RemoteStorageObjectVisualElement > TemplateContainer > #mainVisualElement,
 CreateStorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     margin-right: 10px;
 }
-
-LabeledCheckboxVisualElement #icon {
-    width: 22px;
-    height: 22px;
-}
-
-
-#serviceIcon {
-    width: 21px;
-    height: 22px;
-}

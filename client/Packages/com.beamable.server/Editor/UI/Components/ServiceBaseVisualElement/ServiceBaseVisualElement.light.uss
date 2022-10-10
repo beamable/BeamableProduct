@@ -44,7 +44,6 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/PlayButton_Active_L.png");
 }
 
-
 .localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building D.png");
 }

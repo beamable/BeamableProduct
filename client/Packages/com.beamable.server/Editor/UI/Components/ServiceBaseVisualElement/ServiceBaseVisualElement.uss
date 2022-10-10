@@ -35,48 +35,60 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 }
 
 #logHeader{
-    justify-content: space-between;
     flex-direction: row;
     height: 30px;
     flex-shrink: 0;
 }
-#logHeader > .leftArea{
-    justify-content: center;
-    padding-left: 5px;
-    flex-direction: row;
-    flex-grow: 1;
-}
+
+#logHeader > .leftArea,
 #logHeader > .rightArea {
-    margin-right: 10px;
-}
-#logHeader > LabeledCheckboxVisualElement{
-    margin-left: 2px;
-}
-#logHeader > LabeledCheckboxVisualElement #icon {
-    margin-right: 6px;
-    width: 18px;
-    height: 18px;
-}
-
-StorageObjectVisualElement #logHeader > LabeledCheckboxVisualElement,
-StorageObjectVisualElement #logHeader > .rightArea,
-MicroserviceVisualElement #logHeader > LabeledCheckboxVisualElement,
-MicroserviceVisualElement #logHeader > .rightArea {
-    width: 200px;
-}
-
-#logHeader > .rightArea{
+    flex-grow: 1;
+    flex-basis: 1;
     flex-direction: row;
+    align-items: center;
+}
+
+#logHeader > .leftArea {
+    align-content: flex-start;
+    justify-content: flex-start;
+}
+
+#logHeader > .centerArea {
+    width: 30px;
+    justify-content: center;
+    align-items: center;
+}
+
+#logHeader > .rightArea {
+    padding-right: 10px;
     align-content: flex-end;
-    align-self: stretch;
     justify-content: flex-end;
 }
+
+#serviceIcon {
+    margin-left: 5px;
+    min-width: 24px;
+    min-height: 24px;
+    height: 24px;
+    width: 24px;
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning.png");
+}
+
+#serviceName {
+    padding-left: 5px;
+    padding-right: 0px;
+    -unity-font-style: bold;
+    font-size: 13px;
+}
+
 #startBtn {
     width: 28px;
     flex-basis: auto;
-    margin-left: 10px;
-    margin-right: 10px;
     position: relative;
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-top-left-radius: 0px;
 }
 #logContainer {
     flex-grow: 1;
@@ -150,15 +162,10 @@ MicroserviceVisualElement #logHeader > .rightArea {
 .confirmBtn{
     font-size: 12px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-top-width: 1px;
-    border-right-width: 1px;
     margin-right: 0px;
     background-image: none;
     height: 23px;
     cursor: pan;
-    background-image: none;
     align-self: center;
 }
 
@@ -181,6 +188,8 @@ MicroserviceVisualElement #logHeader > .rightArea {
 }
 
 #moreBtn{
+    width: 30px;
+    height: 30px;
     -unity-slice-bottom: 0;
     -unity-slice-top: 0;
     -unity-slice-right: 0;
@@ -189,14 +198,27 @@ MicroserviceVisualElement #logHeader > .rightArea {
     border-top-width: 0px;
     border-bottom-width: 0px;
     border-left-width: 0px;
-    padding-left: 11px;
-    padding-right: 11px;
+    padding-left: 0px;
+    padding-right: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
     margin-right: 0px;
     margin-left: 0px;
     margin-bottom: 0px;
     margin-top: 0px;
+}
+
+#openDocsBtn, #openScriptBtn {
+    width: 30px;
+    height: 30px;
+    justify-content: center;
+}
+
+#openDocsBtn > #btnIcon,
+#openScriptBtn > #btnIcon {
+    width: 24px;
+    height: 24px;
+    align-self: center;
 }
 
 .hide {

@@ -17,27 +17,36 @@
 
         <engine:VisualElement name="serviceCard">
             <engine:VisualElement name="logHeader">
-                <beamable:LabeledCheckboxVisualElement name="checkbox" flip="True" flip-icon="True"/>
+                
                 <engine:VisualElement class="leftArea" name="leftArea">
+                    <engine:Image name="serviceIcon"/>
+                    <engine:Label name="serviceName"/>
                     <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
                 </engine:VisualElement>
-                <engine:Button name="startBtn" class="confirmBtn">
-                    <engine:VisualElement name="buildImage"/>
-                </engine:Button>
+                
+                <engine:VisualElement class="centerArea" name="centerArea">
+                    <engine:Button name="startBtn" class="confirmBtn noMarginNoPaddingNoBorder">
+                        <engine:VisualElement name="buildImage"/>
+                    </engine:Button>
+                </engine:VisualElement>
+                
                 <engine:VisualElement class="rightArea" name="rightArea">
-                    <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
-                    <engine:VisualElement name="remoteStatusIcon"/>
-                    <engine:VisualElement class="separator"/>
-                    <engine:VisualElement name="statusIcon"/>
+                    <engine:VisualElement name="openDocsBtn">
+                        <engine:VisualElement name="btnIcon"/>
+                    </engine:VisualElement>
+                    <engine:VisualElement name="openScriptBtn">
+                        <engine:VisualElement name="btnIcon"/>
+                    </engine:VisualElement>
                     <engine:Button name="moreBtn"/>
                 </engine:VisualElement>
+                
             </engine:VisualElement>
 
             <engine:VisualElement name="SubTitle">
                 <engine:VisualElement class="rightArea">
                 </engine:VisualElement>
             </engine:VisualElement>
-
+            
             <engine:VisualElement name="logContainer" class="--positionHidden"/>
             <beamableMS:MicroserviceVisualElementSeparator name="separator" class="--positionHidden"/>
 

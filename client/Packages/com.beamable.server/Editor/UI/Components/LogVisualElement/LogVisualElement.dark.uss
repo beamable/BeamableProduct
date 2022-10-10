@@ -1,11 +1,11 @@
 
 .squareBtn {
-    border-color: #000000;
+    border-color: #383838;
     background-color: #454545;
 }
 
 #clear {
-    border-color: #000000;
+    border-color: #383838;
     background-color: rgba(12,12,12,0);
 }
 
@@ -22,11 +22,11 @@
 }
 
 #detailWindow, #logWindowHeader, #white, #clearContainer, #logListRoot {
-    border-color: #000000;
+    border-color: #383838;
 }
 
 .confirmBtn {
-    border-color: #000000;
+    border-color: #383838;
 }
 
 .squareBtn.active {
@@ -44,4 +44,21 @@
 #info .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info_Gray.png");
 }
+
+#detailWindowBottomBar > #copyTextBtn {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/copy.png");
+}
+
+#pagination > #leftArrow {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Page Previous.png");
+}
+
+#pagination > #rightArrow {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/next.png");
+}
+
+#popupBtn {
+    background-color: #545454;
+}
+
 

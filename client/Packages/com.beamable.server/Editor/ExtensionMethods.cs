@@ -1,4 +1,7 @@
-﻿namespace Beamable.Editor
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Beamable.Editor
 {
 	public static class ExtensionMethods
 	{
@@ -16,6 +19,17 @@
 				return false;
 			outputText = $"{inputText.Substring(0, length)}...";
 			return true;
+		}
+		
+		public static List<string> SplitStringIntoParts(this string str, int chunkSize)
+		{
+			if (string.IsNullOrWhiteSpace(str))
+				return new List<string>();
+				
+			var result = Enumerable.Range(0, str.Length / chunkSize)
+			                       .Select(i => str.Substring(i * chunkSize, chunkSize))
+			                       .ToList();
+			return !result.Any() ? new List<string> {str} : result;
 		}
 	}
 }

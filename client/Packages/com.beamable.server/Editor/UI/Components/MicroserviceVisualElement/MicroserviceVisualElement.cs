@@ -54,7 +54,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
-			Root.Q("leftArea")?.RemoveFromHierarchy();
 			_startButton.clickable.clicked -= HandleStartButtonClicked;
 			_startButton.clickable.clicked += HandleStartButtonClicked;
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
@@ -91,11 +90,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected override void UpdateRemoteStatusIcon()
 		{
-			_remoteStatusIcon.ClearClassList();
-			bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
-			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			_remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
-			_remoteStatusIcon.AddToClassList(statusClassName);
+			// _remoteStatusIcon.ClearClassList();
+			// bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
+			// string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
+			// _remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
+			// _remoteStatusIcon.AddToClassList(statusClassName);
 		}
 		protected override void UpdateLocalStatus()
 		{

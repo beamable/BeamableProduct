@@ -4,11 +4,6 @@ CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
     margin-right: 10px;
 }
 
-#serviceIcon {
-    width: 15px;
-    height: 14px;
-}
-
 RemoteMicroserviceVisualElement .separator {
     width: 0px;
     height: 0px;

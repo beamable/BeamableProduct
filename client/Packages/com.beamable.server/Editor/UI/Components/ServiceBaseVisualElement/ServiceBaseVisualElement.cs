@@ -33,9 +33,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
 
 		protected LoadingBarElement _loadingBar;
-		protected VisualElement _statusIcon;
-		protected VisualElement _remoteStatusIcon;
-		protected LabeledCheckboxVisualElement _checkbox; // checkbox with icon and label
+		// protected VisualElement _statusIcon;
+		// protected VisualElement _remoteStatusIcon;
 		protected Button _moreBtn;
 		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
@@ -48,9 +47,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _foldButton;
 		private VisualElement _foldIcon;
 		private Image _serviceIcon;
-		private BeamableCheckboxVisualElement _checkboxElement; // actual checkbox
+		private Label _serviceName;
+		private VisualElement _openDocsBtn;
+		private VisualElement _openScriptBtn;
 
 		private bool _isDockerRunning;
+
 
 		public Action OnServiceStartFailed { get; set; }
 		public Action OnServiceStopFailed { get; set; }
@@ -87,14 +89,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected virtual void QueryVisualElements()
 		{
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
-			Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
 			_moreBtn = Root.Q<Button>("moreBtn");
 			_startButton = Root.Q<Button>("startBtn");
-			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
-			_statusIcon = Root.Q<VisualElement>("statusIcon");
-			_remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
+			// _statusIcon = Root.Q<VisualElement>("statusIcon");
+			// _remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
 			_header = Root.Q("logHeader");
 			_separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
 			_serviceCard = Root.Q("serviceCard");
@@ -102,6 +102,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_serviceCard.Add(_loadingBar);
 			_foldButton = Root.Q<Button>("foldButton");
 			_foldIcon = Root.Q("foldIcon");
+			_serviceIcon = Root.Q<Image>("serviceIcon");
+			_serviceName = Root.Q<Label>("serviceName");
+			_openDocsBtn = Root.Q<VisualElement>("openDocsBtn"); 
+			_openScriptBtn = Root.Q<VisualElement>("openScriptBtn"); 
 			_mainParent = _rootVisualElement.parent.parent;
 		}
 		private void InjectStyleSheets()
@@ -126,13 +130,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
 
-			_checkbox.Refresh();
-			_checkbox.SetText(Model.Name);
-			_checkbox.SetWithoutNotify(Model.IsSelected);
-			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
-			_checkboxElement = _checkbox.Q<BeamableCheckboxVisualElement>();
-			_checkbox.OnValueChanged += SelectedStatusChanged;
-			_serviceIcon = _checkbox.Q<Image>();
+			_openScriptBtn.AddManipulator(new Clickable(() => Model.OpenCode()));
+			_openDocsBtn.AddManipulator(new Clickable(() => Model.OpenDocs()));
+			
+			_serviceName.text = Model.Name;
 
 			if (_serviceIcon != null)
 			{
@@ -163,10 +164,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void UpdateCheckboxTooltip()
 		{
-			if (_checkboxElement != null)
-			{
-				_checkboxElement.tooltip = _checkboxElement.Value ? Tooltips.Microservice.DESELECT : Tooltips.Microservice.SELECT;
-			}
+			Debug.LogWarning("REMOVE IT");
 		}
 
 		private void SelectedStatusChanged(bool isSelected)
@@ -195,36 +193,36 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
 		{
-			_statusIcon.ClearClassList();
+			// _statusIcon.ClearClassList();
 			// _header.EnableInClassList("building", isBuilding);
 
-			string statusClassName;
-			string statusText;
-
-			string status = isRunning ? "localRunning" :
-				isBuilding ? "localBuilding" : "localStopped";
-			switch (status)
-			{
-				case "localRunning":
-					statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
-					statusClassName = "localRunning";
-					break;
-				case "localBuilding":
-					statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
-					statusClassName = "localBuilding";
-					break;
-				case "localStopped":
-					statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
-					statusClassName = "localStopped";
-					break;
-				default:
-					statusText = Tooltips.Microservice.ICON_DIFFERENT;
-					statusClassName = "different";
-					break;
-			}
-
-			_statusIcon.tooltip = statusText;
-			_statusIcon.AddToClassList(statusClassName);
+			// string statusClassName;
+			// string statusText;
+			//
+			// string status = isRunning ? "localRunning" :
+			// 	isBuilding ? "localBuilding" : "localStopped";
+			// switch (status)
+			// {
+			// 	case "localRunning":
+			// 		statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
+			// 		statusClassName = "localRunning";
+			// 		break;
+			// 	case "localBuilding":
+			// 		statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
+			// 		statusClassName = "localBuilding";
+			// 		break;
+			// 	case "localStopped":
+			// 		statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
+			// 		statusClassName = "localStopped";
+			// 		break;
+			// 	default:
+			// 		statusText = Tooltips.Microservice.ICON_DIFFERENT;
+			// 		statusClassName = "different";
+			// 		break;
+			// }
+			//
+			// _statusIcon.tooltip = statusText;
+			// _statusIcon.AddToClassList(statusClassName);
 			_startButton.EnableInClassList("running", isBuilding || isRunning);
 		}
 		private void OnDrag(float value)
