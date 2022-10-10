@@ -184,9 +184,6 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement.OnRefreshButtonClicked += RefreshWindowContent;
 
-			_actionBarVisualElement.OnStartAllClicked += () =>
-				_microserviceContentVisualElement.BuildAndStartAllMicroservices(_loadingBar);
-
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			if (serviceRegistry != null)
 			{

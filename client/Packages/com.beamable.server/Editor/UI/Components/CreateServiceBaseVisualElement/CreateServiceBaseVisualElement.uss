@@ -7,7 +7,6 @@ PrimaryButtonVisualElement {
 #createServiceBaseMainVisualElement {
     flex-grow: 1;
     min-height: 80px;
-    margin-top: 10px;
     margin-bottom: 20px;
     margin-left: 30px;
     margin-right: 10px;

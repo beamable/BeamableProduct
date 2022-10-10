@@ -45,7 +45,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 		}
 
-		public event Action OnStartAllClicked;
 		public event Action OnPublishClicked;
 		public event Action OnRefreshButtonClicked;
 		public event Action<ServiceType> OnCreateNewClicked;
@@ -80,7 +79,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 
 			_startAll = Root.Q<Button>("startAll");
-			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
+			// _startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
 
 			_dependencies = Root.Q<Button>("dependencies");
 			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
@@ -119,7 +118,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void UpdateButtonsState(int selectedServicesAmount, int servicesAmount)
 		{
 			bool anyModelSelected = selectedServicesAmount > 0;
-			UpdateTextButtonTexts(selectedServicesAmount == servicesAmount);
 			_startAll.SetEnabled(IsDockerActive && anyModelSelected);
 			_publish.SetEnabled(IsDockerActive && servicesAmount > 0 && HasPublishPermissions);
 			_startAll.SetEnabled(IsDockerActive);
@@ -131,12 +129,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
 			evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
-		}
-
-		private void UpdateTextButtonTexts(bool allServicesSelected)
-		{
-			var startLabel = _startAll.Q<Label>();
-			startLabel.text = allServicesSelected ? "Play all" : "Play selected";
 		}
 	}
 }
