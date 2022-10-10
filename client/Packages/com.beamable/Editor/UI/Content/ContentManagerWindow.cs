@@ -295,7 +295,7 @@ namespace Beamable.Editor.Content
 			}
 			else
 			{
-				downloadPopup.Model = _contentManager.PrepareDownloadSummary();
+				downloadPopup.Model = ContentManager.PrepareDownloadSummary();
 			}
 
 			downloadPopup.OnRefreshContentManager += () => _contentManager.RefreshWindow(true);
@@ -313,7 +313,7 @@ namespace Beamable.Editor.Content
 
 			downloadPopup.OnDownloadStarted += (summary, prog, finished) =>
 			{
-				_contentManager?.DownloadContent(summary, prog, finished).Then(_ => SoftReset());
+				ContentManager.DownloadContent(summary, prog, finished).Then(_ => SoftReset());
 			};
 
 			return downloadPopup;
@@ -322,7 +322,7 @@ namespace Beamable.Editor.Content
 		ResetContentVisualElement GetResetContentVisualElement()
 		{
 			var clearPopup = new ResetContentVisualElement();
-			clearPopup.Model = _contentManager.PrepareDownloadSummary();
+			clearPopup.Model = ContentManager.PrepareDownloadSummary();
 			clearPopup.DataModel = _contentManager.Model;
 
 			clearPopup.OnRefreshContentManager += () => _contentManager.RefreshWindow(true);
@@ -340,7 +340,7 @@ namespace Beamable.Editor.Content
 
 			clearPopup.OnDownloadStarted += (summary, prog, finished) =>
 			{
-				_contentManager?.DownloadContent(summary, prog, finished).Then(_ =>
+				ContentManager.DownloadContent(summary, prog, finished).Then(_ =>
 				{
 					_contentManager?.Model.TriggerSoftReset();
 				});

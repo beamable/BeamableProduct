@@ -75,6 +75,16 @@ namespace Beamable.Editor.Content.Models
 			ContentIO.OnManifestChanged += ManifestChanged;
 		}
 
+
+		public static async Promise<ContentDataModel> FillWithData(ContentIO contentIO)
+		{
+			var model = new ContentDataModel(contentIO);
+			var serverManifest = await contentIO.FetchManifest();
+			model.SetLocalContent(contentIO.BuildLocalManifest());
+			model.SetServerContent(serverManifest);
+			return model;
+		}
+
 		private void ManifestChanged(string manifestId)
 		{
 			OnManifestChanged?.Invoke();

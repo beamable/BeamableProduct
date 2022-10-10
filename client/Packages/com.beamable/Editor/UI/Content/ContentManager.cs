@@ -113,7 +113,7 @@ namespace Beamable.Editor.Content
 
 		}
 
-		public Promise<Unit> DownloadContent(DownloadSummary summary, HandleContentProgress progressHandler, HandleDownloadFinished finishedHandler)
+		public static Promise<Unit> DownloadContent(DownloadSummary summary, HandleContentProgress progressHandler, HandleDownloadFinished finishedHandler)
 		{
 			var de = BeamEditorContext.Default;
 			var contentDownloader = new ContentDownloader(de.Requester, de.ContentIO);
@@ -161,7 +161,7 @@ namespace Beamable.Editor.Content
 			Model.HandleContentRenamed(oldId, content, nextAssetPath);
 		}
 
-		public Promise<DownloadSummary> PrepareDownloadSummary(params ContentItemDescriptor[] filter)
+		public static Promise<DownloadSummary> PrepareDownloadSummary(params ContentItemDescriptor[] filter)
 		{
 			// no matter what, we always want a fresh manifest locally and from the server.
 			var de = BeamEditorContext.Default;

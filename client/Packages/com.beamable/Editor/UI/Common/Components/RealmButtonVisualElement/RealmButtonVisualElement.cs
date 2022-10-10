@@ -124,10 +124,39 @@ namespace Beamable.Editor.UI.Components
 			content.OnElementSelected += (realm) =>
 			{
 				var beamable = BeamEditorContext.Default;
-				beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); });
+				beamable.SwitchRealm((RealmView)realm).Then(_ =>
+				{
+					UpdateContent();
+					wnd.Close();
+				});
 			};
 			content.Refresh();
 		}
 
+		private void UpdateContent()
+		{
+			var beam = BeamEditorContext.Default;
+			void FinishedHandler(Promise<Unit> promise)
+			{
+				promise.Then(_ =>
+				{
+					ContentDataModel.FillWithData(beam.ContentIO).Then(model =>
+					{
+						model.DeleteLocalOnlyItems();
+						if(ContentManagerWindow.IsInstantiated)
+						{
+							beam.ContentIO.ContentManager.RefreshWindow(true);
+						}
+					});
+				});
+			}
+			ContentManager.PrepareDownloadSummary().Then(summary =>
+			{
+
+				ContentManager.DownloadContent(
+					summary, (progress, processed, total) => { },
+					FinishedHandler);
+			});
+		}
 	}
 }
