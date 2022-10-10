@@ -71,7 +71,6 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     min-height: 24px;
     height: 24px;
     width: 24px;
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning.png");
 }
 
 #serviceName {
@@ -252,4 +251,12 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 
 .unfoldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light_dark.png");
+}
+
+#logHeader.running {
+    background-color: #345167;
+}
+
+#logHeader.failed {
+    background-color: #5d3434;
 }

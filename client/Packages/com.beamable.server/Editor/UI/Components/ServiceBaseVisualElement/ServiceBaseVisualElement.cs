@@ -93,8 +93,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_moreBtn = Root.Q<Button>("moreBtn");
 			_startButton = Root.Q<Button>("startBtn");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
-			// _statusIcon = Root.Q<VisualElement>("statusIcon");
-			// _remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
 			_header = Root.Q("logHeader");
 			_separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
 			_serviceCard = Root.Q("serviceCard");
@@ -140,13 +138,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_serviceIcon.tooltip = Model.Descriptor.ServiceType == ServiceType.MicroService ?
 					Tooltips.Microservice.MICROSERVICE : Tooltips.Microservice.STORAGE_OBJECT;
 			}
-			UpdateCheckboxTooltip();
 
 			Model.OnLogsAttachmentChanged -= CreateLogSection;
 			Model.OnLogsAttachmentChanged += CreateLogSection;
 
 			Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
 			Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
+
+			Model.Builder.OnBuildingProgress -= HandleStartingProgress;
+			Model.Builder.OnBuildingProgress += HandleStartingProgress;
 
 			_separator.Setup(OnDrag);
 			_separator.Refresh();
@@ -162,16 +162,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateModel();
 		}
 
-		private void UpdateCheckboxTooltip()
-		{
-			Debug.LogWarning("REMOVE IT");
-		}
-
-		private void SelectedStatusChanged(bool isSelected)
-		{
-			Model.IsSelected = isSelected;
-			UpdateCheckboxTooltip();
-		}
+		private void HandleStartingProgress(int _, int __) => _header.ClearClassList();
 
 		protected abstract void UpdateRemoteStatusIcon();
 		protected virtual void UpdateButtons()
@@ -193,36 +184,36 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
 		{
-			// _statusIcon.ClearClassList();
-			// _header.EnableInClassList("building", isBuilding);
+			_serviceIcon.ClearClassList();
+			_header.EnableInClassList("building", isBuilding);
 
-			// string statusClassName;
-			// string statusText;
-			//
-			// string status = isRunning ? "localRunning" :
-			// 	isBuilding ? "localBuilding" : "localStopped";
-			// switch (status)
-			// {
-			// 	case "localRunning":
-			// 		statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
-			// 		statusClassName = "localRunning";
-			// 		break;
-			// 	case "localBuilding":
-			// 		statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
-			// 		statusClassName = "localBuilding";
-			// 		break;
-			// 	case "localStopped":
-			// 		statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
-			// 		statusClassName = "localStopped";
-			// 		break;
-			// 	default:
-			// 		statusText = Tooltips.Microservice.ICON_DIFFERENT;
-			// 		statusClassName = "different";
-			// 		break;
-			// }
-			//
-			// _statusIcon.tooltip = statusText;
-			// _statusIcon.AddToClassList(statusClassName);
+			string statusClassName;
+			string statusText;
+			
+			string status = isRunning ? "localRunning" :
+				isBuilding ? "localBuilding" : "localStopped";
+			switch (status)
+			{
+				case "localRunning":
+					statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
+					statusClassName = $"{Model.ServiceType}_localRunning";
+					break;
+				case "localBuilding":
+					statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
+					statusClassName = $"{Model.ServiceType}_localBuilding";
+					break;
+				case "localStopped":
+					statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
+					statusClassName = $"{Model.ServiceType}_localStopped";
+					break;
+				default:
+					statusText = Tooltips.Microservice.ICON_DIFFERENT;
+					statusClassName = $"{Model.ServiceType}_different";
+					break;
+			}
+			
+			_serviceIcon.tooltip = statusText;
+			_serviceIcon.AddToClassList(statusClassName);
 			_startButton.EnableInClassList("running", isBuilding || isRunning);
 		}
 		private void OnDrag(float value)
@@ -261,7 +252,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			UpdateLocalStatus();
 		}
-
+		protected void HandleProgressFinished(bool gotError) => _header.EnableInClassList("failed", gotError);
+		
 		private void CreateLogSection(bool areLogsAttached)
 		{
 			_logElement?.Destroy();
@@ -331,8 +323,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public virtual void ChangeStartButtonState(bool isOn,
 										   string enabledTooltip = null,
-										   string disabledTooltip = null
-			)
+										   string disabledTooltip = null)
 		{
 			var isAuthorized = Context.IsAuthenticated && Context.RealmSecret.HasValue;
 			if (!isAuthorized)

@@ -41,7 +41,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 			Root.Q("statusSeparator")?.RemoveFromHierarchy();
 			Root.Q("foldContainer").visible = false;
-			// _statusIcon.RemoveFromHierarchy();
 			Root.Q<VisualElement>("mainVisualElement").style.SetHeight(DEFAULT_HEADER_HEIGHT);
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
