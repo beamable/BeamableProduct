@@ -138,7 +138,6 @@ namespace Beamable.Editor.Microservice.UI
 			root.Add(_windowRoot);
 
 			bool localServicesAvailable = Model?.AllLocalServices != null;
-			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
 			int selectedServicesAmount = localServicesAvailable
 				? Model.AllLocalServices.Count(beamService => beamService.IsSelected)
 				: 0;
@@ -149,7 +148,6 @@ namespace Beamable.Editor.Microservice.UI
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue(selectedServicesAmount, localServicesAmount);
 
 			_loadingBar = root.Q<LoadingBarElement>("loadingBar");
 			_loadingBar.Hidden = true;
@@ -171,12 +169,7 @@ namespace Beamable.Editor.Microservice.UI
 				};
 			}
 
-			_microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=
-				_microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
 			_microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
-
-			_microserviceContentVisualElement.OnServiceSelectionAmountChange +=
-				_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue;
 			_microserviceContentVisualElement.OnServiceSelectionAmountChange += _actionBarVisualElement.UpdateButtonsState;
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
