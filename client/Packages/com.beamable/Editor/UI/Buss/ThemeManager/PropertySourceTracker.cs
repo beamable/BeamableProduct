@@ -126,7 +126,7 @@ namespace Beamable.UI.Buss
 				if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable) return;
 			}
 
-			var propertyReference = new PropertyReference(styleSheet, styleRule, propertyProvider);
+			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
 
 			if (!_sources.TryGetValue(key, out SourceData sourceData))
 			{
