@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -98,6 +99,7 @@ namespace Beamable.Server
 		{
 			_assemblies = assemblies.ToDictionary(a => a.Name);
 		}
+
 
 		public AssemblyDefinitionInfo Find(string assemblyName)
 		{
@@ -517,7 +519,10 @@ namespace Beamable.Server
 						totalDllReferences.Add(dllReference);
 					}
 
-					foreach (var referenceName in curr.References)
+					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
+					var info = asset.ConvertToInfo();
+
+					foreach (var referenceName in info.References)
 					{
 						try
 						{

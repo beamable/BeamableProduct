@@ -55,8 +55,6 @@ namespace Beamable.Server.Editor
 #if !BEAMABLE_DEVELOPER
 		[HideInInspector]
 #endif
-		public List<ServiceDependencyChecksum> ServiceDependencyChecksums = new List<ServiceDependencyChecksum>();
-
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
 
@@ -299,9 +297,7 @@ namespace Beamable.Server.Editor
 					var value = Microservices[currentIndex];
 					Microservices.RemoveAt(currentIndex);
 					Microservices.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
+					Save();
 				}
 			}
 			else
@@ -315,11 +311,16 @@ namespace Beamable.Server.Editor
 					var value = StorageObjects[currentIndex];
 					StorageObjects.RemoveAt(currentIndex);
 					StorageObjects.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
+					Save();
 				}
 			}
+		}
+
+		public void Save()
+		{
+			EditorUtility.SetDirty(this);
+			AssetDatabase.SaveAssets();
+			AssetDatabase.Refresh();
 		}
 
 		public void MoveIndex(string serviceName, int offset, ServiceType serviceType)

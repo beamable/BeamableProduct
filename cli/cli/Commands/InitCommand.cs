@@ -8,6 +8,7 @@ namespace cli;
 
 public class InitCommandArgs : LoginCommandArgs
 {
+	public bool selectEnvironment = false;
 }
 public class InitCommand : AppCommand<InitCommandArgs>
 {
@@ -126,21 +127,25 @@ public class InitCommand : AppCommand<InitCommandArgs>
 
 	private string GetHost(InitCommandArgs args)
 	{
-		if (!string.IsNullOrEmpty(_ctx.Host))
+		if (!string.IsNullOrEmpty(_ctx.Host) && !args.selectEnvironment)
 			return _ctx.Host;
 
+		const string prod = "prod";
+		const string staging = "staging";
+		const string dev = "dev";
+		const string custom = "custom";
 		var env = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("What Beamable [green]environment[/] would you like to use?")
-				.AddChoices("prod", "staging", "dev", "custom")
+				.AddChoices(prod, staging, dev, custom)
 		);
 
 		return (env switch
 		{
-			"dev" => Constants.PLATFORM_DEV,
-			"staging" => Constants.PLATFORM_STAGING,
-			"prod" => Constants.PLATFORM_PRODUCTION,
-			"custom" => AnsiConsole.Prompt(
+			dev => Constants.PLATFORM_DEV,
+			staging => Constants.PLATFORM_STAGING,
+			prod => Constants.PLATFORM_PRODUCTION,
+			custom => AnsiConsole.Prompt(
 				new TextPrompt<string>("Enter the Beamable platform [green]uri[/]:")
 					.PromptStyle("green")
 					.ValidationErrorMessage("[red]Not a valid uri[/]")

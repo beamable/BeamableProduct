@@ -12,7 +12,7 @@ namespace Beamable.Player
 	/// Experimental API around managing a player's party state.
 	/// </summary>
 	[Serializable]
-	public class PlayerParty : Observable<Party>, IDisposable
+	public class PlayerParty : Observable<Party>
 	{
 		public Action<PartyInviteNotification> onPlayerInvited;
 		
@@ -313,18 +313,6 @@ namespace Beamable.Player
 			}
 
 			await _partyApi.KickPlayer(State.id, playerId);
-		}
-
-		public async void Dispose()
-		{
-			_notificationService.Unsubscribe(PlayerInvitedName(), (Action<PartyInviteNotification>)PlayerInvited);
-
-			if (IsInParty)
-			{
-				await Leave();
-			}
-			
-			_state = null;
 		}
 	}
 }

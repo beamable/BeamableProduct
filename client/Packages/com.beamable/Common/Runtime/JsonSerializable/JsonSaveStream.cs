@@ -727,7 +727,7 @@ namespace Beamable.Serialization
 				{
 					StartObject();
 					{
-						// value.Serialize(this);
+						value.Serialize(this);
 					}
 					EndObject();
 					AppendSeperator();

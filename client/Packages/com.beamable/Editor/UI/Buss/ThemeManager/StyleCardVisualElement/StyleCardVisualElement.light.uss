@@ -1,13 +1,6 @@
 #cardHeader {
     color: rgb(37, 37, 37);
-}
-
-#colorBlock {
-    background-color: rgb(144,144,144);
-}
-
-#colorBlock.active {
-    background-color: rgb(0,145,255);
+    background-color: rgba(144, 144, 144, 1);
 }
 
 #sectionHeader {
@@ -66,4 +59,12 @@
 
 .cleanAll {
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/Erase_dark.png");
+}
+
+.unfolded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_dark.png");
+}
+
+.folded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_dark.png");
 }

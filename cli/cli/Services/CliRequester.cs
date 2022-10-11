@@ -50,12 +50,25 @@ public class CliRequester : IBeamableRequester
 
 		CliSerilogProvider.Instance.Debug($"RESULT: {result}");
 
+		if (!result.IsSuccessStatusCode)
+		{
+			await using Stream stream = await result.Content.ReadAsStreamAsync();
+			using var reader = new StreamReader(stream, Encoding.UTF8);
+			var rawResponse = await reader.ReadToEndAsync();
+			throw new RequesterException("Cli", method.ToReadableString(), uri, (int)result.StatusCode, rawResponse);
+		}
+
 		T parsed = default(T);
 		if (result.Content != null)
 		{
 			await using Stream stream = await result.Content.ReadAsStreamAsync();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
 			var rawResponse = await reader.ReadToEndAsync();
+
+			if (typeof(T) == typeof(string) && rawResponse is T response)
+			{
+				return response;
+			}
 			if (parser != null)
 			{
 				// if there is a custom parser, use that.
@@ -73,7 +86,27 @@ public class CliRequester : IBeamableRequester
 	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
 		bool useCache = false)
 	{
-		return CustomRequest(method, uri, body, includeAuthHeader, parser, false);
+		return CustomRequest(method, uri, body, includeAuthHeader, parser, false).
+		RecoverWith(error =>
+		{
+			switch (error)
+			{
+				// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
+				case RequesterException e when e.RequestError.error == "InvalidTokenError" || e.RequestError.error == "ExpiredTokenError":
+
+					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
+					var authService = new AuthApi(this);
+					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
+						{
+							BeamableLogger.Log($"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
+							_ctx.UpdateToken(rsp);
+							return PromiseBase.Unit;
+						})
+						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+			}
+
+			return Promise<T>.Failed(error);
+		}); ;
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string? basePath, string uri, object body = null)

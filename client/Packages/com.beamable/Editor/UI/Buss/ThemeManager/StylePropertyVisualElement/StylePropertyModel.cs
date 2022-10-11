@@ -55,8 +55,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
 		{
-			VariablesDatabase.TryGetProperty(PropertyProvider,
-											 StyleRule, out IBussProperty property,
+			VariablesDatabase.TryGetProperty(PropertyProvider, StyleRule, out IBussProperty property,
 											 out VariableDatabase.PropertyReference variableSource);
 
 			bussProperty = property;
@@ -89,7 +88,7 @@ namespace Beamable.Editor.UI.Components
 			context.ShowAsContext();
 		}
 
-		public void OnButtonClick()
+		public void OnButtonClick(MouseDownEvent mouseDownEvent)
 		{
 			if (StyleRule.TryGetCachedProperty(PropertyProvider.Key, out var property))
 			{
@@ -139,7 +138,16 @@ namespace Beamable.Editor.UI.Components
 
 			options.Clear();
 			options.Add(Constants.Features.Buss.MenuItems.NONE);
-			options.AddRange(VariablesDatabase.GetVariablesNamesOfType(baseType));
+
+			List<VariableDatabase.PropertyReference> references = VariablesDatabase.GetVariablesOfType(baseType);
+
+			foreach (VariableDatabase.PropertyReference propertyReference in references)
+			{
+				if (!options.Contains(propertyReference.Key))
+				{
+					options.Add(propertyReference.Key);
+				}
+			}
 
 			return options;
 		}
@@ -157,6 +165,37 @@ namespace Beamable.Editor.UI.Components
 			var value = options.FindIndex(option => option.Equals(variableName));
 			value = Mathf.Clamp(value, 0, options.Count - 1);
 			return value;
+		}
+
+		public void OnPropertyChanged(IBussProperty property)
+		{
+			if (StyleRule != null)
+			{
+				if (!StyleRule.HasProperty(PropertyProvider.Key))
+				{
+					StyleRule.TryAddProperty(PropertyProvider.Key, property);
+				}
+				else
+				{
+					StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
+				}
+			}
+
+			if (StyleSheet != null)
+			{
+#if UNITY_EDITOR
+				EditorUtility.SetDirty(StyleSheet);
+#endif
+				StyleSheet.TriggerChange();
+			}
+
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
+
+			if (InlineStyleOwner != null)
+			{
+				InlineStyleOwner.RecalculateStyle();
+			}
 		}
 	}
 }

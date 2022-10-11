@@ -30,14 +30,33 @@ namespace Beamable.Editor.UI.Buss
 			{
 				foreach (var rule in styleSheet.Styles)
 				{
-					if (CardFilter(rule, selectedElement))
+					if (!CardFilter(rule, selectedElement))
+					{
+						continue;
+					}
+
+					if (!rules.ContainsKey(rule))
 					{
 						rules.Add(rule, styleSheet);
 					}
 				}
 			}
 
-			return rules;
+			if (selectedElement == null)
+			{
+				return rules;
+			}
+
+			// Reversing filtered rules order
+			Dictionary<BussStyleRule, BussStyleSheet> sortedRules = new Dictionary<BussStyleRule, BussStyleSheet>();
+
+			for (int i = rules.Count - 1; i >= 0; i--)
+			{
+				var pair = rules.ElementAt(i);
+				sortedRules.Add(pair.Key, pair.Value);
+			}
+
+			return sortedRules;
 		}
 
 		private bool CardFilter(BussStyleRule styleRule, BussElement selectedElement)
@@ -45,9 +64,10 @@ namespace Beamable.Editor.UI.Buss
 			bool contains = styleRule.Properties.Any(property => property.Key.ToLower().Contains(CurrentFilter)) ||
 							styleRule.Properties.Count == 0;
 
+
 			return selectedElement == null
 				? CurrentFilter.Length <= 0 || contains
-				: styleRule.Selector != null && styleRule.Selector.CheckMatch(selectedElement) && contains;
+				: styleRule.Selector != null && styleRule.Selector.IsElementIncludedInSelector(selectedElement) && contains;
 		}
 	}
 }

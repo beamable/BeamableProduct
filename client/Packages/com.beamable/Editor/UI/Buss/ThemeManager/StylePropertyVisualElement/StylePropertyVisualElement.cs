@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using UnityEngine.UIElements;
@@ -52,9 +53,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			_labelComponent.text = _model.PropertyProvider.Key;
-
-
+			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			if (_model.HasVariableConnected)
 			{
@@ -70,16 +69,15 @@ namespace Beamable.Editor.UI.Components
 					CreateEditableField(property);
 					SetVariableSource(variableSource);
 				}
-
-				SetupVariableConnection();
 			}
 			else
 			{
 				CreateEditableField(_model.PropertyProvider.GetProperty());
 			}
 
+			SetupVariableConnection();
 			CheckIfIsReadOnly();
-			EnableInClassList("overriden", _model.IsOverriden);
+			EnableInClassList("overriden", _model.IsOverriden && _model.IsInStyle);
 		}
 
 		protected override void OnDestroy()
@@ -101,12 +99,16 @@ namespace Beamable.Editor.UI.Components
 		{
 			_propertyVisualElement = property.GetVisualElement();
 
-			if (_propertyVisualElement != null)
+			if (_propertyVisualElement == null)
 			{
-				_propertyVisualElement.UpdatedStyleSheet = _model.IsInStyle ? _model.StyleSheet : null;
-				_propertyVisualElement.Init();
-				_valueParent.Add(_propertyVisualElement);
+				return;
 			}
+
+			_propertyVisualElement.OnValueChanged = _model.OnPropertyChanged;
+
+			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
+			_propertyVisualElement.Init();
+			_valueParent.Add(_propertyVisualElement);
 		}
 
 		private void CreateMessageField(VariableDatabase.PropertyValueState result)
@@ -115,18 +117,18 @@ namespace Beamable.Editor.UI.Components
 			switch (result)
 			{
 				case VariableDatabase.PropertyValueState.NoResult:
-					text = "Select variable.";
+					text = "Select variable";
 					break;
 				case VariableDatabase.PropertyValueState.VariableLoopDetected:
-					text = "Variable loop-reference detected.";
+					text = "Variable loop-reference detected";
 					break;
 				default:
-					text = "Something is wrong here.";
+					text = "Something is wrong here";
 					break;
 			}
 
 			_valueParent.Clear();
-			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text);
+			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text) { name = "message" };
 			_valueParent.Add(_propertyVisualElement);
 			_propertyVisualElement.Init();
 		}
@@ -140,7 +142,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				_variableConnection = new VariableConnectionVisualElement(_model);
 				_variableConnection.Init();
-				_variableConnection.Refresh();
 				_variableParent.Add(_variableConnection);
 			}
 		}

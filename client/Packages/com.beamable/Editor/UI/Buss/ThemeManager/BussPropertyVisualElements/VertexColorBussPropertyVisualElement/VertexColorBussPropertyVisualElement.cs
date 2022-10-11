@@ -193,6 +193,7 @@ namespace Beamable.Editor.UI.Components
 			DrawerMode = mode;
 			rect = ColorRect.EditorHelper.WithDrawerMode(rect, (int)DrawerMode);
 			Property.ColorRect = rect;
+			OnValueChanged?.Invoke(Property);
 			TriggerStyleSheetChange();
 		}
 

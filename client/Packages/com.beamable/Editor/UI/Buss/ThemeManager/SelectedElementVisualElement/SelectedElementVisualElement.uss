@@ -34,7 +34,7 @@
 }
 
 #space {
-    width: 160px;
+    width: 140px;
 }
 
 #classElement {
@@ -81,7 +81,7 @@ LabeledTextField #label {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     font-size: 12px;
-    width: 160px;
+    width: 140px;
 }
 
 LabeledObjectField {
@@ -95,10 +95,9 @@ LabeledObjectField #label {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     font-size: 12px;
-    width: 160px;
+    width: 140px;
 }
 
 .hidden{
     display: none;
 }
-
