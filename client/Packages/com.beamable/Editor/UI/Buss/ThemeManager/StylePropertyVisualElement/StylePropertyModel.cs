@@ -35,13 +35,13 @@ namespace Beamable.Editor.UI.Components
 			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key);
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
-								  BussStyleRule styleRule,
-								  BussPropertyProvider propertyProvider,
-								  VariableDatabase variablesDatabase,
-								  PropertySourceTracker propertySourceTracker,
-								  BussElement inlineStyleOwner,
-								  Action<string> removePropertyAction,
-								  Action globalRefresh)
+		                          BussStyleRule styleRule,
+		                          BussPropertyProvider propertyProvider,
+		                          VariableDatabase variablesDatabase,
+		                          PropertySourceTracker propertySourceTracker,
+		                          BussElement inlineStyleOwner,
+		                          Action<string> removePropertyAction,
+		                          Action globalRefresh)
 		{
 			_removePropertyAction = removePropertyAction;
 			_globalRefresh = globalRefresh;
@@ -56,7 +56,7 @@ namespace Beamable.Editor.UI.Components
 		public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
 		{
 			VariablesDatabase.TryGetProperty(PropertyProvider, StyleRule, out IBussProperty property,
-											 out VariableDatabase.PropertyReference variableSource);
+			                                 out VariableDatabase.PropertyReference variableSource);
 
 			bussProperty = property;
 			propertyReference = variableSource;
@@ -138,7 +138,16 @@ namespace Beamable.Editor.UI.Components
 
 			options.Clear();
 			options.Add(Constants.Features.Buss.MenuItems.NONE);
-			options.AddRange(VariablesDatabase.GetVariablesNamesOfType(baseType));
+
+			List<VariableDatabase.PropertyReference> references = VariablesDatabase.GetVariablesOfType(baseType);
+
+			foreach (VariableDatabase.PropertyReference propertyReference in references)
+			{
+				if (!options.Contains(propertyReference.Key))
+				{
+					options.Add(propertyReference.Key);
+				}
+			}
 
 			return options;
 		}
@@ -172,7 +181,6 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-
 			if (StyleSheet != null)
 			{
 #if UNITY_EDITOR
@@ -188,7 +196,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				InlineStyleOwner.RecalculateStyle();
 			}
-
 		}
 	}
 }
