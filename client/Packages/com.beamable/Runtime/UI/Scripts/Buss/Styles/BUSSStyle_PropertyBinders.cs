@@ -152,7 +152,7 @@ namespace Beamable.UI.Buss
 
 			private static HashSet<string> _keyControler = new HashSet<string>();
 
-			internal PropertyBinding(string key, T defaultValue, bool inheritable=false)
+			internal PropertyBinding(string key, T defaultValue, bool inheritable = false)
 			{
 				Key = key;
 				DefaultValue = defaultValue;

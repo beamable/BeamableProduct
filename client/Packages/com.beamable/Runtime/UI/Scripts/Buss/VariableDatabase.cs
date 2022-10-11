@@ -17,9 +17,9 @@ namespace Beamable.UI.Buss
 			public PropertyReference() { }
 
 			public PropertyReference(string key,
-			                         BussStyleSheet styleSheet,
-			                         BussStyleRule styleRule,
-			                         BussPropertyProvider propertyProvider)
+									 BussStyleSheet styleSheet,
+									 BussStyleRule styleRule,
+									 BussPropertyProvider propertyProvider)
 			{
 				HashKey = Animator.StringToHash(key);
 				Key = key;
@@ -67,7 +67,7 @@ namespace Beamable.UI.Buss
 
 			var data = new PropertyReference(key, null, null, null);
 			_variables.Add(data);
-			return new List<PropertyReference> {data};
+			return new List<PropertyReference> { data };
 		}
 
 		public List<PropertyReference> GetVariablesOfType(Type baseType)
@@ -90,9 +90,9 @@ namespace Beamable.UI.Buss
 		}
 
 		public void TryGetProperty(BussPropertyProvider basePropertyProvider,
-		                           BussStyleDescription styleRule,
-		                           out IBussProperty result,
-		                           out PropertyReference variablePropertyReference)
+								   BussStyleDescription styleRule,
+								   out IBussProperty result,
+								   out PropertyReference variablePropertyReference)
 		{
 			if (!basePropertyProvider.HasVariableReference)
 			{
@@ -102,7 +102,7 @@ namespace Beamable.UI.Buss
 			}
 
 			FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-			                     styleRule, out result, out variablePropertyReference);
+								 styleRule, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -139,9 +139,9 @@ namespace Beamable.UI.Buss
 		/// It can search for end value recursively.
 		/// </summary>
 		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-		                                                BussStyleDescription styleRule,
-		                                                out IBussProperty result,
-		                                                out PropertyReference propertyReference)
+														BussStyleDescription styleRule,
+														out IBussProperty result,
+														out PropertyReference propertyReference)
 		{
 			result = null;
 			propertyReference = new PropertyReference(string.Empty, null, null, null);
