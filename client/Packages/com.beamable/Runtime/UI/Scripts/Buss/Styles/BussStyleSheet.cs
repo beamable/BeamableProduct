@@ -157,7 +157,7 @@ namespace Beamable.UI.Buss
 
 		public bool Folded => _folded;
 		public bool ShowAll => _showAll;
-		
+
 		public bool HasProperty(string key)
 		{
 			return _properties.Find(prop => prop.Key == key) != null;
@@ -219,7 +219,7 @@ namespace Beamable.UI.Buss
 		{
 			_folded = value;
 		}
-		
+
 		public void SetShowAll(bool value)
 		{
 			_showAll = value;
