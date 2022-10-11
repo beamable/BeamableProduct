@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
@@ -7,16 +8,21 @@ namespace Beamable.UI.Buss
 	{
 		public class PropertyReference
 		{
+			public readonly int HashKey;
+			public readonly string Key;
 			public readonly BussPropertyProvider PropertyProvider;
 			public readonly BussStyleRule StyleRule;
 			public readonly BussStyleSheet StyleSheet;
 
 			public PropertyReference() { }
 
-			public PropertyReference(BussStyleSheet styleSheet,
-									 BussStyleRule styleRule,
-									 BussPropertyProvider propertyProvider)
+			public PropertyReference(string key,
+			                         BussStyleSheet styleSheet,
+			                         BussStyleRule styleRule,
+			                         BussPropertyProvider propertyProvider)
 			{
+				HashKey = Animator.StringToHash(key);
+				Key = key;
 				StyleSheet = styleSheet;
 				StyleRule = styleRule;
 				PropertyProvider = propertyProvider;
@@ -32,12 +38,13 @@ namespace Beamable.UI.Buss
 		{
 			NoResult,
 			SingleResult,
+			MultipleResults,
 			VariableLoopDetected
 		}
 
 		private readonly List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private readonly HashSet<string> _usedVariableNames = new HashSet<string>();
-		private readonly Dictionary<string, PropertyReference> _variables = new Dictionary<string, PropertyReference>();
+		private readonly List<PropertyReference> _variables = new List<PropertyReference>();
 
 		private readonly IVariablesProvider _variablesProvider;
 
@@ -46,49 +53,29 @@ namespace Beamable.UI.Buss
 			_variablesProvider = variablesProvider;
 		}
 
-		public IBussProperty GetVariable(string key)
+		public List<PropertyReference> GetVariableData(string key)
 		{
-			ReconsiderAllStyleSheets();
-			var variableData = GetVariableData(key);
-			return variableData.PropertyProvider.GetProperty();
-		}
+			var hash = Animator.StringToHash(key);
 
-		public PropertyReference GetVariableData(string key)
-		{
-			if (_variables.TryGetValue(key, out var value))
+			List<PropertyReference> propertyReferences =
+				_variables.FindAll(prop => prop.HashKey == hash);
+
+			if (propertyReferences.Count != 0)
 			{
-				return value;
+				return propertyReferences;
 			}
 
-			var data = new PropertyReference();
-			_variables[key] = data;
-			return data;
+			var data = new PropertyReference(key, null, null, null);
+			_variables.Add(data);
+			return new List<PropertyReference> {data};
 		}
 
-		public IEnumerable<string> GetVariableNames()
+		public List<PropertyReference> GetVariablesOfType(Type baseType)
 		{
-			ReconsiderAllStyleSheets();
-			return _variables.Keys;
-		}
+			List<PropertyReference> propertyReferences =
+				_variables.FindAll(prop => baseType.IsInstanceOfType(prop.PropertyProvider.GetProperty()));
 
-		public IEnumerable<string> GetVariablesNamesOfType(Type baseType)
-		{
-			List<string> variablesNames = new List<string>();
-
-			foreach (var pair in _variables)
-			{
-				if (baseType.IsInstanceOfType(pair.Value.PropertyProvider.GetProperty()))
-				{
-					variablesNames.Add(pair.Key);
-				}
-			}
-
-			return variablesNames;
-		}
-
-		public bool HasVariable(string key)
-		{
-			return _variables.TryGetValue(key, out _);
+			return propertyReferences;
 		}
 
 		public void ReconsiderAllStyleSheets()
@@ -103,19 +90,19 @@ namespace Beamable.UI.Buss
 		}
 
 		public void TryGetProperty(BussPropertyProvider basePropertyProvider,
-								   BussStyleDescription styleRule,
-								   out IBussProperty result,
-								   out PropertyReference variablePropertyReference)
+		                           BussStyleDescription styleRule,
+		                           out IBussProperty result,
+		                           out PropertyReference variablePropertyReference)
 		{
 			if (!basePropertyProvider.HasVariableReference)
 			{
-				variablePropertyReference = new PropertyReference(null, null, null);
+				variablePropertyReference = new PropertyReference(string.Empty, null, null, null);
 				result = basePropertyProvider.GetProperty();
 				return;
 			}
 
 			FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-								 styleRule, out result, out variablePropertyReference);
+			                     styleRule, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -135,7 +122,7 @@ namespace Beamable.UI.Buss
 					{
 						if (propertyProvider.IsVariable)
 						{
-							_variables.Add(propertyProvider.Key, new PropertyReference(sheet, rule, propertyProvider));
+							_variables.Add(new PropertyReference(propertyProvider.Key, sheet, rule, propertyProvider));
 						}
 					}
 				}
@@ -152,12 +139,12 @@ namespace Beamable.UI.Buss
 		/// It can search for end value recursively.
 		/// </summary>
 		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-														BussStyleDescription styleRule,
-														out IBussProperty result,
-														out PropertyReference propertyReference)
+		                                                BussStyleDescription styleRule,
+		                                                out IBussProperty result,
+		                                                out PropertyReference propertyReference)
 		{
 			result = null;
-			propertyReference = new PropertyReference(null, null, null);
+			propertyReference = new PropertyReference(string.Empty, null, null, null);
 			PropertyValueState state;
 
 			if (_usedVariableNames.Contains(variableProperty.VariableName)) // check if we are not in infinite loop
@@ -177,11 +164,15 @@ namespace Beamable.UI.Buss
 			{
 				var variableData = GetVariableData(variableProperty.VariableName);
 
-				if (variableData != null)
+				if (variableData.Count == 1)
 				{
 					state = PropertyValueState.SingleResult;
-					propertyReference = variableData;
+					propertyReference = variableData[0];
 					result = propertyReference.PropertyProvider.GetProperty();
+				}
+				else if (variableData.Count > 1)
+				{
+					state = PropertyValueState.MultipleResults;
 				}
 				else
 				{
