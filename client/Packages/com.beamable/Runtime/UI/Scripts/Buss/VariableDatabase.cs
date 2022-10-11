@@ -67,10 +67,7 @@ namespace Beamable.UI.Buss
 
 			var data = new PropertyReference(key, null, null, null);
 			_variables.Add(data);
-			
-			GetVariableData(key);
-
-			return propertyReferences;
+			return new List<PropertyReference> {data};
 		}
 
 		public List<PropertyReference> GetVariablesOfType(Type baseType)
