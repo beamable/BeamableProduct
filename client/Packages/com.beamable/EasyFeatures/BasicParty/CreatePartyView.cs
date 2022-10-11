@@ -40,17 +40,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected IDependencies System;
 		protected bool CreateNewParty;
 
-		[Header("Callbacks")]
-		public UnityEvent OnCreatePartyRequestSent;
-		public UnityEvent OnCreatePartyResponseReceived;
-		public UnityEvent CancelButtonClicked;
-
 		public bool IsVisible
 		{
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-
+		
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -64,6 +59,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 
 			CreateNewParty = !Context.Party.IsInParty;
+			System.MaxPlayers = CreateNewParty ? 0 : Context.Party.MaxSize;
 			HeaderText.text = CreateNewParty ? "CREATE" : "SETTINGS";
 			PartyIdObject.gameObject.SetActive(!CreateNewParty);
 			PartyIdInputField.text = CreateNewParty ? "" : Context.Party.Id;
@@ -116,7 +112,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				System.MaxPlayers = 0;
 			}
-
+			
 			ValidateNextButton();
 		}
 
@@ -136,7 +132,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				FeatureControl.OpenJoinView();
 			}
-
+			
 			FeatureControl.OpenPartyView();
 		}
 
@@ -145,13 +141,14 @@ namespace Beamable.EasyFeatures.BasicParty
 			if (Context.Party.IsInParty)
 			{
 				// update party settings
+				await Context.Party.Update(System.PartyRestriction, System.MaxPlayers);
 			}
 			else
 			{
 				// show loading
-				await Context.Party.Create(System.PartyRestriction);
+				await Context.Party.Create(System.PartyRestriction, System.MaxPlayers);
 			}
-
+			
 			FeatureControl.OpenPartyView();
 		}
 	}
