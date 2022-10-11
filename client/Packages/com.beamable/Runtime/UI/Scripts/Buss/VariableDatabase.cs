@@ -50,15 +50,6 @@ namespace Beamable.UI.Buss
 			_variablesProvider = variablesProvider;
 		}
 
-		// public IBussProperty GetVariable(string key)
-		// {
-		// 	ReconsiderAllStyleSheets();
-		// 	
-		// 	// FindVariableEndValue()
-		// 	// var variableData = GetVariableData(key);
-		// 	// return variableData.PropertyProvider.GetProperty();
-		// }
-
 		public List<PropertyReference> GetVariableData(string key)
 		{
 			List<PropertyReference> propertyReferences = _variables.FindAll(prop => prop.Key == key);
@@ -74,20 +65,13 @@ namespace Beamable.UI.Buss
 
 			return propertyReferences;
 		}
-		
-		public IEnumerable<string> GetVariablesNamesOfType(Type baseType)
+
+		public List<PropertyReference> GetVariablesOfType(Type baseType)
 		{
-			List<string> variablesNames = new List<string>();
+			List<PropertyReference> propertyReferences =
+				_variables.FindAll(prop => baseType.IsInstanceOfType(prop.PropertyProvider.GetProperty()));
 
-			foreach (var propertyReference in _variables)
-			{
-				if (baseType.IsInstanceOfType(propertyReference.PropertyProvider.GetProperty()))
-				{
-					variablesNames.Add(propertyReference.Key);
-				}
-			}
-
-			return variablesNames;
+			return propertyReferences;
 		}
 
 		public void ReconsiderAllStyleSheets()
@@ -114,7 +98,7 @@ namespace Beamable.UI.Buss
 			}
 
 			FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-			                                                               styleRule, out result, out variablePropertyReference);
+			                     styleRule, out result, out variablePropertyReference);
 		}
 
 		private void AddStyleSheet(BussStyleSheet sheet)
@@ -190,17 +174,6 @@ namespace Beamable.UI.Buss
 				{
 					state = PropertyValueState.NoResult;
 				}
-
-				// if (variableData != null)
-				// {
-				// 	state = PropertyValueState.SingleResult;
-				// 	propertyReference = variableData;
-				// 	result = propertyReference.PropertyProvider.GetProperty();
-				// }
-				// else
-				// {
-				// 	state = PropertyValueState.NoResult;
-				// }
 			}
 
 			if (result != null && result is VariableProperty nestedVariableProperty)

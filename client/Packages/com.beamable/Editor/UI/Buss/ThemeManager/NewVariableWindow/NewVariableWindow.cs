@@ -7,12 +7,10 @@ namespace Beamable.Editor.UI.Buss
 	public class NewVariableWindow : WindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
 		private Action<string, IBussProperty> _onPropertyCreated;
-		private VariableDatabase _variablesDatabase;
 
-		public void Init(Action<string, IBussProperty> onPropertyCreated, VariableDatabase variablesDatabase)
+		public void Init(Action<string, IBussProperty> onPropertyCreated)
 		{
 			_onPropertyCreated = onPropertyCreated;
-			_variablesDatabase = variablesDatabase;
 
 			titleContent = new GUIContent("New Variable Window");
 			minSize = new Vector2(720, 400);
@@ -21,6 +19,6 @@ namespace Beamable.Editor.UI.Buss
 
 			Refresh();
 		}
-		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_onPropertyCreated, _variablesDatabase);
+		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_onPropertyCreated);
 	}
 }

@@ -138,7 +138,7 @@ namespace Beamable.Editor.UI.Buss
 						VariablesDatabase.ReconsiderAllStyleSheets();
 						ForceRefresh();
 					}
-				}, VariablesDatabase);
+				});
 			}
 		}
 

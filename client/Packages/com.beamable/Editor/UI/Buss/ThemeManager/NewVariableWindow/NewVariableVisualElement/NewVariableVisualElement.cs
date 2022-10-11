@@ -34,12 +34,10 @@ namespace Beamable.Editor.UI.Buss
 		// Numbers and special characters are not valid
 		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
 
-		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated,
-										VariableDatabase variablesDatabase) : base(
+		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
 			_onPropertyCreated = onPropertyCreated;
-			// _variablesDatabase = variablesDatabase;
 		}
 
 		private readonly Dictionary<string, IBussProperty> _typesDict = new Dictionary<string, IBussProperty>
@@ -65,8 +63,6 @@ namespace Beamable.Editor.UI.Buss
 		};
 
 		private PrimaryButtonVisualElement _confirmButton;
-		// private List<string> _reservedVariableNames = new List<string>();
-		// private readonly VariableDatabase _variablesDatabase;
 
 		public override void Refresh()
 		{
@@ -99,8 +95,6 @@ namespace Beamable.Editor.UI.Buss
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += NewVariableWindow.CloseWindow;
 
-			// _reservedVariableNames = _variablesDatabase.GetVariableNames().Select(x => x.Substring(2)).ToList();
-
 			OnValidate(String.Empty);
 		}
 
@@ -132,18 +126,6 @@ namespace Beamable.Editor.UI.Buss
 				message = "Variable name can contain only letters";
 				return false;
 			}
-
-			// if (_reservedVariableNames.Count != 0)
-			// {
-			// 	if (variableName.StartsWith("--"))
-			// 		variableName = variableName.Substring(2);
-			//
-			// 	if (_reservedVariableNames.Contains(variableName))
-			// 	{
-			// 		message = "Variable with same name already exists";
-			// 		return false;
-			// 	}
-			// }
 
 			return true;
 		}
