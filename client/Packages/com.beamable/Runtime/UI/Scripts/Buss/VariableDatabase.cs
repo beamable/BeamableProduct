@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
@@ -7,6 +8,7 @@ namespace Beamable.UI.Buss
 	{
 		public class PropertyReference
 		{
+			public readonly int HashKey;
 			public readonly string Key;
 			public readonly BussPropertyProvider PropertyProvider;
 			public readonly BussStyleRule StyleRule;
@@ -19,6 +21,7 @@ namespace Beamable.UI.Buss
 			                         BussStyleRule styleRule,
 			                         BussPropertyProvider propertyProvider)
 			{
+				HashKey = Animator.StringToHash(key);
 				Key = key;
 				StyleSheet = styleSheet;
 				StyleRule = styleRule;
@@ -52,7 +55,8 @@ namespace Beamable.UI.Buss
 
 		public List<PropertyReference> GetVariableData(string key)
 		{
-			List<PropertyReference> propertyReferences = _variables.FindAll(prop => prop.Key == key);
+			List<PropertyReference> propertyReferences =
+				_variables.FindAll(prop => prop.HashKey == Animator.StringToHash(key));
 
 			if (propertyReferences.Count != 0)
 			{
