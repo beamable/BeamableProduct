@@ -55,7 +55,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				return;
 			}
-			
+
 			Run();
 		}
 
@@ -88,24 +88,24 @@ namespace Beamable.EasyFeatures.BasicParty
 			await Context.Party.Join(partyId.ToString());
 			OpenPartyView();
 		}
-		
+
 		private View TypeToViewEnum(Type type)
 		{
 			if (type == typeof(CreatePartyView))
 			{
 				return View.Create;
 			}
-			
+
 			if (type == typeof(InvitePlayersView))
 			{
 				return View.Invite;
 			}
-			
+
 			if (type == typeof(BasicPartyView))
 			{
 				return View.Party;
 			}
-			
+
 			if (type == typeof(JoinPartyView))
 			{
 				return View.Join;
@@ -120,21 +120,21 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				return;
 			}
-			
+
 			OpenView(View.Party);
 		}
-		
+
 		// when party data is provided the view turns to settings
 		public void OpenCreatePartyView()
 		{
 			OpenView(View.Create);
 		}
-		
+
 		public void OpenInviteView()
 		{
 			OpenView(View.Invite);
 		}
-		
+
 		public void OpenJoinView()
 		{
 			OpenView(View.Join);
@@ -144,12 +144,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (_currentView != null)
 			{
-				_currentView.IsVisible = false;	
+				_currentView.IsVisible = false;
 			}
-			
+
 			_currentView = views[view];
 			_currentView.IsVisible = true;
-			
+
 			await PartyViewGroup.Enrich();
 		}
 
