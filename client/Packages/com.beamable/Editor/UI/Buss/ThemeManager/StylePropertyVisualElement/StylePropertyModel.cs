@@ -160,19 +160,35 @@ namespace Beamable.Editor.UI.Components
 
 		public void OnPropertyChanged(IBussProperty property)
 		{
-			if (!StyleRule.HasProperty(PropertyProvider.Key))
+			if (StyleRule != null)
 			{
-				StyleRule.TryAddProperty(PropertyProvider.Key, property);
-			}
-			else
-			{
-				StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
+				if (!StyleRule.HasProperty(PropertyProvider.Key))
+				{
+					StyleRule.TryAddProperty(PropertyProvider.Key, property);
+				}
+				else
+				{
+					StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
+				}
 			}
 
+
+			if (StyleSheet != null)
+			{
 #if UNITY_EDITOR
-			EditorUtility.SetDirty(StyleSheet);
-			AssetDatabase.SaveAssets();
+				EditorUtility.SetDirty(StyleSheet);
 #endif
+				StyleSheet.TriggerChange();
+			}
+
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
+
+			if (InlineStyleOwner != null)
+			{
+				InlineStyleOwner.RecalculateStyle();
+			}
+
 		}
 	}
 }

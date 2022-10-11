@@ -37,10 +37,10 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public event Action Change;
+		private readonly ThemeModel.PropertyDisplayFilter _currentDisplayFilter;
+		private readonly Action _globalRefresh;
 
 		private readonly PropertyComparer _propertyComparer = new PropertyComparer();
-		private readonly Action _globalRefresh;
-		private readonly ThemeModel.PropertyDisplayFilter _currentDisplayFilter;
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -51,13 +51,11 @@ namespace Beamable.Editor.UI.Components
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
 		public bool IsWritable => StyleSheet.IsWritable;
 		public bool IsFolded => StyleRule.Folded;
-		public bool ShowAll { get; private set; }
-		private bool Sorted { get; set; }
+		public bool ShowAll => StyleRule.ShowAll;
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(BussStyleSheet styleSheet,
 							  BussStyleRule styleRule,
-							  Action onUndoAction,
 							  BussElement selectedElement,
 							  bool isSelected,
 							  VariableDatabase variablesDatabase,
@@ -68,7 +66,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
-			UndoAction = onUndoAction;
 			SelectedElement = selectedElement;
 			IsSelected = isSelected;
 			VariablesDatabase = variablesDatabase;
@@ -101,7 +98,10 @@ namespace Beamable.Editor.UI.Components
 
 				foreach (Type type in types)
 				{
-					GUIContent label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
+					GUIContent label = new GUIContent(types.Count() > 1
+														  ? ThemeManagerHelper.FormatKey(key) + "/" +
+															ThemeManagerHelper.FormatKey(type.Name)
+														  : ThemeManagerHelper.FormatKey(key));
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						StyleRule.Properties.Add(
@@ -159,6 +159,45 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow.ShowConfirmationUtility(CLEAR_ALL_PROPERTIES_HEADER, confirmationPopup, null);
+		}
+
+		public void FoldButtonClicked(MouseDownEvent evt)
+		{
+#if UNITY_EDITOR
+			EditorUtility.SetDirty(StyleSheet);
+#endif
+
+			StyleRule.SetFolded(!StyleRule.Folded);
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
+		}
+
+		public List<StylePropertyModel> GetProperties(bool sort = true)
+		{
+			var models = new List<StylePropertyModel>();
+
+			foreach (string key in BussStyle.Keys)
+			{
+				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
+									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
+
+				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
+												   PropertiesDatabase.GetTracker(SelectedElement),
+												   null, RemovePropertyClicked, _globalRefresh);
+
+				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
+				{
+					models.Add(model);
+				}
+			}
+
+			if (sort)
+			{
+				models.Sort(_propertyComparer);
+			}
+
+			models.AddRange(GetVariables());
+			return models;
 		}
 
 		public void OptionsButtonClicked(MouseDownEvent evt)
@@ -226,48 +265,13 @@ namespace Beamable.Editor.UI.Components
 
 		public void ShowAllButtonClicked(MouseDownEvent evt)
 		{
-			ShowAll = !ShowAll;
-			Change?.Invoke();
-		}
+#if UNITY_EDITOR
+			EditorUtility.SetDirty(StyleSheet);
+#endif
 
-		public void SortButtonClicked(MouseDownEvent evt)
-		{
-			Sorted = !Sorted;
-			Change?.Invoke();
-		}
-
-		public void UndoButtonClicked(MouseDownEvent evt)
-		{
-			UndoAction?.Invoke();
-			Change?.Invoke();
-		}
-
-		public List<StylePropertyModel> GetProperties(bool sort = true)
-		{
-			var models = new List<StylePropertyModel>();
-
-			foreach (string key in BussStyle.Keys)
-			{
-				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
-									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
-
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-												   PropertiesDatabase.GetTracker(SelectedElement),
-												   null, RemovePropertyClicked, _globalRefresh);
-
-				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
-				{
-					models.Add(model);
-				}
-			}
-
-			if (sort)
-			{
-				models.Sort(_propertyComparer);
-			}
-
-			models.AddRange(GetVariables());
-			return models;
+			StyleRule.SetShowAll(!StyleRule.ShowAll);
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
 		}
 
 		private List<StylePropertyModel> GetVariables()
@@ -288,23 +292,6 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			return variables;
-		}
-
-		private void RemoveStyleClicked()
-		{
-			BeamablePopupWindow.CloseConfirmationWindow();
-
-			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				DELETE_STYLE_MESSAGE,
-				() =>
-				{
-					BussStyleSheetUtility.RemoveSingleStyle(StyleSheet, StyleRule);
-					_globalRefresh?.Invoke();
-				},
-				BeamablePopupWindow.CloseConfirmationWindow
-			);
-
-			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup, null);
 		}
 
 		private void RemovePropertyClicked(string propertyKey)
@@ -336,15 +323,21 @@ namespace Beamable.Editor.UI.Components
 			_globalRefresh?.Invoke();
 		}
 
-		public void FoldButtonClicked(MouseDownEvent evt)
+		private void RemoveStyleClicked()
 		{
-#if UNITY_EDITOR
-			EditorUtility.SetDirty(StyleSheet);
-#endif
+			BeamablePopupWindow.CloseConfirmationWindow();
 
-			StyleRule.SetFolded(!StyleRule.Folded);
-			AssetDatabase.SaveAssets();
-			_globalRefresh?.Invoke();
+			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
+				DELETE_STYLE_MESSAGE,
+				() =>
+				{
+					BussStyleSheetUtility.RemoveSingleStyle(StyleSheet, StyleRule);
+					_globalRefresh?.Invoke();
+				},
+				BeamablePopupWindow.CloseConfirmationWindow
+			);
+
+			BeamablePopupWindow.ShowConfirmationUtility(DELETE_STYLE_HEADER, confirmationPopup, null);
 		}
 	}
 }

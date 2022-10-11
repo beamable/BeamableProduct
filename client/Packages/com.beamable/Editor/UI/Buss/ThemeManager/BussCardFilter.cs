@@ -30,14 +30,33 @@ namespace Beamable.Editor.UI.Buss
 			{
 				foreach (var rule in styleSheet.Styles)
 				{
-					if (CardFilter(rule, selectedElement))
+					if (!CardFilter(rule, selectedElement))
+					{
+						continue;
+					}
+
+					if (!rules.ContainsKey(rule))
 					{
 						rules.Add(rule, styleSheet);
 					}
 				}
 			}
 
-			return rules;
+			if (selectedElement == null)
+			{
+				return rules;
+			}
+
+			// Reversing filtered rules order
+			Dictionary<BussStyleRule, BussStyleSheet> sortedRules = new Dictionary<BussStyleRule, BussStyleSheet>();
+
+			for (int i = rules.Count - 1; i >= 0; i--)
+			{
+				var pair = rules.ElementAt(i);
+				sortedRules.Add(pair.Key, pair.Value);
+			}
+
+			return sortedRules;
 		}
 
 		private bool CardFilter(BussStyleRule styleRule, BussElement selectedElement)
