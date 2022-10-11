@@ -43,6 +43,11 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 			await System.Context.Social.OnReady;
 
+			await SetupView();
+		}
+
+		private async Promise SetupView()
+		{
 			List<long> blockedPlayers = System.GetPlayersIds(System.Context.Social.Blocked);
 			var viewData = await System.GetPlayersViewData(blockedPlayers);
 
@@ -52,6 +57,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		private async void UnblockPlayer(long playerId)
 		{
 			await System.Context.Social.UnblockPlayer(playerId);
+			await SetupView();
 		}
 	}
 }

@@ -18,6 +18,10 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public Button MessageButton;
 		public Button CloseButton;
 
+		protected Action<long> OnDeleteButton;
+		protected Action<long> OnBlockButton;
+		protected Action<long> OnMessageButton;
+
 		public async Promise Setup(long playerId, Action<long> onDeleteButton, Action<long> onBlockButton, Action<long> onMessageButton)
 		{
 			var Context = BeamContext.Default;
@@ -41,13 +45,36 @@ namespace Beamable.EasyFeatures.BasicSocial
 			UsernameText.text = playerName;
 			GamertagText.text = $"#{playerId}";
 			AvatarImage.sprite = avatar;
+
+			OnDeleteButton = onDeleteButton;
+			OnBlockButton = onBlockButton;
+			OnMessageButton = onMessageButton;
 			
-			DeleteButton.onClick.ReplaceOrAddListener(() => onDeleteButton?.Invoke(playerId));
-			BlockButton.onClick.ReplaceOrAddListener(() => onBlockButton?.Invoke(playerId));
-			MessageButton.onClick.ReplaceOrAddListener(() => onMessageButton?.Invoke(playerId));
-			CloseButton.onClick.ReplaceOrAddListener(() => gameObject.SetActive(false));
+			DeleteButton.onClick.ReplaceOrAddListener(() => DeleteButtonPressed(playerId));
+			BlockButton.onClick.ReplaceOrAddListener(() => BlockButtonPressed(playerId));
+			MessageButton.onClick.ReplaceOrAddListener(() => MessageButtonPressed(playerId));
+			CloseButton.onClick.ReplaceOrAddListener(ClosePopup);
 			
 			gameObject.SetActive(true);
+		}
+
+		public void ClosePopup() => gameObject.SetActive(false);
+
+		private void MessageButtonPressed(long playerId)
+		{
+			OnMessageButton?.Invoke(playerId);
+		}
+
+		private void BlockButtonPressed(long playerId)
+		{
+			OnBlockButton?.Invoke(playerId);
+			ClosePopup();
+		}
+
+		private void DeleteButtonPressed(long playerId)
+		{
+			OnDeleteButton?.Invoke(playerId);
+			ClosePopup();
 		}
 
 		private void Update()

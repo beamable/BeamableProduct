@@ -43,6 +43,11 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 			await System.Context.Social.OnReady;
 
+			await SetupView();
+		}
+
+		private async Promise SetupView()
+		{
 			List<long> friends = System.GetPlayersIds(System.Context.Social.Friends);
 			var viewData = await System.GetPlayersViewData(friends);
 
@@ -62,11 +67,13 @@ namespace Beamable.EasyFeatures.BasicSocial
 		private async void BlockPlayer(long playerId)
 		{
 			await System.Context.Social.BlockPlayer(playerId);
+			await SetupView();
 		}
 
 		private async void DeleteFriend(long playerId)
 		{
 			await System.Context.Social.Unfriend(playerId);
+			await SetupView();
 		}
 	}
 }

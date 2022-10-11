@@ -32,6 +32,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public Toggle InvitesTab;
 		public Toggle BlockedTab;
 		public FriendInfoPopup InfoPopup;
+		public GameObject LoadingOverlay;
 
 		protected BeamContext Context;
 
@@ -49,6 +50,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		
 		public void OnEnable()
 		{
+			SetLoadingOverlay(true);
 			ViewGroup.RebuildManagedViews();
 
 			if (!_runOnEnable)
@@ -80,6 +82,8 @@ namespace Beamable.EasyFeatures.BasicSocial
 			viewTabs.Add(View.Blocked, BlockedTab);
 
 			await OpenView(View.Friends);
+			
+			SetLoadingOverlay(false);
 		}
 
 		private async void TabPicked(bool isOn, View view)
@@ -131,5 +135,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		{
 			await InfoPopup.Setup(playerId, onDeleteButton, onBlockButton, onMessageButton);
 		}
+
+		public void SetLoadingOverlay(bool active) => LoadingOverlay.SetActive(active);
 	}
 }
