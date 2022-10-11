@@ -314,17 +314,5 @@ namespace Beamable.Player
 
 			await _partyApi.KickPlayer(State.id, playerId);
 		}
-
-		public async void Dispose()
-		{
-			_notificationService.Unsubscribe(PlayerInvitedName(), (Action<PartyInviteNotification>)PlayerInvited);
-
-			if (IsInParty)
-			{
-				await Leave();
-			}
-			
-			_state = null;
-		}
 	}
 }
