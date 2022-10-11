@@ -1,7 +1,6 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
-using System;
 using System.Collections.Generic;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -38,11 +37,11 @@ namespace Beamable.Editor.UI.Buss
 			_model.PropertyDatabase.Discard();
 		}
 
-		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action undoAction)
+		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule)
 		{
 			bool isSelected = _model.SelectedElement != null && styleRule.Selector.CheckMatch(_model.SelectedElement);
 			StyleCardModel model =
-				new StyleCardModel(styleSheet, styleRule, undoAction, _model.SelectedElement, isSelected,
+				new StyleCardModel(styleSheet, styleRule, _model.SelectedElement, isSelected,
 								   _model.VariablesDatabase, _model.PropertyDatabase, _model.WritableStyleSheets,
 								   _model.ForceRefresh, _model.DisplayFilter);
 			StyleCardVisualElement styleCard = new StyleCardVisualElement(model);
@@ -71,7 +70,7 @@ namespace Beamable.Editor.UI.Buss
 				var styleSheet = pair.Value;
 				var styleRule = pair.Key;
 
-				AddStyleCard(styleSheet, styleRule, RefreshCards);
+				AddStyleCard(styleSheet, styleRule);
 			}
 		}
 

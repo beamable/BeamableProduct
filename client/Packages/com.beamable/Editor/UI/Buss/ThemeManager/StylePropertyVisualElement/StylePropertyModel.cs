@@ -172,19 +172,23 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-#if UNITY_EDITOR
+
 			if (StyleSheet != null)
 			{
+      #if UNITY_EDITOR
 				EditorUtility.SetDirty(StyleSheet);
+      #endif
+        StyleSheet.TriggerChange();
 			}
-
-			AssetDatabase.SaveAssets();
-#endif
+			
+      AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
 
 			if (InlineStyleOwner != null)
 			{
 				InlineStyleOwner.RecalculateStyle();
 			}
+
 		}
 	}
 }
