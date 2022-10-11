@@ -101,7 +101,7 @@ namespace Beamable.UI.Buss
 			if (styleSheet == null) return;
 			foreach (BussStyleRule styleRule in styleSheet.Styles)
 			{
-				if (styleRule.Selector?.CheckMatch(Element) ?? false)
+				if (styleRule.Selector?.IsElementIncludedInSelector(Element) ?? false)
 				{
 					AddStyleDescription(styleSheet, styleRule);
 				}
@@ -119,11 +119,19 @@ namespace Beamable.UI.Buss
 		private void AddPropertySource(BussStyleSheet styleSheet, BussStyleRule styleRule, BussPropertyProvider propertyProvider)
 		{
 			var key = propertyProvider.Key;
+
+			if (!styleRule.Selector.CheckMatch(Element))
+			{
+				// this is an inherited property, but maybe the property isn't inheritable?
+				if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable) return;
+			}
+
 			var propertyReference = new PropertyReference(styleSheet, styleRule, propertyProvider);
 			if (!_sources.TryGetValue(key, out SourceData sourceData))
 			{
 				_sources[key] = sourceData = new SourceData(key);
 			}
+
 			sourceData.AddSource(propertyReference);
 		}
 

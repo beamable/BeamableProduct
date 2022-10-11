@@ -144,7 +144,7 @@ namespace Beamable.UI.Buss
 		public void RecalculateStyle(BussElement element)
 		{
 			Weights.Clear();
-			element.Style.Clear();
+			element.Style.Inherit(element?.Parent?.Style);
 
 			VariableDatabase.ReconsiderAllStyleSheets();
 
