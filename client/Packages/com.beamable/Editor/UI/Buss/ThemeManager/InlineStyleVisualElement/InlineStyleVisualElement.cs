@@ -28,7 +28,7 @@ namespace Beamable.Editor.UI.Components
 			VisualElement header = new VisualElement();
 			header.AddToClassList("header");
 
-			Image foldIcon = new Image {name = "foldIcon"};
+			Image foldIcon = new Image { name = "foldIcon" };
 			foldIcon.AddToClassList("folded");
 			header.Add(foldIcon);
 
@@ -95,9 +95,9 @@ namespace Beamable.Editor.UI.Components
 			foreach (BussPropertyProvider property in selectedElement.InlineStyle.Properties)
 			{
 				StylePropertyModel model = new StylePropertyModel(selectedElement.StyleSheet, null,
-				                                                  property, _model.VariablesDatabase,
-				                                                  propertySourceTracker, selectedElement,
-				                                                  _model.RemoveInlineProperty, null);
+																  property, _model.VariablesDatabase,
+																  propertySourceTracker, selectedElement,
+																  _model.RemoveInlineProperty, null);
 
 				var element = new StylePropertyVisualElement(model);
 				element.Init();

@@ -175,13 +175,13 @@ namespace Beamable.Editor.UI.Components
 
 			if (StyleSheet != null)
 			{
-      #if UNITY_EDITOR
+#if UNITY_EDITOR
 				EditorUtility.SetDirty(StyleSheet);
-      #endif
-        StyleSheet.TriggerChange();
+#endif
+				StyleSheet.TriggerChange();
 			}
-			
-      AssetDatabase.SaveAssets();
+
+			AssetDatabase.SaveAssets();
 			_globalRefresh?.Invoke();
 
 			if (InlineStyleOwner != null)
