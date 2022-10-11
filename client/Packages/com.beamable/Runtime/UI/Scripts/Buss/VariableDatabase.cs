@@ -55,8 +55,10 @@ namespace Beamable.UI.Buss
 
 		public List<PropertyReference> GetVariableData(string key)
 		{
+			var hash = Animator.StringToHash(key);
+
 			List<PropertyReference> propertyReferences =
-				_variables.FindAll(prop => prop.HashKey == Animator.StringToHash(key));
+				_variables.FindAll(prop => prop.HashKey == hash);
 
 			if (propertyReferences.Count != 0)
 			{
@@ -65,6 +67,7 @@ namespace Beamable.UI.Buss
 
 			var data = new PropertyReference(key, null, null, null);
 			_variables.Add(data);
+			
 			GetVariableData(key);
 
 			return propertyReferences;
