@@ -1,5 +1,6 @@
 #cardHeader {
     color: rgb(255, 255, 255);
+    background-color: rgba(49, 49, 49, 1);
 }
 
 #sectionHeader {
@@ -27,7 +28,7 @@
     color: rgb(255,255,255);
 }
 
-.button:hover {
+.smallButton:hover {
     background-color: rgb(120,120,120);
 }
 
@@ -35,8 +36,8 @@
     background-color: rgb(142,142,142);
 }
 
-.headerButton:hover {
-    background-color: rgb(162,162,162);
+.clicked {
+    background-color: rgb(49, 49, 49);
 }
 
 .add {
