@@ -18,7 +18,7 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			var request = new CreatePartyRequest(restriction.ToString(), _userContext.UserId.ToString(), maxSize);
 			var json = Serialization.JsonSerializable.ToJson(request);
-			
+
 			return _requester.Request<Party>(
 				Method.POST,
 				"/parties",
@@ -30,7 +30,7 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			var request = new UpdatePartyRequest(restriction.ToString(), maxSize);
 			var json = Serialization.JsonSerializable.ToJson(request);
-			
+
 			return _requester.Request<Party>(
 				Method.PUT,
 				$"/parties/{partyId}/metadata",
@@ -80,7 +80,7 @@ namespace Beamable.Experimental.Api.Parties
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}
-		
+
 		public Promise InviteToParty(string partyId, string playerId)
 		{
 			return _requester.Request<Unit>(
@@ -89,7 +89,7 @@ namespace Beamable.Experimental.Api.Parties
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}
-		
+
 		public Promise KickPlayer(string partyId, long playerId) => KickPlayer(partyId, playerId.ToString());
 
 		public Promise PromoteToLeader(string partyId, long playerId) => PromoteToLeader(partyId, playerId.ToString());
