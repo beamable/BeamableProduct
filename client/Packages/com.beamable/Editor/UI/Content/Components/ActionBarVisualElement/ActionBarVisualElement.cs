@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Components;
@@ -129,8 +130,15 @@ namespace Beamable.Editor.Content.Components
 
 		private void SearchBar_OnSearchChanged(string obj)
 		{
-			var query = EditorContentQuery.Parse(obj);
-			Model.SetFilter(query);
+			try
+			{
+				var query = EditorContentQuery.Parse(obj);
+				Model.SetFilter(query);
+			}
+			catch (ContentNotFoundException)
+			{
+				// do nothing - same behaviour as in Unity searchbars
+			}
 		}
 
 		public void RefreshPublishDropdownVisibility()
