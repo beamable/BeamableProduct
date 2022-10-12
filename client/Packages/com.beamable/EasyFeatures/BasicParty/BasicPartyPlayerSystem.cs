@@ -15,7 +15,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			return !string.IsNullOrWhiteSpace(PartyIdToJoin);
 		}
-		
+
 		public bool ValidateConfirmButton(int maxPlayers)
 		{
 			return maxPlayers > 0;

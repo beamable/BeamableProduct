@@ -16,7 +16,7 @@ namespace Beamable.Player
 	public class PlayerParty : Observable<Party>, IDisposable
 	{
 		public Action<PartyInviteNotification> onPlayerInvited;
-		
+
 		private readonly IPartyApi _partyApi;
 		private readonly INotificationService _notificationService;
 		private readonly IUserContext _userContext;
@@ -26,7 +26,7 @@ namespace Beamable.Player
 		private Action<PartyUpdatedNotification> _onPartyUpdated;
 		private Action<PlayerPromotedNotification> _onPlayerPromoted;
 		private Action<PlayerKickedNotification> _onPlayerKicked;
-		
+
 		public PlayerParty(IPartyApi partyApi, INotificationService notificationService, IUserContext userContext)
 		{
 			_partyApi = partyApi;
@@ -180,10 +180,10 @@ namespace Beamable.Player
 		}
 
 		public void RegisterCallbacks(Action<PlayerJoinedNotification> onPlayerJoined,
-		                              Action<PlayerLeftNotification> onPlayerLeft,
-		                              Action<PartyUpdatedNotification> onPartyUpdated,
-		                              Action<PlayerPromotedNotification> onPlayerPromoted,
-		                              Action<PlayerKickedNotification> onPlayerKicked)
+									  Action<PlayerLeftNotification> onPlayerLeft,
+									  Action<PartyUpdatedNotification> onPartyUpdated,
+									  Action<PlayerPromotedNotification> onPlayerPromoted,
+									  Action<PlayerKickedNotification> onPlayerKicked)
 		{
 			_onPlayerJoined = onPlayerJoined;
 			_onPlayerLeft = onPlayerLeft;
@@ -194,17 +194,17 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
 		public async Promise Create(PartyRestriction restriction,
-		                            int maxSize = 0,
-		                            Action<PlayerJoinedNotification> onPlayerJoined = null,
-		                            Action<PlayerLeftNotification> onPlayerLeft = null,
-		                            Action<PartyUpdatedNotification> onPartyUpdated = null,
-		                            Action<PlayerPromotedNotification> onPlayerPromoted = null,
-		                            Action<PlayerKickedNotification> onPlayerKicked = null)
+									int maxSize = 0,
+									Action<PlayerJoinedNotification> onPlayerJoined = null,
+									Action<PlayerLeftNotification> onPlayerLeft = null,
+									Action<PartyUpdatedNotification> onPartyUpdated = null,
+									Action<PlayerPromotedNotification> onPlayerPromoted = null,
+									Action<PlayerKickedNotification> onPlayerKicked = null)
 		{
 			State = await _partyApi.CreateParty(restriction, maxSize);
 			await Members.Refresh();
 			RegisterCallbacks(onPlayerJoined, onPlayerLeft, onPartyUpdated, onPlayerPromoted,
-			                  onPlayerKicked);
+							  onPlayerKicked);
 		}
 
 		/// <inheritdoc cref="IPartyApi.UpdateParty"/>
@@ -254,7 +254,7 @@ namespace Beamable.Player
 
 			await _partyApi.InviteToParty(State.id, playerId);
 		}
-		
+
 		/// <inheritdoc cref="IPartyApi.InviteToParty"/>
 		public async Promise Invite(long playerId)
 		{
@@ -276,7 +276,7 @@ namespace Beamable.Player
 
 			await _partyApi.PromoteToLeader(State.id, playerId);
 		}
-		
+
 		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
 		public async Promise Promote(long playerId)
 		{
@@ -298,7 +298,7 @@ namespace Beamable.Player
 
 			await _partyApi.KickPlayer(State.id, playerId);
 		}
-		
+
 		/// <inheritdoc cref="IPartyApi.KickPlayer"/>
 		public async Promise Kick(long playerId)
 		{
