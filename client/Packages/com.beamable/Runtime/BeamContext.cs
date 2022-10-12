@@ -229,6 +229,7 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
+		private readonly bool _sendHearbeat;
 
 		#endregion
 
@@ -247,6 +248,7 @@ namespace Beamable
 		protected BeamContext()
 		{
 			AuthorizedUser.OnDataUpdated += user => OnUserLoggedIn?.Invoke(user);
+			_sendHearbeat = CoreConfiguration.Instance.SendHeartbeat;
 		}
 
 		/// <summary>
@@ -646,7 +648,10 @@ namespace Beamable
 			var pubnub = InitStep_StartPubnub();
 			// Start Session
 			var session = InitStep_StartNewSession();
-			_heartbeatService.Start();
+			if(_sendHearbeat)
+			{
+				_heartbeatService.Start();
+			}
 
 			// Check if we should initialize the purchaser
 			var purchase = InitStep_StartPurchaser();
