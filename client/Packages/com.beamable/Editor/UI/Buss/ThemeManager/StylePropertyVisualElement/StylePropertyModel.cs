@@ -138,7 +138,16 @@ namespace Beamable.Editor.UI.Components
 
 			options.Clear();
 			options.Add(Constants.Features.Buss.MenuItems.NONE);
-			options.AddRange(VariablesDatabase.GetVariablesNamesOfType(baseType));
+
+			List<VariableDatabase.PropertyReference> references = VariablesDatabase.GetVariablesOfType(baseType);
+
+			foreach (VariableDatabase.PropertyReference propertyReference in references)
+			{
+				if (!options.Contains(propertyReference.Key))
+				{
+					options.Add(propertyReference.Key);
+				}
+			}
 
 			return options;
 		}
@@ -160,19 +169,33 @@ namespace Beamable.Editor.UI.Components
 
 		public void OnPropertyChanged(IBussProperty property)
 		{
-			if (!StyleRule.HasProperty(PropertyProvider.Key))
+			if (StyleRule != null)
 			{
-				StyleRule.TryAddProperty(PropertyProvider.Key, property);
-			}
-			else
-			{
-				StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
+				if (!StyleRule.HasProperty(PropertyProvider.Key))
+				{
+					StyleRule.TryAddProperty(PropertyProvider.Key, property);
+				}
+				else
+				{
+					StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
+				}
 			}
 
+			if (StyleSheet != null)
+			{
 #if UNITY_EDITOR
-			EditorUtility.SetDirty(StyleSheet);
-			AssetDatabase.SaveAssets();
+				EditorUtility.SetDirty(StyleSheet);
 #endif
+				StyleSheet.TriggerChange();
+			}
+
+			AssetDatabase.SaveAssets();
+			_globalRefresh?.Invoke();
+
+			if (InlineStyleOwner != null)
+			{
+				InlineStyleOwner.RecalculateStyle();
+			}
 		}
 	}
 }
