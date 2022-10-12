@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- Content Manager filter doesn't throw exception when search doesn't match. 
+- Fixed Content Manager exception when search doesn't match. 
 
 ## [1.4.0]
 ### Added
