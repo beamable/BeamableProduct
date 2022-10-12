@@ -43,6 +43,18 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 			await System.Context.Social.OnReady;
 
+			System.Context.Social.Friends.OnDataUpdated += FriendsListUpdated;
+			
+			await SetupView();
+		}
+
+		private void OnDisable()
+		{
+			System.Context.Social.Friends.OnDataUpdated -= FriendsListUpdated;
+		}
+
+		private async void FriendsListUpdated(List<PlayerFriend> friendsList)
+		{
 			await SetupView();
 		}
 

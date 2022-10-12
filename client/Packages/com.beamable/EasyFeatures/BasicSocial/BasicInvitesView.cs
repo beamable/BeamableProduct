@@ -45,12 +45,17 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		public async Promise EnrichWithContext(BeamContextGroup managedPlayers)
 		{
-			FeatureControl.SetLoadingOverlay(true);
-			
 			var context = managedPlayers.GetSinglePlayerContext();
 			System = context.ServiceProvider.GetService<IDependencies>();
 			System.Context = context;
-
+			
+			if (!IsVisible)
+			{
+				return;
+			}
+			
+			FeatureControl.SetLoadingOverlay(true);
+			
 			await System.Context.Social.OnReady;
 
 			PlayerIdText.text = $"#{context.PlayerId}";
@@ -64,8 +69,19 @@ namespace Beamable.EasyFeatures.BasicSocial
 			SentListToggle.onValueChanged.ReplaceOrAddListener(isOn => TabPicked(isOn, SentListPresenter));
 			PlayerIdInputField.onEndEdit.ReplaceOrAddListener(SendInvite);
 			CopyIdButton.onClick.ReplaceOrAddListener(CopyPlayerId);
-
+			
 			await OpenTab(ReceivedListPresenter);
+		}
+
+		private void OnDisable()
+		{
+			UnsubscribeFromInvitesEvents();
+		}
+
+		private void UnsubscribeFromInvitesEvents()
+		{
+			System.Context.Social.ReceivedInvites.OnDataUpdated -= OnReceivedListChanged;
+			System.Context.Social.SentInvites.OnDataUpdated -= OnSentListChanged;
 		}
 
 		private void CopyPlayerId()
@@ -107,21 +123,21 @@ namespace Beamable.EasyFeatures.BasicSocial
 			_currentListView = tab;
 			_currentListView.gameObject.SetActive(true);
 
+			UnsubscribeFromInvitesEvents();
+			
 			List<long> ids;
 			Action<long> buttonAction;
 			string buttonText;
 			if (_currentListView == ReceivedListPresenter)
 			{
-				System.Context.Social.ReceivedInvites.OnElementsAdded -= OnInviteReceived;
-				System.Context.Social.ReceivedInvites.OnElementsAdded += OnInviteReceived;
+				System.Context.Social.ReceivedInvites.OnDataUpdated += OnReceivedListChanged;
 				ids = System.GetPlayersIds(System.Context.Social.ReceivedInvites);
 				buttonAction = AcceptInviteFrom;
 				buttonText = "Accept";
 			}
 			else
 			{
-				System.Context.Social.SentInvites.OnElementsAdded -= OnInviteSent;
-				System.Context.Social.SentInvites.OnElementsAdded += OnInviteSent;
+				System.Context.Social.SentInvites.OnDataUpdated += OnSentListChanged;
 				ids = System.GetPlayersIds(System.Context.Social.SentInvites);
 				buttonAction = null;
 				buttonText = "";
@@ -134,12 +150,12 @@ namespace Beamable.EasyFeatures.BasicSocial
 			FeatureControl.SetLoadingOverlay(false);
 		}
 
-		private async void OnInviteSent(IEnumerable<SentFriendInvite> sentInvites)
+		private async void OnSentListChanged(IEnumerable<SentFriendInvite> sentInvites)
 		{
 			await RefreshView();
 		}
 
-		private async void OnInviteReceived(IEnumerable<ReceivedFriendInvite> receivedInvites)
+		private async void OnReceivedListChanged(IEnumerable<ReceivedFriendInvite> receivedInvites)
 		{
 			await RefreshView();
 		}
