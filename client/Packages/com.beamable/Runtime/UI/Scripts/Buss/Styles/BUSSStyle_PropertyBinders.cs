@@ -199,7 +199,19 @@ namespace Beamable.UI.Buss
 					}
 					else
 					{
-						return (T)property;
+						switch (property.ValueType)
+						{
+							case BussPropertyValueType.Inherited:
+								return GetFromStyle(style._inheritedFromStyle);
+							case BussPropertyValueType.Value:
+								return property as T;
+							case BussPropertyValueType.Initial:
+								return DefaultValue;
+
+							default:
+								throw new InvalidOperationException("Unknown property value type");
+						}
+						// return (T)property;
 					}
 				}
 

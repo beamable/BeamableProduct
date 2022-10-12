@@ -5,9 +5,38 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-	public interface IBussProperty
+
+	public interface IBussPropertyBase
+	{
+		BussPropertyValueType ValueType { get; set; }
+	}
+
+	public interface IBussProperty : IBussPropertyBase
 	{
 		IBussProperty CopyProperty();
+
+	}
+
+	public enum BussPropertyValueType //https://developer.mozilla.org/en-US/docs/Web/CSS/inherit#see_also
+	{
+		// use the given value for the property
+		Value,
+
+		// inherit the property value from the parent
+		Inherited,
+
+		// use the initial value of the property binding type
+		Initial
+	}
+
+	public abstract class DefaultBussProperty : IBussPropertyBase
+	{
+		// this needs to be serialized so that all sub properties can have a persistent value type.
+		[SerializeField]
+		private BussPropertyValueType _valueType;
+
+		public BussPropertyValueType ValueType { get => _valueType; set => _valueType = value; }
+
 	}
 
 	public interface IInterpolatedBussProperty : IBussProperty

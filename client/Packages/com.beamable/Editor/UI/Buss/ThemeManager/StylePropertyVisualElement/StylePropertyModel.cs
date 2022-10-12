@@ -13,6 +13,7 @@ namespace Beamable.Editor.UI.Components
 	{
 		private readonly Action<string> _removePropertyAction;
 		private readonly Action _globalRefresh;
+		private readonly Action<string, BussPropertyValueType> _setValueTypeAction;
 
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
@@ -28,6 +29,9 @@ namespace Beamable.Editor.UI.Components
 		public bool IsInStyle => IsInline || (StyleRule != null && StyleRule.Properties.Contains(PropertyProvider));
 		public bool IsWritable => IsInline || (StyleSheet != null && StyleSheet.IsWritable);
 		private bool IsInline => InlineStyleOwner != null;
+
+		public bool IsInherited => PropertyProvider.ValueType == BussPropertyValueType.Inherited;
+		public bool IsInitial => PropertyProvider.ValueType == BussPropertyValueType.Initial;
 		public bool HasVariableConnected => PropertyProvider.HasVariableReference;
 
 		public bool IsOverriden =>
@@ -41,10 +45,12 @@ namespace Beamable.Editor.UI.Components
 								  PropertySourceTracker propertySourceTracker,
 								  BussElement inlineStyleOwner,
 								  Action<string> removePropertyAction,
-								  Action globalRefresh)
+								  Action globalRefresh,
+								  Action<string, BussPropertyValueType> setValueTypeAction)
 		{
 			_removePropertyAction = removePropertyAction;
 			_globalRefresh = globalRefresh;
+			_setValueTypeAction = setValueTypeAction;
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
 			PropertyProvider = propertyProvider;
@@ -76,6 +82,37 @@ namespace Beamable.Editor.UI.Components
 					_removePropertyAction?.Invoke(PropertyProvider.Key);
 				})
 			};
+
+			var valueType = PropertyProvider.ValueType;
+			var showInitialOption = valueType != BussPropertyValueType.Initial;
+			var showInheritedOption = valueType != BussPropertyValueType.Inherited;
+			var showValueOption = valueType != BussPropertyValueType.Value;
+
+			if (showInitialOption)
+			{
+				commands.Add(new GenericMenuCommand("Use Initial Value", () =>
+				{
+					_setValueTypeAction?.Invoke(PropertyProvider.Key, BussPropertyValueType.Initial);
+				}));
+			}
+
+			if (showInheritedOption)
+			{
+				commands.Add(new GenericMenuCommand("Use Inherited Value", () =>
+				{
+					_setValueTypeAction?.Invoke(PropertyProvider.Key, BussPropertyValueType.Inherited);
+				}));
+			}
+
+			if (showValueOption)
+			{
+				commands.Add(new GenericMenuCommand("Use Value", () =>
+				{
+					_setValueTypeAction?.Invoke(PropertyProvider.Key, BussPropertyValueType.Value);
+				}));
+			}
+
+
 
 			GenericMenu context = new GenericMenu();
 

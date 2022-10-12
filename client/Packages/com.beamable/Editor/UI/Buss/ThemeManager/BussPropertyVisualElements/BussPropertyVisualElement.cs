@@ -26,6 +26,11 @@ namespace Beamable.Editor.UI.Components
 			AddToClassList("bussPropertyRoot");
 		}
 
+		public void DisableInput()
+		{
+			this.Q<BindableElement>().SetEnabled(false);
+		}
+
 		protected void AddBussPropertyFieldClass(VisualElement ve)
 		{
 			ve.AddToClassList("bussPropertyField");

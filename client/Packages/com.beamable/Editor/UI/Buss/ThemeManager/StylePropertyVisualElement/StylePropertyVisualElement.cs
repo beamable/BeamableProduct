@@ -55,7 +55,17 @@ namespace Beamable.Editor.UI.Components
 		{
 			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
-			if (_model.HasVariableConnected)
+
+			if (_model.IsInherited)
+			{
+				CreateMessageField("Inherited");
+				var field = CreateEditableField(_model.PropertyProvider.GetProperty());
+				field.DisableInput();
+			} else if (_model.IsInitial){
+				CreateMessageField("Initial");
+				var field = CreateEditableField(_model.PropertyProvider.GetProperty());
+				field.DisableInput();
+			} else if (_model.HasVariableConnected)
 			{
 				string variableName = ((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName;
 
@@ -95,13 +105,13 @@ namespace Beamable.Editor.UI.Components
 			_variableConnection?.SetEnabled(_model.IsWritable);
 		}
 
-		private void CreateEditableField(IBussProperty property)
+		private BussPropertyVisualElement CreateEditableField(IBussProperty property)
 		{
-			_propertyVisualElement = property.GetVisualElement();
+			var element = _propertyVisualElement = property.GetVisualElement();
 
 			if (_propertyVisualElement == null)
 			{
-				return;
+				return null;
 			}
 
 			_propertyVisualElement.OnValueChanged = _model.OnPropertyChanged;
@@ -109,6 +119,19 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
 			_propertyVisualElement.Init();
 			_valueParent.Add(_propertyVisualElement);
+			return element;
+		}
+
+		private void CreateMessageField(string message, bool clearParent=true)
+		{
+			if (clearParent)
+			{
+				_valueParent.Clear();
+			}
+
+			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(message) { name = "message" };
+			_valueParent.Add(_propertyVisualElement);
+			_propertyVisualElement.Init();
 		}
 
 		private void CreateMessageField(VariableDatabase.PropertyValueState result)
@@ -127,16 +150,14 @@ namespace Beamable.Editor.UI.Components
 					break;
 			}
 
-			_valueParent.Clear();
-			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text) { name = "message" };
-			_valueParent.Add(_propertyVisualElement);
-			_propertyVisualElement.Init();
+			CreateMessageField(text);
 		}
 
 		private void SetupVariableConnection()
 		{
 			if (_model.PropertyProvider.IsVariable)
 				return;
+			if (_model.IsInherited || _model.IsInitial) return;
 
 			if (_variableConnection == null)
 			{

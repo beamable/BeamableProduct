@@ -183,7 +183,7 @@ namespace Beamable.Editor.UI.Components
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
 												   PropertiesDatabase.GetTracker(SelectedElement),
-												   null, RemovePropertyClicked, _globalRefresh);
+												   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 
 				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
 				{
@@ -287,11 +287,30 @@ namespace Beamable.Editor.UI.Components
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
 												   PropertiesDatabase.GetTracker(SelectedElement), null,
-												   RemovePropertyClicked, _globalRefresh);
+												   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 				variables.Add(model);
 			}
 
 			return variables;
+		}
+
+		private void SetValueTypeClicked(string propertyKey, BussPropertyValueType valueType)
+		{
+			var propertyModel = GetProperties(false).Find(property => property.PropertyProvider.Key == propertyKey);
+			if (propertyModel == null)
+			{
+				Debug.LogWarning($"StyleCardModel:{nameof(SetValueTypeClicked)}: can't find property with {propertyKey} key");
+				return;
+			}
+
+			propertyModel.PropertyProvider.GetProperty().ValueType = valueType;
+#if UNITY_EDITOR
+			EditorUtility.SetDirty(propertyModel.StyleSheet);
+#endif
+			AssetDatabase.SaveAssets();
+
+			Change?.Invoke();
+			_globalRefresh?.Invoke();
 		}
 
 		private void RemovePropertyClicked(string propertyKey)
@@ -300,7 +319,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (propertyModel == null)
 			{
-				Debug.LogWarning($"StyleCardModel:RemovePropertyCLicked: can't find property with {propertyKey} key");
+				Debug.LogWarning($"StyleCardModel:{nameof(RemovePropertyClicked)}: can't find property with {propertyKey} key");
 				return;
 			}
 
