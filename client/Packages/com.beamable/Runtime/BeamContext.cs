@@ -646,7 +646,7 @@ namespace Beamable
 			var pubnub = InitStep_StartPubnub();
 			// Start Session
 			var session = InitStep_StartNewSession();
-			if(CoreConfiguration.Instance.SendHeartbeat)
+			if (CoreConfiguration.Instance.SendHeartbeat)
 			{
 				_heartbeatService.Start();
 			}
