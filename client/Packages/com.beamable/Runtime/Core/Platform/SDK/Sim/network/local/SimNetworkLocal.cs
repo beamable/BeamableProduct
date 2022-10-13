@@ -5,7 +5,7 @@ namespace Beamable.Experimental.Api.Sim
 {
 	public class SimNetworkLocal : SimNetworkInterface
 	{
-		#pragma warning disable CS0067
+#pragma warning disable CS0067
 		public event Action<SimFaultResult> OnErrorStarted;
 		public event Action<SimErrorReport> OnErrorRecovered;
 		public event Action<SimFaultResult> OnErrorFailed;

@@ -22,7 +22,6 @@ namespace Beamable.Experimental.Api.Sim
 		private static long REQ_FREQ_MS = 1000;
 
 #pragma warning disable CS0067
-
 		/// <inheritdoc cref="SimNetworkInterface.OnErrorStarted"/>
 		public event Action<SimFaultResult> OnErrorStarted;
 
@@ -103,7 +102,7 @@ namespace Beamable.Experimental.Api.Sim
 					{
 						OnErrorRecovered?.Invoke(errorReport);
 					}
-					finally
+					catch
 					{
 						// allow any error to occur...
 					}
@@ -117,7 +116,7 @@ namespace Beamable.Experimental.Api.Sim
 						{
 							OnErrorStarted?.Invoke(result);
 						}
-						finally
+						catch
 						{
 							// allow any error to occur...
 						}
@@ -129,7 +128,7 @@ namespace Beamable.Experimental.Api.Sim
 						{
 							OnErrorFailed?.Invoke(result);
 						}
-						finally
+						catch
 						{
 							// allow any error to occur...
 						}

@@ -58,7 +58,7 @@ namespace Beamable.Experimental.Api.Sim
 		/// If the <see cref="OnErrorFailed"/> event has triggered, <see cref="IsFaulted"/> will be true, and the stream
 		/// cannot be used anymore.
 		/// </summary>
-		bool  IsFaulted { get; }
+		bool IsFaulted { get; }
 
 		/// <summary>
 		/// Synchronize the network interface and receive any fully realized frames by the network
