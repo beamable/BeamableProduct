@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Allow disabling sending heartbeat
+- Allow content reset from Content Window
 
 ### Fixed
 - Fixed Content Manager exception when search doesn't match. 
