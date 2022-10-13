@@ -185,6 +185,7 @@ namespace Beamable.Editor.Content.Components
 		private void HandleDownloadDropdown(ContextualMenuPopulateEvent evt)
 		{
 			evt.menu.BeamableAppendAction("Reset Content", async pos => { await ContentManagerWindow.ResetContent(); });
+			evt.menu.BeamableAppendAction("Download Content (default)", pos => { OnDownloadButtonClicked?.Invoke(); });
 		}
 
 		private void TagButton_OnClicked(Rect visualElementBounds)
