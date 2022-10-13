@@ -21,11 +21,23 @@ namespace Beamable.Experimental.Api.Sim
 	{
 		private static long REQ_FREQ_MS = 1000;
 
+#pragma warning disable CS0067
+
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorStarted"/>
+		public event Action<SimFaultResult> OnErrorStarted;
+
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorRecovered"/>
+		public event Action<SimErrorReport> OnErrorRecovered;
+
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorFailed"/>
+		public event Action<SimFaultResult> OnErrorFailed;
+#pragma warning restore CS0067
 		/// <summary>
 		/// The gamertag of the current player
 		/// </summary>
 		public string ClientId { get; private set; }
 		public bool Ready { get; private set; }
+
 
 		private List<SimEvent> _eventQueue = new List<SimEvent>();
 		private List<SimFrame> _syncFrames = new List<SimFrame>();
@@ -36,27 +48,40 @@ namespace Beamable.Experimental.Api.Sim
 		private string roomName;
 
 		private readonly IDependencyProvider _provider;
+		private ISimFaultHandler _faultHandler;
 		private GameRelayService GameRelay => _provider.GetService<GameRelayService>();
-		private SimFaultHandler FaultHandler => _provider.GetService<SimFaultHandler>();
+		private ISimFaultHandler FaultHandler => _faultHandler ?? (_faultHandler = _provider.GetService<ISimFaultHandler>());
 
-		public SimNetworkEventStream(string roomName, IDependencyProvider provider)
+
+		/// <inheritdoc cref="SimNetworkInterface.IsFaulted"/>
+		public bool IsFaulted => simException != null;
+		private SimNetworkErrorException simException;
+
+
+		public SimNetworkEventStream(string roomName, IDependencyProvider provider, ISimFaultHandler faultHandler=null)
 		{
 			this.roomName = roomName;
 			_provider = provider;
+			_faultHandler = faultHandler;
 			ClientId = provider.GetService<IPlatformService>().User.id.ToString();
 			_syncFrames.Add(_nextFrame);
 			Ready = true;
 		}
 
+
 		public List<SimFrame> Tick(long curFrame, long maxFrame, long expectedMaxFrame)
 		{
+			if (IsFaulted)
+			{
+				throw simException;
+			}
+
 			long now = GetTimeMs();
 			if ((now - _lastReqTime) >= REQ_FREQ_MS)
 			{
 				_lastReqTime = now;
 				var req = new GameRelaySyncMsg();
 				req.t = _nextFrame.Frame;
-				var eventQueueBackup = new List<SimEvent>(_eventQueue);
 				for (int i = 0; i < _eventQueue.Count; i++)
 				{
 					var evt = new GameRelayEvent();
@@ -66,37 +91,54 @@ namespace Beamable.Experimental.Api.Sim
 				_eventQueue.Clear();
 
 				var syncReq = GameRelay.Sync(roomName, req);
-				syncReq.Then(_ => FaultHandler.HandleSyncSuccess());
+				syncReq.Then(_ =>
+				{
+					var errorReport = FaultHandler.HandleSyncSuccess();
+					if (errorReport == null)
+					{
+						return;
+					}
+
+					try
+					{
+						OnErrorRecovered?.Invoke(errorReport);
+					}
+					finally
+					{
+						// allow any error to occur...
+					}
+				});
 				syncReq.Error(ex =>
 				{
-					/*
-					 * the data from this request wasn't sent, so we need to put those events back into the queue...
-					 * However, other events may have been added into the queue at this point, so we need to _insert_
-					 * these events...
-					 *
-					 * If the original event order was A, B, C
-					 *
-					 * Then it is cleared...
-					 *
-					 * Then someone adds D, E, F
-					 *
-					 * Then the request fails, the eventQueue should become
-					 *
-					 * A, B, C, D, E, F
-					 *
-					 */
-					eventQueueBackup.Reverse();
-					foreach (var evt in eventQueueBackup)
+					var result = FaultHandler.HandleSyncError(ex, out var newError);
+					if (newError)
 					{
-						_eventQueue.Insert(0, evt);
+						try
+						{
+							OnErrorStarted?.Invoke(result);
+						}
+						finally
+						{
+							// allow any error to occur...
+						}
 					}
-				})
 
-				syncReq.RecoverWith(ex =>
-				         {
-					         // allow the fault handler to POTENTIALLY save the request from causing an error.
-					         return FaultHandler.HandleSyncError(ex);
-				         });
+					if (!result.Tolerable)
+					{
+						try
+						{
+							OnErrorFailed?.Invoke(result);
+						}
+						finally
+						{
+							// allow any error to occur...
+						}
+
+						simException = new SimNetworkErrorException(result.Report);
+						throw simException;
+					}
+				});
+
 				syncReq.Then(rsp =>
 				{
 					if (rsp.t == -1)

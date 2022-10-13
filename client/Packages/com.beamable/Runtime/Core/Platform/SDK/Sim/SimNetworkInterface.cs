@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Sim
 {
@@ -19,6 +20,28 @@ namespace Beamable.Experimental.Api.Sim
 	/// </summary>
 	public interface SimNetworkInterface
 	{
+		/// <summary>
+		/// This event is triggered when the <see cref="SimNetworkInterface"/> receives some sort of network error.
+		/// After this event is triggered, some time later, either <see cref="OnErrorRecovered"/> or <see cref="OnErrorFailed"/> will be triggered.
+		/// The error handling can be overriden by injecting a custom <see cref="ISimFaultHandler"/>
+		/// </summary>
+		event Action<SimFaultResult> OnErrorStarted;
+
+		/// <summary>
+		/// This event is triggered after the <see cref="SimNetworkInterface"/> recovers from a set of errors.
+		/// This event will only trigger after the <see cref="OnErrorStarted"/> event has been triggered, but it may take several seconds for the error state to recover.
+		/// The error handling can be overriden by injecting a custom <see cref="ISimFaultHandler"/>
+		/// </summary>
+		event Action<SimErrorReport> OnErrorRecovered;
+
+		/// <summary>
+		/// This event is triggered after the <see cref="SimNetworkInterface"/> fails to recover from a set of errors.
+		/// This event will only trigger after the <see cref="OnErrorStarted"/> event has been triggered, but it may take several seconds for the error state to finalize.
+		/// The error handling can be overriden by injecting a custom <see cref="ISimFaultHandler"/>
+		///
+		/// After this event triggers, the <see cref="IsFaulted"/> field will be true.
+		/// </summary>
+		event Action<SimFaultResult> OnErrorFailed;
 
 		/// <summary>
 		/// Get a unique id for the client which is consistent across the network.
@@ -30,6 +53,12 @@ namespace Beamable.Experimental.Api.Sim
 		/// Is the network ready to operate?
 		/// </summary>
 		bool Ready { get; }
+
+		/// <summary>
+		/// If the <see cref="OnErrorFailed"/> event has triggered, <see cref="IsFaulted"/> will be true, and the stream
+		/// cannot be used anymore.
+		/// </summary>
+		bool  IsFaulted { get; }
 
 		/// <summary>
 		/// Synchronize the network interface and receive any fully realized frames by the network
