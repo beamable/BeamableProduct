@@ -138,7 +138,16 @@ namespace Beamable.Editor.UI.Components
 
 			options.Clear();
 			options.Add(Constants.Features.Buss.MenuItems.NONE);
-			options.AddRange(VariablesDatabase.GetVariablesNamesOfType(baseType));
+
+			List<VariableDatabase.PropertyReference> references = VariablesDatabase.GetVariablesOfType(baseType);
+
+			foreach (VariableDatabase.PropertyReference propertyReference in references)
+			{
+				if (!options.Contains(propertyReference.Key))
+				{
+					options.Add(propertyReference.Key);
+				}
+			}
 
 			return options;
 		}
@@ -172,7 +181,6 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-
 			if (StyleSheet != null)
 			{
 #if UNITY_EDITOR
@@ -188,7 +196,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				InlineStyleOwner.RecalculateStyle();
 			}
-
 		}
 	}
 }
