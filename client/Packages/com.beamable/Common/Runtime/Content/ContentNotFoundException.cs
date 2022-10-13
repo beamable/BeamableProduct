@@ -8,7 +8,7 @@ namespace Beamable.Common.Content
 		{
 
 		}
-		
+
 		public ContentNotFoundException(Type type) : base($"No content name found for type=[{type.Name}]")
 		{
 
