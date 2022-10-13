@@ -464,9 +464,9 @@ namespace Beamable.Api.CloudSaving
 		}
 
 		private Promise<Unit> HandleRequest<T>(T request,
-		                                       ConcurrentDictionary<string, string> fileNameToKey,
-		                                       Method method,
-		                                       string endpoint)
+											   ConcurrentDictionary<string, string> fileNameToKey,
+											   Method method,
+											   string endpoint)
 		{
 			var promiseList = new ConcurrentDictionary<string, Func<Promise<Unit>>>();
 			return GetPresignedURL(request, endpoint).FlatMap(presignedURLS =>
@@ -482,7 +482,7 @@ namespace Beamable.Api.CloudSaving
 					//MD5_Checksum : PresignedURL
 					s3Response[presignedURLS.response[i].objectKey] = presignedURLS.response[i];
 				}
-				
+
 				foreach (var kv in fileNameToKey)
 				{
 					PreSignedURL s3PresignedURL;
@@ -492,9 +492,9 @@ namespace Beamable.Api.CloudSaving
 					{
 						var fullPathToFile = kv.Key;
 						isSuccessful = promiseList.TryAdd(s3PresignedURL.url,
-						                                  new Func<Promise<Unit>>(
-							                                  () => GetOrPostObjectInS3(
-								                                  fullPathToFile, s3PresignedURL, method)));
+														  new Func<Promise<Unit>>(
+															  () => GetOrPostObjectInS3(
+																  fullPathToFile, s3PresignedURL, method)));
 					}
 
 					if (!isSuccessful)
@@ -502,7 +502,7 @@ namespace Beamable.Api.CloudSaving
 						Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}");
 					}
 				}
-				
+
 				if (promiseList.Count != responseAmount)
 				{
 					return Promise<Unit>.Failed(new Exception("Some of the keys in manifest does not match a values on the server"));
