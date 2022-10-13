@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed Content Manager exception when search doesn't match. 
 
+### Changed
+- The `[Agnostic]` attribute is no obsolete. It is still usable, but assembly definitions should be used instead for code sharing.
+
 ## [1.4.0]
 ### Added
 - Editor tooling for `SerializableDictionaryStringToSomething<T>` has context menu.
