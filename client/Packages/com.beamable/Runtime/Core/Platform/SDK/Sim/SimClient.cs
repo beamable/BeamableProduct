@@ -21,6 +21,17 @@ namespace Beamable.Experimental.Api.Sim
 	/// </summary>
 	public class SimClient
 	{
+#pragma warning disable CS0067
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorStarted"/>
+		public event Action<SimFaultResult> OnErrorStarted;
+
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorRecovered"/>
+		public event Action<SimErrorReport> OnErrorRecovered;
+
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorFailed"/>
+		public event Action<SimFaultResult> OnErrorFailed;
+#pragma warning restore CS0067
+
 		public int LogHash { get; private set; }
 		public int StateHash { get; private set; }
 		public long Ping { get; private set; }
@@ -75,6 +86,13 @@ namespace Beamable.Experimental.Api.Sim
 			this._frameTickMs = 1000 / framesPerSecond;
 			this._targetNetworkLead = targetNetworkLead;
 			_virtualFramePointer = targetNetworkLead;
+
+			if (network != null)
+			{
+				network.OnErrorFailed += r => OnErrorFailed?.Invoke(r);
+				network.OnErrorStarted += r => OnErrorStarted?.Invoke(r);
+				network.OnErrorRecovered += r => OnErrorRecovered?.Invoke(r);
+			}
 
 			this.OnInit((seed) =>
 			{
