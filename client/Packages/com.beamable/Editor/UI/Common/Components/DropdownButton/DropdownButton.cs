@@ -9,16 +9,16 @@ namespace Beamable.Editor.UI.Components
 	public class DropdownButton : BeamableVisualElement
 	{
 		public new class UxmlFactory : UxmlFactory<DropdownButton, UxmlTraits>
-		{}
+		{ }
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _text = new UxmlStringAttributeDescription
-				{ name = "text", defaultValue = "" };
+			{ name = "text", defaultValue = "" };
 			readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
-				{ name = "tooltip", defaultValue = "" };
+			{ name = "tooltip", defaultValue = "" };
 			readonly UxmlBoolAttributeDescription _forceDropdown = new UxmlBoolAttributeDescription
-				{ name = "forceDropdown", defaultValue = false };
+			{ name = "forceDropdown", defaultValue = false };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -40,7 +40,7 @@ namespace Beamable.Editor.UI.Components
 
 		public event Action OnBaseClick;
 		public event Action<ContextualMenuPopulateEvent> OnDropdownClick;
-		
+
 		private string Text { get; set; }
 		private string Tooltip { get; set; }
 		private bool ForceDropdown { get; set; }
@@ -50,9 +50,10 @@ namespace Beamable.Editor.UI.Components
 		private bool _mouseOverPublishDropdown;
 		private bool _dropdownEnabled = true;
 		public DropdownButton() : base(
-			$"{Constants.Directories.COMMON_COMPONENTS_PATH}/{nameof(DropdownButton)}/{nameof(DropdownButton)}") { }
-		
-		
+			$"{Constants.Directories.COMMON_COMPONENTS_PATH}/{nameof(DropdownButton)}/{nameof(DropdownButton)}")
+		{ }
+
+
 		public override void Refresh()
 		{
 			base.Refresh();
