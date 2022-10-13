@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Allow disabling sending heartbeat
 - Allow content reset from Content Window
+- `SimNetworkEventStream` has a `ISimFaultHandler` parameter that exposes error handling and callbacks for network outages. 
 
 ### Fixed
 - Fixed Content Manager exception when search doesn't match. 
