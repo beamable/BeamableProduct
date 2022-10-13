@@ -14,8 +14,6 @@ MicroserviceContentVisualElement > TemplateContainer > #mainVisualElement > Scro
     position: absolute;
     left: 0px;
     right: 0px;
-    /*padding-right: 10px;*/
-    /*padding-left: 10px;*/
 }
 
 #listRoot{

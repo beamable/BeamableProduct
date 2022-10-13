@@ -65,4 +65,9 @@
     background-color: #545454;
 }
 
+#popupBtn:hover,
+#detailWindowBottomBar > #copyTextBtn:hover {
+    background-color: #474747;
+}
+
 

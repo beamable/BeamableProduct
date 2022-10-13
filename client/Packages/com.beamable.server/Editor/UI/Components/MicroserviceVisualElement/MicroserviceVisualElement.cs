@@ -24,6 +24,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
 		{ }
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
+		protected override bool IsRemoteEnabled => _microserviceModel.RemoteReference?.enabled ?? false;
 
 		private MicroserviceModel _microserviceModel;
 
@@ -87,14 +88,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnServiceReferenceChanged(ServiceReference serviceReference)
 		{
 			UpdateRemoteStatusIcon();
-		}
-		protected override void UpdateRemoteStatusIcon()
-		{
-			// _remoteStatusIcon.ClearClassList();
-			// bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
-			// string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			// _remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
-			// _remoteStatusIcon.AddToClassList(statusClassName);
 		}
 		protected override void UpdateLocalStatus()
 		{

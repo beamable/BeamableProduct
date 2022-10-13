@@ -37,12 +37,21 @@ PrimaryButtonVisualElement {
 }
 
 #buttonsSection {
+    margin-top: 10px;
     flex-direction: row-reverse;
 }
 
 #buttonsSection > PrimaryButtonVisualElement {
     width: 120px;
     height: 30px;
+}
+
+#createBtn > TemplateContainer > Button {
+    border-color: #0090FD;
+}
+
+#createBtn > TemplateContainer > Button.unity-disabled {
+    border-color: #838383;
 }
 
 #createBtn > TemplateContainer > Button {

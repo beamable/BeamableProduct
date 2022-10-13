@@ -67,7 +67,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _warningViewBtn;
 		private Button _errorViewBtn;
 		private Button _buildDropDown;
-		// private Button _advanceDropDown;
 		private VisualElement _logListRoot;
 		private ListView _listView;
 		private string _statusClassName;
@@ -79,7 +78,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private List<string> _parameterParts;
 		private List<string> _allTextToDisplay;
 		
-		private int _chunkSize = 5000;
+		private int _chunkSize = 500;
 		private int _paginationIndex = 0;
 		private VisualElement _leftArrow;
 		private VisualElement _rightArrow;
@@ -99,15 +98,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var clearButton = Root.Q<Button>("clear");
 			clearButton.clickable.clicked += HandleClearButtonClicked;
+			clearButton.tooltip = "Clear logs";
 
-			// _advanceDropDown = Root.Q<Button>("advanceBtn");
-			// _advanceDropDown.tooltip = "More...";
 			if (!NoModel)
 			{
 				var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 				manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-				// _advanceDropDown.clickable.activators.Clear();
-				// _advanceDropDown.AddManipulator(manipulator);
 			}
 
 			_popupBtn = Root.Q<Button>("popupBtn");
@@ -168,6 +164,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					EditorGUIUtility.systemCopyBuffer = builder.ToString();
 				}
 			}));
+			_copyTextBtn.tooltip = "Copy full log";
 			
 			_leftArrow = Root.Q<VisualElement>("leftArrow");
 			_leftArrow.AddManipulator(new Clickable(_ => PreviousMessagePart()));

@@ -36,26 +36,29 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
+			base.UpdateVisualElements();
+			
 			Root.Q<Button>("startBtn").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 			Root.Q("statusSeparator")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openDocsBtn")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openScriptBtn")?.RemoveFromHierarchy();
 			Root.Q("foldContainer").visible = false;
 			Root.Q<VisualElement>("mainVisualElement").style.SetHeight(DEFAULT_HEADER_HEIGHT);
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = Tooltips.Microservice.MORE;
-
+			
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.OnDockerLoginRequired += LoginToDocker;
 
 			_separator.Refresh();
 
 			UpdateLocalStatus();
-			UpdateRemoteStatusIcon();
+			UpdateRemoteStatusIcon("remoteEnabled");
 			UpdateModel();
 		}
 
@@ -79,14 +82,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnServiceReferenceChanged(ServiceReference serviceReference)
 		{
 			UpdateRemoteStatusIcon();
-		}
-
-		protected override void UpdateRemoteStatusIcon()
-		{
-			// _remoteStatusIcon.ClearClassList();
-			// string statusClassName = "remoteEnabled";
-			// _remoteStatusIcon.tooltip = Tooltips.Microservice.ICON_UP_TO_DATE; ;
-			// _remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
 		protected override void UpdateLocalStatus()

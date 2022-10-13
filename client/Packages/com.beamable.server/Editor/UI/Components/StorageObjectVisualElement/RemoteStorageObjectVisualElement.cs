@@ -38,14 +38,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = "More...";
 
 			_separator.Refresh();
 
 			UpdateLocalStatus();
-			UpdateRemoteStatusIcon();
+			UpdateRemoteStatusIcon("remoteEnabled");
 			UpdateModel();
 		}
 
@@ -55,14 +54,5 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_mongoStorageModel = (RemoteMongoStorageModel)Model;
 		}
-
-		protected override void UpdateRemoteStatusIcon()
-		{
-			// _remoteStatusIcon.ClearClassList();
-			// string statusClassName = "remoteEnabled";
-			// _remoteStatusIcon.tooltip = REMOTE_ONLY;
-			// _remoteStatusIcon.AddToClassList(statusClassName);
-		}
-
 	}
 }

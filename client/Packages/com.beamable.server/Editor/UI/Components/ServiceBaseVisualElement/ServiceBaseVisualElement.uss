@@ -188,35 +188,15 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 	margin-right: 0px;
 }
 
-#moreBtn{
-    width: 30px;
-    height: 30px;
-    -unity-slice-bottom: 0;
-    -unity-slice-top: 0;
-    -unity-slice-right: 0;
-    -unity-slice-left: 0;
-    border-right-width: 0px;
-    border-top-width: 0px;
-    border-bottom-width: 0px;
-    border-left-width: 0px;
-    padding-left: 0px;
-    padding-right: 0px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-    margin-right: 0px;
-    margin-left: 0px;
-    margin-bottom: 0px;
-    margin-top: 0px;
-}
-
-#openDocsBtn, #openScriptBtn {
+#openDocsBtn, #openScriptBtn, #moreBtn {
     width: 30px;
     height: 30px;
     justify-content: center;
 }
 
 #openDocsBtn > #btnIcon,
-#openScriptBtn > #btnIcon {
+#openScriptBtn > #btnIcon,
+#moreBtn > #btnIcon {
     width: 24px;
     height: 24px;
     align-self: center;

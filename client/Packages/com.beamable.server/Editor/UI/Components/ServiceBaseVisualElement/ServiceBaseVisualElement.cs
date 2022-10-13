@@ -26,6 +26,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public ServiceModelBase Model { get; set; }
 		protected abstract string ScriptName { get; }
+		protected abstract bool IsRemoteEnabled { get; }
 
 		private const float MIN_HEIGHT = 240.0f;
 		private const float MAX_HEIGHT = 500.0f;
@@ -35,7 +36,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected LoadingBarElement _loadingBar;
 		// protected VisualElement _statusIcon;
 		// protected VisualElement _remoteStatusIcon;
-		protected Button _moreBtn;
+		protected VisualElement _moreBtn;
 		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
 		private VisualElement _logContainerElement;
@@ -46,7 +47,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _serviceCard;
 		private Button _foldButton;
 		private VisualElement _foldIcon;
-		private Image _serviceIcon;
+		protected Image _serviceIcon;
 		private Label _serviceName;
 		private VisualElement _openDocsBtn;
 		private VisualElement _openScriptBtn;
@@ -90,7 +91,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
-			_moreBtn = Root.Q<Button>("moreBtn");
+			_moreBtn = Root.Q<VisualElement>("moreBtn");
 			_startButton = Root.Q<Button>("startBtn");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
 			_header = Root.Q("logHeader");
@@ -124,12 +125,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_moreBtn.clickable.activators.Clear();
 			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
 
-			_openScriptBtn.AddManipulator(new Clickable(() => Model.OpenCode()));
-			_openDocsBtn.AddManipulator(new Clickable(() => Model.OpenDocs()));
+			_openScriptBtn.AddManipulator(new Clickable(Model.OpenCode));
+			_openScriptBtn.tooltip = "Open C# Code";
+			
+			_openDocsBtn.AddManipulator(new Clickable(Model.OpenDocs));
+			_openDocsBtn.SetEnabled(Model.IsRunning);
+			_openDocsBtn.tooltip = "View Documentation";
 			
 			_serviceName.text = Model.Name;
 
@@ -164,13 +168,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleStartingProgress(int _, int __) => _header.ClearClassList();
 
-		protected abstract void UpdateRemoteStatusIcon();
+		protected void UpdateRemoteStatusIcon(string customStatusClassName = "")
+		{
+			_serviceIcon.ClearClassList();
+
+			var statusClassName = string.IsNullOrWhiteSpace(customStatusClassName)
+				? IsRemoteEnabled
+					? $"{Model.ServiceType}_remoteEnabled"
+					: $"{Model.ServiceType}_remoteDisabled"
+				: $"{Model.ServiceType}_{customStatusClassName}";
+
+			_serviceIcon.tooltip = IsRemoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
+			_serviceIcon.AddToClassList(statusClassName);
+		}
 		protected virtual void UpdateButtons()
 		{
 		}
 		protected virtual void UpdateLocalStatus()
 		{
 			_header.EnableInClassList("running", Model.IsRunning);
+			_openDocsBtn.SetEnabled(Model.IsRunning);
 			UpdateButtons();
 		}
 		protected async void UpdateModel()

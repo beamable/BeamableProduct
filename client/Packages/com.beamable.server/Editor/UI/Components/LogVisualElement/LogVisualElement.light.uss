@@ -75,3 +75,8 @@
 #paginationRange {
     color: #000000;
 }
+
+#popupBtn:hover,
+#detailWindowBottomBar > #copyTextBtn:hover {
+    background-color: #b4b4b4;
+}

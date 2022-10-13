@@ -37,7 +37,9 @@
                     <engine:VisualElement name="openScriptBtn">
                         <engine:VisualElement name="btnIcon"/>
                     </engine:VisualElement>
-                    <engine:Button name="moreBtn"/>
+                    <engine:VisualElement name="moreBtn">
+                        <engine:VisualElement name="btnIcon"/>
+                    </engine:VisualElement>
                 </engine:VisualElement>
                 
             </engine:VisualElement>

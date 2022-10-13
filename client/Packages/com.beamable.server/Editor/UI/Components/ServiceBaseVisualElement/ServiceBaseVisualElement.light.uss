@@ -29,10 +29,8 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dropdown_border_dark.png");
 }
 
-#moreBtn{
+#moreBtn > #btnIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
-    background-color: rgba(141, 141, 141, 0);
-    border-color: rgba(141, 141, 141, 0);
 }
 
 #openDocsBtn > #btnIcon {
@@ -95,19 +93,32 @@
     background-color: #c8c8c8;
 }
 
-.MicroService_localStopped {
+.MicroService_localStopped,
+.MicroService_localRunning, 
+.MicroService_localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning light.png");
 }
 
-.MicroService_localRunning, .MicroService_localBuilding {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS running light.png");
+.MicroService_remoteEnabled,
+.MicroService_remoteDisabled {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS runnning light.png");
 }
 
-.StorageObject_localStopped {
+.StorageObject_localStopped, 
+.StorageObject_localRunning, 
+.StorageObject_localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running light.png");
 }
 
-.StorageObject_localRunning, .StorageObject_localBuilding {
+.StorageObject_remoteEnabled,
+.StorageObject_remoteDisabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO running light.png");
 }
+
+#openDocsBtn > #btnIcon:hover,
+#openScriptBtn > #btnIcon:hover,
+#moreBtn > #btnIcon:hover {
+    background-color: #b4b4b4;
+}
+
 

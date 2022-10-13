@@ -20,6 +20,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public new class UxmlFactory : UxmlFactory<StorageObjectVisualElement, UxmlTraits> { }
 
 		protected override string ScriptName => nameof(StorageObjectVisualElement);
+		protected override bool IsRemoteEnabled => _mongoStorageModel.RemoteReference?.enabled ?? false;
 
 		private MongoStorageModel _mongoStorageModel;
 
@@ -80,15 +81,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnServiceReferenceChanged(ServiceStorageReference serviceReference)
 		{
 			UpdateRemoteStatusIcon();
-		}
-
-		protected override void UpdateRemoteStatusIcon()
-		{
-			// _remoteStatusIcon.ClearClassList();
-			// bool remoteEnabled = _mongoStorageModel.RemoteReference?.enabled ?? false;
-			// string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			// _remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
-			// _remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
 		protected override void SetupProgressBarForStart(Task _)
