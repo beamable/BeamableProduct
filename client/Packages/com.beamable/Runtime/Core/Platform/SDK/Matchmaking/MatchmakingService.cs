@@ -87,14 +87,14 @@ namespace Beamable.Experimental.Api.Matchmaking
 			if (_platform.Heartbeat.IsRunning)
 			{
 				return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
-					                                            this,
-					                                            _platform,
-					                                            tickets.tickets,
-					                                            maxWait,
-					                                            updateHandler,
-					                                            readyHandler,
-					                                            timeoutHandler
-				                                            ));
+																this,
+																_platform,
+																tickets.tickets,
+																maxWait,
+																updateHandler,
+																readyHandler,
+																timeoutHandler
+															));
 			}
 
 			const string info =
