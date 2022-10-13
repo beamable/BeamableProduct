@@ -1,4 +1,5 @@
 using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,7 @@ namespace Beamable.Experimental.Api.Sim
 
 		private readonly IDependencyProvider _provider;
 		private GameRelayService GameRelay => _provider.GetService<GameRelayService>();
+		private SimFaultHandler FaultHandler => _provider.GetService<SimFaultHandler>();
 
 		public SimNetworkEventStream(string roomName, IDependencyProvider provider)
 		{
@@ -54,6 +56,7 @@ namespace Beamable.Experimental.Api.Sim
 				_lastReqTime = now;
 				var req = new GameRelaySyncMsg();
 				req.t = _nextFrame.Frame;
+				var eventQueueBackup = new List<SimEvent>(_eventQueue);
 				for (int i = 0; i < _eventQueue.Count; i++)
 				{
 					var evt = new GameRelayEvent();
@@ -62,7 +65,39 @@ namespace Beamable.Experimental.Api.Sim
 				}
 				_eventQueue.Clear();
 
-				GameRelay.Sync(roomName, req).Then(rsp =>
+				var syncReq = GameRelay.Sync(roomName, req);
+				syncReq.Then(_ => FaultHandler.HandleSyncSuccess());
+				syncReq.Error(ex =>
+				{
+					/*
+					 * the data from this request wasn't sent, so we need to put those events back into the queue...
+					 * However, other events may have been added into the queue at this point, so we need to _insert_
+					 * these events...
+					 *
+					 * If the original event order was A, B, C
+					 *
+					 * Then it is cleared...
+					 *
+					 * Then someone adds D, E, F
+					 *
+					 * Then the request fails, the eventQueue should become
+					 *
+					 * A, B, C, D, E, F
+					 *
+					 */
+					eventQueueBackup.Reverse();
+					foreach (var evt in eventQueueBackup)
+					{
+						_eventQueue.Insert(0, evt);
+					}
+				})
+
+				syncReq.RecoverWith(ex =>
+				         {
+					         // allow the fault handler to POTENTIALLY save the request from causing an error.
+					         return FaultHandler.HandleSyncError(ex);
+				         });
+				syncReq.Then(rsp =>
 				{
 					if (rsp.t == -1)
 					{
