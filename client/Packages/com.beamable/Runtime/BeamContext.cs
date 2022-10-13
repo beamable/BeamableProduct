@@ -229,7 +229,6 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
-		private readonly bool _sendHearbeat;
 
 		#endregion
 
@@ -248,7 +247,6 @@ namespace Beamable
 		protected BeamContext()
 		{
 			AuthorizedUser.OnDataUpdated += user => OnUserLoggedIn?.Invoke(user);
-			_sendHearbeat = CoreConfiguration.Instance.SendHeartbeat;
 		}
 
 		/// <summary>
@@ -648,7 +646,7 @@ namespace Beamable
 			var pubnub = InitStep_StartPubnub();
 			// Start Session
 			var session = InitStep_StartNewSession();
-			if(_sendHearbeat)
+			if(CoreConfiguration.Instance.SendHeartbeat)
 			{
 				_heartbeatService.Start();
 			}

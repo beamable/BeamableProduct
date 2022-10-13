@@ -84,15 +84,29 @@ namespace Beamable.Experimental.Api.Matchmaking
 		  TimeSpan? maxWait = null
 		)
 		{
-			return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
-			  this,
-			  _platform,
-			  tickets.tickets,
-			  maxWait,
-			  updateHandler,
-			  readyHandler,
-			  timeoutHandler
-			));
+			if (_platform.Heartbeat.IsRunning)
+			{
+				return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
+					                                            this,
+					                                            _platform,
+					                                            tickets.tickets,
+					                                            maxWait,
+					                                            updateHandler,
+					                                            readyHandler,
+					                                            timeoutHandler
+				                                            ));
+			}
+
+			const string info =
+#if UNITY_EDITOR
+				"<b>IHeartbeatService</b> is not running, " +
+				"<b>MatchmakingService</b> will not work correctly" +
+				"This could be caused by disabling <b>SendHeartbeat</b> option in <b>Beamable Core Configuration</b>.";
+#else
+				"IHeartbeatService is not running, MatchmakingService will not work correctly.";
+#endif
+			return Promise<MatchmakingHandle>.Failed(new Exception(info));
+
 		}
 
 		/// <summary>
