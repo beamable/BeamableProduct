@@ -1,3 +1,4 @@
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -50,7 +51,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public event Action OnRefreshButtonClicked;
 		public event Action<ServiceType> OnCreateNewClicked;
 		private Button _refreshButton;
-		private Button _createNew;
+		private DropdownButton _createNew;
 		private Button _startAll;
 		private Button _infoButton;
 		private Button _publish;
@@ -70,14 +71,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
 			_refreshButton.tooltip = Tooltips.Microservice.REFRESH;
-			_createNew = Root.Q<Button>("createNew");
-
-			var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
-			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_createNew.clickable.activators.Clear();
-			_createNew.tooltip = Tooltips.Microservice.ADD_NEW;
-			_createNew.AddManipulator(manipulator);
-
+			_createNew = Root.Q<DropdownButton>("createNew");
+			_createNew.OnDropdownClick += PopulateCreateMenu;
 
 			_startAll = Root.Q<Button>("startAll");
 			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };

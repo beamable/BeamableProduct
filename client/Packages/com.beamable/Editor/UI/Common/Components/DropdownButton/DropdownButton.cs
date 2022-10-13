@@ -19,6 +19,8 @@ namespace Beamable.Editor.UI.Components
 				{ name = "tooltip", defaultValue = "" };
 			readonly UxmlBoolAttributeDescription _forceDropdown = new UxmlBoolAttributeDescription
 				{ name = "forceDropdown", defaultValue = false };
+			readonly UxmlBoolAttributeDescription _enableIcon = new UxmlBoolAttributeDescription
+				{ name = "enableIcon", defaultValue = false };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -33,6 +35,7 @@ namespace Beamable.Editor.UI.Components
 					component.Text = _text.GetValueFromBag(bag, cc);
 					component.Tooltip = _tooltip.GetValueFromBag(bag, cc);
 					component.ForceDropdown = _forceDropdown.GetValueFromBag(bag, cc);
+					component.EnableIcon = _enableIcon.GetValueFromBag(bag, cc);
 					component.Refresh();
 				}
 			}
@@ -44,6 +47,7 @@ namespace Beamable.Editor.UI.Components
 		private string Text { get; set; }
 		private string Tooltip { get; set; }
 		private bool ForceDropdown { get; set; }
+		private bool EnableIcon { get; set; }
 		private Button _baseButton;
 		private Button _dropdownButton;
 		private VisualElement _dropdownImg;
@@ -62,6 +66,10 @@ namespace Beamable.Editor.UI.Components
 			label.tooltip = Tooltip;
 			_baseButton = Root.Q<Button>("baseButton");
 			_dropdownButton = Root.Q<Button>("dropdownButton");
+			if (!EnableIcon)
+			{
+				Root.Q<Image>("icon").RemoveFromHierarchy();
+			}
 			_dropdownImg = Root.Q("dropDownImg");
 			_dropdownButton.RegisterCallback<MouseEnterEvent>(evt => _mouseOverPublishDropdown = true);
 			_dropdownButton.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverPublishDropdown = false);

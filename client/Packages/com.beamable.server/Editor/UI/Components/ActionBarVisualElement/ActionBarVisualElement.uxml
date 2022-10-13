@@ -2,6 +2,7 @@
 <engine:UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:engine="UnityEngine.Experimental.UIElements"
+        xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
@@ -18,14 +19,7 @@
                 <engine:Label class="buttonText" text="Dependencies"/>
             </engine:Button>
 
-            <engine:Button name="createNew" class="boundedButton">
-                <engine:VisualElement class="mainPart">
-                    <engine:Image name="createNewIcon"/>
-                    <engine:Label class="buttonText" text="Create New"/>
-                </engine:VisualElement>
-                <engine:Image name="dropDownImg" class="--image-scale-to-fit">
-                </engine:Image>
-            </engine:Button>
+            <beamable:DropdownButton name="createNew" forceDropdown="true" enableIcon="true" text="Create new" />
 
             <engine:Button name="publish" class="boundedButton">
                 <engine:Image name="publishIcon"/>

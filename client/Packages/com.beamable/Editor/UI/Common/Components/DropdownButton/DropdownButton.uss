@@ -1,6 +1,8 @@
 ﻿#baseButton {
     width: 100%;
     justify-content: center;
+    align-items: stretch;
+    flex-direction: row;
 }
 
 #dropDownImg  {
@@ -13,4 +15,46 @@
 .hidden {
     position: absolute;
     right: 10000px;
+}
+
+.mainPart {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    align-items: center;
+    flex-direction: column;
+}
+.mainPart .buttonLabel {
+    align-self: center;
+    flex-grow: 1;
+    font-size: 9px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-center;
+}
+
+.buttonIcon{
+    flex-grow: 1;
+    top: 2px;
+    width: 18px;
+    height: 18px;
+    align-self: center;
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
+}
+
+.dropdownButton {
+    background-image: none;
+    background-color: rgba(0,0,0,0);
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: -6px;
+    bottom: -3px;
+    border-bottom-width: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-right: 0px;
+    margin-left: 0px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
 }

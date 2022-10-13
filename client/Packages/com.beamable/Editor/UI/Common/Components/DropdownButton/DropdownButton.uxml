@@ -7,9 +7,12 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:Button name="baseButton" class="boundedButton">
+        <engine:VisualElement class="mainPart">
+            <engine:Image class="buttonIcon" name="icon"/>
+            <engine:Label class="buttonLabel" name="label" text="Create New"/>
+        </engine:VisualElement>
         <engine:Image name="dropDownImg" class="--image-scale-to-fit">
             <engine:Button name="dropdownButton" class="--noBorder dropdownButton"/>
         </engine:Image>
-        <engine:Label text="Button" class="buttonLabel" name="label"/>
     </engine:Button>
 </engine:UXML>

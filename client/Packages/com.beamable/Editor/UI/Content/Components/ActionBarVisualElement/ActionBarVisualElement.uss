@@ -94,24 +94,6 @@
     background-image: none;
 }
 
-.dropdownButton{
-    background-image: none;
-    position: absolute;
-    top: -2px;
-    left: 0;
-    right: -6px;
-    bottom: -3px;
-    border-bottom-width: 0px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-right: 0px;
-    margin-left: 0px;
-    padding-bottom: 0px;
-    padding-top: 0px;
-    padding-right: 0px;
-    padding-left: 0px;
-}
-
 /* Different button name selectors. Used one time each */
 .createButtonLabel{
     font-size: 10px;

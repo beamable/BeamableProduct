@@ -37,7 +37,7 @@
     font-size: 9px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-center;
-    top: 1px;
+    align-self: center;
     margin-right: 2px;
     margin-left: 2px;
 }
@@ -64,16 +64,6 @@
 
 #createNew {
     width: 85px;
-    padding-left: 0px;
-    padding-right: 0px;
-    padding-top: 0px;
-}
-#dropDownImg {
-    position: absolute;
-    height: 35px;
-    right: 0px;
-    width: 18px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_dark.png")
 }
 
 #createNew.disabledStorage {
@@ -129,7 +119,6 @@
     align-self: center;
     height: 28px;
     width: 28px;
-
 }
 
 #infoIcon{
