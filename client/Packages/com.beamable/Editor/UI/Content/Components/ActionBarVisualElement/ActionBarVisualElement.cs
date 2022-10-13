@@ -193,18 +193,10 @@ namespace Beamable.Editor.Content.Components
 			Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 			var content = new TagFilterPopupVisualElement();
 			content.Model = Model;
-			var longest = "";
-			foreach (var name in Model.GetAllTags())
-			{
-				if (name.Length > longest.Length)
-				{
-					longest = name;
-				}
-			}
 
-			var width = Mathf.Max(120, longest.Length * 7 + 30);
+			int longest = Model.GetAllTags().Max(s => s.Length);
+			var width = Mathf.Max(120, longest * 7 + 30);
 			var wnd = BeamablePopupWindow.ShowDropdown("Filter Tag", popupWindowRect, new Vector2(width, 200), content);
-
 
 			//content.OnSelected += (wrapper, name) =>
 			//{
@@ -227,16 +219,8 @@ namespace Beamable.Editor.Content.Components
 			var content = new TypeFilterPopupVisualElement();
 			content.Model = Model;
 
-			var longest = "";
-			foreach (var name in Model.GetContentTypes().Select(t => t.TypeName))
-			{
-				if (name.Length > longest.Length)
-				{
-					longest = name;
-				}
-			}
-
-			var width = Mathf.Max(120, longest.Length * 7 + 30);
+			int longest = Model.GetContentTypes().Max(s => s.TypeName.Length);
+			var width = Mathf.Max(120, longest * 7 + 30);
 			var wnd = BeamablePopupWindow.ShowDropdown("Filter Tag", popupWindowRect, new Vector2(width, 200), content);
 
 			//content.OnSelected += (wrapper, name) =>
