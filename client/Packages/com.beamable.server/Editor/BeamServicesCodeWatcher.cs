@@ -162,10 +162,10 @@ namespace Beamable.Server.Editor
 			}
 
 			var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
-			                                      .Select(asmName => currCodeHandles.FirstOrDefault(
-				                                              c => c.AsmDefInfo.Name == asmName))
-			                                      .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
-			                                      .ToList();
+												  .Select(asmName => currCodeHandles.FirstOrDefault(
+															  c => c.AsmDefInfo.Name == asmName))
+												  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
+												  .ToList();
 
 			config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
 			config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
