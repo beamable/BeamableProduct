@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Content.Validation
 {

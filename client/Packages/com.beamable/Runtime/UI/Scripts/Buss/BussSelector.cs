@@ -15,6 +15,21 @@ namespace Beamable.UI.Buss
 			pseudoClass = null;
 			return false;
 		}
+
+		/// <summary>
+		/// Similar to <see cref="CheckMatch"/>, except that this method will
+		/// return true if the selector matches the given element, or ANY element in the given element's parent lineage.
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		public bool IsElementIncludedInSelector(BussElement element)
+		{
+			if (element == null) return false;
+
+			if (CheckMatch(element)) return true;
+
+			return IsElementIncludedInSelector(element.Parent);
+		}
 	}
 
 	/// <summary>
@@ -55,6 +70,11 @@ namespace Beamable.UI.Buss
 			int classCountComparison = ClassCount.CompareTo(other.ClassCount);
 			if (classCountComparison != 0) return classCountComparison;
 			return ElementCount.CompareTo(other.ElementCount);
+		}
+
+		public override string ToString()
+		{
+			return $"Id: {IdCount}, class: {ClassCount}, element: {ElementCount}";
 		}
 	}
 

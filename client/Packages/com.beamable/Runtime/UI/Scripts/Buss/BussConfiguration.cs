@@ -144,7 +144,7 @@ namespace Beamable.UI.Buss
 		public void RecalculateStyle(BussElement element)
 		{
 			Weights.Clear();
-			element.Style.Clear();
+			element.Style.Inherit(element?.Parent?.Style);
 
 			VariableDatabase.ReconsiderAllStyleSheets();
 
@@ -209,7 +209,7 @@ namespace Beamable.UI.Buss
 
 						if (variableName != string.Empty && !descriptor.HasProperty(variableName))
 						{
-							prop = _variableDatabase.GetVariable(variableName);
+							_variableDatabase.TryGetProperty(property, descriptor, out prop, out var variablePropertyReference);
 						}
 					}
 

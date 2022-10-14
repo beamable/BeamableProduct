@@ -14,7 +14,6 @@
 }
 
 #leftContentVisualElement {
-
     flex-direction: row;
     justify-content: flex-start;
     align-items:center;
@@ -95,7 +94,7 @@
     background-image: none;
 }
 
-#publishDropdownButton{
+.dropdownButton{
     background-image: none;
     position: absolute;
     top: -2px;
@@ -114,30 +113,6 @@
 }
 
 /* Different button name selectors. Used one time each */
-
-#dropDownImg{
-    right: 0px;
-    width: 18px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_dark.png")
-}
-
-#dropDownImg.hidden {
-    position: absolute;
-    right: 10000px;
-}
-
-#createNewButton #dropDownImg {
-    height: 16px;
-}
-
-#publishButton #dropDownImg {
-    align-self: stretch;
-}
-
-#publishButton {
-    justify-content: center;
-}
-
 .createButtonLabel{
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
@@ -148,6 +123,10 @@
     width: 8px;
     height: 15px;
     align-self: center;
+}
+
+#downloadButton {
+    width: 85px;
 }
 
 Button.unity-button,

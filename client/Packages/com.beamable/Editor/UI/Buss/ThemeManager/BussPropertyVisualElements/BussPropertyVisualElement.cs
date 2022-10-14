@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Components
 		public Action<IBussProperty> OnValueChanged;
 
 		protected BussPropertyVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss", false)
+			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/{nameof(BussPropertyVisualElement)}.uss", false)
 		{ }
 
 		public override void Init()

@@ -72,6 +72,8 @@ namespace Beamable.Player
 		public LeaderboardService LeaderboardService => _ctx.ServiceProvider.GetService<LeaderboardService>();
 		public IBeamableRequester Requester => _ctx.ServiceProvider.GetService<IBeamableRequester>();
 		public StatsService StatsService => _ctx.ServiceProvider.GetService<StatsService>();
+
+		[Obsolete("Use " + nameof(StatsService) + " instead.")]
 		public StatsService Stats => _ctx.ServiceProvider.GetService<StatsService>();
 		public SessionService SessionService => _ctx.ServiceProvider.GetService<SessionService>();
 		public IAnalyticsTracker AnalyticsTracker => _ctx.ServiceProvider.GetService<IAnalyticsTracker>();

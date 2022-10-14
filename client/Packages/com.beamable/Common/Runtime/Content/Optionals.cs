@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Content
 {
