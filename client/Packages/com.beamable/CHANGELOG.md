@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed Content Manager exception when search doesn't match. 
+- Fixed Content not getting resolved when `BeamContext.Default` is not used.
 
 ## [1.4.0]
 ### Added
