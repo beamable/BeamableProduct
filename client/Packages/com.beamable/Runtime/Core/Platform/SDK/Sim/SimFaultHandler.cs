@@ -41,7 +41,7 @@ namespace Beamable.Experimental.Api.Sim
 		protected SimErrorReport report;
 		protected bool HasError => report != null;
 
-		protected HashSet<long> allowedPlatformErrorCodes = new HashSet<long>(new long[] {502, 504});
+		protected HashSet<long> allowedPlatformErrorCodes = new HashSet<long>(new long[] { 502, 504 });
 
 		public virtual SimErrorReport HandleSyncSuccess()
 		{
