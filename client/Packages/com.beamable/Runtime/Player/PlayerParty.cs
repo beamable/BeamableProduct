@@ -16,7 +16,6 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerParty : DefaultObservable
 	{
-		public int Howdy;
 		public Action<PartyInviteNotification> OnPlayerInvited;
 		public Action<PlayerJoinedNotification> OnPlayerJoined;
 		public Action<PlayerLeftNotification> OnPlayerLeft;
