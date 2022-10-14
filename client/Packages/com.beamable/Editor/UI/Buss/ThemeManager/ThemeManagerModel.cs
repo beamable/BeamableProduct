@@ -128,7 +128,7 @@ namespace Beamable.Editor.UI.Buss
 			NewVariableWindow window = NewVariableWindow.ShowWindow();
 			if (window != null)
 			{
-				window.Init(SelectedElement.InlineStyle, (key, property) =>
+				window.Init((key, property) =>
 				{
 					if (SelectedElement.InlineStyle.TryAddProperty(key, property))
 					{
@@ -138,7 +138,7 @@ namespace Beamable.Editor.UI.Buss
 						VariablesDatabase.ReconsiderAllStyleSheets();
 						ForceRefresh();
 					}
-				}, VariablesDatabase);
+				});
 			}
 		}
 

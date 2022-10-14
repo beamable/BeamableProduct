@@ -3,6 +3,7 @@ using Beamable.Common.Content.Validation;
 using Beamable.Common.Shop;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Leaderboards
 {
@@ -14,7 +15,7 @@ namespace Beamable.Common.Leaderboards
 	/// #### Related Links
 	/// - See Beamable.Common.Content.ContentObject script reference
 	/// - See Beamable.Api.Leaderboard.LeaderboardService script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>

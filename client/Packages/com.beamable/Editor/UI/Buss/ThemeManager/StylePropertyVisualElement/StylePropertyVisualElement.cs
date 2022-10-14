@@ -142,7 +142,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				_variableConnection = new VariableConnectionVisualElement(_model);
 				_variableConnection.Init();
-				_variableConnection.Refresh();
 				_variableParent.Add(_variableConnection);
 			}
 		}

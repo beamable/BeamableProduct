@@ -2,6 +2,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Shop
 {
@@ -13,7 +14,7 @@ namespace Beamable.Common.Shop
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/store-feature">Store</a> feature documentation
 	/// - See Beamable.Api.Commerce.CommerceService script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>

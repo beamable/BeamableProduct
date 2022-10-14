@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Reflection;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 {

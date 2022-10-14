@@ -1,6 +1,7 @@
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Announcements
 {

@@ -12,6 +12,17 @@ namespace Beamable.UI.Buss
 
 		private static Dictionary<string, IPropertyBinding> _bindings = new Dictionary<string, IPropertyBinding>();
 
+		/// <summary>
+		/// Get the <see cref="IPropertyBinding"/> structure for a given property name
+		/// </summary>
+		/// <param name="propertyKey">the name of the css property that the binding was created for. for example, "backgroundColor"</param>
+		/// <param name="binding">the binding will be be bound to this variable after the method has run. Will be null if the binding wasn't found</param>
+		/// <returns>true if the binding was found, false otherwise. </returns>
+		public static bool TryGetBinding(string propertyKey, out IPropertyBinding binding)
+		{
+			return _bindings.TryGetValue(propertyKey, out binding);
+		}
+
 		protected readonly Dictionary<string, IBussProperty> _properties = new Dictionary<string, IBussProperty>();
 
 		public static readonly PropertyBinding<MainTextureBussProperty> MainTextureSource =
@@ -77,18 +88,18 @@ namespace Beamable.UI.Buss
 
 		// Font
 		public static readonly PropertyBinding<IFontBussProperty> Font =
-			new PropertyBinding<IFontBussProperty>("font", new FontBussAssetProperty());
+			new PropertyBinding<IFontBussProperty>("font", new FontBussAssetProperty(), true);
 
 		public static readonly PropertyBinding<IFloatBussProperty> FontSize =
-			new PropertyBinding<IFloatBussProperty>("fontSize", new FloatBussProperty(18f));
+			new PropertyBinding<IFloatBussProperty>("fontSize", new FloatBussProperty(18f), true);
 
 		public static readonly PropertyBinding<IColorBussProperty> FontColor =
-			new PropertyBinding<IColorBussProperty>("fontColor", new SingleColorBussProperty(Color.white));
+			new PropertyBinding<IColorBussProperty>("fontColor", new SingleColorBussProperty(Color.white), true);
 
 		public static readonly PropertyBinding<TextAlignmentOptionsBussProperty> TextAlignment =
 			new PropertyBinding<TextAlignmentOptionsBussProperty>("textAlignment",
 																  new TextAlignmentOptionsBussProperty(
-																	  TextAlignmentOptions.TopLeft));
+																	  TextAlignmentOptions.TopLeft), true);
 
 		// Transitions
 		// TODO: Disabled with BEAM-3130 due to incomplete implementation
@@ -101,7 +112,7 @@ namespace Beamable.UI.Buss
 
 		#endregion
 
-		internal interface IPropertyBinding
+		public interface IPropertyBinding
 		{
 			string Key
 			{
@@ -112,6 +123,11 @@ namespace Beamable.UI.Buss
 			{
 				get;
 			}
+
+			/// <summary>
+			/// When true, an element can inherit this property from the element's parent.
+			/// </summary>
+			bool Inheritable { get; }
 
 			IBussProperty GetProperty(BussStyle style);
 			void SetProperty(BussStyle style, IBussProperty property);
@@ -130,15 +146,18 @@ namespace Beamable.UI.Buss
 				get;
 			}
 
+			public bool Inheritable { get; }
+
 			public Type PropertyType => typeof(T);
 
 			private static HashSet<string> _keyControler = new HashSet<string>();
 
-			internal PropertyBinding(string key, T defaultValue)
+			internal PropertyBinding(string key, T defaultValue, bool inheritable = false)
 			{
 				Key = key;
 				DefaultValue = defaultValue;
 				_bindings[key] = this;
+				Inheritable = inheritable;
 			}
 
 			IBussProperty IPropertyBinding.GetProperty(BussStyle style) => Get(style);

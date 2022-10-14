@@ -148,22 +148,30 @@ namespace Beamable.Server.Editor
 			var config = MicroserviceConfiguration.Instance;
 			var currCodeHandles = config.ServiceCodeHandlesOnLastDomainReload;
 
-			if (currCodeHandles != null && currCodeHandles.Count > 0)
+			if (currCodeHandles == null || currCodeHandles.Count <= 0)
 			{
-				var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
-
-				var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
-													  .Select(asmName => currCodeHandles.FirstOrDefault(
-																  c => c.AsmDefInfo.Name == asmName))
-													  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
-													  .ToList();
-
-				config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
-				config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
-
-				config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
-				config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+				// there are no current code handles, so there is nothing to check.
+				return;
 			}
+
+			var serviceToUpdate = currCodeHandles.FirstOrDefault(h => h.ServiceName == serviceName);
+			if (string.IsNullOrEmpty(serviceToUpdate.ServiceName))
+			{
+				// none of the existing code handles reference this service yet, so there is nothing to do.
+				return;
+			}
+
+			var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
+												  .Select(asmName => currCodeHandles.FirstOrDefault(
+															  c => c.AsmDefInfo.Name == asmName))
+												  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
+												  .ToList();
+
+			config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+
+			config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
 		}
 
 		public void CheckForMissingMongoDependenciesOnMicroservices()
