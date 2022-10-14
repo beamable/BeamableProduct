@@ -57,7 +57,7 @@ namespace Beamable.Experimental.Api.Sim
 		private SimNetworkErrorException simException;
 
 
-		public SimNetworkEventStream(string roomName, IDependencyProvider provider, ISimFaultHandler faultHandler=null)
+		public SimNetworkEventStream(string roomName, IDependencyProvider provider, ISimFaultHandler faultHandler = null)
 		{
 			this.roomName = roomName;
 			_provider = provider;
