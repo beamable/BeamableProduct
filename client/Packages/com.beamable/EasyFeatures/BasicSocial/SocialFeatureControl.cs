@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -33,6 +34,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public Toggle BlockedTab;
 		public FriendInfoPopup InfoPopup;
 		public GameObject LoadingOverlay;
+		public OverlaysController OverlaysController;
 
 		protected BeamContext Context;
 

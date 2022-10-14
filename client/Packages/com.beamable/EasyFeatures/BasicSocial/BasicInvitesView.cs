@@ -1,4 +1,5 @@
-﻿using Beamable.Common;
+﻿using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Player;
 using Beamable.Player;
 using System;
@@ -97,7 +98,22 @@ namespace Beamable.EasyFeatures.BasicSocial
 				return;
 			}
 
-			await System.Context.Social.Invite(id);
+			try
+			{
+				await System.Context.Social.Invite(id);
+				FeatureControl.OverlaysController.ShowInform($"Sent invite to player {playerId}", null);
+			}
+			catch (PlatformRequesterException e)
+			{
+				if (e.Error.status == 404)
+				{
+					FeatureControl.OverlaysController.ShowError($"No player found with id {playerId}");
+				}
+				else
+				{
+					throw;
+				}
+			}
 		}
 
 		private async void TabPicked(bool isOn, FriendsListPresenter list)
