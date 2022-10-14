@@ -10,14 +10,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0]
 ### Added
-- Allow disabling sending heartbeat
-- Allow content reset from Content Window
+- Presence heartbeat may be disabled in _Project Settings/Beamable/Core/Send Heartbeat_.
+- Content Manager's download button shows Reset Content option in dropdown. 
 - `SimNetworkEventStream` has a `ISimFaultHandler` parameter that exposes error handling and callbacks for network outages. 
 
 ### Fixed
-- Fixed Content Manager exception when search doesn't match. 
+- Content Manager Filter does not log exception when type query does not match any types.
+- `CloudSavingService` no longer uploads manifests with missing objects.
 - Fixed Content not getting resolved when `BeamContext.Default` is not used.
 
 ### Changed
