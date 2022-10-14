@@ -1,4 +1,5 @@
 using Beamable.Common.Content;
+#pragma warning disable CS0618
 
 namespace Beamable.Experimental.Common.Calendars
 {
@@ -10,7 +11,7 @@ namespace Beamable.Experimental.Common.Calendars
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -26,7 +27,7 @@ namespace Beamable.Experimental.Common.Calendars
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -42,7 +43,7 @@ namespace Beamable.Experimental.Common.Calendars
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>

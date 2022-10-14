@@ -4,6 +4,7 @@ using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Content;
 using Beamable.Common.Leaderboards;
 using System.Collections.Generic;
+#pragma warning disable CS0618
 
 namespace Beamable.Server.Api.Leaderboards
 {

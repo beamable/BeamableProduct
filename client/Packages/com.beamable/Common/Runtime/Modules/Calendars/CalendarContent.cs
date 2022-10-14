@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+#pragma warning disable CS0618
 
 namespace Beamable.Experimental.Common.Calendars
 {
@@ -16,7 +17,7 @@ namespace Beamable.Experimental.Common.Calendars
 	/// #### Related Links
 	/// - See Beamable.Common.Content.ContentObject script reference
 	/// - See Beamable.Experimental.Api.Calendars.CalendarsService script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
