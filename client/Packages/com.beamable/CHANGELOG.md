@@ -14,10 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Presence heartbeat may be disabled in _Project Settings/Beamable/Core/Send Heartbeat_.
 - Content Manager's download button shows Reset Content option in dropdown. 
+- `SimNetworkEventStream` has a `ISimFaultHandler` parameter that exposes error handling and callbacks for network outages. 
 
 ### Fixed
 - Content Manager Filter does not log exception when type query does not match any types.
 - `CloudSavingService` no longer uploads manifests with missing objects.
+- Fixed Content not getting resolved when `BeamContext.Default` is not used.
+
+### Changed
+- The `[Agnostic]` attribute is now obsolete. It is still usable, but assembly definitions should be used instead for code sharing.
+- The `Stats` accessor on `IBeamableAPI` is now obsolete. Use `StatsService` instead.
 
 ## [1.4.0]
 ### Added

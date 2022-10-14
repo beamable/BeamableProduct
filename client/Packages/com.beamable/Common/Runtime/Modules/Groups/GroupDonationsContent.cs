@@ -2,6 +2,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Groups
 {
@@ -14,7 +15,7 @@ namespace Beamable.Common.Groups
 	/// #### Related Links
 	/// - See Beamable.Common.Content.ContentObject script reference
 	/// - See Beamable.Api.Groups.GroupsService script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
