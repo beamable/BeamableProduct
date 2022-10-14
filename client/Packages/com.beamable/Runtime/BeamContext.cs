@@ -657,10 +657,7 @@ namespace Beamable
 
 			OnReloadUser?.Invoke();
 
-			if (IsDefault)
-			{
-				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
-			}
+			ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
 		}
 
 
