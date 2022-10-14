@@ -8,6 +8,9 @@ namespace Beamable.Api.Sessions
 {
 	public interface IHeartbeatService
 	{
+		/// <summary>Indicates if <see cref="IHeartbeatService"/> started sending hearbeats.</summary>
+		bool IsRunning { get; }
+
 		/// <summary>
 		/// Start sending heartbeats with the <see cref="SessionService.SendHeartbeat"/> method.
 		/// </summary>
@@ -28,6 +31,8 @@ namespace Beamable.Api.Sessions
 
 	public class Heartbeat : IHeartbeatService
 	{
+		public bool IsRunning { get; private set; }
+
 		private const int LegacyHeartbeatInterval = 30;
 		private const int HeartbeatInterval = 5;
 
@@ -49,12 +54,14 @@ namespace Beamable.Api.Sessions
 			_coroutineService = coroutineService;
 			_connectivityService = connectivityService;
 			_presenceApi = presenceApi;
+			IsRunning = false;
 			_legacyHeartbeatRoutine = SendLegacyHeartbeat(LegacyHeartbeatInterval);
 			_heartbeatRoutine = SendHeartbeat(HeartbeatInterval);
 		}
 
 		public void Start()
 		{
+			IsRunning = true;
 			_coroutineService.StartCoroutine(_legacyHeartbeatRoutine);
 			_coroutineService.StartCoroutine(_heartbeatRoutine);
 		}
