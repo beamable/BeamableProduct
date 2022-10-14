@@ -176,6 +176,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			EnableInClassList("showAllProperties", _model.ShowAll);
 			_showAllButtonText.text = _model.ShowAll ? TOGGLE_HIDE_ALL : TOGGLE_SHOW_ALL;
+			_showAllButton.EnableInClassList("clicked", _model.ShowAll);
 		}
 	}
 }
