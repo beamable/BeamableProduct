@@ -66,8 +66,8 @@ namespace Beamable.EasyFeatures.BasicParty
 			Context = PartyViewGroup.AllPlayerContexts[0];
 			await Context.OnReady;
 
-			Context.Party.onPlayerInvited -= OnPlayerInvitedToParty;
-			Context.Party.onPlayerInvited += OnPlayerInvitedToParty;
+			Context.Party.OnPlayerInvited -= OnPlayerInvitedToParty;
+			Context.Party.OnPlayerInvited += OnPlayerInvitedToParty;
 			PartyPlayerSystem = Context.ServiceProvider.GetService<BasicPartyPlayerSystem>();
 
 			foreach (var view in PartyViewGroup.ManagedViews)
@@ -160,7 +160,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnDestroy()
 		{
-			Context.Party.onPlayerInvited -= OnPlayerInvitedToParty;
+			Context.Party.OnPlayerInvited -= OnPlayerInvitedToParty;
 		}
 	}
 }
