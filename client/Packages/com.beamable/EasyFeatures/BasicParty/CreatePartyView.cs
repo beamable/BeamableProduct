@@ -38,7 +38,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => _enrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)
@@ -98,7 +98,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				System.MaxPlayers = 0;
 			}
-			
+
 			ValidateNextButton();
 		}
 
@@ -113,7 +113,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				FeatureControl.OpenJoinView();
 			}
-			
+
 			FeatureControl.OpenPartyView();
 		}
 
@@ -121,12 +121,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (Context.Party.IsInParty)
 			{
-				if (System.MaxPlayers < Context.Party.Members.Count)
+				if (System.MaxPlayers < Context.Party.PartyMembers.Count)
 				{
-					FeatureControl.OverlaysController.ShowError($"There's currently {Context.Party.Members.Count} players in the party. You can't set max size to less than that.");
+					FeatureControl.OverlaysController.ShowError($"There's currently {Context.Party.PartyMembers.Count} players in the party. You can't set max size to less than that.");
 					return;
 				}
-				
+
 				// update party settings
 				await Context.Party.Update(PartyRestriction.InviteOnly, System.MaxPlayers);
 			}
@@ -135,7 +135,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				// show loading
 				await Context.Party.Create(PartyRestriction.InviteOnly, System.MaxPlayers);
 			}
-			
+
 			FeatureControl.OpenPartyView();
 		}
 	}
