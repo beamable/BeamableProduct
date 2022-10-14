@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Presence heartbeat may be disabled in _Project Settings/Beamable/Core/Send Heartbeat_.
 - Content Manager's download button shows Reset Content option in dropdown. 
 - `SimNetworkEventStream` has a `ISimFaultHandler` parameter that exposes error handling and callbacks for network outages. 
+- `PartyMember` and `ReceivedPartyInvites` observable lists in `PlayerParty` sdk. 
 
 ### Fixed
 - Content Manager Filter does not log exception when type query does not match any types.
