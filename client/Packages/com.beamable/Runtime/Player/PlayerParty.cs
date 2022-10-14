@@ -14,17 +14,17 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerParty : Observable<Party>
 	{
-		public Action<PartyInviteNotification> onPlayerInvited;
+		public Action<PartyInviteNotification> OnPlayerInvited;
+		public Action<PlayerJoinedNotification> OnPlayerJoined;
+		public Action<PlayerLeftNotification> OnPlayerLeft;
+		public Action<PartyUpdatedNotification> OnPartyUpdated;
+		public Action<PlayerPromotedNotification> OnPlayerPromoted;
+		public Action<PlayerKickedNotification> OnPlayerKicked;
 
 		private readonly IPartyApi _partyApi;
 		private readonly INotificationService _notificationService;
 		private readonly IUserContext _userContext;
 		private Party _state;
-		private Action<PlayerJoinedNotification> _onPlayerJoined;
-		private Action<PlayerLeftNotification> _onPlayerLeft;
-		private Action<PartyUpdatedNotification> _onPartyUpdated;
-		private Action<PlayerPromotedNotification> _onPlayerPromoted;
-		private Action<PlayerKickedNotification> _onPlayerKicked;
 
 		public PlayerParty(IPartyApi partyApi, INotificationService notificationService, IUserContext userContext)
 		{
@@ -86,36 +86,36 @@ namespace Beamable.Player
 		private async void PlayerJoined(PlayerJoinedNotification notification)
 		{
 			await Refresh();
-			_onPlayerJoined?.Invoke(notification);
+			OnPlayerJoined?.Invoke(notification);
 		}
 
 		private async void PlayerLeft(PlayerLeftNotification notification)
 		{
 			await Refresh();
-			_onPlayerLeft?.Invoke(notification);
+			OnPlayerLeft?.Invoke(notification);
 		}
 
 		private void PlayerInvited(PartyInviteNotification data)
 		{
-			onPlayerInvited?.Invoke(data);
+			OnPlayerInvited?.Invoke(data);
 		}
 
 		private async void PartyUpdated(PartyUpdatedNotification notification)
 		{
 			await Refresh();
-			_onPartyUpdated?.Invoke(notification);
+			OnPartyUpdated?.Invoke(notification);
 		}
 
 		private async void PlayerPromoted(PlayerPromotedNotification notification)
 		{
 			await Refresh();
-			_onPlayerPromoted?.Invoke(notification);
+			OnPlayerPromoted?.Invoke(notification);
 		}
 
 		private async void PlayerKicked(PlayerKickedNotification notification)
 		{
 			await Refresh();
-			_onPlayerKicked?.Invoke(notification);
+			OnPlayerKicked?.Invoke(notification);
 		}
 
 		private Promise<List<string>> RefreshMembersList() => Promise<List<string>>.Successful(_state.members);
@@ -178,29 +178,11 @@ namespace Beamable.Player
 			return value;
 		}
 
-		[Obsolete("Use the method will full type support instead.")]
+		[Obsolete("Use individual public actions instead.")]
 		public void RegisterCallbacks(Action<object> onPlayerJoined, Action<object> onPlayerLeft)
 		{
-			RegisterCallbacks(
-				joinedEvt => onPlayerJoined?.Invoke(joinedEvt),
-				leftEvt => onPlayerLeft?.Invoke(leftEvt),
-				null,
-				null,
-				null
-				);
-		}
-
-		public void RegisterCallbacks(Action<PlayerJoinedNotification> onPlayerJoined,
-		                              Action<PlayerLeftNotification> onPlayerLeft,
-		                              Action<PartyUpdatedNotification> onPartyUpdated,
-		                              Action<PlayerPromotedNotification> onPlayerPromoted,
-		                              Action<PlayerKickedNotification> onPlayerKicked)
-		{
-			_onPlayerJoined = onPlayerJoined;
-			_onPlayerLeft = onPlayerLeft;
-			_onPartyUpdated = onPartyUpdated;
-			_onPlayerPromoted = onPlayerPromoted;
-			_onPlayerKicked = onPlayerKicked;
+			OnPlayerJoined = joinedEvt => onPlayerJoined?.Invoke(joinedEvt);
+			OnPlayerLeft = leftEvt => onPlayerLeft?.Invoke(leftEvt);
 		}
 
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
@@ -214,8 +196,12 @@ namespace Beamable.Player
 		{
 			State = await _partyApi.CreateParty(restriction, maxSize);
 			await Members.Refresh();
-			RegisterCallbacks(onPlayerJoined, onPlayerLeft, onPartyUpdated, onPlayerPromoted,
-			                  onPlayerKicked);
+			
+			OnPlayerJoined = onPlayerJoined;
+			OnPlayerLeft = onPlayerLeft;
+			OnPartyUpdated = onPartyUpdated;
+			OnPlayerPromoted = onPlayerPromoted;
+			OnPlayerKicked = onPlayerKicked;
 		}
 
 		/// <inheritdoc cref="IPartyApi.UpdateParty"/>

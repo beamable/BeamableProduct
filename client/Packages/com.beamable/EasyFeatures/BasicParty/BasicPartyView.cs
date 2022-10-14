@@ -58,8 +58,13 @@ namespace Beamable.EasyFeatures.BasicParty
 			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
 			QuickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
-			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft, OnPartyUpdated,
-			                                OnPlayerPromoted, OnPlayerKicked);
+			
+			// set party events
+			Context.Party.OnPlayerJoined = OnPlayerJoined;
+			Context.Party.OnPlayerLeft = OnPlayerLeft;
+			Context.Party.OnPartyUpdated = OnPartyUpdated;
+			Context.Party.OnPlayerPromoted = OnPlayerPromoted;
+			Context.Party.OnPlayerKicked = OnPlayerKicked;
 		}
 
 		protected void RefreshView()

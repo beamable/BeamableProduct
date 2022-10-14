@@ -36,7 +36,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 			
-			Context.Party.onPlayerInvited += OnPlayerInvited;
+			Context.Party.OnPlayerInvited += OnPlayerInvited;
 
 			await RefreshInvitesList();
 			
