@@ -36,11 +36,11 @@ namespace Beamable.EasyFeatures.BasicParty
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, CreatePartyView.IDependencies>();
-			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, JoinPartyView.IDependencies>();
 		}
 
 		[SerializeField]
 		private bool _runOnEnable = true;
+
 		public bool RunOnEnable
 		{
 			get => _runOnEnable;
@@ -58,7 +58,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			Run();
 		}
-
+		
 		public async void Run()
 		{
 			await PartyViewGroup.RebuildPlayerContexts(PartyViewGroup.AllPlayerCodes);
@@ -66,8 +66,8 @@ namespace Beamable.EasyFeatures.BasicParty
 			Context = PartyViewGroup.AllPlayerContexts[0];
 			await Context.OnReady;
 
-			Context.Party.onPlayerInvited -= OnPlayerInvitedToParty;
-			Context.Party.onPlayerInvited += OnPlayerInvitedToParty;
+			Context.Party.OnPlayerInvited -= OnPlayerInvitedToParty;
+			Context.Party.OnPlayerInvited += OnPlayerInvitedToParty;
 			PartyPlayerSystem = Context.ServiceProvider.GetService<BasicPartyPlayerSystem>();
 
 			foreach (var view in PartyViewGroup.ManagedViews)
@@ -78,14 +78,19 @@ namespace Beamable.EasyFeatures.BasicParty
 			OpenView(View.Create);
 		}
 
-		private void OnPlayerInvitedToParty(PartyInviteNotification inviteNotification)
+		private async void OnPlayerInvitedToParty(PartyInviteNotification inviteNotification)
 		{
+			if (_currentView == views[View.Join])
+			{
+				await PartyViewGroup.Enrich();
+			}
+			
 			OverlaysController.ShowConfirm($"{inviteNotification.invitingPlayerId} invited you to a party. Would you like to join?", () => AcceptPartyInvite(inviteNotification.partyId));
 		}
 
-		private async void AcceptPartyInvite(object partyId)
+		private async void AcceptPartyInvite(string partyId)
 		{
-			await Context.Party.Join(partyId.ToString());
+			await Context.Party.Join(partyId);
 			OpenPartyView();
 		}
 
@@ -155,7 +160,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		private void OnDestroy()
 		{
-			Context.Party.onPlayerInvited -= OnPlayerInvitedToParty;
+			Context.Party.OnPlayerInvited -= OnPlayerInvitedToParty;
 		}
 	}
 }

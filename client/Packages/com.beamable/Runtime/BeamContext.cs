@@ -141,9 +141,6 @@ namespace Beamable
 
 		[SerializeField] private PlayerLobby _playerLobby;
 
-		[SerializeField]
-		private PlayerParty _playerParty;
-
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -167,7 +164,7 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="PlayerParty"/> for this context.
 		/// </summary>
-		public PlayerParty Party => _playerParty = _playerParty ?? _serviceScope.GetService<PlayerParty>();
+		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
 
 		/// <summary>
 		/// <para>
@@ -250,7 +247,7 @@ namespace Beamable
 		}
 
 		/// <summary>
-		/// A <see cref="BeamContext"/> is configured for one authorized user. 
+		/// A <see cref="BeamContext"/> is configured for one authorized user.
 		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
 		///
 		/// This method will <i>create</i> new <see cref="BeamContext"/> instance using <see cref="TokenResponse"/> values
@@ -266,7 +263,7 @@ namespace Beamable
 #if UNITY_EDITOR
 				const string log =
 					@"<b>BeamContext</b> with id <b>{0}</b> already exists. " +
-					"In order to update existing BeamContext it is recommended to use <b>" + 
+					"In order to update existing BeamContext it is recommended to use <b>" +
 					nameof(ChangeAuthorizedPlayer) + "</b> method instead.";
 				Debug.LogError(string.Format(log, isDefault ? "Default" : playerCode));
 #endif

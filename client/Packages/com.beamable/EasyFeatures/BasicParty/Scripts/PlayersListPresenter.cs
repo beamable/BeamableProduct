@@ -1,4 +1,5 @@
 ﻿using Beamable.Avatars;
+using Beamable.Common;
 using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
@@ -22,15 +23,27 @@ namespace Beamable.EasyFeatures.BasicParty
 		protected List<PartySlotPresenter.ViewData> Slots;
 		protected bool AreElementsExpandable;
 
-		public void Setup(List<string> players, bool areElementsExpandable, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember, int maxPlayers = 0)
+		public async Promise Setup(List<long> players, bool areElementsExpandable, Action<string> onPlayerAccepted, Action<string> onAskedToLeave, Action<string> onPromoted, Action onAddMember, int maxPlayers = 0)
 		{
 			PartySlotPresenter.ViewData[] viewData = new PartySlotPresenter.ViewData[players.Count];
 			for (int i = 0; i < players.Count; i++)
 			{
+				var stats = await BeamContext.Default.Api.StatsService.GetStats("client", "public", "player", players[i]);
+				string name = stats.ContainsKey("alias") ? stats["alias"] : players[i].ToString();
+				string avatarName = stats.ContainsKey("avatar") ? stats["avatar"] : "";
+				Sprite avatarSprite = AvatarConfiguration.Instance.Default.Sprite;
+				if (!string.IsNullOrWhiteSpace(avatarName))
+				{
+					var avatar = AvatarConfiguration.Instance.Avatars.FirstOrDefault(av => av.Name == avatarName);
+					if (avatar != null)
+					{
+						avatarSprite = avatar.Sprite;
+					}
+				}
+
 				viewData[i] = new PartySlotPresenter.ViewData
 				{
-					Avatar = AvatarConfiguration.Instance.Default.Sprite,
-					PlayerId = players[i]
+					Avatar = avatarSprite, PlayerId = players[i].ToString(), Name = name
 				};
 			}
 
@@ -64,9 +77,7 @@ namespace Beamable.EasyFeatures.BasicParty
 				var data = Slots[i];
 				var rankEntryPoolData = new PartySlotPresenter.PoolData
 				{
-					ViewData = data,
-					Index = i,
-					Height = DefaultElementHeight
+					ViewData = data, Index = i, Height = DefaultElementHeight
 				};
 				items.Add(rankEntryPoolData);
 			}
@@ -75,9 +86,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				items.Add(new PartySlotPresenter.PoolData
 				{
-					Height = DefaultElementHeight,
-					Index = Slots.Count - 1,
-					ViewData = new PartySlotPresenter.ViewData()
+					Height = DefaultElementHeight, Index = Slots.Count - 1, ViewData = new PartySlotPresenter.ViewData()
 				});
 			}
 
