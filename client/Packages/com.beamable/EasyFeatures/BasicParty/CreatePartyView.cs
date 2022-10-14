@@ -1,12 +1,8 @@
-﻿using Beamable.EasyFeatures.Components;
-using Beamable.Experimental.Api.Parties;
+﻿using Beamable.Experimental.Api.Parties;
 using Beamable.UI.Buss;
 using EasyFeatures.Components;
-using System;
-using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using Button = UnityEngine.UI.Button;
 
 namespace Beamable.EasyFeatures.BasicParty
@@ -16,7 +12,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public interface IDependencies : IBeamableViewDeps
 		{
 			int MaxPlayers { get; set; }
-			PartyRestriction PartyRestriction { get; set; }
 			bool ValidateConfirmButton(int maxPlayers);
 		}
 
@@ -29,21 +24,14 @@ namespace Beamable.EasyFeatures.BasicParty
 		public GameObject PartyIdObject;
 		public TMP_InputField PartyIdInputField;
 		public TMP_InputField MaxPlayersTextField;
-		public MultiToggleComponent AccessToggle;
 		public Button CopyIdButton;
 		public Button NextButton;
-		public Button CancelButton;
 		public Button BackButton;
 		public BussElement NextButtonBussElement;
 
 		protected BeamContext Context;
 		protected IDependencies System;
 		protected bool CreateNewParty;
-
-		[Header("Callbacks")]
-		public UnityEvent OnCreatePartyRequestSent;
-		public UnityEvent OnCreatePartyResponseReceived;
-		public UnityEvent CancelButtonClicked;
 
 		public bool IsVisible
 		{
@@ -64,18 +52,17 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 
 			CreateNewParty = !Context.Party.IsInParty;
+			System.MaxPlayers = CreateNewParty ? 0 : Context.Party.MaxSize;
 			HeaderText.text = CreateNewParty ? "CREATE" : "SETTINGS";
 			PartyIdObject.gameObject.SetActive(!CreateNewParty);
 			PartyIdInputField.text = CreateNewParty ? "" : Context.Party.Id;
 			MaxPlayersTextField.text = CreateNewParty ? "" : System.MaxPlayers.ToString();
 			MaxPlayersValueChanged(System.MaxPlayers.ToString());
-			AccessToggle.Setup(Enum.GetNames(typeof(PartyRestriction)).ToList(), OnAccessOptionSelected, (int)System.PartyRestriction);
 
 			// set callbacks
 			MaxPlayersTextField.onValueChanged.ReplaceOrAddListener(MaxPlayersValueChanged);
 			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(OnNextButtonClicked);
-			CancelButton.onClick.ReplaceOrAddListener(OnCancelButtonClicked);
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 		}
 
@@ -93,11 +80,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				NextButtonBussElement.SetButtonDisabled();
 			}
-		}
-
-		private void OnAccessOptionSelected(int optionId)
-		{
-			System.PartyRestriction = (PartyRestriction)optionId;
 		}
 
 		private void OnCopyIdButtonClicked()
@@ -125,11 +107,6 @@ namespace Beamable.EasyFeatures.BasicParty
 			ReturnToPartyView();
 		}
 
-		private void OnCancelButtonClicked()
-		{
-			ReturnToPartyView();
-		}
-
 		private void ReturnToPartyView()
 		{
 			if (!Context.Party.IsInParty)
@@ -144,12 +121,19 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (Context.Party.IsInParty)
 			{
+				if (System.MaxPlayers < Context.Party.PartyMembers.Count)
+				{
+					FeatureControl.OverlaysController.ShowError($"There's currently {Context.Party.PartyMembers.Count} players in the party. You can't set max size to less than that.");
+					return;
+				}
+
 				// update party settings
+				await Context.Party.Update(PartyRestriction.InviteOnly, System.MaxPlayers);
 			}
 			else
 			{
 				// show loading
-				await Context.Party.Create(System.PartyRestriction);
+				await Context.Party.Create(PartyRestriction.InviteOnly, System.MaxPlayers);
 			}
 
 			FeatureControl.OpenPartyView();

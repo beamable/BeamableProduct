@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Player;
+﻿using Beamable.Common.Content;
+using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 
@@ -18,7 +19,7 @@ namespace Beamable.Experimental.Api.Parties
 		public string restriction;
 
 		/// <summary>
-		/// PlayerId of a player who created the party.
+		/// PlayerId of a party leader.
 		/// </summary>
 		public string leader;
 
@@ -33,6 +34,11 @@ namespace Beamable.Experimental.Api.Parties
 		public PartyRestriction Restriction => (PartyRestriction)Enum.Parse(typeof(PartyRestriction), restriction);
 
 		/// <summary>
+		/// Maximum allowed number of players in the party.
+		/// </summary>
+		public int maxSize;
+
+		/// <summary>
 		/// Update the state of the current party with the data from another party instance.
 		/// This will trigger the observable callbacks.
 		/// </summary>
@@ -43,6 +49,7 @@ namespace Beamable.Experimental.Api.Parties
 			restriction = updatedState?.restriction;
 			leader = updatedState?.leader;
 			members = updatedState?.members;
+			maxSize = updatedState?.maxSize ?? 0;
 			TriggerUpdate();
 		}
 	}

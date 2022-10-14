@@ -1,8 +1,8 @@
 ﻿using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
+using Beamable.Experimental.Api.Parties;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicParty
@@ -35,13 +35,12 @@ namespace Beamable.EasyFeatures.BasicParty
 		[RegisterBeamableDependencies]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
-			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, BasicPartyView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, CreatePartyView.IDependencies>();
-			builder.SetupUnderlyingSystemSingleton<BasicPartyPlayerSystem, JoinPartyView.IDependencies>();
 		}
 
 		[SerializeField]
 		private bool _runOnEnable = true;
+
 		public bool RunOnEnable
 		{
 			get => _runOnEnable;
@@ -59,7 +58,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			Run();
 		}
-
+		
 		public async void Run()
 		{
 			await PartyViewGroup.RebuildPlayerContexts(PartyViewGroup.AllPlayerCodes);
@@ -67,6 +66,8 @@ namespace Beamable.EasyFeatures.BasicParty
 			Context = PartyViewGroup.AllPlayerContexts[0];
 			await Context.OnReady;
 
+			Context.Party.OnPlayerInvited -= OnPlayerInvitedToParty;
+			Context.Party.OnPlayerInvited += OnPlayerInvitedToParty;
 			PartyPlayerSystem = Context.ServiceProvider.GetService<BasicPartyPlayerSystem>();
 
 			foreach (var view in PartyViewGroup.ManagedViews)
@@ -75,6 +76,22 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 
 			OpenView(View.Create);
+		}
+
+		private async void OnPlayerInvitedToParty(PartyInviteNotification inviteNotification)
+		{
+			if (_currentView == views[View.Join])
+			{
+				await PartyViewGroup.Enrich();
+			}
+			
+			OverlaysController.ShowConfirm($"{inviteNotification.invitingPlayerId} invited you to a party. Would you like to join?", () => AcceptPartyInvite(inviteNotification.partyId));
+		}
+
+		private async void AcceptPartyInvite(string partyId)
+		{
+			await Context.Party.Join(partyId);
+			OpenPartyView();
 		}
 
 		private View TypeToViewEnum(Type type)
@@ -109,8 +126,6 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 
-			// replace MaxPlayers parameter Party.MaxPlayers once it's available in the SDK
-			PartyPlayerSystem.Setup(Context.Party.Members.ToList(), PartyPlayerSystem.MaxPlayers);
 			OpenView(View.Party);
 		}
 
@@ -141,6 +156,11 @@ namespace Beamable.EasyFeatures.BasicParty
 			_currentView.IsVisible = true;
 
 			await PartyViewGroup.Enrich();
+		}
+
+		private void OnDestroy()
+		{
+			Context.Party.OnPlayerInvited -= OnPlayerInvitedToParty;
 		}
 	}
 }
