@@ -15,7 +15,7 @@ namespace Beamable.Player
 	public class PlayerParty : Observable<Party>
 	{
 		public Action<PartyInviteNotification> onPlayerInvited;
-		
+
 		private readonly IPartyApi _partyApi;
 		private readonly INotificationService _notificationService;
 		private readonly IUserContext _userContext;
@@ -25,7 +25,7 @@ namespace Beamable.Player
 		private Action<PartyUpdatedNotification> _onPartyUpdated;
 		private Action<PlayerPromotedNotification> _onPlayerPromoted;
 		private Action<PlayerKickedNotification> _onPlayerKicked;
-		
+
 		public PlayerParty(IPartyApi partyApi, INotificationService notificationService, IUserContext userContext)
 		{
 			_partyApi = partyApi;
@@ -178,6 +178,18 @@ namespace Beamable.Player
 			return value;
 		}
 
+		[Obsolete("Use the method will full type support instead.")]
+		public void RegisterCallbacks(Action<object> onPlayerJoined, Action<object> onPlayerLeft)
+		{
+			RegisterCallbacks(
+				joinedEvt => onPlayerJoined?.Invoke(joinedEvt),
+				leftEvt => onPlayerLeft?.Invoke(leftEvt),
+				null,
+				null,
+				null
+				);
+		}
+
 		public void RegisterCallbacks(Action<PlayerJoinedNotification> onPlayerJoined,
 		                              Action<PlayerLeftNotification> onPlayerLeft,
 		                              Action<PartyUpdatedNotification> onPartyUpdated,
@@ -253,7 +265,7 @@ namespace Beamable.Player
 
 			await _partyApi.InviteToParty(State.id, playerId);
 		}
-		
+
 		/// <inheritdoc cref="IPartyApi.InviteToParty"/>
 		public async Promise Invite(long playerId)
 		{
@@ -281,7 +293,7 @@ namespace Beamable.Player
 
 			await _partyApi.PromoteToLeader(State.id, playerId);
 		}
-		
+
 		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
 		public async Promise Promote(long playerId)
 		{
@@ -303,7 +315,7 @@ namespace Beamable.Player
 
 			await _partyApi.KickPlayer(State.id, playerId);
 		}
-		
+
 		/// <inheritdoc cref="IPartyApi.KickPlayer"/>
 		public async Promise Kick(long playerId)
 		{

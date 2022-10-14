@@ -28,7 +28,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			PartySlotPresenter.ViewData[] viewData = new PartySlotPresenter.ViewData[players.Count];
 			for (int i = 0; i < players.Count; i++)
 			{
-				var stats = await BeamContext.Default.Api.Stats.GetStats("client", "public", "player", players[i]);
+				var stats = await BeamContext.Default.Api.StatsService.GetStats("client", "public", "player", players[i]);
 				string name = stats.ContainsKey("alias") ? stats["alias"] : players[i].ToString();
 				string avatarName = stats.ContainsKey("avatar") ? stats["avatar"] : "";
 				Sprite avatarSprite = AvatarConfiguration.Instance.Default.Sprite;
@@ -40,13 +40,13 @@ namespace Beamable.EasyFeatures.BasicParty
 						avatarSprite = avatar.Sprite;
 					}
 				}
-				
+
 				viewData[i] = new PartySlotPresenter.ViewData
 				{
 					Avatar = avatarSprite, PlayerId = players[i].ToString(), Name = name
 				};
 			}
-			
+
 			Slots = viewData.ToList();
 			ScrollView.SetContentProvider(this);
 			OnAcceptButtonClicked = onPlayerAccepted;
@@ -54,7 +54,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			OnPromoteClicked = onPromoted;
 			OnAddMemberClicked = onAddMember;
 			AreElementsExpandable = areElementsExpandable;
-			
+
 			ClearEntries();
 			SpawnEntries(maxPlayers);
 		}
@@ -65,7 +65,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				Destroy(slotPresenter.gameObject);
 			}
-			
+
 			SpawnedEntries.Clear();
 		}
 
@@ -111,7 +111,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		public void Despawn(PoolableScrollView.IItem item, RectTransform rt)
 		{
 			if (rt == null) return;
-			
+
 			// TODO: implement object pooling
 			var slotPresenter = rt.GetComponent<PartySlotPresenter>();
 			SpawnedEntries.Remove(slotPresenter);
