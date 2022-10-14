@@ -458,7 +458,7 @@ namespace Beamable.Editor.Content
 
 
 		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
-		private static async Task ResetContent()
+		public static async Task ResetContent()
 		{
 			var contentManagerWindow = await GetFullyInitializedWindow();
 			contentManagerWindow._currentWindow?.Close();

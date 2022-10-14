@@ -1,4 +1,5 @@
 using Beamable.Common.Content;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Inventory
 {
