@@ -20,13 +20,13 @@ namespace Beamable.EasyFeatures.BasicParty
 			get => gameObject.activeSelf;
 			set => gameObject.SetActive(value);
 		}
-		
+
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public async void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			Context = managedPlayers.GetSinglePlayerContext();
-			
+
 			if (!IsVisible)
 			{
 				return;
@@ -34,19 +34,19 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			// set callbacks
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
-			
+
 			// prepare friends list
 			await Context.Social.OnReady;	// show loading
 			var friendsList = Context.Social.Friends;
 			List<long> friends = new List<long>(friendsList.Count);
 			for (int i = 0; i < friendsList.Count; i++)
 			{
-				if (Context.Party.Members.Any(playerId => playerId.Equals(friendsList[i].playerId.ToString())))
+				if (Context.Party.PartyMembers.Any(member => member.playerId.Equals(friendsList[i].playerId)))
 					continue;
-				
+
 				friends.Add(friendsList[i].playerId);
 			}
-			
+
 			await PartyList.Setup(friends, false, OnPlayerInvited, null, null, null);
 		}
 
