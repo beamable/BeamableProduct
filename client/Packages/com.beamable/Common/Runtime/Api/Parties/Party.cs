@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Player;
+﻿using Beamable.Common.Content;
+using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 
@@ -18,7 +19,7 @@ namespace Beamable.Experimental.Api.Parties
 		public string restriction;
 
 		/// <summary>
-		/// PlayerId of a player who created the party.
+		/// PlayerId of a party leader.
 		/// </summary>
 		public string leader;
 
