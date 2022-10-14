@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Player;
+﻿using Beamable.Common.Content;
+using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 

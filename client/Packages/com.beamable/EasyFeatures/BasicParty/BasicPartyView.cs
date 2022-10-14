@@ -58,7 +58,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
 			QuickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
-			
+
 			// set party events
 			Context.Party.OnPlayerJoined = OnPlayerJoined;
 			Context.Party.OnPlayerLeft = OnPlayerLeft;
@@ -84,25 +84,17 @@ namespace Beamable.EasyFeatures.BasicParty
 		}
 
 		private void SetupPlayerCountText() =>
-			PlayerCountText.text = $"{Context.Party.Members.Count}/{Context.Party.MaxSize}";
+			PlayerCountText.text = $"{Context.Party.PartyMembers.Count}/{Context.Party.MaxSize}";
 
 		private async void SetupPartyList()
 		{
-			var members = Context.Party.Members;
+			var members = Context.Party.PartyMembers;
 			List<long> playerIds = new List<long>(members.Count);
 			for (int i = 0; i < members.Count; i++)
 			{
-				if (long.TryParse(members[i], out long id))
-				{
-					playerIds.Add(id);
-				}
-				else
-				{
-					Debug.LogError($"Party member's id '{members[i]}' could not be parsed to long");
-					return;
-				}
+				playerIds.Add(members[i].playerId);
 			}
-			
+
 			await PartyList.Setup(playerIds, Context.Party.IsLeader, null, OnAskedToLeave,
 			                OnPromoteButtonClicked, OnAddMember, Context.Party.MaxSize);
 		}
