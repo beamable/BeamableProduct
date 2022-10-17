@@ -14,38 +14,13 @@ namespace Beamable.Editor.UI.Components
 {
 	public class StyleCardModel
 	{
-		private class PropertyComparer : IComparer<StylePropertyModel>
-		{
-			public int Compare(StylePropertyModel x, StylePropertyModel y)
-			{
-				if (x == null || y == null)
-				{
-					Debug.LogWarning("PropertyComparer:Compare: one of compared elements is null");
-					return 0;
-				}
-
-				int comparison = (y.IsInStyle).CompareTo(x.IsInStyle);
-
-				if (comparison == 0)
-				{
-					comparison = string.Compare(x.PropertyProvider.Key, y.PropertyProvider.Key,
-												StringComparison.Ordinal);
-				}
-
-				return comparison;
-			}
-		}
-
 		public event Action Change;
 		private readonly ThemeModel.PropertyDisplayFilter _currentDisplayFilter;
 		private readonly Action _globalRefresh;
 
-		private readonly PropertyComparer _propertyComparer = new PropertyComparer();
-
+		public bool IsSelected { get; }
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
-		private Action UndoAction { get; }
-		public bool IsSelected { get; }
 		private VariableDatabase VariablesDatabase { get; }
 		private PropertySourceDatabase PropertiesDatabase { get; }
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
@@ -191,11 +166,7 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			if (sort)
-			{
-				models.Sort(_propertyComparer);
-			}
-
+			models = models.OrderBy(m => m.PropertyProvider.Key).ToList();
 			models.AddRange(GetVariables());
 			return models;
 		}
