@@ -130,7 +130,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public long foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -175,7 +175,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public InvitationDirection foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -214,7 +214,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public string foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -261,7 +261,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public string FIELD;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -304,7 +304,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public long[] foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -349,7 +349,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public MapOfLong foo = new MapOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -388,7 +388,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalLong foo = new OptionalLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -437,7 +437,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalLongArray foo = new OptionalLongArray();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -488,7 +488,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalMapOfLong foo = new OptionalMapOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -543,7 +543,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalMapOfLongArray foo = new OptionalMapOfLongArray();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -597,7 +597,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public MapOfLongArray foo = new MapOfLongArray();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)

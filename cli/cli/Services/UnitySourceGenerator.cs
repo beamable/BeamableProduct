@@ -944,6 +944,9 @@ public static class UnityHelper
 
 		var type = new CodeTypeDeclaration(SanitizeClassName(name));
 
+		// make the type partial, so that we can extend it manually...
+		type.IsPartial = true;
+
 		// make sure the model is serializable
 		type.CustomAttributes.Add(
 			new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
