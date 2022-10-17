@@ -43,7 +43,9 @@ namespace Beamable.EasyFeatures.BasicParty
 
 				viewData[i] = new PartySlotPresenter.ViewData
 				{
-					Avatar = avatarSprite, PlayerId = players[i].ToString(), Name = name
+					Avatar = avatarSprite,
+					PlayerId = players[i].ToString(),
+					Name = name
 				};
 			}
 
@@ -77,7 +79,9 @@ namespace Beamable.EasyFeatures.BasicParty
 				var data = Slots[i];
 				var rankEntryPoolData = new PartySlotPresenter.PoolData
 				{
-					ViewData = data, Index = i, Height = DefaultElementHeight
+					ViewData = data,
+					Index = i,
+					Height = DefaultElementHeight
 				};
 				items.Add(rankEntryPoolData);
 			}
@@ -86,7 +90,9 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				items.Add(new PartySlotPresenter.PoolData
 				{
-					Height = DefaultElementHeight, Index = Slots.Count - 1, ViewData = new PartySlotPresenter.ViewData()
+					Height = DefaultElementHeight,
+					Index = Slots.Count - 1,
+					ViewData = new PartySlotPresenter.ViewData()
 				});
 			}
 
