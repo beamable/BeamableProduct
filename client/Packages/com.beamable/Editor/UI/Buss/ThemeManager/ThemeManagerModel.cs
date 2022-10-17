@@ -199,6 +199,20 @@ namespace Beamable.Editor.UI.Buss
 			ForceRefresh();
 		}
 
+		public void SetInlinePropertyValueType(string propertyKey, BussPropertyValueType valueType)
+		{
+			if (SelectedElement == null) return;
+			var propertyProvider = SelectedElement.InlineStyle.Properties.Find(property => property.Key == propertyKey);
+			if (propertyProvider == null) return;
+
+			propertyProvider.GetProperty().ValueType = valueType;
+			// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
+			EditorUtility.SetDirty(SelectedElement);
+			SelectedElement.RecalculateStyle();
+			VariablesDatabase.ReconsiderAllStyleSheets();
+			ForceRefresh();
+		}
+
 		public void RemoveInlineProperty(string value)
 		{
 			if (SelectedElement == null)

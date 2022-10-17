@@ -120,11 +120,29 @@ namespace Beamable.UI.Buss
 		{
 			var key = propertyProvider.Key;
 
-			if (!styleRule.Selector.CheckMatch(Element))
-			{
-				// this is an inherited property, but maybe the property isn't inheritable?
-				if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable) return;
-			}
+			if (string.IsNullOrEmpty(key)) return;
+
+			// if (!styleRule.Selector.CheckMatch(Element))
+			// {
+			// 	// this is an inherited property, but maybe the property isn't inheritable?
+			// 	if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable)
+			// 	{
+			//
+			// 		var prop = propertyProvider.GetProperty();
+			// 		if (prop == null)
+			// 		{
+			//
+			// 		}
+			// 		// final chance- the property itself may say "inherited"
+			// 		if (propertyProvider.ValueType != BussPropertyValueType.Inherited)
+			// 		{
+			// 			return;
+			// 		} else if (propertyProvider.ValueType == BussPropertyValueType.Inherited)
+			// 		{
+			//
+			// 		}
+			// 	}
+			// }
 
 			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
 

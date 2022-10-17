@@ -240,6 +240,8 @@ namespace Beamable.UI.Buss
 		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
 		public bool HasVariableReference => GetProperty() is VariableProperty;
 
+		public BussPropertyValueType ValueType => GetProperty().ValueType;
+
 		public static BussPropertyProvider Create(string key, IBussProperty property, bool forceSerialization = false)
 		{
 			var propertyProvider = new SerializableValueObject();
