@@ -36,7 +36,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
 
 			// prepare friends list
-			await Context.Social.OnReady;	// show loading
+			await Context.Social.OnReady;   // show loading
 			var friendsList = Context.Social.Friends;
 			List<long> friends = new List<long>(friendsList.Count);
 			for (int i = 0; i < friendsList.Count; i++)

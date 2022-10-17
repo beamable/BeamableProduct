@@ -96,7 +96,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			}
 
 			await PartyList.Setup(playerIds, Context.Party.IsLeader, null, OnAskedToLeave,
-			                OnPromoteButtonClicked, OnAddMember, Context.Party.MaxSize);
+							OnPromoteButtonClicked, OnAddMember, Context.Party.MaxSize);
 		}
 
 		protected virtual void OnPlayerJoined(PlayerJoinedNotification notification)
@@ -117,7 +117,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnPromoteButtonClicked(string id)
 		{
 			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to transfer lead to {id}?",
-			                                              () => PromotePlayer(id));
+														  () => PromotePlayer(id));
 		}
 
 		private async void PromotePlayer(string id)
@@ -138,7 +138,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnAskedToLeave(string id)
 		{
 			FeatureControl.OverlaysController.ShowConfirm($"Are you sure you want to ask {id} to leave the party?",
-			                                              () => KickPlayer(id));
+														  () => KickPlayer(id));
 		}
 
 		private async void KickPlayer(string id)
