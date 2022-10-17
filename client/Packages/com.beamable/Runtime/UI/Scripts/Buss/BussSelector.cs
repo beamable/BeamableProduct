@@ -71,6 +71,11 @@ namespace Beamable.UI.Buss
 			if (classCountComparison != 0) return classCountComparison;
 			return ElementCount.CompareTo(other.ElementCount);
 		}
+
+		public override string ToString()
+		{
+			return $"Id: {IdCount}, class: {ClassCount}, element: {ElementCount}";
+		}
 	}
 
 	public class UniversalSelector : BussSelector
