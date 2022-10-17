@@ -198,6 +198,7 @@ namespace Beamable
 																	   UnityUserDataCache<RankEntry>.CreateInstance
 																   ));
 			DependencyBuilder.AddSingleton<GameRelayService>();
+			DependencyBuilder.AddTransient<ISimFaultHandler, DefaultSimFaultHandler>();
 			DependencyBuilder.AddSingleton<MatchmakingService>(provider => new MatchmakingService(
 																   provider.GetService<IPlatformService>(),
 																   // the matchmaking service needs a special instance of the beamable api requester

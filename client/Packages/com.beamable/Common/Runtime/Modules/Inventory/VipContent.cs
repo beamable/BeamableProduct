@@ -2,6 +2,7 @@
 using Beamable.Common.Content.Validation;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Inventory
 {
@@ -13,7 +14,7 @@ namespace Beamable.Common.Inventory
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -29,7 +30,7 @@ namespace Beamable.Common.Inventory
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -44,7 +45,7 @@ namespace Beamable.Common.Inventory
 	///
 	/// #### Related Links
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
