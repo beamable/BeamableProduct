@@ -10,7 +10,11 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
-using UnityEngine;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Trace;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
@@ -63,14 +67,37 @@ namespace Beamable.Server
             XmlDocsHelper.ProviderFactory = XmlDocsHelper.FileIOProvider;
         }
 
+
+        private static void ConfigureOpenTelemetry()
+        {
+
+
+
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-            ConfigureLogging();
+	        ConfigureLogging();
             ConfigureUnhandledError();
             ConfigureDocsProvider();
 
-            var beamableService = new BeamableMicroService();
             var args = new EnviornmentArgs();
+            var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild);
+            var beamableService = new BeamableMicroService(activityProvider:activityProvider);
+
+            using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+	            .AddSource(activityProvider.ActivityName)
+	            .AddOtlpExporter(config =>
+	            {
+		            // config.
+	            })
+	            .AddJaegerExporter(config =>
+	            {
+		            // config.AgentHost = "jaeger";
+		            // config.Endpoint = new Uri("http://jaeger:14268");
+	            })
+	            .Build();
+
 
             var localDebug = new LocalDebugService(beamableService);
 

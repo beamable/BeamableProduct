@@ -27,7 +27,7 @@ namespace Beamable.Microservice.Tests.Socket
         {
             _configure = configure;
         }
-        public IConnection Create(string _)
+        public IConnection Create(string _, IActivityProvider __ = null)
         {
             var socket = new TestSocket();
             _configure(socket);

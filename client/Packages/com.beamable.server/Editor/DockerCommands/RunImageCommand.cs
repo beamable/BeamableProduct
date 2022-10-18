@@ -186,6 +186,9 @@ namespace Beamable.Server.Editor.DockerCommands
 			PruneAfterStartup = true;
 			Environment = new Dictionary<string, string>()
 			{
+				["OTEL_EXPORTER_JAEGER_AGENT_HOST"] = "jaeger",
+				["OTEL_EXPORTER_OTLP_PROTOCOL"] = "grpc",
+				["OTEL_EXPORTER_OTLP_ENDPOINT"] = "otlp", // TODO: ???
 				[ENV_CID] = cid,
 				[ENV_PID] = pid,
 				[ENV_SECRET] = secret,
@@ -242,6 +245,10 @@ namespace Beamable.Server.Editor.DockerCommands
 			MapDotnetCompileErrors();
 		}
 
+		protected override string GetCustomDockerFlags()
+		{
+			return "--link jaeger ";
+		}
 	}
 
 	public class RunImageCommand : DockerCommand

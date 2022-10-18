@@ -33,6 +33,7 @@ using Beamable.Server.Content;
 using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using OpenTelemetry.Trace;
 using ContentService = Beamable.Server.Content.ContentService;
 using ServiceDescriptor = Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 #if DB_MICROSERVICE
@@ -108,6 +109,7 @@ namespace Beamable.Server
       private IConnection _connection;
       private readonly IConnectionProvider _connectionProvider;
       private readonly IContentResolver _contentResolver;
+      private readonly IActivityProvider _activityProvider;
       private Promise<IConnection> _webSocketPromise;
       private MicroserviceRequester _requester;
       private SocketRequesterContext _socketRequesterContext;
@@ -171,7 +173,7 @@ namespace Beamable.Server
       /// </summary>
       private bool _ranCustomUserInitializationHooks = false;
 
-      public BeamableMicroService(IConnectionProvider socketProvider=null, IContentResolver contentResolver=null)
+      public BeamableMicroService(IConnectionProvider socketProvider=null, IContentResolver contentResolver=null, IActivityProvider activityProvider=null)
       {
          if (socketProvider == null)
          {
@@ -183,8 +185,14 @@ namespace Beamable.Server
             contentResolver = new DefaultContentResolver();
          }
 
+         if (activityProvider == null)
+         {
+	         activityProvider = new ActivityProvider();
+         }
+
          _connectionProvider = socketProvider;
          _contentResolver = contentResolver;
+         _activityProvider = activityProvider;
       }
 
       public async Task Start<TMicroService>(IMicroserviceArgs args)
@@ -346,7 +354,7 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-         ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute, new ServiceMethodProvider
+         ServiceMethods = ServiceMethodHelper.Scan(_activityProvider, _serviceAttribute, new ServiceMethodProvider
             {
                instanceType = typeof(AdminRoutes),
                factory = BuildAdminInstance,
@@ -518,7 +526,7 @@ namespace Beamable.Server
          void Attempt()
          {
             Log.Debug($"connecting to ws ({Host}) ... ");
-            var ws = _connectionProvider.Create(Host);
+            var ws = _connectionProvider.Create(Host, _activityProvider);
             ws.OnConnect(socket =>
             {
                Log.Debug("connection made.");
@@ -589,22 +597,27 @@ namespace Beamable.Server
 
       async Task HandlePlatformMessage(RequestContext ctx, string msg)
       {
-         try
-         {
-            _socketRequesterContext.HandleMessage(ctx, msg);
-            await _requester.Acknowledge(ctx);
-         }
-         catch (Exception ex)
-         {
-            BeamableLogger.LogException(ex);
-            await _requester.Acknowledge(ctx, new WebsocketErrorResponse
-            {
-               status = 500, // TODO: Catch a special type of exception, NackException?
-               error = ex.GetType().Name,
-               message = ex.Message,
-               service = MicroserviceName
-            });
-         }
+	      using var activity = _activityProvider.StartActivity("platform-message");
+
+	      try
+	      {
+		      _socketRequesterContext.HandleMessage(ctx, msg);
+		      await _requester.Acknowledge(ctx);
+	      }
+	      catch (Exception ex)
+	      {
+		      activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
+		      activity?.RecordException(ex);
+
+		      BeamableLogger.LogException(ex);
+		      await _requester.Acknowledge(ctx, new WebsocketErrorResponse
+		      {
+			      status = 500, // TODO: Catch a special type of exception, NackException?
+			      error = ex.GetType().Name,
+			      message = ex.Message,
+			      service = MicroserviceName
+		      });
+	      }
       }
 
 
@@ -615,6 +628,7 @@ namespace Beamable.Server
          {
             ServiceCollection = new ServiceCollection();
             ServiceCollection
+	            .AddSingleton<IActivityProvider>(_activityProvider)
                .AddScoped(MicroserviceType)
                .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
@@ -732,8 +746,10 @@ namespace Beamable.Server
 
       async Task HandleClientMessage(RequestContext ctx, string msg)
       {
-         if (RefuseNewClientMessages)
-         {
+	      using var activity = _activityProvider.StartActivity("client-message");
+	      if (RefuseNewClientMessages)
+	      {
+		      activity?.SetStatus(ActivityStatusCode.Error, "empty message");
             Log.Warning("Received a message after service began draining. id={id}", ctx.Id);
             return; // let this message die.
          }
@@ -743,13 +759,18 @@ namespace Beamable.Server
             var route = ctx.Path.Substring(QualifiedName.Length + 1);
 
             var parameterProvider = new AdaptiveParameterProvider(ctx);
+
+            activity?.SetTag("beam.route", route);
+            activity?.SetTag("beam.param.provider", parameterProvider.GetType().Name);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
+            activity?.SetTag("beam.res.body", responseJson);
             BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
             await _socketRequesterContext.SendMessageSafely(responseJson);
             // TODO: Kill Scope
          }
          catch (MicroserviceException ex)
          {
+	         activity?.RecordException(ex);
             var failResponse = new GatewayErrorResponse
             {
                id = ctx.Id,
@@ -763,6 +784,7 @@ namespace Beamable.Server
          }
          catch (TargetInvocationException ex)
          {
+
             var inner = ex.InnerException;
             var failResponse = new GatewayResponse()
             {
@@ -773,6 +795,8 @@ namespace Beamable.Server
 
             if (inner is MicroserviceException msException)
             {
+	            activity?.RecordException(msException);
+
                failResponse.status = msException.ResponseStatus;
                failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
 
@@ -782,6 +806,8 @@ namespace Beamable.Server
             }
             else
             {
+	            activity?.RecordException(ex);
+
                failResponse = new GatewayResponse
                {
                   id = ctx.Id,
@@ -802,6 +828,8 @@ namespace Beamable.Server
          }
          catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
          {
+	         activity?.RecordException(ex);
+
             BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", ex.GetType().Name, ex.Message,
                ex.Source, ex.StackTrace);
             // var failResponse = new GatewayErrorResponse
@@ -826,27 +854,41 @@ namespace Beamable.Server
 
       async Task HandleWebsocketMessage(IConnection ws, string msg)
       {
-         Log.Debug("Handling WS Message. {msg}",msg);
+	      using var activity = _activityProvider.StartActivity("message");
+	      activity?.SetTag("net.sock.peer.name", _args.Host);
 
-         if (!msg.TryBuildRequestContext(_args, out var ctx))
-         {
-            Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
-            return;
-         }
+	      Log.Debug("Handling WS Message. {msg}", msg);
 
-         var reqLog = Log.ForContext("requestContext", ctx, true);
-         BeamableSerilogProvider.LogContext.Value = reqLog;
+	      if (!msg.TryBuildRequestContext(_args, out var ctx))
+	      {
+		      Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
+		      return;
+	      }
 
-         if (_socketRequesterContext.IsPlatformMessage(ctx))
-         {
-            // the request is a platform request.
-            await HandlePlatformMessage(ctx, msg);
-         }
-         else
-         {
-            // this is a client request. Handle the service method.
-            await HandleClientMessage(ctx, msg);
-         }
+	      var reqLog = Log.ForContext("requestContext", ctx, true);
+	      BeamableSerilogProvider.LogContext.Value = reqLog;
+
+	      activity?.SetTag("beam.cid",ctx.Cid);
+	      activity?.SetTag("beam.pid",ctx.Pid);
+	      activity?.SetTag("beam.req.id",ctx.Id);
+	      activity?.SetTag("beam.req.method",ctx.Method);
+	      activity?.SetTag("beam.req.path",ctx.Path);
+	      activity?.SetTag("beam.req.body",ctx.Body);
+	      activity?.SetTag("beam.user.id",ctx.UserId);
+	      activity?.SetTag("beam.user.scopes",ctx.Scopes);
+
+	      if (_socketRequesterContext.IsPlatformMessage(ctx))
+	      {
+		      activity?.SetTag("beam.req.type", "platform");
+		      // the request is a platform request.
+		      await HandlePlatformMessage(ctx, msg);
+	      }
+	      else
+	      {
+		      activity?.SetTag("beam.req.type", "client");
+		      // this is a client request. Handle the service method.
+		      await HandleClientMessage(ctx, msg);
+	      }
       }
 
       private IBeamableRequester GenerateRequester(RequestContext ctx)

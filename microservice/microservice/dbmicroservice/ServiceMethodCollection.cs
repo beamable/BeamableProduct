@@ -9,11 +9,13 @@ namespace Beamable.Server
    public class ServiceMethodCollection
    {
       private readonly IEnumerable<ServiceMethod> _methods;
+      private readonly IActivityProvider _activityProvider;
       private Dictionary<string, ServiceMethod> _pathToMethod;
 
-      public ServiceMethodCollection(IEnumerable<ServiceMethod> methods)
+      public ServiceMethodCollection(IEnumerable<ServiceMethod> methods, IActivityProvider activityProvider)
       {
          _methods = methods;
+         _activityProvider = activityProvider;
          _pathToMethod = methods.ToDictionary(method => method.Path);
       }
 
@@ -21,6 +23,7 @@ namespace Beamable.Server
 
       public async Task<string> Handle(RequestContext ctx, string path, IParameterProvider parameterProvider)
       {
+
          BeamableSerilogProvider.LogContext.Value.Debug("Handling {path}", path);
          if (_pathToMethod.TryGetValue(path, out var method) )
          {
@@ -35,10 +38,15 @@ namespace Beamable.Server
                throw new UnauthorizedUserException(method.Path);
             }
 
-            var output = method.Execute(ctx, parameterProvider);
-            var result = await output;
+            object result = null;
+            using (var _ = _activityProvider.StartActivity("handle-client-message"))
+            {
+	            var output = method.Execute(ctx, parameterProvider);
+	            result = await output;
+            }
             BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);
 
+            using var serializeActivity = _activityProvider.StartActivity("serialize-handle-client-message");
             var serializedResult = method.ResponseSerializer.SerializeResponse(ctx, result);
             return serializedResult;
          }

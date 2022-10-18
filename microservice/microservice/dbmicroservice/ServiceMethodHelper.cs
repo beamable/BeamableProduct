@@ -23,14 +23,14 @@ namespace Beamable.Server
 
    public static class ServiceMethodHelper
    {
-      public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, params ServiceMethodProvider[] serviceMethodProviders)
+      public static ServiceMethodCollection Scan(IActivityProvider activityProvider, MicroserviceAttribute serviceAttribute, params ServiceMethodProvider[] serviceMethodProviders)
       {
          var output = new List<ServiceMethod>();
          foreach (var provider in serviceMethodProviders)
          {
             output.AddRange(ScanType(serviceAttribute, provider));
          }
-         return new ServiceMethodCollection(output);
+         return new ServiceMethodCollection(output, activityProvider);
       }
 
       private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
@@ -107,11 +107,11 @@ namespace Beamable.Server
                namedDeserializers.Add(parameterName, deserializer);
                deserializers.Add(deserializer);
             }
-            
+
             MethodInvocation executor;
 
             var resultType = method.ReturnType;
-            
+
             if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
                resultType = typeof(Promise<Unit>);
 
@@ -122,7 +122,7 @@ namespace Beamable.Server
                   var promiseObject = closureMethod.Invoke(target, args);
                   var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
                      nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
-                  
+
                   return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
                      .Invoke(null, new[] {promiseObject});
                };
@@ -130,7 +130,7 @@ namespace Beamable.Server
             else
             {
                var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
-               
+
                if (isAsync)
                {
                   executor = (target, args) =>
@@ -168,7 +168,7 @@ namespace Beamable.Server
             if (output.Select(sm => sm.Path).Contains(servicePath))
                throw new BeamableMicroserviceException($"Overloaded Callables are not currently supported in C#MS! Class={method.DeclaringType.Name} Method={method.Name}")
                   { ErrorCode = BeamableMicroserviceException.kBMS_ERROR_CODE_OVERLOADED_METHOD_UNSUPPORTED };
-            
+
             output.Add(serviceMethod);
          }
 

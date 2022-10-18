@@ -21,11 +21,11 @@ namespace Beamable.Server
 
     {
 
-        public IConnection Create(string host)
+        public IConnection Create(string host, IActivityProvider activityProvider=null)
 
         {
 
-            var ws = EasyWebSocket.Create(host);
+            var ws = EasyWebSocket.Create(host, activityProvider);
 
             return ws;
 
@@ -62,6 +62,7 @@ namespace Beamable.Server
 
 
         private long messageNumber = 0;
+        private static IActivityProvider _activityProvider;
 
 
         public WebSocketState State => _ws.State;
@@ -95,12 +96,12 @@ namespace Beamable.Server
 
         /// <returns></returns>
 
-        public static EasyWebSocket Create(string uri)
+        public static EasyWebSocket Create(string uri, IActivityProvider activityProvider)
 
         {
+	        _activityProvider = activityProvider;
 
-            return new EasyWebSocket(uri);
-
+	        return new EasyWebSocket(uri);
         }
 
 
@@ -226,6 +227,7 @@ namespace Beamable.Server
             {
                 throw new Exception($"Connection is not open. state=[{_ws.State}]");
             }
+            using var activity = _activityProvider.StartActivity("ws-send");
 
 
             var messageBuffer = Encoding.UTF8.GetBytes(message);
