@@ -201,7 +201,6 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			AssetDatabase.SaveAssets();
-			_globalRefresh?.Invoke();
 
 			if (InlineStyleOwner != null)
 			{
