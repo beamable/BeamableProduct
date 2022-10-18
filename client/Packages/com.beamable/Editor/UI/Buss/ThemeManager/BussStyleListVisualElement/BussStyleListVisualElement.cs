@@ -66,10 +66,10 @@ namespace Beamable.Editor.UI.Buss
 		{
 			ClearCards();
 
-			foreach (var item in _model.FilteredRules.OrderByDescending(x => x.Key.Order))
+			foreach (var pair in _model.FilteredRules.OrderByDescending(x => x.Key.Order))
 			{
-				var styleSheet = item.Value;
-				var styleRule = item.Key;
+				var styleSheet = pair.Value;
+				var styleRule = pair.Key;
 
 				AddStyleCard(styleSheet, styleRule);
 			}
