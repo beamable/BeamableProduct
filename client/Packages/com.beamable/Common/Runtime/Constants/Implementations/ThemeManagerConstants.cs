@@ -20,13 +20,9 @@ namespace Beamable.Common
 					public const string CLEAR_ALL_PROPERTIES_HEADER = "Clear all properties";
 					public const string CLEAR_ALL_PROPERTIES_MESSAGE = "Are You sure You want to clear all properties and variables?";
 
-					public const string NO_BUSS_STYLE_SHEET_AVAILABLE =
-						"There should be created at least one Buss Style Sheet and it should be referenced by Buss Element present at scene";
-
 					public const string ADD_STYLE_BUTTON_LABEL = "Add Style";
 					public const string ADD_STYLE_OPTIONS_HEADER = "Select target stylesheet";
 
-					public const string DUPLICATE_STYLESHEET_BUTTON_LABEL = "Duplicate factory stylesheet";
 					public const string DUPLICATE_STYLESHEET_OPTIONS_HEADER = "Select source stylesheet";
 
 					public const string TOGGLE_SHOW_ALL = "Show All";

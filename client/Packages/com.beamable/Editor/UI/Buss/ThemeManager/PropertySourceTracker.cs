@@ -10,6 +10,7 @@ namespace Beamable.UI.Buss
 		private readonly Dictionary<string, SourceData> _sources = new Dictionary<string, SourceData>();
 		public BussElement Element { get; }
 
+
 		public PropertySourceTracker(BussElement element)
 		{
 			Element = element;
@@ -80,7 +81,7 @@ namespace Beamable.UI.Buss
 			return GetUsedPropertyReference(key, BussStyle.GetBaseType(key));
 		}
 
-		public PropertyReference GetUsedPropertyReference(string key, Type baseType)
+		private PropertyReference GetUsedPropertyReference(string key, Type baseType)
 		{
 			if (_sources.ContainsKey(key))
 			{
