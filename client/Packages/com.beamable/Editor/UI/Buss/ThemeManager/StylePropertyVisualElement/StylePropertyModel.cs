@@ -92,7 +92,9 @@ namespace Beamable.Editor.UI.Components
 			{
 				commands.Add(new GenericMenuCommand("Use Initial Value", () =>
 				{
+					// OnPropertyChanged(PropertyProvider.GetProperty());
 					_setValueTypeAction?.Invoke(PropertyProvider.Key, BussPropertyValueType.Initial);
+					OnPropertyChanged(PropertyProvider.GetProperty());
 				}));
 			}
 
@@ -101,6 +103,7 @@ namespace Beamable.Editor.UI.Components
 				commands.Add(new GenericMenuCommand("Use Inherited Value", () =>
 				{
 					_setValueTypeAction?.Invoke(PropertyProvider.Key, BussPropertyValueType.Inherited);
+					OnPropertyChanged(PropertyProvider.GetProperty());
 				}));
 			}
 
@@ -109,6 +112,7 @@ namespace Beamable.Editor.UI.Components
 				commands.Add(new GenericMenuCommand("Use Value", () =>
 				{
 					_setValueTypeAction?.Invoke(PropertyProvider.Key, BussPropertyValueType.Value);
+					OnPropertyChanged(PropertyProvider.GetProperty());
 				}));
 			}
 

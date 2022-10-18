@@ -40,21 +40,15 @@ namespace Beamable.UI.Buss
 
 	}
 
-	public enum BussPropertyValueType
-	{
-		Value,
-		Initial,
-		Inherited
-	}
 
-	public abstract class IBussProperty<T> : IBussProperty
-	{
-
-
-		T Value { get; }
-
-		public abstract IBussProperty CopyProperty();
-	}
+	// public abstract class IBussProperty<T> : IBussProperty
+	// {
+	//
+	//
+	// 	T Value { get; }
+	//
+	// 	public abstract IBussProperty CopyProperty();
+	// }
 
 	public interface IInterpolatedBussProperty : IBussProperty
 	{
