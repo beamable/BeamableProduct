@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Components
 		private VariableDatabase VariablesDatabase { get; }
 		private PropertySourceTracker PropertySourceTracker { get; }
 		public BussElement InlineStyleOwner { get; }
-		public string Tooltip { get; set; }
+		public string Tooltip { get; }
 		public int VariableDropdownOptionIndex => GetOptionIndex();
 		public List<string> DropdownOptions => GetDropdownOptions();
 
@@ -35,13 +35,13 @@ namespace Beamable.Editor.UI.Components
 			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key);
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
-								  BussStyleRule styleRule,
-								  BussPropertyProvider propertyProvider,
-								  VariableDatabase variablesDatabase,
-								  PropertySourceTracker propertySourceTracker,
-								  BussElement inlineStyleOwner,
-								  Action<string> removePropertyAction,
-								  Action globalRefresh)
+		                          BussStyleRule styleRule,
+		                          BussPropertyProvider propertyProvider,
+		                          VariableDatabase variablesDatabase,
+		                          PropertySourceTracker propertySourceTracker,
+		                          BussElement inlineStyleOwner,
+		                          Action<string> removePropertyAction,
+		                          Action globalRefresh)
 		{
 			_removePropertyAction = removePropertyAction;
 			_globalRefresh = globalRefresh;
@@ -51,12 +51,23 @@ namespace Beamable.Editor.UI.Components
 			VariablesDatabase = variablesDatabase;
 			PropertySourceTracker = propertySourceTracker;
 			InlineStyleOwner = inlineStyleOwner;
+
+			if (IsOverriden && IsInStyle && PropertySourceTracker != null)
+			{
+				VariableDatabase.PropertyReference reference =
+					PropertySourceTracker.GetUsedPropertyReference(PropertyProvider.Key);
+				Tooltip = $"Property is overriden by {reference.StyleRule.SelectorString} rule from {reference.StyleSheet.name} stylesheet";
+			}
+			else
+			{
+				Tooltip = String.Empty;
+			}
 		}
 
 		public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
 		{
 			VariablesDatabase.TryGetProperty(PropertyProvider, StyleRule, out IBussProperty property,
-											 out VariableDatabase.PropertyReference variableSource);
+			                                 out VariableDatabase.PropertyReference variableSource);
 
 			bussProperty = property;
 			propertyReference = variableSource;
