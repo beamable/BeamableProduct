@@ -35,33 +35,33 @@ namespace Beamable.Tests.Buss
 			styleSheetA.Styles.Add(BussStyleRule.Create("#A", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(10f)),
-			}.ToList()));
+			}.ToList(), styleSheetA.Styles.Count));
 			styleSheetA.Styles.Add(BussStyleRule.Create("#A > *", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(15f)),
-			}.ToList()));
+			}.ToList(), styleSheetA.Styles.Count));
 			styleSheetA.Styles.Add(BussStyleRule.Create("#A > .class1", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(20f)),
-			}.ToList()));
+			}.ToList(), styleSheetA.Styles.Count));
 
 			styleSheetB = ScriptableObject.CreateInstance<BussStyleSheet>();
 			styleSheetB.Styles.Add(BussStyleRule.Create("*", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.BorderWidth.Key, new FloatBussProperty(44f)),
-			}.ToList()));
+			}.ToList(), styleSheetB.Styles.Count));
 			styleSheetB.Styles.Add(BussStyleRule.Create("#B", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(15f)),
-			}.ToList()));
+			}.ToList(), styleSheetB.Styles.Count));
 			styleSheetB.Styles.Add(BussStyleRule.Create("#B *", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(20f)),
-			}.ToList()));
+			}.ToList(),styleSheetB.Styles.Count ));
 			styleSheetB.Styles.Add(BussStyleRule.Create("#B, #B_B_B", new BussPropertyProvider[]
 			{
 				BussPropertyProvider.Create(BussStyle.BorderWidth.Key, new FloatBussProperty(66f)),
-			}.ToList()));
+			}.ToList(), styleSheetB.Styles.Count));
 		}
 
 		private void InitHierarchy()

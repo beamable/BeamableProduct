@@ -106,7 +106,7 @@ namespace Beamable.UI.Buss
 				return;
 			}
 
-			BussStyleRule rule = BussStyleRule.Create(style.SelectorString, new List<BussPropertyProvider>());
+			BussStyleRule rule = BussStyleRule.Create(style.SelectorString, new List<BussPropertyProvider>(), targetStyleSheet.Styles.Count);
 
 			foreach (BussPropertyProvider propertyProvider in style.Properties)
 			{

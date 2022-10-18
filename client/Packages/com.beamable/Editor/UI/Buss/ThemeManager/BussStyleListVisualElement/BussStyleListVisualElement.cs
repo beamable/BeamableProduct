@@ -2,6 +2,7 @@
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
+using System.Linq;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
@@ -65,10 +66,10 @@ namespace Beamable.Editor.UI.Buss
 		{
 			ClearCards();
 
-			foreach (var pair in _model.FilteredRules)
+			foreach (var item in _model.FilteredRules.OrderByDescending(x => x.Key.Order))
 			{
-				var styleSheet = pair.Value;
-				var styleRule = pair.Key;
+				var styleSheet = item.Value;
+				var styleRule = item.Key;
 
 				AddStyleCard(styleSheet, styleRule);
 			}

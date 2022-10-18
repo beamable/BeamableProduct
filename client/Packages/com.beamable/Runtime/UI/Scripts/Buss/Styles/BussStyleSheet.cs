@@ -121,7 +121,8 @@ namespace Beamable.UI.Buss
 	public class BussStyleRule : BussStyleDescription
 	{
 		[SerializeField] private string _selector;
-
+		[SerializeField] private int _order;
+		
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
 
 		public string SelectorString
@@ -129,10 +130,16 @@ namespace Beamable.UI.Buss
 			get => _selector;
 			set => _selector = value;
 		}
-
-		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
+		
+		public int Order
 		{
-			return new BussStyleRule { _selector = selector, _properties = properties };
+			get => _order;
+			set => _order = value;
+		}
+
+		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties, int order)
+		{
+			return new BussStyleRule { _selector = selector, _properties = properties, _order = order};
 		}
 
 		public bool RemoveProperty(IBussProperty bussProperty)

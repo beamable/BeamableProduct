@@ -90,7 +90,7 @@ namespace Beamable.Editor.UI.Buss
 				selectorName = BussNameUtility.GetLabel(SelectedElement);
 			}
 
-			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
+			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>(), selectedStyleSheet.Styles.Count);
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
 			AssetDatabase.SaveAssets();
