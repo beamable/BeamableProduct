@@ -29,17 +29,17 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_labelComponent = new TextElement {name = "propertyLabel"};
+			_labelComponent = new TextElement { name = "propertyLabel" };
 			_labelComponent.RegisterCallback<MouseDownEvent>(_model.LabelClicked);
 			Root.Add(_labelComponent);
 
-			_valueParent = new VisualElement {name = "value"};
+			_valueParent = new VisualElement { name = "value" };
 			Root.Add(_valueParent);
 
-			_variableParent = new VisualElement {name = "globalVariable"};
+			_variableParent = new VisualElement { name = "globalVariable" };
 			Root.Add(_variableParent);
 
-			_overrideIndicatorParent = new VisualElement {name = "overrideIndicatorParent"};
+			_overrideIndicatorParent = new VisualElement { name = "overrideIndicatorParent" };
 			_overrideIndicatorParent.AddToClassList("overrideIndicatorParent");
 			Root.Add(_overrideIndicatorParent);
 
@@ -131,7 +131,7 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_valueParent.Clear();
-			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text) {name = "message"};
+			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(text) { name = "message" };
 			_valueParent.Add(_propertyVisualElement);
 			_propertyVisualElement.Init();
 		}
