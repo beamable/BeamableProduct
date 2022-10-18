@@ -50,7 +50,10 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		private void OnDisable()
 		{
-			System.Context.Social.Friends.OnDataUpdated -= FriendsListUpdated;
+			if (System != null && System.Context.Social.OnReady.IsCompleted)
+			{
+				System.Context.Social.Friends.OnDataUpdated -= FriendsListUpdated;	
+			}
 		}
 
 		private async void FriendsListUpdated(List<PlayerFriend> friendsList)
