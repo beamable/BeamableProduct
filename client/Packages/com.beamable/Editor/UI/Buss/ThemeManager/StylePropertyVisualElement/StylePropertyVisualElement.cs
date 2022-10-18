@@ -45,7 +45,6 @@ namespace Beamable.Editor.UI.Components
 
 			var overrideIndicator = new VisualElement();
 			overrideIndicator.AddToClassList("overrideIndicator");
-			overrideIndicator.tooltip = "TEST";
 			_overrideIndicatorParent.Add(overrideIndicator);
 
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
