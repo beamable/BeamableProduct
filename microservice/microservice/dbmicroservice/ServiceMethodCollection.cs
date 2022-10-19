@@ -39,14 +39,14 @@ namespace Beamable.Server
             }
 
             object result = null;
-            using (var _ = _activityProvider.StartActivity("handle-client-message"))
+            using (var _ = _activityProvider.StartActivity(path))
             {
 	            var output = method.Execute(ctx, parameterProvider);
 	            result = await output;
             }
             BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);
 
-            using var serializeActivity = _activityProvider.StartActivity("serialize-handle-client-message");
+            using var serializeActivity = _activityProvider.StartActivity($"serialize-{path}");
             var serializedResult = method.ResponseSerializer.SerializeResponse(ctx, result);
             return serializedResult;
          }

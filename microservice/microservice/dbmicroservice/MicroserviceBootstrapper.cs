@@ -12,7 +12,10 @@ using Serilog.Events;
 using Serilog.Formatting.Compact;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 
@@ -85,19 +88,34 @@ namespace Beamable.Server
             var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild);
             var beamableService = new BeamableMicroService(activityProvider:activityProvider);
 
-            using var tracerProvider = Sdk.CreateTracerProviderBuilder()
-	            .AddSource(activityProvider.ActivityName)
+            var metricProvider = Sdk.CreateMeterProviderBuilder()
+	            .AddMeter(activityProvider.ActivityName)
 	            .AddOtlpExporter(config =>
 	            {
-		            // config.
+		            // config.Endpoint = new Uri("https://otel-collector:4317");
+		            config.Protocol = OtlpExportProtocol.Grpc;
 	            })
-	            .AddJaegerExporter(config =>
+	            // .AddRuntimeInstrumentation()
+	            // .AddProcessInstrumentation()
+	            .AddConsoleExporter()
+	            .Build();
+            using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+	            .AddSource(activityProvider.ActivityName)
+	            .SetResourceBuilder(ResourceBuilder.CreateEmpty()
+		            .AddService(typeof(TMicroService).Name)
+		            .AddAttributes(new Dictionary<string, object>
+		            {
+			            ["cid"] = args.CustomerID,
+			            ["pid"] = args.ProjectName,
+			            ["beam-version"] = args.SdkVersionExecution,
+		            })
+	            )
+	            .AddOtlpExporter(config =>
 	            {
-		            // config.AgentHost = "jaeger";
-		            // config.Endpoint = new Uri("http://jaeger:14268");
+		            // config.Endpoint = new Uri("https://otel-collector:4317");
+		            config.Protocol = OtlpExportProtocol.Grpc;
 	            })
 	            .Build();
-
 
             var localDebug = new LocalDebugService(beamableService);
 

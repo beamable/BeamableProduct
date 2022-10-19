@@ -49,6 +49,7 @@ using Beamable.Common.Api.Stats;
 using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Api.Notifications;
+using beamable.server.Tracing;
 using microservice.Common;
 using Newtonsoft.Json;
 using Serilog;
@@ -598,6 +599,7 @@ namespace Beamable.Server
       async Task HandlePlatformMessage(RequestContext ctx, string msg)
       {
 	      using var activity = _activityProvider.StartActivity("platform-message");
+	      _activityProvider.GetCounter<long>("beam.request.platform.count").Add(1);
 
 	      try
 	      {
@@ -629,6 +631,7 @@ namespace Beamable.Server
             ServiceCollection = new ServiceCollection();
             ServiceCollection
 	            .AddSingleton<IActivityProvider>(_activityProvider)
+	            .AddSingleton<IBeamableTracer, BeamableTracer>()
                .AddScoped(MicroserviceType)
                .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
@@ -747,6 +750,8 @@ namespace Beamable.Server
       async Task HandleClientMessage(RequestContext ctx, string msg)
       {
 	      using var activity = _activityProvider.StartActivity("client-message");
+	      _activityProvider.GetCounter<long>("beam.request.client.count").Add(1);
+
 	      if (RefuseNewClientMessages)
 	      {
 		      activity?.SetStatus(ActivityStatusCode.Error, "empty message");
@@ -757,6 +762,7 @@ namespace Beamable.Server
          try
          {
             var route = ctx.Path.Substring(QualifiedName.Length + 1);
+
 
             var parameterProvider = new AdaptiveParameterProvider(ctx);
 
@@ -771,6 +777,10 @@ namespace Beamable.Server
          catch (MicroserviceException ex)
          {
 	         activity?.RecordException(ex);
+	         activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
+
+	         _activityProvider.GetCounter<long>("beam.request.client.error.count").Add(1);
+
             var failResponse = new GatewayErrorResponse
             {
                id = ctx.Id,
@@ -784,6 +794,7 @@ namespace Beamable.Server
          }
          catch (TargetInvocationException ex)
          {
+	         _activityProvider.GetCounter<long>("beam.request.client.error.count").Add(1);
 
             var inner = ex.InnerException;
             var failResponse = new GatewayResponse()
@@ -796,6 +807,7 @@ namespace Beamable.Server
             if (inner is MicroserviceException msException)
             {
 	            activity?.RecordException(msException);
+	            activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
 
                failResponse.status = msException.ResponseStatus;
                failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
@@ -807,6 +819,7 @@ namespace Beamable.Server
             else
             {
 	            activity?.RecordException(ex);
+	            activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
 
                failResponse = new GatewayResponse
                {
@@ -828,9 +841,11 @@ namespace Beamable.Server
          }
          catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
          {
+	         _activityProvider.GetCounter<long>("beam.request.client.error.count").Add(1);
 	         activity?.RecordException(ex);
+	         activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
 
-            BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", ex.GetType().Name, ex.Message,
+	         BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", ex.GetType().Name, ex.Message,
                ex.Source, ex.StackTrace);
             // var failResponse = new GatewayErrorResponse
             // {
@@ -856,6 +871,7 @@ namespace Beamable.Server
       {
 	      using var activity = _activityProvider.StartActivity("message");
 	      activity?.SetTag("net.sock.peer.name", _args.Host);
+	      _activityProvider.GetCounter<long>("beam.request.count").Add(1);
 
 	      Log.Debug("Handling WS Message. {msg}", msg);
 
@@ -918,6 +934,7 @@ namespace Beamable.Server
             Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
             Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
             Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
+            Tracing = provider.GetRequiredService<IBeamableTracer>()
          };
          return services;
       }
@@ -945,6 +962,7 @@ namespace Beamable.Server
             Commerce = new MicroserviceCommerceApi(requester),
             Chat = new MicroserviceChatApi(requester, ctx),
             Payments = new MicroservicePaymentsApi(requester),
+            Tracing = new BeamableTracer(_activityProvider)
          };
 
          return services;

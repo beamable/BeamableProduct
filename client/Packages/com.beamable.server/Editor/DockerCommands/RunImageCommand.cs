@@ -186,9 +186,9 @@ namespace Beamable.Server.Editor.DockerCommands
 			PruneAfterStartup = true;
 			Environment = new Dictionary<string, string>()
 			{
-				["OTEL_EXPORTER_JAEGER_AGENT_HOST"] = "jaeger",
-				["OTEL_EXPORTER_OTLP_PROTOCOL"] = "grpc",
-				["OTEL_EXPORTER_OTLP_ENDPOINT"] = "otlp", // TODO: ???
+				// ["OTEL_EXPORTER_JAEGER_AGENT_HOST"] = "jaeger",
+				// ["OTEL_EXPORTER_OTLP_PROTOCOL"] = "grpc",
+				// ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://otel-collector:4317", // TODO: ???
 				[ENV_CID] = cid,
 				[ENV_PID] = pid,
 				[ENV_SECRET] = secret,
@@ -245,10 +245,16 @@ namespace Beamable.Server.Editor.DockerCommands
 			MapDotnetCompileErrors();
 		}
 
-		protected override string GetCustomDockerFlags()
-		{
-			return "--link jaeger ";
-		}
+		// protected override string GetCustomDockerFlags()
+		// {
+		// 	return "--link jaeger ";
+		// }
+
+		// protected override string GetCustomDockerFlags()
+		// {
+		// 	return "--net clickhouse-setup_default ";
+		// }
+
 	}
 
 	public class RunImageCommand : DockerCommand

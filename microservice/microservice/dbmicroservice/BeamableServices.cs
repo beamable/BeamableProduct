@@ -18,6 +18,7 @@ using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
+using beamable.server.Tracing;
 
 namespace Beamable.Server
 {
@@ -41,5 +42,6 @@ namespace Beamable.Server
       public IMicroserviceCommerceApi Commerce { get; set; }
       public IMicroserviceChatApi Chat { get; set; }
       public IMicroservicePaymentsApi Payments { get; set; }
+      public IBeamableTracer Tracing { get; set; }
    }
 }
