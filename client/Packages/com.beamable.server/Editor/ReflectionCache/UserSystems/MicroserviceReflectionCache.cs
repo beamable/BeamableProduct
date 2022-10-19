@@ -486,38 +486,44 @@ namespace Beamable.Server.Editor
 							return res;
 						}
 
-						// Wait until the container has completely booted up and it's Start function has finished.
-						var timeWaitingForBoot = 0f;
-						var isHealthy = false;
-						do
-						{
-							try
-							{
-								var healthStatus = await CheckHealthStatus();
-								if (healthStatus.Contains("true"))
-									isHealthy = true;
 
-								if (healthStatus.Contains("false"))
+						if (MicroserviceConfiguration.Instance.EnablePrePublishHealthCheck)
+						{
+							var healthcheckTimeout = MicroserviceConfiguration.Instance.PrePublishHealthCheckTimeout.GetOrElse(10);
+
+							// Wait until the container has completely booted up and it's Start function has finished.
+							var timeWaitingForBoot = 0f;
+							var isHealthy = false;
+							do
+							{
+								try
+								{
+									var healthStatus = await CheckHealthStatus();
+									if (healthStatus.Contains("true"))
+										isHealthy = true;
+
+									if (healthStatus.Contains("false"))
+										isHealthy = false;
+								}
+								catch
+								{
 									isHealthy = false;
-							}
-							catch
+								}
+
+								await Task.Delay(500, token);
+								timeWaitingForBoot += .5f;
+							} while (timeWaitingForBoot <= healthcheckTimeout && !isHealthy);
+
+							if (!isHealthy)
 							{
-								isHealthy = false;
+								OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
+								UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+								// Stop the container since we don't need to keep the local one alive anymore.
+								await new StopImageCommand(descriptor).StartAsync();
+
+								return;
 							}
-
-							await Task.Delay(500, token);
-							timeWaitingForBoot += .5f;
-						} while (timeWaitingForBoot <= 10f && !isHealthy);
-
-						if (!isHealthy)
-						{
-							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
-							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-
-							// Stop the container since we don't need to keep the local one alive anymore.
-							await new StopImageCommand(descriptor).StartAsync();
-
-							return;
 						}
 
 						// Stop the container since we don't need to keep the local one alive anymore.
