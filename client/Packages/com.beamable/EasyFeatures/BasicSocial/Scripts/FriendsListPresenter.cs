@@ -19,14 +19,36 @@ namespace Beamable.EasyFeatures.BasicSocial
 		protected List<FriendSlotPresenter.ViewData> Slots;
 		protected Action<long> onButtonPressed;
 		protected Action<long> onEntryPressed;
+		protected Action<long> onAcceptPressed;
+		protected Action<long> onCancelPressed;
 		protected string buttonText;
+
+		private bool isAcceptCancelVariant;
 
 		public void Setup(List<FriendSlotPresenter.ViewData> viewData, Action<long> onButtonPressed = null, string buttonText = "Confirm", Action<long> onEntryPressed = null)
 		{
+			isAcceptCancelVariant = false;
+			
 			this.onButtonPressed = onButtonPressed;
 			this.buttonText = buttonText;
 			this.onEntryPressed = onEntryPressed;
 			
+			SetupInternal(viewData);
+		}
+
+		public void Setup(List<FriendSlotPresenter.ViewData> viewData, Action<long> onAcceptPressed, Action<long> onCancelPressed, Action<long> onEntryPressed = null)
+		{
+			isAcceptCancelVariant = true;
+
+			this.onAcceptPressed = onAcceptPressed;
+			this.onCancelPressed = onCancelPressed;
+			this.onEntryPressed = onEntryPressed;
+			
+			SetupInternal(viewData);
+		}
+
+		private void SetupInternal(List<FriendSlotPresenter.ViewData> viewData)
+		{
 			Slots = viewData.ToList();
 			ScrollView.SetContentProvider(this);
 			
@@ -69,8 +91,15 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 			var data = item as FriendSlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be FriendSlotPresenter");
-			
-			spawned.Setup(data, onEntryPressed, onButtonPressed, buttonText);
+
+			if (isAcceptCancelVariant)
+			{
+				spawned.Setup(data, onEntryPressed, onCancelPressed, onAcceptPressed);
+			}
+			else
+			{
+				spawned.Setup(data, onEntryPressed, onButtonPressed, buttonText);	
+			}
 			
 			return spawned.GetComponent<RectTransform>();
 		}

@@ -4,6 +4,7 @@ using Beamable.Common.Player;
 using Beamable.Player;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -141,28 +142,21 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 			UnsubscribeFromInvitesEvents();
 			
-			List<long> ids;
-			Action<long> buttonAction;
-			string buttonText;
 			if (_currentListView == ReceivedListPresenter)
 			{
 				System.Context.Social.ReceivedInvites.OnDataUpdated += OnReceivedListChanged;
-				ids = System.GetPlayersIds(System.Context.Social.ReceivedInvites);
-				buttonAction = AcceptInviteFrom;
-				buttonText = "Accept";
+				var ids = System.GetPlayersIds(System.Context.Social.ReceivedInvites);
+				var viewData = await System.GetPlayersViewData(ids);
+				_currentListView.Setup(viewData, AcceptInviteFrom, CancelInviteFrom);
 			}
 			else
 			{
 				System.Context.Social.SentInvites.OnDataUpdated += OnSentListChanged;
-				ids = System.GetPlayersIds(System.Context.Social.SentInvites);
-				buttonAction = null;
-				buttonText = "";
+				var ids = System.GetPlayersIds(System.Context.Social.SentInvites);
+				var viewData = await System.GetPlayersViewData(ids);
+				_currentListView.Setup(viewData, CancelSentInviteTo, "Recall");
 			}
 
-			var viewData = await System.GetPlayersViewData(ids);
-
-			_currentListView.Setup(viewData, buttonAction, buttonText);
-			
 			FeatureControl.SetLoadingOverlay(false);
 		}
 
@@ -182,6 +176,24 @@ namespace Beamable.EasyFeatures.BasicSocial
 		{
 			await System.Context.Social.AcceptInviteFrom(invitingPlayerId);
 			await RefreshView();
+		}
+		
+		private void CancelInviteFrom(long playerId)
+		{
+			throw new NotImplementedException();
+		}
+		
+		private async void CancelSentInviteTo(long playerId)
+		{
+			var sentInvite = System.Context.Social.SentInvites.FirstOrDefault(invite => invite.PlayerId == playerId);
+			if (sentInvite != null)
+			{
+				await sentInvite.Cancel();
+			}
+			else
+			{
+				Debug.LogError($"There is no invite sent to player {playerId}");
+			}
 		}
 	}
 }

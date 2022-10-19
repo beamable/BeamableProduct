@@ -1,4 +1,5 @@
-﻿using Beamable.UI.Scripts;
+﻿using Beamable.UI.Buss;
+using Beamable.UI.Scripts;
 using System;
 using TMPro;
 using UnityEngine;
@@ -8,15 +9,19 @@ namespace Beamable.EasyFeatures.BasicSocial
 {
 	public class FriendSlotPresenter : MonoBehaviour
 	{
+		private const string ONLINE_CLASS = "online";
+		private const string OFFLINE_CLASS = "offline";
+		
 		public Image AvatarImage;
 		public TextMeshProUGUI UsernameText;
 		public TextMeshProUGUI DescriptionText;
 		public Button ConfirmButton;
-		public Button MainButton;
 		public TextMeshProUGUI ConfirmButtonText;
-		public Image PresenceDot;
-		public Color OnlineColor = Color.green;
-		public Color OfflineColor = Color.grey;
+		public Button MainButton;
+		public GameObject AcceptCancelButtons;
+		public Button AcceptButton;
+		public Button CancelButton;
+		public BussElement PresenceDotBussElement;
 		[Range(0, 1)]
 		public float OnlineAlpha = 1;
 		[Range(0, 1)]
@@ -40,19 +45,40 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onConfirmPressed, string buttonText = "Confirm")
 		{
-			AvatarImage.sprite = item.ViewData.Avatar;
-			UsernameText.text = item.ViewData.PlayerName;
-			DescriptionText.text = item.ViewData.Description;
+			SetViewData(item.ViewData);
 			
 			ConfirmButton.onClick.ReplaceOrAddListener(() => onConfirmPressed?.Invoke(item.ViewData.PlayerId));
 			ConfirmButton.gameObject.SetActive(onConfirmPressed != null);
 			ConfirmButtonText.text = buttonText;
 			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
+			AcceptCancelButtons.SetActive(false);
+			
+			SetOnlineState(true);
+		}
+
+		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onCancelPressed, Action<long> onAcceptPressed)
+		{
+			SetViewData(item.ViewData);
+			
+			ConfirmButton.gameObject.SetActive(false);
+			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
+			AcceptCancelButtons.SetActive(true);
+			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptPressed?.Invoke(item.ViewData.PlayerId));
+			CancelButton.onClick.ReplaceOrAddListener(() => onCancelPressed?.Invoke(item.ViewData.PlayerId));
+			
+			SetOnlineState(true);
+		}
+
+		private void SetViewData(ViewData viewData)
+		{
+			AvatarImage.sprite = viewData.Avatar;
+			UsernameText.text = viewData.PlayerName;
+			DescriptionText.text = viewData.Description;
 		}
 
 		public void SetOnlineState(bool online)
 		{
-			PresenceDot.color = online ? OnlineColor : OfflineColor;
+			PresenceDotBussElement.AddClass(online ? ONLINE_CLASS : OFFLINE_CLASS);
 			CanvasGroup.alpha = online ? OnlineAlpha : OfflineAlpha;
 		}
 	}
