@@ -87,6 +87,9 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
 		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
 
+		[Tooltip("When enabled, you can override microservice health check timeout on publish. This could be helpfull for slower machines. Value is in seconds.")]
+		public OptionalInt PrePublishHealthCheckTimeout;
+
 
 		public string DockerCommand
 		{
