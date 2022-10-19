@@ -28,7 +28,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			FriendSlotPresenter.ViewData[] viewData = new FriendSlotPresenter.ViewData[playerIds.Count];
 			for (int i = 0; i < playerIds.Count; i++)
 			{
-				var stats = await Context.Api.Stats.GetStats("client", "public", "player", playerIds[i]);
+				var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerIds[i]);
 				if (!stats.TryGetValue("alias", out string playerName))
 				{
 					playerName = playerIds[i].ToString();

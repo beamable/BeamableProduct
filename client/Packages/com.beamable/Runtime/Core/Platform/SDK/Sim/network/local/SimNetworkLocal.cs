@@ -1,9 +1,16 @@
+using System;
 using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Sim
 {
 	public class SimNetworkLocal : SimNetworkInterface
 	{
+#pragma warning disable CS0067
+		public event Action<SimFaultResult> OnErrorStarted;
+		public event Action<SimErrorReport> OnErrorRecovered;
+		public event Action<SimFaultResult> OnErrorFailed;
+		public bool IsFaulted { get; }
+#pragma warning restore CS0067
 		public string ClientId { get; private set; }
 		public bool Ready { get; private set; }
 		private List<SimEvent> _eventQueue = new List<SimEvent>();

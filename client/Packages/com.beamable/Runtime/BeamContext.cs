@@ -140,9 +140,6 @@ namespace Beamable
 		private PlayerStats _playerStats;
 
 		[SerializeField] private PlayerLobby _playerLobby;
-		
-		[SerializeField]
-		private PlayerParty _playerParty;
 
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
@@ -167,7 +164,7 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="PlayerParty"/> for this context.
 		/// </summary>
-		public PlayerParty Party => _playerParty = _playerParty ?? _serviceScope.GetService<PlayerParty>();
+		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
 
 		/// <summary>
 		/// <para>
@@ -250,7 +247,7 @@ namespace Beamable
 		}
 
 		/// <summary>
-		/// A <see cref="BeamContext"/> is configured for one authorized user. 
+		/// A <see cref="BeamContext"/> is configured for one authorized user.
 		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
 		///
 		/// This method will <i>create</i> new <see cref="BeamContext"/> instance using <see cref="TokenResponse"/> values
@@ -266,7 +263,7 @@ namespace Beamable
 #if UNITY_EDITOR
 				const string log =
 					@"<b>BeamContext</b> with id <b>{0}</b> already exists. " +
-					"In order to update existing BeamContext it is recommended to use <b>" + 
+					"In order to update existing BeamContext it is recommended to use <b>" +
 					nameof(ChangeAuthorizedPlayer) + "</b> method instead.";
 				Debug.LogError(string.Format(log, isDefault ? "Default" : playerCode));
 #endif
@@ -646,7 +643,10 @@ namespace Beamable
 			var pubnub = InitStep_StartPubnub();
 			// Start Session
 			var session = InitStep_StartNewSession();
-			_heartbeatService.Start();
+			if (CoreConfiguration.Instance.SendHeartbeat)
+			{
+				_heartbeatService.Start();
+			}
 
 			// Check if we should initialize the purchaser
 			var purchase = InitStep_StartPurchaser();
@@ -654,10 +654,7 @@ namespace Beamable
 
 			OnReloadUser?.Invoke();
 
-			if (IsDefault)
-			{
-				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
-			}
+			ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
 		}
 
 

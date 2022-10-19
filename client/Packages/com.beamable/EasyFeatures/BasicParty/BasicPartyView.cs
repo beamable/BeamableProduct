@@ -1,8 +1,6 @@
-﻿using Beamable.EasyFeatures.Components;
-using Beamable.Experimental.Api.Parties;
+﻿using Beamable.Experimental.Api.Parties;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,8 +13,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public int EnrichOrder;
 
 		[Header("Components")]
-		public TextMeshProUGUI PartyIdText;
-
 		public TextMeshProUGUI PlayerCountText;
 
 		public PlayersListPresenter PartyList;
@@ -30,7 +26,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		public Button CreateLobbyButton;
 		public Button JoinLobbyButton;
 		public Button QuickStartButton;
-		public Button CopyIdButton;
 		public Button NextButton;
 		public Button LeaveButton;
 
@@ -62,15 +57,18 @@ namespace Beamable.EasyFeatures.BasicParty
 			CreateLobbyButton.onClick.ReplaceOrAddListener(CreateLobbyButtonClicked);
 			JoinLobbyButton.onClick.ReplaceOrAddListener(JoinLobbyButtonClicked);
 			QuickStartButton.onClick.ReplaceOrAddListener(QuickStartButtonClicked);
-			CopyIdButton.onClick.ReplaceOrAddListener(OnCopyIdButtonClicked);
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
-			Context.Party.RegisterCallbacks(OnPlayerJoined, OnPlayerLeft, OnPartyUpdated,
-											OnPlayerPromoted, OnPlayerKicked);
+
+			// set party events
+			Context.Party.OnPlayerJoined = OnPlayerJoined;
+			Context.Party.OnPlayerLeft = OnPlayerLeft;
+			Context.Party.OnPartyUpdated = OnPartyUpdated;
+			Context.Party.OnPlayerPromoted = OnPlayerPromoted;
+			Context.Party.OnPlayerKicked = OnPlayerKicked;
 		}
 
 		protected void RefreshView()
 		{
-			PartyIdText.text = Context.Party.Id;
 			SetupPlayerCountText();
 
 			LeadButtonsGroup.SetActive(Context.Party.IsLeader);
@@ -86,11 +84,18 @@ namespace Beamable.EasyFeatures.BasicParty
 		}
 
 		private void SetupPlayerCountText() =>
-			PlayerCountText.text = $"{Context.Party.Members.Count}/{Context.Party.MaxSize}";
+			PlayerCountText.text = $"{Context.Party.PartyMembers.Count}/{Context.Party.MaxSize}";
 
-		private void SetupPartyList()
+		private async void SetupPartyList()
 		{
-			PartyList.Setup(Context.Party.Members.ToList(), Context.Party.IsLeader, null, OnAskedToLeave,
+			var members = Context.Party.PartyMembers;
+			List<long> playerIds = new List<long>(members.Count);
+			for (int i = 0; i < members.Count; i++)
+			{
+				playerIds.Add(members[i].playerId);
+			}
+
+			await PartyList.Setup(playerIds, Context.Party.IsLeader, null, OnAskedToLeave,
 							OnPromoteButtonClicked, OnAddMember, Context.Party.MaxSize);
 		}
 
@@ -107,12 +112,6 @@ namespace Beamable.EasyFeatures.BasicParty
 		private void OnAddMember()
 		{
 			FeatureControl.OpenInviteView();
-		}
-
-		private void OnCopyIdButtonClicked()
-		{
-			GUIUtility.systemCopyBuffer = Context.Party.Id;
-			FeatureControl.OverlaysController.ShowToast("Party ID was copied");
 		}
 
 		private void OnPromoteButtonClicked(string id)

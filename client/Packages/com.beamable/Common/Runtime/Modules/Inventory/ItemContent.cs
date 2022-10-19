@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Serialization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Inventory
 {

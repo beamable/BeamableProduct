@@ -1,8 +1,22 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Parties
 {
+	[Serializable]
+	public class InvitesResponse
+	{
+		public List<PartyInvite> invitations;
+	}
+
+	[Serializable]
+	public struct PartyInvite
+	{
+		public string partyId, invitedBy;
+	}
+
 	public class PartyService : IPartyApi
 	{
 		private readonly IBeamableRequester _requester;
@@ -88,6 +102,14 @@ namespace Beamable.Experimental.Api.Parties
 				$"/parties/{partyId}/invite",
 				new PlayerRequest(playerId)
 			).ToPromise();
+		}
+
+		public Promise<InvitesResponse> GetPartyInvites()
+		{
+			return _requester.Request<InvitesResponse>(
+				Method.GET,
+				$"/players/{_userContext.UserId}/parties/invites"
+			);
 		}
 
 		public Promise KickPlayer(string partyId, long playerId) => KickPlayer(partyId, playerId.ToString());

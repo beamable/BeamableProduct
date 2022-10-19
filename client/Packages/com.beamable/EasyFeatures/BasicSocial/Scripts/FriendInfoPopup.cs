@@ -26,7 +26,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		{
 			var Context = BeamContext.Default;
 			
-			var stats = await Context.Api.Stats.GetStats("client", "public", "player", playerId);
+			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
 			if (!stats.TryGetValue("alias", out string playerName))
 			{
 				playerName = playerId.ToString();

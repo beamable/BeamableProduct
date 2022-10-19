@@ -84,5 +84,11 @@ namespace Beamable.Experimental.Api.Parties
 		/// <param name="partyId">The id of the <see cref="Party"/>.</param>
 		/// <param name="playerId">The id of the player to invite.</param>
 		Promise InviteToParty(string partyId, long playerId);
+
+		/// <summary>
+		/// Request a list of pending <see cref="PartyInvite"/>.
+		/// </summary>
+		/// <returns>List of <see cref="PartyInvite"/>.</returns>
+		Promise<InvitesResponse> GetPartyInvites();
 	}
 }
