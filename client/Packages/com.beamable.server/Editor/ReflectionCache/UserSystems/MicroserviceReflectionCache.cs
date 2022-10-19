@@ -487,11 +487,11 @@ namespace Beamable.Server.Editor
 						}
 
 
-						var healtcheckTimeout = 10;
+						var healthcheckTimeout = 10;
 
 						MicroserviceConfiguration.Instance.PrePublishHealthCheckTimeout.DoIfExists(value =>
 						{
-							healtcheckTimeout = value;
+							healthcheckTimeout = value;
 						});
 
 						// Wait until the container has completely booted up and it's Start function has finished.
@@ -515,7 +515,7 @@ namespace Beamable.Server.Editor
 
 							await Task.Delay(500, token);
 							timeWaitingForBoot += .5f;
-						} while (timeWaitingForBoot <= healtcheckTimeout && !isHealthy);
+						} while (timeWaitingForBoot <= healthcheckTimeout && !isHealthy);
 
 						if (!isHealthy)
 						{
