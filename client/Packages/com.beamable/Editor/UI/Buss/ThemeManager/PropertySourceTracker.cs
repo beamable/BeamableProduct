@@ -10,7 +10,6 @@ namespace Beamable.UI.Buss
 		private readonly Dictionary<string, SourceData> _sources = new Dictionary<string, SourceData>();
 		public BussElement Element { get; }
 
-
 		public PropertySourceTracker(BussElement element)
 		{
 			Element = element;
@@ -66,7 +65,8 @@ namespace Beamable.UI.Buss
 			{
 				foreach (var reference in _sources[key].Properties)
 				{
-					if (reference.PropertyProvider.IsPropertyOfType(baseType) || reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
+						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
 						return reference.PropertyProvider;
 					}
@@ -87,7 +87,8 @@ namespace Beamable.UI.Buss
 			{
 				foreach (var reference in _sources[key].Properties)
 				{
-					if (reference.PropertyProvider.IsPropertyOfType(baseType) || reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
+						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
 						return reference;
 					}
@@ -117,33 +118,20 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		private void AddPropertySource(BussStyleSheet styleSheet, BussStyleRule styleRule, BussPropertyProvider propertyProvider)
+		private void AddPropertySource(BussStyleSheet styleSheet,
+									   BussStyleRule styleRule,
+									   BussPropertyProvider propertyProvider)
 		{
 			var key = propertyProvider.Key;
 
-			if (string.IsNullOrEmpty(key)) return;
-
-			// if (!styleRule.Selector.CheckMatch(Element))
-			// {
-			// 	// this is an inherited property, but maybe the property isn't inheritable?
-			// 	if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable)
-			// 	{
-			//
-			// 		var prop = propertyProvider.GetProperty();
-			// 		if (prop == null)
-			// 		{
-			//
-			// 		}
-			// 		// final chance- the property itself may say "inherited"
-			// 		if (propertyProvider.ValueType != BussPropertyValueType.Inherited)
-			// 		{
-			// 			return;
-			// 		} else if (propertyProvider.ValueType == BussPropertyValueType.Inherited)
-			// 		{
-			//
-			// 		}
-			// 	}
-			// }
+			if (styleRule != null)
+			{
+				if (!styleRule.Selector.CheckMatch(Element))
+				{
+					// this is an inherited property, but maybe the property isn't inheritable?
+					if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable) return;
+				}
+			}
 
 			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
 
@@ -183,7 +171,8 @@ namespace Beamable.UI.Buss
 
 	public class PropertySourceDatabase
 	{
-		private readonly Dictionary<BussElement, PropertySourceTracker> _trackers = new Dictionary<BussElement, PropertySourceTracker>();
+		private readonly Dictionary<BussElement, PropertySourceTracker> _trackers =
+			new Dictionary<BussElement, PropertySourceTracker>();
 
 		public PropertySourceTracker GetTracker(BussElement bussElement)
 		{
@@ -208,6 +197,7 @@ namespace Beamable.UI.Buss
 					pair.Key.StyleRecalculated -= pair.Value.Recalculate;
 				}
 			}
+
 			_trackers.Clear();
 		}
 	}
