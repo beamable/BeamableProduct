@@ -187,6 +187,12 @@ namespace Beamable.UI.Buss
 
 		#endregion
 
+		public void Reenable()
+		{
+			enabled = false;
+			enabled = true;
+		}
+
 		/// <summary>
 		/// Used when the parent or the style sheet is changed.
 		/// Recalculates the list of style sheets that are used for this BussElement and then recalculates BussStyle.
