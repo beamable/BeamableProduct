@@ -66,7 +66,7 @@ namespace Beamable.UI.Buss
 				foreach (var reference in _sources[key].Properties)
 				{
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
-					    reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
 						return reference.PropertyProvider;
 					}
@@ -88,7 +88,7 @@ namespace Beamable.UI.Buss
 				foreach (var reference in _sources[key].Properties)
 				{
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
-					    reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
+						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
 						return reference;
 					}
@@ -119,8 +119,8 @@ namespace Beamable.UI.Buss
 		}
 
 		private void AddPropertySource(BussStyleSheet styleSheet,
-		                               BussStyleRule styleRule,
-		                               BussPropertyProvider propertyProvider)
+									   BussStyleRule styleRule,
+									   BussPropertyProvider propertyProvider)
 		{
 			var key = propertyProvider.Key;
 
