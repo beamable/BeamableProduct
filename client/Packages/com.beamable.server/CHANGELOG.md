@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### [Unreleased]
 ### Added
+- Added possibility of disable Microservice HealthCheck at the begining of publish process.
 - Added possibility of override Microservice PrePublishHealthCheckTimeout.
 
 ### [1.5.0]

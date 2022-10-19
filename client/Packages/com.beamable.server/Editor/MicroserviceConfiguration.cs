@@ -84,12 +84,14 @@ namespace Beamable.Server.Editor
 		[Tooltip("When enabled, after you start a service, this will automatically prune unused and dangling docker images related to that service.")]
 		public bool EnableAutoPrune = true;
 
-		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
-		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
+		[Tooltip("It will enable microservice health check at the begining of publish process.")]
+		public bool EnablePrePublishHealthCheck = true;
 
 		[Tooltip("When enabled, you can override microservice health check timeout on publish. This could be helpfull for slower machines. Value is in seconds.")]
 		public OptionalInt PrePublishHealthCheckTimeout;
 
+		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
+		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
 
 		public string DockerCommand
 		{
