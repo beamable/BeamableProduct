@@ -122,7 +122,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
     BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
@@ -1138,7 +1138,6 @@ MonoBehaviour:
   _assetReferences: []
   _parent: {fileID: 0}
   _children:
-  - {fileID: 420616525560599782}
   - {fileID: 8826195124262267859}
   - {fileID: 3240497270756934398}
   - {fileID: 6487258661427704217}
@@ -1238,8 +1237,8 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 32
+  m_fontSizeBase: 32
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1326,7 +1325,7 @@ MonoBehaviour:
     _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 6431871841353558281}
+  _parent: {fileID: 8826195124262267859}
   _children: []
 --- !u!1 &2456856760506039623
 GameObject:
@@ -1422,7 +1421,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2456856760571702460
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1440,8 +1439,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -20, y: 0}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -30, y: 0}
+  m_SizeDelta: {x: 165, y: 75}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &2456856760571702459
 CanvasRenderer:
@@ -1525,7 +1524,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
     BottomRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
@@ -1533,7 +1532,7 @@ MonoBehaviour:
     TopRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 30
+  rounding: 40
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -1579,7 +1578,8 @@ MonoBehaviour:
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 6431871841353558281}
-  _children: []
+  _children:
+  - {fileID: 420616525560599782}
 --- !u!1 &3047603594351587900
 GameObject:
   m_ObjectHideFlags: 0
@@ -1702,7 +1702,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
     BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
@@ -1772,7 +1772,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2285181397137399996
 RectTransform:
   m_ObjectHideFlags: 0
