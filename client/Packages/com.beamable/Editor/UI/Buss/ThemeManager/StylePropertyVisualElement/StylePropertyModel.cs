@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Editor.Common;
+using Beamable.Editor.UI.Validation;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
@@ -56,7 +57,10 @@ namespace Beamable.Editor.UI.Components
 			{
 				VariableDatabase.PropertyReference reference =
 					PropertySourceTracker.GetUsedPropertyReference(PropertyProvider.Key);
-				Tooltip = $"Property is overriden by {reference.StyleRule.SelectorString} rule from {reference.StyleSheet.name} stylesheet";
+
+				Tooltip = reference.StyleRule != null
+					? $"Property is overriden by {reference.StyleRule.SelectorString} rule from {reference.StyleSheet.name} stylesheet"
+					: "Property is overriden by inline style";
 			}
 			else
 			{
@@ -204,7 +208,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (InlineStyleOwner != null)
 			{
-				InlineStyleOwner.RecalculateStyle();
+				InlineStyleOwner.Reenable();
 			}
 		}
 	}
