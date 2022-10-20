@@ -77,7 +77,10 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		private void OnDisable()
 		{
-			UnsubscribeFromInvitesEvents();
+			if (System != null && System.Context.Social.OnReady.IsCompleted)
+			{
+				UnsubscribeFromInvitesEvents();	
+			}
 		}
 
 		private void UnsubscribeFromInvitesEvents()

@@ -550,39 +550,24 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+        _json: '{"_color":{"r":0.1725490242242813,"g":0.12156862765550614,"b":0.37254902720451357,"a":1.0}}'
     - _key: borderColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+        _json: '{"_color":{"r":0.4941176474094391,"g":0.4274509847164154,"b":0.7882353067398071,"a":1.0}}'
     - _key: borderWidth
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_floatValue":4.0}'
-    - _key: fontColor
-      _property:
-        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.9921568632125855,"g":0.9450980424880981,"b":0.7882353067398071,"a":1.0}}'
-    - _key: fontSize
+        _json: '{"_floatValue":2.0}'
+    - _key: roundCorners
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_floatValue":36.0}'
-    - _key: font
-      _property:
-        _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        _json: '{"AssetSerializationKey":0}'
-    - _key: textAlignment
-      _property:
-        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
-          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-        _json: '{"Enum":8194}'
+        _json: '{"_floatValue":10.0}'
     _cachedProperties: []
-    _selector: .toggle.option.selected
+    _selector: .toggle.option.deselected
   - _folded: 0
     _showAll: 0
     _properties:
@@ -590,39 +575,24 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":0.0}}'
+        _json: '{"_color":{"r":0.12156862765550614,"g":0.07058823853731156,"b":0.30588236451148989,"a":1.0}}'
     - _key: borderColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+        _json: '{"_color":{"r":0.8745098114013672,"g":0.8470588326454163,"b":1.0,"a":1.0}}'
     - _key: borderWidth
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_floatValue":4.0}'
-    - _key: fontColor
-      _property:
-        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
-    - _key: fontSize
+        _json: '{"_floatValue":2.0}'
+    - _key: roundCorners
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_floatValue":36.0}'
-    - _key: font
-      _property:
-        _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        _json: '{"AssetSerializationKey":0}'
-    - _key: textAlignment
-      _property:
-        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
-          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-        _json: '{"Enum":8194}'
+        _json: '{"_floatValue":10.0}'
     _cachedProperties: []
-    _selector: .toggle.option.deselected
+    _selector: .toggle.option.selected
   - _folded: 0
     _showAll: 0
     _properties:
@@ -1118,6 +1088,96 @@ MonoBehaviour:
         _json: '{"_floatValue":10.0}'
     _cachedProperties: []
     _selector: .button.cancel
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: font
+      _property:
+        _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"AssetSerializationKey":5}'
+    - _key: fontColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_color":{"r":0.7411764860153198,"g":0.7137255072593689,"b":0.8509804010391235,"a":1.0}}'
+    - _key: fontSize
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_floatValue":40.0}'
+    - _key: textAlignment
+      _property:
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        _json: '{"Enum":257}'
+    _cachedProperties: []
+    _selector: '#playerIdLabel'
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: font
+      _property:
+        _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"AssetSerializationKey":5}'
+    - _key: fontColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_color":{"r":0.7411764860153198,"g":0.7137255072593689,"b":0.8509804010391235,"a":1.0}}'
+    - _key: fontSize
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_floatValue":35.0}'
+    - _key: textAlignment
+      _property:
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        _json: '{"Enum":513}'
+    _cachedProperties: []
+    _selector: '#placeholderText'
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: fontColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    _cachedProperties: []
+    _selector: .toggle.text.selected
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: font
+      _property:
+        _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"AssetSerializationKey":3}'
+    - _key: fontSize
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_floatValue":40.0}'
+    - _key: textAlignment
+      _property:
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        _json: '{"Enum":514}'
+    _cachedProperties: []
+    _selector: .toggle.text
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: fontColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_color":{"r":0.7411764860153198,"g":0.7137255072593689,"b":0.8509804010391235,"a":1.0}}'
+    _cachedProperties: []
+    _selector: .toggle.text.deselected
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   - {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}
