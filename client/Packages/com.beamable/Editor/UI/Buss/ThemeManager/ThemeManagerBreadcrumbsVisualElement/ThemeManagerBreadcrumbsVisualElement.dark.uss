@@ -1,6 +1,3 @@
 ﻿ThemeManagerBreadcrumbsVisualElement {
     background-color: #131313;
 }
-.boundedButton {
-    /*border-color: #8f8f8f;*/
-}

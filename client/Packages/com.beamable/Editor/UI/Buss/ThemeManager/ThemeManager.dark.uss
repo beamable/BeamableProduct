@@ -1,6 +1,3 @@
-#navigationGroup {
-    /*background-color: rgb(77,77,77);*/
-}
 
 .unfolded {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Fold out_light.png");

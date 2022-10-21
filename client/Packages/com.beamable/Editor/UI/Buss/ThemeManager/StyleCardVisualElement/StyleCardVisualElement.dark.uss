@@ -5,7 +5,6 @@
 
 #sectionHeader {
     color: rgb(255,255,255);
-    /*background-color: rgb(89,89,89);*/
 }
 
 #sectionLabel {
@@ -14,16 +13,7 @@
 }
 
 #properties {
-    /*background-color: rgb(77,77,77);*/
     margin-bottom: 10px;
-}
-
-#variables {
-    /*background-color: rgb(77,77,77);*/
-}
-
-.button {
-    /*background-color: rgb(100,100,100);*/
 }
 
 .button > TextElement {
@@ -34,16 +24,7 @@
     background-color: rgb(120,120,120);
 }
 
-.headerButton {
-    /*background-color: rgb(142,142,142);*/
-}
-
-.clicked {
-    /*background-color: rgb(49, 49, 49);*/
-}
-
 .add {
-    /*background-color: rgb(89,89,89);*/
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
 }
 .edit {

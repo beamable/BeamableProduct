@@ -1,6 +1,4 @@
-﻿#root {
-    /*background-color: rgb(77, 77, 77);*/
-}
+﻿
 
 .header {
     background-color: #282828;

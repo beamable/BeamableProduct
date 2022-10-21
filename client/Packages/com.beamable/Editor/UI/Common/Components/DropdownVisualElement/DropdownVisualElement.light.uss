@@ -1,5 +1,4 @@
 ﻿#mainContainer {
-    /*border-color: #6C6C6C;*/
     background-color: #b4b4b4;
 }
 

@@ -4,7 +4,6 @@
 
 .subheader{
     color: #000000;
-    /*background-color: rgba(180, 180, 180, 1);*/
 }
 
 .subheaderLabel {

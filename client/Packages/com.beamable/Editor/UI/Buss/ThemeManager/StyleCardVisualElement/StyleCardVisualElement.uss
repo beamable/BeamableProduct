@@ -1,7 +1,6 @@
 #cardContainer {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    /*margin-bottom: 10px;*/
 }
 
 #cardHeader {
@@ -72,7 +71,6 @@
 
 .add {
     margin-left: 0;
-    /*background-color: rgb(89,89,89);*/
 }
 
 .hidden {

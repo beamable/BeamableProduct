@@ -1,13 +1,6 @@
-﻿#root {
-    /*background-color: rgb(180, 180, 180);*/
-}
-
+﻿
 .header {
     background-color: #A7A7A7;
-}
-
-#elementsContainer{
-    /*background-color: rgba(180, 180, 180, 1);*/
 }
 
 #addButton {
