@@ -3,6 +3,7 @@ using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -95,9 +96,21 @@ namespace Beamable.Editor.UI.Components
 					if (srcTracker != null)
 					{
 						var appliedPropertyProvider = srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
+
+
+						
 						if (appliedPropertyProvider != null)
 						{
-							CreateEditableField(appliedPropertyProvider.GetProperty());
+							var field = CreateEditableField(appliedPropertyProvider.GetProperty());
+							field.DisableInput("The field is disabled because it references a variable.");
+
+							void UpdateField()
+							{
+								if (field.IsRemoved) return;
+								field.OnPropertyChangedExternally();
+								appliedPropertyProvider.GetProperty().OnValueChanged += UpdateField;
+							}
+							appliedPropertyProvider.GetProperty().OnValueChanged += UpdateField;
 						}
 					}
 				}

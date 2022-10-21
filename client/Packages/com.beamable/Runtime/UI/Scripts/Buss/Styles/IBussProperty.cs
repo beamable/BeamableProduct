@@ -16,6 +16,8 @@ namespace Beamable.UI.Buss
 
 		IBussProperty CopyProperty();
 
+		event Action OnValueChanged;
+		void NotifyValueChange();
 	}
 
 	public enum BussPropertyValueType //https://developer.mozilla.org/en-US/docs/Web/CSS/inherit#see_also
@@ -38,6 +40,21 @@ namespace Beamable.UI.Buss
 
 		public BussPropertyValueType ValueType { get => _valueType; set => _valueType = value; }
 
+		/// <summary>
+		/// An event that will trigger when the <see cref="NotifyValueChange"/> method is run.
+		/// The action is cleared every time <see cref="NotifyValueChange"/> executes, so it is impossible get
+		/// more than one update. 
+		/// </summary>
+		public event Action OnValueChanged;
+		
+		
+		public void NotifyValueChange()
+		{
+			var delegates = OnValueChanged;
+			OnValueChanged = () => { };
+			
+			delegates?.Invoke();
+		}
 	}
 
 	public interface IInterpolatedBussProperty : IBussProperty

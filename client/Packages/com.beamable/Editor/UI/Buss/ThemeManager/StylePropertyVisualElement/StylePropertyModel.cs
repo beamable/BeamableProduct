@@ -115,27 +115,6 @@ namespace Beamable.Editor.UI.Components
 					_removePropertyAction?.Invoke(PropertyProvider.Key);
 				})
 			};
-			
-			commands.Add(new GenericMenuCommand("Get Self", () =>
-			{
-				PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out _);
-			}));
-			
-			commands.Add(new GenericMenuCommand("Print Cascade", () =>
-			{
-				Debug.Log("printing cascade for " + PropertyProvider.Key);
-				if (PropertySourceTracker == null)
-				{
-					Debug.Log("there is no source tracker :(");
-					return;
-				}
-				PropertySourceTracker.Recalculate();
-
-				foreach (var reference in PropertySourceTracker.GetAllSources(PropertyProvider.Key))
-				{
-					Debug.Log(reference.GetDisplayString());
-				}
-			}));
 
 			var valueType = PropertyProvider.ValueType;
 			var showInitialOption = valueType != BussPropertyValueType.Initial;
