@@ -46,6 +46,7 @@ namespace Beamable.Editor.UI.Components
 			var overrideIndicator = new VisualElement();
 			overrideIndicator.AddToClassList("overrideIndicator");
 			_overrideIndicatorParent.Add(overrideIndicator);
+			_overrideIndicatorParent.RegisterCallback<MouseDownEvent>(_model.LabelClicked);
 
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
@@ -61,8 +62,18 @@ namespace Beamable.Editor.UI.Components
 			if (_model.IsInherited)
 			{
 				CreateMessageField("Inherited");
-				var field = CreateEditableField(_model.PropertyProvider.GetProperty());
-				field.DisableInput();
+
+				// var srcTracker = _model.PropertySourceTracker;
+				// if (srcTracker != null)
+				// {
+				// 	var appliedPropertyProvider = srcTracker.GetNextInheritedProperty(_model.PropertyProvider);
+				// 	if (appliedPropertyProvider != null)
+				// 	{
+				// 		var appliedProperty = appliedPropertyProvider.GetProperty();
+				// 		var field = CreateEditableField(appliedProperty);
+				// 		field.DisableInput();
+				// 	}
+				// }
 			} else if (_model.IsInitial){
 				CreateMessageField("Initial");
 				var field = CreateEditableField(_model.PropertyProvider.GetProperty());

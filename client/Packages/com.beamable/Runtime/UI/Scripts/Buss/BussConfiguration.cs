@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -143,99 +144,131 @@ namespace Beamable.UI.Buss
 
 		public void RecalculateStyle(BussElement element)
 		{
-			Weights.Clear();
+			
 			element.Style.Inherit(element?.Parent?.Style);
-
-			VariableDatabase.ReconsiderAllStyleSheets();
-
-			// Applying default bemable styles
-			foreach (BussStyleSheet styleSheet in FactoryStyleSheets)
-			{
-				ApplyStyleSheet(element, styleSheet);
-			}
-
-			// Applying developer styles
-			foreach (BussStyleSheet styleSheet in DeveloperStyleSheets)
-			{
-				ApplyStyleSheet(element, styleSheet);
-			}
-
-			foreach (BussStyleSheet styleSheet in element.AllStyleSheets)
-			{
-				if (styleSheet != null)
-				{
-					ApplyStyleSheet(element, styleSheet);
-				}
-			}
-
-			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
-
-			element.ApplyStyle();
+			// element.Sources.Recalculate();
+			// foreach (var key in element.Sources.GetKeys())
+			// {
+			// 	element.Style[key] = element.Sources.GetUsedPropertyProvider(key, out _).GetProperty();
+			// }
+			// element.ApplyStyle();
+			//
+			// Weights.Clear();
+			// element.Style.Inherit(element?.Parent?.Style);
+			//
+			// VariableDatabase.ReconsiderAllStyleSheets();
+			//
+			// // Applying default bemable styles
+			// foreach (BussStyleSheet styleSheet in FactoryStyleSheets)
+			// {
+			// 	ApplyStyleSheet(element, styleSheet);
+			// }
+			//
+			// // Applying developer styles
+			// foreach (BussStyleSheet styleSheet in DeveloperStyleSheets)
+			// {
+			// 	ApplyStyleSheet(element, styleSheet);
+			// }
+			//
+			// foreach (BussStyleSheet styleSheet in element.AllStyleSheets)
+			// {
+			// 	if (styleSheet != null)
+			// 	{
+			// 		ApplyStyleSheet(element, styleSheet);
+			// 	}
+			// }
+			//
+			// ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
+			//
+			// element.ApplyStyle();
 		}
 
-		private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
-		{
-			if (element == null || sheet == null) return;
-			foreach (BussStyleRule descriptor in sheet.Styles)
-			{
-				if (descriptor.Selector?.CheckMatch(element) ?? false)
-				{
-					SelectorWeight weight = descriptor.Selector.GetWeight();
-					if (descriptor.Selector.TryGetPseudoClass(out string pseudoClass))
-					{
-						ApplyDescriptorWithPseudoClass(element, pseudoClass, descriptor, weight);
-					}
-					else
-					{
-						ApplyDescriptor(element, descriptor, weight);
-					}
-				}
-			}
-		}
+		// private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
+		// {
+		// 	if (element == null || sheet == null) return;
+		// 	foreach (BussStyleRule descriptor in sheet.Styles)
+		// 	{
+		// 		if (descriptor.Selector?.CheckMatch(element) ?? false)
+		// 		{
+		// 			SelectorWeight weight = descriptor.Selector.GetWeight();
+		// 			if (descriptor.Selector.TryGetPseudoClass(out string pseudoClass))
+		// 			{
+		// 				ApplyDescriptorWithPseudoClass(element, pseudoClass, descriptor, weight);
+		// 			}
+		// 			else
+		// 			{
+		// 				ApplyDescriptor(element, descriptor, weight);
+		// 			}
+		// 		}
+		// 	}
+		// }
 
-		private static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor, SelectorWeight weight)
-		{
-			if (element == null || descriptor == null) return;
-			foreach (BussPropertyProvider property in descriptor.Properties)
-			{
-				if (!Weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
-				{
-					IBussProperty prop = property.GetProperty();
+		// private static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor, SelectorWeight weight)
+		// {
+		// 	if (element == null || descriptor == null) return;
+		// 	foreach (BussPropertyProvider property in descriptor.Properties)
+		// 	{
+		//
+		// 		// if (!BussStyle.TryGetBinding(property.Key, out var binding)) continue; // there must be a valid binding.
+		// 		// if (!binding.Inheritable)
+		// 		// {
+		// 		// 	// the binding isn't inheritable, but 
+		// 		// 	if (property.ValueType != BussPropertyValueType.Inherited) continue;
+		// 		// }
+		//
+		// 		
+		// 		if (!Weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
+		// 			weight.CompareTo(currentWeight) >= 0)
+		// 		{
+		// 			// track the weight of this property...
+		// 			Weights[property.Key] = weight;
+		// 			IBussProperty prop = property.GetProperty();
+		//
+		// 			if (property.ValueType == BussPropertyValueType.Inherited)
+		// 			{
+		// 				var parent = element?.Parent;
+		// 				IBussProperty parentValue = null;
+		// 				while (parentValue == null && parent != null)
+		// 				{
+		// 					parentValue = parent.Style[property.Key];
+		// 					parent = parent?.Parent;
+		// 				}
+		// 				element.Style[property.Key] = parentValue;
+		// 			} 
+		// 			else if (property.HasVariableReference)
+		// 			{
+		// 				var variableName = ((VariableProperty)property.GetProperty()).VariableName;
+		//
+		// 				if (variableName != string.Empty && !descriptor.HasProperty(variableName))
+		// 				{
+		// 					_variableDatabase.TryGetProperty(property, descriptor, out prop, out var variablePropertyReference);
+		// 				}
+		// 			}
+		// 			else
+		// 			{
+		// 				element.Style[property.Key] = prop;
+		// 			}
+		// 		}
+		// 	}
+		// }
 
-					if (property.HasVariableReference)
-					{
-						var variableName = ((VariableProperty)property.GetProperty()).VariableName;
-
-						if (variableName != string.Empty && !descriptor.HasProperty(variableName))
-						{
-							_variableDatabase.TryGetProperty(property, descriptor, out prop, out var variablePropertyReference);
-						}
-					}
-
-					element.Style[property.Key] = prop;
-					Weights[property.Key] = weight;
-				}
-			}
-		}
-
-		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-														   string pseudoClass,
-														   BussStyleDescription descriptor,
-														   SelectorWeight weight)
-		{
-			if (element == null || descriptor == null) return;
-			foreach (BussPropertyProvider property in descriptor.Properties)
-			{
-				string weightKey = pseudoClass + property.Key;
-				if (!Weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
-				{
-					element.Style[pseudoClass, property.Key] = property.GetProperty();
-					Weights[weightKey] = weight;
-				}
-			}
-		}
+		// private static void ApplyDescriptorWithPseudoClass(BussElement element,
+		// 												   string pseudoClass,
+		// 												   BussStyleDescription descriptor,
+		// 												   SelectorWeight weight)
+		// {
+		// 	if (element == null || descriptor == null) return;
+		// 	foreach (BussPropertyProvider property in descriptor.Properties)
+		// 	{
+		// 		string weightKey = pseudoClass + property.Key;
+		// 		if (!Weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
+		// 			weight.CompareTo(currentWeight) >= 0)
+		// 		{
+		// 			element.Style[pseudoClass, property.Key] = property.GetProperty();
+		// 			Weights[weightKey] = weight;
+		// 		}
+		// 	}
+		// }
 
 		#endregion
 

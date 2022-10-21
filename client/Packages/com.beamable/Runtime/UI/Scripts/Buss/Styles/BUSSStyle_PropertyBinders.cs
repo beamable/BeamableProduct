@@ -202,7 +202,7 @@ namespace Beamable.UI.Buss
 						switch (property.ValueType)
 						{
 							case BussPropertyValueType.Inherited:
-								return GetFromStyle(style._inheritedFromStyle);
+								// return GetFromStyle(style._inheritedFromStyle);
 							case BussPropertyValueType.Value:
 								return property as T;
 							case BussPropertyValueType.Initial:

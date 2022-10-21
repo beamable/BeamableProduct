@@ -4,6 +4,7 @@ using Beamable.Editor.UI.Validation;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,7 +21,8 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
 		private VariableDatabase VariablesDatabase { get; }
-		private PropertySourceTracker PropertySourceTracker { get; }
+		public PropertySourceTracker PropertySourceTracker { get; }
+		public BussElement AppliedToElement { get; }
 		public BussElement InlineStyleOwner { get; }
 		public string Tooltip { get; }
 		public int VariableDropdownOptionIndex => GetOptionIndex();
@@ -37,13 +39,35 @@ namespace Beamable.Editor.UI.Components
 
 		public bool IsOverriden =>
 			PropertySourceTracker != null && PropertySourceTracker != null &
-			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key);
+			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out _);
+
+		public bool IsOverriden2
+		{
+			get
+			{
+				if (PropertySourceTracker == null) return false;
+				var appliedProvider = PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out var rank);
+				
+				// the used provider is not me.
+				// thats because I am inherited.
+				// if I am inherited, I cannot be overriden?
+				if (PropertyProvider.ValueType == BussPropertyValueType.Inherited)
+				{
+					// I must be the first inherited property...
+					var firstProvider = PropertySourceTracker.GetAllSources(PropertyProvider.Key).FirstOrDefault();
+					return firstProvider?.PropertyProvider != PropertyProvider;
+				}
+				
+				return appliedProvider != PropertyProvider;
+			}
+		}
 
 		public StylePropertyModel(BussStyleSheet styleSheet,
 								  BussStyleRule styleRule,
 								  BussPropertyProvider propertyProvider,
 								  VariableDatabase variablesDatabase,
 								  PropertySourceTracker propertySourceTracker,
+								  BussElement appliedToElement,
 								  BussElement inlineStyleOwner,
 								  Action<string> removePropertyAction,
 								  Action globalRefresh,
@@ -57,6 +81,7 @@ namespace Beamable.Editor.UI.Components
 			PropertyProvider = propertyProvider;
 			VariablesDatabase = variablesDatabase;
 			PropertySourceTracker = propertySourceTracker;
+			AppliedToElement = appliedToElement;
 			InlineStyleOwner = inlineStyleOwner;
 
 			if (IsOverriden && IsInStyle && PropertySourceTracker != null)
@@ -85,6 +110,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void LabelClicked(MouseDownEvent evt)
 		{
+			Debug.Log("Clicked");
 			if (StyleSheet != null && !StyleSheet.IsWritable)
 			{
 				return;
@@ -103,6 +129,28 @@ namespace Beamable.Editor.UI.Components
 			var showInheritedOption = valueType != BussPropertyValueType.Inherited;
 			var showValueOption = valueType != BussPropertyValueType.Value;
 
+			commands.Add(new GenericMenuCommand("Print Cascade", () =>
+			{
+				Debug.Log("printing cascade for " + PropertyProvider.Key);
+				if (PropertySourceTracker == null)
+				{
+					Debug.Log("there is no source tracker :(");
+					return;
+				}
+				PropertySourceTracker.Recalculate();
+
+				foreach (var reference in PropertySourceTracker.GetAllSources(PropertyProvider.Key))
+				{
+					Debug.Log(reference.GetDisplayString());
+				}
+			}));
+			commands.Add(new GenericMenuCommand("Recalculate Style", () =>
+			{
+				Debug.Log("Recalculating...");
+				BussConfiguration.UseConfig(c => c.RecalculateStyle(AppliedToElement));
+				// AppliedToElement.RecalculateStyle();
+			}));
+			
 			if (showInitialOption)
 			{
 				commands.Add(new GenericMenuCommand("Use Initial Value", () =>

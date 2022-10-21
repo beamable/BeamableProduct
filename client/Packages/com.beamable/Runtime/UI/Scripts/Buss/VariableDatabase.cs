@@ -32,6 +32,11 @@ namespace Beamable.UI.Buss
 			{
 				return StyleRule == null ? SelectorWeight.Max : StyleRule.Selector.GetWeight();
 			}
+
+			public string GetDisplayString()
+			{
+				return $"{StyleSheet.name} - {StyleRule.SelectorString}";
+			}
 		}
 
 		public enum PropertyValueState

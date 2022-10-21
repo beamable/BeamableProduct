@@ -96,7 +96,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				StylePropertyModel model = new StylePropertyModel(selectedElement.StyleSheet, null,
 																  property, _model.VariablesDatabase,
-																  propertySourceTracker, selectedElement,
+																  propertySourceTracker, selectedElement, selectedElement,
 																  _model.RemoveInlineProperty, null, _model.SetInlinePropertyValueType);
 
 				var element = new StylePropertyVisualElement(model);

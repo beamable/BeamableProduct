@@ -157,7 +157,7 @@ namespace Beamable.Editor.UI.Components
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-												   PropertiesDatabase.GetTracker(SelectedElement),
+												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
 												   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 
 				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
@@ -257,7 +257,7 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-												   PropertiesDatabase.GetTracker(SelectedElement), null,
+												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
 												   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 				variables.Add(model);
 			}

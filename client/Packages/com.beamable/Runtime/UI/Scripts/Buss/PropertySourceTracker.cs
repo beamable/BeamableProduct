@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using PropertyReference = Beamable.UI.Buss.VariableDatabase.PropertyReference;
@@ -54,17 +54,64 @@ namespace Beamable.UI.Buss
 			return data.Properties.First().StyleRule == styleRule;
 		}
 
-		public BussPropertyProvider GetUsedPropertyProvider(string key)
+		public IEnumerable<string> GetKeys() => _sources.Keys;
+
+		public IEnumerable<PropertyReference> GetAllSources(string key)
 		{
-			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key));
+			if (!_sources.TryGetValue(key, out var sourceData))
+			{
+				yield break;
+			}
+
+			foreach (var reference in sourceData.Properties)
+			{
+				yield return reference;
+			}
 		}
 
-		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType)
+		/// <summary>
+		/// This method should accept a <see cref="BussPropertyProvider"/> that has an inherited value type.
+		/// Given an inherited property provider, this will find the effective provider beyond the given property.
+		/// </summary>
+		/// <param name="property"></param>
+		/// <returns></returns>
+		public BussPropertyProvider GetNextInheritedProperty(BussPropertyProvider property)
 		{
+			if (property.ValueType != BussPropertyValueType.Inherited) return property;
+			
+			var found = false;
+			foreach (var reference in GetAllSources(property.Key))
+			{
+				if (found)
+				{
+					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
+					return reference.PropertyProvider;
+				}
+				if (reference.PropertyProvider == property)
+				{
+					found = true;
+				}
+			}
+
+			return null;
+		}
+		
+		public BussPropertyProvider GetUsedPropertyProvider(string key, out int rank)
+		{
+			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), out rank);
+		}
+
+		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType, out int rank)
+		{
+			rank = 0;
 			if (_sources.ContainsKey(key))
 			{
 				foreach (var reference in _sources[key].Properties)
 				{
+					rank++;
+					// if the reference says, "inherit", then the used property should continue up the reference sequence
+					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
+					
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
 						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
@@ -126,7 +173,7 @@ namespace Beamable.UI.Buss
 
 			if (styleRule != null)
 			{
-				if (!styleRule.Selector.CheckMatch(Element))
+				if (!styleRule.Selector.IsElementIncludedInSelector(Element))
 				{
 					// this is an inherited property, but maybe the property isn't inheritable?
 					if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable) return;
