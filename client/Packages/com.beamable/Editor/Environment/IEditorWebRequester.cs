@@ -8,7 +8,7 @@ namespace Beamable.Editor.Environment
 	public interface IEditorWebRequester
 	{
 		/// <summary>
-		/// Make an EditorWeb request to any address with no preconfigured authorization
+		/// Make an EditorWebRequest to any address with no preconfigured authorization
 		/// </summary>
 		/// <param name="method">One of the common HTTP methods represented through the <see cref="Method"/> enum</param>
 		/// <param name="url"></param>

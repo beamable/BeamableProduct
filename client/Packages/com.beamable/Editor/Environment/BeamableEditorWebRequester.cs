@@ -2,7 +2,6 @@
 using Beamable.Common.Api;
 using Beamable.Editor.Environment;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
