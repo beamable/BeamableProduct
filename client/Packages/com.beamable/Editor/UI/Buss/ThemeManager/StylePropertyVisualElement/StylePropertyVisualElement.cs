@@ -63,17 +63,17 @@ namespace Beamable.Editor.UI.Components
 			{
 				CreateMessageField("Inherited");
 
-				// var srcTracker = _model.PropertySourceTracker;
-				// if (srcTracker != null)
-				// {
-				// 	var appliedPropertyProvider = srcTracker.GetNextInheritedProperty(_model.PropertyProvider);
-				// 	if (appliedPropertyProvider != null)
-				// 	{
-				// 		var appliedProperty = appliedPropertyProvider.GetProperty();
-				// 		var field = CreateEditableField(appliedProperty);
-				// 		field.DisableInput();
-				// 	}
-				// }
+				var srcTracker = _model.PropertySourceTracker;
+				if (srcTracker != null)
+				{
+					var appliedPropertyProvider = srcTracker.GetNextInheritedProperty(_model.PropertyProvider);
+					if (appliedPropertyProvider != null)
+					{
+						var appliedProperty = appliedPropertyProvider.GetProperty();
+						var field = CreateEditableField(appliedProperty);
+						field.DisableInput();
+					}
+				}
 			} else if (_model.IsInitial){
 				CreateMessageField("Initial");
 				var field = CreateEditableField(_model.PropertyProvider.GetProperty());

@@ -171,14 +171,15 @@ namespace Beamable.UI.Buss
 		{
 			var key = propertyProvider.Key;
 
+			var exactMatch = true;
 			if (styleRule != null)
 			{
-				if (!styleRule.Selector.IsElementIncludedInSelector(Element))
+				if (!styleRule.Selector.IsElementIncludedInSelector(Element, out exactMatch))
 				{
 					// this is an inherited property, but maybe the property isn't inheritable?
 					if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable) return;
 				}
-			}
+			} 
 
 			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
 
@@ -186,8 +187,8 @@ namespace Beamable.UI.Buss
 			{
 				_sources[key] = sourceData = new SourceData(key);
 			}
-
-			sourceData.AddSource(propertyReference);
+			
+			sourceData.AddSource(propertyReference, exactMatch);
 		}
 
 		public class SourceData
@@ -195,23 +196,37 @@ namespace Beamable.UI.Buss
 			public readonly string key;
 			public readonly List<PropertyReference> Properties = new List<PropertyReference>();
 
+
+			private readonly List<PropertyReference> InheritedProperties = new List<PropertyReference>();
+			private readonly List<PropertyReference> MatchedProperties = new List<PropertyReference>();
+			
 			public SourceData(string key)
 			{
 				this.key = key;
 			}
 
-			public void AddSource(PropertyReference propertyReference)
+			public void AddSource(PropertyReference propertyReference, bool exactMatch)
 			{
+				var propList = MatchedProperties;
+				if (!exactMatch)
+				{
+					propList = InheritedProperties;
+				}
+				
 				var weight = propertyReference.GetWeight();
-				var index = Properties.FindIndex(r => weight.CompareTo(r.GetWeight()) >= 0);
+				var index = propList.FindIndex(r => weight.CompareTo(r.GetWeight()) >= 0);
 				if (index < 0)
 				{
-					Properties.Add(propertyReference);
+					propList.Add(propertyReference);
 				}
 				else
 				{
-					Properties.Insert(index, propertyReference);
+					propList.Insert(index, propertyReference);
 				}
+
+				Properties.Clear();
+				Properties.AddRange(MatchedProperties);
+				Properties.AddRange(InheritedProperties);
 			}
 		}
 	}

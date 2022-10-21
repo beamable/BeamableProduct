@@ -37,11 +37,11 @@ namespace Beamable.Editor.UI.Components
 		public bool IsInitial => PropertyProvider.ValueType == BussPropertyValueType.Initial;
 		public bool HasVariableConnected => PropertyProvider.HasVariableReference;
 
-		public bool IsOverriden =>
-			PropertySourceTracker != null && PropertySourceTracker != null &
-			PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out _);
+		// public bool IsOverriden =>
+		// 	PropertySourceTracker != null && PropertySourceTracker != null &
+		// 	PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out _);
 
-		public bool IsOverriden2
+		public bool IsOverriden
 		{
 			get
 			{

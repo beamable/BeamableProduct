@@ -30,7 +30,7 @@ namespace Beamable.UI.Buss
 		}
 
 		private static BussConfiguration Instance => Get<BussConfiguration>();
-		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
+		// private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
 		private static VariableDatabase _variableDatabase;
 		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
@@ -146,12 +146,12 @@ namespace Beamable.UI.Buss
 		{
 			
 			element.Style.Inherit(element?.Parent?.Style);
-			// element.Sources.Recalculate();
-			// foreach (var key in element.Sources.GetKeys())
-			// {
-			// 	element.Style[key] = element.Sources.GetUsedPropertyProvider(key, out _).GetProperty();
-			// }
-			// element.ApplyStyle();
+			element.Sources.Recalculate();
+			foreach (var key in element.Sources.GetKeys())
+			{
+				element.Style[key] = element.Sources.GetUsedPropertyProvider(key, out _).GetProperty();
+			}
+			element.ApplyStyle();
 			//
 			// Weights.Clear();
 			// element.Style.Inherit(element?.Parent?.Style);
