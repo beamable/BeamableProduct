@@ -486,7 +486,7 @@ namespace Beamable.Server.Editor
 							
 							var res = await de.ServiceScope.GetService<IEditorWebRequester>()
 							                  .ManualRequest<string>(
-								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health");
+								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
 							
 							return res;
 						}
