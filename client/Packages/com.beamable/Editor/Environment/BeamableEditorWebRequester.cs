@@ -7,7 +7,7 @@ using System.IO;
 using System.Net;
 using UnityEngine;
 
-public class BeamableEditorWebRequester : IEditorWebRequester
+public class BeamableEditorWebRequester : IEditorHttpRequester
 {
 	public Promise<T> ManualRequest<T>(Method method,
 	                                   string url,

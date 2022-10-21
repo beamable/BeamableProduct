@@ -5,10 +5,10 @@ using System.Collections.Generic;
 
 namespace Beamable.Editor.Environment
 {
-	public interface IEditorWebRequester
+	public interface IEditorHttpRequester
 	{
 		/// <summary>
-		/// Make an EditorWebRequest to any address with no preconfigured authorization
+		/// Make an Editor HTTP request to any address with no preconfigured authorization
 		/// </summary>
 		/// <param name="method">One of the common HTTP methods represented through the <see cref="Method"/> enum</param>
 		/// <param name="url"></param>

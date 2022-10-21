@@ -90,7 +90,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<HubspotService>();
 			DependencyBuilder.AddSingleton<BeamableDispatcher>();
 			
-			DependencyBuilder.AddSingleton<IEditorWebRequester>(provider => new BeamableEditorWebRequester());
+			DependencyBuilder.AddSingleton<IEditorHttpRequester>(provider => new BeamableEditorWebRequester());
 
 			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();

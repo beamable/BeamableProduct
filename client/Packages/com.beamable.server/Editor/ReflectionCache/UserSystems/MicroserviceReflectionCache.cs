@@ -480,10 +480,8 @@ namespace Beamable.Server.Editor
 
 							if (!dockerPortResult.ContainerExists)
 								return "false";
-
-							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
 							
-							var res = await de.ServiceScope.GetService<IEditorWebRequester>()
+							var res = await de.ServiceScope.GetService<IEditorHttpRequester>()
 							                  .ManualRequest<string>(
 								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
 							
