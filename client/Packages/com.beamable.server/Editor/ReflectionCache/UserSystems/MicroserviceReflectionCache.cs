@@ -480,11 +480,11 @@ namespace Beamable.Server.Editor
 
 							if (!dockerPortResult.ContainerExists)
 								return "false";
-							
+
 							var res = await de.ServiceScope.GetService<IEditorHttpRequester>()
-							                  .ManualRequest<string>(
-								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
-							
+											  .ManualRequest<string>(
+												  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+
 							return res;
 						}
 
