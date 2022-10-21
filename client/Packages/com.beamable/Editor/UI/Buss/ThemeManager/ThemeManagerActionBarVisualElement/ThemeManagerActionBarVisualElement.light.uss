@@ -1,5 +1,5 @@
 ﻿#root {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");
+    /*background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");*/
 }
 
 .boundedButton {

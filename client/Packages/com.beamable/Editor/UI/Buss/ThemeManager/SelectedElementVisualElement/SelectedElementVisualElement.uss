@@ -1,6 +1,6 @@
 ﻿#root {
     flex-grow: 1;
-    margin-bottom: 10px;
+    /*margin-bottom: 10px;*/
 }
 
 .header {
@@ -23,12 +23,12 @@
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     font-size: 12px;
-    padding-left: 20px;
+    padding-left: 30px;
 }
 
 #classesList {
     margin-top: 5px;
-    margin-left: 20px;
+    margin-left: 30px;
     margin-right: 20px;
     align-items: flex-end;
 }
@@ -64,7 +64,7 @@
 }
 
 .button:hover {
-    background-color: rgb(120,120,120);
+    background-color: #DCDCDC;
 }
 
 #elementsContainer {
@@ -72,8 +72,8 @@
 }
 
 LabeledTextField {
-    margin-top: 20px;
-    margin-left: 20px;
+    margin-top: 15px;
+    margin-left: 30px;
     margin-right: 20px;
 }
 
@@ -85,7 +85,7 @@ LabeledTextField #label {
 }
 
 LabeledObjectField {
-    margin-left: 20px;
+    margin-left: 30px;
     margin-right: 20px;
     flex-direction: row;
     align-items: center;

@@ -4,7 +4,7 @@
 }
 
 #indentedLabel {
-    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Medium.ttf");
     -unity-font-style: bold;
     -unity-text-align: middle-left;
     font-size: 12px;
