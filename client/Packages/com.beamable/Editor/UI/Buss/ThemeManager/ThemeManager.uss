@@ -21,7 +21,7 @@
 }
 
 #navigationGroup {
-    margin-bottom: 10px;
+    /*margin-bottom: 10px;*/
 }
 
 #styleSheetSource {
@@ -40,7 +40,7 @@
 }
 
 #toggle Label {
-    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Medium.ttf");
     -unity-font-style: bold;
     -unity-text-align: middle-right;
 }
@@ -61,12 +61,12 @@ BussElementHierarchyVisualElement {
 }
 
 InlineStyleVisualElement {
-    padding-bottom: 10px;
+    /*padding-bottom: 10px;*/
 }
 
 #foldIcon {
-    height: 7px;
-    width: 7px;
+    height: 10px;
+    width: 10px;
 }
 
 
