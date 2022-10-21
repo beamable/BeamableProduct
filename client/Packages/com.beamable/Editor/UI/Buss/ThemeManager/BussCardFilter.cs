@@ -49,10 +49,10 @@ namespace Beamable.Editor.UI.Buss
 			{
 				var weightComparison = b.Item1.Selector.GetWeight().CompareTo(a.Item1.Selector.GetWeight());
 				if (weightComparison != 0) return weightComparison;
-				//
+				
 				var exactMatchComparison = a.Item3.CompareTo(b.Item3);
 				if (exactMatchComparison != 0) return exactMatchComparison;
-				//
+				
 				var styleSheetComparison = a.Item2.IsReadOnly.CompareTo(b.Item2.IsReadOnly);
 				return styleSheetComparison;
 			});

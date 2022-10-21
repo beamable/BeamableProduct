@@ -37,20 +37,12 @@ namespace Beamable.Editor.UI.Components
 		public bool IsInitial => PropertyProvider.ValueType == BussPropertyValueType.Initial;
 		public bool HasVariableConnected => PropertyProvider.HasVariableReference;
 
-		// public bool IsOverriden =>
-		// 	PropertySourceTracker != null && PropertySourceTracker != null &
-		// 	PropertyProvider != PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out _);
-
 		public bool IsOverriden
 		{
 			get
 			{
 				if (PropertySourceTracker == null) return false;
 				var appliedProvider = PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out var rank);
-				
-				// the used provider is not me.
-				// thats because I am inherited.
-				// if I am inherited, I cannot be overriden?
 				if (PropertyProvider.ValueType == BussPropertyValueType.Inherited)
 				{
 					// I must be the first inherited property...
@@ -110,7 +102,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void LabelClicked(MouseDownEvent evt)
 		{
-			Debug.Log("Clicked");
+			
 			if (StyleSheet != null && !StyleSheet.IsWritable)
 			{
 				return;
@@ -129,28 +121,6 @@ namespace Beamable.Editor.UI.Components
 			var showInheritedOption = valueType != BussPropertyValueType.Inherited;
 			var showValueOption = valueType != BussPropertyValueType.Value;
 
-			commands.Add(new GenericMenuCommand("Print Cascade", () =>
-			{
-				Debug.Log("printing cascade for " + PropertyProvider.Key);
-				if (PropertySourceTracker == null)
-				{
-					Debug.Log("there is no source tracker :(");
-					return;
-				}
-				PropertySourceTracker.Recalculate();
-
-				foreach (var reference in PropertySourceTracker.GetAllSources(PropertyProvider.Key))
-				{
-					Debug.Log(reference.GetDisplayString());
-				}
-			}));
-			commands.Add(new GenericMenuCommand("Recalculate Style", () =>
-			{
-				Debug.Log("Recalculating...");
-				BussConfiguration.UseConfig(c => c.RecalculateStyle(AppliedToElement));
-				// AppliedToElement.RecalculateStyle();
-			}));
-			
 			if (showInitialOption)
 			{
 				commands.Add(new GenericMenuCommand("Use Initial Value", () =>
@@ -178,9 +148,7 @@ namespace Beamable.Editor.UI.Components
 					OnPropertyChanged(PropertyProvider.GetProperty());
 				}));
 			}
-
-
-
+			
 			GenericMenu context = new GenericMenu();
 
 			foreach (GenericMenuCommand command in commands)

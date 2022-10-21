@@ -40,16 +40,6 @@ namespace Beamable.UI.Buss
 
 	}
 
-
-	// public abstract class IBussProperty<T> : IBussProperty
-	// {
-	//
-	//
-	// 	T Value { get; }
-	//
-	// 	public abstract IBussProperty CopyProperty();
-	// }
-
 	public interface IInterpolatedBussProperty : IBussProperty
 	{
 		IBussProperty Interpolate(IBussProperty other, float value);

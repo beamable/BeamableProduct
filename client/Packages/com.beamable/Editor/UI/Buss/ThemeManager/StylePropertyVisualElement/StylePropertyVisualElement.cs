@@ -46,7 +46,6 @@ namespace Beamable.Editor.UI.Components
 			var overrideIndicator = new VisualElement();
 			overrideIndicator.AddToClassList("overrideIndicator");
 			_overrideIndicatorParent.Add(overrideIndicator);
-			_overrideIndicatorParent.RegisterCallback<MouseDownEvent>(_model.LabelClicked);
 
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
