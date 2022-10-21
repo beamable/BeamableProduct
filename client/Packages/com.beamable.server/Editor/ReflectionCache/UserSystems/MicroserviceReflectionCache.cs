@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Reflection;
@@ -479,10 +480,11 @@ namespace Beamable.Server.Editor
 
 							if (!dockerPortResult.ContainerExists)
 								return "false";
-
-							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
-							var res = await de.ServiceScope.GetService<IHttpRequester>()
-													.ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+							
+							var res = await de.ServiceScope.GetService<IEditorHttpRequester>()
+							                  .ManualRequest<string>(
+								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+							
 							return res;
 						}
 
