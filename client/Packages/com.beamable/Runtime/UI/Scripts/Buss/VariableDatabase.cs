@@ -35,7 +35,7 @@ namespace Beamable.UI.Buss
 
 			public string GetDisplayString()
 			{
-				return $"{StyleSheet.name} - {StyleRule.SelectorString}";
+				return $"{StyleSheet.name} - {StyleRule.SelectorString} -- {this.PropertyProvider.IsVariable}";
 			}
 		}
 
@@ -58,57 +58,57 @@ namespace Beamable.UI.Buss
 			_variablesProvider = variablesProvider;
 		}
 
-		public List<PropertyReference> GetVariableData(string key)
-		{
-			var hash = Animator.StringToHash(key);
+		// public List<PropertyReference> GetVariableData(string key)
+		// {
+		// 	var hash = Animator.StringToHash(key);
+		//
+		// 	List<PropertyReference> propertyReferences =
+		// 		_variables.FindAll(prop => prop.HashKey == hash);
+		//
+		// 	if (propertyReferences.Count != 0)
+		// 	{
+		// 		return propertyReferences;
+		// 	}
+		//
+		// 	var data = new PropertyReference(key, null, null, null);
+		// 	_variables.Add(data);
+		// 	return new List<PropertyReference> { data };
+		// }
 
-			List<PropertyReference> propertyReferences =
-				_variables.FindAll(prop => prop.HashKey == hash);
-
-			if (propertyReferences.Count != 0)
-			{
-				return propertyReferences;
-			}
-
-			var data = new PropertyReference(key, null, null, null);
-			_variables.Add(data);
-			return new List<PropertyReference> { data };
-		}
-
-		public List<PropertyReference> GetVariablesOfType(Type baseType)
-		{
-			List<PropertyReference> propertyReferences =
-				_variables.FindAll(prop => baseType.IsInstanceOfType(prop.PropertyProvider.GetProperty()));
-
-			return propertyReferences;
-		}
+		// public List<PropertyReference> GetVariablesOfType(Type baseType)
+		// {
+		// 	List<PropertyReference> propertyReferences =
+		// 		_variables.FindAll(prop => baseType.IsInstanceOfType(prop.PropertyProvider.GetProperty()));
+		//
+		// 	return propertyReferences;
+		// }
 
 		public void ReconsiderAllStyleSheets()
 		{
-			_variables.Clear();
-			_styleSheets.Clear();
-
-			foreach (BussStyleSheet sheet in _variablesProvider.GetStylesheets())
-			{
-				AddStyleSheet(sheet);
-			}
+			// _variables.Clear();
+			// _styleSheets.Clear();
+			//
+			// foreach (BussStyleSheet sheet in _variablesProvider.GetStylesheets())
+			// {
+			// 	AddStyleSheet(sheet);
+			// }
 		}
 
-		public void TryGetProperty(BussPropertyProvider basePropertyProvider,
-								   BussStyleDescription styleRule,
-								   out IBussProperty result,
-								   out PropertyReference variablePropertyReference)
-		{
-			if (!basePropertyProvider.HasVariableReference)
-			{
-				variablePropertyReference = new PropertyReference(string.Empty, null, null, null);
-				result = basePropertyProvider.GetProperty();
-				return;
-			}
-
-			FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
-								 styleRule, out result, out variablePropertyReference);
-		}
+		// public void TryGetProperty(BussPropertyProvider basePropertyProvider,
+		// 						   BussStyleDescription styleRule,
+		// 						   out IBussProperty result,
+		// 						   out PropertyReference variablePropertyReference)
+		// {
+		// 	if (!basePropertyProvider.HasVariableReference)
+		// 	{
+		// 		variablePropertyReference = new PropertyReference(string.Empty, null, null, null);
+		// 		result = basePropertyProvider.GetProperty();
+		// 		return;
+		// 	}
+		//
+		// 	FindVariableEndValue((VariableProperty)basePropertyProvider.GetProperty(),
+		// 						 styleRule, out result, out variablePropertyReference);
+		// }
 
 		private void AddStyleSheet(BussStyleSheet sheet)
 		{
@@ -143,56 +143,56 @@ namespace Beamable.UI.Buss
 		/// Otherwise returns null.
 		/// It can search for end value recursively.
 		/// </summary>
-		private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
-														BussStyleDescription styleRule,
-														out IBussProperty result,
-														out PropertyReference propertyReference)
-		{
-			result = null;
-			propertyReference = new PropertyReference(string.Empty, null, null, null);
-			PropertyValueState state;
-
-			if (_usedVariableNames.Contains(variableProperty.VariableName)) // check if we are not in infinite loop
-			{
-				_usedVariableNames.Clear();
-				return PropertyValueState.VariableLoopDetected;
-			}
-
-			_usedVariableNames.Add(variableProperty.VariableName);
-
-			if (styleRule.HasProperty(variableProperty.VariableName))
-			{
-				state = PropertyValueState.SingleResult;
-				result = styleRule.GetProperty(variableProperty.VariableName);
-			}
-			else
-			{
-				var variableData = GetVariableData(variableProperty.VariableName);
-
-				if (variableData.Count == 1)
-				{
-					state = PropertyValueState.SingleResult;
-					propertyReference = variableData[0];
-					result = propertyReference.PropertyProvider.GetProperty();
-				}
-				else if (variableData.Count > 1)
-				{
-					state = PropertyValueState.MultipleResults;
-				}
-				else
-				{
-					state = PropertyValueState.NoResult;
-				}
-			}
-
-			if (result != null && result is VariableProperty nestedVariableProperty)
-			{
-				state = FindVariableEndValue(nestedVariableProperty, styleRule, out result, out propertyReference);
-			}
-
-			_usedVariableNames.Clear();
-
-			return state;
-		}
+		// private PropertyValueState FindVariableEndValue(VariableProperty variableProperty,
+		// 												BussStyleDescription styleRule,
+		// 												out IBussProperty result,
+		// 												out PropertyReference propertyReference)
+		// {
+		// 	result = null;
+		// 	propertyReference = new PropertyReference(string.Empty, null, null, null);
+		// 	PropertyValueState state;
+		//
+		// 	if (_usedVariableNames.Contains(variableProperty.VariableName)) // check if we are not in infinite loop
+		// 	{
+		// 		_usedVariableNames.Clear();
+		// 		return PropertyValueState.VariableLoopDetected;
+		// 	}
+		//
+		// 	_usedVariableNames.Add(variableProperty.VariableName);
+		//
+		// 	if (styleRule.HasProperty(variableProperty.VariableName))
+		// 	{
+		// 		state = PropertyValueState.SingleResult;
+		// 		result = styleRule.GetProperty(variableProperty.VariableName);
+		// 	}
+		// 	else
+		// 	{
+		// 		var variableData = GetVariableData(variableProperty.VariableName);
+		//
+		// 		if (variableData.Count == 1)
+		// 		{
+		// 			state = PropertyValueState.SingleResult;
+		// 			propertyReference = variableData[0];
+		// 			result = propertyReference.PropertyProvider.GetProperty();
+		// 		}
+		// 		else if (variableData.Count > 1)
+		// 		{
+		// 			state = PropertyValueState.MultipleResults;
+		// 		}
+		// 		else
+		// 		{
+		// 			state = PropertyValueState.NoResult;
+		// 		}
+		// 	}
+		//
+		// 	if (result != null && result is VariableProperty nestedVariableProperty)
+		// 	{
+		// 		state = FindVariableEndValue(nestedVariableProperty, styleRule, out result, out propertyReference);
+		// 	}
+		//
+		// 	_usedVariableNames.Clear();
+		//
+		// 	return state;
+		// }
 	}
 }

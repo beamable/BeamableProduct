@@ -166,7 +166,15 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			models = models.OrderBy(m => m.PropertyProvider.Key).ToList();
+			var sortedModels = models.ToList();
+			sortedModels.Sort((a, b) =>
+			{
+				var overridenComparison = a.IsOverriden.CompareTo(b.IsOverriden);
+				if (overridenComparison != 0) return overridenComparison;
+
+				return String.Compare(a.PropertyProvider.Key, b.PropertyProvider.Key, StringComparison.Ordinal);
+			});
+			models = sortedModels;
 			models.AddRange(GetVariables());
 			return models;
 		}

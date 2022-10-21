@@ -91,14 +91,14 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
-		{
-			VariablesDatabase.TryGetProperty(PropertyProvider, StyleRule, out IBussProperty property,
-											 out VariableDatabase.PropertyReference variableSource);
-
-			bussProperty = property;
-			propertyReference = variableSource;
-		}
+		// public void GetResult(out IBussProperty bussProperty, out VariableDatabase.PropertyReference propertyReference)
+		// {
+		// 	VariablesDatabase.TryGetProperty(PropertyProvider, StyleRule, out IBussProperty property,
+		// 									 out VariableDatabase.PropertyReference variableSource);
+		//
+		// 	bussProperty = property;
+		// 	propertyReference = variableSource;
+		// }
 
 		public void LabelClicked(MouseDownEvent evt)
 		{
@@ -115,6 +115,27 @@ namespace Beamable.Editor.UI.Components
 					_removePropertyAction?.Invoke(PropertyProvider.Key);
 				})
 			};
+			
+			commands.Add(new GenericMenuCommand("Get Self", () =>
+			{
+				PropertySourceTracker.GetUsedPropertyProvider(PropertyProvider.Key, out _);
+			}));
+			
+			commands.Add(new GenericMenuCommand("Print Cascade", () =>
+			{
+				Debug.Log("printing cascade for " + PropertyProvider.Key);
+				if (PropertySourceTracker == null)
+				{
+					Debug.Log("there is no source tracker :(");
+					return;
+				}
+				PropertySourceTracker.Recalculate();
+
+				foreach (var reference in PropertySourceTracker.GetAllSources(PropertyProvider.Key))
+				{
+					Debug.Log(reference.GetDisplayString());
+				}
+			}));
 
 			var valueType = PropertyProvider.ValueType;
 			var showInitialOption = valueType != BussPropertyValueType.Initial;
@@ -205,23 +226,35 @@ namespace Beamable.Editor.UI.Components
 
 		private List<string> GetDropdownOptions()
 		{
-			var baseType = BussStyle.GetBaseType(PropertyProvider.Key);
 			var options = new List<string>();
-
-			options.Clear();
 			options.Add(Constants.Features.Buss.MenuItems.NONE);
-
-			List<VariableDatabase.PropertyReference> references = VariablesDatabase.GetVariablesOfType(baseType);
-
-			foreach (VariableDatabase.PropertyReference propertyReference in references)
+			var baseType = BussStyle.GetBaseType(PropertyProvider.Key);
+			if (PropertySourceTracker != null)
 			{
-				if (!options.Contains(propertyReference.Key))
-				{
-					options.Add(propertyReference.Key);
-				}
+				options.AddRange(PropertySourceTracker.GetAllVariableNames(baseType));
 			}
 
 			return options;
+
+
+			//
+			// var baseType = BussStyle.GetBaseType(PropertyProvider.Key);
+			// var options = new List<string>();
+			//
+			// options.Clear();
+			// options.Add(Constants.Features.Buss.MenuItems.NONE);
+			//
+			// List<VariableDatabase.PropertyReference> references = VariablesDatabase.GetVariablesOfType(baseType);
+			//
+			// foreach (VariableDatabase.PropertyReference propertyReference in references)
+			// {
+			// 	if (!options.Contains(propertyReference.Key))
+			// 	{
+			// 		options.Add(propertyReference.Key);
+			// 	}
+			// }
+			//
+			// return options;
 		}
 
 		private int GetOptionIndex()

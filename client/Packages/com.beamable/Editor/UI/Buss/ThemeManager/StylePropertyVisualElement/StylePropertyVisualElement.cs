@@ -47,6 +47,10 @@ namespace Beamable.Editor.UI.Components
 			overrideIndicator.AddToClassList("overrideIndicator");
 			_overrideIndicatorParent.Add(overrideIndicator);
 
+			var overrideIndicatorSpacer = new VisualElement();
+			overrideIndicatorSpacer.AddToClassList("overrideIndicatorSpacer");
+			_overrideIndicatorParent.Add(overrideIndicatorSpacer);
+
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
 
@@ -87,8 +91,15 @@ namespace Beamable.Editor.UI.Components
 				}
 				else
 				{
-					_model.GetResult(out IBussProperty property, out VariableDatabase.PropertyReference variableSource);
-					CreateEditableField(property);
+					var srcTracker = _model.PropertySourceTracker;
+					if (srcTracker != null)
+					{
+						var appliedPropertyProvider = srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
+						if (appliedPropertyProvider != null)
+						{
+							CreateEditableField(appliedPropertyProvider.GetProperty());
+						}
+					}
 				}
 			}
 			else
@@ -153,7 +164,7 @@ namespace Beamable.Editor.UI.Components
 			switch (result)
 			{
 				case VariableDatabase.PropertyValueState.NoResult:
-					text = "Select variable";
+					text = "Select variable or keyword";
 					break;
 				case VariableDatabase.PropertyValueState.VariableLoopDetected:
 					text = "Variable loop-reference detected";

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using PropertyReference = Beamable.UI.Buss.VariableDatabase.PropertyReference;
 
 namespace Beamable.UI.Buss
@@ -56,6 +57,11 @@ namespace Beamable.UI.Buss
 
 		public IEnumerable<string> GetKeys() => _sources.Keys;
 
+		/// <summary>
+		/// Enumerate all <see cref="PropertyReference"/> objects of the given key
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
 		public IEnumerable<PropertyReference> GetAllSources(string key)
 		{
 			if (!_sources.TryGetValue(key, out var sourceData))
@@ -66,6 +72,27 @@ namespace Beamable.UI.Buss
 			foreach (var reference in sourceData.Properties)
 			{
 				yield return reference;
+			}
+		}
+
+		public IEnumerable<string> GetAllVariableNames()
+		{
+			return _sources.Keys.Where(BussStyleSheetUtility.IsValidVariableName);
+		}
+		
+		public IEnumerable<string> GetAllVariableNames(Type baseType)
+		{
+			foreach (var kvp in _sources)
+			{
+				if (!BussStyleSheetUtility.IsValidVariableName(kvp.Key)) continue;
+				
+				var firstProperty = kvp.Value.Properties.FirstOrDefault();
+				if (firstProperty == null) continue;
+
+				if (firstProperty.PropertyProvider.IsPropertyOfType(baseType))
+				{
+					yield return kvp.Key;
+				}
 			}
 		}
 
@@ -98,10 +125,15 @@ namespace Beamable.UI.Buss
 		
 		public BussPropertyProvider GetUsedPropertyProvider(string key, out int rank)
 		{
-			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), out rank);
+			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), false, out rank);
 		}
 
-		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType, out int rank)
+		public BussPropertyProvider ResolveVariableProperty(string key)
+		{
+			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), true, out _);
+		}
+
+		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType, bool resolveVariables, out int rank)
 		{
 			rank = 0;
 			if (_sources.ContainsKey(key))
@@ -111,6 +143,16 @@ namespace Beamable.UI.Buss
 					rank++;
 					// if the reference says, "inherit", then the used property should continue up the reference sequence
 					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
+					
+					// if the reference is a variable, redirect!
+					if (resolveVariables && reference.PropertyProvider.HasVariableReference)
+					{
+						var variableProperty = reference.PropertyProvider.GetProperty() as VariableProperty;
+						var variableName = variableProperty.VariableName;
+
+						var referenceValue = GetUsedPropertyProvider(variableName, out var nestedRank);
+						return referenceValue;
+					}
 					
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
 						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
@@ -159,6 +201,7 @@ namespace Beamable.UI.Buss
 
 		private void AddStyleDescription(BussStyleSheet styleSheet, BussStyleDescription styleDescription)
 		{
+			if (styleDescription == null || styleDescription.Properties == null) return;
 			foreach (BussPropertyProvider property in styleDescription.Properties)
 			{
 				AddPropertySource(styleSheet, styleDescription as BussStyleRule, property);
@@ -177,9 +220,14 @@ namespace Beamable.UI.Buss
 				if (!styleRule.Selector.IsElementIncludedInSelector(Element, out exactMatch))
 				{
 					// this is an inherited property, but maybe the property isn't inheritable?
-					if (!BussStyle.TryGetBinding(key, out var binding) || !binding.Inheritable) return;
+					if (BussStyle.TryGetBinding(key, out var binding) && !binding.Inheritable) return;
 				}
-			} 
+			}
+
+			if (propertyProvider.IsVariable)
+			{
+				
+			}
 
 			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
 
@@ -229,6 +277,7 @@ namespace Beamable.UI.Buss
 				Properties.AddRange(InheritedProperties);
 			}
 		}
+
 	}
 
 	public class PropertySourceDatabase
