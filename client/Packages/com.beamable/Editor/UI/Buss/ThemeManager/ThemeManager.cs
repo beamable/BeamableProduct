@@ -9,10 +9,6 @@ namespace Beamable.Editor.UI.Buss
 	public class ThemeManager : BeamEditorWindow<ThemeManager>
 	{
 		private ThemeManagerBreadcrumbsVisualElement _breadcrumbs;
-		private BeamablePopupWindow _confirmationPopup;
-		private LabeledCheckboxVisualElement _filterToggle;
-		private LabeledCheckboxVisualElement _hideOverridenToggle;
-		private bool _inStyleSheetChangedLoop;
 		private ThemeManagerModel _model;
 		private NavigationVisualElement _navigationWindow;
 		private ScrollView _scrollView;
@@ -38,11 +34,6 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow?.Destroy();
 			_selectedElement?.Destroy();
 			_model?.Clear();
-		}
-
-		private void OnFocus()
-		{
-			_model?.ForceRefresh();
 		}
 
 		[MenuItem(
