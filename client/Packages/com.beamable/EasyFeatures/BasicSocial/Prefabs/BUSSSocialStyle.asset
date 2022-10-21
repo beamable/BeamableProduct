@@ -95,7 +95,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_colorRect":{"BottomLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.7058823704719544},"BottomRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.7058823704719544},"TopLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"TopRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"_drawerMode":0}}'
+        _json: '{"_colorRect":{"BottomLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.9019607901573181},"BottomRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.9019607901573181},"TopLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"TopRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"_drawerMode":0}}'
     _cachedProperties: []
     _selector: .card
   - _folded: 0
@@ -575,12 +575,12 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+        _json: '{"_color":{"r":0.4024069011211395,"g":0.3248344957828522,"b":0.703000009059906,"a":1.0}}'
     - _key: borderColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+        _json: '{"_color":{"r":0.20784315466880799,"g":0.1411764770746231,"b":0.44705885648727419,"a":1.0}}'
     - _key: borderWidth
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -625,7 +625,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+        _json: '{"_color":{"r":0.20784315466880799,"g":0.1411764770746231,"b":0.44705885648727419,"a":1.0}}'
     - _key: borderWidth
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -635,7 +635,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.7333333492279053,"g":0.45490196347236636,"b":0.13725490868091584,"a":1.0}}'
+        _json: '{"_color":{"r":0.7519999742507935,"g":0.7519999742507935,"b":0.7519999742507935,"a":1.0}}'
     - _key: fontSize
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -670,7 +670,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_color":{"r":0.3176470696926117,"g":0.14509804546833039,"b":0.0,"a":1.0}}'
+        _json: '{"_color":{"r":0.1725490242242813,"g":0.12156863510608673,"b":0.37254902720451357,"a":1.0}}'
     - _key: textAlignment
       _property:
         _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
