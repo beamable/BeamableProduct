@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -480,9 +481,16 @@ namespace Beamable.Server.Editor
 							if (!dockerPortResult.ContainerExists)
 								return "false";
 
-							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
-							var res = await de.ServiceScope.GetService<IHttpRequester>()
-													.ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+							// changed to WebRequest because UnityWebRequest can't handle EmptyResponse without DebugLog.Error
+							
+							var request = WebRequest.Create($"http://{dockerPortResult.LocalFullAddress}/health");
+							var response = await request.GetResponseAsync();
+							
+							string res;
+							using (var streamReader = new StreamReader(response.GetResponseStream()))
+							{
+								res = await streamReader.ReadToEndAsync();
+							}
 							return res;
 						}
 
