@@ -17,6 +17,8 @@ namespace Beamable.Editor.Environment
 		/// If the type of the <see cref="body"/> is an object, it will be serialized to JSON.
 		/// If the type of the <see cref="body"/> is a string, no serialization will occur.
 		/// </param>
+		/// <exception cref="ArgumentOutOfRangeException">thrown when the request result code is unknown</exception>
+		/// <exception cref="NotImplementedException">thrown when the request param is set but not implememnted</exception>
 		/// <param name="headers">
 		/// A dictionary where the keys are header names, and the values are the header values.
 		/// </param>
@@ -37,11 +39,11 @@ namespace Beamable.Editor.Environment
 		/// A <see cref="Promise{T}"/> of type <see cref="T"/> when the network request completes.
 		/// </returns>
 		Promise<T> ManualRequest<T>(Method method,
-		   string url,
-		   object body = null,
-		   Dictionary<string, string> headers = null,
-		   string contentType = "application/json",
-		   Func<string, T> parser = null);
+		                            string url,
+		                            object body = null,
+		                            Dictionary<string, string> headers = null,
+		                            string contentType = "application/json",
+		                            Func<string, T> parser = null);
 		
 	}
 }
