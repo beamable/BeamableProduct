@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Reflection;
@@ -481,16 +482,12 @@ namespace Beamable.Server.Editor
 							if (!dockerPortResult.ContainerExists)
 								return "false";
 
-							// changed to WebRequest because UnityWebRequest can't handle EmptyResponse without DebugLog.Error
+							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
 							
-							var request = WebRequest.Create($"http://{dockerPortResult.LocalFullAddress}/health");
-							var response = await request.GetResponseAsync();
+							var res = await de.ServiceScope.GetService<IEditorWebRequester>()
+							                  .ManualRequest<string>(
+								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health");
 							
-							string res;
-							using (var streamReader = new StreamReader(response.GetResponseStream()))
-							{
-								res = await streamReader.ReadToEndAsync();
-							}
 							return res;
 						}
 
