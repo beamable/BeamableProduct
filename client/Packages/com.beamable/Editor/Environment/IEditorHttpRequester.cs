@@ -18,7 +18,7 @@ namespace Beamable.Editor.Environment
 		/// If the type of the <see cref="body"/> is a string, no serialization will occur.
 		/// </param>
 		/// <exception cref="ArgumentOutOfRangeException">thrown when the request result code is unknown</exception>
-		/// <exception cref="NotImplementedException">thrown when the request param is set but not implememnted</exception>
+		/// <exception cref="NotImplementedException">thrown when the request param is set but not implemented</exception>
 		/// <param name="headers">
 		/// A dictionary where the keys are header names, and the values are the header values.
 		/// </param>
