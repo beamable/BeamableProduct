@@ -1,5 +1,5 @@
 #navigationGroup {
-    background-color: #B4B4B4;
+    /*background-color: #B4B4B4;*/
 }
 
 #filterToggle > TemplateContainer > #mainVisualElement> Label {
@@ -7,11 +7,11 @@
 }
 
 .unfolded {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_dark.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Fold out_Dark.png");
 }
 
 .folded {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_dark.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/FoldRight_Dark copy.png");
 }
 
 

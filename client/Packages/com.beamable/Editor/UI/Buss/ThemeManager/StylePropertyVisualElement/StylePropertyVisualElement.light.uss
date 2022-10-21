@@ -19,9 +19,6 @@ StylePropertyVisualElement *:disabled{
     width: 0;
 }
 
-StylePropertyVisualElement.doesntExists {
-    background-color: rgba(255, 255, 255, 0.16);
-}
 
 #removeButton {
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove_Dark.png");

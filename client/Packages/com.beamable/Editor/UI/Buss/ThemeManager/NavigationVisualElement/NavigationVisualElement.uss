@@ -20,7 +20,8 @@
 
 #elementsContainer {
     flex-grow: 1;
-    height: 210px;
+    height: 200px;
+    margin-bottom: 10px;
 }
 
 .hidden {
