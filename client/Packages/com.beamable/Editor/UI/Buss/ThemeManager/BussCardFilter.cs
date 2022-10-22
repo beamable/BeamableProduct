@@ -47,12 +47,15 @@ namespace Beamable.Editor.UI.Buss
 			
 			unsortedRules.Sort((a, b) =>
 			{
+				// first, sort by exact matches. Inherited styles always play second fiddle 
+				var exactMatchComparison = a.Item3.CompareTo(b.Item3);
+				if (exactMatchComparison != 0) return exactMatchComparison;
+
+				// then amongst items inherited and matched elements, prefer selector specificity 
 				var weightComparison = b.Item1.Selector.GetWeight().CompareTo(a.Item1.Selector.GetWeight());
 				if (weightComparison != 0) return weightComparison;
 				
-				var exactMatchComparison = a.Item3.CompareTo(b.Item3);
-				if (exactMatchComparison != 0) return exactMatchComparison;
-				
+				// and finally, if there is still a tie, prefer customer sheets
 				var styleSheetComparison = a.Item2.IsReadOnly.CompareTo(b.Item2.IsReadOnly);
 				return styleSheetComparison;
 			});

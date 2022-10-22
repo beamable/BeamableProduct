@@ -65,8 +65,6 @@ namespace Beamable.Editor.UI.Components
 
 			if (_model.IsInherited)
 			{
-				CreateMessageField("Inherited");
-
 				var srcTracker = _model.PropertySourceTracker;
 				if (srcTracker != null)
 				{
@@ -79,9 +77,9 @@ namespace Beamable.Editor.UI.Components
 					}
 				}
 			} else if (_model.IsInitial){
-				CreateMessageField("Initial");
-				var field = CreateEditableField(_model.PropertyProvider.GetProperty());
-				field.DisableInput();
+				var initialValue = BussStyle.GetDefaultValue(_model.PropertyProvider.Key);
+				var field = CreateEditableField(initialValue);
+				field.DisableInput("The initial value cannot be changed.");
 			} else if (_model.HasVariableConnected)
 			{
 				string variableName = ((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName;
@@ -194,7 +192,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (_model.PropertyProvider.IsVariable)
 				return;
-			if (_model.IsInherited || _model.IsInitial) return;
 
 			if (_variableConnection == null)
 			{

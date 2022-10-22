@@ -112,7 +112,17 @@ namespace Beamable.UI.Buss
 				if (found)
 				{
 					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
-					return reference.PropertyProvider;
+					var inheritedReference = reference.PropertyProvider;
+					
+					if (inheritedReference.HasVariableReference)
+					{
+						var variableProperty = inheritedReference.GetProperty() as VariableProperty;
+						var variableName = variableProperty.VariableName;
+
+						var referenceValue = GetUsedPropertyProvider(variableName, out _);
+						return referenceValue;
+					}
+					
 				}
 				if (reference.PropertyProvider == property)
 				{

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -56,6 +57,10 @@ namespace Beamable.Editor.UI.Components
 			foreach (DropdownSingleOptionVisualElement option in _allOptions)
 			{
 				overallHeight += option.Height;
+				if (option.LineBelow)
+				{
+					overallHeight += 10;
+				}
 			}
 
 			return overallHeight;
@@ -71,6 +76,13 @@ namespace Beamable.Editor.UI.Components
 			foreach (DropdownSingleOptionVisualElement option in _allOptions)
 			{
 				_mainContainer.Add(option);
+				if (option.LineBelow)
+				{
+					var spacer = new VisualElement();
+					spacer.AddToClassList("dropdown-spacer");
+					
+					_mainContainer.Add(spacer);
+				}
 				option.Refresh();
 			}
 
