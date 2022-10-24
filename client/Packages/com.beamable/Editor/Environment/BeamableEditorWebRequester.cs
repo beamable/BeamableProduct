@@ -11,11 +11,11 @@ using UnityEngine;
 public class BeamableEditorWebRequester : IEditorHttpRequester
 {
 	public async Promise<T> ManualRequest<T>(Method method,
-	                                         string url,
-	                                         object body = null,
-	                                         Dictionary<string, string> headers = null,
-	                                         string contentType = "application/json",
-	                                         Func<string, T> parser = null)
+											 string url,
+											 object body = null,
+											 Dictionary<string, string> headers = null,
+											 string contentType = "application/json",
+											 Func<string, T> parser = null)
 	{
 		if (body != null)
 			throw new NotImplementedException();

@@ -39,11 +39,11 @@ namespace Beamable.Editor.Environment
 		/// A <see cref="Promise{T}"/> of type <see cref="T"/> when the network request completes.
 		/// </returns>
 		Promise<T> ManualRequest<T>(Method method,
-		                            string url,
-		                            object body = null,
-		                            Dictionary<string, string> headers = null,
-		                            string contentType = "application/json",
-		                            Func<string, T> parser = null);
-		
+									string url,
+									object body = null,
+									Dictionary<string, string> headers = null,
+									string contentType = "application/json",
+									Func<string, T> parser = null);
+
 	}
 }
