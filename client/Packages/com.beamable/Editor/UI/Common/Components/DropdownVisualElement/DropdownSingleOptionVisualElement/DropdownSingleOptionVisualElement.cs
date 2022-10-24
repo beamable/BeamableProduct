@@ -49,7 +49,7 @@ namespace Beamable.Editor.UI.Components
 			_onClick?.Invoke(_labelText);
 		}
 
-		public DropdownSingleOptionVisualElement Setup(string label, Action<string> onClick, float width, float height, bool lineBelow=false)
+		public DropdownSingleOptionVisualElement Setup(string label, Action<string> onClick, float width, float height, bool lineBelow = false)
 		{
 			_lineBelow = lineBelow;
 			_labelText = label;
