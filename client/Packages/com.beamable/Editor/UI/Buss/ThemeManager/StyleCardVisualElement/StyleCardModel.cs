@@ -21,7 +21,6 @@ namespace Beamable.Editor.UI.Components
 		public bool IsSelected { get; }
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
-		private VariableDatabase VariablesDatabase { get; }
 		private PropertySourceDatabase PropertiesDatabase { get; }
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
 		public bool IsWritable => StyleSheet.IsWritable;
@@ -33,7 +32,6 @@ namespace Beamable.Editor.UI.Components
 							  BussStyleRule styleRule,
 							  BussElement selectedElement,
 							  bool isSelected,
-							  VariableDatabase variablesDatabase,
 							  PropertySourceDatabase propertiesDatabase,
 							  IEnumerable<BussStyleSheet> writableStyleSheets,
 							  Action globalRefresh,
@@ -43,7 +41,6 @@ namespace Beamable.Editor.UI.Components
 			StyleRule = styleRule;
 			SelectedElement = selectedElement;
 			IsSelected = isSelected;
-			VariablesDatabase = variablesDatabase;
 			PropertiesDatabase = propertiesDatabase;
 			WritableStyleSheets = writableStyleSheets;
 
@@ -156,9 +153,9 @@ namespace Beamable.Editor.UI.Components
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-												   PropertiesDatabase.GetTracker(SelectedElement),
-												   null, RemovePropertyClicked, _globalRefresh);
+				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
+												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
+												   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 
 				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
 				{
@@ -166,7 +163,15 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 
-			models = models.OrderBy(m => m.PropertyProvider.Key).ToList();
+			var sortedModels = models.ToList();
+			sortedModels.Sort((a, b) =>
+			{
+				var overridenComparison = a.IsOverriden.CompareTo(b.IsOverriden);
+				if (overridenComparison != 0) return overridenComparison;
+
+				return String.Compare(a.PropertyProvider.Key, b.PropertyProvider.Key, StringComparison.Ordinal);
+			});
+			models = sortedModels;
 			models.AddRange(GetVariables());
 			return models;
 		}
@@ -256,13 +261,32 @@ namespace Beamable.Editor.UI.Components
 					continue;
 				}
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
-												   PropertiesDatabase.GetTracker(SelectedElement), null,
-												   RemovePropertyClicked, _globalRefresh);
+				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
+												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
+												   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 				variables.Add(model);
 			}
 
 			return variables;
+		}
+
+		private void SetValueTypeClicked(string propertyKey, BussPropertyValueType valueType)
+		{
+			var propertyModel = GetProperties(false).Find(property => property.PropertyProvider.Key == propertyKey);
+			if (propertyModel == null)
+			{
+				Debug.LogWarning($"StyleCardModel:{nameof(SetValueTypeClicked)}: can't find property with {propertyKey} key");
+				return;
+			}
+
+			propertyModel.PropertyProvider.GetProperty().ValueType = valueType;
+#if UNITY_EDITOR
+			EditorUtility.SetDirty(propertyModel.StyleSheet);
+#endif
+			AssetDatabase.SaveAssets();
+
+			Change?.Invoke();
+			_globalRefresh?.Invoke();
 		}
 
 		private void RemovePropertyClicked(string propertyKey)
@@ -271,7 +295,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (propertyModel == null)
 			{
-				Debug.LogWarning($"StyleCardModel:RemovePropertyCLicked: can't find property with {propertyKey} key");
+				Debug.LogWarning($"StyleCardModel:{nameof(RemovePropertyClicked)}: can't find property with {propertyKey} key");
 				return;
 			}
 

@@ -1,7 +1,4 @@
-﻿#root {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");
-}
-
+﻿
 .boundedButton {
     border-color: #b4b4b4;
 }
