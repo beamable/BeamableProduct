@@ -26,7 +26,7 @@ namespace Beamable.Common
 					public const string DUPLICATE_STYLESHEET_OPTIONS_HEADER = "Select source stylesheet";
 
 					public const string TOGGLE_SHOW_ALL = "Show All";
-					public const string TOGGLE_HIDE_ALL = "Hide All";
+					public const string TOGGLE_HIDE_ALL = "Hide Unused";
 				}
 
 				public static partial class MenuItems
@@ -36,6 +36,11 @@ namespace Beamable.Common
 					public const string COPY_INTO_NEW_STYLE_SHEET = "Copy into new style sheet";
 					public const string REMOVE = "Remove";
 					public const string NONE = "None";
+					public const string INITIAL_VALUE = "Initial";
+					public const string INHERITED_VALUE = "Inherit";
+
+					public const string CONNECT_VARIABLE_TEXT = "Use a variable or a keyword";
+					public const string REMOVE_VARIABLE_CONNECT = "Use a hardcoded value";
 				}
 
 				public static partial class Paths

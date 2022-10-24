@@ -5,9 +5,56 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-	public interface IBussProperty
+
+	public interface IBussPropertyBase
 	{
+		BussPropertyValueType ValueType { get; set; }
+	}
+
+	public interface IBussProperty : IBussPropertyBase
+	{
+
 		IBussProperty CopyProperty();
+
+		event Action OnValueChanged;
+		void NotifyValueChange();
+	}
+
+	public enum BussPropertyValueType //https://developer.mozilla.org/en-US/docs/Web/CSS/inherit#see_also
+	{
+		// use the given value for the property
+		Value,
+
+		// inherit the property value from the parent
+		Inherited,
+
+		// use the initial value of the property binding type
+		Initial
+	}
+
+	public abstract class DefaultBussProperty : IBussPropertyBase
+	{
+		// this needs to be serialized so that all sub properties can have a persistent value type.
+		[SerializeField]
+		private BussPropertyValueType _valueType;
+
+		public BussPropertyValueType ValueType { get => _valueType; set => _valueType = value; }
+
+		/// <summary>
+		/// An event that will trigger when the <see cref="NotifyValueChange"/> method is run.
+		/// The action is cleared every time <see cref="NotifyValueChange"/> executes, so it is impossible get
+		/// more than one update. 
+		/// </summary>
+		public event Action OnValueChanged;
+		
+		
+		public void NotifyValueChange()
+		{
+			var delegates = OnValueChanged;
+			OnValueChanged = () => { };
+			
+			delegates?.Invoke();
+		}
 	}
 
 	public interface IInterpolatedBussProperty : IBussProperty
