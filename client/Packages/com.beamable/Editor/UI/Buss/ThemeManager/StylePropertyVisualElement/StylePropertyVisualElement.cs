@@ -75,6 +75,10 @@ namespace Beamable.Editor.UI.Components
 						var field = CreateEditableField(appliedProperty);
 						field.DisableInput();
 					}
+					else
+					{
+						CreateMessageField("Unknown inherited property");
+					}
 				}
 			} else if (_model.IsInitial){
 				var initialValue = BussStyle.GetDefaultValue(_model.PropertyProvider.Key);
@@ -86,7 +90,7 @@ namespace Beamable.Editor.UI.Components
 
 				if (variableName == String.Empty)
 				{
-					CreateMessageField(VariableDatabase.PropertyValueState.NoResult);
+					CreateMessageField(PropertyValueState.NoResult);
 				}
 				else
 				{
@@ -169,15 +173,15 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement.Init();
 		}
 
-		private void CreateMessageField(VariableDatabase.PropertyValueState result)
+		private void CreateMessageField(PropertyValueState result)
 		{
 			string text;
 			switch (result)
 			{
-				case VariableDatabase.PropertyValueState.NoResult:
+				case PropertyValueState.NoResult:
 					text = "Select variable or keyword";
 					break;
-				case VariableDatabase.PropertyValueState.VariableLoopDetected:
+				case PropertyValueState.VariableLoopDetected:
 					text = "Variable loop-reference detected";
 					break;
 				default:

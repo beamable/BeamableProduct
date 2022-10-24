@@ -16,9 +16,7 @@ namespace Beamable.Editor.UI.Components
 	{
 		private static readonly DropdownEntry InitialOption =
 			new DropdownEntry(Constants.Features.Buss.MenuItems.INITIAL_VALUE, false);
-		private static readonly DropdownEntry InheritedOption =
-			new DropdownEntry(Constants.Features.Buss.MenuItems.INHERITED_VALUE, true);
-		
+
 		private readonly Action<string> _removePropertyAction;
 		private readonly Action _globalRefresh;
 		private readonly Action<string, BussPropertyValueType> _setValueTypeAction;
@@ -88,7 +86,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (IsOverriden && IsInStyle && PropertySourceTracker != null)
 			{
-				VariableDatabase.PropertyReference reference =
+				PropertyReference reference =
 					PropertySourceTracker.GetUsedPropertyReference(PropertyProvider.Key);
 
 				Tooltip = reference.StyleRule != null
@@ -156,7 +154,7 @@ namespace Beamable.Editor.UI.Components
 			var option = DropdownOptions[index];
 			PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Value;
 
-			if (option == InheritedOption)
+			if (option.DisplayName == Constants.Features.Buss.MenuItems.INHERITED_VALUE)
 			{
 				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Inherited;
 			} else if (option == InitialOption)
@@ -179,16 +177,19 @@ namespace Beamable.Editor.UI.Components
 
 		private List<DropdownEntry> GetDropdownOptions()
 		{
-			var options = new List<DropdownEntry>();
-			// options.Add(NoneOption);
-			
-			options.Add(InitialOption);
-			options.Add(InheritedOption);
+			var options = new List<DropdownEntry> { InitialOption };
+			var inheritedOption = new DropdownEntry(Constants.Features.Buss.MenuItems.INHERITED_VALUE, false);
+			options.Add(inheritedOption);
 			
 			var baseType = BussStyle.GetBaseType(PropertyProvider.Key);
 			if (PropertySourceTracker != null)
 			{
-				options.AddRange(PropertySourceTracker.GetAllVariableNames(baseType));
+				var variables = PropertySourceTracker.GetAllVariableNames(baseType).ToList();
+				if (variables.Count > 0)
+				{
+					inheritedOption.LineBelow = true;
+				}
+				options.AddRange(variables);
 			}
 
 			return options;

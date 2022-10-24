@@ -147,7 +147,8 @@ namespace Beamable.UI.Buss
 			element.Sources.Recalculate();
 			foreach (var key in element.Sources.GetKeys())
 			{
-				element.Style[key] = element.Sources.GetUsedPropertyProvider(key, out _).GetProperty();
+				element.Style[key] = (element.Sources.GetUsedPropertyProvider(key, out _)?.GetProperty()) ??
+				                     BussStyle.GetDefaultValue(key);
 			}
 			element.ApplyStyle();
 		}

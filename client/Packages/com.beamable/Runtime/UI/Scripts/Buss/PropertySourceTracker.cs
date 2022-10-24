@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using PropertyReference = Beamable.UI.Buss.VariableDatabase.PropertyReference;
+using PropertyReference = Beamable.UI.Buss.PropertyReference;
 
 namespace Beamable.UI.Buss
 {
@@ -121,6 +121,10 @@ namespace Beamable.UI.Buss
 
 						var referenceValue = GetUsedPropertyProvider(variableName, out _);
 						return referenceValue;
+					}
+					else
+					{
+						return reference.PropertyProvider;
 					}
 					
 				}
