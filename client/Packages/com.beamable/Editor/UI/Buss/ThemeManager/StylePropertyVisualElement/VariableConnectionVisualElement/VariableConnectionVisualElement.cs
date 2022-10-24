@@ -1,5 +1,7 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -48,10 +50,21 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			_button.EnableInClassList("whenConnected", _model.HasVariableConnected);
-			_dropdown.visible = _model.HasVariableConnected;
+			_button.EnableInClassList("whenConnected", _model.HasNonValueConnection);
+			_dropdown.visible = _model.HasNonValueConnection;
+			_button.tooltip = Constants.Features.Buss.MenuItems.CONNECT_VARIABLE_TEXT;
+			if (_model.HasNonValueConnection)
+			{
+				_button.tooltip = Constants.Features.Buss.MenuItems.REMOVE_VARIABLE_CONNECT;
+			}
+
 			_dropdown.Setup(_model.DropdownOptions, _model.OnVariableSelected, _model.VariableDropdownOptionIndex,
-							false);
+			                false);
+
+			if ( !_model.IsInherited && !_model.IsInitial && _model.IsVariableConnectionEmpty)
+			{
+				_dropdown.SetValueWithoutVerification(Constants.Features.Buss.MenuItems.NONE);
+			}
 		}
 	}
 }

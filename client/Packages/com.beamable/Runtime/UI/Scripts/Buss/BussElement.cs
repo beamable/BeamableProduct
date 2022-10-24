@@ -27,6 +27,9 @@ namespace Beamable.UI.Buss
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
+		private PropertySourceTracker _sources;
+		public PropertySourceTracker Sources => _sources ?? (_sources = new PropertySourceTracker(this));
+
 		public string Id
 		{
 			get => _id;

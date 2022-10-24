@@ -26,6 +26,7 @@ namespace Beamable.Editor.UI.Components
 			_field.value = Property.FloatValue;
 			Root.Add(_field);
 
+
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}
 

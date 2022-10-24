@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Beamable.UI.Buss
 {
 	[Serializable]
-	public class Vector2BussProperty : IVector2BussProperty
+	public class Vector2BussProperty : DefaultBussProperty, IVector2BussProperty
 	{
 		[SerializeField]
 		private Vector2 _vector2Value;

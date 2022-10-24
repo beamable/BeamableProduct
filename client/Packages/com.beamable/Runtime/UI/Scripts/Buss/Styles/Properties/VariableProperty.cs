@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Beamable.UI.Buss
 {
 	[Serializable]
-	public class VariableProperty : IBussProperty
+	public class VariableProperty : DefaultBussProperty, IBussProperty
 	{
 		[SerializeField]
 		private string _variableName = "";

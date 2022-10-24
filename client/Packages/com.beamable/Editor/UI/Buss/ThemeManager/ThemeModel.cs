@@ -33,7 +33,6 @@ namespace Beamable.Editor.UI.Buss
 
 		public abstract List<BussStyleSheet> WritableStyleSheets { get; }
 
-		public VariableDatabase VariablesDatabase => BussConfiguration.OptionalInstance.Value.VariableDatabase;
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public void ForceRefresh()
