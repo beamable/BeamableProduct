@@ -31,7 +31,7 @@ namespace Beamable.UI.Buss
 		{
 			return IsElementIncludedInSelector(element, out isExactMatch, out _);
 		}
-		
+
 		public bool IsElementIncludedInSelector(BussElement element, out bool isExactMatch, out int parentDistance)
 		{
 			isExactMatch = false;

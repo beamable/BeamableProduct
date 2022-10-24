@@ -282,7 +282,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnStyleSheetChanged()
 		{
-			
+
 		}
 
 		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)

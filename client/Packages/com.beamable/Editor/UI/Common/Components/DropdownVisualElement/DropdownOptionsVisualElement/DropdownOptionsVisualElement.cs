@@ -80,7 +80,7 @@ namespace Beamable.Editor.UI.Components
 				{
 					var spacer = new VisualElement();
 					spacer.AddToClassList("dropdown-spacer");
-					
+
 					_mainContainer.Add(spacer);
 				}
 				option.Refresh();
