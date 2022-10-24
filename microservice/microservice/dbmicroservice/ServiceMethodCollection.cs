@@ -39,14 +39,14 @@ namespace Beamable.Server
             }
 
             object result = null;
-            using (var _ = _activityProvider.StartActivity(path))
+            using (var _ = _activityProvider.StartActivity(path + OTElConstants.ACT_CLIENT_CALLABLE))
             {
 	            var output = method.Execute(ctx, parameterProvider);
 	            result = await output;
             }
             BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);
 
-            using var serializeActivity = _activityProvider.StartActivity($"serialize-{path}");
+            using var serializeActivity = _activityProvider.StartActivity(OTElConstants.ACT_SERIALIZE);
             var serializedResult = method.ResponseSerializer.SerializeResponse(ctx, result);
             return serializedResult;
          }

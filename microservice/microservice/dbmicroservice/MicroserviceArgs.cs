@@ -12,6 +12,10 @@ namespace Beamable.Server
       string SdkVersionExecution { get; }
       bool WatchToken { get; }
       public bool DisableCustomInitializationHooks { get; }
+      public bool EmitOtel { get; }
+      public bool EmitOtelMetrics { get; }
+      public bool OtelMetricsIncludeRuntimeInstrumentation { get; }
+      public bool OtelMetricsIncludeProcessInstrumentation { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -25,6 +29,10 @@ namespace Beamable.Server
       public string SdkVersionExecution { get; set; }
       public bool WatchToken { get; set; }
       public bool DisableCustomInitializationHooks { get; set; }
+      public bool EmitOtel { get; set; }
+      public bool EmitOtelMetrics { get; set; }
+      public bool OtelMetricsIncludeRuntimeInstrumentation { get; set; }
+      public bool OtelMetricsIncludeProcessInstrumentation { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -41,7 +49,11 @@ namespace Beamable.Server
             SdkVersionBaseBuild = args.SdkVersionBaseBuild,
             SdkVersionExecution = args.SdkVersionExecution,
             WatchToken = args.WatchToken,
-            DisableCustomInitializationHooks = args.DisableCustomInitializationHooks
+            DisableCustomInitializationHooks = args.DisableCustomInitializationHooks,
+            EmitOtel = args.EmitOtel,
+            EmitOtelMetrics = args.EmitOtelMetrics,
+            OtelMetricsIncludeProcessInstrumentation = args.OtelMetricsIncludeProcessInstrumentation,
+            OtelMetricsIncludeRuntimeInstrumentation = args.OtelMetricsIncludeRuntimeInstrumentation
          };
       }
    }
@@ -56,6 +68,10 @@ namespace Beamable.Server
       public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
       public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
       public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
+      public bool EmitOtel => (Environment.GetEnvironmentVariable("EMIT_OTEL")?.ToLowerInvariant() ?? "") == "false";
+      public bool EmitOtelMetrics => (Environment.GetEnvironmentVariable("EMIT_OTEL_METRICS")?.ToLowerInvariant() ?? "") == "false";
+      public bool OtelMetricsIncludeRuntimeInstrumentation => (Environment.GetEnvironmentVariable("OTEL_INCLUDE_RUNTIME_INSTRUMENTATION")?.ToLowerInvariant() ?? "") == "true";
+      public bool OtelMetricsIncludeProcessInstrumentation => (Environment.GetEnvironmentVariable("OTEL_INCLUDE_PROCESS_INSTRUMENTATION")?.ToLowerInvariant() ?? "") == "true";
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
    }
 }

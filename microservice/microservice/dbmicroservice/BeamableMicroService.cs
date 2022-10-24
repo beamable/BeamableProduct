@@ -598,8 +598,8 @@ namespace Beamable.Server
 
       async Task HandlePlatformMessage(RequestContext ctx, string msg)
       {
-	      using var activity = _activityProvider.StartActivity("platform-message");
-	      _activityProvider.GetCounter<long>("beam.request.platform.count").Add(1);
+	      using var activity = _activityProvider.StartActivity(OTElConstants.ACT_PLATFORM_MESSAGE);
+	      _activityProvider.IncrementPlatformRequestCounter();
 
 	      try
 	      {
@@ -749,129 +749,124 @@ namespace Beamable.Server
 
       async Task HandleClientMessage(RequestContext ctx, string msg)
       {
-	      using var activity = _activityProvider.StartActivity("client-message");
-	      _activityProvider.GetCounter<long>("beam.request.client.count").Add(1);
+	      using var activity = _activityProvider.StartActivity(OTElConstants.ACT_CLIENT_MESSAGE);
+	      _activityProvider.IncrementClientRequestCounter();
 
 	      if (RefuseNewClientMessages)
 	      {
 		      activity?.SetStatus(ActivityStatusCode.Error, "empty message");
-            Log.Warning("Received a message after service began draining. id={id}", ctx.Id);
-            return; // let this message die.
-         }
+		      Log.Warning("Received a message after service began draining. id={id}", ctx.Id);
+		      return; // let this message die.
+	      }
 
-         try
-         {
-            var route = ctx.Path.Substring(QualifiedName.Length + 1);
+	      try
+	      {
+		      var route = ctx.Path.Substring(QualifiedName.Length + 1);
 
 
-            var parameterProvider = new AdaptiveParameterProvider(ctx);
+		      var parameterProvider = new AdaptiveParameterProvider(ctx);
 
-            activity?.SetTag("beam.route", route);
-            activity?.SetTag("beam.param.provider", parameterProvider.GetType().Name);
-            var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
-            activity?.SetTag("beam.res.body", responseJson);
-            BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
-            await _socketRequesterContext.SendMessageSafely(responseJson);
-            // TODO: Kill Scope
-         }
-         catch (MicroserviceException ex)
-         {
-	         activity?.RecordException(ex);
-	         activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_ROUTE, route);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_PARAM_PROVIDER, parameterProvider.GetType().Name);
+		      var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_RES_BODY, responseJson);
+		      BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
+		      await _socketRequesterContext.SendMessageSafely(responseJson);
+		      // TODO: Kill Scope
+	      }
+	      catch (MicroserviceException ex)
+	      {
+		      activity?.RecordException(ex);
+		      activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
+		      _activityProvider.IncrementRequesterExceptionCounter(ex);
+		      var failResponse = new GatewayErrorResponse
+		      {
+			      id = ctx.Id,
+			      status = ex.ResponseStatus,
+			      body = ex.GetErrorResponse(_serviceAttribute.MicroserviceName)
+		      };
+		      var failResponseJson = JsonConvert.SerializeObject(failResponse);
+		      BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}",
+			      ex.GetType().Name, ex.Message,
+			      ex.Source, failResponseJson, ex.StackTrace);
+		      await _socketRequesterContext.SendMessageSafely(failResponseJson);
+	      }
+	      catch (TargetInvocationException ex)
+	      {
+		      _activityProvider.IncrementRequesterExceptionCounter(ex);
+		      var inner = ex.InnerException;
+		      var failResponse = new GatewayResponse() { id = ctx.Id, };
 
-	         _activityProvider.GetCounter<long>("beam.request.client.error.count").Add(1);
+		      string failResponseJson;
 
-            var failResponse = new GatewayErrorResponse
-            {
-               id = ctx.Id,
-               status = ex.ResponseStatus,
-               body = ex.GetErrorResponse(_serviceAttribute.MicroserviceName)
-            };
-            var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", ex.GetType().Name, ex.Message,
-               ex.Source, failResponseJson, ex.StackTrace);
-            await _socketRequesterContext.SendMessageSafely(failResponseJson);
-         }
-         catch (TargetInvocationException ex)
-         {
-	         _activityProvider.GetCounter<long>("beam.request.client.error.count").Add(1);
+		      if (inner is MicroserviceException msException)
+		      {
+			      activity?.RecordException(msException);
+			      activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
 
-            var inner = ex.InnerException;
-            var failResponse = new GatewayResponse()
-            {
-               id = ctx.Id,
-            };
+			      failResponse.status = msException.ResponseStatus;
+			      failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
 
-            string failResponseJson;
+			      failResponseJson = JsonConvert.SerializeObject(failResponse);
+			      BeamableSerilogProvider.LogContext.Value.Error(
+				      "Exception {type}: {message} - {source} {json} \n {stack}", msException.GetType().Name,
+				      msException.Message,
+				      msException.Source, failResponseJson, msException.StackTrace);
+		      }
+		      else
+		      {
+			      activity?.RecordException(ex);
+			      activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
 
-            if (inner is MicroserviceException msException)
-            {
-	            activity?.RecordException(msException);
-	            activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
+			      failResponse = new GatewayResponse
+			      {
+				      id = ctx.Id, status = 500, body = new ClientResponse { payload = "" }
+			      };
 
-               failResponse.status = msException.ResponseStatus;
-               failResponse.body = msException.GetErrorResponse(_serviceAttribute.MicroserviceName);
+			      failResponseJson = JsonConvert.SerializeObject(failResponse);
+			      BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}",
+				      inner.GetType().Name,
+				      inner.Message,
+				      inner.Source, inner.StackTrace);
+		      }
 
-               failResponseJson = JsonConvert.SerializeObject(failResponse);
-               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", msException.GetType().Name, msException.Message,
-                  msException.Source, failResponseJson, msException.StackTrace);
-            }
-            else
-            {
-	            activity?.RecordException(ex);
-	            activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
+		      await _socketRequesterContext.SendMessageSafely(failResponseJson);
+	      }
+	      catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
+	      {
+		      _activityProvider.IncrementRequesterExceptionCounter(ex);
+		      
+		      activity?.RecordException(ex);
+		      activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
 
-               failResponse = new GatewayResponse
-               {
-                  id = ctx.Id,
-                  status = 500,
-                  body = new ClientResponse
-                  {
-                     payload = ""
-                  }
-               };
-
-               failResponseJson = JsonConvert.SerializeObject(failResponse);
-               BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", inner.GetType().Name,
-                  inner.Message,
-                  inner.Source, inner.StackTrace);
-            }
-
-            await _socketRequesterContext.SendMessageSafely(failResponseJson);
-         }
-         catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
-         {
-	         _activityProvider.GetCounter<long>("beam.request.client.error.count").Add(1);
-	         activity?.RecordException(ex);
-	         activity?.SetStatus(ActivityStatusCode.Error, ex?.Message);
-
-	         BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}", ex.GetType().Name, ex.Message,
-               ex.Source, ex.StackTrace);
-            // var failResponse = new GatewayErrorResponse
-            // {
-            //    id = ctx.Id,
-            //    status = ex.ResponseStatus,
-            //    body = ex.GetErrorResponse(_serviceAttribute.MicroserviceName)
-            // };
-            var failResponse = new GatewayResponse
-            {
-               id = ctx.Id,
-               status = 500,
-               body = new ClientResponse
-               {
-                  payload = ex.Message // TODO: Format this into a better response.
-               }
-            };
-            var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            await _socketRequesterContext.SendMessageSafely(failResponseJson);
-         }
+		      BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} \n {stack}",
+			      ex.GetType().Name, ex.Message,
+			      ex.Source, ex.StackTrace);
+		      // var failResponse = new GatewayErrorResponse
+		      // {
+		      //    id = ctx.Id,
+		      //    status = ex.ResponseStatus,
+		      //    body = ex.GetErrorResponse(_serviceAttribute.MicroserviceName)
+		      // };
+		      var failResponse = new GatewayResponse
+		      {
+			      id = ctx.Id,
+			      status = 500,
+			      body = new ClientResponse
+			      {
+				      payload = ex.Message // TODO: Format this into a better response.
+			      }
+		      };
+		      var failResponseJson = JsonConvert.SerializeObject(failResponse);
+		      await _socketRequesterContext.SendMessageSafely(failResponseJson);
+	      }
       }
 
       async Task HandleWebsocketMessage(IConnection ws, string msg)
       {
-	      using var activity = _activityProvider.StartActivity("message");
-	      activity?.SetTag("net.sock.peer.name", _args.Host);
-	      _activityProvider.GetCounter<long>("beam.request.count").Add(1);
+	      using var activity = _activityProvider.StartActivity(OTElConstants.ACT_MESSAGE);
+	      activity?.SetTag(OTElConstants.TAG_NET_SOCK_PEER_NAME, _args.Host);
+	      _activityProvider.IncrementRequestCounter();
 
 	      Log.Debug("Handling WS Message. {msg}", msg);
 
@@ -884,24 +879,24 @@ namespace Beamable.Server
 	      var reqLog = Log.ForContext("requestContext", ctx, true);
 	      BeamableSerilogProvider.LogContext.Value = reqLog;
 
-	      activity?.SetTag("beam.cid",ctx.Cid);
-	      activity?.SetTag("beam.pid",ctx.Pid);
-	      activity?.SetTag("beam.req.id",ctx.Id);
-	      activity?.SetTag("beam.req.method",ctx.Method);
-	      activity?.SetTag("beam.req.path",ctx.Path);
-	      activity?.SetTag("beam.req.body",ctx.Body);
-	      activity?.SetTag("beam.user.id",ctx.UserId);
-	      activity?.SetTag("beam.user.scopes",ctx.Scopes);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_CID, ctx.Cid);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_PID, ctx.Pid);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_ID, ctx.Id);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_METHOD, ctx.Method);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_PATH ,ctx.Path);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_BODY, ctx.Body);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_USER_ID, ctx.UserId);
+	      activity?.SetTag(OTElConstants.TAG_BEAM_USER_SCOPES, string.Join(", ", ctx.Scopes));
 
 	      if (_socketRequesterContext.IsPlatformMessage(ctx))
 	      {
-		      activity?.SetTag("beam.req.type", "platform");
+		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_TYPE, "platform");
 		      // the request is a platform request.
 		      await HandlePlatformMessage(ctx, msg);
 	      }
 	      else
 	      {
-		      activity?.SetTag("beam.req.type", "client");
+		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_TYPE, "client");
 		      // this is a client request. Handle the service method.
 		      await HandleClientMessage(ctx, msg);
 	      }

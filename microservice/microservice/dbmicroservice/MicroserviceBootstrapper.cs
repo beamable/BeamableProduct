@@ -71,11 +71,53 @@ namespace Beamable.Server
         }
 
 
-        private static void ConfigureOpenTelemetry()
+        private static ActivityProvider ConfigureOpenTelemetry<T>(IMicroserviceArgs args)
         {
+	        var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild);
 
+	        if (args.EmitOtelMetrics)
+	        {
+		        var metricBuilder = Sdk.CreateMeterProviderBuilder()
+				        .AddMeter(activityProvider.ActivityName)
+				        .AddOtlpExporter(config =>
+				        {
+					        config.Protocol = OtlpExportProtocol.Grpc;
+				        });
 
+		        if (args.OtelMetricsIncludeProcessInstrumentation)
+		        {
+			        metricBuilder = metricBuilder.AddProcessInstrumentation();
+		        }
+		        if (args.OtelMetricsIncludeRuntimeInstrumentation)
+		        {
+			        metricBuilder = metricBuilder.AddRuntimeInstrumentation();
+		        }
 
+		        metricBuilder.Build();
+	        }
+
+	        if (args.EmitOtel)
+	        {
+		        using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+			        .AddSource(activityProvider.ActivityName)
+			        .SetResourceBuilder(ResourceBuilder.CreateEmpty()
+				        .AddService(typeof(T).Name)
+				        .AddAttributes(new Dictionary<string, object>
+				        {
+					        ["cid"] = args.CustomerID,
+					        ["pid"] = args.ProjectName,
+					        ["beam-version"] = args.SdkVersionExecution,
+				        })
+			        )
+			        .AddOtlpExporter(config =>
+			        {
+				        config.Protocol = OtlpExportProtocol.Grpc;
+			        })
+			        .Build();
+	        }
+	        
+
+	        return activityProvider;
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
@@ -85,37 +127,8 @@ namespace Beamable.Server
             ConfigureDocsProvider();
 
             var args = new EnviornmentArgs();
-            var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild);
-            var beamableService = new BeamableMicroService(activityProvider:activityProvider);
-
-            var metricProvider = Sdk.CreateMeterProviderBuilder()
-	            .AddMeter(activityProvider.ActivityName)
-	            .AddOtlpExporter(config =>
-	            {
-		            // config.Endpoint = new Uri("https://otel-collector:4317");
-		            config.Protocol = OtlpExportProtocol.Grpc;
-	            })
-	            // .AddRuntimeInstrumentation()
-	            // .AddProcessInstrumentation()
-	            .AddConsoleExporter()
-	            .Build();
-            using var tracerProvider = Sdk.CreateTracerProviderBuilder()
-	            .AddSource(activityProvider.ActivityName)
-	            .SetResourceBuilder(ResourceBuilder.CreateEmpty()
-		            .AddService(typeof(TMicroService).Name)
-		            .AddAttributes(new Dictionary<string, object>
-		            {
-			            ["cid"] = args.CustomerID,
-			            ["pid"] = args.ProjectName,
-			            ["beam-version"] = args.SdkVersionExecution,
-		            })
-	            )
-	            .AddOtlpExporter(config =>
-	            {
-		            // config.Endpoint = new Uri("https://otel-collector:4317");
-		            config.Protocol = OtlpExportProtocol.Grpc;
-	            })
-	            .Build();
+            var activityProvider = ConfigureOpenTelemetry<TMicroService>(args);
+            var beamableService = new BeamableMicroService(activityProvider: activityProvider);
 
             var localDebug = new LocalDebugService(beamableService);
 

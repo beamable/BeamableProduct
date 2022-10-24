@@ -13,5 +13,9 @@ namespace microserviceTests.microservice
       public string SdkVersionExecution { get; set; } = "test";
       public bool WatchToken { get; }
       public bool DisableCustomInitializationHooks { get; }
+      public bool EmitOtel { get; }
+      public bool EmitOtelMetrics { get; }
+      public bool OtelMetricsIncludeRuntimeInstrumentation { get; }
+      public bool OtelMetricsIncludeProcessInstrumentation { get; }
    }
 }

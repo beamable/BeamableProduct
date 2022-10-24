@@ -227,7 +227,7 @@ namespace Beamable.Server
             {
                 throw new Exception($"Connection is not open. state=[{_ws.State}]");
             }
-            using var activity = _activityProvider.StartActivity("ws-send");
+            using var activity = _activityProvider.StartActivity(OTElConstants.ACT_SEND_WEBSOCKET);
 
 
             var messageBuffer = Encoding.UTF8.GetBytes(message);
