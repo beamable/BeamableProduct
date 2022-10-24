@@ -228,6 +228,8 @@ namespace Beamable.Server
                                                                                   !asm.GetName().Name.StartsWith("nunit.") &&
                                                                                   !asm.GetName().Name.StartsWith("JetBrains.") &&
                                                                                   !asm.GetName().Name.StartsWith("Microsoft.") &&
+                                                                                  !asm.GetName().Name.StartsWith("DataDog.") &&
+                                                                                  !asm.GetName().Name.StartsWith("Datadog.") &&
                                                                                   !asm.GetName().Name.StartsWith("Serilog."))
             .Select(asm => asm.GetName().Name)
             .ToList();
