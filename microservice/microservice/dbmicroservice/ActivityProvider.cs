@@ -176,7 +176,7 @@ public class BeamTrace : IBeamTrace
 
 	public void Dispose()
 	{
-		_activity.SetStatus(ActivityStatusCode.Ok);
+		_activity?.SetStatus(ActivityStatusCode.Ok);
 		_activity?.Dispose();
 	}
 
