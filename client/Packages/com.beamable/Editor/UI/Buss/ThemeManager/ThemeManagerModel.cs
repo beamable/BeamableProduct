@@ -108,7 +108,6 @@ namespace Beamable.Editor.UI.Buss
 							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 							EditorUtility.SetDirty(SelectedElement);
 							SelectedElement.RecalculateStyle();
-							VariablesDatabase.ReconsiderAllStyleSheets();
 							ForceRefresh();
 						}
 					});
@@ -135,7 +134,6 @@ namespace Beamable.Editor.UI.Buss
 						// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 						EditorUtility.SetDirty(SelectedElement);
 						SelectedElement.RecalculateStyle();
-						VariablesDatabase.ReconsiderAllStyleSheets();
 						ForceRefresh();
 					}
 				});
@@ -209,7 +207,6 @@ namespace Beamable.Editor.UI.Buss
 			// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 			EditorUtility.SetDirty(SelectedElement);
 			SelectedElement.RecalculateStyle();
-			VariablesDatabase.ReconsiderAllStyleSheets();
 			ForceRefresh();
 		}
 
@@ -229,7 +226,6 @@ namespace Beamable.Editor.UI.Buss
 				// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 				EditorUtility.SetDirty(SelectedElement);
 				SelectedElement.RecalculateStyle();
-				VariablesDatabase.ReconsiderAllStyleSheets();
 				ForceRefresh();
 			}
 		}
@@ -286,7 +282,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnStyleSheetChanged()
 		{
-			VariablesDatabase.ReconsiderAllStyleSheets();
+			
 		}
 
 		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)

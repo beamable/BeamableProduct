@@ -24,7 +24,6 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
-		private VariableDatabase VariablesDatabase { get; }
 		public PropertySourceTracker PropertySourceTracker { get; }
 		public BussElement AppliedToElement { get; }
 		public BussElement InlineStyleOwner { get; }
@@ -65,7 +64,6 @@ namespace Beamable.Editor.UI.Components
 		public StylePropertyModel(BussStyleSheet styleSheet,
 								  BussStyleRule styleRule,
 								  BussPropertyProvider propertyProvider,
-								  VariableDatabase variablesDatabase,
 								  PropertySourceTracker propertySourceTracker,
 								  BussElement appliedToElement,
 								  BussElement inlineStyleOwner,
@@ -79,7 +77,6 @@ namespace Beamable.Editor.UI.Components
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
 			PropertyProvider = propertyProvider;
-			VariablesDatabase = variablesDatabase;
 			PropertySourceTracker = propertySourceTracker;
 			AppliedToElement = appliedToElement;
 			InlineStyleOwner = inlineStyleOwner;

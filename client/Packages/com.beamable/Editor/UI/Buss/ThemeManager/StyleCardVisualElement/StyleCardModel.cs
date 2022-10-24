@@ -21,7 +21,6 @@ namespace Beamable.Editor.UI.Components
 		public bool IsSelected { get; }
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
-		private VariableDatabase VariablesDatabase { get; }
 		private PropertySourceDatabase PropertiesDatabase { get; }
 		private IEnumerable<BussStyleSheet> WritableStyleSheets { get; }
 		public bool IsWritable => StyleSheet.IsWritable;
@@ -33,7 +32,6 @@ namespace Beamable.Editor.UI.Components
 							  BussStyleRule styleRule,
 							  BussElement selectedElement,
 							  bool isSelected,
-							  VariableDatabase variablesDatabase,
 							  PropertySourceDatabase propertiesDatabase,
 							  IEnumerable<BussStyleSheet> writableStyleSheets,
 							  Action globalRefresh,
@@ -43,7 +41,6 @@ namespace Beamable.Editor.UI.Components
 			StyleRule = styleRule;
 			SelectedElement = selectedElement;
 			IsSelected = isSelected;
-			VariablesDatabase = variablesDatabase;
 			PropertiesDatabase = propertiesDatabase;
 			WritableStyleSheets = writableStyleSheets;
 
@@ -156,7 +153,7 @@ namespace Beamable.Editor.UI.Components
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
+				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
 												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
 												   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 
@@ -264,7 +261,7 @@ namespace Beamable.Editor.UI.Components
 					continue;
 				}
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider, VariablesDatabase,
+				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
 												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
 												   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 				variables.Add(model);

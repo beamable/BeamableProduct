@@ -95,7 +95,7 @@ namespace Beamable.Editor.UI.Components
 			foreach (BussPropertyProvider property in selectedElement.InlineStyle.Properties)
 			{
 				StylePropertyModel model = new StylePropertyModel(selectedElement.StyleSheet, null,
-																  property, _model.VariablesDatabase,
+																  property,
 																  propertySourceTracker, selectedElement, selectedElement,
 																  _model.RemoveInlineProperty, null, _model.SetInlinePropertyValueType);
 

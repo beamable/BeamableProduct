@@ -30,7 +30,6 @@ namespace Beamable.UI.Buss
 		}
 
 		private static BussConfiguration Instance => Get<BussConfiguration>();
-		private static VariableDatabase _variableDatabase;
 		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
 		public List<BussStyleSheet> FactoryStyleSheets
@@ -51,8 +50,7 @@ namespace Beamable.UI.Buss
 					 .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
 
 		public List<BussElement> RootBussElements => _rootBussElements;
-		public VariableDatabase VariableDatabase => _variableDatabase ?? (_variableDatabase = new VariableDatabase(this));
-
+	
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);

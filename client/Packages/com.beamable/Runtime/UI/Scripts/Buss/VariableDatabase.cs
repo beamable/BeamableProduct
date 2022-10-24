@@ -4,20 +4,6 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-	public class VariableDatabase
-	{
-		public VariableDatabase(IVariablesProvider variablesProvider)
-		{
-			// _variablesProvider = variablesProvider;
-		}
-
-		public void ReconsiderAllStyleSheets()
-		{
-
-		}
-
-	}
-
 	public enum PropertyValueState
 	{
 		NoResult,
