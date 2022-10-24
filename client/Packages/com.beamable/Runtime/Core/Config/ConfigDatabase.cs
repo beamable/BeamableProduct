@@ -128,6 +128,7 @@ namespace Beamable.Config
 					return;
 				}
 				sessionOverrides.Remove(name);
+				database.Add(name, value);
 				PlayerPrefs.SetString(name.Trim(), value.Trim());
 			}
 			else
@@ -186,6 +187,7 @@ namespace Beamable.Config
 			if (ConfigDatabase.database.ContainsKey(name))
 			{
 				sessionOverrides.Remove(name);
+				ConfigDatabase.database.Remove(name);
 				PlayerPrefs.DeleteKey(name);
 			}
 			else

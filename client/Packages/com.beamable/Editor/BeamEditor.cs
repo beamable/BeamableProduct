@@ -826,6 +826,11 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm?.Pid);
 			requester.DeleteToken();
+			if (ConfigDatabase.HasKey("pid"))
+			{
+				ConfigDatabase.Reset("pid");
+				SaveConfig(CurrentCustomer?.Alias, "", cid: CurrentCustomer?.Cid);
+			}
 			CurrentUser = null;
 			OnUserChange?.Invoke(null);
 			BeamableEnvironment.ReloadEnvironment();
@@ -909,6 +914,11 @@ namespace Beamable
 			if (string.IsNullOrEmpty(host))
 			{
 				host = BeamableEnvironment.ApiUrl;
+			}
+
+			if (!string.IsNullOrEmpty(pid))
+			{
+				ConfigDatabase.SetString("pid", pid, createField: true);
 			}
 
 			WriteConfig(alias, pid, host, cid);
