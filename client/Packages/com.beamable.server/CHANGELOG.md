@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Open Telemetry configuration in base image.
 
+### Fixed
+- Fixed empty reply from server when publishing a Microservice (curl error 52).
+- Cancellation exceptions when publishing a Microservice (timeouts). 
+
+### [1.5.1]
+### Added
+- `EnablePrePublishHealthCheck` option in _Project Settings/Beamable/Microservices` can be used to disable Microservice health checks when publishing. Disabling this is dangerous and may lead to unhealthy servers being deployed to production.
+- `PrePublishHealthCheckTimeout` option in _Project Settings/Beamable/Microservices` can optionally override the amount of seconds before a health check is considered to timeout. The default value is 10 seconds.
+
 ### [1.5.0]
 ### Fixed
 - `SequenceContainsNoElements` error when building Microservices.

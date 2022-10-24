@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -29,8 +30,6 @@ namespace Beamable.UI.Buss
 		}
 
 		private static BussConfiguration Instance => Get<BussConfiguration>();
-		private static readonly Dictionary<string, SelectorWeight> Weights = new Dictionary<string, SelectorWeight>();
-		private static VariableDatabase _variableDatabase;
 		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
 		public List<BussStyleSheet> FactoryStyleSheets
@@ -51,7 +50,6 @@ namespace Beamable.UI.Buss
 					 .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
 
 		public List<BussElement> RootBussElements => _rootBussElements;
-		public VariableDatabase VariableDatabase => _variableDatabase ?? (_variableDatabase = new VariableDatabase(this));
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
@@ -143,98 +141,14 @@ namespace Beamable.UI.Buss
 
 		public void RecalculateStyle(BussElement element)
 		{
-			Weights.Clear();
 			element.Style.Inherit(element?.Parent?.Style);
-
-			VariableDatabase.ReconsiderAllStyleSheets();
-
-			// Applying default bemable styles
-			foreach (BussStyleSheet styleSheet in FactoryStyleSheets)
+			element.Sources.Recalculate();
+			foreach (var key in element.Sources.GetKeys())
 			{
-				ApplyStyleSheet(element, styleSheet);
+				element.Style[key] = (element.Sources.GetUsedPropertyProvider(key, out _)?.GetProperty()) ??
+									 BussStyle.GetDefaultValue(key);
 			}
-
-			// Applying developer styles
-			foreach (BussStyleSheet styleSheet in DeveloperStyleSheets)
-			{
-				ApplyStyleSheet(element, styleSheet);
-			}
-
-			foreach (BussStyleSheet styleSheet in element.AllStyleSheets)
-			{
-				if (styleSheet != null)
-				{
-					ApplyStyleSheet(element, styleSheet);
-				}
-			}
-
-			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
-
 			element.ApplyStyle();
-		}
-
-		private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
-		{
-			if (element == null || sheet == null) return;
-			foreach (BussStyleRule descriptor in sheet.Styles)
-			{
-				if (descriptor.Selector?.CheckMatch(element) ?? false)
-				{
-					SelectorWeight weight = descriptor.Selector.GetWeight();
-					if (descriptor.Selector.TryGetPseudoClass(out string pseudoClass))
-					{
-						ApplyDescriptorWithPseudoClass(element, pseudoClass, descriptor, weight);
-					}
-					else
-					{
-						ApplyDescriptor(element, descriptor, weight);
-					}
-				}
-			}
-		}
-
-		private static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor, SelectorWeight weight)
-		{
-			if (element == null || descriptor == null) return;
-			foreach (BussPropertyProvider property in descriptor.Properties)
-			{
-				if (!Weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
-				{
-					IBussProperty prop = property.GetProperty();
-
-					if (property.HasVariableReference)
-					{
-						var variableName = ((VariableProperty)property.GetProperty()).VariableName;
-
-						if (variableName != string.Empty && !descriptor.HasProperty(variableName))
-						{
-							_variableDatabase.TryGetProperty(property, descriptor, out prop, out var variablePropertyReference);
-						}
-					}
-
-					element.Style[property.Key] = prop;
-					Weights[property.Key] = weight;
-				}
-			}
-		}
-
-		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-														   string pseudoClass,
-														   BussStyleDescription descriptor,
-														   SelectorWeight weight)
-		{
-			if (element == null || descriptor == null) return;
-			foreach (BussPropertyProvider property in descriptor.Properties)
-			{
-				string weightKey = pseudoClass + property.Key;
-				if (!Weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
-				{
-					element.Style[pseudoClass, property.Key] = property.GetProperty();
-					Weights[weightKey] = weight;
-				}
-			}
 		}
 
 		#endregion

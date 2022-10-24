@@ -1,6 +1,7 @@
 using Beamable.Common;
 using cli.Utils;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
@@ -293,12 +294,14 @@ public class SwaggerService
 					{
 						Log.Warning("found warning for {url}. {message} . from {pointer}", url, warning.Message,
 							warning.Pointer);
+						throw new OpenApiException($"invalid document {url} - {warning.Message} - {warning.Pointer}");
 					}
 
 					foreach (var error in res.Diagnostic.Errors)
 					{
 						Log.Error("found ERROR for {url}. {message} . from {pointer}", url, error.Message,
 							error.Pointer);
+						throw new OpenApiException($"invalid document {url} - {error.Message} - {error.Pointer}");
 					}
 
 					res.Descriptor = api;

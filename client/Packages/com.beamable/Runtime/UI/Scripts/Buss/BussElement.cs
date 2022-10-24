@@ -27,6 +27,9 @@ namespace Beamable.UI.Buss
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
+		private PropertySourceTracker _sources;
+		public PropertySourceTracker Sources => _sources ?? (_sources = new PropertySourceTracker(this));
+
 		public string Id
 		{
 			get => _id;
@@ -186,6 +189,12 @@ namespace Beamable.UI.Buss
 		// }
 
 		#endregion
+
+		public void Reenable()
+		{
+			enabled = false;
+			enabled = true;
+		}
 
 		/// <summary>
 		/// Used when the parent or the style sheet is changed.
