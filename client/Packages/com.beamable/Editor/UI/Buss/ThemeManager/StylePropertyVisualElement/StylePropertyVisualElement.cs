@@ -80,11 +80,14 @@ namespace Beamable.Editor.UI.Components
 						CreateMessageField("Unknown inherited property");
 					}
 				}
-			} else if (_model.IsInitial){
+			}
+			else if (_model.IsInitial)
+			{
 				var initialValue = BussStyle.GetDefaultValue(_model.PropertyProvider.Key);
 				var field = CreateEditableField(initialValue);
 				field.DisableInput("The initial value cannot be changed.");
-			} else if (_model.HasVariableConnected)
+			}
+			else if (_model.HasVariableConnected)
 			{
 				string variableName = ((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName;
 
@@ -100,7 +103,7 @@ namespace Beamable.Editor.UI.Components
 						var appliedPropertyProvider = srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
 
 
-						
+
 						if (appliedPropertyProvider != null)
 						{
 							var field = CreateEditableField(appliedPropertyProvider.GetProperty());
@@ -161,7 +164,7 @@ namespace Beamable.Editor.UI.Components
 			return element;
 		}
 
-		private void CreateMessageField(string message, bool clearParent=true)
+		private void CreateMessageField(string message, bool clearParent = true)
 		{
 			if (clearParent)
 			{

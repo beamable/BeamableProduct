@@ -50,7 +50,7 @@ namespace Beamable.UI.Buss
 					 .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
 
 		public List<BussElement> RootBussElements => _rootBussElements;
-	
+
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);
@@ -146,7 +146,7 @@ namespace Beamable.UI.Buss
 			foreach (var key in element.Sources.GetKeys())
 			{
 				element.Style[key] = (element.Sources.GetUsedPropertyProvider(key, out _)?.GetProperty()) ??
-				                     BussStyle.GetDefaultValue(key);
+									 BussStyle.GetDefaultValue(key);
 			}
 			element.ApplyStyle();
 		}

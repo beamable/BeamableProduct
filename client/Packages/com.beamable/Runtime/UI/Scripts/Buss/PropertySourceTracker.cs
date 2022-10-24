@@ -79,13 +79,13 @@ namespace Beamable.UI.Buss
 		{
 			return _sources.Keys.Where(BussStyleSheetUtility.IsValidVariableName);
 		}
-		
+
 		public IEnumerable<string> GetAllVariableNames(Type baseType)
 		{
 			foreach (var kvp in _sources)
 			{
 				if (!BussStyleSheetUtility.IsValidVariableName(kvp.Key)) continue;
-				
+
 				var firstProperty = kvp.Value.Properties.FirstOrDefault();
 				if (firstProperty == null) continue;
 
@@ -105,7 +105,7 @@ namespace Beamable.UI.Buss
 		public BussPropertyProvider GetNextInheritedProperty(BussPropertyProvider property)
 		{
 			if (property.ValueType != BussPropertyValueType.Inherited) return property;
-			
+
 			var found = false;
 			foreach (var reference in GetAllSources(property.Key))
 			{
@@ -113,7 +113,7 @@ namespace Beamable.UI.Buss
 				{
 					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
 					var inheritedReference = reference.PropertyProvider;
-					
+
 					if (inheritedReference.HasVariableReference)
 					{
 						var variableProperty = inheritedReference.GetProperty() as VariableProperty;
@@ -126,7 +126,7 @@ namespace Beamable.UI.Buss
 					{
 						return reference.PropertyProvider;
 					}
-					
+
 				}
 				if (reference.PropertyProvider == property)
 				{
@@ -136,7 +136,7 @@ namespace Beamable.UI.Buss
 
 			return null;
 		}
-		
+
 		public BussPropertyProvider GetUsedPropertyProvider(string key, out int rank)
 		{
 			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), false, out rank);
@@ -157,7 +157,7 @@ namespace Beamable.UI.Buss
 					rank++;
 					// if the reference says, "inherit", then the used property should continue up the reference sequence
 					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
-					
+
 					// if the reference is a variable, redirect!
 					if (resolveVariables && reference.PropertyProvider.HasVariableReference)
 					{
@@ -167,7 +167,7 @@ namespace Beamable.UI.Buss
 						var referenceValue = GetUsedPropertyProvider(variableName, out var nestedRank);
 						return referenceValue;
 					}
-					
+
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
 						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
@@ -240,7 +240,7 @@ namespace Beamable.UI.Buss
 
 			if (propertyProvider.IsVariable)
 			{
-				
+
 			}
 
 			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
@@ -249,7 +249,7 @@ namespace Beamable.UI.Buss
 			{
 				_sources[key] = sourceData = new SourceData(key);
 			}
-			
+
 			sourceData.AddSource(propertyReference, exactMatch);
 		}
 
@@ -261,7 +261,7 @@ namespace Beamable.UI.Buss
 
 			private readonly List<PropertyReference> InheritedProperties = new List<PropertyReference>();
 			private readonly List<PropertyReference> MatchedProperties = new List<PropertyReference>();
-			
+
 			public SourceData(string key)
 			{
 				this.key = key;
@@ -274,7 +274,7 @@ namespace Beamable.UI.Buss
 				{
 					propList = InheritedProperties;
 				}
-				
+
 				var weight = propertyReference.GetWeight();
 				var index = propList.FindIndex(r => weight.CompareTo(r.GetWeight()) >= 0);
 				if (index < 0)

@@ -27,7 +27,7 @@ namespace Beamable.Editor.UI.Buss
 			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
 
 			var unsortedRules = new List<(BussStyleRule, BussStyleSheet, int)>();
-			
+
 			foreach (var styleSheet in styleSheets)
 			{
 				foreach (var rule in styleSheet.Styles)
@@ -36,7 +36,7 @@ namespace Beamable.Editor.UI.Buss
 					{
 						continue;
 					}
-					unsortedRules.Add( (rule, styleSheet, parentDistance) );
+					unsortedRules.Add((rule, styleSheet, parentDistance));
 				}
 			}
 
@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				return rules;
 			}
-			
+
 			unsortedRules.Sort((a, b) =>
 			{
 				// first, sort by exact matches. Inherited styles always play second fiddle 
@@ -54,7 +54,7 @@ namespace Beamable.Editor.UI.Buss
 				// then amongst items inherited and matched elements, prefer selector specificity 
 				var weightComparison = b.Item1.Selector.GetWeight().CompareTo(a.Item1.Selector.GetWeight());
 				if (weightComparison != 0) return weightComparison;
-				
+
 				// and finally, if there is still a tie, prefer customer sheets
 				var styleSheetComparison = a.Item2.IsReadOnly.CompareTo(b.Item2.IsReadOnly);
 				return styleSheetComparison;

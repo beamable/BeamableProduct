@@ -46,13 +46,13 @@ namespace Beamable.UI.Buss
 		/// more than one update. 
 		/// </summary>
 		public event Action OnValueChanged;
-		
-		
+
+
 		public void NotifyValueChange()
 		{
 			var delegates = OnValueChanged;
 			OnValueChanged = () => { };
-			
+
 			delegates?.Invoke();
 		}
 	}
