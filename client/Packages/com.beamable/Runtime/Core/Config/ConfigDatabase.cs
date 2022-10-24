@@ -128,7 +128,7 @@ namespace Beamable.Config
 					return;
 				}
 				sessionOverrides.Remove(name);
-				database.Add(name, value);
+				database[name] = value;
 				PlayerPrefs.SetString(name.Trim(), value.Trim());
 			}
 			else
