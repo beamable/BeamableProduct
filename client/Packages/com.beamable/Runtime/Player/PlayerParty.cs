@@ -146,9 +146,14 @@ namespace Beamable.Player
 			OnPlayerPromoted?.Invoke(notification);
 		}
 
-		private async void PlayerKicked(PlayerKickedNotification notification)
+		private void PlayerKicked(PlayerKickedNotification notification)
 		{
-			await Refresh();
+			long kickedPlayerId = long.Parse(notification.kickedPlayerId);
+			if (kickedPlayerId == _userContext.UserId)
+			{
+				State = null;	
+			}
+			
 			OnPlayerKicked?.Invoke(notification);
 		}
 
