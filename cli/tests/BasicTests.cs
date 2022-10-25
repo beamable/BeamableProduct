@@ -23,6 +23,11 @@ public class Tests
 		Assert.AreEqual(0, status);
 	}
 
+	[Test]
+	public async Task TestBrokenOrder() // TODO: better name please
+	{
+		var status = await Cli.RunAsyncWithParams("--host", "https://dev.api.beamable.com", "oapi", "generate", "--conflict-strategy", "RenameUncommonConflicts");
+	}
 
 	[Test]
 	public async Task GenerateStuff() // TODO: better name please

@@ -111,6 +111,13 @@ public class SwaggerService
 			return json;
 		}
 
+		//
+		// string SerializeSchemaSuperMode(OpenApiSchema schema)
+		// {
+		// 	// var sb = new StringBuilder();
+		// 	// sb.
+		// }
+
 		foreach (var doc in documents)
 		{
 			foreach (var kvp in doc.Components.Schemas)
@@ -122,6 +129,7 @@ public class SwaggerService
 				var stream = new MemoryStream(Encoding.UTF8.GetBytes(originalJson));
 				var raw = reader.ReadFragment<OpenApiSchema>(stream, OpenApiSpecVersion.OpenApi3_0, out _);
 				// var raw = JsonConvert.DeserializeObject<OpenApiSchema>(originalJson);
+
 				list.Add(new NamedOpenApiSchema
 				{
 					RawSchema = raw.GetEffective(doc),
@@ -141,6 +149,14 @@ public class SwaggerService
 
 				// found dupe...
 				var elements = group.ToList();
+
+				if (group.Key == "PlayerReward")
+				{
+					
+				}
+
+				List<IGrouping<string, OpenApiSchema>> duplications;
+
 
 				var uniqueElementGroups = elements.GroupBy(e => SerializeSchema(e.Schema)).ToList();
 				if (uniqueElementGroups.Count <= 1)
@@ -534,6 +550,19 @@ public interface IGenerationContext
 	IReadOnlyList<NamedOpenApiSchema> OrderedSchemas { get; }
 }
 
+public class OpenApiSchemaComparer : IEqualityComparer<OpenApiSchema>
+{
+	public bool Equals(OpenApiSchema x, OpenApiSchema y)
+	{
+		return NamedOpenApiSchema.AreEqual(x, y, out _);
+	}
+ 
+	public int GetHashCode(OpenApiSchema obj)
+	{
+		return obj.GetHashCode();
+	}
+}
+
 public class NamedOpenApiSchema
 {
 	/// <summary>
@@ -560,4 +589,112 @@ public class NamedOpenApiSchema
 	/// A combination of the <see cref="Document"/>'s title, and <see cref="Name"/>
 	/// </summary>
 	public string UniqueName => $"{Document.Info.Title}-{Name}";
+
+
+	
+	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b, out List<string> differences)
+	{
+		differences = new List<string>();
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		
+		// title must match.
+		if (!string.Equals(a.Title, b.Title))
+		{
+			differences.Add("titles are different");
+		}
+		
+		// type must match.
+		if (!string.Equals(a.Type, b.Type))
+		{
+			differences.Add("types are different");
+		}
+		
+		// format must match.
+		if (!string.Equals(a.Format, b.Format))
+		{
+			differences.Add("formats are different");
+		}
+
+		// required fields must set equal
+		if (!a.Required.SetEquals(b.Required))
+		{
+			differences.Add("required fields are different");
+		}
+		
+		// additional properties must be same
+		if (a.AdditionalPropertiesAllowed != b.AdditionalPropertiesAllowed)
+		{
+			differences.Add("additional properties don't match");
+		}
+
+		// additional property deep equal must match
+		if (!AreEqual(a.AdditionalProperties, b.AdditionalProperties, out var moreReasons))
+		{
+			differences.AddRange(moreReasons.Select(x => $"additionalProperties - {x}"));
+		}
+		
+		// items property deep equal must match
+		if (!AreEqual(a.Items, b.Items, out moreReasons))
+		{
+			differences.AddRange(moreReasons.Select(x => $"items - {x}"));
+		}
+		
+		// if this is a reference, it must reference the same thing.
+		if (a.Reference != null && b.Reference != null)
+		{
+			// the reference id must be the same
+			if (!string.Equals(a.Reference.Id, b.Reference.Id))
+			{
+				differences.Add("reference ids are different");
+			}
+			
+			// the host document must be the same.
+			if (!string.Equals(a.Reference.HostDocument?.Info?.Title, b.Reference.HostDocument?.Info?.Title))
+			{
+				differences.Add("reference host document titles are different");
+			}
+		} else if (a.Reference == null && b.Reference != null)
+		{
+			differences.Add("b has reference, but a doesn't");
+		} else if (a.Reference != null && b.Reference == null)
+		{
+			differences.Add("a has reference, but b doesn't");
+		}
+		
+		// properties must match
+		if (a.Properties != null && b.Properties != null)
+		{
+			// the keys must be an exact match.
+			var aKeys = new SortedSet<string>(a.Properties.Keys);
+			var bKeys = new SortedSet<string>(b.Properties.Keys);
+
+			if (!aKeys.SetEquals(bKeys))
+			{
+				differences.Add("property keys do not match");
+			}
+			else
+			{
+				// check that all property schemas match
+				foreach (var key in aKeys)
+				{
+					var aSchema = a.Properties[key];
+					var bSchema = b.Properties[key];
+					if (!AreEqual(aSchema, bSchema, out moreReasons))
+					{
+						differences.AddRange(moreReasons.Select(x => $"property {key} - {x}"));
+					}
+				}
+			}
+		} else if (a.Properties == null && b.Properties != null)
+		{
+			differences.Add("b has properties, but a doesn't");
+		} else if (a.Properties != null && b.Properties == null)
+		{
+			differences.Add("a has properties, but b doesn't");
+		}
+		
+
+		return differences.Count == 0;
+	}
 }
