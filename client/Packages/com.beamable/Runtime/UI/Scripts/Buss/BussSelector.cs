@@ -24,12 +24,36 @@ namespace Beamable.UI.Buss
 		/// <returns></returns>
 		public bool IsElementIncludedInSelector(BussElement element)
 		{
+			return IsElementIncludedInSelector(element, out _, out _);
+		}
+
+		public bool IsElementIncludedInSelector(BussElement element, out bool isExactMatch)
+		{
+			return IsElementIncludedInSelector(element, out isExactMatch, out _);
+		}
+
+		public bool IsElementIncludedInSelector(BussElement element, out bool isExactMatch, out int parentDistance)
+		{
+			isExactMatch = false;
+			parentDistance = 0;
 			if (element == null) return false;
 
-			if (CheckMatch(element)) return true;
+			var maxDepth = 100;
+			while (maxDepth-- > 0 && element != null)
+			{
+				var isMatch = CheckMatch(element);
+				if (isMatch)
+				{
+					isExactMatch = parentDistance == 0;
+					return true;
+				}
 
-			return IsElementIncludedInSelector(element.Parent);
+				parentDistance++;
+				element = element?.Parent;
+			}
+			return false;
 		}
+
 	}
 
 	/// <summary>

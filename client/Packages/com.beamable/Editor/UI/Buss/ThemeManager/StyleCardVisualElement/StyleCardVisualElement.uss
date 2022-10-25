@@ -39,10 +39,6 @@
     flex-grow: 1;
 }
 
-#variables {
-    min-height: 60px;
-}
-
 .button {
     -unity-text-align: middle-center;
     align-self: center;
@@ -57,7 +53,7 @@
 }
 
 .mediumButton {
-    width: 70px;
+    min-width: 70px;
 }
 
 .largeButton {

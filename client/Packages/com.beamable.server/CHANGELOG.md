@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [Unreleased]
 ### Fixed
 - Fixed empty reply from server when publishing a Microservice (curl error 52).
+- Cancellation exceptions when publishing a Microservice (timeouts). 
 
 ### [1.5.1]
 ### Added
