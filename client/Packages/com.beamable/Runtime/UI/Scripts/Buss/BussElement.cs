@@ -27,6 +27,9 @@ namespace Beamable.UI.Buss
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
+		private PropertySourceTracker _sources;
+		public PropertySourceTracker Sources => _sources ?? (_sources = new PropertySourceTracker(this));
+
 		public string Id
 		{
 			get => _id;
@@ -160,30 +163,38 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetPseudoClass(string className, bool isEnabled)
-		{
-			var changed = false;
-			if (isEnabled)
-			{
-				if (!_pseudoClasses.Contains(className))
-				{
-					_pseudoClasses.Add(className);
-					changed = true;
-				}
-			}
-			else
-			{
-				changed = _pseudoClasses.Remove(className);
-			}
-
-			if (changed)
-			{
-				Style.SetStyleAnimatedListener(ApplyStyle);
-				Style.SetPseudoStyle(className, isEnabled);
-			}
-		}
+		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// public void SetPseudoClass(string className, bool isEnabled)
+		// {
+		// 	var changed = false;
+		// 	if (isEnabled)
+		// 	{
+		// 		if (!_pseudoClasses.Contains(className))
+		// 		{
+		// 			_pseudoClasses.Add(className);
+		// 			changed = true;
+		// 		}
+		// 	}
+		// 	else
+		// 	{
+		// 		changed = _pseudoClasses.Remove(className);
+		// 	}
+		//
+		// 	if (changed)
+		// 	{
+		// 		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// 		//Style.SetStyleAnimatedListener(ApplyStyle);
+		// 		//Style.SetPseudoStyle(className, isEnabled);
+		// 	}
+		// }
 
 		#endregion
+
+		public void Reenable()
+		{
+			enabled = false;
+			enabled = true;
+		}
 
 		/// <summary>
 		/// Used when the parent or the style sheet is changed.

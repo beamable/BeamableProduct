@@ -26,28 +26,53 @@ namespace Beamable.Editor.UI.Buss
 		{
 			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
 
+			var unsortedRules = new List<(BussStyleRule, BussStyleSheet, int)>();
+
 			foreach (var styleSheet in styleSheets)
 			{
 				foreach (var rule in styleSheet.Styles)
 				{
-					if (CardFilter(rule, selectedElement))
+					if (!CardFilter(rule, selectedElement, out var parentDistance))
 					{
-						rules.Add(rule, styleSheet);
+						continue;
 					}
+					unsortedRules.Add((rule, styleSheet, parentDistance));
 				}
 			}
 
-			return rules;
+			if (selectedElement == null)
+			{
+				return rules;
+			}
+
+			unsortedRules.Sort((a, b) =>
+			{
+				// first, sort by exact matches. Inherited styles always play second fiddle 
+				var exactMatchComparison = a.Item3.CompareTo(b.Item3);
+				if (exactMatchComparison != 0) return exactMatchComparison;
+
+				// then amongst items inherited and matched elements, prefer selector specificity 
+				var weightComparison = b.Item1.Selector.GetWeight().CompareTo(a.Item1.Selector.GetWeight());
+				if (weightComparison != 0) return weightComparison;
+
+				// and finally, if there is still a tie, prefer customer sheets
+				var styleSheetComparison = a.Item2.IsReadOnly.CompareTo(b.Item2.IsReadOnly);
+				return styleSheetComparison;
+			});
+
+			var sortedRules = unsortedRules.ToDictionary(tuple => tuple.Item1, tuple => tuple.Item2);
+			return sortedRules;
 		}
 
-		private bool CardFilter(BussStyleRule styleRule, BussElement selectedElement)
+		private bool CardFilter(BussStyleRule styleRule, BussElement selectedElement, out int parentDistance)
 		{
 			bool contains = styleRule.Properties.Any(property => property.Key.ToLower().Contains(CurrentFilter)) ||
 							styleRule.Properties.Count == 0;
 
+			parentDistance = 100;
 			return selectedElement == null
 				? CurrentFilter.Length <= 0 || contains
-				: styleRule.Selector != null && styleRule.Selector.CheckMatch(selectedElement) && contains;
+				: styleRule.Selector != null && styleRule.Selector.IsElementIncludedInSelector(selectedElement, out _, out parentDistance) && contains;
 		}
 	}
 }

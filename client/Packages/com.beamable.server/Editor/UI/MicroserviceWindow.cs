@@ -77,7 +77,8 @@ namespace Beamable.Editor.Microservice.UI
 
 			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
 			{
-				result |= await DockerCommand.CheckDockerAppRunning();
+				var midResult = await DockerCommand.CheckDockerAppRunning();
+				result |= midResult;
 			}
 
 			return result;
@@ -87,7 +88,7 @@ namespace Beamable.Editor.Microservice.UI
 		{
 			minSize = new Vector2(550, 200);
 
-			checkDockerPromise = new CheckDockerCommand().StartAsync();
+			checkDockerPromise = PerformCheck();
 			await checkDockerPromise;
 
 			void OnUserChange(EditorUser _) => BuildWithContext();

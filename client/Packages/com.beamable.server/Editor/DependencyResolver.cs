@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -98,6 +99,7 @@ namespace Beamable.Server
 		{
 			_assemblies = assemblies.ToDictionary(a => a.Name);
 		}
+
 
 		public AssemblyDefinitionInfo Find(string assemblyName)
 		{
@@ -272,7 +274,9 @@ namespace Beamable.Server
 			// get all methods
 			Add(type.BaseType);
 
+#pragma warning disable CS0618
 			var agnosticAttribute = type.GetCustomAttribute<AgnosticAttribute>();
+#pragma warning restore CS0618
 			if (agnosticAttribute != null && agnosticAttribute.SupportTypes != null)
 			{
 				foreach (var supportType in agnosticAttribute.SupportTypes)
@@ -363,7 +367,9 @@ namespace Beamable.Server
 
 		private static bool IsSourceCodeType(Type t, out IHasSourcePath attribute)
 		{
+#pragma warning disable CS0618
 			attribute = t.GetCustomAttribute<AgnosticAttribute>(false);
+#pragma warning restore CS0618
 			if (attribute == null)
 			{
 				attribute = t.GetCustomAttribute<ContentTypeAttribute>(false);
@@ -517,7 +523,10 @@ namespace Beamable.Server
 						totalDllReferences.Add(dllReference);
 					}
 
-					foreach (var referenceName in curr.References)
+					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
+					var info = asset.ConvertToInfo();
+
+					foreach (var referenceName in info.References)
 					{
 						try
 						{

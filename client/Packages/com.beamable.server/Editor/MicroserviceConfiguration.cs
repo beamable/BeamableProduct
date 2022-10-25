@@ -55,8 +55,6 @@ namespace Beamable.Server.Editor
 #if !BEAMABLE_DEVELOPER
 		[HideInInspector]
 #endif
-		public List<ServiceDependencyChecksum> ServiceDependencyChecksums = new List<ServiceDependencyChecksum>();
-
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
 
@@ -86,9 +84,14 @@ namespace Beamable.Server.Editor
 		[Tooltip("When enabled, after you start a service, this will automatically prune unused and dangling docker images related to that service.")]
 		public bool EnableAutoPrune = true;
 
+		[Tooltip("It will enable microservice health check at the begining of publish process.")]
+		public bool EnablePrePublishHealthCheck = true;
+
+		[Tooltip("When enabled, you can override microservice health check timeout on publish. This could be helpfull for slower machines. Value is in seconds.")]
+		public OptionalInt PrePublishHealthCheckTimeout;
+
 		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
 		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
-
 
 		public string DockerCommand
 		{

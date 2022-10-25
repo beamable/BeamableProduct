@@ -5,12 +5,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### [Unreleased]
+### Fixed
+- Fixed empty reply from server when publishing a Microservice (curl error 52).
+- Cancellation exceptions when publishing a Microservice (timeouts). 
+
+### [1.5.1]
+### Added
+- `EnablePrePublishHealthCheck` option in _Project Settings/Beamable/Microservices` can be used to disable Microservice health checks when publishing. Disabling this is dangerous and may lead to unhealthy servers being deployed to production.
+- `PrePublishHealthCheckTimeout` option in _Project Settings/Beamable/Microservices` can optionally override the amount of seconds before a health check is considered to timeout. The default value is 10 seconds.
+
+### [1.5.0]
+### Fixed
+- `SequenceContainsNoElements` error when building Microservices.
+
+### [1.4.0]
 ### Added
 - Added `long` PlayerId version of `InviteToParty`, `PromoteToLeader` and `KickPlayer` methods of the `IPartyApi` interface.
-- Utility apis for setting expiration on Mail Update and Mail Send requests
+- Utility APIs for setting expiration on `MailUpdate` and `MailSend` requests
 
 ### Fixed
 - ActionBarVisualElement buttons behaviour is fixed when Docker is not running.
+- Fixed issue with MS rebuild/stop on entering to Playmode.
+- Fixed Microservices stop at Unity Exit.
+- DependencyResolver allows possibility to remove asmdef reference by user.
 
 ## [1.3.6]
 ### Added

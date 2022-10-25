@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Reflection;
@@ -457,20 +458,6 @@ namespace Beamable.Server.Editor
 					// Try to start the image and talk to it's healthcheck endpoint.
 					try
 					{
-						// We are now verifying the image we just built
-						UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
-
-						// Check to see if the storage descriptor is running.
-						var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
-
-						// Create a build that will build an image that doesn't run the custom initialization hooks
-						// Let's run it locally.
-						// At the moment we disable running custom hooks for this verification.
-						// This is because we cannot guarantee the user won't do anything in them to break this.
-						// TODO: Change algorithm to always have StorageObjects running locally during verification process.
-						// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
-						var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
-						runServiceCommand.Start();
 
 						async Promise<string> CheckHealthStatus()
 						{
@@ -480,44 +467,66 @@ namespace Beamable.Server.Editor
 							if (!dockerPortResult.ContainerExists)
 								return "false";
 
-							// UnityWebRequest (which is used internally) does not accept 0.0.0.0 as localhost...
-							var res = await de.ServiceScope.GetService<IHttpRequester>()
-													.ManualRequest(Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health", parser: x => x);
+							var res = await de.ServiceScope.GetService<IEditorHttpRequester>()
+											  .ManualRequest<string>(
+												  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health",
+												  parser: x => x);
 							return res;
 						}
 
-						// Wait until the container has completely booted up and it's Start function has finished.
-						var timeWaitingForBoot = 0f;
-						var isHealthy = false;
-						do
-						{
-							try
-							{
-								var healthStatus = await CheckHealthStatus();
-								if (healthStatus.Contains("true"))
-									isHealthy = true;
 
-								if (healthStatus.Contains("false"))
+						if (MicroserviceConfiguration.Instance.EnablePrePublishHealthCheck)
+						{
+							// We are now verifying the image we just built
+							UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
+
+							// Check to see if the storage descriptor is running.
+							var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
+
+							// Create a build that will build an image that doesn't run the custom initialization hooks
+							// Let's run it locally.
+							// At the moment we disable running custom hooks for this verification.
+							// This is because we cannot guarantee the user won't do anything in them to break this.
+							// TODO: Change algorithm to always have StorageObjects running locally during verification process.
+							// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
+							var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
+							runServiceCommand.Start();
+
+							var healthcheckTimeout = MicroserviceConfiguration.Instance.PrePublishHealthCheckTimeout.GetOrElse(10);
+
+							// Wait until the container has completely booted up and it's Start function has finished.
+							var timeWaitingForBoot = 0f;
+							var isHealthy = false;
+							do
+							{
+								try
+								{
+									var healthStatus = await CheckHealthStatus();
+									if (healthStatus.Contains("true"))
+										isHealthy = true;
+
+									if (healthStatus.Contains("false"))
+										isHealthy = false;
+								}
+								catch
+								{
 									isHealthy = false;
-							}
-							catch
+								}
+
+								await Task.Delay(500, token);
+								timeWaitingForBoot += .5f;
+							} while (timeWaitingForBoot <= healthcheckTimeout && !isHealthy);
+
+							if (!isHealthy)
 							{
-								isHealthy = false;
+								OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
+								UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
+								// Stop the container since we don't need to keep the local one alive anymore.
+								await new StopImageCommand(descriptor).StartAsync();
+
+								return;
 							}
-
-							await Task.Delay(500, token);
-							timeWaitingForBoot += .5f;
-						} while (timeWaitingForBoot <= 10f && !isHealthy);
-
-						if (!isHealthy)
-						{
-							OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
-							UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-
-							// Stop the container since we don't need to keep the local one alive anymore.
-							await new StopImageCommand(descriptor).StartAsync();
-
-							return;
 						}
 
 						// Stop the container since we don't need to keep the local one alive anymore.

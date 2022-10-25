@@ -55,6 +55,8 @@ namespace Beamable.Server.Editor
 	// ReSharper disable once ClassNeverInstantiated.Global
 	public class BeamServicesCodeWatcher : IBeamHintSystem
 	{
+		private const int CLEANUP_CONTAINERS_TIMEOUT = 3;
+
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
 
@@ -146,22 +148,30 @@ namespace Beamable.Server.Editor
 			var config = MicroserviceConfiguration.Instance;
 			var currCodeHandles = config.ServiceCodeHandlesOnLastDomainReload;
 
-			if (currCodeHandles != null && currCodeHandles.Count > 0)
+			if (currCodeHandles == null || currCodeHandles.Count <= 0)
 			{
-				var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
-
-				var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
-													  .Select(asmName => currCodeHandles.FirstOrDefault(
-																  c => c.AsmDefInfo.Name == asmName))
-													  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
-													  .ToList();
-
-				config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
-				config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
-
-				config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
-				config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+				// there are no current code handles, so there is nothing to check.
+				return;
 			}
+
+			var serviceToUpdate = currCodeHandles.FirstOrDefault(h => h.ServiceName == serviceName);
+			if (string.IsNullOrEmpty(serviceToUpdate.ServiceName))
+			{
+				// none of the existing code handles reference this service yet, so there is nothing to do.
+				return;
+			}
+
+			var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
+												  .Select(asmName => currCodeHandles.FirstOrDefault(
+															  c => c.AsmDefInfo.Name == asmName))
+												  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
+												  .ToList();
+
+			config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+
+			config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
 		}
 
 		public void CheckForMissingMongoDependenciesOnMicroservices()
@@ -254,13 +264,13 @@ namespace Beamable.Server.Editor
 						return true;
 					}
 
-					var existingChecksum = microserviceConfiguration.ServiceDependencyChecksums.FirstOrDefault(
+					var existingChecksum = MicroservicesDataModel.Instance.ServiceDependencyChecksums.FirstOrDefault(
 						service => service.ServiceName == desc.Name);
 
 					return !string.Equals(existingChecksum.Checksum, currentDependency.Checksum);
 				}).ToList();
 
-				microserviceConfiguration.ServiceDependencyChecksums =
+				MicroservicesDataModel.Instance.ServiceDependencyChecksums =
 					ServiceToChecksum.Select(kvp => kvp.Value).ToList();
 
 				foreach (var service in dirtyServices)
@@ -295,6 +305,9 @@ namespace Beamable.Server.Editor
 		[DidReloadScripts]
 		private static void WatchMicroserviceFiles()
 		{
+			EditorApplication.wantsToQuit -= WantsToQuit;
+			EditorApplication.wantsToQuit += WantsToQuit;
+
 			// If we are not initialized, delay the call until we are.
 			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 			{
@@ -311,8 +324,6 @@ namespace Beamable.Server.Editor
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
 			}
-
-			EditorApplication.quitting += CleanupRunningContainers;
 
 			// Check for the hint regarding local changes that are not deployed to your local docker environment
 			codeWatcher.CheckForLocalChangesNotYetDeployed();
@@ -385,34 +396,58 @@ namespace Beamable.Server.Editor
 			return (!alreadyExisted || checksumDiffers);
 		}
 
-		public static void CleanupRunningContainers()
+		private static bool WantsToQuit()
 		{
 			try
 			{
-				// this method should exist in some sort of Docker system. But until we have that...
 				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				foreach (var service in registry.Descriptors)
-				{
-					var generatorDesc = GetGeneratorDescriptor(service);
 
-					var kill = new StopImageCommand(service);
-					var killGenerator = new StopImageCommand(generatorDesc);
-					kill.StartAsync();
-					killGenerator.StartAsync();
-				}
-
-				foreach (var storage in registry.StorageDescriptors)
+				int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
+				if (allDesc > 0)
 				{
-					var kill = new StopImageCommand(storage);
-					var killTool = new StopImageCommand(storage.LocalToolContainerName);
-					kill.StartAsync();
-					killTool.StartAsync();
+					Task task = Task.Run(async () => { await CleanupRunningContainers(); });
+					TimeSpan timeout = TimeSpan.FromSeconds(CLEANUP_CONTAINERS_TIMEOUT);
+					task.Wait(timeout);
 				}
 			}
 			catch
 			{
 				Debug.LogError("Failed to clean up running docker containers");
 			}
+
+			return true;
+		}
+
+		private static Task CleanupRunningContainers()
+		{
+			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+			int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
+
+			if (allDesc > 0)
+			{
+				foreach (var service in registry.Descriptors)
+				{
+					var generatorDesc = GetGeneratorDescriptor(service);
+
+					var kill = new StopImageCommand(service, true);
+					var killGenerator = new StopImageCommand(generatorDesc, true);
+
+					kill.Start();
+					killGenerator.Start();
+				}
+
+				foreach (var storage in registry.StorageDescriptors)
+				{
+					var kill = new StopImageCommand(storage, true);
+					var killTool = new StopImageCommand(storage.LocalToolContainerName, true);
+
+					kill.Start();
+					killTool.Start();
+				}
+			}
+
+			return Task.CompletedTask;
 		}
 
 		public static MicroserviceDescriptor GetGeneratorDescriptor(IDescriptor service)
