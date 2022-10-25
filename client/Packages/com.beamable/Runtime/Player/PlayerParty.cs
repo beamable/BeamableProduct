@@ -97,7 +97,7 @@ namespace Beamable.Player
 		/// </summary>
 		public async Promise Refresh()
 		{
-			if (State?.id == null) return;
+			if (!IsInParty) return;
 
 			State = await _partyApi.GetParty(State.id);
 			await RefreshMembersFromState();
@@ -127,9 +127,9 @@ namespace Beamable.Player
 			OnPlayerLeft?.Invoke(notification);
 		}
 
-		private void PlayerInvited(PartyInviteNotification data)
+		private async void PlayerInvited(PartyInviteNotification data)
 		{
-			ReceivedPartyInvites.Refresh();
+			await ReceivedPartyInvites.Refresh();
 			OnPlayerInvited?.Invoke(data);
 		}
 
@@ -145,9 +145,14 @@ namespace Beamable.Player
 			OnPlayerPromoted?.Invoke(notification);
 		}
 
-		private async void PlayerKicked(PlayerKickedNotification notification)
+		private void PlayerKicked(PlayerKickedNotification notification)
 		{
-			await Refresh();
+			long kickedPlayerId = long.Parse(notification.kickedPlayerId);
+			if (kickedPlayerId == _userContext.UserId)
+			{
+				State = null;	
+			}
+			
 			OnPlayerKicked?.Invoke(notification);
 		}
 
@@ -206,7 +211,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// Checks if the player is in a party.
 		/// </summary>
-		public bool IsInParty => State != null;
+		public bool IsInParty => State != null && !string.IsNullOrEmpty(State.id);
 
 		/// <inheritdoc cref="Party.id"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
