@@ -128,9 +128,9 @@ namespace Beamable.Player
 			OnPlayerLeft?.Invoke(notification);
 		}
 
-		private void PlayerInvited(PartyInviteNotification data)
+		private async void PlayerInvited(PartyInviteNotification data)
 		{
-			ReceivedPartyInvites.Refresh();
+			await ReceivedPartyInvites.Refresh();
 			OnPlayerInvited?.Invoke(data);
 		}
 
