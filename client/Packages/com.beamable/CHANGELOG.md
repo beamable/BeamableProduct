@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
+- fixed empty list for OnElementsAdded and OnElementRemoved events in ObservableReadonlyList type 
 - Party invite event will not fire more than once anymore
 
 ## [1.5.1]
