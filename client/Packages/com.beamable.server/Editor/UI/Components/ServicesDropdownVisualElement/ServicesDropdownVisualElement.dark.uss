@@ -1,0 +1,8 @@
+﻿#ServiceEntry-MicroService TemplateContainer > #mainVisualElement > Image {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning.png");
+}
+
+#ServiceEntry-StorageObject TemplateContainer > #mainVisualElement > Image {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running.png");
+}
+

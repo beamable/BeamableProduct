@@ -1,0 +1,36 @@
+﻿ServicesDropdownVisualElement{
+    border-color: #000000;
+    border-width: 1px;
+    padding-bottom: 4px;
+}
+
+#mainVisualElement {
+    margin-top: 4px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+PrimaryButtonVisualElement {
+    height: 24px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#servicesList {
+    flex-grow: 1;
+}
+
+LabeledCheckboxVisualElement > TemplateContainer > #mainVisualElement > Label {
+    text-overflow: ellipsis;
+    -unity-text-overflow-position: end;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+LabeledCheckboxVisualElement > TemplateContainer > #mainVisualElement > Image {
+    margin-left: 0px;
+}
+
+#serviceEntry {
+    height: 24px;
+}

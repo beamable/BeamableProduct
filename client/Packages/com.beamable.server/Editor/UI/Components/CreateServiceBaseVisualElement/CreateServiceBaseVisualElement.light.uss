@@ -4,11 +4,8 @@
 
 #cancelBtn > TemplateContainer > Button {
     background-color: rgba(0,0,0,0);
-    border-left-color: #dedede;
-    border-right-color: #dedede;
-    border-top-color: #dedede;
-    border-bottom-color: #dedede;
-    color: black;
+    border-color: #000000;
+    color: #000000;
 }
 
 ServiceCreateDependentService,

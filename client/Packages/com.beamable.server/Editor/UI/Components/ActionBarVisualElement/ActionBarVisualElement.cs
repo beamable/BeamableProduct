@@ -1,9 +1,11 @@
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -79,7 +81,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 
 			_startAll = Root.Q<Button>("startAll");
-			// _startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
+			_startAll.clickable.clicked += () => HandlePlayButton(_startAll.worldBound);
 
 			_dependencies = Root.Q<Button>("dependencies");
 			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
@@ -129,6 +131,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
 			evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
+		}
+		
+		private void HandlePlayButton(Rect visualElementBounds)
+		{
+			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
+			var services = MicroservicesDataModel.Instance.AllLocalServices;
+			var content = new ServicesDropdownVisualElement(services);
+			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(200, 33 + services.Count * 24), content);
+			content.Refresh();
 		}
 	}
 }

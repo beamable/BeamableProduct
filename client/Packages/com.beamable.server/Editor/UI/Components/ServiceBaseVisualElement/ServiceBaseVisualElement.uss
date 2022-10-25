@@ -234,11 +234,3 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 .unfoldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light_dark.png");
 }
-
-#logHeader.running {
-    background-color: #345167;
-}
-
-#logHeader.failed {
-    background-color: #5d3434;
-}

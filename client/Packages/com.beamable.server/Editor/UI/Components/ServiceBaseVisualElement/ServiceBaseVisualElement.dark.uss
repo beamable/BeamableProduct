@@ -130,8 +130,17 @@
 #openDocsBtn > #btnIcon:hover,
 #openScriptBtn > #btnIcon:hover,
 #moreBtn > #btnIcon:hover {
-    background-color: #474747;
+    background-color: #545454;
 }
+
+#logHeader.running {
+    background-color: #345167;
+}
+
+#logHeader.failed {
+    background-color: #5d3434;
+}
+
 
 
 

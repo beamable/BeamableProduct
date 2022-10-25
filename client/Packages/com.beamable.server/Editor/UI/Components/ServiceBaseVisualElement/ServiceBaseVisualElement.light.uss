@@ -101,7 +101,7 @@
 
 .MicroService_remoteEnabled,
 .MicroService_remoteDisabled {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS runnning light.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS running light.png");
 }
 
 .StorageObject_localStopped, 
@@ -118,7 +118,16 @@
 #openDocsBtn > #btnIcon:hover,
 #openScriptBtn > #btnIcon:hover,
 #moreBtn > #btnIcon:hover {
-    background-color: #b4b4b4;
+    background-color: #bbbbbb;
 }
+
+#logHeader.running {
+    background-color: #abd0e7;
+}
+
+#logHeader.failed {
+    background-color: #e1b0b1;
+}
+
 
 
