@@ -1,7 +1,6 @@
 #cardContainer {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    margin-bottom: 10px;
 }
 
 #cardHeader {
@@ -23,8 +22,8 @@
 }
 
 #foldIcon {
-    height: 7px;
-    width: 7px;
+    height: 10px;
+    width: 10px;
 }
 
 #sectionHeader {
@@ -33,15 +32,11 @@
 }
 
 #sectionLabel {
-    padding-left: 20px;
+    padding-left: 30px;
 }
 
 #divider {
     flex-grow: 1;
-}
-
-#variables {
-    min-height: 60px;
 }
 
 .button {
@@ -58,7 +53,7 @@
 }
 
 .mediumButton {
-    width: 70px;
+    min-width: 70px;
 }
 
 .largeButton {
@@ -72,7 +67,6 @@
 
 .add {
     margin-left: 0;
-    background-color: rgb(89,89,89);
 }
 
 .hidden {

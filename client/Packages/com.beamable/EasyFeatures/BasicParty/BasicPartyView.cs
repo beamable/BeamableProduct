@@ -106,7 +106,10 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		protected virtual void OnPlayerLeft(PlayerLeftNotification notification)
 		{
-			RefreshView();
+			if (Context.Party.IsInParty)
+			{
+				RefreshView();
+			}
 		}
 
 		private void OnAddMember()

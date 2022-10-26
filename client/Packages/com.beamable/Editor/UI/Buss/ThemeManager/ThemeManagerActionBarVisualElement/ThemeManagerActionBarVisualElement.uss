@@ -36,7 +36,7 @@
 }
 
 .unboundedButton {
-    height: 35px;
+    height: 38px;
     width: 38px;
     position: relative;
     align-items: center;
@@ -73,7 +73,7 @@
 }
 
 .iconButton {
-    top: 8px;
+    top: 10px;
     width: 15px;
     height: 15px;
     align-self: center;

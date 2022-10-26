@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Beamable.UI.Buss
 {
 	[Serializable]
-	public class FloatBussProperty : IFloatBussProperty, IFloatFromFloatBussProperty
+	public class FloatBussProperty : DefaultBussProperty, IFloatBussProperty, IFloatFromFloatBussProperty
 	{
 		[SerializeField]
 		private float _floatValue;
@@ -45,7 +45,7 @@ namespace Beamable.UI.Buss
 	}
 
 	[Serializable]
-	public class FractionFloatBussProperty : IFloatFromFloatBussProperty
+	public class FractionFloatBussProperty : DefaultBussProperty, IFloatFromFloatBussProperty
 	{
 		public float Fraction;
 		public float Offset;
