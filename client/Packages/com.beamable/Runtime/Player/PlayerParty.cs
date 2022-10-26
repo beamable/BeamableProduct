@@ -151,9 +151,9 @@ namespace Beamable.Player
 			long kickedPlayerId = long.Parse(notification.kickedPlayerId);
 			if (kickedPlayerId == _userContext.UserId)
 			{
-				State = null;	
+				State = null;
 			}
-			
+
 			OnPlayerKicked?.Invoke(notification);
 		}
 
