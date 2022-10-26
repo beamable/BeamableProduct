@@ -27,7 +27,7 @@ public class Tests
 	// [Test]
 	// public async Task TestBrokenOrder()
 	// {
-	// 	var status = await Cli.RunAsyncWithParams("--host", "https://dev.api.beamable.com", "oapi", "generate", "--conflict-strategy", "RenameUncommonConflicts");
+	// 	var status = await Cli.RunAsyncWithParams("--host", "https://dev.api.beamable.com", "oapi", "generate", "--conflict-strategy", "RenameUncommonConflicts", "--engine", "unity");
 	// }
 
 	[Test]
