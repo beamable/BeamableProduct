@@ -108,7 +108,7 @@ namespace Beamable.EasyFeatures.BasicParty
 		{
 			if (Context.Party.IsInParty)
 			{
-				RefreshView();	
+				RefreshView();
 			}
 		}
 
