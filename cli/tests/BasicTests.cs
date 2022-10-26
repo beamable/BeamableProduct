@@ -22,7 +22,13 @@ public class Tests
 		var status = Cli.RunWithParams("--version");
 		Assert.AreEqual(0, status);
 	}
-
+	
+	// // use this test to help identify live issues
+	// [Test]
+	// public async Task TestBrokenOrder()
+	// {
+	// 	var status = await Cli.RunAsyncWithParams("--host", "https://dev.api.beamable.com", "oapi", "generate", "--conflict-strategy", "RenameUncommonConflicts", "--engine", "unity");
+	// }
 
 	[Test]
 	public async Task GenerateStuff() // TODO: better name please
