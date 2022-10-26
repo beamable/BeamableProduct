@@ -22,7 +22,7 @@ public class Tests
 		var status = Cli.RunWithParams("--version");
 		Assert.AreEqual(0, status);
 	}
-	
+
 	// // use this test to help identify live issues
 	// [Test]
 	// public async Task TestBrokenOrder()

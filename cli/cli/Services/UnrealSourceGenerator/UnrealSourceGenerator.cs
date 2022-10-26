@@ -303,7 +303,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				var enumDecl = new UnrealEnumDeclaration
 				{
-					UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = namedOpenApiSchema.Schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
+					UnrealTypeName = schemaUnrealType,
+					NamespacedTypeName = schemaNamespacedType,
+					EnumValues = namedOpenApiSchema.Schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
 				};
 
 				enumTypes.Add(enumDecl);
@@ -373,7 +375,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 					// Decide if we need to add the default value helper in order to parse primitive numeric types
 					if (unrealType.StartsWith(UNREAL_BYTE) || unrealType.StartsWith(UNREAL_SHORT) || unrealType.StartsWith(UNREAL_INT) || unrealType.StartsWith(UNREAL_LONG) ||
-					    unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE))
+						unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE))
 					{
 						serializableTypeDeclaration.DefaultValueHelpersInclude = string.IsNullOrEmpty(serializableTypeDeclaration.DefaultValueHelpersInclude)
 							? "#include \"Misc/DefaultValueHelper.h\""
@@ -673,7 +675,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 
 					if (endpointData.Responses.TryGetValue("200", out var response) &&
-					    response.Content.TryGetValue("application/json", out var jsonResponse))
+						response.Content.TryGetValue("application/json", out var jsonResponse))
 					{
 						var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
 						var ueType = unrealEndpoint.ResponseBodyUnrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, openApiDocument, "", bodySchema);
@@ -687,10 +689,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealEndpoint.IncludeStatementsUnrealTypes = string.Join("\n", unrealEndpoint.GetAllUnrealTypes().Select(GetIncludeStatementForUnrealType));
 
 					Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-					                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-					                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-					                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-					                  $"\n{unrealEndpoint.ResponseBodyUnrealType}");
+									  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+									  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+									  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+									  $"\n{unrealEndpoint.ResponseBodyUnrealType}");
 
 					if (unrealEndpoint.IsAuth)
 					{
