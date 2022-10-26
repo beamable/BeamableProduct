@@ -257,6 +257,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void DisplayCreatingNewService(ServiceType serviceType)
 		{
+			if (_servicesCreateElements.Values.Any(x => x.hierarchy.childCount != 0))
+				return;
+			
 			_servicesCreateElements[serviceType].Refresh();
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
