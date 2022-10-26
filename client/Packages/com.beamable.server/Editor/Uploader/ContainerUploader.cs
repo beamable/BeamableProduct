@@ -180,74 +180,9 @@ namespace Beamable.Server.Editor.Uploader
 			return await Attempt();
 		}
 
-
 		private async Task<HttpResponseMessage> SendRequest(string name,
 		                                                    Func<HttpRequestMessage> requestGenerator,
 		                                                    CancellationToken token) =>
-			await SendRequestWithRetries(name, () => _client.SendAsync(requestGenerator()), token);
-		private async Task<HttpResponseMessage> SendPutRequest(string name, Uri uri, Func<StringContent> contentGenerator, CancellationToken token) =>
-			await SendRequestWithRetries(name,() => _client.PutAsync(uri, contentGenerator()), token);
-		private async Task<HttpResponseMessage> SendPostRequest(string name, Uri uri, Func<StringContent> contentGenerator, CancellationToken token) =>
-			await SendRequestWithRetries(name,() => _client.PostAsync(uri, contentGenerator()), token);
-
-		private async Task<HttpResponseMessage> SendRequestWithRetries(string name, Func<Task<HttpResponseMessage>> requestGenerator, CancellationToken cancellationToken, int maxAttempts = 500)
-		{
-			var attemptCount = 0;
-			var timeoutStatusCodes = new HttpStatusCode[]
-			{
-				HttpStatusCode.BadGateway, HttpStatusCode.GatewayTimeout, HttpStatusCode.GatewayTimeout
-			};
-			async Task<HttpResponseMessage> Attempt()
-			{
-				if (attemptCount++ >= maxAttempts)
-				{
-					throw new HttpRequestException("Request timed out, and exhausted all retries.");
-				}
-				cancellationToken.ThrowIfCancellationRequested();
-				try
-				{
-					var result = await requestGenerator();
-					if (timeoutStatusCodes.Contains(result.StatusCode))
-					{
-						// failed, try again :( 
-						Debug.LogWarning(
-							$"Request failed with bad status code, trying again... name=[{name}] attempt=[{attemptCount}] status=[{result.StatusCode}]");
-						return await Attempt();
-					}
-
-					return result;
-				}
-
-				catch (IOException io)
-				{
-					Debug.LogWarning($"Request failed out due to io, trying again... name=[{name}] attempt=[{attemptCount}] message=[{io.Message}]");
-					return await Attempt();
-				}
-				catch (HttpRequestException ex) when (ex.InnerException is IOException inner)
-				{
-					Debug.LogWarning($"Request failed out due to inner io, trying again... name=[{name}] attempt=[{attemptCount}] message=[{ex.Message}] inner=[{inner.Message}]");
-					return await Attempt();
-				}
-				catch (TaskCanceledException)
-				{
-					Debug.LogWarning($"Request timed out, trying again... name=[{name}] attempt=[{attemptCount}]");
-					return await Attempt();
-				}
-				catch (Exception ex)
-				{
-					Debug.Log("Unknown upload exception!!");
-					Debug.LogException(ex);
-					throw;
-				}
-			}
-
-			return await Attempt();
-		}
-
-
-		private async Task<HttpResponseMessage> SendRequest(string name,
-															Func<HttpRequestMessage> requestGenerator,
-															CancellationToken token) =>
 			await SendRequestWithRetries(name, () => _client.SendAsync(requestGenerator()), token);
 		private async Task<HttpResponseMessage> SendPutRequest(string name, Uri uri, Func<StringContent> contentGenerator, CancellationToken token) =>
 			await SendRequestWithRetries(name, () => _client.PutAsync(uri, contentGenerator()), token);
