@@ -113,6 +113,13 @@ public class SwaggerService
 		
 		var schemaRecursiveRefs = new Dictionary<NamedOpenApiSchemaHandle, List<OpenApiSchema>>();
 
+		//
+		// string SerializeSchemaSuperMode(OpenApiSchema schema)
+		// {
+		// 	// var sb = new StringBuilder();
+		// 	// sb.
+		// }
+
 		foreach (var doc in documents)
 		{
 			foreach ((string schemaName, OpenApiSchema openApiSchema) in doc.Components.Schemas)
@@ -195,20 +202,44 @@ public class SwaggerService
 				// found dupe...
 				var elements = group.ToList();
 
-				var uniqueElementGroups = elements.GroupBy(e => SerializeSchema(e.Schema)).ToList();
-				if (uniqueElementGroups.Count <= 1)
+				Dictionary<string, List<NamedOpenApiSchema>> similarSchemas = new Dictionary<string, List<NamedOpenApiSchema>>();
+				var firstElement = elements.First();
+				similarSchemas.Add(firstElement.UniqueName, new List<NamedOpenApiSchema>{firstElement});
+				for (var i = 1; i < elements.Count; i++)
+				{
+					// check if there is an element match already
+					var thisElement = elements[i];
+
+					var found = false;
+					foreach (var (_, existingGroup) in similarSchemas)
+					{
+						var groupSample = existingGroup.First();
+						var areEqual = NamedOpenApiSchema.AreEqual(groupSample.Schema, thisElement.Schema, out _);
+						if (areEqual)
+						{
+							existingGroup.Add(thisElement);
+							found = true;
+							break;
+						}
+					}
+
+					if (!found)
+					{
+						similarSchemas.Add(thisElement.UniqueName, new List<NamedOpenApiSchema>{thisElement});
+					}
+				}
+
+				if (similarSchemas.Count <= 1)
 					continue; // there is only 1 variant of the serialization, so its "fine", and we don't need to do anything
 
 				/*
-					 * There are multiple serializations of the model, which means we need to re-wire each of them to point to
-					 * their own specific implementation :(
-					 *
+		
 					 * But if there is one variant that has distinctly _more_ references, we should assume it is a common one.
 					 */
 
 				// find the variant with the most entries...
-				var variants = uniqueElementGroups.ToList();
-				IGrouping<string, NamedOpenApiSchema> highest = null;
+				var variants = similarSchemas.Select(x => x.Value).ToList();
+				List<NamedOpenApiSchema> highest = null;
 				foreach (var variant in variants)
 				{
 					var size = variant.Count();
@@ -587,6 +618,19 @@ public interface IGenerationContext
 	IReadOnlyList<NamedOpenApiSchema> OrderedSchemas { get; }
 }
 
+public class OpenApiSchemaComparer : IEqualityComparer<OpenApiSchema>
+{
+	public bool Equals(OpenApiSchema x, OpenApiSchema y)
+	{
+		return NamedOpenApiSchema.AreEqual(x, y, out _);
+	}
+ 
+	public int GetHashCode(OpenApiSchema obj)
+	{
+		return obj.GetHashCode();
+	}
+}
+
 public class NamedOpenApiSchema
 {
 	/// <summary>
@@ -618,6 +662,141 @@ public class NamedOpenApiSchema
 	/// A combination of the <see cref="Document"/>'s title, and <see cref="Name"/>
 	/// </summary>
 	public string UniqueName => $"{Document.Info.Title}-{Name}";
+
+
+	private static Dictionary<(OpenApiSchema, OpenApiSchema), List<string>> _equalityCache =
+		new Dictionary<(OpenApiSchema, OpenApiSchema), List<string>>();
+	
+	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b) => AreEqual(a, b, out _);
+	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b, out List<string> differences)
+	{
+		
+		differences = new List<string>();
+
+		if (_equalityCache.TryGetValue((a, b), out var equalityReasons))
+		{
+			differences = equalityReasons;
+			return differences.Count == 0;
+		}
+		else
+		{
+			_equalityCache.Add( (a, b), differences);
+		}
+		
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		if (a == b) return true;
+
+		// title must match.
+		// if (!string.Equals(a.Title, b.Title))
+		// {
+		// 	differences.Add("titles are different");
+		// }
+		
+		// type must match.
+		if (!string.Equals(a.Type, b.Type))
+		{
+			differences.Add("types are different");
+		}
+		
+		// format must match.
+		if (!string.Equals(a.Format, b.Format))
+		{
+			differences.Add("formats are different");
+		}
+
+		// required fields must set equal
+		if (!a.Required.SetEquals(b.Required))
+		{
+			differences.Add("required fields are different");
+		}
+		
+		// additional properties must be same
+		if (a.AdditionalPropertiesAllowed != b.AdditionalPropertiesAllowed)
+		{
+			differences.Add("additional properties don't match");
+		}
+
+		// additional property deep equal must match
+		if (!AreEqual(a.AdditionalProperties, b.AdditionalProperties, out var moreReasons))
+		{
+			differences.AddRange(moreReasons.Select(x => $"additionalProperties - {x}"));
+		}
+		
+		// items property deep equal must match
+		if (!AreEqual(a.Items, b.Items, out moreReasons))
+		{
+			differences.AddRange(moreReasons.Select(x => $"items - {x}"));
+		}
+		
+		// if this is a reference, it must reference the same thing.
+		if (a.Reference != null && b.Reference != null)
+		{
+			// the reference id must be the same
+			if (!string.Equals(a.Reference.Id, b.Reference.Id))
+			{
+				differences.Add("reference ids are different");
+			}
+			
+			// the host document must be the same.
+			// var aSchema = a.GetEffective(a.Reference.HostDocument);
+			// var bSchema = b.GetEffective(b.Reference.HostDocument);
+		
+	
+			
+			if (!string.Equals(a.Reference.HostDocument?.Info?.Title, b.Reference.HostDocument?.Info?.Title))
+			{
+				var aSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				var bSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				if (!AreEqual(aSchema, bSchema, out moreReasons))
+				{
+					differences.AddRange(moreReasons.Select(x => $"reference - {x}"));
+				}
+				// differences.Add("reference host document titles are different");
+			}
+		} else if (a.Reference == null && b.Reference != null)
+		{
+			differences.Add("b has reference, but a doesn't");
+		} else if (a.Reference != null && b.Reference == null)
+		{
+			differences.Add("a has reference, but b doesn't");
+		}
+		
+		// properties must match
+		if (a.Properties != null && b.Properties != null)
+		{
+			// the keys must be an exact match.
+			var aKeys = new SortedSet<string>(a.Properties.Keys);
+			var bKeys = new SortedSet<string>(b.Properties.Keys);
+
+			if (!aKeys.SetEquals(bKeys))
+			{
+				differences.Add("property keys do not match");
+			}
+			else
+			{
+				// check that all property schemas match
+				foreach (var key in aKeys)
+				{
+					var aSchema = a.Properties[key];
+					var bSchema = b.Properties[key];
+					if (!AreEqual(aSchema, bSchema, out moreReasons))
+					{
+						differences.AddRange(moreReasons.Select(x => $"property {key} - {x}"));
+					}
+				}
+			}
+		} else if (a.Properties == null && b.Properties != null)
+		{
+			differences.Add("b has properties, but a doesn't");
+		} else if (a.Properties != null && b.Properties == null)
+		{
+			differences.Add("a has properties, but b doesn't");
+		}
+		
+
+		return differences.Count == 0;
+	}
 }
 
 public struct NamedOpenApiSchemaHandle
