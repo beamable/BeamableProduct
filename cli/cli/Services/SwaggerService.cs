@@ -72,7 +72,7 @@ public class SwaggerService
 	/// Create a list of <see cref="GeneratedFileDescriptor"/> that contain the generated source code
 	/// </summary>
 	/// <returns></returns>
-	public async Task<List<GeneratedFileDescriptor>> Generate(BeamableApiFilter filter, GenerateSdkConflictResolutionStrategy resolutionStrategy)
+	public async Task<List<GeneratedFileDescriptor>> Generate(BeamableApiFilter filter, string targetEngine, GenerateSdkConflictResolutionStrategy resolutionStrategy)
 	{
 		// TODO: we should be able to specify if we want to generate from downloading, or from using a cached source.
 		var openApiDocuments = await DownloadBeamableApis(filter);
@@ -86,7 +86,7 @@ public class SwaggerService
 
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
 		var files = new List<GeneratedFileDescriptor>();
-		foreach (var generator in _generators)
+		foreach (var generator in _generators.Where(g => string.IsNullOrEmpty(targetEngine) || g.GetType().Name.Contains(targetEngine, StringComparison.OrdinalIgnoreCase)))
 		{
 			files.AddRange(generator.Generate(context));
 		}
@@ -110,25 +110,78 @@ public class SwaggerService
 			schema.Title = oldTitle;
 			return json;
 		}
+		
+		var schemaRecursiveRefs = new Dictionary<NamedOpenApiSchemaHandle, List<OpenApiSchema>>();
 
 		foreach (var doc in documents)
 		{
-			foreach (var kvp in doc.Components.Schemas)
+			foreach ((string schemaName, OpenApiSchema openApiSchema) in doc.Components.Schemas)
 			{
-				if (string.IsNullOrEmpty(kvp.Key)) continue;
+				if (string.IsNullOrEmpty(schemaName)) continue;
 
 				var reader = new OpenApiStreamReader();
-				var originalJson = SerializeSchema(kvp.Value);
+				var originalJson = SerializeSchema(openApiSchema);
 				var stream = new MemoryStream(Encoding.UTF8.GetBytes(originalJson));
 				var raw = reader.ReadFragment<OpenApiSchema>(stream, OpenApiSpecVersion.OpenApi3_0, out _);
 				// var raw = JsonConvert.DeserializeObject<OpenApiSchema>(originalJson);
+				
+				// Make the handle for this specific document's schema
+				var namedOpenApiSchemaHandle = new NamedOpenApiSchemaHandle() { OwnerDoc = doc, SchemaName = schemaName, };
+
+				// Build the list of schemas referenced by this specific document's schema
+				var schemaRefCount = new List<OpenApiSchema>(64);
+				GatherSchemaRefs(doc.Components.Schemas, schemaName, schemaName, schemaRefCount);
+
+				// We fail loudly if we ever get two schemas with the same name in the same document.
+				// This means we can't properly disambiguate between them.   
+				if (!schemaRecursiveRefs.TryAdd(namedOpenApiSchemaHandle, schemaRefCount))
+					throw new Exception($"Schema Name {schemaName} Clashing with another document's Schema!");
+
+				// If there are blank schemas for whatever reason, we can simply skip them.
+				if (string.IsNullOrEmpty(schemaName)) continue;
+
+				// Log out the ref count found.
+				Log.Logger.Verbose($"{namedOpenApiSchemaHandle.OwnerDoc.Info.Title}-{namedOpenApiSchemaHandle.SchemaName} Found Ref Count = {schemaRecursiveRefs[namedOpenApiSchemaHandle].Count}");
+				
 				list.Add(new NamedOpenApiSchema
 				{
 					RawSchema = raw.GetEffective(doc),
-					Name = kvp.Key,
-					Schema = kvp.Value,
-					Document = doc
+					Name = schemaName,
+					Schema = openApiSchema,
+					Document = doc,
+					DependsOnSchema = schemaRecursiveRefs[namedOpenApiSchemaHandle]
 				});
+			}
+		}
+		
+		// Find the number of recursive references to other schemas that each individual schema has (SchemaName => Recursive Refs)
+		void GatherSchemaRefs(IDictionary<string, OpenApiSchema> allSchemas, string schemaName, string originalName, List<OpenApiSchema> outSchemaRefs, int lvl = 0)
+		{
+			var data = allSchemas[schemaName];
+			var properties = data.Properties;
+
+			foreach ((string _, OpenApiSchema propData) in properties)
+			{
+				var isPropArray = propData.Type == "array";
+
+				if (isPropArray && propData.Items.Reference != null)
+				{
+					var schemaKey = propData.Items.Reference.Id;
+					if (!outSchemaRefs.Contains(allSchemas[schemaKey]))
+					{
+						outSchemaRefs.Add(allSchemas[schemaKey]);
+						GatherSchemaRefs(allSchemas, schemaKey, originalName, outSchemaRefs, lvl + 1);
+					}
+				}
+				else if (propData.Reference != null)
+				{
+					var schemaKey = propData.Reference.Id;
+					if (!outSchemaRefs.Contains(allSchemas[schemaKey]))
+					{
+						outSchemaRefs.Add(allSchemas[schemaKey]);
+						GatherSchemaRefs(allSchemas, schemaKey, originalName, outSchemaRefs, lvl + 1);
+					}
+				}
 			}
 		}
 
@@ -257,8 +310,8 @@ public class SwaggerService
 		if (resolutionStrategy != GenerateSdkConflictResolutionStrategy.None)
 		{
 			HandleResolution();
+			list = list.DistinctBy(x => x.Name).ToList();
 		}
-		list = list.DistinctBy(x => x.Name).ToList();
 
 		return list;
 	}
@@ -557,7 +610,18 @@ public class NamedOpenApiSchema
 	public OpenApiSchema RawSchema;
 
 	/// <summary>
+	/// List of openAPI Schemas that this depends on. 
+	/// </summary>
+	public List<OpenApiSchema> DependsOnSchema;
+	
+	/// <summary>
 	/// A combination of the <see cref="Document"/>'s title, and <see cref="Name"/>
 	/// </summary>
 	public string UniqueName => $"{Document.Info.Title}-{Name}";
+}
+
+public struct NamedOpenApiSchemaHandle
+{
+	public OpenApiDocument OwnerDoc;
+	public string SchemaName;
 }
