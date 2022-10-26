@@ -110,7 +110,7 @@ public class SwaggerService
 			schema.Title = oldTitle;
 			return json;
 		}
-		
+
 		var schemaRecursiveRefs = new Dictionary<NamedOpenApiSchemaHandle, List<OpenApiSchema>>();
 
 		foreach (var doc in documents)
@@ -124,7 +124,7 @@ public class SwaggerService
 				var stream = new MemoryStream(Encoding.UTF8.GetBytes(originalJson));
 				var raw = reader.ReadFragment<OpenApiSchema>(stream, OpenApiSpecVersion.OpenApi3_0, out _);
 				// var raw = JsonConvert.DeserializeObject<OpenApiSchema>(originalJson);
-				
+
 				// Make the handle for this specific document's schema
 				var namedOpenApiSchemaHandle = new NamedOpenApiSchemaHandle() { OwnerDoc = doc, SchemaName = schemaName, };
 
@@ -142,7 +142,7 @@ public class SwaggerService
 
 				// Log out the ref count found.
 				Log.Logger.Verbose($"{namedOpenApiSchemaHandle.OwnerDoc.Info.Title}-{namedOpenApiSchemaHandle.SchemaName} Found Ref Count = {schemaRecursiveRefs[namedOpenApiSchemaHandle].Count}");
-				
+
 				list.Add(new NamedOpenApiSchema
 				{
 					RawSchema = raw.GetEffective(doc),
@@ -153,7 +153,7 @@ public class SwaggerService
 				});
 			}
 		}
-		
+
 		// Find the number of recursive references to other schemas that each individual schema has (SchemaName => Recursive Refs)
 		void GatherSchemaRefs(IDictionary<string, OpenApiSchema> allSchemas, string schemaName, string originalName, List<OpenApiSchema> outSchemaRefs, int lvl = 0)
 		{
@@ -613,7 +613,7 @@ public class NamedOpenApiSchema
 	/// List of openAPI Schemas that this depends on. 
 	/// </summary>
 	public List<OpenApiSchema> DependsOnSchema;
-	
+
 	/// <summary>
 	/// A combination of the <see cref="Document"/>'s title, and <see cref="Name"/>
 	/// </summary>
