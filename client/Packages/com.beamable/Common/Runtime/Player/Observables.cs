@@ -333,7 +333,7 @@ namespace Beamable.Common.Player
 			}
 
 			_data = nextData;
-			
+
 			if (existing.Count > 0)
 			{
 				OnElementRemoved?.Invoke(existing);
