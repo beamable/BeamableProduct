@@ -59,9 +59,9 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_dropdown.Setup(_model.DropdownOptions, _model.OnVariableSelected, _model.VariableDropdownOptionIndex,
-			                false);
+							false);
 
-			if ( !_model.IsInherited && !_model.IsInitial && _model.IsVariableConnectionEmpty)
+			if (!_model.IsInherited && !_model.IsInitial && _model.IsVariableConnectionEmpty)
 			{
 				_dropdown.SetValueWithoutVerification(Constants.Features.Buss.MenuItems.NONE);
 			}

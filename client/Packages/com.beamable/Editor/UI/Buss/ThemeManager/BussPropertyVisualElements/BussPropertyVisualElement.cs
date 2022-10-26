@@ -18,6 +18,8 @@ namespace Beamable.Editor.UI.Components
 		
 		public bool IsRemoved { get; private set; }
 
+		public bool IsRemoved { get; private set; }
+
 		protected BussPropertyVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/{nameof(BussPropertyVisualElement)}.uss", false)
 		{ }
@@ -27,7 +29,7 @@ namespace Beamable.Editor.UI.Components
 			base.Init();
 			OnValueChanged += _ => BaseProperty?.NotifyValueChange();
 			AddToClassList("bussPropertyRoot");
-			
+
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
 				// TODO: there is tech debt here- if someone detaches Theme Manager, this will trigger the clean up event by accident.
@@ -35,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 			});
 		}
 
-		public void DisableInput(string tooltip="Disabled")
+		public void DisableInput(string tooltip = "Disabled")
 		{
 			this.Q<BindableElement>().SetEnabled(false);
 			this.tooltip = tooltip;

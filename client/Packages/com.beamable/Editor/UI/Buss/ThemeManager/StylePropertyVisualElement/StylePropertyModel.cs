@@ -56,7 +56,7 @@ namespace Beamable.Editor.UI.Components
 					var firstProvider = PropertySourceTracker.GetAllSources(PropertyProvider.Key).FirstOrDefault();
 					return firstProvider?.PropertyProvider != PropertyProvider;
 				}
-				
+
 				return appliedProvider != PropertyProvider;
 			}
 		}
@@ -99,7 +99,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void LabelClicked(MouseDownEvent evt)
 		{
-			
+
 			if (StyleSheet != null && !StyleSheet.IsWritable)
 			{
 				return;
@@ -154,7 +154,8 @@ namespace Beamable.Editor.UI.Components
 			if (option.DisplayName == Constants.Features.Buss.MenuItems.INHERITED_VALUE)
 			{
 				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Inherited;
-			} else if (option == InitialOption)
+			}
+			else if (option == InitialOption)
 			{
 				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Initial;
 			}
@@ -177,7 +178,7 @@ namespace Beamable.Editor.UI.Components
 			var options = new List<DropdownEntry> { InitialOption };
 			var inheritedOption = new DropdownEntry(Constants.Features.Buss.MenuItems.INHERITED_VALUE, false);
 			options.Add(inheritedOption);
-			
+
 			var baseType = BussStyle.GetBaseType(PropertyProvider.Key);
 			if (PropertySourceTracker != null)
 			{
@@ -195,7 +196,7 @@ namespace Beamable.Editor.UI.Components
 		private int GetOptionIndex()
 		{
 			var options = GetDropdownOptions();
-			
+
 			if (PropertyProvider.ValueType == BussPropertyValueType.Initial)
 			{
 				return 0;
@@ -204,7 +205,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				return 1;
 			}
-			
+
 			string variableName = string.Empty;
 			if (HasVariableConnected)
 			{

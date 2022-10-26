@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [Unreleased]
+### Fixed
+- Fixed empty reply from server when publishing a Microservice (curl error 52).
+- Cancellation exceptions when publishing a Microservice (timeouts). 
+
 ### [1.5.1]
 ### Added
 - `EnablePrePublishHealthCheck` option in _Project Settings/Beamable/Microservices` can be used to disable Microservice health checks when publishing. Disabling this is dangerous and may lead to unhealthy servers being deployed to production.

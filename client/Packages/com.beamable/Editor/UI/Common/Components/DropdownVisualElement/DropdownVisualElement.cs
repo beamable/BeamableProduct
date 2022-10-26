@@ -88,6 +88,17 @@ namespace Beamable.Editor.UI.Components
 
 
 		public void Setup(List<string> labels,
+						  Action<int> onOptionSelected,
+						  int initialIndex = 0,
+						  bool invokeOnStart = true)
+		{
+			Setup(labels.Select(x => new DropdownEntry
+			{
+				DisplayName = x,
+				LineBelow = false
+			}).ToList(), onOptionSelected, initialIndex, invokeOnStart);
+		}
+
 		                  Action<int> onOptionSelected,
 		                  int initialIndex = 0,
 		                  bool invokeOnStart = true)
@@ -99,6 +110,7 @@ namespace Beamable.Editor.UI.Components
 			}).ToList(), onOptionSelected, initialIndex, invokeOnStart);
 		}
 		
+		public void Setup(List<DropdownEntry> entries,
 		public void Setup(List<DropdownEntry> entries,
 						  Action<int> onOptionSelected,
 						  int initialIndex = 0,
@@ -115,8 +127,9 @@ namespace Beamable.Editor.UI.Components
 				{
 					OnOptionSelectedInternal(currentId);
 					onOptionSelected?.Invoke(currentId);
-				}) { LineBelow = entry.LineBelow };
-				
+				})
+				{ LineBelow = entry.LineBelow };
+
 				_optionModels.Add(singleOption);
 			}
 
@@ -153,8 +166,8 @@ namespace Beamable.Editor.UI.Components
 			foreach (DropdownSingleOption option in _optionModels)
 			{
 				var element = new DropdownSingleOptionVisualElement().Setup(option.Label,
-				                                                            option.OnClick, _root.localBound.width,
-				                                                            _root.localBound.height, option.LineBelow);
+																			option.OnClick, _root.localBound.width,
+																			_root.localBound.height, option.LineBelow);
 				allOptions.Add(element);
 			}
 
@@ -180,14 +193,14 @@ namespace Beamable.Editor.UI.Components
 
 		public DropdownEntry()
 		{
-				
+
 		}
 
 		public DropdownEntry(string name)
 		{
 			DisplayName = name;
 		}
-		
+
 		public DropdownEntry(string name, bool lineBelow)
 		{
 			DisplayName = name;

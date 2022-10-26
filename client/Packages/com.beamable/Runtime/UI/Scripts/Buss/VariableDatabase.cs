@@ -23,9 +23,9 @@ namespace Beamable.UI.Buss
 		public PropertyReference() { }
 
 		public PropertyReference(string key,
-		                         BussStyleSheet styleSheet,
-		                         BussStyleRule styleRule,
-		                         BussPropertyProvider propertyProvider)
+								 BussStyleSheet styleSheet,
+								 BussStyleRule styleRule,
+								 BussPropertyProvider propertyProvider)
 		{
 			HashKey = Animator.StringToHash(key);
 			Key = key;
