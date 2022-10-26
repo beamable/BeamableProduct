@@ -45,11 +45,11 @@ public class OpenApiEqualityTests
 	{
 		var schemaA = new OpenApiSchema { AdditionalProperties = new OpenApiSchema
 		{
-			Title = a
+			Type = a
 		}};
 		var schemaB = new OpenApiSchema  { AdditionalProperties = new OpenApiSchema
 		{
-			Title = b
+			Type = b
 		} };
 
 		var isEqual = NamedOpenApiSchema.AreEqual(schemaA, schemaB, out var differences);
@@ -67,11 +67,11 @@ public class OpenApiEqualityTests
 	{
 		var schemaA = new OpenApiSchema { Items = new OpenApiSchema
 		{
-			Title = a
+			Type = a
 		}};
 		var schemaB = new OpenApiSchema  { Items = new OpenApiSchema
 		{
-			Title = b
+			Type = b
 		} };
 
 		var isEqual = NamedOpenApiSchema.AreEqual(schemaA, schemaB, out var differences);
@@ -90,13 +90,13 @@ public class OpenApiEqualityTests
 	{
 		var schemaA = new OpenApiSchema { Properties = new Dictionary<string, OpenApiSchema>
 		{
-			[aKey1] = new OpenApiSchema { Title = aTitle1},
-			[aKey2] = new OpenApiSchema { Title = aTitle2},
+			[aKey1] = new OpenApiSchema { Type = aTitle1},
+			[aKey2] = new OpenApiSchema { Type = aTitle2},
 		}};
 		var schemaB = new OpenApiSchema { Properties = new Dictionary<string, OpenApiSchema>
 		{
-			[bKey1] = new OpenApiSchema { Title = bTitle1},
-			[bKey2] = new OpenApiSchema { Title = bTitle2},
+			[bKey1] = new OpenApiSchema { Type = bTitle1},
+			[bKey2] = new OpenApiSchema { Type = bTitle2},
 		}};
 		
 
@@ -110,7 +110,6 @@ public class OpenApiEqualityTests
 	
 	[TestCase(true, "a", "aTitle", "a", "aTitle")]
 	[TestCase(false, "a", "aTitle", "b", "aTitle")]
-	[TestCase(false, "a", "aTitle", "a", "bTitle")]
 	public void Equality_Reference(bool expected, string aId, string aTitle, string bId, string bTitle)
 	{
 		var schemaA = new OpenApiSchema { Reference = new OpenApiReference
@@ -132,23 +131,6 @@ public class OpenApiEqualityTests
 		Assert.AreEqual(expected, isEqual);
 	}
 
-	
-	[TestCase(true, "a", "a")]
-	[TestCase(true, null, null)]
-	[TestCase(false, "a", "b")]
-	[TestCase(false, "a", null)]
-	public void Equality_Titles(bool expected, string a, string b)
-	{
-		var schemaA = new OpenApiSchema { Title = a};
-		var schemaB = new OpenApiSchema { Title = b};
-
-		var isEqual = NamedOpenApiSchema.AreEqual(schemaA, schemaB, out var differences);
-		foreach (var diff in differences)
-		{
-			Console.WriteLine(diff);
-		}
-		Assert.AreEqual(expected, isEqual);
-	}
 	
 	[TestCase(true, "a", "a")]
 	[TestCase(true, null, null)]

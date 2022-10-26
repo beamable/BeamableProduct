@@ -150,28 +150,44 @@ public class SwaggerService
 				// found dupe...
 				var elements = group.ToList();
 
-				if (group.Key == "PlayerReward")
+				Dictionary<string, List<NamedOpenApiSchema>> similarSchemas = new Dictionary<string, List<NamedOpenApiSchema>>();
+				var firstElement = elements.First();
+				similarSchemas.Add(firstElement.UniqueName, new List<NamedOpenApiSchema>{firstElement});
+				for (var i = 1; i < elements.Count; i++)
 				{
-					
+					// check if there is an element match already
+					var thisElement = elements[i];
+
+					var found = false;
+					foreach (var (_, existingGroup) in similarSchemas)
+					{
+						var groupSample = existingGroup.First();
+						var areEqual = NamedOpenApiSchema.AreEqual(groupSample.Schema, thisElement.Schema, out _);
+						if (areEqual)
+						{
+							existingGroup.Add(thisElement);
+							found = true;
+							break;
+						}
+					}
+
+					if (!found)
+					{
+						similarSchemas.Add(thisElement.UniqueName, new List<NamedOpenApiSchema>{thisElement});
+					}
 				}
 
-				List<IGrouping<string, OpenApiSchema>> duplications;
-
-
-				var uniqueElementGroups = elements.GroupBy(e => SerializeSchema(e.Schema)).ToList();
-				if (uniqueElementGroups.Count <= 1)
+				if (similarSchemas.Count <= 1)
 					continue; // there is only 1 variant of the serialization, so its "fine", and we don't need to do anything
 
 				/*
-					 * There are multiple serializations of the model, which means we need to re-wire each of them to point to
-					 * their own specific implementation :(
-					 *
+		
 					 * But if there is one variant that has distinctly _more_ references, we should assume it is a common one.
 					 */
 
 				// find the variant with the most entries...
-				var variants = uniqueElementGroups.ToList();
-				IGrouping<string, NamedOpenApiSchema> highest = null;
+				var variants = similarSchemas.Select(x => x.Value).ToList();
+				List<NamedOpenApiSchema> highest = null;
 				foreach (var variant in variants)
 				{
 					var size = variant.Count();
@@ -591,18 +607,34 @@ public class NamedOpenApiSchema
 	public string UniqueName => $"{Document.Info.Title}-{Name}";
 
 
+	private static Dictionary<(OpenApiSchema, OpenApiSchema), List<string>> _equalityCache =
+		new Dictionary<(OpenApiSchema, OpenApiSchema), List<string>>();
 	
+	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b) => AreEqual(a, b, out _);
 	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b, out List<string> differences)
 	{
+		
 		differences = new List<string>();
+
+		if (_equalityCache.TryGetValue((a, b), out var equalityReasons))
+		{
+			differences = equalityReasons;
+			return differences.Count == 0;
+		}
+		else
+		{
+			_equalityCache.Add( (a, b), differences);
+		}
+		
 		if (a == null && b == null) return true;
 		if (a == null || b == null) return false;
-		
+		if (a == b) return true;
+
 		// title must match.
-		if (!string.Equals(a.Title, b.Title))
-		{
-			differences.Add("titles are different");
-		}
+		// if (!string.Equals(a.Title, b.Title))
+		// {
+		// 	differences.Add("titles are different");
+		// }
 		
 		// type must match.
 		if (!string.Equals(a.Type, b.Type))
@@ -650,9 +682,20 @@ public class NamedOpenApiSchema
 			}
 			
 			// the host document must be the same.
+			// var aSchema = a.GetEffective(a.Reference.HostDocument);
+			// var bSchema = b.GetEffective(b.Reference.HostDocument);
+		
+	
+			
 			if (!string.Equals(a.Reference.HostDocument?.Info?.Title, b.Reference.HostDocument?.Info?.Title))
 			{
-				differences.Add("reference host document titles are different");
+				var aSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				var bSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				if (!AreEqual(aSchema, bSchema, out moreReasons))
+				{
+					differences.AddRange(moreReasons.Select(x => $"reference - {x}"));
+				}
+				// differences.Add("reference host document titles are different");
 			}
 		} else if (a.Reference == null && b.Reference != null)
 		{
