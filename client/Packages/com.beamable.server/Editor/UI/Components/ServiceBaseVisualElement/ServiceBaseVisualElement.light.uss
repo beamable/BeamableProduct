@@ -120,12 +120,3 @@
 #startBtn:hover {
     background-color: #bbbbbb;
 }
-
-#logHeader.running {
-    background-color: #abd0e7;
-}
-
-#logHeader.failed {
-    background-color: #e1b0b1;
-}
-
