@@ -76,18 +76,16 @@
 }
 
 #buildImage {
-    background-color: #424242;
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Play_light.png");
 }
 
 .building #buildImage {
-    background-color: #555555;
+    background-color: #7b7b7b;
 }
 
 .running #buildImage {
     background-color: #234a6c;
 }
-
 
 .foldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light_dark.png");
@@ -125,9 +123,14 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO running.png");
 }
 
+#startBtn {
+    background-color: #383838;
+}
+
 #openDocsBtn > #btnIcon:hover,
 #openScriptBtn > #btnIcon:hover,
-#moreBtn > #btnIcon:hover {
+#moreBtn > #btnIcon:hover,
+#startBtn:hover {
     background-color: #424242;
 }
 

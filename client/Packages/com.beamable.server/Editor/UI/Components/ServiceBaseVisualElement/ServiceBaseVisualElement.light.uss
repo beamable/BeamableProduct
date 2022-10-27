@@ -42,7 +42,6 @@
 }
 
 #buildImage {
-    background-color: #c8c8c8;
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Play_dark.png");
 }
 
@@ -112,6 +111,10 @@
 
 .StorageObject_remoteEnabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO running light.png");
+}
+
+#startBtn {
+    background-color: #c8c8c8;
 }
 
 #openDocsBtn > #btnIcon:hover,
