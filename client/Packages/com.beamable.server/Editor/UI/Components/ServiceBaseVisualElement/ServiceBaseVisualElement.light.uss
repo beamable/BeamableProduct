@@ -42,6 +42,7 @@
 }
 
 #buildImage {
+    background-color: #c8c8c8;
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Play_dark.png");
 }
 
@@ -127,9 +128,4 @@
 #logHeader.failed {
     background-color: #e1b0b1;
 }
-
-#startBtn {
-    background-color: #c8c8c8;
-}
-
 

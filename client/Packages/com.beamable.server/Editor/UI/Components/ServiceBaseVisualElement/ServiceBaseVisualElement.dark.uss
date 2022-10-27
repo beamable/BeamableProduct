@@ -76,6 +76,7 @@
 }
 
 #buildImage {
+    background-color: #424242;
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Play_light.png");
 }
 
@@ -137,10 +138,5 @@
 #logHeader.failed {
     background-color: #5d3434;
 }
-
-#startBtn {
-    background-color: #424242;
-}
-
 
 
