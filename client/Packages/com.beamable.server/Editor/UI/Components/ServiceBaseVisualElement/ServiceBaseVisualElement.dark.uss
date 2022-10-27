@@ -76,12 +76,15 @@
 }
 
 #buildImage {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Play_light.png");
 }
 
-.building #buildImage,
+.building #buildImage {
+    background-color: #555555;
+}
+
 .running #buildImage {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/PlayButton_Active_L.png");
+    background-color: #234a6c;
 }
 
 
@@ -98,7 +101,7 @@
 }
 
 #logHeader {
-    background-color: #414141;
+    background-color: #282828;
 }
 
 #logContainer {
@@ -124,7 +127,7 @@
 #openDocsBtn > #btnIcon:hover,
 #openScriptBtn > #btnIcon:hover,
 #moreBtn > #btnIcon:hover {
-    background-color: #545454;
+    background-color: #424242;
 }
 
 #logHeader.running {
@@ -135,7 +138,9 @@
     background-color: #5d3434;
 }
 
-
+#startBtn {
+    background-color: #424242;
+}
 
 
 

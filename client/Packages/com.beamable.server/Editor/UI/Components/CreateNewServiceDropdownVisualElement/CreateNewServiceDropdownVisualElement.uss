@@ -22,3 +22,11 @@
     align-self: center;
 }
 
+#serviceEntryButton > #imageMicroService {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not running without wifi.png");
+}
+
+#serviceEntryButton > #imageStorageObject {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running without wifi.png");
+}
+

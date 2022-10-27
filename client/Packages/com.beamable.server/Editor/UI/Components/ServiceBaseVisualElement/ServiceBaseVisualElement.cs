@@ -202,7 +202,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
 		{
 			_serviceIcon.ClearClassList();
-			_header.EnableInClassList("building", isBuilding);
+			// _header.EnableInClassList("building", isBuilding);
 			_startButton.EnableInClassList("building", isBuilding);
 			_startButton.EnableInClassList("running", isRunning);
 			UpdateRemoteStatusIcon();
