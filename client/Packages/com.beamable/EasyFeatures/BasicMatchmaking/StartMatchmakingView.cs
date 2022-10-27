@@ -34,6 +34,7 @@ namespace Beamable.EasyFeatures.Basicmatchmaking
 
 		public Action<string> OnError;
 
+		public bool IsVisible { get; set; }
 		public int GetEnrichOrder() => EnrichOrder;
 
 		protected IDependencies System;

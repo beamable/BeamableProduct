@@ -42,7 +42,8 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		public Action<string> OnError;
 		
 		protected IDependencies System;
-		
+
+		public bool IsVisible { get; set; }
 		public int GetEnrichOrder() => EnrichOrder;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)

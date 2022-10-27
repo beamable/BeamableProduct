@@ -13,7 +13,7 @@ namespace Beamable.EasyFeatures.BasicMatchmaking
 		protected SimGameType SelectedGameType;
 		
 		public bool IsVisible { get; set; }
-		public int MaxPlayers => SelectedGameType.maxPlayers;
+		public int MaxPlayers => SelectedGameType.CalculateMaxPlayers();
 		public int CurrentPlayers => SlotsData.Count(slot => slot.PlayerId != string.Empty);
 		public bool IsPlayerAdmin => PlayerIds[0] == BeamContext.PlayerId.ToString();
 		public bool IsPlayerReady => BeamContext.Lobby.GetCurrentPlayer(BeamContext.PlayerId.ToString()).IsReady();
