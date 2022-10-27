@@ -351,6 +351,10 @@ ListView {
     flex-grow: 1;
 }
 
+ListView ConsoleLogVisualElement:hover {
+    background-color: #545454;
+}
+
 ListView ConsoleLogVisualElement:selected {
     background-color: rgb(58, 127, 214);
 }
