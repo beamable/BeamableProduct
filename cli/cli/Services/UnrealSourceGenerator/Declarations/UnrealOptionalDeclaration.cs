@@ -5,17 +5,17 @@ public struct UnrealOptionalDeclaration
 	public string UnrealTypeName;
 	public string NamespacedTypeName;
 	public string UnrealTypeIncludeStatement;
-	
+
 	public string ValueUnrealTypeName;
 	public string ValueNamespacedTypeName;
 	public string ValueUnrealTypeIncludeStatement;
 
 	private string _valueInitializerStatement;
-	
+
 	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)
 	{
 		_valueInitializerStatement = ValueUnrealTypeName.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX) ? "nullptr" : $"{ValueUnrealTypeName}()";
-		
+
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		helperDict.Add(nameof(UnrealTypeIncludeStatement), UnrealTypeIncludeStatement);
