@@ -1,6 +1,6 @@
 ﻿ServicesDropdownVisualElement {
     border-width: 1px;
-    padding-bottom: 4px;
+    padding-bottom: 10px;
 }
 
 #mainVisualElement {
@@ -11,9 +11,7 @@
 
 PrimaryButtonVisualElement {
     height: 24px;
-    margin-top: 5px;
-    padding-left: 10px;
-    padding-right: 10px;
+    margin-top: 10px;
 }
 
 #servicesList {

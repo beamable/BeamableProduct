@@ -146,7 +146,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 			var services = MicroservicesDataModel.Instance.AllLocalServices;
 			var content = new ServicesDropdownVisualElement(services);
-			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(200, 33 + services.Count * 24), content);
+			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(200, 50 + services.Count * 24), content);
 			content.Refresh();
 			content.OnCloseRequest += wnd.Close;
 		}
