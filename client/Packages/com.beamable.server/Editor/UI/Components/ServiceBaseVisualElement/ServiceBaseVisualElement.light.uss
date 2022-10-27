@@ -45,8 +45,12 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");
 }
 
-.building #buildImage,
+.building #buildImage {
+    background-color: #656565;
+}
+
 .running #buildImage {
+    background-color: #2e5b8d;
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/PlayButton_Active_L.png");
 }
 
@@ -93,31 +97,26 @@
     background-color: #c8c8c8;
 }
 
-.MicroService_localStopped,
-.MicroService_localRunning, 
-.MicroService_localBuilding {
+.MicroService_remoteDisabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning light.png");
 }
 
-.MicroService_remoteEnabled,
-.MicroService_remoteDisabled {
+.MicroService_remoteEnabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS running light.png");
 }
 
-.StorageObject_localStopped, 
-.StorageObject_localRunning, 
-.StorageObject_localBuilding {
+.StorageObject_remoteDisabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running light.png");
 }
 
-.StorageObject_remoteEnabled,
-.StorageObject_remoteDisabled {
+.StorageObject_remoteEnabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO running light.png");
 }
 
 #openDocsBtn > #btnIcon:hover,
 #openScriptBtn > #btnIcon:hover,
-#moreBtn > #btnIcon:hover {
+#moreBtn > #btnIcon:hover,
+#startBtn:hover {
     background-color: #bbbbbb;
 }
 
@@ -127,6 +126,10 @@
 
 #logHeader.failed {
     background-color: #e1b0b1;
+}
+
+#startBtn {
+    background-color: #c8c8c8;
 }
 
 

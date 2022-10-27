@@ -105,25 +105,19 @@
     background-color: #545454;
 }
 
-.MicroService_localStopped,
-.MicroService_localRunning, 
-.MicroService_localBuilding {
+.MicroService_remoteDisabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning.png");
 }
 
-.MicroService_remoteEnabled,
-.MicroService_remoteDisabled {
+.MicroService_remoteEnabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS running.png");
 }
 
-.StorageObject_localStopped,
-.StorageObject_localRunning, 
-.StorageObject_localBuilding {
+.StorageObject_remoteDisabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running.png");
 }
 
-.StorageObject_remoteEnabled,
-.StorageObject_remoteDisabled {
+.StorageObject_remoteEnabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO running.png");
 }
 
@@ -140,6 +134,7 @@
 #logHeader.failed {
     background-color: #5d3434;
 }
+
 
 
 

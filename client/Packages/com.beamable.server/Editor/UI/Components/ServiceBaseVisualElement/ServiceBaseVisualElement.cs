@@ -203,35 +203,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_serviceIcon.ClearClassList();
 			_header.EnableInClassList("building", isBuilding);
-
-			string statusClassName;
-			string statusText;
-			
-			string status = isRunning ? "localRunning" :
-				isBuilding ? "localBuilding" : "localStopped";
-			switch (status)
-			{
-				case "localRunning":
-					statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
-					statusClassName = $"{Model.ServiceType}_localRunning";
-					break;
-				case "localBuilding":
-					statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
-					statusClassName = $"{Model.ServiceType}_localBuilding";
-					break;
-				case "localStopped":
-					statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
-					statusClassName = $"{Model.ServiceType}_localStopped";
-					break;
-				default:
-					statusText = Tooltips.Microservice.ICON_DIFFERENT;
-					statusClassName = $"{Model.ServiceType}_different";
-					break;
-			}
-			
-			_serviceIcon.tooltip = statusText;
-			_serviceIcon.AddToClassList(statusClassName);
-			_startButton.EnableInClassList("running", isBuilding || isRunning);
+			_startButton.EnableInClassList("building", isBuilding);
+			_startButton.EnableInClassList("running", isRunning);
+			UpdateRemoteStatusIcon();
 		}
 		private void OnDrag(float value)
 		{
