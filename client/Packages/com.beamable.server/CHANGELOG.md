@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `curl error 52` while publishing Microservices and performing health-checks.
 - Task Cancellation exceptions while publishing Microservice.
+- Various `DockerNotInstalledException` events when MicroserviceManager window isn't open, but Docker ins't running.
 
 ## [1.5.1]
 ### Added
