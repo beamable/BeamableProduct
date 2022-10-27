@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System;
@@ -162,6 +163,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					var builder = new StringBuilder();
 					_allTextToDisplay.ForEach(text => builder.Append(text));
 					EditorGUIUtility.systemCopyBuffer = builder.ToString();
+					BeamableLogger.Log("Copied full log message to the system copy buffer");
 				}
 			}));
 			_copyTextBtn.tooltip = "Copy full log";
