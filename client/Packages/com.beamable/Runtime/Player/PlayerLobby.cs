@@ -52,7 +52,7 @@ namespace Beamable.Player
 				{
 					_notificationService.Unsubscribe(UpdateName(base.Value.lobbyId), OnRawUpdate);
 				}
-				
+
 				if (value != null)
 				{
 					_notificationService.Subscribe(UpdateName(value.lobbyId), OnRawUpdate);
@@ -119,6 +119,12 @@ namespace Beamable.Player
 		public async Promise GetLobby(string lobbyId)
 		{
 			Value = await _lobbyApi.GetLobby(lobbyId);
+		}
+
+		/// <inheritdoc cref="ILobbyApi.FindLobbiesOfType"/>
+		public Promise<LobbyQueryResponse> FindLobbiesOfType(string matchType, int limit = 100, int skip = 0)
+		{
+			return _lobbyApi.FindLobbiesOfType(matchType, limit, skip);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>

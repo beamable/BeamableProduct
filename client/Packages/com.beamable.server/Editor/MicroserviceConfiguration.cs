@@ -55,8 +55,6 @@ namespace Beamable.Server.Editor
 #if !BEAMABLE_DEVELOPER
 		[HideInInspector]
 #endif
-		public List<ServiceDependencyChecksum> ServiceDependencyChecksums = new List<ServiceDependencyChecksum>();
-
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
 
@@ -67,6 +65,9 @@ namespace Beamable.Server.Editor
 
 		[Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
 		public bool AutoBuildCommonAssembly = true;
+
+		[Tooltip("When true, Beamable guarantees any Assembly Definition referencing a StorageObject's AsmDef also references the required Mongo DLLs.")]
+		public bool EnsureMongoAssemblyDependencies = true;
 
 		[Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
 		public bool ColorLogs = true;
@@ -83,9 +84,14 @@ namespace Beamable.Server.Editor
 		[Tooltip("When enabled, after you start a service, this will automatically prune unused and dangling docker images related to that service.")]
 		public bool EnableAutoPrune = true;
 
+		[Tooltip("It will enable microservice health check at the begining of publish process.")]
+		public bool EnablePrePublishHealthCheck = true;
+
+		[Tooltip("When enabled, you can override microservice health check timeout on publish. This could be helpfull for slower machines. Value is in seconds.")]
+		public OptionalInt PrePublishHealthCheckTimeout;
+
 		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
 		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
-
 
 		public string DockerCommand
 		{
@@ -116,7 +122,8 @@ namespace Beamable.Server.Editor
 		[Tooltip("When you build Microservices, they can be built to an AMD or ARM cpu architecture. By default, locally, Beamable will use whatever the default for your machine is. Allowed values are \"linux/arm64\" or \"linux/amd64\"")]
 		public OptionalString LocalMicroserviceCPUArchitecturePreference = new OptionalString();
 
-		[Tooltip("When you deploy Microservices, they can be built to an AMD or ARM cpu architecture. By default, Beamable will build and deploy images similar to the host architecture. However, if you want to hardcode a specific architecture over all your development machines, you can. Allowed values are \"linux/arm64\" or \"linux/amd64\"")]
+		[Obsolete("Beamable does not support deploying ARM images. Images will be forced to build as AMD.")]
+		[Tooltip("This feature is deprecated. Images will be forced to build as linux/amd64. ")]
 		public OptionalString RemoteMicroserviceCPUArchitecturePreference = new OptionalString();
 
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
@@ -181,7 +188,7 @@ namespace Beamable.Server.Editor
 				case CPUArchitectureContext.LOCAL:
 					return LocalMicroserviceCPUArchitecturePreference?.GetOrElse(() => null);
 				case CPUArchitectureContext.DEPLOY:
-					return RemoteMicroserviceCPUArchitecturePreference?.GetOrElse(() => null);
+					return Constants.Features.Docker.CPU_LINUX_AMD_64;
 				case CPUArchitectureContext.DEFAULT:
 				default:
 					return null;
@@ -295,9 +302,7 @@ namespace Beamable.Server.Editor
 					var value = Microservices[currentIndex];
 					Microservices.RemoveAt(currentIndex);
 					Microservices.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
+					Save();
 				}
 			}
 			else
@@ -311,11 +316,16 @@ namespace Beamable.Server.Editor
 					var value = StorageObjects[currentIndex];
 					StorageObjects.RemoveAt(currentIndex);
 					StorageObjects.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
+					Save();
 				}
 			}
+		}
+
+		public void Save()
+		{
+			EditorUtility.SetDirty(this);
+			AssetDatabase.SaveAssets();
+			AssetDatabase.Refresh();
 		}
 
 		public void MoveIndex(string serviceName, int offset, ServiceType serviceType)

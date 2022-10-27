@@ -15,6 +15,7 @@ public interface IAppContext
 	public string Host { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
+	public string RefreshToken { get; }
 
 	/// <summary>
 	/// Control how basic options are found from the console context.
@@ -44,17 +45,19 @@ public class DefaultAppContext : IAppContext
 	private CliToken _token;
 
 	private string _cid, _pid, _host;
+	private string _refreshToken;
 
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
+	public string RefreshToken => _refreshToken;
 
 	public string WorkingDirectory { get; private set; }
 	public LogEventLevel LogLevel { get; private set; }
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
-									AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
-							 ConfigService configService, CliEnvironment environment)
+		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
+		ConfigService configService, CliEnvironment environment)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -79,7 +82,13 @@ public class DefaultAppContext : IAppContext
 			else if (!string.IsNullOrEmpty(_environment.LogLevel))
 				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), _environment.LogLevel, true);
 			else
-				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Warning;
+			{
+#if BEAMABLE_DEVELOPER
+				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Debug;
+#else
+				App.LogLevel.MinimumLevel = LogLevel = = LogEventLevel.Warning
+#endif
+			}
 		}
 
 		WorkingDirectory = Directory.GetCurrentDirectory();
@@ -95,13 +104,21 @@ public class DefaultAppContext : IAppContext
 
 		if (!TryGetSetting(out _host, bindingContext, _platformOption))
 		{
+			_host = Constants.DEFAULT_PLATFORM;
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		TryGetSetting(out var accessToken, bindingContext, _accessTokenOption);
-		TryGetSetting(out var refreshToken, bindingContext, _refreshTokenOption);
+		string defaultAccessToken = string.Empty;
+		string defaultRefreshToken = string.Empty;
+		if (_configService.ReadTokenFromFile(out var response))
+		{
+			defaultAccessToken = response.access_token;
+			defaultRefreshToken = response.refresh_token;
+		}
+		TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
+		TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
-		_token = new CliToken(accessToken, refreshToken, _cid, _pid);
+		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
 		Set(_cid, _pid, _host);
 	}
 

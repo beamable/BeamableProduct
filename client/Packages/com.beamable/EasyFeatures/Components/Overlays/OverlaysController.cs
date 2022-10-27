@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace Beamable.EasyFeatures.Components
@@ -13,6 +13,7 @@ namespace Beamable.EasyFeatures.Components
 
 		public OverlayedModalWindow ModalWindow;
 		public OverlayedLabelWithButton LabelWithButton;
+		public OverlayedToastPopup ToastPopup;
 
 		private IOverlayComponent _currentObject;
 
@@ -23,11 +24,14 @@ namespace Beamable.EasyFeatures.Components
 
 		public void ShowLabelWithButton(string label, string buttonLabel, Action onClick)
 		{
-			Show(LabelWithButton, () => { LabelWithButton.Show(label, buttonLabel, ()=>
+			Show(LabelWithButton, () =>
 			{
-				HideOverlay();
-				onClick?.Invoke();
-			}); });
+				LabelWithButton.Show(label, buttonLabel, () =>
+{
+	HideOverlay();
+	onClick?.Invoke();
+});
+			});
 		}
 
 		public void ShowError(string message)
@@ -72,6 +76,11 @@ namespace Beamable.EasyFeatures.Components
 			Mask.SetActive(true);
 			action?.Invoke();
 			_currentObject = activeComponent;
+		}
+
+		public void ShowToast(string message, float duration = 3f)
+		{
+			ToastPopup.Show(message, duration);
 		}
 	}
 }

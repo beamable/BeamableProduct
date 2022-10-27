@@ -1,8 +1,22 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Parties
 {
+	[Serializable]
+	public class InvitesResponse
+	{
+		public List<PartyInvite> invitations;
+	}
+
+	[Serializable]
+	public struct PartyInvite
+	{
+		public string partyId, invitedBy;
+	}
+
 	public class PartyService : IPartyApi
 	{
 		private readonly IBeamableRequester _requester;
@@ -14,14 +28,27 @@ namespace Beamable.Experimental.Api.Parties
 			_userContext = userContext;
 		}
 
-		public Promise<Party> CreateParty(PartyRestriction restriction)
+		public Promise<Party> CreateParty(PartyRestriction restriction, int maxSize = 0)
 		{
+			var request = new CreatePartyRequest(restriction.ToString(), _userContext.UserId.ToString(), maxSize);
+			var json = Serialization.JsonSerializable.ToJson(request);
+
 			return _requester.Request<Party>(
 				Method.POST,
 				"/parties",
-				new CreatePartyRequest(
-					restriction.ToString(),
-					_userContext.UserId.ToString())
+				json
+			);
+		}
+
+		public Promise<Party> UpdateParty(string partyId, PartyRestriction restriction, int maxSize = 0)
+		{
+			var request = new UpdatePartyRequest(restriction.ToString(), maxSize);
+			var json = Serialization.JsonSerializable.ToJson(request);
+
+			return _requester.Request<Party>(
+				Method.PUT,
+				$"/parties/{partyId}/metadata",
+				json
 			);
 		}
 
@@ -45,7 +72,8 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			return _requester.Request<Unit>(
 				Method.DELETE,
-				$"/parties/{partyId}"
+				$"/parties/{partyId}/members",
+				new PlayerRequest(_userContext.UserId.ToString())
 			).ToPromise();
 		}
 
@@ -53,7 +81,7 @@ namespace Beamable.Experimental.Api.Parties
 		{
 			return _requester.Request<Unit>(
 				Method.DELETE,
-				$"/parties/{partyId}",
+				$"/parties/{partyId}/members",
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}
@@ -75,5 +103,19 @@ namespace Beamable.Experimental.Api.Parties
 				new PlayerRequest(playerId)
 			).ToPromise();
 		}
+
+		public Promise<InvitesResponse> GetPartyInvites()
+		{
+			return _requester.Request<InvitesResponse>(
+				Method.GET,
+				$"/players/{_userContext.UserId}/parties/invites"
+			);
+		}
+
+		public Promise KickPlayer(string partyId, long playerId) => KickPlayer(partyId, playerId.ToString());
+
+		public Promise PromoteToLeader(string partyId, long playerId) => PromoteToLeader(partyId, playerId.ToString());
+
+		public Promise InviteToParty(string partyId, long playerId) => InviteToParty(partyId, playerId.ToString());
 	}
 }

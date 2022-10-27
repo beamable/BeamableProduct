@@ -1,3 +1,4 @@
+using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
 using System.Net.Http.Json;
 
@@ -50,6 +51,33 @@ public class ConfigService
 			Directory.CreateDirectory(ConfigFilePath);
 		}
 		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		File.WriteAllText(fullPath, json);
+	}
+
+	public bool ReadTokenFromFile(out TokenResponse response)
+	{
+		response = null;
+		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_TOKEN_FILE_NAME);
+		if (!File.Exists(fullPath)) return false;
+
+		try
+		{
+			var content = File.ReadAllText(fullPath);
+			response = JsonConvert.DeserializeObject<TokenResponse>(content);
+			return true;
+		}
+		catch
+		{
+			// ignored
+		}
+
+		return false;
+	}
+
+	public void SaveTokenToFile(TokenResponse response)
+	{
+		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_TOKEN_FILE_NAME);
+		var json = JsonConvert.SerializeObject(response);
 		File.WriteAllText(fullPath, json);
 	}
 

@@ -1,4 +1,4 @@
-﻿using Beamable.UI.Scripts;
+using Beamable.UI.Scripts;
 using System;
 using TMPro;
 using UnityEngine;
@@ -12,7 +12,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		{
 			public float FoldedHeight => 150.0f;
 			public float UnfoldedHeight => 300.0f;
-			
+
 			public string PlayerId { get; set; }
 			public bool IsReady { get; set; }
 			public float Height { get; set; }
@@ -39,15 +39,15 @@ namespace Beamable.EasyFeatures.BasicLobby
 		}
 
 		public void SetupFilled(string playerName,
-		                        bool isReady,
-		                        bool isAdmin,
-		                        bool isUnfolded,
-		                        Action onAdminButtonClicked,
-		                        Action onKickButtonClicked,
-		                        Action onPassLeadershipButtonClicked)
+								bool isReady,
+								bool isAdmin,
+								bool isUnfolded,
+								Action onAdminButtonClicked,
+								Action onKickButtonClicked,
+								Action onPassLeadershipButtonClicked)
 		{
 			Name.text = playerName;
-			
+
 			KickButton.onClick.ReplaceOrAddListener(onKickButtonClicked.Invoke);
 			PassLeadershipButton.onClick.ReplaceOrAddListener(onPassLeadershipButtonClicked.Invoke);
 			AdminButton.onClick.ReplaceOrAddListener(onAdminButtonClicked.Invoke);

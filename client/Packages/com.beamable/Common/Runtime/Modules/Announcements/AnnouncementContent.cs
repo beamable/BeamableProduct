@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Announcements
 {

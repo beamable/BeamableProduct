@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Beamable.EasyFeatures.Components
 {
@@ -6,7 +6,6 @@ namespace Beamable.EasyFeatures.Components
 	{
 		void HideOverlay();
 		void ShowOverlayedLabel(string label);
-		void ShowOverlayedLabelWithButton(string label, string buttonLabel, Action onClick);
 		void ShowErrorWindow(string message);
 		void ShowConfirmWindow(string message, Action confirmAction);
 		void ShowInformWindow(string message, Action confirmAction);

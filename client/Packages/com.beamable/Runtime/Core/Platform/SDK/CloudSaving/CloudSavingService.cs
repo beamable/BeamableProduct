@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -39,7 +40,7 @@ namespace Beamable.Api.CloudSaving
 		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
 		private IEnumerator _fileWatchingRoutine;
 		private IEnumerator _fileWebRequestRoutine;
-		private ConnectivityService _connectivityService;
+		private IConnectivityService _connectivityService;
 		private List<Func<Promise<Unit>>> _ProcessFilesPromiseList = new List<Func<Promise<Unit>>>();
 		private string _manifestPath => Path.Combine(localCloudDataPath.manifestPath, "cloudDataManifest.json");
 		private LocalCloudDataPath localCloudDataPath => new LocalCloudDataPath(_platform);
@@ -75,7 +76,7 @@ namespace Beamable.Api.CloudSaving
 			_platform = platform;
 			_requester = requester;
 			_coroutineService = coroutineService;
-			_connectivityService = new ConnectivityService(_coroutineService);
+			_connectivityService = provider.GetService<IConnectivityService>();
 		}
 
 		/// <summary>
@@ -462,38 +463,56 @@ namespace Beamable.Api.CloudSaving
 			return newManifestDict;
 		}
 
-		private Promise<Unit> HandleRequest<T>(T request, ConcurrentDictionary<string, string> fileNameToKey, Method method, string endpoint)
+		private Promise<Unit> HandleRequest<T>(T request,
+											   ConcurrentDictionary<string, string> fileNameToKey,
+											   Method method,
+											   string endpoint)
 		{
-			var promiseList = new List<Func<Promise<Unit>>>();
-			Dictionary<string, PreSignedURL> s3Response = new Dictionary<string, PreSignedURL>();
+			var promiseList = new ConcurrentDictionary<string, Func<Promise<Unit>>>();
 			return GetPresignedURL(request, endpoint).FlatMap(presignedURLS =>
 			{
-				if (presignedURLS.response.Count > 0)
+				int responseAmount = presignedURLS.response.Count;
+				if (responseAmount == 0)
 				{
-					presignedURLS.response.ForEach(resp =>
-				 {
-					 //MD5_Checksum : PresignedURL
-					 s3Response[resp.objectKey] = resp;
-				 });
-					foreach (var kv in fileNameToKey)
+					return PromiseBase.SuccessfulUnit;
+				}
+				var s3Response = new Dictionary<string, PreSignedURL>(responseAmount);
+				for (int i = 0; i < responseAmount; i++)
+				{
+					//MD5_Checksum : PresignedURL
+					s3Response[presignedURLS.response[i].objectKey] = presignedURLS.response[i];
+				}
+
+				foreach (var kv in fileNameToKey)
+				{
+					PreSignedURL s3PresignedURL;
+					bool isSuccessful = s3Response.TryGetValue(kv.Value, out s3PresignedURL);
+
+					if (isSuccessful)
 					{
 						var fullPathToFile = kv.Key;
-						PreSignedURL s3PresignedURL;
-						if (s3Response.TryGetValue(kv.Value, out s3PresignedURL))
-						{
-							promiseList.Add(new Func<Promise<Unit>>(() => GetOrPostObjectInS3(fullPathToFile, s3PresignedURL, method)));
-						}
-						else
-						{
-							Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}");
-						}
+						isSuccessful = promiseList.TryAdd(s3PresignedURL.url,
+														  new Func<Promise<Unit>>(
+															  () => GetOrPostObjectInS3(
+																  fullPathToFile, s3PresignedURL, method)));
+					}
+
+					if (!isSuccessful)
+					{
+						Debug.LogWarning($"Key in manifest does not match a value on the server, Key {kv.Value}");
 					}
 				}
-				return Promise.ExecuteInBatch(10, promiseList).Map(_ => PromiseBase.Unit);
+
+				if (promiseList.Count != responseAmount)
+				{
+					return Promise<Unit>.Failed(new Exception("Some of the keys in manifest does not match a values on the server"));
+				}
+
+				return Promise.ExecuteInBatch(10, promiseList.Values.ToList()).Map(_ => PromiseBase.Unit);
 			}).Error(delete =>
-			   {
-				   Directory.Delete(localCloudDataPath.temp, true);
-			   });
+			{
+				Directory.Delete(localCloudDataPath.temp, true);
+			});
 		}
 
 		private Promise<Unit> GetOrPostObjectInS3(string fullPathToDestinationFile, PreSignedURL url, Method method)

@@ -20,7 +20,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public virtual Promise<T> StartAsync()
 		{
-			if (DockerRequired && DockerNotInstalled)
+			if (!_skipDockerCheck && DockerRequired && DockerNotInstalled)
 			{
 				return Promise<T>.Failed(new DockerNotInstalledException());
 			}

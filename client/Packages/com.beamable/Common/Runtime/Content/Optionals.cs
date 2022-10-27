@@ -1,8 +1,10 @@
+using Beamable.Common.Shop;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Content
 {
@@ -39,6 +41,15 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class Optional<T> : Optional
 	{
+		public static implicit operator T(Optional<T> option) => option?.HasValue == true ? (T)option.Value : default(T);
+		public static implicit operator Optional<T>(T val)
+		{
+			var x = new Optional<T>();
+			x.Value = val;
+			x.HasValue = true;
+			return x;
+		}
+
 		public T Value;
 		public override object GetValue()
 		{
@@ -48,6 +59,12 @@ namespace Beamable.Common.Content
 		public override void SetValue(object value)
 		{
 			Value = (T)value;
+			HasValue = true;
+		}
+
+		public void Set(T value)
+		{
+			Value = value;
 			HasValue = true;
 		}
 
@@ -131,7 +148,14 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	public class OptionalBool : OptionalValue<bool> { }
+
+	[System.Serializable]
+	[Agnostic]
 	public class OptionalInt : OptionalValue<int> { }
+
+	[System.Serializable]
+	public class OptionalObject : Optional<object> { }
 
 	[System.Serializable]
 	[Agnostic]
@@ -139,7 +163,68 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	public class OptionalFloat : OptionalValue<float> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalByte : OptionalValue<byte> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalShort : OptionalValue<short> { }
+
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalGuid : OptionalValue<Guid> { }
+
+	[System.Serializable]
+	[Agnostic]
 	public class OptionalDouble : OptionalValue<double> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalList<T> : Optional<List<T>> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArray<T> : Optional<T[]> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalIntArray : OptionalArray<int> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalStringArray : OptionalArray<string> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalFloatArray : OptionalArray<float> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDoubleArray : OptionalArray<double> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalShortArray : OptionalArray<short> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalLongArray : OptionalArray<long> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalUuidArray : OptionalArray<Guid> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalByteArray : OptionalArray<byte> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDictionaryStringToObject : Optional<Dictionary<string, object>> { }
 
 	[System.Serializable]
 	[Agnostic]

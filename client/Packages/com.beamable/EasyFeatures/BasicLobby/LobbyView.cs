@@ -1,4 +1,4 @@
-﻿using Beamable.Common;
+using Beamable.Common;
 using Beamable.UI.Buss;
 using EasyFeatures.Components;
 using System;
@@ -21,7 +21,6 @@ namespace Beamable.EasyFeatures.BasicLobby
 			int MaxPlayers { get; }
 			int CurrentPlayers { get; }
 			int? CurrentlySelectedPlayerIndex { get; set; }
-			bool IsVisible { get; }
 			bool IsPlayerAdmin { get; }
 			bool IsPlayerReady { get; }
 			bool IsMatchStarting { get; }
@@ -50,7 +49,7 @@ namespace Beamable.EasyFeatures.BasicLobby
 		public Button LeaveButton;
 
 		public BussElement StartButtonBussElement;
-		
+
 		[Header("Callbacks")]
 		public UnityEvent OnRebuildRequested;
 
@@ -67,16 +66,20 @@ namespace Beamable.EasyFeatures.BasicLobby
 
 		protected IDependencies System;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
+
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public virtual void EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var ctx = managedPlayers.GetSinglePlayerContext();
 			System = ctx.ServiceProvider.GetService<IDependencies>();
 
-			gameObject.SetActive(System.IsVisible);
-
-			if (!System.IsVisible)
+			if (!IsVisible)
 			{
 				return;
 			}
@@ -96,20 +99,20 @@ namespace Beamable.EasyFeatures.BasicLobby
 			SettingsButton.gameObject.SetActive(System.IsPlayerAdmin);
 			ReadyButton.gameObject.SetActive(!System.IsPlayerReady);
 			NotReadyButton.gameObject.SetActive(System.IsPlayerReady);
-			
+
 			ValidateStartButton();
 
 			LobbySlotsList.ClearPooledRankedEntries();
 			LobbySlotsList.Setup(System.SlotsData, System.IsPlayerAdmin, OnAdminButtonClicked, OnKickButtonClicked,
-			                     OnPassLeadershipButtonClicked);
+								 OnPassLeadershipButtonClicked);
 			LobbySlotsList.RebuildPooledLobbiesEntries();
 		}
 
-		private void ValidateStartButton()
+		public virtual void ValidateStartButton()
 		{
 			bool buttonValid = System.IsPlayerAdmin && System.IsServerReady();
 			StartButton.interactable = buttonValid;
-			
+
 			if (buttonValid)
 			{
 				StartButtonBussElement.SetButtonPrimary();
@@ -161,27 +164,27 @@ namespace Beamable.EasyFeatures.BasicLobby
 			OnSettingButtonClicked?.Invoke();
 		}
 
-		private void ReadyButtonClicked()
+		public virtual void ReadyButtonClicked()
 		{
 			if (System.IsMatchStarting)
 			{
 				return;
 			}
-			
+
 			System.SetPlayerReady(true);
 		}
 
-		private void NotReadyButtonClicked()
+		public virtual void NotReadyButtonClicked()
 		{
 			if (System.IsMatchStarting)
 			{
 				return;
 			}
-			
+
 			System.SetPlayerReady(false);
 		}
 
-		private async void StartButtonClicked()
+		public virtual async void StartButtonClicked()
 		{
 			if (!System.IsPlayerAdmin || System.IsMatchStarting)
 			{
@@ -200,13 +203,13 @@ namespace Beamable.EasyFeatures.BasicLobby
 			}
 		}
 
-		private async void LeaveButtonClicked()
+		public virtual async void LeaveButtonClicked()
 		{
 			if (System.IsMatchStarting)
 			{
 				return;
 			}
-			
+
 			if (System.IsPlayerAdmin)
 			{
 				OnAdminLeaveLobbyRequestSent?.Invoke();

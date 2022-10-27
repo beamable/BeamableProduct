@@ -3,23 +3,17 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
-using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
-using UnityEngine.UIElements;
-#endif
 
-namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
+namespace Beamable.UI.Buss
 {
-	public class BussConfiguration : ModuleConfigurationObject
+	public class BussConfiguration : ModuleConfigurationObject, IVariablesProvider
 	{
-		private static BussConfiguration Instance => Get<BussConfiguration>();
-
 		public static Optional<BussConfiguration> OptionalInstance
 		{
 			get
@@ -35,51 +29,31 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 		}
 
-		private static Dictionary<string, SelectorWeight> _weights = new Dictionary<string, SelectorWeight>();
+		private static BussConfiguration Instance => Get<BussConfiguration>();
+		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
+
+		public List<BussStyleSheet> FactoryStyleSheets
+		{
+			get
+			{
+				BussStyleSheet[] bussStyleSheets = Resources
+												   .LoadAll<BussStyleSheet>(
+													   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
+												   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
+
+				return bussStyleSheets.OrderBy(s => s.SortingOrder).ToList();
+			}
+		}
+
+		public List<BussStyleSheet> DeveloperStyleSheets =>
+			Resources.LoadAll<BussStyleSheet>("")
+					 .Where(styleSheet => !styleSheet.IsReadOnly).ToList();
+
+		public List<BussElement> RootBussElements => _rootBussElements;
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);
-		}
-
-		[SerializeField] private List<BussStyleSheet> _globalStyleSheets = new List<BussStyleSheet>();
-
-		private readonly List<BussStyleSheet> _defaultBeamableStyleSheets = new List<BussStyleSheet>();
-		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
-
-		public List<BussStyleSheet> DefaultBeamableStyleSheetSheets => _defaultBeamableStyleSheets;
-		public List<BussStyleSheet> GlobalStyleSheets => _globalStyleSheets;
-		public List<BussElement> RootBussElements => _rootBussElements;
-
-#if UNITY_EDITOR
-		static BussConfiguration()
-		{
-			// temporary solution to refresh the list of BussElements on scene change
-			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
-			EditorSceneManager.sceneClosed += scene => UseConfig(config => config.RefreshBussElements());
-		}
-
-		void RefreshBussElements()
-		{
-			_rootBussElements.Clear();
-			foreach (BussElement element in FindObjectsOfType<BussElement>())
-			{
-				element.CheckParent();
-			}
-
-			EditorUtility.SetDirty(this);
-			
-			RefreshDefaultStyles();
-		}
-#endif
-
-		public void AddGlobalStyleSheet(BussStyleSheet styleSheet)
-		{
-			if (!GlobalStyleSheets.Contains(styleSheet))
-			{
-				GlobalStyleSheets.Add(styleSheet);
-				UpdateStyleSheet(styleSheet);
-			}
 		}
 
 		public void RegisterObserver(BussElement bussElement)
@@ -103,9 +77,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			// This should happen only in editor
 			if (styleSheet == null) return;
 
-			RefreshDefaultStyles();
-
-			if (_defaultBeamableStyleSheets.Contains(styleSheet) || _globalStyleSheets.Contains(styleSheet))
+			if (FactoryStyleSheets.Contains(styleSheet) || DeveloperStyleSheets.Contains(styleSheet))
 			{
 				foreach (BussElement bussElement in _rootBussElements)
 				{
@@ -121,14 +93,12 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 		}
 
-		private void RefreshDefaultStyles()
+		public void ForceRefresh()
 		{
-			_defaultBeamableStyleSheets.Clear();
-			BussStyleSheet[] bussStyleSheets = Resources
-											   .LoadAll<BussStyleSheet>(
-												   Constants.Features.Buss.Paths.FACTORY_STYLES_RESOURCES_PATH)
-											   .Where(styleSheet => styleSheet.IsReadOnly).ToArray();
-			_defaultBeamableStyleSheets.AddRange(bussStyleSheets);
+			foreach (var element in _rootBussElements)
+			{
+				element.OnStyleChanged();
+			}
 		}
 
 		private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)
@@ -147,91 +117,48 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			}
 		}
 
+#if UNITY_EDITOR
+		static BussConfiguration()
+		{
+			// temporary solution to refresh the list of BussElements on scene change
+			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
+			EditorSceneManager.sceneClosed += scene => UseConfig(config => config.RefreshBussElements());
+		}
+
+		void RefreshBussElements()
+		{
+			_rootBussElements.Clear();
+			foreach (BussElement element in FindObjectsOfType<BussElement>())
+			{
+				element.CheckParent();
+			}
+
+			EditorUtility.SetDirty(this);
+		}
+#endif
+
 		#region Styles parsing
 
 		public void RecalculateStyle(BussElement element)
 		{
-			_weights.Clear();
-			element.Style.Clear();
-			element.PseudoStyles.Clear();
-
-			// Applying default bemable styles
-			foreach (BussStyleSheet styleSheet in _defaultBeamableStyleSheets)
+			element.Style.Inherit(element?.Parent?.Style);
+			element.Sources.Recalculate();
+			foreach (var key in element.Sources.GetKeys())
 			{
-				ApplyStyleSheet(element, styleSheet);
+				element.Style[key] = (element.Sources.GetUsedPropertyProvider(key, out _)?.GetProperty()) ??
+									 BussStyle.GetDefaultValue(key);
 			}
-
-			// Applying developer styles
-			foreach (BussStyleSheet styleSheet in _globalStyleSheets)
-			{
-				ApplyStyleSheet(element, styleSheet);
-			}
-
-			foreach (BussStyleSheet styleSheet in element.AllStyleSheets)
-			{
-				if (styleSheet != null)
-				{
-					ApplyStyleSheet(element, styleSheet);
-				}
-			}
-
-			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
-
 			element.ApplyStyle();
 		}
 
-		private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
-		{
-			if (element == null || sheet == null) return;
-			foreach (BussStyleRule descriptor in sheet.Styles)
-			{
-				if (descriptor.Selector?.CheckMatch(element) ?? false)
-				{
-					SelectorWeight weight = descriptor.Selector.GetWeight();
-					if (descriptor.Selector.TryGetPseudoClass(out string pseudoClass))
-					{
-						ApplyDescriptorWithPseudoClass(element, pseudoClass, descriptor, weight);
-					}
-					else
-					{
-						ApplyDescriptor(element, descriptor, weight);
-					}
-				}
-			}
-		}
-
-		private static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor, SelectorWeight weight)
-		{
-			if (element == null || descriptor == null) return;
-			foreach (BussPropertyProvider property in descriptor.Properties)
-			{
-				if (!_weights.TryGetValue(property.Key, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
-				{
-					element.Style[property.Key] = property.GetProperty();
-					_weights[property.Key] = weight;
-				}
-			}
-		}
-
-		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-														   string pseudoClass,
-														   BussStyleDescription descriptor,
-														   SelectorWeight weight)
-		{
-			if (element == null || descriptor == null) return;
-			foreach (BussPropertyProvider property in descriptor.Properties)
-			{
-				string weightKey = pseudoClass + property.Key;
-				if (!_weights.TryGetValue(weightKey, out SelectorWeight currentWeight) ||
-					weight.CompareTo(currentWeight) >= 0)
-				{
-					element.Style[pseudoClass, property.Key] = property.GetProperty();
-					_weights[weightKey] = weight;
-				}
-			}
-		}
-
 		#endregion
+
+		public List<BussStyleSheet> GetStylesheets()
+		{
+			var list = new List<BussStyleSheet>();
+			list.AddRange(FactoryStyleSheets);
+			list.AddRange(DeveloperStyleSheets);
+			return list;
+		}
 	}
 }

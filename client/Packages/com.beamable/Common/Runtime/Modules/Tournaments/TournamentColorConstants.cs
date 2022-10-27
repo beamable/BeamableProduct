@@ -1,5 +1,6 @@
 ﻿using Beamable.UI;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Tournaments
 {

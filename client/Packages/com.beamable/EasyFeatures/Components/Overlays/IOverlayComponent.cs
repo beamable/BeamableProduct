@@ -1,4 +1,4 @@
-﻿namespace Beamable.EasyFeatures.Components
+namespace Beamable.EasyFeatures.Components
 {
 	public interface IOverlayComponent
 	{

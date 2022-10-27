@@ -1,4 +1,4 @@
-﻿using Beamable.UI.Scripts;
+using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,10 +22,10 @@ namespace Beamable.EasyFeatures.BasicLobby
 		private readonly List<LobbySlotPresenter> _spawnedSlots = new List<LobbySlotPresenter>();
 
 		public void Setup(List<LobbySlotPresenter.ViewData> slots,
-		                  bool isAdmin,
-		                  Action<int> onAdminButtonClicked,
-		                  Action<int> onKickButtonClicked,
-		                  Action<int> onPassLeadershipButtonClicked)
+						  bool isAdmin,
+						  Action<int> onAdminButtonClicked,
+						  Action<int> onKickButtonClicked,
+						  Action<int> onPassLeadershipButtonClicked)
 		{
 			PoolableScrollView.SetContentProvider(this);
 
@@ -54,7 +54,11 @@ namespace Beamable.EasyFeatures.BasicLobby
 				var data = _slots[i];
 				LobbySlotPresenter.ViewData rankEntryPoolData = new LobbySlotPresenter.ViewData
 				{
-					PlayerId = data.PlayerId, IsReady = data.IsReady, IsUnfolded = data.IsUnfolded, Index = i, Height = data.IsUnfolded ? data.UnfoldedHeight : data.FoldedHeight
+					PlayerId = data.PlayerId,
+					IsReady = data.IsReady,
+					IsUnfolded = data.IsUnfolded,
+					Index = i,
+					Height = data.IsUnfolded ? data.UnfoldedHeight : data.FoldedHeight
 				};
 				items.Add(rankEntryPoolData);
 			}
@@ -75,18 +79,18 @@ namespace Beamable.EasyFeatures.BasicLobby
 			if (poolData.PlayerId != String.Empty) // Temporarily Name is set to playerId
 			{
 				spawned.SetupFilled(poolData.PlayerId, poolData.IsReady, _isAdmin, poolData.IsUnfolded,
-				                    () =>
-				                    {
-					                    _onAdminButtonClicked.Invoke(poolData.Index);
-				                    },
-				                    () =>
-				                    {
-					                    _onKickButtonClicked.Invoke(poolData.Index);
-				                    },
-				                    () =>
-				                    {
-					                    _onPassLeadershipButtonClicked.Invoke(poolData.Index);
-				                    });
+									() =>
+									{
+										_onAdminButtonClicked.Invoke(poolData.Index);
+									},
+									() =>
+									{
+										_onKickButtonClicked.Invoke(poolData.Index);
+									},
+									() =>
+									{
+										_onPassLeadershipButtonClicked.Invoke(poolData.Index);
+									});
 			}
 			else
 			{

@@ -113,12 +113,14 @@ namespace Beamable.Editor.UI.Model
 				IsArchived = true;
 			}
 
+			MicroserviceConfiguration.Instance.Save();
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}
 
 		public void Unarchive()
 		{
 			IsArchived = false;
+			MicroserviceConfiguration.Instance.Save();
 			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
 		}
 		protected void OpenCode()
