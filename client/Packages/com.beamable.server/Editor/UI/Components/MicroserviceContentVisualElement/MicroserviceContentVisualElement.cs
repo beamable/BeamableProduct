@@ -255,12 +255,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_actionPrompt.SetVisible(PROMPT_STOPPED_FAILURE, true, false);
 		}
 
-		public void DisplayCreatingNewService(ServiceType serviceType)
+		public void DisplayCreatingNewService(ServiceType serviceType, Action onClose)
 		{
 			if (_servicesCreateElements.Values.Any(x => x.hierarchy.childCount != 0))
 				return;
-			
-			_servicesCreateElements[serviceType].Refresh();
+
+			_servicesCreateElements[serviceType].Refresh(() => onClose?.Invoke());
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
 

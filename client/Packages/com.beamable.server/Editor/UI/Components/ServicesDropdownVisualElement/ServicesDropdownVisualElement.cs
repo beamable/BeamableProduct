@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
@@ -8,6 +9,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class ServicesDropdownVisualElement : MicroserviceComponent
 	{
+		public event Action OnCloseRequest;
+		
 		private IReadOnlyList<IBeamableService> Services { get; }
 		private VisualElement _servicesList;
 		private PrimaryButtonVisualElement _playSelectedBtn;
@@ -48,8 +51,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandlePlaySelectedButton()
 		{
 			foreach (var serviceEntry in _serviceEntries)
-				if (!serviceEntry.Service.IsRunning)
+				if (serviceEntry.Service.IsSelected && !serviceEntry.Service.IsRunning)
 					serviceEntry.Service.Start();
+			OnCloseRequest?.Invoke();
 		}
 	}
 

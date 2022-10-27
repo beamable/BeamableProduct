@@ -178,8 +178,7 @@ namespace Beamable.Editor.Microservice.UI
 				Application.OpenURL(URLs.Documentations.URL_DOC_MICROSERVICES);
 			};
 
-			_actionBarVisualElement.OnCreateNewClicked += _microserviceContentVisualElement
-				.DisplayCreatingNewService;
+			_actionBarVisualElement.OnCreateNewClicked += serviceType => _microserviceContentVisualElement.DisplayCreatingNewService(serviceType, _actionBarVisualElement.Refresh);
 
 			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this, ActiveContext);
 

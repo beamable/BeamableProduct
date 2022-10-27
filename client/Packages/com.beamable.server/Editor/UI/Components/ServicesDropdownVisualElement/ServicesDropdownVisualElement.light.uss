@@ -1,4 +1,8 @@
-﻿#ServiceEntry-MicroService TemplateContainer > #mainVisualElement > Image {
+﻿ServicesDropdownVisualElement {
+    border-color: #8a8a8a;
+}
+
+#ServiceEntry-MicroService TemplateContainer > #mainVisualElement > Image {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning light.png");
 }
 

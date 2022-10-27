@@ -50,6 +50,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public event Action OnPublishClicked;
 		public event Action OnRefreshButtonClicked;
 		public event Action<ServiceType> OnCreateNewClicked;
+		
 		private Button _refreshButton;
 		private Button _createNew;
 		private Button _startAll;
@@ -71,14 +72,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
 			_refreshButton.tooltip = Tooltips.Microservice.REFRESH;
+
 			_createNew = Root.Q<Button>("createNew");
-
-			var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
-			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_createNew.clickable.activators.Clear();
+			_createNew.clickable.clicked += () =>
+			{
+				HandleCreateNewButton(_createNew.worldBound);
+			};
 			_createNew.tooltip = Tooltips.Microservice.ADD_NEW;
-			_createNew.AddManipulator(manipulator);
-
 
 			_startAll = Root.Q<Button>("startAll");
 			_startAll.clickable.clicked += () => HandlePlayButton(_startAll.worldBound);
@@ -127,10 +127,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_createNew.SetEnabled(IsDockerActive);
 		}
 
-		private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)
+		private void HandleCreateNewButton(Rect visualElementBounds)
 		{
-			evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
-			evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
+			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
+			var content = new CreateNewServiceDropdownVisualElement();
+			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(140, Enum.GetNames(typeof(ServiceType)).Length * 28), content);
+			content.Refresh();
+			content.OnCreateNewClicked += serviceType =>
+			{
+				_createNew.SetEnabled(false);
+				OnCreateNewClicked?.Invoke(serviceType);
+				wnd.Close();
+			};
 		}
 		
 		private void HandlePlayButton(Rect visualElementBounds)
@@ -140,6 +148,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var content = new ServicesDropdownVisualElement(services);
 			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(200, 33 + services.Count * 24), content);
 			content.Refresh();
+			content.OnCloseRequest += wnd.Close;
 		}
 	}
 }

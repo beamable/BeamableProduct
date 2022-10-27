@@ -78,7 +78,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private List<string> _parameterParts;
 		private List<string> _allTextToDisplay;
 		
-		private int _chunkSize = 500;
+		private int _chunkSize = 5000;
 		private int _paginationIndex = 0;
 		private VisualElement _leftArrow;
 		private VisualElement _rightArrow;

@@ -57,8 +57,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void SetNewModel(LogMessage model)
 		{
-			var text = model.Message.Split('\n');
 			_model = model;
+
+			if (string.IsNullOrWhiteSpace(model.Message))
+				return;
+				
+			var text = model.Message.Split('\n');
 			_description.text = text.Length > 0 
 				? text[0].SplitStringIntoParts(_descriptionChunkSize)[0] 
 				: model.Message.SplitStringIntoParts(_descriptionChunkSize)[0];

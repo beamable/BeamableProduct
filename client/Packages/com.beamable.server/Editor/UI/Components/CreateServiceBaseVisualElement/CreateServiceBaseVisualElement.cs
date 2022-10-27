@@ -26,6 +26,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected abstract string ScriptName { get; }
 		protected abstract ServiceType ServiceType { get; }
 
+		public Action OnClose;
 		public event Action OnCreateServiceClicked;
 
 		protected ServiceCreateDependentService _serviceCreateDependentService;
@@ -41,6 +42,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private FormConstraint _isNameSizedRight;
 		private FormConstraint _isNameUnique;
 
+		public void Refresh(Action onClose)
+		{
+			OnClose = onClose;
+			Refresh();
+		}
 		public override void Refresh()
 		{
 			base.Refresh();
@@ -51,19 +57,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_serviceIcon = Root.Q<VisualElement>("serviceIcon");
 			_nameTextField = Root.Q<TextField>("nameTextField");
-
 			_createBtn = Root.Q<PrimaryButtonVisualElement>("createBtn");
 			_cancelBtn = Root.Q<PrimaryButtonVisualElement>("cancelBtn");
-		
-			_nameTextField = Root.Q<TextField>("nameTextField");
 		}
 		private void UpdateVisualElements()
 		{
 			_serviceIcon.AddToClassList(ServiceType.ToString());
 			_nameTextField.AddPlaceholder("Enter service name");
 			
-			_cancelBtn.Button.clicked += Root.RemoveFromHierarchy;
-			_createBtn.Button.clicked += HandleContinueButtonClicked;
+			_cancelBtn.Button.clicked += () =>
+			{
+				Root.RemoveFromHierarchy();
+				OnClose?.Invoke();
+			};
+			_createBtn.Button.clicked += () =>
+			{
+				HandleContinueButtonClicked();
+				OnClose?.Invoke();
+			};
 			
 			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName, .01);
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
