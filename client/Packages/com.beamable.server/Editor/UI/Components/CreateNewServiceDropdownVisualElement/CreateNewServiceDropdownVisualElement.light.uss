@@ -6,3 +6,12 @@
     background-color: #bbbbbb;
 }
 
+#serviceEntryButton > #imageMicroService {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning light without wifi.png");
+}
+
+#serviceEntryButton > #imageStorageObject {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running light without wifi.png");
+}
+
+
