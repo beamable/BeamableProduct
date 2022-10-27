@@ -131,12 +131,3 @@
     background-color: #424242;
 }
 
-#logHeader.running {
-    background-color: #345167;
-}
-
-#logHeader.failed {
-    background-color: #5d3434;
-}
-
-
