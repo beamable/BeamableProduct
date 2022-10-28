@@ -90,10 +90,11 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
+			selector.SetForcedVisualPriority();
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
 			AssetDatabase.SaveAssets();
-
+			selector.SetForcedVisualPriority();
 			Change?.Invoke();
 		}
 

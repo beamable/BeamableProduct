@@ -220,7 +220,10 @@ namespace Beamable.Editor.UI.Components
 
 		public void OnSelectorChanged(BussStyleRule rule, BussStyleSheet sheet)
 		{
-			SelectedElement.RecalculateStyle();
+			if (SelectedElement != null)
+			{
+				SelectedElement.RecalculateStyle();
+			}
 			SelectorChanged?.Invoke();
 		}
 
