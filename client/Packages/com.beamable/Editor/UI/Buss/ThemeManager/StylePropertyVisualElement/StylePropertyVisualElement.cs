@@ -62,7 +62,8 @@ namespace Beamable.Editor.UI.Components
 		{
 			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
-
+			_valueParent.Clear();
+			
 			if (_model.IsInherited)
 			{
 				var srcTracker = _model.PropertySourceTracker;
