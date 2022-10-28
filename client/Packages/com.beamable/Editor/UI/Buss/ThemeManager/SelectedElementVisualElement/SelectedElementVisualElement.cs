@@ -22,7 +22,11 @@ namespace Beamable.Editor.UI.Components
 
 		private int? _selectedClassListIndex;
 		private readonly ThemeManagerModel _model;
-
+		
+		// this structure is for holding the registered callbacks in the virtual class list.
+		private Dictionary<TextField, EventCallback<ChangeEvent<string>>> _changeHandlers =
+			new Dictionary<TextField, EventCallback<ChangeEvent<string>>>();
+		
 		public SelectedElementVisualElement(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(SelectedElementVisualElement)}/{nameof(SelectedElementVisualElement)}.uss")
 		{
@@ -222,14 +226,13 @@ namespace Beamable.Editor.UI.Components
 			classElement.Add(new TextField());
 			return classElement;
 		}
-
+		
 		private void BindListViewElement(VisualElement element, int index)
 		{
 			TextField textField = (TextField)element.Children().ToList()[1];
 			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
 			textField.isDelayed = true;
-			textField.RegisterValueChangedCallback(ClassValueChanged);
-
+			BindTextfieldCallback(textField, ClassValueChanged);
 			void ClassValueChanged(ChangeEvent<string> evt)
 			{
 				string newValue = BussNameUtility.AsClassSelector(evt.newValue);
@@ -239,6 +242,24 @@ namespace Beamable.Editor.UI.Components
 				EditorUtility.SetDirty(_model.SelectedElement);
 				_model.ForceRefresh();
 			}
+		}
+
+		private void BindTextfieldCallback(TextField textField, EventCallback<ChangeEvent<string>> cb)
+		{
+			// before we can add the new callback, we need to unregister the old one, other
+			//  we end up with many many callbacks on each element, which leads to perf issues
+			//  and editor crashes
+			if (_changeHandlers.TryGetValue(textField, out var existing))
+			{
+				textField.UnregisterCallback(existing);
+				_changeHandlers[textField] = cb;
+			}
+			else
+			{
+				_changeHandlers.Add(textField, cb);
+			}
+			textField.RegisterValueChangedCallback(cb);
+
 		}
 
 		protected override void OnDestroy()
