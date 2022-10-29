@@ -283,6 +283,7 @@ namespace Beamable.Editor.UI.Components
 			EditorUtility.SetDirty(StyleSheet);
 #endif
 
+			Undo.RecordObject(StyleSheet, StyleRule.ShowAll ? "Hide All" : "Show All");
 			StyleRule.SetShowAll(!StyleRule.ShowAll);
 			AssetDatabase.SaveAssets();
 			_globalRefresh?.Invoke();
@@ -329,6 +330,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemovePropertyClicked(string propertyKey)
 		{
+			Undo.RecordObject(StyleSheet, "Remove property");
+
 			var propertyModel = GetProperties(false).Find(property => property.PropertyProvider.Key == propertyKey);
 
 			if (propertyModel == null)

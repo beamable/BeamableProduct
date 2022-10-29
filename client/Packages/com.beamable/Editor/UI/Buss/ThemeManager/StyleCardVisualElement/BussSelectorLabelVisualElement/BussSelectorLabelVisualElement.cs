@@ -147,6 +147,7 @@ namespace Beamable.Editor.UI.Components
 			var newValue = evt.newValue;
 			EditorDebouncer.Debounce("buss-set-selector", () =>
 			{
+				Undo.RecordObject(_styleSheet, $"Change selector");
 				_styleRule.SelectorString = newValue;
 				_styleSheet.TriggerChange();
 				_onSelectorChanged?.Invoke(_styleRule, _styleSheet);
