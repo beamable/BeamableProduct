@@ -34,7 +34,7 @@ namespace Beamable.Editor.UI.Buss
 		{
 			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
 
-			var unsortedRules = new List<(BussStyleRule, BussStyleSheet, int)>();
+			var ruleSet = new HashSet<(BussStyleRule, BussStyleSheet, int)>();
 
 			foreach (var styleSheet in styleSheets)
 			{
@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.Buss
 					{
 						continue;
 					}
-					unsortedRules.Add((rule, styleSheet, parentDistance));
+					ruleSet.Add((rule, styleSheet, parentDistance));
 				}
 			}
 
@@ -52,7 +52,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				return rules;
 			}
-
+			var unsortedRules = ruleSet.ToList();
 			unsortedRules.Sort((a, b) =>
 			{
 				var forcedOrder = b.Item1.ForcedVisualPriority.CompareTo(a.Item1.ForcedVisualPriority);
@@ -70,6 +70,7 @@ namespace Beamable.Editor.UI.Buss
 				var styleSheetComparison = a.Item2.IsReadOnly.CompareTo(b.Item2.IsReadOnly);
 				return styleSheetComparison;
 			});
+			
 
 			var sortedRules = unsortedRules.ToDictionary(tuple => tuple.Item1, tuple => tuple.Item2);
 			return sortedRules;

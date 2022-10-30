@@ -40,11 +40,6 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		private void OnValidate()
-		{
-			TriggerChange();
-		}
-
 		public void TriggerChange()
 		{
 			if (!IsWritable) return;
