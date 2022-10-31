@@ -38,27 +38,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-		public event Action<bool> OnSelectAllCheckboxChanged;
 		public event Action<ServicesDisplayFilter> OnNewServicesDisplayFilterSelected;
 
 		private RealmButtonVisualElement _realmButton;
 		private Button _servicesFilter;
 		private Label _servicesFilterLabel;
-		private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
 		private ServicesDisplayFilter _filter;
 
 		public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
 		{
-		}
-
-		protected override void OnDestroy()
-		{
-			if (_selectAllLabeledCheckbox != null)
-			{
-				_selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
-			}
-
-			base.OnDestroy();
 		}
 
 		public override void Refresh()
@@ -77,18 +65,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
 			UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
 			_servicesFilter.visible = true;
-
-
-			_selectAllLabeledCheckbox = Root.Q<LabeledCheckboxVisualElement>("selectAllLabeledCheckbox");
-			_selectAllLabeledCheckbox.Refresh();
-			_selectAllLabeledCheckbox.DisableIcon();
-			_selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
-			_selectAllLabeledCheckbox.OnValueChanged += TriggerSelectAll;
-		}
-
-		void TriggerSelectAll(bool value)
-		{
-			OnSelectAllCheckboxChanged?.Invoke(value);
 		}
 
 		void UpdateServicesFilterText(ServicesDisplayFilter filter)
@@ -127,17 +103,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void RefreshFiltering()
 		{
 			OnNewServicesDisplayFilterSelected?.Invoke(_filter);
-		}
-
-		public void UpdateSelectAllCheckboxValue(int selectedServicesAmount, int servicesAmount)
-		{
-			_selectAllLabeledCheckbox.SetWithoutNotify(servicesAmount > 0 && selectedServicesAmount == servicesAmount);
-			SetSelectAllVisibility(servicesAmount > 0);
-		}
-
-		private void SetSelectAllVisibility(bool value)
-		{
-			_selectAllLabeledCheckbox.EnableInClassList("hidden", !value);
 		}
 	}
 

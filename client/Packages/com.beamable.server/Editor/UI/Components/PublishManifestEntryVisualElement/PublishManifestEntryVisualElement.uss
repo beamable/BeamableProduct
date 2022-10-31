@@ -67,14 +67,12 @@
     height: 20px;
 }
 
-.microserviceImage {
-    margin-left: 5px;
-    margin-top: 5px;
-}
-
+.microserviceImage, 
 .storageImage {
-    width: 30px;
-    height: 30px;
+    margin-left: 2px;
+    margin-right: 2px;
+    width: 26px;
+    height: 26px;
 }
 .published #mainContainer> LoadingBarElement {
     height: 0px;

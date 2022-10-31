@@ -425,7 +425,7 @@ public static class UIElementsPolyfill2021
 	public static void RefreshPolyfill(this ListView listView)
 	{
 #if UNITY_2021_2_OR_NEWER
-		listView.Rebuild();
+		listView.RefreshItems();
 #else
 		listView.Refresh();
 #endif

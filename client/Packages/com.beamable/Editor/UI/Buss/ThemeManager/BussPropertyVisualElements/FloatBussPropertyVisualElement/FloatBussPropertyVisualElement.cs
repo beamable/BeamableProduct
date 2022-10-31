@@ -26,11 +26,13 @@ namespace Beamable.Editor.UI.Components
 			_field.value = Property.FloatValue;
 			Root.Add(_field);
 
+
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}
 
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
+			OnBeforeChange?.Invoke();
 			Property.FloatValue = evt.newValue;
 			OnValueChanged?.Invoke(Property);
 			_isCallingOnChange = true;
