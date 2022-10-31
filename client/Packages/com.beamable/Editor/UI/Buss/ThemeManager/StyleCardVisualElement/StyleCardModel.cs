@@ -12,9 +12,17 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
+	public enum RuleAppliedStatus
+	{
+		Exact,
+		Inherited,
+		NotApplied
+	}
+	
 	public class StyleCardModel
 	{
 		public event Action Change;
+		public event Action SelectorChanged;
 		private readonly ThemeModel.PropertyDisplayFilter _currentDisplayFilter;
 		private readonly Action _globalRefresh;
 
@@ -26,6 +34,27 @@ namespace Beamable.Editor.UI.Components
 		public bool IsWritable => StyleSheet.IsWritable;
 		public bool IsFolded => StyleRule.Folded;
 		public bool ShowAll => StyleRule.ShowAll;
+
+		private RuleAppliedStatus _previousAppliedStatus = RuleAppliedStatus.Exact;
+		public RuleAppliedStatus RuleAppliedStatus
+		{
+			get
+			{
+				if (StyleRule?.Selector == null || SelectedElement == null)
+				{
+					return _previousAppliedStatus;
+				}
+				if (StyleRule.Selector.IsElementIncludedInSelector(SelectedElement, out var exact))
+				{
+					return _previousAppliedStatus = exact
+						? RuleAppliedStatus.Exact
+						: RuleAppliedStatus.Inherited;
+				}
+
+				return _previousAppliedStatus = RuleAppliedStatus.NotApplied;
+			}
+		}
+		
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(BussStyleSheet styleSheet,
@@ -187,6 +216,12 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			context.ShowAsContext();
+		}
+
+		public void OnSelectorChanged(BussStyleRule rule, BussStyleSheet sheet)
+		{
+			SelectedElement.RecalculateStyle();
+			SelectorChanged?.Invoke();
 		}
 
 		public List<GenericMenuCommand> PrepareCommands()
