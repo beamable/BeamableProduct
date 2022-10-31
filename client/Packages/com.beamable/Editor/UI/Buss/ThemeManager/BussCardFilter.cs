@@ -11,14 +11,22 @@ namespace Beamable.Editor.UI.Buss
 
 		public Dictionary<BussStyleRule, BussStyleSheet> GetFiltered(BussStyleSheet styleSheet)
 		{
-			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
-
+			var unsortedRules = new List<(BussStyleRule, BussStyleSheet)>();
 			foreach (var rule in styleSheet.Styles)
 			{
-				rules.Add(rule, styleSheet);
+				unsortedRules.Add((rule, styleSheet));
 			}
+			
+			unsortedRules.Sort((a, b) =>
+			{
+				var forcedOrder = b.Item1.ForcedVisualPriority.CompareTo(a.Item1.ForcedVisualPriority);
+				
+				return forcedOrder;
+			});
 
-			return rules;
+
+			var sortedRules = unsortedRules.ToDictionary(tuple => tuple.Item1, tuple => tuple.Item2);
+			return sortedRules;
 		}
 
 		public Dictionary<BussStyleRule, BussStyleSheet> GetFiltered(List<BussStyleSheet> styleSheets,
@@ -47,6 +55,9 @@ namespace Beamable.Editor.UI.Buss
 
 			unsortedRules.Sort((a, b) =>
 			{
+				var forcedOrder = b.Item1.ForcedVisualPriority.CompareTo(a.Item1.ForcedVisualPriority);
+				if (forcedOrder != 0) return forcedOrder;
+				
 				// first, sort by exact matches. Inherited styles always play second fiddle 
 				var exactMatchComparison = a.Item3.CompareTo(b.Item3);
 				if (exactMatchComparison != 0) return exactMatchComparison;

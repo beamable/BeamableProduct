@@ -36,6 +36,7 @@ namespace Beamable.Editor.UI.Buss
 
 		public static List<string> AsClassesList(List<string> classesList)
 		{
+			if (classesList == null) return new List<string>();
 			List<string> finalList = new List<string>();
 			finalList.AddRange(classesList.Select(AsClassSelector));
 			return finalList;
