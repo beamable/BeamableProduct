@@ -36,11 +36,17 @@ namespace Beamable.EasyFeatures.BasicParty
 				return;
 			}
 
+			Context.Party.OnPlayerInvited -= OnPlayerInvited;
 			Context.Party.OnPlayerInvited += OnPlayerInvited;
 
 			await RefreshInvitesList();
 
 			BackButton.onClick.ReplaceOrAddListener(OnBackButtonClicked);
+		}
+
+		private void OnDisable()
+		{
+			Context.Party.OnPlayerInvited -= OnPlayerInvited;
 		}
 
 		protected virtual async Promise RefreshInvitesList()
