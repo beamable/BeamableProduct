@@ -167,17 +167,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return 0;
 			}
 			_scrollContainer.Sort(Comparer);
-
-			var publishElements = _scrollContainer.Children();
-			bool isOdd = false;
-			foreach (VisualElement child in publishElements)
-			{
-				if (!(child is PublishManifestEntryVisualElement manifestEntryVisualElement))
-					continue;
-
-				manifestEntryVisualElement.SetOddRow(isOdd);
-				isOdd = !isOdd;
-			}
 		}
 
 		private void HandlePrimaryButtonClicked()
