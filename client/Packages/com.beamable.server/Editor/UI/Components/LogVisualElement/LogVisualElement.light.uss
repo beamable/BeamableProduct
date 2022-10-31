@@ -27,7 +27,7 @@
     background-color: #c3c3c3;
 }
 
-#detailWindow, #logWindowHeader, #white, #clearContainer, #logListRoot {
+#detailWindow, #detailWindowBottomBar, #logWindowHeader, #white, #clearContainer, #logListRoot {
     border-color: #9b9b9b;
 }
 
@@ -58,4 +58,25 @@
 
 #info .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info_Gray_light.png");
+}
+
+#detailWindowBottomBar > #copyTextBtn {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/copy light.png");
+}
+
+#pagination > #leftArrow {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Page Previous light.png");
+}
+
+#pagination > #rightArrow {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/next light.png");
+}
+
+#paginationRange {
+    color: #000000;
+}
+
+#popupBtn:hover,
+#detailWindowBottomBar > #copyTextBtn:hover {
+    background-color: #b4b4b4;
 }

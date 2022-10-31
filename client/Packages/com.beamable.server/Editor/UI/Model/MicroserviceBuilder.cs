@@ -164,6 +164,10 @@ namespace Beamable.Editor.UI.Model
 				var details = await getChecksum.StartAsync();
 				LastBuildImageId = details.imageId;
 			}
+			catch (DockerNotInstalledException)
+			{
+				// nothing to do here, because we don't know what the last image id was/is. 
+			}
 			catch (Exception e)
 			{
 				System.Console.WriteLine(e);

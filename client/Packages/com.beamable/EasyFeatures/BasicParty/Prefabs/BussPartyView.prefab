@@ -189,7 +189,10 @@ MonoBehaviour:
   - text
   - centered
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -548,7 +551,10 @@ MonoBehaviour:
   - text
   - centered
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -742,8 +748,7 @@ MonoBehaviour:
   m_text: 4/8
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -850,10 +855,13 @@ MonoBehaviour:
   - text
   - centered
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1803853297890384518}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &443405170512740869
 GameObject:
@@ -980,7 +988,10 @@ MonoBehaviour:
   _classes:
   - card
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -1053,8 +1064,7 @@ MonoBehaviour:
   m_text: Create a lobby
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1161,10 +1171,13 @@ MonoBehaviour:
   - disable
   - label
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 8034446206520995320}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &450700549227120144
 GameObject:
@@ -1470,7 +1483,10 @@ MonoBehaviour:
   - label
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -1686,7 +1702,10 @@ MonoBehaviour:
   - primary
   - half
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -1877,7 +1896,10 @@ MonoBehaviour:
   _classes:
   - header
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -2104,7 +2126,10 @@ MonoBehaviour:
   - textarea
   - frame
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -2279,7 +2304,10 @@ MonoBehaviour:
   - button
   - disable
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -2487,7 +2515,10 @@ MonoBehaviour:
   _classes:
   - card
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -2616,7 +2647,10 @@ MonoBehaviour:
   _classes:
   - header
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -2797,7 +2831,10 @@ MonoBehaviour:
   - primary
   - half
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -2976,7 +3013,10 @@ MonoBehaviour:
   - header
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -3103,7 +3143,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
     BottomRightColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
@@ -3150,7 +3190,10 @@ MonoBehaviour:
   - button
   - icon
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -3278,7 +3321,10 @@ MonoBehaviour:
   _classes:
   - back
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -3650,7 +3696,10 @@ MonoBehaviour:
   - popup
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -3959,7 +4008,10 @@ MonoBehaviour:
   - text
   - centered
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -4087,7 +4139,10 @@ MonoBehaviour:
   _classes:
   - background
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -4300,7 +4355,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
     BottomRightColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
@@ -4346,10 +4401,13 @@ MonoBehaviour:
   _classes:
   - header
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1803853297890384518}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &2505980170522706436
 GameObject:
@@ -4655,7 +4713,10 @@ MonoBehaviour:
   - label
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -4820,7 +4881,10 @@ MonoBehaviour:
   _classes:
   - back
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -5101,7 +5165,10 @@ MonoBehaviour:
   - label
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -5229,7 +5296,10 @@ MonoBehaviour:
   _classes:
   - back
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -5313,7 +5383,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
     BottomRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
@@ -5359,7 +5429,10 @@ MonoBehaviour:
   _classes:
   - card
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -5442,7 +5515,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
     BottomRightColor: {r: 0.8862745, g: 0.52156866, b: 0.11764706, a: 1}
@@ -5488,10 +5561,13 @@ MonoBehaviour:
   _classes:
   - header
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 4889646795767693338}
+  _parent: {fileID: 7101434251433996900}
   _children:
   - {fileID: 3828208233885850925}
 --- !u!1 &3661806430308560734
@@ -5755,8 +5831,7 @@ MonoBehaviour:
   m_text: Join a lobby
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5863,10 +5938,13 @@ MonoBehaviour:
   - disable
   - label
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1806650953729161551}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &3681503111756403381
 GameObject:
@@ -5991,10 +6069,13 @@ MonoBehaviour:
   _classes:
   - back
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 333188493150026846}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &3812096431988423751
 GameObject:
@@ -6208,7 +6289,10 @@ MonoBehaviour:
   - text
   - placeholder
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -6356,8 +6440,7 @@ MonoBehaviour:
   m_text: No invites pending
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -6464,10 +6547,13 @@ MonoBehaviour:
   - primary
   - label
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 4889646795767693338}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &4882342202641847066
 GameObject:
@@ -6704,7 +6790,10 @@ MonoBehaviour:
   - popup
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -6884,7 +6973,10 @@ MonoBehaviour:
   - text
   - midline
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -6924,10 +7016,10 @@ RectTransform:
   m_Father: {fileID: 440343970062035284}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -50}
-  m_SizeDelta: {x: -960, y: -1800}
+  m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &8662736209908937460
 CanvasRenderer:
@@ -7011,7 +7103,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
     BottomRightColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
@@ -7058,7 +7150,10 @@ MonoBehaviour:
   - button
   - icon
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -7239,7 +7334,10 @@ MonoBehaviour:
   - text
   - midline
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -7439,7 +7537,10 @@ MonoBehaviour:
   - label
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -7479,10 +7580,10 @@ RectTransform:
   m_Father: {fileID: 7599028857772057752}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -50}
-  m_SizeDelta: {x: -960, y: -1800}
+  m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &3513314652100050643
 CanvasRenderer:
@@ -7613,7 +7714,10 @@ MonoBehaviour:
   - button
   - icon
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -8074,7 +8178,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
     BottomRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
@@ -8121,7 +8225,10 @@ MonoBehaviour:
   - button
   - menu
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -8460,7 +8567,10 @@ MonoBehaviour:
   - primary
   - label
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -8717,7 +8827,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.7568628, g: 0.90196085, b: 0.36078432, a: 1}
     BottomRightColor: {r: 0.21960786, g: 0.56078434, b: 0.054901965, a: 1}
@@ -8764,7 +8874,10 @@ MonoBehaviour:
   - button
   - primary
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -9050,7 +9163,10 @@ MonoBehaviour:
   - header
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -9222,7 +9338,10 @@ MonoBehaviour:
   _classes:
   - card
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -9325,10 +9444,10 @@ RectTransform:
   m_Father: {fileID: 7772980750703680792}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -50}
-  m_SizeDelta: {x: -960, y: -1800}
+  m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &2091323794239399561
 CanvasRenderer:
@@ -9412,7 +9531,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
     BottomRightColor: {r: 0.23529413, g: 0.57254905, b: 0.0627451, a: 1}
@@ -9459,7 +9578,10 @@ MonoBehaviour:
   - button
   - icon
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -9595,7 +9717,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
     BottomRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
@@ -9641,7 +9763,10 @@ MonoBehaviour:
   _classes:
   - card
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -9815,7 +9940,10 @@ MonoBehaviour:
   - button
   - primary
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -9888,8 +10016,7 @@ MonoBehaviour:
   m_text: Party
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -9995,7 +10122,10 @@ MonoBehaviour:
   - header
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -10068,8 +10198,7 @@ MonoBehaviour:
   m_text: Join a party
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -10094,7 +10223,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 57.15
+  m_fontSize: 48
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -10175,10 +10304,13 @@ MonoBehaviour:
   - header
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 654536145819611390}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &7198180055612530344
 GameObject:
@@ -10355,7 +10487,10 @@ MonoBehaviour:
   - text
   - placeholder
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -10534,7 +10669,10 @@ MonoBehaviour:
   - header
   - text
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -10703,7 +10841,10 @@ MonoBehaviour:
   _id: 
   _classes: []
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 11400000, guid: d547de90a0642714690a28464d496af4, type: 2}
   _assetReferences: []
   _parent: {fileID: 0}
@@ -10716,12 +10857,19 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 2276874058785543585}
+  - {fileID: 267795231653204070}
   - {fileID: 287543073179065500}
+  - {fileID: 333188493150026846}
+  - {fileID: 654536145819611390}
+  - {fileID: 655068402923662870}
   - {fileID: 720472615717813639}
   - {fileID: 731457673789459286}
   - {fileID: 1024693945962012685}
   - {fileID: 1043360234325085021}
+  - {fileID: 1126933628841049207}
   - {fileID: 1531982027628998858}
+  - {fileID: 1803853297890384518}
+  - {fileID: 1806650953729161551}
   - {fileID: 1865924025303145143}
   - {fileID: 2054216876066723682}
   - {fileID: 2088083709590841821}
@@ -10734,35 +10882,46 @@ MonoBehaviour:
   - {fileID: 2460049701572921094}
   - {fileID: 2650649391545940321}
   - {fileID: 2674524142173362637}
+  - {fileID: 2927080513431883182}
   - {fileID: 2987346519146606566}
   - {fileID: 3140475970169791925}
+  - {fileID: 3828208233885850925}
   - {fileID: 3875699359298861248}
   - {fileID: 3902703983827424181}
   - {fileID: 4092850901016841514}
+  - {fileID: 4275245313844660093}
   - {fileID: 4638797991002692526}
+  - {fileID: 4681517842924920863}
   - {fileID: 4855049664603966365}
+  - {fileID: 4869691873065029364}
+  - {fileID: 4889646795767693338}
+  - {fileID: 5370172409308139665}
   - {fileID: 5384181552324655808}
   - {fileID: 5398844875404962038}
   - {fileID: 5429742713176582092}
   - {fileID: 5457711448997599324}
+  - {fileID: 5567154148468603483}
   - {fileID: 5692861773696402825}
   - {fileID: 5762542613482602906}
   - {fileID: 6021015997725700611}
   - {fileID: 6077481244633485219}
   - {fileID: 6138629402621532639}
   - {fileID: 6290300071539446376}
+  - {fileID: 6298717437523822600}
   - {fileID: 6390733183148494032}
   - {fileID: 6482817137391007753}
+  - {fileID: 6744534030260047613}
   - {fileID: 6972756201993583677}
   - {fileID: 7364145944014820432}
   - {fileID: 7738403116676165283}
+  - {fileID: 7788742087694503204}
+  - {fileID: 7955188352063997804}
+  - {fileID: 8034446206520995320}
   - {fileID: 8364218200935556317}
   - {fileID: 8515045719811572704}
   - {fileID: 8732269423149768903}
   - {fileID: 8855498774721569000}
   - {fileID: 9158196248141860116}
-  - {fileID: 3828208233885850925}
-  - {fileID: 5567154148468603483}
 --- !u!1 &7323302036864656406
 GameObject:
   m_ObjectHideFlags: 0
@@ -10850,10 +11009,10 @@ RectTransform:
   m_Father: {fileID: 1925024733663427320}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -50}
-  m_SizeDelta: {x: -960, y: -1800}
+  m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &8336765503992276431
 CanvasRenderer:
@@ -10984,7 +11143,10 @@ MonoBehaviour:
   - button
   - icon
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -11292,7 +11454,10 @@ MonoBehaviour:
   _classes:
   - header
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -11473,7 +11638,10 @@ MonoBehaviour:
   - disable
   - label
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -11849,8 +12017,7 @@ MonoBehaviour:
   m_text: Quick start
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 21694640253449650, guid: 4806300b5aa03495ba88747550dc64ef,
-    type: 2}
+  m_sharedMaterial: {fileID: 0}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -11957,10 +12124,13 @@ MonoBehaviour:
   - primary
   - label
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 6744534030260047613}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &8195712089439050602
 GameObject:
@@ -12700,7 +12870,10 @@ MonoBehaviour:
   _classes:
   - card
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -12863,7 +13036,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 1
+  mode: 0
   colorRect:
     BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
     BottomRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
@@ -12910,7 +13083,10 @@ MonoBehaviour:
   - button
   - menu
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -13344,10 +13520,13 @@ MonoBehaviour:
   _classes:
   - options
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 655068402923662870}
+  _parent: {fileID: 7101434251433996900}
   _children: []
 --- !u!1 &9078813363438006617
 GameObject:
@@ -13609,7 +13788,10 @@ MonoBehaviour:
   - textarea
   - frame
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -13790,7 +13972,10 @@ MonoBehaviour:
   - primary
   - label
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -13964,7 +14149,10 @@ MonoBehaviour:
   - button
   - primary
   _inlineStyle:
+    _folded: 0
+    _showAll: 0
     _properties: []
+    _cachedProperties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 7101434251433996900}
@@ -14552,6 +14740,16 @@ PrefabInstance:
       propertyPath: mode
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1419208300312615883, guid: af670257db6860a459f5cc63ca108646,
+        type: 3}
+      propertyPath: meshFrame
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1419208300312615883, guid: af670257db6860a459f5cc63ca108646,
+        type: 3}
+      propertyPath: outlineWidth
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 1869318058741752606, guid: af670257db6860a459f5cc63ca108646,
         type: 3}
       propertyPath: m_fontMaterial
@@ -14747,6 +14945,16 @@ PrefabInstance:
         type: 3}
       propertyPath: mode
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1419208300312615883, guid: af670257db6860a459f5cc63ca108646,
+        type: 3}
+      propertyPath: meshFrame
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1419208300312615883, guid: af670257db6860a459f5cc63ca108646,
+        type: 3}
+      propertyPath: outlineWidth
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 1869318058741752606, guid: af670257db6860a459f5cc63ca108646,
         type: 3}

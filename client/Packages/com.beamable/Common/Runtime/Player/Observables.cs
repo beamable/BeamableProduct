@@ -332,6 +332,8 @@ namespace Beamable.Common.Player
 				}
 			}
 
+			_data = nextData;
+
 			if (existing.Count > 0)
 			{
 				OnElementRemoved?.Invoke(existing);
@@ -341,8 +343,6 @@ namespace Beamable.Common.Player
 			{
 				OnElementsAdded?.Invoke(added);
 			}
-
-			_data = nextData;
 		}
 
 		// public override object GetData() => _data;

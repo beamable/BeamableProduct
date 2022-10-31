@@ -1,5 +1,6 @@
 #_windowRoot {
     flex-grow: 1;
+    min-width: 425px;
 }
 #window-main {
     flex-direction: column;
@@ -10,11 +11,11 @@
     left: 0px;
     min-width: 380px;
 }
-#microserviceContentVisualElement{
+#microserviceContentVisualElement {
     flex-grow: 1;
 }
 
-#loadingBar{
+#loadingBar {
     margin-left: 0px;
     margin-right: 0px;
     top: 0px;

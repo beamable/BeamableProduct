@@ -1,10 +1,9 @@
 .header {
-    background-color: rgba(49, 49, 49, 1);
+    background-color: #282828;
 }
 
 .subheader{
     color: rgb(255,255,255);
-    background-color: rgb(89,89,89);
 }
 
 .subheaderLabel {
@@ -12,7 +11,7 @@
 }
 
 .propertyContainer{
-    background-color: rgb(77,77,77);
+    background-color: #282828;
 }
 
 LabeledTextField #label {

@@ -114,6 +114,12 @@ namespace Beamable.Editor.UI.Model
 			return task;
 		}
 
+		public override void OpenDocs()
+		{
+			if (IsRunning)
+				OpenLocalDocs();
+		}
+
 		public Task BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
@@ -133,7 +139,7 @@ namespace Beamable.Editor.UI.Model
 			return task;
 		}
 
-		public void OpenLocalDocs()
+		private void OpenLocalDocs()
 		{
 			var de = BeamEditorContext.Default;
 			var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Requester.Token.RefreshToken}";
@@ -166,7 +172,7 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
-			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenDocs(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
 			{
 				BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);

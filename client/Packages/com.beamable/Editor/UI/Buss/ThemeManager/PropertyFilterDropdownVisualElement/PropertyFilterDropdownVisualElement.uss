@@ -3,7 +3,6 @@
     flex-direction: column;
     height: 75px;
     position: relative;
-    /*background-color: #000000;*/
 }
 
 Button.unity-button,

@@ -40,19 +40,19 @@ namespace Beamable.EasyFeatures.BasicParty
 		}
 
 		public void Setup(PoolData item,
-		                  PlayersListPresenter listPresenter,
-		                  bool isExpandable,
-		                  Action<string> onAcceptButton,
-		                  Action<string> onAskToLeaveButton,
-		                  Action<string> onPromoteButton,
-		                  Action onAddMemberButton)
+						  PlayersListPresenter listPresenter,
+						  bool isExpandable,
+						  Action<string> onAcceptButton,
+						  Action<string> onAskToLeaveButton,
+						  Action<string> onPromoteButton,
+						  Action onAddMemberButton)
 		{
 			bool isSlotOccupied = !string.IsNullOrWhiteSpace(item.ViewData.PlayerId);
 			OccupiedSlotGroup.SetActive(isSlotOccupied);
 			AddMemberButton.gameObject.SetActive(!isSlotOccupied);
 
 			bool isLeader = BeamContext.Default.Party.IsInParty &&
-			                item.ViewData.PlayerId == BeamContext.Default.Party.Leader;
+							item.ViewData.PlayerId == BeamContext.Default.Party.Leader;
 			LeaderBadge.SetActive(isLeader);
 			AvatarImage.sprite = item.ViewData.Avatar;
 			PlayerNameText.text = item.ViewData.Name;

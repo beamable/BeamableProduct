@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using cli.Services;
+using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -91,6 +92,7 @@ public class App
 		Services.AddSingleton<SwaggerService>();
 		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
 		Services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
+		Services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>();
 
 		// add commands
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();

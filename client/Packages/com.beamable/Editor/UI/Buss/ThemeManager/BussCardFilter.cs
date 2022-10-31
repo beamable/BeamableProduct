@@ -11,14 +11,22 @@ namespace Beamable.Editor.UI.Buss
 
 		public Dictionary<BussStyleRule, BussStyleSheet> GetFiltered(BussStyleSheet styleSheet)
 		{
-			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
-
+			var unsortedRules = new List<(BussStyleRule, BussStyleSheet)>();
 			foreach (var rule in styleSheet.Styles)
 			{
-				rules.Add(rule, styleSheet);
+				unsortedRules.Add((rule, styleSheet));
 			}
+			
+			unsortedRules.Sort((a, b) =>
+			{
+				var forcedOrder = b.Item1.ForcedVisualPriority.CompareTo(a.Item1.ForcedVisualPriority);
+				
+				return forcedOrder;
+			});
 
-			return rules;
+
+			var sortedRules = unsortedRules.ToDictionary(tuple => tuple.Item1, tuple => tuple.Item2);
+			return sortedRules;
 		}
 
 		public Dictionary<BussStyleRule, BussStyleSheet> GetFiltered(List<BussStyleSheet> styleSheets,
@@ -26,19 +34,17 @@ namespace Beamable.Editor.UI.Buss
 		{
 			Dictionary<BussStyleRule, BussStyleSheet> rules = new Dictionary<BussStyleRule, BussStyleSheet>();
 
+			var ruleSet = new HashSet<(BussStyleRule, BussStyleSheet, int)>();
+
 			foreach (var styleSheet in styleSheets)
 			{
 				foreach (var rule in styleSheet.Styles)
 				{
-					if (!CardFilter(rule, selectedElement))
+					if (!CardFilter(rule, selectedElement, out var parentDistance))
 					{
 						continue;
 					}
-
-					if (!rules.ContainsKey(rule))
-					{
-						rules.Add(rule, styleSheet);
-					}
+					ruleSet.Add((rule, styleSheet, parentDistance));
 				}
 			}
 
@@ -46,28 +52,39 @@ namespace Beamable.Editor.UI.Buss
 			{
 				return rules;
 			}
-
-			// Reversing filtered rules order
-			Dictionary<BussStyleRule, BussStyleSheet> sortedRules = new Dictionary<BussStyleRule, BussStyleSheet>();
-
-			for (int i = rules.Count - 1; i >= 0; i--)
+			var unsortedRules = ruleSet.ToList();
+			unsortedRules.Sort((a, b) =>
 			{
-				var pair = rules.ElementAt(i);
-				sortedRules.Add(pair.Key, pair.Value);
-			}
+				var forcedOrder = b.Item1.ForcedVisualPriority.CompareTo(a.Item1.ForcedVisualPriority);
+				if (forcedOrder != 0) return forcedOrder;
+				
+				// first, sort by exact matches. Inherited styles always play second fiddle 
+				var exactMatchComparison = a.Item3.CompareTo(b.Item3);
+				if (exactMatchComparison != 0) return exactMatchComparison;
 
+				// then amongst items inherited and matched elements, prefer selector specificity 
+				var weightComparison = b.Item1.Selector.GetWeight().CompareTo(a.Item1.Selector.GetWeight());
+				if (weightComparison != 0) return weightComparison;
+
+				// and finally, if there is still a tie, prefer customer sheets
+				var styleSheetComparison = a.Item2.IsReadOnly.CompareTo(b.Item2.IsReadOnly);
+				return styleSheetComparison;
+			});
+			
+
+			var sortedRules = unsortedRules.ToDictionary(tuple => tuple.Item1, tuple => tuple.Item2);
 			return sortedRules;
 		}
 
-		private bool CardFilter(BussStyleRule styleRule, BussElement selectedElement)
+		private bool CardFilter(BussStyleRule styleRule, BussElement selectedElement, out int parentDistance)
 		{
 			bool contains = styleRule.Properties.Any(property => property.Key.ToLower().Contains(CurrentFilter)) ||
 							styleRule.Properties.Count == 0;
 
-
+			parentDistance = 100;
 			return selectedElement == null
 				? CurrentFilter.Length <= 0 || contains
-				: styleRule.Selector != null && styleRule.Selector.IsElementIncludedInSelector(selectedElement) && contains;
+				: styleRule.Selector != null && styleRule.Selector.IsElementIncludedInSelector(selectedElement, out _, out parentDistance) && contains;
 		}
 	}
 }

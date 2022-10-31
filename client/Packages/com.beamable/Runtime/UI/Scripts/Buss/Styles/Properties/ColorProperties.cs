@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Beamable.UI.Buss
 {
 	[Serializable]
-	public class SingleColorBussProperty : IColorBussProperty, IVertexColorBussProperty
+	public class SingleColorBussProperty : DefaultBussProperty, IColorBussProperty, IVertexColorBussProperty
 	{
 		[SerializeField]
 		private Color _color;
@@ -46,7 +46,7 @@ namespace Beamable.UI.Buss
 	}
 
 	[Serializable]
-	public class VertexColorBussProperty : IVertexColorBussProperty
+	public class VertexColorBussProperty : DefaultBussProperty, IVertexColorBussProperty
 	{
 		[SerializeField]
 		private ColorRect _colorRect;

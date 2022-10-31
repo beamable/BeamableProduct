@@ -1,9 +1,7 @@
-﻿#root {
-    background-color: rgb(77, 77, 77);
-}
+﻿
 
 .header {
-    background-color: rgba(49, 49, 49, 1);
+    background-color: #282828;
 }
 
 .headerLabel {

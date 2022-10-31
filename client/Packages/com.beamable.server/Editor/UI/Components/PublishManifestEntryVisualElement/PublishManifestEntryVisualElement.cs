@@ -152,8 +152,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_commentField.SetEnabled(false);
 		}
 
-		public void SetOddRow(bool isOdd) => EnableInClassList("oddRow", isOdd);
-
 		public void UpdateStatus(ServicePublishState state)
 		{
 			switch (state)
