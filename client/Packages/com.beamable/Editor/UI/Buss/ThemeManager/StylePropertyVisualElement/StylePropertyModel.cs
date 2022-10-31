@@ -34,7 +34,7 @@ namespace Beamable.Editor.UI.Components
 		public bool IsVariable => PropertyProvider.IsVariable;
 		public bool IsInStyle => IsInline || (StyleRule != null && StyleRule.Properties.Contains(PropertyProvider));
 		public bool IsWritable => IsInline || (StyleSheet != null && StyleSheet.IsWritable);
-		private bool IsInline => InlineStyleOwner != null;
+		public bool IsInline => InlineStyleOwner != null;
 
 		public bool IsInherited => PropertyProvider.ValueType == BussPropertyValueType.Inherited;
 		public bool IsInitial => PropertyProvider.ValueType == BussPropertyValueType.Initial;
@@ -126,6 +126,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void OnButtonClick(MouseDownEvent mouseDownEvent)
 		{
+			Undo.RecordObject(StyleSheet, "Use keyword");
 			if (StyleRule.TryGetCachedProperty(PropertyProvider.Key, out var property))
 			{
 				PropertyProvider.SetProperty(property);
@@ -149,18 +150,21 @@ namespace Beamable.Editor.UI.Components
 		public void OnVariableSelected(int index)
 		{
 			var option = DropdownOptions[index];
-			PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Value;
 
 			if (option.DisplayName == Constants.Features.Buss.MenuItems.INHERITED_VALUE)
 			{
+				Undo.RecordObject(StyleSheet, "Set inherited");
 				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Inherited;
 			}
 			else if (option == InitialOption)
 			{
+				Undo.RecordObject(StyleSheet, "Set initial");
 				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Initial;
 			}
 			else
 			{
+				Undo.RecordObject(StyleSheet, "Set variable");
+				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Value;
 				((VariableProperty)PropertyProvider.GetProperty()).VariableName = option.DisplayName;
 			}
 
