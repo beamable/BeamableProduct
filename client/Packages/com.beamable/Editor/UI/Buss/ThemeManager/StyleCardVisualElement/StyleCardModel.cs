@@ -274,6 +274,13 @@ namespace Beamable.Editor.UI.Components
 			{
 				commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveStyleClicked));
 			}
+			
+			commands.Add(new GenericMenuCommand($"Select {StyleSheet.name} in inspector", () =>
+			{
+				Selection.activeObject = StyleSheet;
+				var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+				EditorWindow.GetWindow(inspector).Focus();
+			}));
 
 			return commands;
 		}

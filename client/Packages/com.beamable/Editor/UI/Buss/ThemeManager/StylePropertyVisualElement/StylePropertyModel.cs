@@ -86,9 +86,17 @@ namespace Beamable.Editor.UI.Components
 				PropertyReference reference =
 					PropertySourceTracker.GetUsedPropertyReference(PropertyProvider.Key);
 
-				Tooltip = reference.StyleRule != null
-					? $"Property is overriden by {reference.StyleRule.SelectorString} rule from {reference.StyleSheet.name} stylesheet"
-					: "Property is overriden by inline style";
+				if (reference.StyleRule == StyleRule)
+				{
+					Tooltip = $"{PropertyProvider.Key} is not inherited by default.";
+				}
+				else
+				{
+					Tooltip = reference.StyleRule != null
+						? $"Property is overriden by {reference.StyleRule.SelectorString} rule from {reference.StyleSheet.name} stylesheet"
+						: "Property is overriden by inline style";
+				}
+				
 			}
 			else
 			{

@@ -152,11 +152,16 @@ namespace Beamable.UI.Buss
 			rank = 0;
 			if (_sources.ContainsKey(key))
 			{
+				var requestedInheritence = false;
 				foreach (var reference in _sources[key].Properties)
 				{
 					rank++;
 					// if the reference says, "inherit", then the used property should continue up the reference sequence
-					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
+					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited)
+					{
+						requestedInheritence = true;
+						continue;
+					}
 
 					// if the reference is a variable, redirect!
 					if (resolveVariables && reference.PropertyProvider.HasVariableReference)
@@ -171,6 +176,20 @@ namespace Beamable.UI.Buss
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
 						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
+
+						if (!requestedInheritence)
+						{
+							// if this is the first source, it means we haven't necessarily asked to inherit the rule.
+							if (BussStyle.TryGetBinding(key, out var binding) && !binding.Inheritable)
+							{
+								// if we aren't an exact match, we need to continue...
+								if (!reference.StyleRule.Selector.CheckMatch(Element))
+								{
+									continue;
+								}
+							}
+						}
+						
 						return reference.PropertyProvider;
 					}
 				}
