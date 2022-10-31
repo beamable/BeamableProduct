@@ -1,5 +1,4 @@
 ﻿using Beamable.UI.Buss;
-using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -31,7 +30,6 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnValueChange(ChangeEvent<Color> evt)
 		{
-			OnBeforeChange?.Invoke();
 			Property.Color = evt.newValue;
 			OnValueChanged?.Invoke(Property);
 			TriggerStyleSheetChange();

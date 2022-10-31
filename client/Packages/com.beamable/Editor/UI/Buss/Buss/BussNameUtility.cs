@@ -36,7 +36,6 @@ namespace Beamable.Editor.UI.Buss
 
 		public static List<string> AsClassesList(List<string> classesList)
 		{
-			if (classesList == null) return new List<string>();
 			List<string> finalList = new List<string>();
 			finalList.AddRange(classesList.Select(AsClassSelector));
 			return finalList;
@@ -61,7 +60,7 @@ namespace Beamable.Editor.UI.Buss
 			using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
 			{
 				pooledBuilder.Builder.Append(string.IsNullOrWhiteSpace(element.Id)
-												 ? element.TypeName
+												 ? element.GetType().Name
 												 : AsIdSelector(element.Id));
 
 				foreach (string className in element.Classes)

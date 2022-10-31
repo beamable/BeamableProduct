@@ -13,7 +13,9 @@ namespace Beamable.UI.Buss
 
 	public interface IBussProperty : IBussPropertyBase
 	{
+
 		IBussProperty CopyProperty();
+
 		event Action OnValueChanged;
 		void NotifyValueChange();
 	}

@@ -15,7 +15,6 @@ namespace Beamable.Editor.UI.Components
 		public abstract IBussProperty BaseProperty { get; }
 
 		public Action<IBussProperty> OnValueChanged;
-		public Action OnBeforeChange;
 
 		public bool IsRemoved { get; private set; }
 

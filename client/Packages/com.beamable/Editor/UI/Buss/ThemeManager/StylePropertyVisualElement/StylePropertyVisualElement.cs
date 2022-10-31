@@ -3,7 +3,6 @@ using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
@@ -63,8 +62,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
-			_valueParent.Clear();
-			
+
 			if (_model.IsInherited)
 			{
 				var srcTracker = _model.PropertySourceTracker;
@@ -153,19 +151,13 @@ namespace Beamable.Editor.UI.Components
 		{
 			var element = _propertyVisualElement = property.GetVisualElement();
 
-			
 			if (_propertyVisualElement == null)
 			{
 				return null;
 			}
 
 			_propertyVisualElement.OnValueChanged = _model.OnPropertyChanged;
-			_propertyVisualElement.OnBeforeChange += () =>
-			{
-				Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
-				// Undo.RegisterCompleteObjectUndo(_model.StyleSheet, $"Change {property.GetType().Name}");
-			};
-			
+
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
 			_propertyVisualElement.Init();
 			_valueParent.Add(_propertyVisualElement);

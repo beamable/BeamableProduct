@@ -66,26 +66,8 @@ namespace Beamable.Editor.UI.Components
 
 			_colorBlock.EnableInClassList("active", _model.IsSelected);
 			_model.Change += OnChange;
+
 			_colorBlock.RegisterCallback<MouseDownEvent>(_model.FoldButtonClicked);
-		}
-		
-		
-		public void RepaintProperties()
-		{
-			SetSelectorStatus();
-			foreach (var property in Root.Query<StylePropertyVisualElement>().ToList())
-			{
-				property.Refresh();
-			}
-		}
-
-		private void SetSelectorStatus()
-		{
-			var appliedStatus = _model.RuleAppliedStatus;
-			_selectorLabelComponent.EnableInClassList("is-exact", appliedStatus == RuleAppliedStatus.Exact);
-			_selectorLabelComponent.EnableInClassList("is-inherited", appliedStatus == RuleAppliedStatus.Inherited);
-			_selectorLabelComponent.EnableInClassList("is-not-applied", appliedStatus == RuleAppliedStatus.NotApplied);
-
 		}
 
 		private void SetFold()
@@ -140,9 +122,8 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.OnSelectorChanged,  _model.PrepareCommands);
+			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.PrepareCommands);
 			_selectorLabelParent.Add(_selectorLabelComponent);
-			SetSelectorStatus();
 		}
 
 		private void OnChange()

@@ -104,14 +104,6 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.Add(_scrollView);
 			root.Add(_windowRoot);
 
-			Undo.undoRedoPerformed -= HandleUndo;
-			Undo.undoRedoPerformed += HandleUndo;
-
-			_model.ForceRefresh();
-		}
-
-		void HandleUndo()
-		{
 			_model.ForceRefresh();
 		}
 	}

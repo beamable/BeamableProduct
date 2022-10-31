@@ -23,7 +23,6 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 
 		private Func<List<GenericMenuCommand>> _refreshCommands;
-		private Action<BussStyleRule, BussStyleSheet> _onSelectorChanged;
 
 		public BussSelectorLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(StyleCardVisualElement)}/{nameof(BussSelectorLabelVisualElement)}/{nameof(BussSelectorLabelVisualElement)}.uss")
@@ -31,10 +30,8 @@ namespace Beamable.Editor.UI.Components
 
 		public void Setup(BussStyleRule styleRule,
 						  BussStyleSheet styleSheet,
-						  Action<BussStyleRule, BussStyleSheet> onSelectorChanged,
 						  Func<List<GenericMenuCommand>> refreshCommands)
 		{
-			_onSelectorChanged = onSelectorChanged;
 			base.Init();
 
 			_styleRule = styleRule;
@@ -47,35 +44,20 @@ namespace Beamable.Editor.UI.Components
 		private new void Refresh()
 		{
 			Root.Clear();
-			
-			var labelRow = new VisualElement();
-			labelRow.name = "labelRow";
-			Root.Add(labelRow);
 
-			var inheritedLabel = new Label("(Inherited)");
-			inheritedLabel.name = "inheritedLabel";
-			labelRow.Add(inheritedLabel);
-			
-			var notAppliedLabel = new Label("(Selector does not match current selection)");
-			notAppliedLabel.name = "notApplied";
-			labelRow.Add(notAppliedLabel);
-			
-			var mainRow = new VisualElement();
-			Root.Add(mainRow);
-			
 #if BEAMABLE_DEVELOPER
 			_editableLabel = new TextField();
 			_editableLabel.AddToClassList("interactable");
 			_editableLabel.value = _styleRule.SelectorString;
 			_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
 			_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);
-			mainRow.Add(_editableLabel);
+			Root.Add(_editableLabel);
 #else
 			if (_styleSheet.IsReadOnly)
 			{
 				TextElement styleId = new TextElement();
 				styleId.text = _styleRule.SelectorString;
-				mainRow.Add(styleId);
+				Root.Add(styleId);
 			}
 			else
 			{
@@ -88,12 +70,12 @@ namespace Beamable.Editor.UI.Components
 				_editableLabel.value = _styleRule.SelectorString;
 				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
 				_editableLabel.RegisterCallback<KeyDownEvent>(KeyboardPressed);
-				mainRow.Add(_editableLabel);
+				Root.Add(_editableLabel);
 			}
 #endif
 
 			TextElement separator01 = new TextElement { name = "separator", text = "|" };
-			mainRow.Add(separator01);
+			Root.Add(separator01);
 
 			_styleSheetLabel = new TextElement();
 			_styleSheetLabel.AddToClassList("interactable");
@@ -101,15 +83,15 @@ namespace Beamable.Editor.UI.Components
 			_styleSheetLabel.name = "styleSheetName";
 			_styleSheetLabel.text = $"{_styleSheet.name}";
 			_styleSheetLabel.RegisterCallback<MouseDownEvent>(OnStyleSheetClicked);
-			mainRow.Add(_styleSheetLabel);
+			Root.Add(_styleSheetLabel);
 
 			if (_styleSheet.IsReadOnly)
 			{
 				TextElement separator02 = new TextElement { name = "separator", text = "|" };
-				mainRow.Add(separator02);
+				Root.Add(separator02);
 
 				TextElement readonlyLabel = new TextElement { text = "readonly" };
-				mainRow.Add(readonlyLabel);
+				Root.Add(readonlyLabel);
 			}
 		}
 
@@ -144,15 +126,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void StyleIdChanged(ChangeEvent<string> evt)
 		{
-			var newValue = evt.newValue;
-			EditorDebouncer.Debounce("buss-set-selector", () =>
-			{
-				Undo.RecordObject(_styleSheet, $"Change selector");
-				_styleRule.SelectorString = newValue;
-				_styleSheet.TriggerChange();
-				_onSelectorChanged?.Invoke(_styleRule, _styleSheet);
-			});
-			
+			_styleRule.SelectorString = evt.newValue;
+			_styleSheet.TriggerChange();
 		}
 	}
 }

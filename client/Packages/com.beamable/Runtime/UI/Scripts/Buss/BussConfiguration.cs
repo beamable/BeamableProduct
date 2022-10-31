@@ -22,7 +22,7 @@ namespace Beamable.UI.Buss
 				{
 					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
 				}
-				catch (Exception)
+				catch (ModuleConfigurationNotReadyException)
 				{
 					return new Optional<BussConfiguration>();
 				}

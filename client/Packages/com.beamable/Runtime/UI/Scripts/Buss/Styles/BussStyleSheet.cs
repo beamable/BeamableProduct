@@ -2,7 +2,6 @@
 using Beamable.UI.Sdf;
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
 using static Beamable.Common.Constants.MenuItems.Assets;
@@ -10,7 +9,6 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	[Serializable]
 	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style",
 					 order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
@@ -40,6 +38,11 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		private void OnValidate()
+		{
+			TriggerChange();
+		}
+
 		public void TriggerChange()
 		{
 			if (!IsWritable) return;
@@ -53,7 +56,6 @@ namespace Beamable.UI.Buss
 
 		public void RemoveStyle(BussStyleRule styleRule)
 		{
-			Undo.RecordObject(this, "Remove style");
 			if (_styles.Remove(styleRule))
 			{
 				TriggerChange();
@@ -71,7 +73,6 @@ namespace Beamable.UI.Buss
 
 		public void RemoveAllProperties(BussStyleRule styleRule)
 		{
-			Undo.RecordObject(this, "Clear All");
 			styleRule.Properties.Clear();
 			TriggerChange();
 		}
@@ -79,10 +80,6 @@ namespace Beamable.UI.Buss
 		public void OnBeforeSerialize()
 		{
 			PutAssetReferencesInReferenceList();
-		}
-		private void OnValidate()
-		{
-			TriggerChange();
 		}
 
 		public void OnAfterDeserialize()
@@ -121,22 +118,10 @@ namespace Beamable.UI.Buss
 	}
 
 	[Serializable]
-	public class BussStyleRule : BussStyleDescription, ISerializationCallbackReceiver
+	public class BussStyleRule : BussStyleDescription
 	{
 		[SerializeField] private string _selector;
 
-		/// <summary>
-		/// This property isn't serialized, so it will default to 0 when the object is reloaded from disk.
-		/// However, it should be used to force a style rule to the top or bottom of a sorting list.
-		/// </summary>
-		public int ForcedVisualPriority { get; private set; }
-		private static int _nextForcedVisualPriority;
-		
-		/// <summary>
-		/// Mark the current rule has the most important visual rule in ordering until the next domain reload.
-		/// </summary>
-		public void SetForcedVisualPriority() => ForcedVisualPriority = ++_nextForcedVisualPriority;
-		
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
 
 		public string SelectorString
@@ -156,15 +141,7 @@ namespace Beamable.UI.Buss
 			return _properties.Remove(provider);
 		}
 
-		public void OnBeforeSerialize()
-		{
-			ForcedVisualPriority = 0;
-		}
 
-		public void OnAfterDeserialize()
-		{
-			ForcedVisualPriority = 0;
-		}
 	}
 
 	[Serializable]

@@ -5,6 +5,7 @@
 
 #cardHeader {
     -unity-font-style: bold;
+    height: 36px;
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;

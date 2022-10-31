@@ -238,8 +238,13 @@ namespace Beamable.UI.Buss
 				}
 			}
 
+			if (propertyProvider.IsVariable)
+			{
+
+			}
 
 			var propertyReference = new PropertyReference(key, styleSheet, styleRule, propertyProvider);
+
 			if (!_sources.TryGetValue(key, out SourceData sourceData))
 			{
 				_sources[key] = sourceData = new SourceData(key);
@@ -297,7 +302,14 @@ namespace Beamable.UI.Buss
 		public PropertySourceTracker GetTracker(BussElement bussElement)
 		{
 			if (bussElement == null) return null;
-			var tracker = bussElement.Sources;
+
+			if (!_trackers.TryGetValue(bussElement, out var tracker))
+			{
+				tracker = new PropertySourceTracker(bussElement);
+				_trackers[bussElement] = tracker;
+				bussElement.StyleRecalculated += tracker.Recalculate;
+			}
+
 			return tracker;
 		}
 
