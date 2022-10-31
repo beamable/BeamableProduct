@@ -173,6 +173,7 @@ namespace Beamable.Editor.UI.Buss
 				return;
 			}
 
+			Undo.RecordObject(SelectedElement, "Change Id");
 			SelectedElement.Id = BussNameUtility.CleanString(value);
 
 			EditorUtility.SetDirty(SelectedElement);
