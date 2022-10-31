@@ -76,18 +76,26 @@ namespace Beamable.Editor.Toolbox.Components
             var elementSize = 220; // TODO: Find this number programmaticaly
             var totalElements = TotalWidgets;
 
+            try
+            {
+	            var elementsPerRow = (int)(totalWidth / elementSize);
+	            var completedRows = (int)(totalElements / elementsPerRow);
+	            var correctElements = completedRows * elementsPerRow;
+	            var leftOverElements = totalElements - correctElements;
+	            var extraElements = (elementsPerRow - leftOverElements) % elementsPerRow;
 
-            var elementsPerRow = (int) (totalWidth / elementSize);
-            var completedRows = (int) (totalElements / elementsPerRow);
-            var correctElements = completedRows * elementsPerRow;
-            var leftOverElements = totalElements - correctElements;
-            var extraElements = (elementsPerRow - leftOverElements) % elementsPerRow;
+	            extraElements =
+		            Mathf.Min(extraElements,
+		                      totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
+	            if (ExtraElementCount == extraElements) return;
+	            ExtraElementCount = extraElements;
 
-            extraElements = Mathf.Min(extraElements, totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
-            if (ExtraElementCount == extraElements) return;
-            ExtraElementCount = extraElements;
-
-            SetExtraElements();
+	            SetExtraElements();
+            }
+            catch (DivideByZeroException)
+            {
+	            // let it go, friend. 
+            }
         }
 
         private void Model_OnQueryChanged()
