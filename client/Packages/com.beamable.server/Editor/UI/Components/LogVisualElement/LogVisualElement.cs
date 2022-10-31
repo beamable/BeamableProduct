@@ -258,7 +258,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var detailText = string.Empty;
 			_paginationIndex = 0;
-			
+			_pagination.EnableInClassList("hide", true);
+
 			if (Model.Logs.Selected != null)
 			{
 				_messageParts = Model.Logs.Selected.Message.SplitStringIntoParts(_chunkSize);
@@ -267,34 +268,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				if (_allTextToDisplay.Count == 1)
 				{
-					_pagination.EnableInClassList("hide", true);
 					detailText = $"{_allTextToDisplay[0]}";
 				}
-				else if (_allTextToDisplay.Count == 2)
+				else if (_allTextToDisplay.Count > 1)
 				{
 					if (_allTextToDisplay.Sum(x => x.Length) <= _chunkSize)
 					{
-						_pagination.EnableInClassList("hide", true);
-						detailText = $"{_allTextToDisplay[0]}\n{_allTextToDisplay[1]}";
+						foreach (var text in _allTextToDisplay)
+							detailText += $"{text}\n";
 					}
 					else
 					{
 						_pagination.EnableInClassList("hide", false);
+						_paginationRange.text = $"1/{_allTextToDisplay.Count}";
 						detailText = $"{_allTextToDisplay[0]}";
-						_paginationRange.text = "1/2";
 					}
 				}
-				else if (_allTextToDisplay.Count > 2)
-				{
-					_pagination.EnableInClassList("hide", false);
-					_paginationRange.text = $"1/{_allTextToDisplay.Count}";
-					detailText = $"{_allTextToDisplay[0]}";
-				}
 			}
-			else
-			{
-				_pagination.EnableInClassList("hide", true);
-			}
+
 			_detailLabel.SetValueWithoutNotify(detailText);
 		}
 

@@ -8,3 +8,8 @@ RemoteMicroserviceVisualElement .separator {
     width: 0px;
     height: 0px;
 }
+
+RemoteMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
+    height: 30px;
+    margin-bottom: 20px;
+}
