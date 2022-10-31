@@ -81,39 +81,46 @@ namespace Beamable.Api
          var result = new Promise<T>();
          var request = BuildWebRequest(method, url, contentType, bodyBytes);
 
-         if (headers != null)
+         try
          {
-            foreach (var header in headers)
-            {
-               request.SetRequestHeader(header.Key, header.Value);
-            }
+	         if (headers != null)
+	         {
+		         foreach (var header in headers)
+		         {
+			         request.SetRequestHeader(header.Key, header.Value);
+		         }
+	         }
+
+	         var op = request.SendWebRequest();
+	         op.completed += _ =>
+	         {
+		         try
+		         {
+			         var responsePayload = request.downloadHandler.text;
+			         if (request.responseCode >= 300 || request.IsNetworkError())
+			         {
+				         result.CompleteError(new HttpRequesterException(responsePayload));
+			         }
+			         else
+			         {
+				         T parsedResult = parser == null
+					         ? JsonUtility.FromJson<T>(responsePayload)
+					         : parser(responsePayload);
+				         result.CompleteSuccess(parsedResult);
+			         }
+		         }
+		         catch (Exception ex)
+		         {
+			         result.CompleteError(ex);
+		         }
+	         };
+
+	         return result;
          }
-
-         var op = request.SendWebRequest();
-         op.completed += _ =>
+         finally
          {
-            try
-            {
-               var responsePayload = request.downloadHandler.text;
-               if (request.responseCode >= 300 || request.IsNetworkError())
-               {
-                  result.CompleteError(new HttpRequesterException(responsePayload));
-               }
-               else
-               {
-                  T parsedResult = parser == null
-                     ? JsonUtility.FromJson<T>(responsePayload)
-                     : parser(responsePayload);
-                  result.CompleteSuccess(parsedResult);
-               }
-            }
-            catch (Exception ex)
-            {
-               result.CompleteError(ex);
-            }
-         };
-
-         return result;
+	         request.Dispose();
+         }
       }
 
       public string EscapeURL(string url)
@@ -341,40 +348,44 @@ namespace Beamable.Api
             return;
          }
 
-         var responsePayload = request.downloadHandler.text;
-
-         if (request.responseCode >= 300 || request.IsNetworkError())
+         try
          {
-            // Handle errors
-            PlatformError platformError = null;
-            try
-            {
-               platformError = JsonUtility.FromJson<PlatformError>(responsePayload);
-            }
-            catch (Exception)
-            {
-               // Swallow the exception and let the error be null
-            }
+	         var responsePayload = request.downloadHandler.text;
+	         if (request.responseCode >= 300 || request.IsNetworkError())
+	         {
+		         // Handle errors
+		         PlatformError platformError = null;
+		         try
+		         {
+			         platformError = JsonUtility.FromJson<PlatformError>(responsePayload);
+		         }
+		         catch (Exception)
+		         {
+			         // Swallow the exception and let the error be null
+		         }
 
-            promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
+		         promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
 
+	         }
+	         else
+	         {
+		         // Parse JSON object and resolve promise
+		         PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
+
+		         try
+		         {
+			         T result = parser == null ? JsonUtility.FromJson<T>(responsePayload) : parser(responsePayload);
+			         promise.CompleteSuccess(result);
+		         }
+		         catch (Exception ex)
+		         {
+			         promise.CompleteError(ex);
+		         }
+	         }
          }
-         else
+         finally
          {
-            // Parse JSON object and resolve promise
-            PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
-
-            try
-            {
-               T result = parser == null ?
-                  JsonUtility.FromJson<T>(responsePayload) :
-                  parser(responsePayload);
-               promise.CompleteSuccess(result);
-            }
-            catch (Exception ex)
-            {
-               promise.CompleteError(ex);
-            }
+	         request.Dispose();
          }
       }
 
