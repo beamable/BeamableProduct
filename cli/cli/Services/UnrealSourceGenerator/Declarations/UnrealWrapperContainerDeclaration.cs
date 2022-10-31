@@ -15,7 +15,7 @@ public struct UnrealEnumDeclaration
 		{
 			var serializationName = v;
 			var enumValue = $@"{v.Capitalize()} UMETA(DisplayName=""{v.SpaceOutOnUpperCase()}"", SerializationName=""{serializationName}"")";
-			
+
 			return enumValue;
 		}));
 
