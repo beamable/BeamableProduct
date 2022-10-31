@@ -10,12 +10,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 	public class ServicesDropdownVisualElement : MicroserviceComponent
 	{
 		public event Action OnCloseRequest;
-		
+
 		private IReadOnlyList<IBeamableService> Services { get; }
 		private VisualElement _servicesList;
 		private PrimaryButtonVisualElement _playSelectedBtn;
 		private readonly List<ServiceEntry> _serviceEntries = new List<ServiceEntry>();
-		
+
 		public ServicesDropdownVisualElement(IReadOnlyList<IBeamableService> services) : base(nameof(ServicesDropdownVisualElement))
 		{
 			Services = services;
@@ -41,7 +41,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 			_playSelectedBtn.Button.SetEnabled(_serviceEntries.Any(x => x.Service.IsSelected));
 		}
-		
+
 		private void HandleValueChanged(ServiceEntry serviceEntry, bool isSelected)
 		{
 			serviceEntry.Service.IsSelected = isSelected;
