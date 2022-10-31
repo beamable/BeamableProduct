@@ -80,6 +80,10 @@ namespace Beamable.UI.Buss
 		{
 			PutAssetReferencesInReferenceList();
 		}
+		private void OnValidate()
+		{
+			TriggerChange();
+		}
 
 		public void OnAfterDeserialize()
 		{
