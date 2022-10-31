@@ -6,6 +6,11 @@ namespace Beamable
 	public static class BeamableUndoUtility
 	{
 		[Conditional("UNITY_EDITOR")]
-		public static void Undo(Object obj, string message) => UnityEditor.Undo.RecordObject(obj, message);
+		public static void Undo(Object obj, string message)
+		{
+			#if UNITY_EDITOR
+			UnityEditor.Undo.RecordObject(obj, message);
+			#endif
+		} 
 	}
 }
