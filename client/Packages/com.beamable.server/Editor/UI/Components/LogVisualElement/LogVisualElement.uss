@@ -392,3 +392,8 @@ ListView ConsoleLogVisualElement:selected {
 #leftArrow, #rightArrow {
     min-width: 20px;
 }
+
+.hide {
+    position: absolute;
+    left: 100000px;
+}

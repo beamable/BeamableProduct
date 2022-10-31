@@ -86,7 +86,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		protected override async void Build()
 		{
-			minSize = new Vector2(550, 200);
+			minSize = new Vector2(425, 200);
 
 			checkDockerPromise = PerformCheck();
 			await checkDockerPromise;
@@ -138,14 +138,9 @@ namespace Beamable.Editor.Microservice.UI
 
 			root.Add(_windowRoot);
 
-			bool localServicesAvailable = Model?.AllLocalServices != null;
-			int selectedServicesAmount = localServicesAvailable
-				? Model.AllLocalServices.Count(beamService => beamService.IsSelected)
-				: 0;
-
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, Model?.AllUnarchivedServiceCount ?? 0);
+			_actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
@@ -171,7 +166,6 @@ namespace Beamable.Editor.Microservice.UI
 			}
 
 			_microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
-			_microserviceContentVisualElement.OnServiceSelectionAmountChange += _actionBarVisualElement.UpdateButtonsState;
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
@@ -219,6 +213,7 @@ namespace Beamable.Editor.Microservice.UI
 		private void ServiceArchived()
 		{
 			_microserviceBreadcrumbsVisualElement.RefreshFiltering();
+			_actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
 		}
 
 		private void OnServiceDeleteProceed()

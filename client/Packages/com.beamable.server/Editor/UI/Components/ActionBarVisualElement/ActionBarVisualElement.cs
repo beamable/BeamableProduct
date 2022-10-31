@@ -63,8 +63,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
 		bool IsDockerActive => !(DockerCommand.DockerNotInstalled ||
 								 (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow && DockerCommand.DockerNotRunning));
-		bool CanHaveDependencies => IsDockerActive && MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
-		MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+		bool CanHaveDependencies => IsDockerActive && MicroservicesDataModel.Instance.localServices.Count(x => !x.IsArchived) > 0 && 
+		                            MicroservicesDataModel.Instance.localStorages.Count(x => !x.IsArchived) > 0;
 
 		public override void Refresh()
 		{
@@ -74,10 +74,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_refreshButton.tooltip = Tooltips.Microservice.REFRESH;
 
 			_createNew = Root.Q<Button>("createNew");
-			_createNew.clickable.clicked += () =>
-			{
-				HandleCreateNewButton(_createNew.worldBound);
-			};
+			_createNew.clickable.clicked += () => HandleCreateNewButton(_createNew.worldBound);
 			_createNew.tooltip = Tooltips.Microservice.ADD_NEW;
 
 			_startAll = Root.Q<Button>("startAll");
@@ -106,23 +103,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = Tooltips.Microservice.DOCUMENT;
 
-
-			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;
-			int selectedServicesAmount = localServicesAvailable
-				? MicroservicesDataModel.Instance.AllLocalServices.Count(beamService => beamService.IsSelected)
-				: 0;
-			UpdateButtonsState(selectedServicesAmount, MicroservicesDataModel.Instance?.AllUnarchivedServiceCount ?? 0);
+			UpdateButtonsState(MicroservicesDataModel.Instance.AllLocalServices.Count(x => !x.IsArchived));
 
 			Context.OnRealmChange += _ => Refresh();
 			Context.OnUserChange += _ => Refresh();
 		}
 
-		public void UpdateButtonsState(int selectedServicesAmount, int servicesAmount)
+		public void UpdateButtonsState(int servicesAmount)
 		{
-			bool anyModelSelected = selectedServicesAmount > 0;
-			_startAll.SetEnabled(IsDockerActive && anyModelSelected);
+			_startAll.SetEnabled(IsDockerActive && servicesAmount > 0);
 			_publish.SetEnabled(IsDockerActive && servicesAmount > 0 && HasPublishPermissions);
-			_startAll.SetEnabled(IsDockerActive);
 			_dependencies.SetEnabled(CanHaveDependencies);
 			_createNew.SetEnabled(IsDockerActive);
 		}

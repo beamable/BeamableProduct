@@ -423,6 +423,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
 			consoleLogVisualElement.RemoveFromClassList("unity-list-view__item");
 			consoleLogVisualElement.RemoveFromClassList("unity-listview_item");
+			consoleLogVisualElement.RemoveFromClassList("unity-collection-view__item");
 			consoleLogVisualElement.MarkDirtyRepaint();
 		}
 
