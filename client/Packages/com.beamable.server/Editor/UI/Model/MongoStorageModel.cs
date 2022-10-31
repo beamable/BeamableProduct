@@ -82,6 +82,12 @@ namespace Beamable.Editor.UI.Model
 			return task;
 		}
 
+		public override void OpenDocs()
+		{
+			if (IsRunning)
+				AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor);
+		}
+
 		public void EnrichWithRemoteReference(ServiceStorageReference remoteReference)
 		{
 			RemoteReference = remoteReference;
@@ -101,7 +107,7 @@ namespace Beamable.Editor.UI.Model
 			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor), IsRunning);
-			evt.menu.BeamableAppendAction($"{localCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/Goto data explorer", _ => OpenDocs(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), IsRunning);
@@ -137,7 +143,6 @@ namespace Beamable.Editor.UI.Model
 			AddArchiveSupport(evt);
 		}
 
-
 		protected void AddArchiveSupport(ContextualMenuPopulateEvent evt)
 		{
 			evt.menu.AppendSeparator();
@@ -157,7 +162,6 @@ namespace Beamable.Editor.UI.Model
 				});
 			}
 		}
-
 
 		public override void Refresh(IDescriptor descriptor)
 		{

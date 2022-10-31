@@ -42,6 +42,10 @@
     margin-left: 2px;
 }
 
+
+#publish, #startAll, #dependencies, #createNew {
+    width: 80px;
+}
 #startIcon{
     top: 2px;
     width: 18px;
@@ -63,7 +67,6 @@
 }
 
 #createNew {
-    width: 85px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 0px;
@@ -79,6 +82,7 @@
 #createNew.disabledStorage {
     width: 70px;
 }
+
 #createNew.disabledStorage #dropDownImg {
     height: 0px;
     width: 0px;
@@ -137,14 +141,6 @@
     align-self: center;
     height: 15px;
     width: 8px;
-}
-
-#startAll {
-    width: 72px;
-}
-
-#dependencies {
-    width: 80px;
 }
 
 #dependenciesIcon{
