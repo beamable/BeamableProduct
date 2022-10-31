@@ -2,7 +2,6 @@
 using Beamable.UI.Sdf;
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
 using static Beamable.Common.Constants.MenuItems.Assets;
@@ -53,7 +52,7 @@ namespace Beamable.UI.Buss
 
 		public void RemoveStyle(BussStyleRule styleRule)
 		{
-			Undo.RecordObject(this, "Remove style");
+			BeamableUndoUtility.Undo(this, "Remove Style");
 			if (_styles.Remove(styleRule))
 			{
 				TriggerChange();
@@ -71,7 +70,7 @@ namespace Beamable.UI.Buss
 
 		public void RemoveAllProperties(BussStyleRule styleRule)
 		{
-			Undo.RecordObject(this, "Clear All");
+			BeamableUndoUtility.Undo(this, "Clear All");
 			styleRule.Properties.Clear();
 			TriggerChange();
 		}
