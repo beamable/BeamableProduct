@@ -120,6 +120,7 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 
+			Undo.RecordObject(_model.SelectedElement, "Add Class");
 			_model.SelectedElement.AddClass("");
 			RefreshClassesList();
 			RefreshHeight();
@@ -142,6 +143,7 @@ namespace Beamable.Editor.UI.Components
 				className = className.Remove(0, 1);
 			}
 
+			Undo.RecordObject(_model.SelectedElement, "Remove Class");
 			_model.SelectedElement.RemoveClass(className);
 			RefreshClassesList();
 			RefreshHeight();
@@ -238,6 +240,7 @@ namespace Beamable.Editor.UI.Components
 				string newValue = BussNameUtility.AsClassSelector(evt.newValue);
 				_classesList.itemsSource[index] = newValue;
 				textField.SetValueWithoutNotify(newValue);
+				Undo.RecordObject(_model.SelectedElement, "Change classes");
 				_model.SelectedElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
 				EditorUtility.SetDirty(_model.SelectedElement);
 				_model.ForceRefresh();
