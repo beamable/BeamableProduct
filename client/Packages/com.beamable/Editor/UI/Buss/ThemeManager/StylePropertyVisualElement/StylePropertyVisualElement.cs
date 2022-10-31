@@ -162,8 +162,14 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement.OnValueChanged = _model.OnPropertyChanged;
 			_propertyVisualElement.OnBeforeChange += () =>
 			{
-				Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
-				// Undo.RegisterCompleteObjectUndo(_model.StyleSheet, $"Change {property.GetType().Name}");
+				if (_model.IsInline)
+				{
+					Undo.RecordObject(_model.AppliedToElement, $"Change {_model.PropertyProvider.Key}");
+				}
+				else
+				{
+					Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
+				}
 			};
 			
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;

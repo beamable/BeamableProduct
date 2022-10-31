@@ -34,7 +34,7 @@ namespace Beamable.Editor.UI.Components
 		public bool IsVariable => PropertyProvider.IsVariable;
 		public bool IsInStyle => IsInline || (StyleRule != null && StyleRule.Properties.Contains(PropertyProvider));
 		public bool IsWritable => IsInline || (StyleSheet != null && StyleSheet.IsWritable);
-		private bool IsInline => InlineStyleOwner != null;
+		public bool IsInline => InlineStyleOwner != null;
 
 		public bool IsInherited => PropertyProvider.ValueType == BussPropertyValueType.Inherited;
 		public bool IsInitial => PropertyProvider.ValueType == BussPropertyValueType.Initial;
