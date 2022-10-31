@@ -105,6 +105,7 @@ namespace Beamable.Editor.UI.Components
 														  : ThemeManagerHelper.FormatKey(key));
 					context.AddItem(new GUIContent(label), false, () =>
 					{
+						Undo.RecordObject(StyleSheet, $"Add {label}");
 						StyleRule.Properties.Add(
 							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
 #if UNITY_EDITOR
@@ -129,11 +130,11 @@ namespace Beamable.Editor.UI.Components
 			{
 				window.Init((key, property) =>
 				{
+					Undo.RecordObject(StyleSheet, $"Add {key}");
 					if (!StyleRule.TryAddProperty(key, property))
 					{
 						return;
 					}
-
 #if UNITY_EDITOR
 					EditorUtility.SetDirty(StyleSheet);
 #endif
@@ -283,6 +284,7 @@ namespace Beamable.Editor.UI.Components
 			EditorUtility.SetDirty(StyleSheet);
 #endif
 
+			Undo.RecordObject(StyleSheet, StyleRule.ShowAll ? "Hide All" : "Show All");
 			StyleRule.SetShowAll(!StyleRule.ShowAll);
 			AssetDatabase.SaveAssets();
 			_globalRefresh?.Invoke();
@@ -329,6 +331,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemovePropertyClicked(string propertyKey)
 		{
+			Undo.RecordObject(StyleSheet, "Remove property");
+
 			var propertyModel = GetProperties(false).Find(property => property.PropertyProvider.Key == propertyKey);
 
 			if (propertyModel == null)

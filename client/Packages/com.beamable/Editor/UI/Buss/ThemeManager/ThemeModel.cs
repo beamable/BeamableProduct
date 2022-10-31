@@ -84,6 +84,8 @@ namespace Beamable.Editor.UI.Buss
 
 		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string selectorName = "*")
 		{
+			Undo.RecordObject(selectedStyleSheet, "Add style rule");
+
 			if (SelectedElement != null)
 			{
 				selectorName = BussNameUtility.GetLabel(SelectedElement);
