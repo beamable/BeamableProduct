@@ -78,8 +78,11 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 #serviceName {
     padding-left: 5px;
     padding-right: 0px;
+    margin-right: 5px;
     -unity-font-style: bold;
     font-size: 13px;
+    flex-shrink: 1;
+    overflow: hidden;
 }
 
 #startBtn {

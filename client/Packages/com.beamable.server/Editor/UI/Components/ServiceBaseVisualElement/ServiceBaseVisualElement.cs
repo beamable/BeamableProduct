@@ -134,6 +134,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_openDocsBtn.tooltip = "View Documentation";
 			
 			_serviceName.text = Model.Name;
+			_serviceName.tooltip = Model.Name;
 
 			if (_serviceIcon != null)
 			{
