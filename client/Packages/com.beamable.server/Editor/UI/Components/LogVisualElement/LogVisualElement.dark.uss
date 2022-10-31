@@ -69,7 +69,3 @@
 #detailWindowBottomBar > #copyTextBtn:hover {
     background-color: #474747;
 }
-
-ListView ConsoleLogVisualElement:hover {
-    background-color: #545454;
-}

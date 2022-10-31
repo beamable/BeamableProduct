@@ -27,7 +27,7 @@ namespace Beamable.Editor
 			if (string.IsNullOrWhiteSpace(str))
 				return new List<string>();
 
-			var fullDataChunksCount = str.Length / chunkSize;
+			var fullDataChunksCount = Mathf.FloorToInt(str.Length / (float)chunkSize);
 			var lastDataChunkSize = str.Length - (chunkSize * fullDataChunksCount);
 			var result = Enumerable.Range(0, fullDataChunksCount)
 			                       .Select(i => str.Substring(i * chunkSize, chunkSize))

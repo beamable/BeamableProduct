@@ -144,7 +144,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandlePlayButton(Rect visualElementBounds)
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
-			var services = MicroservicesDataModel.Instance.AllLocalServices;
+			var services = MicroservicesDataModel.Instance.AllLocalServices.Where(x => !x.IsArchived).ToList();
 			var content = new ServicesDropdownVisualElement(services);
 			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(200, 50 + services.Count * 24), content);
 			content.Refresh();

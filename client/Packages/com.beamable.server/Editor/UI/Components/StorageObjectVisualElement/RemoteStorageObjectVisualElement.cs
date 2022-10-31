@@ -26,6 +26,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 			Root.Q("startBtn")?.RemoveFromHierarchy();
+			Root.Q<MicroserviceVisualElementSeparator>("separator")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER
 			Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);
@@ -40,8 +41,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = "More...";
-
-			_separator.Refresh();
 
 			UpdateLocalStatus();
 			UpdateRemoteStatusIcon("remoteEnabled");

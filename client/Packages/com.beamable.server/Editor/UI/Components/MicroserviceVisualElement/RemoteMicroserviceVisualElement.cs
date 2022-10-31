@@ -44,6 +44,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q("statusSeparator")?.RemoveFromHierarchy();
 			Root.Q<VisualElement>("openDocsBtn")?.RemoveFromHierarchy();
 			Root.Q<VisualElement>("openScriptBtn")?.RemoveFromHierarchy();
+			Root.Q<MicroserviceVisualElementSeparator>("separator")?.RemoveFromHierarchy();
 			Root.Q("foldContainer").visible = false;
 			Root.Q<VisualElement>("mainVisualElement").style.SetHeight(DEFAULT_HEADER_HEIGHT);
 
@@ -54,8 +55,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.OnDockerLoginRequired += LoginToDocker;
-
-			_separator.Refresh();
 
 			UpdateLocalStatus();
 			UpdateRemoteStatusIcon("remoteEnabled");

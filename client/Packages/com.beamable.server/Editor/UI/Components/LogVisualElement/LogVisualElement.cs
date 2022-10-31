@@ -213,11 +213,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_popupBtn.RemoveFromHierarchy();
 			}
 
-			// if (!EnableMoreButton)
-			// {
-			// 	_advanceDropDown.RemoveFromHierarchy();
-			// }
-
 			_listView.RefreshPolyfill();
 			UpdateCounts();
 		}
@@ -328,6 +323,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandleClearButtonClicked()
 		{
 			Model.Logs.Clear();
+			_pagination.EnableInClassList("hide", true);
+			_paginationIndex = 0;
 
 			EditorApplication.delayCall += () =>
 			{
@@ -412,7 +409,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		ConsoleLogVisualElement CreateListViewElement()
 		{
 			ConsoleLogVisualElement contentVisualElement = new ConsoleLogVisualElement();
-
 			return contentVisualElement;
 		}
 
@@ -425,6 +421,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			consoleLogVisualElement.Refresh();
 			consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
 			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
+			consoleLogVisualElement.RemoveFromClassList("unity-list-view__item");
+			consoleLogVisualElement.RemoveFromClassList("unity-listview_item");
 			consoleLogVisualElement.MarkDirtyRepaint();
 		}
 

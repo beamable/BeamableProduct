@@ -30,12 +30,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private const float MIN_HEIGHT = 240.0f;
 		private const float MAX_HEIGHT = 500.0f;
-		private const float DETACHED_HEIGHT = 100.0f;
+		private const float DETACHED_HEIGHT = 30.0f;
 		protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
 
 		protected LoadingBarElement _loadingBar;
-		// protected VisualElement _statusIcon;
-		// protected VisualElement _remoteStatusIcon;
 		protected VisualElement _moreBtn;
 		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
