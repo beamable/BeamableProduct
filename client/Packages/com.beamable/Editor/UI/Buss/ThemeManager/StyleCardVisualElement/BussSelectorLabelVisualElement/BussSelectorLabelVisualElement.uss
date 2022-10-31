@@ -1,10 +1,46 @@
 ﻿BussSelectorLabelVisualElement {
     flex-direction: row;
+    padding-bottom: 4px;
+    padding-top: 4px;
+}
+
+BussSelectorLabelVisualElement > * {
+    flex-direction: column;
+}
+
+BussSelectorLabelVisualElement > * > * {
+    flex-direction: row;
+}
+
+#labelRow {
+    opacity: .7;
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+
+BussSelectorLabelVisualElement.is-not-applied {
+    opacity: .5;
+}
+
+BussSelectorLabelVisualElement.is-exact #labelRow {
+    display: none;
+}
+
+#notApplied,
+#inheritedLabel {
+    display: none
+}
+
+BussSelectorLabelVisualElement.is-inherited #inheritedLabel {
+    display: flex;
+}
+BussSelectorLabelVisualElement.is-not-applied #notApplied {
+    display: flex;
 }
 
 #root {
     margin-left: 10px;
-    flex-direction: row;
+    flex-direction: column;
 }
 
 #separator {
