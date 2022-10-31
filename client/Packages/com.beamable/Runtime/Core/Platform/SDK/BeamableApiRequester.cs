@@ -115,38 +115,46 @@ namespace Core.Platform.SDK
         return;
       }
 
-      if (request.responseCode >= 300 || request.IsNetworkError())
+      try
       {
-        // Handle errors
-        var payload = request.downloadHandler.text;
 
-        PlatformError platformError = null;
-        try
-        {
-          platformError = JsonUtility.FromJson<PlatformError>(payload);
-        }
-        catch (Exception)
-        {
-          // Swallow the exception and let the error be null
-        }
+	      if (request.responseCode >= 300 || request.IsNetworkError())
+	      {
+		      // Handle errors
+		      var payload = request.downloadHandler.text;
 
-        promise.CompleteError(new PlatformRequesterException(platformError, request, payload));
+		      PlatformError platformError = null;
+		      try
+		      {
+			      platformError = JsonUtility.FromJson<PlatformError>(payload);
+		      }
+		      catch (Exception)
+		      {
+			      // Swallow the exception and let the error be null
+		      }
 
+		      promise.CompleteError(new PlatformRequesterException(platformError, request, payload));
+
+	      }
+	      else
+	      {
+		      // Parse JSON object and resolve promise
+		      PlatformLogger.Log($"BeamableAPI RESPONSE: {request.downloadHandler.text}");
+
+		      try
+		      {
+			      var result = JsonUtility.FromJson<T>(request.downloadHandler.text);
+			      promise.CompleteSuccess(result);
+		      }
+		      catch (Exception ex)
+		      {
+			      promise.CompleteError(ex);
+		      }
+	      }
       }
-      else
+      finally
       {
-        // Parse JSON object and resolve promise
-        PlatformLogger.Log($"BeamableAPI RESPONSE: {request.downloadHandler.text}");
-
-        try
-        {
-          var result = JsonUtility.FromJson<T>(request.downloadHandler.text);
-          promise.CompleteSuccess(result);
-        }
-        catch (Exception ex)
-        {
-          promise.CompleteError(ex);
-        }
+	      request.Dispose();
       }
     }
 

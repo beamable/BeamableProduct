@@ -7,17 +7,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.7]
+### Fixed
+- dispose of native collections in `IPlatformRequester`
+
+
 ## [0.18.6]
 ### Fixed
 - Realm scoped permissions are now respected
+
 
 ## [0.18.5]
 ### Fixed
 - Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
 
+
 ## [0.18.2]
 ### Changed
 - Improved baked content performance by keeping data in a single file and limiting number of IO operations.
+
 
 ## [0.18.1]
 ### Fixed
@@ -64,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `matchingIntervalSecs` for `SimGameType` allows game makers to specify the rate by which matchmaking occurs
 
 ### Changed
-- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter
 - New design of Microservices Publish Window with support for Storage Objects
 
 ### Fixed
@@ -170,7 +178,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Facebook SDK won't be referenced unless the Facebook setting is checked in the Account Management Configuration
 
-## [0.14.0] 
+## [0.14.0]
 ### Fixed
 - Integration for Unity In-App-Purchasing 3.x.x packages
 - Content references will update after a manifest subscription update
@@ -196,9 +204,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.13.3]
 ### Fixed:
-- Matchmaking state transition bug 
+- Matchmaking state transition bug
 - Increases heartbeat rate for MatchMaking
-  
+
 
 ## [0.13.2]
 ### Fixed:
