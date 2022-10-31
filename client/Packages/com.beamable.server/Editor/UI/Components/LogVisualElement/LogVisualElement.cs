@@ -74,11 +74,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _pagination;
 		private VisualElement _copyTextBtn;
 		private Label _paginationRange;
-
+		
 		private List<string> _messageParts;
 		private List<string> _parameterParts;
 		private List<string> _allTextToDisplay;
-
+		
 		private int _chunkSize = 5000;
 		private int _paginationIndex = 0;
 		private VisualElement _leftArrow;
@@ -167,7 +167,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				}
 			}));
 			_copyTextBtn.tooltip = "Copy full log";
-
+			
 			_leftArrow = Root.Q<VisualElement>("leftArrow");
 			_leftArrow.AddManipulator(new Clickable(_ => PreviousMessagePart()));
 			_rightArrow = Root.Q<VisualElement>("rightArrow");
@@ -307,7 +307,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void SetMessagePart()
 		{
 			var detailText = $"{_allTextToDisplay[_paginationIndex]}";
-			_paginationRange.text = $"{_paginationIndex + 1}/{_allTextToDisplay.Count}";
+			_paginationRange.text = $"{_paginationIndex+1}/{_allTextToDisplay.Count}";
 			_detailLabel.SetValueWithoutNotify(detailText);
 		}
 

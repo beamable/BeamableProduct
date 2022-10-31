@@ -101,8 +101,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_foldIcon = Root.Q("foldIcon");
 			_serviceIcon = Root.Q<Image>("serviceIcon");
 			_serviceName = Root.Q<Label>("serviceName");
-			_openDocsBtn = Root.Q<VisualElement>("openDocsBtn");
-			_openScriptBtn = Root.Q<VisualElement>("openScriptBtn");
+			_openDocsBtn = Root.Q<VisualElement>("openDocsBtn"); 
+			_openScriptBtn = Root.Q<VisualElement>("openScriptBtn"); 
 			_mainParent = _rootVisualElement.parent.parent;
 		}
 		private void InjectStyleSheets()
@@ -128,11 +128,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_openScriptBtn.AddManipulator(new Clickable(Model.OpenCode));
 			_openScriptBtn.tooltip = "Open C# Code";
-
+			
 			_openDocsBtn.AddManipulator(new Clickable(Model.OpenDocs));
 			_openDocsBtn.SetEnabled(Model.IsRunning);
 			_openDocsBtn.tooltip = "View Documentation";
-
+			
 			_serviceName.text = Model.Name;
 			_serviceName.tooltip = Model.Name;
 
@@ -243,7 +243,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateLocalStatus();
 		}
 		protected void HandleProgressFinished(bool gotError) => _header.EnableInClassList("failed", gotError);
-
+		
 		private void CreateLogSection(bool areLogsAttached)
 		{
 			_logElement?.Destroy();

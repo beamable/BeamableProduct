@@ -37,7 +37,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
-
+			
 			Root.Q<Button>("startBtn").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
@@ -52,7 +52,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = Tooltips.Microservice.MORE;
-
+			
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.OnDockerLoginRequired += LoginToDocker;
 

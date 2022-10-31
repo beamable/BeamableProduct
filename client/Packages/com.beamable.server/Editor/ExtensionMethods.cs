@@ -21,7 +21,7 @@ namespace Beamable.Editor
 			outputText = $"{inputText.Substring(0, length)}...";
 			return true;
 		}
-
+		
 		public static List<string> SplitStringIntoParts(this string str, int chunkSize)
 		{
 			if (string.IsNullOrWhiteSpace(str))
@@ -30,11 +30,11 @@ namespace Beamable.Editor
 			var fullDataChunksCount = Mathf.FloorToInt(str.Length / (float)chunkSize);
 			var lastDataChunkSize = str.Length - (chunkSize * fullDataChunksCount);
 			var result = Enumerable.Range(0, fullDataChunksCount)
-								   .Select(i => str.Substring(i * chunkSize, chunkSize))
-								   .ToList();
-
+			                       .Select(i => str.Substring(i * chunkSize, chunkSize))
+			                       .ToList();
+			
 			result.Add(str.Substring(chunkSize * fullDataChunksCount, lastDataChunkSize));
-			return !result.Any() ? new List<string> { str } : result;
+			return !result.Any() ? new List<string> {str} : result;
 		}
 	}
 }

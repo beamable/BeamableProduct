@@ -32,7 +32,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected ServiceCreateDependentService _serviceCreateDependentService;
 
 		private const int MAX_NAME_LENGTH = 28;
-
+		
 		private VisualElement _serviceIcon;
 		private TextField _nameTextField;
 		private PrimaryButtonVisualElement _createBtn;
@@ -64,7 +64,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_serviceIcon.AddToClassList(ServiceType.ToString());
 			_nameTextField.AddPlaceholder("Enter service name");
-
+			
 			_cancelBtn.Button.clicked += () =>
 			{
 				Root.RemoveFromHierarchy();
@@ -75,25 +75,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 				HandleContinueButtonClicked();
 				OnClose?.Invoke();
 			};
-
+			
 			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName, .01);
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
 				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH), .01);
 			_isNameUnique = _nameTextField.AddErrorLabel("Name", IsNameUnique);
-
+			
 			_createBtn.AddGateKeeper(_isNameValid, _isNameSizedRight, _isNameUnique);
-
+			
 			ShowServiceCreateDependentService();
 			_nameTextField.maxLength = MAX_NAME_LENGTH;
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
-
+			
 			RenameGestureBegin();
 		}
 
 		private void ShowServiceCreateDependentService()
 		{
-			if (!ShouldShowCreateDependentService)
+			if (!ShouldShowCreateDependentService) 
 				return;
 			_serviceCreateDependentService = new ServiceCreateDependentService();
 			_serviceCreateDependentService.Refresh();
@@ -105,7 +105,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			if (!_createBtn.CheckGateKeepers())
 				return;
-
+			
 			var additionalReferences = _serviceCreateDependentService?.GetReferences();
 			_createBtn.SetText("Creating...");
 			_createBtn.Load(new Promise()); // spin forever, because a re-compile will save us!

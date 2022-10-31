@@ -97,18 +97,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void SetupProgressBarForBuildAndStart(Task task)
 		{
 			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
-															 new StepLogParser(new VirtualLoadingBar(), Model, null),
-															 new RunImageLogParser(new VirtualLoadingBar(), Model));
+			                                                 new StepLogParser(new VirtualLoadingBar(), Model, null),
+			                                                 new RunImageLogParser(new VirtualLoadingBar(), Model));
 
 			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
 		private void SetupProgressBarForBuildAndRestart(Task task)
 		{
 			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
-															 new StepLogParser(new VirtualLoadingBar(), Model, null),
-															 new RunImageLogParser(new VirtualLoadingBar(), Model),
-															 new StopImageLogParser(new VirtualLoadingBar(), Model));
-
+			                                                 new StepLogParser(new VirtualLoadingBar(), Model, null),
+			                                                 new RunImageLogParser(new VirtualLoadingBar(), Model),
+			                                                 new StopImageLogParser(new VirtualLoadingBar(), Model));
+			
 			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
 		private void SetupProgressBarForBuild(Task task)
