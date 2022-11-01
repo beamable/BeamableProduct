@@ -47,7 +47,7 @@ namespace Beamable.UI.Buss
 		public BussStyleDescription InlineStyle => _inlineStyle;
 
 		public virtual string TypeName => "BussElement";
-
+		
 		public BussStyleSheet StyleSheet
 		{
 			get => _styleSheet;
@@ -97,6 +97,17 @@ namespace Beamable.UI.Buss
 			OnStyleChanged();
 		}
 
+		// private void OnValidate()
+		// {
+		// 	if (!gameObject || !gameObject.scene.IsValid())
+		// 	{
+		// 		return; // OnValidate runs on prefabs, which we absolutely don't want to.
+		// 	}
+		//
+		// 	CheckParent();
+		// 	OnStyleChanged();
+		// }
+
 		private void OnTransformParentChanged()
 		{
 			CheckParent();
@@ -106,7 +117,6 @@ namespace Beamable.UI.Buss
 
 		private void OnDisable()
 		{
-			ClearCache();
 			if (Parent != null)
 			{
 				Parent._children.Remove(this);
@@ -115,11 +125,6 @@ namespace Beamable.UI.Buss
 			{
 				BussConfiguration.UseConfig(c => c.UnregisterObserver(this));
 			}
-		}
-
-		private void OnDestroy()
-		{
-			ClearCache();
 		}
 
 		#endregion
@@ -248,22 +253,17 @@ namespace Beamable.UI.Buss
 		{
 			ApplyStyle();
 		}
-
-		private void ClearCache()
-		{
-			foreach (var styleCacheEntry in _styleCacheEntries)
-			{
-				styleCacheEntry.Release();
-			}
-			_styleCacheEntries.Clear();
-		}
 		
 		/// <summary>
 		/// Recalculates style for this and children BussElements.
 		/// </summary>
 		public void RecalculateStyle()
 		{
-			ClearCache();
+			foreach (var styleCacheEntry in _styleCacheEntries)
+			{
+				styleCacheEntry.Release();
+			}
+			
 			Style.Inherit(Parent?.Style);
 			Sources.Recalculate();
 			StyleCache.Instance.Clear(this);

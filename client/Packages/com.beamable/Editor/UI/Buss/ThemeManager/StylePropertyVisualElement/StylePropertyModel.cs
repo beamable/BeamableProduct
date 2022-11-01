@@ -259,6 +259,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				foreach (var elem in StyleCache.Instance.GetElementsReferencingRule(StyleRule, PropertyProvider.Key))
 				{
+					Debug.Log("Reapplying styles for " + elem.name);
 					elem.ReapplyStyles();
 				}
 			}
