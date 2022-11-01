@@ -49,10 +49,6 @@ namespace Beamable.Editor.UI.Components
 
 		public abstract void OnPropertyChangedExternally();
 
-		protected void TriggerStyleSheetChange()
-		{
-			// no-op
-		}
 	}
 
 	public abstract class BussPropertyVisualElement<T> : BussPropertyVisualElement where T : IBussProperty
