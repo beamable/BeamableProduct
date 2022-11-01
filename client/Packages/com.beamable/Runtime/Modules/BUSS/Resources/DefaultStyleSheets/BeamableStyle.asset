@@ -96,6 +96,11 @@ MonoBehaviour:
         _type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_colorRect":{"BottomLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.9019607901573181},"BottomRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.9019607901573181},"TopLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"TopRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"_drawerMode":0}}'
+    - _key: textAlignment
+      _property:
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"Enum":514}'
     _cachedProperties: []
     _selector: .card
   - _folded: 0
@@ -141,6 +146,11 @@ MonoBehaviour:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_floatValue":25.0}'
+    - _key: textAlignment
+      _property:
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"Enum":514}'
     _cachedProperties: []
     _selector: .header
   - _folded: 0
@@ -216,8 +226,13 @@ MonoBehaviour:
         _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"AssetSerializationKey":1}'
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
     _cachedProperties: []
-    _selector: .back
+    _selector: .back .icon
   - _folded: 0
     _showAll: 0
     _properties:
@@ -1187,7 +1202,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_floatValue":20.0}'
     _cachedProperties: []
-    _selector: .panel.account
+    _selector: .panel
   - _folded: 0
     _showAll: 0
     _properties:
@@ -1198,6 +1213,36 @@ MonoBehaviour:
         _json: '{"_valueType":0,"AssetSerializationKey":-1}'
     _cachedProperties: []
     _selector: SdfImageBussElement.button.home
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.38823530077934267,"g":0.3176470696926117,"b":0.6705882549285889,"a":1.0}}'
+    - _key: roundCorners
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_floatValue":6.0}'
+    _cachedProperties: []
+    _selector: .back
+  - _folded: 0
+    _showAll: 0
+    _properties: []
+    _cachedProperties: []
+    _selector: '#rankValueLabel'
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: textAlignment
+      _property:
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"Enum":513}'
+    _cachedProperties: []
+    _selector: .panel.rank text.alias
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   - {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}
