@@ -9,3 +9,11 @@
 .selected {
     background-color: rgba(0,0,0,0.2); 
 }
+
+
+#idLabel {
+    color: #2e5ea4;
+}
+#classLabel {
+    color: #80412f;
+}
