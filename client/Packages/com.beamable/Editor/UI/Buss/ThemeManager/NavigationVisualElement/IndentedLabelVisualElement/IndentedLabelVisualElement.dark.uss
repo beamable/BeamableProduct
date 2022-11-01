@@ -7,5 +7,5 @@
 }
 
 .selected {
-    background-color: rgb(0,145,255);
+    background-color: rgba(0,145,255, .5);
 }
