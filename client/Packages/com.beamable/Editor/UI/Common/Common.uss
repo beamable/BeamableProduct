@@ -42,12 +42,12 @@
 /* === BEGIN - ANNOUNCEMENTS === */
 .announcement-main {
     flex-direction: row;
-    background-color: #B3BAAF;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-color: #D5D5D5;
+    /*background-color: #B3BAAF;*/
+    /*border-left-width: 1px;*/
+    /*border-right-width: 1px;*/
+    /*border-top-width: 1px;*/
+    /*border-bottom-width: 1px;*/
+    /*border-color: #D5D5D5;*/
 }
 
 .announcement-main * {
@@ -85,6 +85,8 @@
     max-width: 60px;
     min-width: 60px;
     justify-content: center;
+    margin-bottom: 5px;
+    margin-top: 5px;
 }
 
 #announcement-logo {

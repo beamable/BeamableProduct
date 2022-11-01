@@ -1,16 +1,12 @@
-﻿/* === BEGIN - ANNOUNCEMENTS === */
-.announcement-main {
-    border-color: #14280B;
-    background-color: #51574A;
-}
+﻿
 
 .announcement-main * {
     color: #FFFFFF;
+    background-color: none;
 }
 
 .announcement-buttons {
     background-color: #565656;
-    border-color: #7A7A7A;
 }
 
 .announcement-hiddenButton {
