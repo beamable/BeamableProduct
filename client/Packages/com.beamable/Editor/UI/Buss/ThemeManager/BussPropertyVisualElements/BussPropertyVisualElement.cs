@@ -51,19 +51,7 @@ namespace Beamable.Editor.UI.Components
 
 		protected void TriggerStyleSheetChange()
 		{
-			IsTriggeringStyleSheetChange = true;
-			try
-			{
-				if (UpdatedStyleSheet != null)
-				{
-					UpdatedStyleSheet.TriggerChange();
-				}
-			}
-			catch (Exception e)
-			{
-				BeamableLogger.LogException(e);
-			}
-			IsTriggeringStyleSheetChange = false;
+			// no-op
 		}
 	}
 

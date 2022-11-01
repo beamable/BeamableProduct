@@ -67,7 +67,9 @@ namespace Beamable.Editor.UI.Buss
 		{
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Selection.selectionChanged += OnSelectionChanged;
-
+			
+			Undo.undoRedoPerformed -= HandleUndo;
+			Undo.undoRedoPerformed += HandleUndo;
 			Filter = new BussCardFilter();
 
 			OnHierarchyChanged();

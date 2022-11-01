@@ -30,6 +30,9 @@ namespace Beamable.UI.Buss
 		private PropertySourceTracker _sources;
 		public PropertySourceTracker Sources => _sources ?? (_sources = new PropertySourceTracker(this));
 
+		[NonSerialized]
+		private List<StyleCache.StyleCacheEntry> _styleCacheEntries = new List<StyleCache.StyleCacheEntry>();
+		
 		public string Id
 		{
 			get => _id;
@@ -94,16 +97,16 @@ namespace Beamable.UI.Buss
 			OnStyleChanged();
 		}
 
-		private void OnValidate()
-		{
-			if (!gameObject || !gameObject.scene.IsValid())
-			{
-				return; // OnValidate runs on prefabs, which we absolutely don't want to.
-			}
-
-			CheckParent();
-			OnStyleChanged();
-		}
+		// private void OnValidate()
+		// {
+		// 	if (!gameObject || !gameObject.scene.IsValid())
+		// 	{
+		// 		return; // OnValidate runs on prefabs, which we absolutely don't want to.
+		// 	}
+		//
+		// 	CheckParent();
+		// 	OnStyleChanged();
+		// }
 
 		private void OnTransformParentChanged()
 		{
@@ -246,12 +249,37 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		public void ReapplyStyles()
+		{
+			ApplyStyle();
+		}
+		
 		/// <summary>
 		/// Recalculates style for this and children BussElements.
 		/// </summary>
 		public void RecalculateStyle()
 		{
-			BussConfiguration.UseConfig(c => c.RecalculateStyle(this));
+			foreach (var styleCacheEntry in _styleCacheEntries)
+			{
+				styleCacheEntry.Release();
+			}
+			
+			Style.Inherit(Parent?.Style);
+			Sources.Recalculate();
+			StyleCache.Instance.Clear(this);
+			foreach (var key in Sources.GetKeys())
+			{
+				var source = Sources.ResolveVariableProperty(key);
+				if (source?.PropertyProvider != null && source.StyleRule != null)
+				{
+					var cacheEntry = StyleCache.Instance.AttachReference(this, key, source);
+					_styleCacheEntries.Add(cacheEntry);
+				}
+				
+				Style[key] = (source?.PropertyProvider?.GetProperty()) ??
+				             BussStyle.GetDefaultValue(key);
+			}
+			
 			ApplyStyle();
 
 			StyleRecalculated?.Invoke();
@@ -264,7 +292,7 @@ namespace Beamable.UI.Buss
 				}
 			}
 		}
-
+		
 		public void CheckParent()
 		{
 			var mysTransform = transform;

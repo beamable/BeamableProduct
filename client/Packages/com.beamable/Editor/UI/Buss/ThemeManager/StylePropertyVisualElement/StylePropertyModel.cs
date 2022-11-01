@@ -242,20 +242,34 @@ namespace Beamable.Editor.UI.Components
 					StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
 				}
 			}
-
+			
+			/*
+			 * Naively, we could tell the entire style sheet to recompute.
+			 * However, this will lead to a large change that scales poorly compared to the total number of elements,
+			 *  because every single element will need to checked against every rule.
+			 * Ideally, we would only need to update the elements that apply the rule.
+			 * This can be done, because we _already_ know which elements apply to which rules. Instead of doing a whole sheet
+			 *  refresh, we can simply identify which elements need to be updated.
+			 */
+			if (StyleRule == null)
+			{
+				AppliedToElement.ReapplyStyles();
+			}
+			else
+			{
+				foreach (var elem in StyleCache.Instance.GetElementsReferencingRule(StyleRule, PropertyProvider.Key))
+				{
+					Debug.Log("Reapplying styles for " + elem.name);
+					elem.ReapplyStyles();
+				}
+			}
+			
 			if (StyleSheet != null)
 			{
 #if UNITY_EDITOR
 				EditorUtility.SetDirty(StyleSheet);
+				AssetDatabase.SaveAssets();
 #endif
-				StyleSheet.TriggerChange();
-			}
-
-			AssetDatabase.SaveAssets();
-
-			if (InlineStyleOwner != null)
-			{
-				InlineStyleOwner.Reenable();
 			}
 		}
 	}
