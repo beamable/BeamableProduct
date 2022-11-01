@@ -36,6 +36,8 @@ namespace Beamable.Editor.UI.Components
 		public bool ShowAll => StyleRule.ShowAll;
 
 		private RuleAppliedStatus _previousAppliedStatus = RuleAppliedStatus.Exact;
+		private ThemeModel _parentModel;
+
 		public RuleAppliedStatus RuleAppliedStatus
 		{
 			get
@@ -57,7 +59,7 @@ namespace Beamable.Editor.UI.Components
 
 		private BussElement SelectedElement { get; }
 
-		public StyleCardModel(BussStyleSheet styleSheet,
+		public StyleCardModel(ThemeModel parentModel, BussStyleSheet styleSheet,
 							  BussStyleRule styleRule,
 							  BussElement selectedElement,
 							  bool isSelected,
@@ -66,6 +68,7 @@ namespace Beamable.Editor.UI.Components
 							  Action globalRefresh,
 							  ThemeModel.PropertyDisplayFilter currentDisplayFilter)
 		{
+			_parentModel = parentModel;
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
 			SelectedElement = selectedElement;
@@ -183,9 +186,9 @@ namespace Beamable.Editor.UI.Components
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
-												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
-												   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
+				var model = new StylePropertyModel(_parentModel, StyleSheet, StyleRule, propertyProvider,
+				                                   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
+				                                   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 
 				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
 				{
@@ -308,9 +311,9 @@ namespace Beamable.Editor.UI.Components
 					continue;
 				}
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
-												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
-												   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
+				var model = new StylePropertyModel(_parentModel, StyleSheet, StyleRule, propertyProvider,
+				                                   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
+				                                   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 				variables.Add(model);
 			}
 

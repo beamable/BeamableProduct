@@ -61,28 +61,33 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			_labelComponent.text = _model.IsVariable
-				? _model.PropertyProvider.Key
-				: ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
+			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			_valueParent.Clear();
-
+			
 			if (_model.IsInherited)
 			{
-				var srcTracker = _model.PropertySourceTracker;
-				if (srcTracker != null)
+				if (_model.HasElementContext)
 				{
-					var appliedPropertyProvider = srcTracker.GetNextInheritedProperty(_model.PropertyProvider);
-					if (appliedPropertyProvider != null)
+					var srcTracker = _model.PropertySourceTracker;
+					if (srcTracker != null)
 					{
-						var appliedProperty = appliedPropertyProvider.GetProperty();
-						var field = CreateEditableField(appliedProperty);
-						field.DisableInput();
+						var appliedPropertyProvider = srcTracker.GetNextInheritedProperty(_model.PropertyProvider);
+						if (appliedPropertyProvider != null)
+						{
+							var appliedProperty = appliedPropertyProvider.GetProperty();
+							var field = CreateEditableField(appliedProperty);
+							field.DisableInput();
+						}
+						else
+						{
+							CreateMessageField("Unknown inherited property");
+						}
 					}
-					else
-					{
-						CreateMessageField("Unknown inherited property");
-					}
+				}
+				else
+				{
+					CreateMessageField("No context to show inheritance.");
 				}
 			}
 			else if (_model.IsInitial)
@@ -95,29 +100,64 @@ namespace Beamable.Editor.UI.Components
 			{
 				string variableName = ((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName;
 
-				if (variableName == String.Empty)
+				if (!_model.HasElementContext)
 				{
-					CreateMessageField(PropertyValueState.NoResult);
+					var tf = new TextField();
+					if (variableName != null && variableName.StartsWith("--"))
+					{
+						variableName = variableName.Substring(2);
+					}
+					
+					tf.SetValueWithoutNotify(variableName);
+					tf.RegisterValueChangedCallback(evt =>
+					{
+						var newValue = evt.newValue;
+						EditorDebouncer.Debounce("buss-manual-variable-name", () =>
+						{
+							Undo.RecordObject(_model.StyleSheet, "Change variable");
+							((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName = "--" +newValue;
+							if (_model.StyleSheet != null)
+							{
+								_model.StyleSheet.TriggerChange();
+							}
+							AssetDatabase.SaveAssets();
+						});
+					});
+					_valueParent.Add(tf);
 				}
 				else
 				{
-					var srcTracker = _model.PropertySourceTracker;
-					if (srcTracker != null)
+
+
+					if (variableName == String.Empty)
 					{
-						var appliedPropertyProvider = srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
-
-						if (appliedPropertyProvider != null)
+						CreateMessageField(PropertyValueState.NoResult);
+					}
+					else
+					{
+						var srcTracker = _model.PropertySourceTracker;
+						if (srcTracker != null)
 						{
-							var field = CreateEditableField(appliedPropertyProvider.PropertyProvider.GetProperty());
-							field.DisableInput("The field is disabled because it references a variable.");
+							var appliedPropertyProvider =
+								srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
 
-							void UpdateField()
+
+
+							if (appliedPropertyProvider != null)
 							{
-								if (field.IsRemoved) return;
-								field.OnPropertyChangedExternally();
+								var field = CreateEditableField(appliedPropertyProvider.PropertyProvider.GetProperty());
+								field.DisableInput("The field is disabled because it references a variable.");
+
+								void UpdateField()
+								{
+									if (field.IsRemoved) return;
+									field.OnPropertyChangedExternally();
+									appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged +=
+										UpdateField;
+								}
+
 								appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged += UpdateField;
 							}
-							appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged += UpdateField;
 						}
 					}
 				}
@@ -153,6 +193,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			var element = _propertyVisualElement = property.GetVisualElement();
 
+			
 			if (_propertyVisualElement == null)
 			{
 				return null;
@@ -170,7 +211,7 @@ namespace Beamable.Editor.UI.Components
 					Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
 				}
 			};
-
+			
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
 			_propertyVisualElement.Init();
 			_valueParent.Add(_propertyVisualElement);
@@ -213,14 +254,12 @@ namespace Beamable.Editor.UI.Components
 			if (_model.PropertyProvider.IsVariable)
 				return;
 
-			if (_variableConnection != null)
+			if (_variableConnection == null)
 			{
-				return;
+				_variableConnection = new VariableConnectionVisualElement(_model);
+				_variableConnection.Init();
+				_variableParent.Add(_variableConnection);
 			}
-
-			_variableConnection = new VariableConnectionVisualElement(_model);
-			_variableConnection.Init();
-			_variableParent.Add(_variableConnection);
 		}
 	}
 }
