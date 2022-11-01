@@ -21,8 +21,6 @@ namespace Beamable.UI.Buss
 		public void Recalculate()
 		{
 			_sources.Clear();
-			// Debug.Log($"recalculating buss styles... {Element.name}");
-
 			if (BussConfiguration.OptionalInstance.HasValue)
 			{
 				var config = BussConfiguration.OptionalInstance.Value;
