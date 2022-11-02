@@ -76,8 +76,10 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnDestroy()
 		{
+			_model?.Destroy();
 			if (_list != null)
 			{
+				_styleSheet.Change -= _list.Refresh;
 				_list.Destroy();
 				_list = null;
 			}

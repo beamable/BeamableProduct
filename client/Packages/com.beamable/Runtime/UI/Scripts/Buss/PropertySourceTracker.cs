@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using UnityEngine;
 using PropertyReference = Beamable.UI.Buss.PropertyReference;
 
 namespace Beamable.UI.Buss
@@ -20,7 +21,6 @@ namespace Beamable.UI.Buss
 		public void Recalculate()
 		{
 			_sources.Clear();
-
 			if (BussConfiguration.OptionalInstance.HasValue)
 			{
 				var config = BussConfiguration.OptionalInstance.Value;
@@ -139,24 +139,29 @@ namespace Beamable.UI.Buss
 
 		public BussPropertyProvider GetUsedPropertyProvider(string key, out int rank)
 		{
-			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), false, out rank);
+			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), false, out rank).Item1;
 		}
 
-		public BussPropertyProvider ResolveVariableProperty(string key)
+		public PropertyReference ResolveVariableProperty(string key)
 		{
-			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), true, out _);
+			return GetUsedPropertyProvider(key, BussStyle.GetBaseType(key), true, out _).Item2;
 		}
 
-		public BussPropertyProvider GetUsedPropertyProvider(string key, Type baseType, bool resolveVariables, out int rank)
+		public (BussPropertyProvider, PropertyReference) GetUsedPropertyProvider(string key, Type baseType, bool resolveVariables, out int rank)
 		{
 			rank = 0;
 			if (_sources.ContainsKey(key))
 			{
+				var requestedInheritence = false;
 				foreach (var reference in _sources[key].Properties)
 				{
 					rank++;
 					// if the reference says, "inherit", then the used property should continue up the reference sequence
-					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited) continue;
+					if (reference.PropertyProvider.ValueType == BussPropertyValueType.Inherited)
+					{
+						requestedInheritence = true;
+						continue;
+					}
 
 					// if the reference is a variable, redirect!
 					if (resolveVariables && reference.PropertyProvider.HasVariableReference)
@@ -165,18 +170,32 @@ namespace Beamable.UI.Buss
 						var variableName = variableProperty.VariableName;
 
 						var referenceValue = GetUsedPropertyProvider(variableName, out var nestedRank);
-						return referenceValue;
+						return (referenceValue, reference);
 					}
 
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
 						reference.PropertyProvider.IsPropertyOfType(typeof(VariableProperty)))
 					{
-						return reference.PropertyProvider;
+
+						if (!requestedInheritence)
+						{
+							// if this is the first source, it means we haven't necessarily asked to inherit the rule.
+							if (BussStyle.TryGetBinding(key, out var binding) && !binding.Inheritable)
+							{
+								// if we aren't an exact match, we need to continue...
+								if ((!reference.StyleRule?.Selector.CheckMatch(Element)) ?? false)
+								{
+									continue;
+								}
+							}
+						}
+						
+						return (reference.PropertyProvider, reference);
 					}
 				}
 			}
 
-			return null;
+			return (null, null);
 		}
 
 		public PropertyReference GetUsedPropertyReference(string key)

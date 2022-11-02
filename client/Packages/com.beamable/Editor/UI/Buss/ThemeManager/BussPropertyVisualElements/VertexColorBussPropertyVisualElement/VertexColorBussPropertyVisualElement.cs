@@ -35,7 +35,6 @@ namespace Beamable.Editor.UI.Components
 			set
 			{
 				Property.ColorRect = ColorRect.EditorHelper.WithDrawerMode(Property.ColorRect, (int)value);
-				TriggerStyleSheetChange();
 			}
 		}
 
@@ -194,7 +193,6 @@ namespace Beamable.Editor.UI.Components
 			rect = ColorRect.EditorHelper.WithDrawerMode(rect, (int)DrawerMode);
 			Property.ColorRect = rect;
 			OnValueChanged?.Invoke(Property);
-			TriggerStyleSheetChange();
 		}
 
 		public override void OnPropertyChangedExternally()
