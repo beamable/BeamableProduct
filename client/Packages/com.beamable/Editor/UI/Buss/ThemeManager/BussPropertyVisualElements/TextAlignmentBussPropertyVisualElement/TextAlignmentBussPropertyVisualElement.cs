@@ -67,6 +67,7 @@ namespace Beamable.Editor.UI.Components
 			var intValue = (int)Property.Enum;
 			Property.Enum = (TextAlignmentOptions)GetValue(value, GetVerticalAlignmentGridValue(intValue));
 			UpdateHorizontalToggle();
+			OnValueChanged?.Invoke(Property);
 		}
 
 		private void SetVerticalValue(int value)
@@ -75,6 +76,7 @@ namespace Beamable.Editor.UI.Components
 			var intValue = (int)Property.Enum;
 			Property.Enum = (TextAlignmentOptions)GetValue(GetHorizontalAlignmentGridValue(intValue), value);
 			UpdateVerticalToggle();
+			OnValueChanged?.Invoke(Property);
 		}
 
 		private void UpdateHorizontalToggle()

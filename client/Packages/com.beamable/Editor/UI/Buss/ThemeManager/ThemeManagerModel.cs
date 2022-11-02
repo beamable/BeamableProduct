@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 using Object = UnityEngine.Object;
@@ -243,15 +244,24 @@ namespace Beamable.Editor.UI.Buss
 		{
 			FoundElements.Clear();
 
-			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
+			var currentPrefab = PrefabStageUtility.GetCurrentPrefabStage();
+
+			if (currentPrefab == null)
 			{
-				GameObject gameObject = (GameObject)foundObject;
-				if (gameObject.transform.parent == null)
+				foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
 				{
-					Traverse(gameObject, 0);
+					GameObject gameObject = (GameObject)foundObject;
+					if (gameObject.transform.parent == null)
+					{
+						Traverse(gameObject, 0);
+					}
 				}
 			}
-
+			else
+			{
+				Traverse(currentPrefab.prefabContentsRoot, 0);
+			}
+			
 			ForceRefresh();
 		}
 
