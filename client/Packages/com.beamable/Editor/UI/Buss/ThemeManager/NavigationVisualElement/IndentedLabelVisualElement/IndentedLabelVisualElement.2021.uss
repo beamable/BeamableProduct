@@ -1,0 +1,3 @@
+TextElement {
+    -unity-font-definition: url("project:///Packages/com.beamable/Editor/UI/Font/Monaco.ttf");
+}
