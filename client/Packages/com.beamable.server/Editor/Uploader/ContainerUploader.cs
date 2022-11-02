@@ -125,7 +125,7 @@ namespace Beamable.Server.Editor.Uploader
 			response.EnsureSuccessStatusCode();
 			_harness.Log("image manifest uploaded");
 		}
-		
+
 		private async Task<HttpResponseMessage> SendRequestWithRetries(string name, Func<Task<HttpResponseMessage>> requestGenerator, CancellationToken cancellationToken, int maxAttempts = 500)
 		{
 			var attemptCount = 0;
@@ -181,8 +181,8 @@ namespace Beamable.Server.Editor.Uploader
 		}
 
 		private async Task<HttpResponseMessage> SendRequest(string name,
-		                                                    Func<HttpRequestMessage> requestGenerator,
-		                                                    CancellationToken token) =>
+															Func<HttpRequestMessage> requestGenerator,
+															CancellationToken token) =>
 			await SendRequestWithRetries(name, () => _client.SendAsync(requestGenerator()), token);
 		private async Task<HttpResponseMessage> SendPutRequest(string name, Uri uri, Func<StringContent> contentGenerator, CancellationToken token) =>
 			await SendRequestWithRetries(name, () => _client.PutAsync(uri, contentGenerator()), token);

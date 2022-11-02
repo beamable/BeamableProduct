@@ -7,8 +7,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class CreateNewServiceDropdownVisualElement : MicroserviceComponent
 	{
-		
-		
+
+
 		public CreateNewServiceDropdownVisualElement() : base(nameof(CreateNewServiceDropdownVisualElement)) { }
 		public event Action<ServiceType> OnCreateNewClicked;
 
@@ -16,7 +16,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private readonly Dictionary<ServiceType, string> _serviceTypeCustomNamesDict = new Dictionary<ServiceType, string>
 		{
-			{ ServiceType.MicroService, "Microservice" }, 
+			{ ServiceType.MicroService, "Microservice" },
 			{ ServiceType.StorageObject, "Storage Object" }
 		};
 
@@ -28,11 +28,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void SetContent()
 		{
-			foreach (var serviceType in (ServiceType[]) Enum.GetValues(typeof(ServiceType)))
+			foreach (var serviceType in (ServiceType[])Enum.GetValues(typeof(ServiceType)))
 			{
-				var serviceEntryButton = new VisualElement {name = "serviceEntryButton"};
-				serviceEntryButton.Add(new Image {name = $"image{serviceType}"});
-				serviceEntryButton.Add(new Label(TryGetCustomServiceName(serviceType)){name = "label"});
+				var serviceEntryButton = new VisualElement { name = "serviceEntryButton" };
+				serviceEntryButton.Add(new Image { name = $"image{serviceType}" });
+				serviceEntryButton.Add(new Label(TryGetCustomServiceName(serviceType)) { name = "label" });
 				serviceEntryButton.RegisterCallback<MouseDownEvent>(_ =>
 				{
 					OnCreateNewClicked?.Invoke(serviceType);
@@ -40,7 +40,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_servicesList.Add(serviceEntryButton);
 			}
 		}
-		private string TryGetCustomServiceName(ServiceType serviceType) 
+		private string TryGetCustomServiceName(ServiceType serviceType)
 			=> _serviceTypeCustomNamesDict.ContainsKey(serviceType) ? _serviceTypeCustomNamesDict[serviceType] : serviceType.ToString();
 	}
 }
