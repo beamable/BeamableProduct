@@ -98,7 +98,7 @@ public struct UnrealSerializableTypeDeclaration
 		foreach (var unrealPropertyDeclaration in UPropertyDeclarations)
 		{
 			var paramDeclaration = $"{unrealPropertyDeclaration.PropertyUnrealType} {unrealPropertyDeclaration.PropertyName}";
-			
+
 			makeSb.Append($"{paramDeclaration}, ");
 			if (unrealPropertyDeclaration.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL))
 			{
@@ -250,7 +250,7 @@ U₢{nameof(NamespacedTypeName)}₢* U₢{nameof(NamespacedTypeName)}₢Library:
 ";
 	public const string BREAK_UTILITY_DECLARATION = $@"UFUNCTION(BlueprintPure, Category=""Beam|Backend"", DisplayName=""Beam - Break ₢{nameof(NamespacedTypeName)}₢"", meta=(NativeBreakFunc))
 	static void Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢);";
-	
+
 	public const string BREAK_UTILITY_DEFINITION = $@"void U₢{nameof(NamespacedTypeName)}₢Library::Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢)
 {{
 	₢{nameof(_breakAssignments)}₢	

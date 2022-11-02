@@ -1,4 +1,7 @@
-﻿.manifestRow {
+﻿PublishManifestEntryVisualElement {
+    overflow: hidden;
+}
+.manifestRow {
     flex-grow: 1;
     flex-direction: row;
     align-content: stretch;

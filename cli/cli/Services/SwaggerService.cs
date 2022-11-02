@@ -110,7 +110,7 @@ public class SwaggerService
 			schema.Title = oldTitle;
 			return json;
 		}
-		
+
 		var schemaRecursiveRefs = new Dictionary<NamedOpenApiSchemaHandle, List<OpenApiSchema>>();
 
 		//
@@ -131,7 +131,7 @@ public class SwaggerService
 				var stream = new MemoryStream(Encoding.UTF8.GetBytes(originalJson));
 				var raw = reader.ReadFragment<OpenApiSchema>(stream, OpenApiSpecVersion.OpenApi3_0, out _);
 				// var raw = JsonConvert.DeserializeObject<OpenApiSchema>(originalJson);
-				
+
 				// Make the handle for this specific document's schema
 				var namedOpenApiSchemaHandle = new NamedOpenApiSchemaHandle() { OwnerDoc = doc, SchemaName = schemaName, };
 
@@ -149,7 +149,7 @@ public class SwaggerService
 
 				// Log out the ref count found.
 				Log.Logger.Verbose($"{namedOpenApiSchemaHandle.OwnerDoc.Info.Title}-{namedOpenApiSchemaHandle.SchemaName} Found Ref Count = {schemaRecursiveRefs[namedOpenApiSchemaHandle].Count}");
-				
+
 				list.Add(new NamedOpenApiSchema
 				{
 					RawSchema = raw.GetEffective(doc),
@@ -160,7 +160,7 @@ public class SwaggerService
 				});
 			}
 		}
-		
+
 		// Find the number of recursive references to other schemas that each individual schema has (SchemaName => Recursive Refs)
 		void GatherSchemaRefs(IDictionary<string, OpenApiSchema> allSchemas, string schemaName, string originalName, List<OpenApiSchema> outSchemaRefs, int lvl = 0)
 		{
@@ -204,7 +204,7 @@ public class SwaggerService
 
 				Dictionary<string, List<NamedOpenApiSchema>> similarSchemas = new Dictionary<string, List<NamedOpenApiSchema>>();
 				var firstElement = elements.First();
-				similarSchemas.Add(firstElement.UniqueName, new List<NamedOpenApiSchema>{firstElement});
+				similarSchemas.Add(firstElement.UniqueName, new List<NamedOpenApiSchema> { firstElement });
 				for (var i = 1; i < elements.Count; i++)
 				{
 					// check if there is an element match already
@@ -225,7 +225,7 @@ public class SwaggerService
 
 					if (!found)
 					{
-						similarSchemas.Add(thisElement.UniqueName, new List<NamedOpenApiSchema>{thisElement});
+						similarSchemas.Add(thisElement.UniqueName, new List<NamedOpenApiSchema> { thisElement });
 					}
 				}
 
@@ -624,7 +624,7 @@ public class OpenApiSchemaComparer : IEqualityComparer<OpenApiSchema>
 	{
 		return NamedOpenApiSchema.AreEqual(x, y, out _);
 	}
- 
+
 	public int GetHashCode(OpenApiSchema obj)
 	{
 		return obj.GetHashCode();
@@ -657,7 +657,7 @@ public class NamedOpenApiSchema
 	/// List of openAPI Schemas that this depends on. 
 	/// </summary>
 	public List<OpenApiSchema> DependsOnSchema;
-	
+
 	/// <summary>
 	/// A combination of the <see cref="Document"/>'s title, and <see cref="Name"/>
 	/// </summary>
@@ -666,11 +666,11 @@ public class NamedOpenApiSchema
 
 	private static Dictionary<(OpenApiSchema, OpenApiSchema), List<string>> _equalityCache =
 		new Dictionary<(OpenApiSchema, OpenApiSchema), List<string>>();
-	
+
 	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b) => AreEqual(a, b, out _);
 	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b, out List<string> differences)
 	{
-		
+
 		differences = new List<string>();
 
 		if (_equalityCache.TryGetValue((a, b), out var equalityReasons))
@@ -680,9 +680,9 @@ public class NamedOpenApiSchema
 		}
 		else
 		{
-			_equalityCache.Add( (a, b), differences);
+			_equalityCache.Add((a, b), differences);
 		}
-		
+
 		if (a == null && b == null) return true;
 		if (a == null || b == null) return false;
 		if (a == b) return true;
@@ -692,13 +692,13 @@ public class NamedOpenApiSchema
 		// {
 		// 	differences.Add("titles are different");
 		// }
-		
+
 		// type must match.
 		if (!string.Equals(a.Type, b.Type))
 		{
 			differences.Add("types are different");
 		}
-		
+
 		// format must match.
 		if (!string.Equals(a.Format, b.Format))
 		{
@@ -710,7 +710,7 @@ public class NamedOpenApiSchema
 		{
 			differences.Add("required fields are different");
 		}
-		
+
 		// additional properties must be same
 		if (a.AdditionalPropertiesAllowed != b.AdditionalPropertiesAllowed)
 		{
@@ -722,13 +722,13 @@ public class NamedOpenApiSchema
 		{
 			differences.AddRange(moreReasons.Select(x => $"additionalProperties - {x}"));
 		}
-		
+
 		// items property deep equal must match
 		if (!AreEqual(a.Items, b.Items, out moreReasons))
 		{
 			differences.AddRange(moreReasons.Select(x => $"items - {x}"));
 		}
-		
+
 		// if this is a reference, it must reference the same thing.
 		if (a.Reference != null && b.Reference != null)
 		{
@@ -737,13 +737,13 @@ public class NamedOpenApiSchema
 			{
 				differences.Add("reference ids are different");
 			}
-			
+
 			// the host document must be the same.
 			// var aSchema = a.GetEffective(a.Reference.HostDocument);
 			// var bSchema = b.GetEffective(b.Reference.HostDocument);
-		
-	
-			
+
+
+
 			if (!string.Equals(a.Reference.HostDocument?.Info?.Title, b.Reference.HostDocument?.Info?.Title))
 			{
 				var aSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
@@ -754,14 +754,16 @@ public class NamedOpenApiSchema
 				}
 				// differences.Add("reference host document titles are different");
 			}
-		} else if (a.Reference == null && b.Reference != null)
+		}
+		else if (a.Reference == null && b.Reference != null)
 		{
 			differences.Add("b has reference, but a doesn't");
-		} else if (a.Reference != null && b.Reference == null)
+		}
+		else if (a.Reference != null && b.Reference == null)
 		{
 			differences.Add("a has reference, but b doesn't");
 		}
-		
+
 		// properties must match
 		if (a.Properties != null && b.Properties != null)
 		{
@@ -786,14 +788,16 @@ public class NamedOpenApiSchema
 					}
 				}
 			}
-		} else if (a.Properties == null && b.Properties != null)
+		}
+		else if (a.Properties == null && b.Properties != null)
 		{
 			differences.Add("b has properties, but a doesn't");
-		} else if (a.Properties != null && b.Properties == null)
+		}
+		else if (a.Properties != null && b.Properties == null)
 		{
 			differences.Add("a has properties, but b doesn't");
 		}
-		
+
 
 		return differences.Count == 0;
 	}

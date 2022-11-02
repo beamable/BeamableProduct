@@ -24,7 +24,7 @@ public struct UnrealPropertyDeclaration
 
 
 	public string BriefCommentString;
-	
+
 	public void IntoProcessMap(Dictionary<string, string> helperDict)
 	{
 		helperDict.Add(nameof(PropertyUnrealType), PropertyUnrealType);
@@ -57,7 +57,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string U_ENUM_U_PROPERTY_SERIALIZE = $@"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), U₢{nameof(PropertyNamespacedType)}₢Library::₢{nameof(PropertyNamespacedType)}₢ToSerializationName(₢{nameof(PropertyName)}₢));";
 	public const string U_ENUM_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = U₢{nameof(PropertyNamespacedType)}₢Library::SerializationNameTo₢{nameof(PropertyNamespacedType)}₢(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")));";
-	
+
 	public const string U_OBJECT_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeUObject<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -128,7 +128,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
 			return U_ENUM_U_PROPERTY_SERIALIZE;
-		
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_MAP))
 			return MAP_U_PROPERTY_SERIALIZE;
 
@@ -158,7 +158,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
 			return U_ENUM_U_PROPERTY_DESERIALIZE;
-		
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_DESERIALIZE;
 
@@ -222,7 +222,7 @@ public struct UnrealPropertyDeclaration
 		{
 			stringBuilder.Insert(0, "b");
 		}
-		
+
 		return stringBuilder.ToString();
 	}
 }
