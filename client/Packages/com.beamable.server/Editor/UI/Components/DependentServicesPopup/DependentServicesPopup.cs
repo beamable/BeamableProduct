@@ -60,8 +60,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void SetStorageObjectsContainer()
 		{
-			StorageObjectEntries = new Dictionary<MongoStorageModel, DependentServicesStorageObjectEntryVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
-			foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
+			StorageObjectEntries = new Dictionary<MongoStorageModel, DependentServicesStorageObjectEntryVisualElement>(MicroservicesDataModel.Instance.AllStorages.Count);
+			foreach (var storageObjectModel in MicroservicesDataModel.Instance.AllStorages)
 			{
 				if (storageObjectModel.IsArchived && !HasAnyDependentMicroservice(storageObjectModel))
 				{
