@@ -91,6 +91,7 @@ namespace Beamable.Editor.UI.Common
 
 		public void Destroy()
 		{
+			
 			foreach (var child in Children())
 			{
 				if (child is BeamableVisualElement beamableChild)

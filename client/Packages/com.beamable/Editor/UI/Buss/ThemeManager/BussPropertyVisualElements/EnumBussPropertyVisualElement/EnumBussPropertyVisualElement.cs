@@ -34,7 +34,6 @@ namespace Beamable.Editor.UI.Components
 			OnBeforeChange?.Invoke();
 			Property.EnumValue = changeEvent.newValue;
 			OnValueChanged?.Invoke(Property);
-			TriggerStyleSheetChange();
 		}
 
 		public override void OnPropertyChangedExternally()
