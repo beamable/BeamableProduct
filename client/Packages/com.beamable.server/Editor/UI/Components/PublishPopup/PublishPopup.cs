@@ -108,6 +108,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mainLoadingBar.Refresh();
 
 			_scrollContainer = Root.Q<ScrollView>("manifestsContainer");
+#if UNITY_2021_1_OR_NEWER
+			_scrollContainer.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+#else
+			_scrollContainer.showHorizontal = false;
+#endif
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
 
 			var entryModels = new List<IEntryModel>(Model.Services.Values);
