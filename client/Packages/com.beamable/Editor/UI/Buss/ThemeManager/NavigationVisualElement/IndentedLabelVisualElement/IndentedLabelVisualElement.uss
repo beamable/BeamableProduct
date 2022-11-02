@@ -1,0 +1,34 @@
+﻿#indentedLabelContainer {
+    height: 20px;
+    justify-content: center;
+    align-content: stretch;
+}
+
+TextElement {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Monaco.ttf");
+    -unity-text-align: middle-left;
+    font-size: 12px;
+    /*height: 12px;*/
+    /*-unity-font-style: bold;*/
+}
+
+#idLabel {
+    margin-left: 4px;
+    color: #98B4F2;
+}
+#classLabel {
+    color: #C8C772;
+}
+
+
+#element {
+    flex-direction: row;
+    flex-grow: 1;
+}
+#iconContainer {
+    flex-direction: column;
+    justify-content: center;
+}
+#foldIcon {
+    margin-right: 4px;
+}

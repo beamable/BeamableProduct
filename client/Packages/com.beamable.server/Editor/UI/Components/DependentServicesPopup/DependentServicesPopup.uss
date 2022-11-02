@@ -54,4 +54,8 @@ Button {
     margin-left: 0px;
 }
 
+PrimaryButtonVisualElement {
+    height: 28px;
+}
+
 

@@ -11,7 +11,7 @@
 
 #nameColumn, #depsColumn {
     flex-direction: row;
-    align-self: flex-start;
+    align-self: center;
     flex: 1;
 }
 
@@ -19,8 +19,9 @@
     flex-direction: column;
 }
 
-#SizeC {
+#SizeC, #CommentsC {
     flex-direction: row;
+    align-self: center;
 }
 
 
@@ -31,13 +32,13 @@
 #enabledC {
     height: 20px;
     flex-direction: row;
-    justify-content: center;
+    justify-content: flex-end;
+    align-self: center;
 }
 
 
 #nameMS {
     -unity-font-style: bold;
-    margin-top: 6px;
 }
 
 #typeImage {
@@ -66,14 +67,12 @@
     height: 20px;
 }
 
-.microserviceImage {
-    margin-left: 5px;
-    margin-top: 5px;
-}
-
+.microserviceImage, 
 .storageImage {
-    width: 30px;
-    height: 30px;
+    margin-left: 2px;
+    margin-right: 2px;
+    width: 26px;
+    height: 26px;
 }
 .published #mainContainer> LoadingBarElement {
     height: 0px;
@@ -84,14 +83,19 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
 }
 
-.unpublished {}
-
-.publish-inProgress #checkImage, .publish-failed #checkImage  {
-     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_Dark.png");
+#mainContainer > LoadingBarElement {
+    margin-left: 100px;
+    margin-right: 100px;
+    margin-bottom: 1px;
 }
 
-#mainContainer > LoadingBarElement {
-    margin-left: 75px;
-    margin-right: 75px;
-    margin-bottom: 1px;
+#CheckC {
+    margin-left: 15px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#stateLabel {
+    margin-top: 10px;
 }

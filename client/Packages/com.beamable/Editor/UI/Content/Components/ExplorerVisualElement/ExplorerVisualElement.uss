@@ -33,7 +33,7 @@ ExplorerVisualElement #content #splitter .splitWrapper.rightSplit {
 
 ExplorerVisualElement .splitWrapper {
     flex-grow: 1;
-    min-width: 100px;
+    min-width: 150px;
 }
 
 ExplorerVisualElement .splitWrapper > VisualElement {

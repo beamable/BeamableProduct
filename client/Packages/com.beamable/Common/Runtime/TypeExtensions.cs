@@ -6,6 +6,11 @@ namespace Beamable.Common
 {
 	public static class TypeExtensions
 	{
+		/// <summary>
+		/// Given some type, produce a string version of the type.
+		/// </summary>
+		/// <param name="type">Some runtime type</param>
+		/// <returns>A string that captures the fully qualified type name.</returns>
 		public static string GetTypeString(this Type type)
 		{
 			StringBuilder retType = new StringBuilder();

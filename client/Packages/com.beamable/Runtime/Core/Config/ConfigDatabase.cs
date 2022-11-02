@@ -13,7 +13,12 @@ namespace Beamable.Config
 
 		public static void Init()
 		{
-			SetConfigValuesFromFile(GetConfigFileName());
+			var alreadyInitialized = database != null && database.Count > 0;
+
+			if (!alreadyInitialized)
+			{
+				SetConfigValuesFromFile(GetConfigFileName());
+			}
 		}
 
 		public static string GetConfigFileName()
@@ -42,32 +47,31 @@ namespace Beamable.Config
 		public static bool HasConfigFile(string filename)
 		{
 			// this is hardly efficient, but if it is done infrequently enough, it should be fine
+#if UNITY_EDITOR
+			return File.Exists(GetFullPath(filename)) || Resources.Load<TextAsset>(filename) != null;
+#else
 			return Resources.Load<TextAsset>(filename) != null;
+#endif
 		}
 
 		public static void SetConfigValuesFromFile(string fileName)
 		{
-			TextAsset asset = Resources.Load(fileName) as TextAsset;
-			if (asset == null)
+			var text = GetFileContent(fileName);
+
+			if (!(Serialization.SmallerJSON.Json.Deserialize(text) is IDictionary<string, object> dictionaryJson))
 			{
-				throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
+				Debug.LogError("Config is invalid json");
+				return;
 			}
-			else
+
+			using (var iter = dictionaryJson.GetEnumerator())
 			{
-				var d = Serialization.SmallerJSON.Json.Deserialize(asset.text) as IDictionary<string, object>;
-				if (d == null)
+				while (iter.MoveNext())
 				{
-					Debug.LogError("Config is invalid json");
-				}
-				else
-				{
-					var iter = d.GetEnumerator();
-					while (iter.MoveNext())
-					{
-						database[iter.Current.Key] = iter.Current.Value.ToString();
-					}
+					database[iter.Current.Key] = iter.Current.Value.ToString();
 				}
 			}
+
 		}
 
 		public static ICollection<string> GetAllValueNames()
@@ -189,6 +193,49 @@ namespace Beamable.Config
 				Debug.LogError("Could not find '" + name + "' in Config");
 				throw new KeyNotFoundException();
 			}
+		}
+
+		public static string GetFullPath(string fileName) =>
+			Path.Combine("Assets", "Beamable", "Resources", $"{fileName}.txt");
+
+
+		/// <summary>
+		/// Remove the config-defaults file. Calling this outside the Unity Editor has no effect.
+		/// </summary>
+		public static void DeleteConfigDatabase()
+		{
+#if !UNITY_EDITOR
+			Debug.LogWarning($"Cannot call {nameof(DeleteConfigDatabase)} unless in UnityEditor. The config database will not be deleted.");
+			return;
+#else
+			const string assetsFolder = "Assets/";
+			var path = GetFullPath(GetConfigFileName());
+			if (path.Length > assetsFolder.Length)
+			{
+				UnityEditor.FileUtil.DeleteFileOrDirectory(path);
+				UnityEditor.FileUtil.DeleteFileOrDirectory(path + ".meta");
+			}
+#endif
+		}
+
+		private static string GetFileContent(string fileName)
+		{
+#if UNITY_EDITOR
+			var fullPath = GetFullPath(fileName);
+
+			if(File.Exists(fullPath))
+			{
+				var result = File.ReadAllText(fullPath);
+				return result;
+			}
+#endif
+			var asset = Resources.Load(fileName) as TextAsset;
+			if (asset == null)
+			{
+				throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
+			}
+
+			return asset.text;
 		}
 	}
 }

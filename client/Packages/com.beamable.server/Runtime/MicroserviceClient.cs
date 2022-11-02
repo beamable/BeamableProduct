@@ -37,6 +37,7 @@ namespace Beamable.Server
 	public class MicroserviceClient
 	{
 		protected IBeamableRequester _requester;
+
 		protected MicroserviceClient(IBeamableRequester requester = null)
 		{
 			_requester = requester;
@@ -49,11 +50,8 @@ namespace Beamable.Server
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{
-			if (_requester == null)
-			{
-				_requester = await API.Instance.Map(b => b.Requester);
-			}
-			return await MicroserviceClientHelper.Request<T>(_requester, serviceName, endpoint, serializedFields);
+			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
+			return await MicroserviceClientHelper.Request<T>(requester, serviceName, endpoint, serializedFields);
 		}
 
 		protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
@@ -136,6 +134,14 @@ namespace Beamable.Server
 				return (T)(object)PromiseBase.Unit;
 			}
 
+			// Handle ScriptableObject Deserialization (like ContententObject)
+			if (typeof(ScriptableObject).IsAssignableFrom(type))
+			{
+				var so = ScriptableObject.CreateInstance(type);
+				JsonUtility.FromJsonOverwrite(json, so);
+				return (T)(object)so;
+			}
+
 			if (type == typeof(string))
 			{
 				if (json.StartsWith("\"") && json.EndsWith("\""))
@@ -198,10 +204,40 @@ namespace Beamable.Server
 				return (T)result;
 			}
 
+			if (json.Equals("null") || json.Length == 0)
+				return defaultInstance;
+
 			if (json.StartsWith("[") && json.EndsWith("]"))
 			{
+				string rawJson = json;
 				json = $"{{\"items\": {json}}}";
 				var wrapped = JsonUtility.FromJson<JsonUtilityWrappedList<T>>(json);
+
+				// Handle ScriptableObject List Deserialization (like List of ContententObject)
+				if (wrapped != null && wrapped.items != null)
+				{
+					Type arrayType = wrapped.items.GetType();
+
+					if (arrayType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(arrayType))
+					{
+						Type scriptableType = arrayType.GetGenericArguments()[0];
+						if (typeof(ScriptableObject).IsAssignableFrom(scriptableType))
+						{
+							var obj = Json.Deserialize(rawJson) as IEnumerable<object>;
+							object instance = Activator.CreateInstance(arrayType);
+							var list = (IList)instance;
+
+							foreach (var element in obj)
+							{
+								var tmm = ScriptableObject.CreateInstance(scriptableType);
+								JsonUtility.FromJsonOverwrite(Json.Serialize(element, new StringBuilder()), tmm);
+								list.Add(tmm);
+							}
+
+							return (T)list;
+						}
+					}
+				}
 				return wrapped.items;
 			}
 

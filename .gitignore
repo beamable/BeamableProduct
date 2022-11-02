@@ -34,6 +34,10 @@
 /UnityInstaller/Assets/StreamingAssets/
 /UnityInstaller/Assets/StreamingAssets.meta
 
+fake-react/
+fake-svelte/
+loadtests/
+
 # Microservice project files
 /microservice/bin/
 /microservice/obj
@@ -46,10 +50,25 @@
 /microservice/microserviceTests/bin/
 /microservice/microserviceTests/obj/
 /microservice/microserviceTests/.idea/
+/microservice/beamable.tooling.common/bin/
+/microservice/beamable.tooling.common/obj/
+/microservice/beamable.tooling.common/.idea/
 /microservice/*.sln.DotSettings.*
 
 /microservice/microservice/.idea/
 
+/cli/bin/
+/cli/obj
+/cli/.idea/
+/cli/cli/bin/
+/cli/cli/nupkg/
+/cli/cli/obj/
+/cli/cli/.idea/
+/cli/tests/bin/
+/cli/tests/obj/
+/cli/tests/.idea/
+/cli/*.sln.DotSettings.*
+cli/cli/beamoLocalRuntime.json
 
 # Server generated files.
 /server/tmp/
@@ -100,3 +119,5 @@ client/Assets/Beamable/Resources/config-defaults.txt
 # Every developer's Editor.meta is going to be different by virtue of different layouts and stuff. If Editor.meta is missing, Unity will regenerate it from scratch.
 client/Assets/Editor.meta
 client/Assets/Plugins/Editor.meta
+client/Assets/Editor/BeamableLoginDev/login_data.json
+client/Assets/BeamSemiAutomatedTester/Reports

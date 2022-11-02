@@ -27,11 +27,11 @@ namespace Beamable.Editor.Content
 			var baseHeight = RefEditorGUI.DefaultPropertyHeight(property, label);
 			//         var baseHeight = EditorGUI.GetPropertyHeight(property, label);
 
-			if (property.serializedObject.isEditingMultipleObjects || !EditorAPI.Instance.IsCompleted)
+			if (property.serializedObject.isEditingMultipleObjects || !BeamEditor.IsInitialized)
 			{
 				return baseHeight;
 			}
-			var ctx = EditorAPI.Instance.GetResult().ContentIO.GetValidationContext();
+			var ctx = BeamEditorContext.Default.ContentIO.GetValidationContext();
 
 			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>();
 			var contentObj = property.serializedObject.targetObject as ContentObject;
@@ -82,7 +82,7 @@ namespace Beamable.Editor.Content
 		{
 			label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
 
-			if (property.serializedObject.isEditingMultipleObjects || !EditorAPI.Instance.IsCompleted)
+			if (property.serializedObject.isEditingMultipleObjects || !BeamEditor.IsInitialized)
 			{
 				RefEditorGUI.DefaultPropertyField(position, property, label);
 				return; // don't support multiple edit.
@@ -113,7 +113,7 @@ namespace Beamable.Editor.Content
 			//
 			//         }
 
-			var ctx = EditorAPI.Instance.GetResult().ContentIO.GetValidationContext();
+			var ctx = BeamEditorContext.Default.ContentIO.GetValidationContext();
 
 			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>();
 			var contentObj = property.serializedObject.targetObject as ContentObject;

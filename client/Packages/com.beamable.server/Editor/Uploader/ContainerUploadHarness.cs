@@ -18,14 +18,7 @@ namespace Beamable.Server.Editor.Uploader
 	/// </summary>
 	public class ContainerUploadHarness
 	{
-		private readonly CommandRunnerWindow _context;
-
 		public event Action<float, long, long> onProgress;
-
-		public ContainerUploadHarness(CommandRunnerWindow context)
-		{
-			_context = context;
-		}
 
 		/// <summary>
 		/// Log a message to the progress panel.
@@ -51,10 +44,10 @@ namespace Beamable.Server.Editor.Uploader
 			onProgress?.Invoke(progress, amount, total);
 		}
 
-		public async Task<string> GetImageId(MicroserviceDescriptor descriptor)
+		public async Task<ImageDetails> GetImageId(MicroserviceDescriptor descriptor)
 		{
-			var command = new GetImageIdCommand(descriptor);
-			var imageId = await command.Start(null);
+			var command = new GetImageDetailsCommand(descriptor);
+			var imageId = await command.StartAsync();
 
 			return imageId;
 		}
@@ -63,12 +56,12 @@ namespace Beamable.Server.Editor.Uploader
 		{
 			if (imageId == null)
 			{
-				imageId = await GetImageId(descriptor);
+				imageId = (await GetImageId(descriptor)).imageId;
 			}
 
 			var saveImageCommand = new SaveImageCommand(descriptor, imageId, outputPath);
 
-			await saveImageCommand.Start(_context);
+			await saveImageCommand.StartAsync();
 		}
 
 
@@ -86,7 +79,7 @@ namespace Beamable.Server.Editor.Uploader
 			{
 				if (imageId == null)
 				{
-					imageId = await GetImageId(descriptor);
+					imageId = (await GetImageId(descriptor)).imageId;
 				}
 				await SaveImage(descriptor, filename, imageId);
 				using (var file = File.OpenRead(filename))
@@ -95,7 +88,9 @@ namespace Beamable.Server.Editor.Uploader
 					tar.ExtractContents(folder);
 				}
 
-				var beamable = await EditorAPI.Instance;
+				var beamable = BeamEditorContext.Default;
+				await beamable.InitializePromise;
+
 				var uploader = new ContainerUploader(beamable, this, descriptor, imageId);
 				await uploader.Upload(folder, token);
 

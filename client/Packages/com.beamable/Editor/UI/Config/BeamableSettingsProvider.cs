@@ -17,19 +17,17 @@ namespace Beamable.Editor.Config
 {
 	public static class BeamableSettingsProvider
 	{
-
 		[MenuItem(
-		   MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		   Commons.OPEN + " " +
-		   MenuItems.Windows.Names.CONFIG_MANAGER,
-		   priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			Commons.OPEN + " " +
+			MenuItems.Windows.Names.CONFIG_MANAGER,
+			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static void Open()
 		{
 			ConfigManager.Initialize(forceCreation: true);
 			SettingsService.OpenProjectSettings("Project/Beamable");
 		}
-
 
 		[SettingsProvider]
 		public static SettingsProvider CreateBeamableProjectSettings()
@@ -47,23 +45,19 @@ namespace Beamable.Editor.Config
 							if (ConfigManager.MissingAnyConfiguration)
 							{
 								var createButton = new Button(() =>
-						   {
-							   Open();
-							   SettingsService.NotifySettingsProviderChanged();
-						   })
 								{
-									text = "Create Beamable Config Files"
-								};
+									Open();
+									SettingsService.NotifySettingsProviderChanged();
+								})
+								{ text = "Create Beamable Config Files" };
 								var missingConfigs =
-							  string.Join(",\n", ConfigManager.MissingConfigurations.Select(d => $" - {d.Name}"));
-								var lbl = new Label()
-								{
-									text = $"Welcome to Beamable! These configurations need to be created:\n{missingConfigs}"
-								};
+									string.Join(",\n", ConfigManager.MissingConfigurations.Select(d => $" - {d.Name}"));
+								var lbl = new Label() { text = $"Welcome to Beamable! These configurations need to be created:\n{missingConfigs}" };
 								lbl.AddTextWrapStyle();
 								rootElement.Add(lbl);
 								rootElement.Add(createButton);
 							}
+
 							var options = ConfigManager.GenerateOptions();
 
 							var scroller = new ScrollView();
@@ -90,40 +84,64 @@ namespace Beamable.Editor.Config
 			}
 		}
 
+		public static SettingsProvider[] provider;
+
 		[SettingsProviderGroup]
 		public static SettingsProvider[] CreateBeamableProjectModuleSettings()
 		{
-			try
-			{
-				ConfigManager.Initialize(); // re-initialize every time the window is activated, so that we make sure the SO's always exist.
+			DelayCall(false);
 
-				var providers = ConfigManager.ConfigObjects.Select(config =>
+			void DelayCall(bool notifyIfFound)
+			{
+				if (!BeamEditor.IsInitialized)
 				{
-					var options = ConfigManager.GenerateOptions(config);
-					var provider = new SettingsProvider($"Project/Beamable/{options[0].Module}", SettingsScope.Project)
+					EditorApplication.delayCall += () => DelayCall(true);
+					return;
+				}
+
+				try
+				{
+					ConfigManager.Initialize(); // re-initialize every time the window is activated, so that we make sure the SO's always exist.
+
+					List<SettingsProvider> providers = new List<SettingsProvider>();
+
+					foreach (BaseModuleConfigurationObject config in ConfigManager.ConfigObjects)
 					{
-						activateHandler = (searchContext, rootElement) =>
-					{
-						options = ConfigManager.GenerateOptions(config);
-						var scroller = new ScrollView();
-						rootElement.AddStyleSheet($"{BASE_UI_PATH}/ConfigWindow.uss");
-						rootElement.Add(scroller);
-						ConfigWindow.CreateFields(scroller, null, options, false);
-					},
+						var options = ConfigManager.GenerateOptions(config);
 
-						keywords = new HashSet<string>(options.Select(o => o.Name))
-					};
+						if (options.Count == 0)
+						{
+							continue;
+						}
 
-					return provider;
-				}).ToArray();
+						var settingsProvider = new SettingsProvider($"Project/Beamable/{options[0].Module}", SettingsScope.Project)
+						{
+							activateHandler = (searchContext, rootElement) =>
+							{
+								options = ConfigManager.GenerateOptions(config);
+								var scroller = new ScrollView();
+								rootElement.AddStyleSheet($"{BASE_UI_PATH}/ConfigWindow.uss");
+								rootElement.Add(scroller);
+								ConfigWindow.CreateFields(scroller, null, options, false);
+							},
+							keywords = new HashSet<string>(options.Select(o => o.Name))
+						};
 
-				return providers;
+						providers.Add(settingsProvider);
+					}
+
+					provider = providers.ToArray();
+				}
+				catch (Exception ex)
+				{
+					Debug.LogException(ex);
+				}
+
+				if (notifyIfFound)
+					SettingsService.NotifySettingsProviderChanged();
 			}
-			catch (Exception ex)
-			{
-				Debug.LogException(ex);
-				return null;
-			}
+
+			return provider;
 		}
 	}
 }

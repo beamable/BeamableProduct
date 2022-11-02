@@ -60,10 +60,20 @@ namespace Beamable.Api
 			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.SetString($"{_prefix}{cid}.access_token", token.Token);
 			PlayerPrefs.SetString($"{_prefix}{cid}.refresh_token", token.RefreshToken);
-			PlayerPrefs.SetString(
-			   $"{_prefix}{cid}.expires",
-			   token.ExpiresAt.ToFileTimeUtc().ToString()
-			);
+			try
+			{
+				PlayerPrefs.SetString(
+					$"{_prefix}{cid}.expires",
+					token.ExpiresAt.ToFileTimeUtc().ToString()
+				);
+			}
+			catch (ArgumentOutOfRangeException)
+			{
+				Debug.LogWarning($"Wasn't able to set the expiration time of the token in playerprefs. ExpiresAt=[{token.ExpiresAt}]. " +
+								 "This is a non-fatal error, because if the token is expired, it will be re-issued after the first auth failure, " +
+								 "and the original request will be reattempted.");
+			}
+
 			StoreDeviceRefreshToken(cid, null, token);
 			PlayerPrefs.Save();
 			return Promise<Unit>.Successful(PromiseBase.Unit);

@@ -21,28 +21,26 @@
         <engine:VisualElement name="splitPane">
             <engine:VisualElement name="services">
                 <engine:VisualElement name="header">
-                    <engine:VisualElement name="enabledC" class="column">
-                        <engine:Label text="Enabled" class="SubTitleText"/>
-                    </engine:VisualElement>
-
-                    <engine:VisualElement name="typeC" class="column">
-                        <engine:Label text="Type" class="SubTitleText"/>
-                    </engine:VisualElement>
+                    <engine:VisualElement name="enabledC" class="column"/>
 
                     <engine:VisualElement name="nameC" class="column">
+                        <engine:Image class="HeaderSeparatorImage"/>
                         <engine:Label text="Name" class="SubTitleText"/>
                     </engine:VisualElement>
 
                     <engine:VisualElement name="depsC" class="column">
+                        <engine:Image class="HeaderSeparatorImage"/>
                         <engine:Label text="Dependencies" class="SubTitleText"/>
                     </engine:VisualElement>
 
                     <engine:VisualElement name="SizeC" class="column">
-                    <engine:Label text="Profile" class="SubTitleText"/>
+                        <engine:Image class="HeaderSeparatorImage"/>
+                        <engine:Label text="Size" class="SubTitleText"/>
                     </engine:VisualElement>
 
                     <engine:VisualElement name="CommentsC" class="column">
-                    <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
+                        <engine:Image class="HeaderSeparatorImage"/>
+                        <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
                     </engine:VisualElement>
 
                     <engine:VisualElement name="CheckC" class="column"/>

@@ -11,6 +11,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class RemoteMicroserviceVisualElement : MicroserviceVisualElement
@@ -34,40 +36,28 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
-			Root.Q<Button>("buildBtn").RemoveFromHierarchy();
+			base.UpdateVisualElements();
+			
+			Root.Q<Button>("startBtn").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
-			Root.Q<VisualElement>("dependentServicesContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
-
-#if UNITY_2019_1_OR_NEWER
-            Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);
-#elif UNITY_2018
-            Root.Q<VisualElement>("mainVisualElement").style.height = StyleValue<float>.Create(DEFAULT_HEADER_HEIGHT);
-#endif
+			Root.Q("statusSeparator")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openDocsBtn")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openScriptBtn")?.RemoveFromHierarchy();
+			Root.Q<MicroserviceVisualElementSeparator>("separator")?.RemoveFromHierarchy();
 			Root.Q("foldContainer").visible = false;
-
-			_statusIcon.RemoveFromHierarchy();
+			Root.Q<VisualElement>("mainVisualElement").style.SetHeight(DEFAULT_HEADER_HEIGHT);
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
-			_moreBtn.tooltip = "More...";
-
-			_checkbox.Refresh();
-			_checkbox.SetText(Model.Name);
-			_checkbox.SetWithoutNotify(Model.IsSelected);
-			_checkbox.SetEnabled(false);
-			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
-			_checkbox.OnValueChanged += b => Model.IsSelected = b;
-
+			_moreBtn.tooltip = Tooltips.Microservice.MORE;
+			
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.OnDockerLoginRequired += LoginToDocker;
 
-			_separator.Refresh();
-
 			UpdateLocalStatus();
-			UpdateRemoteStatusIcon();
+			UpdateRemoteStatusIcon("remoteEnabled");
 			UpdateModel();
 		}
 
@@ -91,14 +81,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnServiceReferenceChanged(ServiceReference serviceReference)
 		{
 			UpdateRemoteStatusIcon();
-		}
-
-		protected override void UpdateRemoteStatusIcon()
-		{
-			_remoteStatusIcon.ClearClassList();
-			string statusClassName = "remoteEnabled";
-			_remoteStatusIcon.tooltip = REMOTE_ONLY;
-			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
 		protected override void UpdateLocalStatus()

@@ -19,6 +19,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Content;
 using Beamable.Experimental;
@@ -71,6 +72,8 @@ namespace Beamable.Player
 		public LeaderboardService LeaderboardService => _ctx.ServiceProvider.GetService<LeaderboardService>();
 		public IBeamableRequester Requester => _ctx.ServiceProvider.GetService<IBeamableRequester>();
 		public StatsService StatsService => _ctx.ServiceProvider.GetService<StatsService>();
+
+		[Obsolete("Use " + nameof(StatsService) + " instead.")]
 		public StatsService Stats => _ctx.ServiceProvider.GetService<StatsService>();
 		public SessionService SessionService => _ctx.ServiceProvider.GetService<SessionService>();
 		public IAnalyticsTracker AnalyticsTracker => _ctx.ServiceProvider.GetService<IAnalyticsTracker>();
@@ -87,6 +90,8 @@ namespace Beamable.Player
 		public ICloudDataApi TrialDataService => _ctx.ServiceProvider.GetService<ICloudDataApi>();
 		public ITournamentApi Tournaments => _ctx.ServiceProvider.GetService<ITournamentApi>();
 		public ISdkEventService SdkEventService => _ctx.ServiceProvider.GetService<ISdkEventService>();
+		public IPresenceApi PresenceService => _ctx.ServiceProvider.GetService<IPresenceApi>();
+		public IPresenceApi Presence => _ctx.ServiceProvider.GetService<IPresenceApi>();
 
 		private string Cid => _ctx.Cid;
 		private string Pid => _ctx.Pid;

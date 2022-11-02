@@ -27,9 +27,14 @@ namespace Beamable.Api
 		public string Pid { get; }
 
 		private bool _neverExpires;
-		//Consider the token expired if we're within 1 Day of true expiration
-		//This is to avoid the token expiring during a play session
-		public bool IsExpired => !_neverExpires && DateTime.UtcNow.AddDays(1) > ExpiresAt;
+
+		/// <summary>
+		/// Check if the <see cref="Token"/> is expired, or will expire within the play session.
+		/// </summary>
+		public bool IsExpired =>
+			//Consider the token expired if we're within 1 Day of true expiration
+			//This is to avoid the token expiring during a play session
+			!_neverExpires && DateTime.UtcNow.AddDays(1) > ExpiresAt;
 
 		public AccessToken(AccessTokenStorage storage, string cid, string pid, string token, string refreshToken, long expiresAt)
 		{
@@ -42,6 +47,7 @@ namespace Beamable.Api
 			if (expiresAt >= long.MaxValue - 1)
 			{
 				_neverExpires = true;
+				ExpiresAt = DateTime.MaxValue;
 			}
 			else
 			{
@@ -67,32 +73,54 @@ namespace Beamable.Api
 			}
 		}
 
-		// Saves to disk
+		/// <summary>
+		/// Saving an <see cref="AccessToken"/> commits the full token structure to PlayerPrefs.
+		/// Only one token can be saved per player code / cid / pid combo.
+		/// </summary>
+		/// <returns>A promise indicating when the write operation will complete.</returns>
 		public Promise<Unit> Save()
 		{
-
 			return _storage.SaveTokenForRealm(
 			   Cid,
 			   Pid,
 			   this
 			);
 		}
+
+		/// <summary>
+		/// Saving an <see cref="AccessToken"/> as a customer scoped token will commit the full token structure
+		/// to PlayerPrefs, but do so without scoping it with the token's <see cref="AccessToken.Pid"/>.
+		/// Only one token can be saved per player code / cid combo.
+		/// </summary>
+		/// <returns>A promise indicating when the write operation will complete.</returns>
 		public Promise<Unit> SaveAsCustomerScoped()
 		{
 			return _storage.SaveTokenForCustomer(Cid, this);
 		}
 
-		// Deletes from disk
+		/// <summary>
+		/// Deleting an <see cref="AccessToken"/> will remove the full token structure from PlayerPrefs.
+		/// </summary>
+		/// <returns>A promise indicating when the delete operation will complete.</returns>
 		public Promise<Unit> Delete()
 		{
 			return _storage.DeleteTokenForRealm(Cid, Pid);
 		}
 
+		/// <summary>
+		/// Deleting an <see cref="AccessToken"/> will remove the full token structure from PlayerPrefs.
+		/// </summary>
+		/// <returns>A promise indicating when the delete operation will complete.</returns>
 		public Promise<Unit> DeleteAsCustomerScoped()
 		{
 			return _storage.DeleteTokenForCustomer(Cid);
 		}
 
+		/// <summary>
+		/// <b> DANGEROUS </b>
+		/// This method can be used to simulate what happens if the internal <see cref="AccessToken.Token"/> is corrupted.
+		/// You may want to do this during testing to check if the game can recover from a corrupted token.
+		/// </summary>
 		public void CorruptAccessToken()
 		{
 			// Set as a garbage (but plausible) token
@@ -100,6 +128,11 @@ namespace Beamable.Api
 			Save();
 		}
 
+		/// <summary>
+		/// <b> DANGEROUS </b>
+		/// This method can be used to simulate what happens if the internal <see cref="AccessToken.Token"/> has expired.
+		/// You may want to do this during testing to check if the game can recover from an expired token.
+		/// </summary>
 		public void ExpireAccessToken()
 		{
 			ExpiresAt = DateTime.UtcNow.AddDays(-2);

@@ -1,6 +1,7 @@
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
+using Beamable.Server.Api.Chat;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Content;
@@ -10,6 +11,7 @@ using Beamable.Server.Api.Inventory;
 using Beamable.Server.Api.Leaderboards;
 using Beamable.Server.Api.Mail;
 using Beamable.Server.Api.Notifications;
+using Beamable.Server.Api.Payments;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
@@ -24,7 +26,7 @@ namespace Beamable.Server
 	///
 	/// #### Related Links
 	/// - See Beamable.Server.Microservice script reference
-	/// 
+	///
 	/// ### Example
 	/// This demonstrates example usage from WITHIN a custom %Beamable %Microservice.
 	///
@@ -49,63 +51,63 @@ namespace Beamable.Server
 	///   var SocialService = Services.Social;
 	///   var StatsService = Services.Stats;
 	///   var TournamentService = Services.Tournament;
-	///   var TrialDataService = Services.TrialData; 
-	/// 
+	///   var TrialDataService = Services.TrialData;
+	///
 	/// }
 	///
 	/// ```
 	///
-	/// 
+	///
 	/// #### Alternative API Links
 	/// - See Beamable.API for the main %Client script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
 	public interface IBeamableServices
 	{
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/announcements-feature">Announcements</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/announcements-feature-overview">Announcements</a> feature
 		/// </summary>
 		IMicroserviceAnnouncementsApi Announcements { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/accounts-feature">Accounts</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/identity">Identity</a> feature
 		/// </summary>
 		IMicroserviceAuthApi Auth { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/calendars-feature">Calendars</a> feature
+		/// %Microservice entry point for the Calendars feature
 		/// </summary>
 		IMicroserviceCalendarsApi Calendars { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/content-feature">Content</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/content-feature-overview">Content</a> feature
 		/// </summary>
 		IMicroserviceContentApi Content { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/events-feature">Events</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/events-feature-overview">Events</a> feature
 		/// </summary>
 		IMicroserviceEventsApi Events { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/groups-feature">Groups</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/groups-feature-overview">Groups</a> feature
 		/// </summary>
 		IMicroserviceGroupsApi Groups { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature
 		/// </summary>
 		IMicroserviceInventoryApi Inventory { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/leaderboards-feature">Leaderboards</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/leaderboards-feature-overview">Leaderboards</a> feature
 		/// </summary>
 		IMicroserviceLeaderboardsApi Leaderboards { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/mail-feature">Mail</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/mail-feature-overview">Mail</a> feature
 		/// </summary>
 		IMicroserviceMailApi Mail { get; }
 
@@ -120,25 +122,38 @@ namespace Beamable.Server
 		IMicroserviceRealmConfigService RealmConfig { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/friends-feature">Friends</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/social-networking">Social</a> feature
 		/// </summary>
 		IMicroserviceSocialApi Social { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/analytics-feature">Analytics</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/stats-feature-overview">Stats</a> feature
 		/// </summary>
 		IMicroserviceStatsApi Stats { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/tournaments-feature">Tournaments</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/tournaments-feature-overview">Tournaments</a> feature
 		/// </summary>
 		IMicroserviceTournamentApi Tournament { get; }
 
 		/// <summary>
-		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/cloud-saving-feature">Cloud Saving</a> feature
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/cloud-save-feature-overview">Cloud Saving</a> feature
 		/// </summary>
 		IMicroserviceCloudDataApi TrialData { get; }
 
+		/// <summary>
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/commerce-overview">Commerce</a> feature
+		/// </summary>
 		IMicroserviceCommerceApi Commerce { get; }
+
+		/// <summary>
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/reference/chat-overview">Chat</a> feature
+		/// </summary>
+		IMicroserviceChatApi Chat { get; }
+
+		/// <summary>
+		/// %Microservice entry point for payment operations.
+		/// </summary>
+		IMicroservicePaymentsApi Payments { get; }
 	}
 }

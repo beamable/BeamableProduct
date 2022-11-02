@@ -15,6 +15,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class MicroserviceVisualElement : ServiceBaseVisualElement
@@ -22,12 +24,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
 		{ }
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
+		protected override bool IsRemoteEnabled => _microserviceModel.RemoteReference?.enabled ?? false;
 
-		private Action _defaultBuildAction;
-
-		private VisualElement _buildDefaultLabel;
-		private Button _buildBtn;
 		private MicroserviceModel _microserviceModel;
+
+		public override void Refresh()
+		{
+			base.Refresh();
+		}
 
 		protected override void OnDestroy()
 		{
@@ -41,19 +45,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.ServiceBuilder.OnIsBuildingChanged -= OnIsBuildingChanged;
 			_microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
+			_microserviceModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 		}
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			_buildBtn = Root.Q<Button>("buildBtn");
-			_buildDefaultLabel = Root.Q<VisualElement>("buildImage");
 			_microserviceModel = (MicroserviceModel)Model;
 		}
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
-			_buildBtn.clickable.clicked -= HandleBuildButtonClicked;
-			_buildBtn.clickable.clicked += HandleBuildButtonClicked;
+			_startButton.clickable.clicked -= HandleStartButtonClicked;
+			_startButton.clickable.clicked += HandleStartButtonClicked;
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndStart += SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndRestart -= SetupProgressBarForBuildAndRestart;
@@ -86,14 +89,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			UpdateRemoteStatusIcon();
 		}
-		protected override void UpdateRemoteStatusIcon()
-		{
-			_remoteStatusIcon.ClearClassList();
-			bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
-			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			_remoteStatusIcon.tooltip = remoteEnabled ? REMOTE_ENABLED : REMOTE_NOT_ENABLED;
-			_remoteStatusIcon.AddToClassList(statusClassName);
-		}
 		protected override void UpdateLocalStatus()
 		{
 			base.UpdateLocalStatus();
@@ -101,43 +96,53 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void SetupProgressBarForBuildAndStart(Task task)
 		{
-			var _ = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
-				new StepLogParser(new VirtualLoadingBar(), Model, null),
-				new RunImageLogParser(new VirtualLoadingBar(), Model)
-			);
+			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
+			                                                 new StepLogParser(new VirtualLoadingBar(), Model, null),
+			                                                 new RunImageLogParser(new VirtualLoadingBar(), Model));
+
+			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
 		private void SetupProgressBarForBuildAndRestart(Task task)
 		{
-			var _ = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
-				new StepLogParser(new VirtualLoadingBar(), Model, null),
-				new RunImageLogParser(new VirtualLoadingBar(), Model),
-				new StopImageLogParser(new VirtualLoadingBar(), Model)
-			);
+			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
+			                                                 new StepLogParser(new VirtualLoadingBar(), Model, null),
+			                                                 new RunImageLogParser(new VirtualLoadingBar(), Model),
+			                                                 new StopImageLogParser(new VirtualLoadingBar(), Model));
+			
+			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
 		private void SetupProgressBarForBuild(Task task)
 		{
 			new StepLogParser(_loadingBar, Model, task);
 		}
-		private void HandleBuildButtonClicked() => _defaultBuildAction?.Invoke();
+		private void HandleStartButtonClicked()
+		{
+			if (_microserviceModel.IsRunning)
+			{
+				_microserviceModel.Stop();
+			}
+			else
+			{
+				_microserviceModel.BuildAndStart();
+			}
+		}
 
 		protected override void UpdateButtons()
 		{
 			base.UpdateButtons();
-			_stopButton.visible = Model.IsRunning;
-			_buildBtn.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-													 _microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
-			_buildDefaultLabel.EnableInClassList("running", _microserviceModel.IsRunning);
 
-			if (_microserviceModel.IsRunning)
-			{
-				_defaultBuildAction = () => _microserviceModel.BuildAndRestart();
-			}
-			else
-			{
-				_defaultBuildAction = () => _microserviceModel.BuildAndStart();
-			}
-			_stopButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
-			_buildBtn.SetEnabled(!_microserviceModel.IsBuilding);
+			var api = BeamEditorContext.Default;
+			if (!api.IsAuthenticated)
+				return;
+
+			ChangeStartButtonState(!_microserviceModel.IsBuilding);
+		}
+
+		public override void ChangeStartButtonState(bool isOn, string enabledTooltip = null, string disabledTooltip = null)
+		{
+			enabledTooltip = enabledTooltip ?? GetBuildButtonString(_microserviceModel.IncludeDebugTools,
+																	_microserviceModel.IsRunning ? STOP : Tooltips.Microservice.PLAY_MICROSERVICE);
+			base.ChangeStartButtonState(isOn, enabledTooltip, disabledTooltip);
 		}
 	}
 }

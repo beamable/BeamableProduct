@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.ManagerClient;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class StorageObjectVisualElement : ServiceBaseVisualElement
@@ -17,6 +20,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public new class UxmlFactory : UxmlFactory<StorageObjectVisualElement, UxmlTraits> { }
 
 		protected override string ScriptName => nameof(StorageObjectVisualElement);
+		protected override bool IsRemoteEnabled => _mongoStorageModel.RemoteReference?.enabled ?? false;
 
 		private MongoStorageModel _mongoStorageModel;
 
@@ -34,12 +38,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
+			_startButton.clickable.clicked -= HandleStartClicked;
+			_startButton.clickable.clicked += HandleStartClicked;
 			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 			_mongoStorageModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished += OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged += OnIsRunningChanged;
+		}
+
+		private void HandleStartClicked()
+		{
+			if (_mongoStorageModel.IsRunning)
+			{
+				_mongoStorageModel.Stop();
+			}
+			else
+			{
+				_mongoStorageModel.Start();
+			}
 		}
 
 		protected override void UpdateLocalStatus()
@@ -65,15 +83,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateRemoteStatusIcon();
 		}
 
-		protected override void UpdateRemoteStatusIcon()
-		{
-			_remoteStatusIcon.ClearClassList();
-			bool remoteEnabled = _mongoStorageModel.RemoteReference?.enabled ?? false;
-			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			_remoteStatusIcon.tooltip = remoteEnabled ? REMOTE_ENABLED : REMOTE_NOT_ENABLED;
-			_remoteStatusIcon.AddToClassList(statusClassName);
-		}
-
 		protected override void SetupProgressBarForStart(Task _)
 		{
 			// left blank for no loading bar
@@ -87,8 +96,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			Root.Q("buildBtn")?.RemoveFromHierarchy();
 			_mongoStorageModel = (MongoStorageModel)Model;
+		}
+
+		protected override void UpdateButtons()
+		{
+			base.UpdateButtons();
+
+			_startButton.tooltip = Model.IsRunning ? STOP : Tooltips.Microservice.PLAY_STORAGE;
 		}
 	}
 }

@@ -8,6 +8,9 @@ namespace Beamable.Common
 	public class PackageVersion
 	{
 		private const string PREVIEW_STRING = "PREVIEW";
+		private const string PREVIEW_PREFIX_STRING = "PRE";
+		private const string EXPERIMENTAL_STRING = "EXPERIMENTAL";
+		private const string EXP_PREFIX_STRING = "EXP";
 		private const string RC_STRING = "RC";
 		private const string NIGHTLY_STRING = "NIGHTLY";
 		private const int UNASSIGNED_VALUE = -1;
@@ -20,19 +23,59 @@ namespace Beamable.Common
 		[SerializeField] private int _patch = UNASSIGNED_VALUE;
 		[SerializeField] private int _rc = UNASSIGNED_VALUE;
 		[SerializeField] private long _nightlyTime = UNASSIGNED_VALUE;
-		[SerializeField] private bool _isPreview;
+		[SerializeField] private bool _isPreview, _isExperimental;
 
+		/// <summary>
+		/// True if this package version is representing a release candidate version.
+		/// </summary>
 		public bool IsReleaseCandidate => _rc > UNASSIGNED_VALUE;
+
+		/// <summary>
+		/// True if this package version is representing a nightly version
+		/// </summary>
 		public bool IsNightly => _nightlyTime > UNASSIGNED_VALUE;
+
+		/// <summary>
+		/// True if this package version is representing a preview build.
+		/// https://docs.unity3d.com/Manual/upm-lifecycle.html
+		/// </summary>
 		public bool IsPreview => _isPreview;
 
+		/// <summary>
+		/// True if this package version represents an experimental build.
+		/// https://docs.unity3d.com/Manual/upm-lifecycle.html
+		/// </summary>
+		public bool IsExperimental => _isExperimental;
+
+		/// <summary>
+		/// The major version is the first number in the semantic version string.
+		/// In the example, "1.2.3", the major version is 1.
+		/// </summary>
 		public int Major => _major;
+
+		/// <summary>
+		/// The minor version is the second number in the semantic version string.
+		/// In the example, "1.2.3", the minor version is 2.
+		/// </summary>
 		public int Minor => _minor;
+
+		/// <summary>
+		/// The patch version is the last number in the semantic version string.
+		/// In the example, "1.2.3", the patch version is 3.
+		/// </summary>
 		public int Patch => _patch;
+
+		/// <summary>
+		/// If this is a nightly package, see <see cref="IsNightly"/>, this will represent the date time when the build was created
+		/// </summary>
 		public long? NightlyTime => IsNightly ? _nightlyTime : default;
+
+		/// <summary>
+		/// If this is a release candidate package, see <see cref="IsReleaseCandidate"/>, this will represent the number of the release candidate.
+		/// </summary>
 		public int? RC => IsReleaseCandidate ? _rc : default;
 
-		public PackageVersion(int major, int minor, int patch, int rc = -1, long nightlyTime = -1, bool isPreview = false)
+		public PackageVersion(int major, int minor, int patch, int rc = -1, long nightlyTime = -1, bool isPreview = false, bool isExperimental = false)
 		{
 			_major = major;
 			_minor = minor;
@@ -40,14 +83,19 @@ namespace Beamable.Common
 			_rc = rc;
 			_nightlyTime = nightlyTime;
 			_isPreview = isPreview;
+			_isExperimental = isExperimental;
 		}
-
 
 		protected bool Equals(PackageVersion other)
 		{
 			return _major == other._major && _minor == other._minor && _patch == other._patch && _rc == other._rc && _nightlyTime == other._nightlyTime && _isPreview == other._isPreview;
 		}
 
+		/// <summary>
+		/// Check if the given object is a semantic match of this package version.
+		/// </summary>
+		/// <param name="obj"></param>
+		/// <returns>True if the given object is the same semantic package version as this instance.</returns>
 		public override bool Equals(object obj)
 		{
 			if (ReferenceEquals(null, obj)) return false;
@@ -70,8 +118,10 @@ namespace Beamable.Common
 			}
 		}
 
+		[Obsolete]
 		public bool IsMinor(int major, int minor) => IsMajor(major) && Minor == minor;
 
+		[Obsolete]
 		public bool IsMajor(int major) => Major == major;
 
 		public static bool operator <(PackageVersion a, PackageVersion b)
@@ -105,6 +155,10 @@ namespace Beamable.Common
 		public static implicit operator PackageVersion(string versionString) => PackageVersion.FromSemanticVersionString(versionString);
 
 
+		/// <summary>
+		/// Convert the package version into a semantic package string.
+		/// </summary>
+		/// <returns>A semantic version string</returns>
 		public override string ToString()
 		{
 			var sb = new StringBuilder();
@@ -117,6 +171,11 @@ namespace Beamable.Common
 			{
 				sb.Append(PREVIEW_SEPARATOR);
 				sb.Append(PREVIEW_STRING);
+			}
+			if (_isExperimental && _major != 0)
+			{
+				sb.Append(PREVIEW_SEPARATOR);
+				sb.Append(EXPERIMENTAL_STRING);
 			}
 
 			if (IsNightly)
@@ -137,6 +196,33 @@ namespace Beamable.Common
 			return sb.ToString();
 		}
 
+		/// <summary>
+		/// Try to parse a string into a <see cref="PackageVersion"/>
+		/// </summary>
+		/// <param name="semanticVersion">some semantic string</param>
+		/// <param name="version">This value will be assigned to the parsed value of the semantic string, or will be null if the string wasn't a valid semantic version string</param>
+		/// <returns>True if the given string was a valid semantic version; false otherwise.</returns>
+		public static bool TryFromSemanticVersionString(string semanticVersion, out PackageVersion version)
+		{
+			try
+			{
+				version = semanticVersion;
+				return true;
+			}
+			catch
+			{
+				version = new PackageVersion(0, 0, 0);
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Parse a string into a <see cref="PackageVersion"/>
+		/// https://docs.unity3d.com/Manual/upm-lifecycle.html
+		/// </summary>
+		/// <param name="semanticVersion">some semantic version string</param>
+		/// <returns>A <see cref="PackageVersion"/></returns>
+		/// <exception cref="ArgumentException">If the string was not a valid semantic version string</exception>
 		public static PackageVersion FromSemanticVersionString(string semanticVersion)
 		{
 			var major = -1;
@@ -145,14 +231,34 @@ namespace Beamable.Common
 			var rc = -1;
 			var nightlyTime = -1L;
 			var isPreview = false;
+			var isExp = false;
 
 			var buffer = "";
 			for (var i = 0; i < semanticVersion.Length; i++)
 			{
 				var c = semanticVersion[i];
-				if (!isPreview && buffer.Equals(PREVIEW_STRING))
+				if (!isPreview && buffer.ToLowerInvariant().StartsWith(PREVIEW_PREFIX_STRING.ToLowerInvariant()))
 				{
+					// consume the rest of the PREVIEW_STRING- which is until some delim.
+					while (c != PREVIEW_SEPARATOR && c != VERSION_SEPARATOR && i < semanticVersion.Length)
+					{
+						i++; // outside for loop modification.
+						c = semanticVersion[i];
+					}
+
 					isPreview = true;
+					buffer = "";
+				}
+				if (!isExp && buffer.ToLowerInvariant().StartsWith(EXP_PREFIX_STRING.ToLowerInvariant()))
+				{
+					// consume the rest of the PREVIEW_STRING- which is until some delim.
+					while (c != PREVIEW_SEPARATOR && c != VERSION_SEPARATOR && i < semanticVersion.Length)
+					{
+						i++; // outside for loop modification.
+						c = semanticVersion[i];
+					}
+
+					isExp = true;
 					buffer = "";
 				}
 
@@ -219,15 +325,26 @@ namespace Beamable.Common
 					}
 				}
 
+				if (lastChar && buffer.ToLowerInvariant().StartsWith(PREVIEW_PREFIX_STRING.ToLowerInvariant()))
+				{
+					isPreview = true;
+				}
+
+				if (lastChar && buffer.ToLowerInvariant().StartsWith(EXP_PREFIX_STRING.ToLowerInvariant()))
+				{
+					isExp = true;
+				}
 			}
 
+			isExp |= major == 0; // if the major version is a 0, then its implied to be a preview package.
 			return new PackageVersion(
 			   major: major,
 			   minor: minor,
 			   patch: patch,
 			   rc: rc,
 			   nightlyTime: nightlyTime,
-			   isPreview: isPreview);
+			   isPreview: isPreview,
+			   isExperimental: isExp);
 		}
 	}
 }

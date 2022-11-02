@@ -6,7 +6,7 @@
         xmlns:beamable="Beamable.Editor.UI.Components"
         xmlns:beamableMS="Beamable.Editor.Microservice.UI.Components"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-    
+
     <engine:VisualElement name="mainVisualElement">
 
         <engine:VisualElement name="foldContainer">
@@ -14,41 +14,44 @@
                 <engine:VisualElement name="foldIcon" class="foldIcon unfoldIcon"/>
             </engine:Button>
         </engine:VisualElement>
-        
+
         <engine:VisualElement name="serviceCard">
             <engine:VisualElement name="logHeader">
-                <beamable:LabeledCheckboxVisualElement name="checkbox" flip ="True"/>
+                
                 <engine:VisualElement class="leftArea" name="leftArea">
+                    <engine:Image name="serviceIcon"/>
+                    <engine:Label name="serviceName"/>
                     <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
                 </engine:VisualElement>
-                <engine:VisualElement class="rightArea" name="rightArea">
-                    <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
-                    <engine:Button name="stopBtn" class="confirmBtn">
-                        <engine:VisualElement name="stopImage"/>
-                    </engine:Button>
-                    <engine:Button name="buildBtn" class="confirmBtn">
+                
+                <engine:VisualElement class="centerArea" name="centerArea">
+                    <engine:Button name="startBtn" class="confirmBtn noMarginNoPaddingNoBorder">
                         <engine:VisualElement name="buildImage"/>
                     </engine:Button>
-                    <engine:VisualElement name="remoteStatusIcon"/>
-                    <engine:VisualElement name="statusIcon"/>
-                    <engine:Button name="moreBtn"/>
                 </engine:VisualElement>
+                
+                <engine:VisualElement class="rightArea" name="rightArea">
+                    <engine:VisualElement name="openDocsBtn">
+                        <engine:VisualElement name="btnIcon"/>
+                    </engine:VisualElement>
+                    <engine:VisualElement name="openScriptBtn">
+                        <engine:VisualElement name="btnIcon"/>
+                    </engine:VisualElement>
+                    <engine:VisualElement name="moreBtn">
+                        <engine:VisualElement name="btnIcon"/>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+                
             </engine:VisualElement>
 
             <engine:VisualElement name="SubTitle">
                 <engine:VisualElement class="rightArea">
                 </engine:VisualElement>
             </engine:VisualElement>
-
+            
             <engine:VisualElement name="logContainer" class="--positionHidden"/>
             <beamableMS:MicroserviceVisualElementSeparator name="separator" class="--positionHidden"/>
 
-            <engine:VisualElement name="buttonsContainer">
-                <engine:VisualElement name="dependentServicesContainer">
-                    <engine:Button name="dependentServicesBtn" text="Dependent services" class="noMarginNoPaddingNoBorder"/>
-                </engine:VisualElement>
-            </engine:VisualElement>
-            
         </engine:VisualElement>
 
     </engine:VisualElement>

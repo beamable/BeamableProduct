@@ -10,13 +10,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
-
+	[Serializable]
 	public class AssemblyDefinitionInfo : IEquatable<AssemblyDefinitionInfo>
 	{
 		public string Name;
@@ -97,8 +100,22 @@ namespace Beamable.Server
 			_assemblies = assemblies.ToDictionary(a => a.Name);
 		}
 
+
 		public AssemblyDefinitionInfo Find(string assemblyName)
 		{
+			const string guidPrefix = "GUID:";
+
+			if (assemblyName.StartsWith(guidPrefix))
+			{
+				var path = AssetDatabase.GUIDToAssetPath(assemblyName.Replace(guidPrefix, string.Empty));
+				var assemblyDefinitionInfo = _assemblies.Where(pair => pair.Value.Location == path)
+													.Select(pair => pair.Value).FirstOrDefault();
+				if (assemblyDefinitionInfo != null)
+				{
+					return assemblyDefinitionInfo;
+				}
+			}
+
 			if (!_assemblies.TryGetValue(assemblyName, out var unityAssembly))
 			{
 				throw new AssemblyDefinitionNotFoundException(assemblyName);
@@ -204,12 +221,37 @@ namespace Beamable.Server
 		public List<MicroserviceFileDependency> FilesToCopy;
 		public AssemblyDefinitionInfoGroup Assemblies;
 		public List<PluginImporter> DllsToCopy;
+
+		public string GetDependencyChecksum()
+		{
+			var sb = new StringBuilder();
+			foreach (var fileDep in FilesToCopy)
+			{
+				sb.Append(fileDep.Agnostic.SourcePath);
+			}
+
+			foreach (var asm in Assemblies.ToCopy)
+			{
+				sb.Append(asm.Location);
+			}
+
+			foreach (var dll in DllsToCopy)
+			{
+				sb.Append(dll.assetPath);
+			}
+
+			using (var md5 = MD5.Create())
+			{
+				var bytes = Encoding.ASCII.GetBytes(sb.ToString());
+				var hash = md5.ComputeHash(bytes);
+				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+				return checksum;
+			}
+		}
 	}
 
 	public class DependencyResolver : MonoBehaviour
 	{
-
-
 		public static HashSet<Type> GetReferencedTypes(Type type)
 		{
 			var results = new HashSet<Type>();
@@ -232,7 +274,9 @@ namespace Beamable.Server
 			// get all methods
 			Add(type.BaseType);
 
+#pragma warning disable CS0618
 			var agnosticAttribute = type.GetCustomAttribute<AgnosticAttribute>();
+#pragma warning restore CS0618
 			if (agnosticAttribute != null && agnosticAttribute.SupportTypes != null)
 			{
 				foreach (var supportType in agnosticAttribute.SupportTypes)
@@ -323,7 +367,9 @@ namespace Beamable.Server
 
 		private static bool IsSourceCodeType(Type t, out IHasSourcePath attribute)
 		{
+#pragma warning disable CS0618
 			attribute = t.GetCustomAttribute<AgnosticAttribute>(false);
+#pragma warning restore CS0618
 			if (attribute == null)
 			{
 				attribute = t.GetCustomAttribute<ContentTypeAttribute>(false);
@@ -477,7 +523,10 @@ namespace Beamable.Server
 						totalDllReferences.Add(dllReference);
 					}
 
-					foreach (var referenceName in curr.References)
+					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
+					var info = asset.ConvertToInfo();
+
+					foreach (var referenceName in info.References)
 					{
 						try
 						{

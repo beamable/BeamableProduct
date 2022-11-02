@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using Beamable.Common.Content;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
@@ -181,6 +182,26 @@ namespace Beamable.Server.Tests.Runtime
 			public override string ToString() => $"A=[{A}]";
 		}
 
+		[System.Serializable]
+		public class LocalizeContentObject : ContentObject
+		{
+			[SerializeField]
+			public string Title = "";
+
+			[SerializeField]
+			public int RandomSeed = 3;
+
+			public override bool Equals(object obj)
+			{
+				return obj != null && obj is LocalizeContentObject casted && casted.Title == Title && casted.RandomSeed == RandomSeed;
+			}
+
+			public override int GetHashCode()
+			{
+				return base.GetHashCode(); // need to override because of Equals override
+			}
+		}
+
 		[UnityTest]
 		public IEnumerator CanDeserializeBoolean()
 		{
@@ -262,6 +283,69 @@ namespace Beamable.Server.Tests.Runtime
 
 			yield return req.ToYielder();
 			Assert.AreEqual(new Vector2(1, 3), req.GetResult());
+		}
+
+		[UnityTest]
+		public IEnumerator CanDeserializeProperties()
+		{
+			var client = new TestClient(ROUTE);
+
+			MockRequester.MockRequest<TestProperties>(Method.POST,
+													  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("{\"<A>k__BackingField\": 7, \"<B>k__BackingField\": \"test string\"}");
+
+			var req = client.Request<TestProperties>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+			var obj = req.GetResult();
+			Assert.AreEqual(obj.A, 7);
+			Assert.AreEqual(obj.B, "test string");
+		}
+
+		[UnityTest]
+		public IEnumerator CanDeserializeContentObject()
+		{
+			var client = new TestClient(ROUTE);
+
+			MockRequester.MockRequest<LocalizeContentObject>(Method.POST,
+											   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("{\"Title\": \"Tst\", \"RandomSeed\": 3}");
+
+			var req = client.Request<LocalizeContentObject>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+
+			var tmp = ScriptableObject.CreateInstance<LocalizeContentObject>();
+			tmp.Title = "Tst";
+			tmp.RandomSeed = 3;
+
+			Assert.AreEqual(tmp, req.GetResult());
+		}
+
+		[UnityTest]
+		public IEnumerator CanDeserializeListOf_ContentObject()
+		{
+			var client = new TestClient(ROUTE);
+
+			MockRequester.MockRequest<List<LocalizeContentObject>>(Method.POST,
+																   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("[{\"Title\": \"Tst1\", \"RandomSeed\": 1},{\"Title\": \"Tst2\", \"RandomSeed\": 2} ]");
+
+			var req = client.Request<List<LocalizeContentObject>>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+
+			var tmpList = new List<LocalizeContentObject>();
+
+			for (int i = 1; i <= 2; i++)
+			{
+				var tmp = ScriptableObject.CreateInstance<LocalizeContentObject>();
+				tmp.Title = "Tst" + i;
+				tmp.RandomSeed = i;
+				tmpList.Add(tmp);
+			}
+
+			Assert.AreEqual(tmpList, req.GetResult());
 		}
 	}
 }

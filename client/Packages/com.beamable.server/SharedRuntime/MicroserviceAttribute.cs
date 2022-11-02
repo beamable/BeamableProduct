@@ -15,6 +15,19 @@ namespace Beamable.Server
 		   "Any new client build of your game won't require the payload string. Unless you've deployed a client build using Beamable before version 0.11.0, you shouldn't set this")]
 		public bool UseLegacySerialization { get; set; } = false;
 
+		/// <summary>
+		/// <b>Danger!</b>, if you enable this field, you will not be able to rely on content loaded from the Microservice code.
+		/// Normally, when a Beamable Microservice starts, it registers an event subscription with Beamable's internal platform,
+		/// so that it can receive a stream of Beamable events. The primary use case is to receive events about Content Publication.
+		/// When a Content Publication event is received, the Microservice flushes the in-memory content cache. After the cache is flushed,
+		/// all future content requests download new content. Without the event, the content downloaded on the Microservice will
+		/// always be the same as it was the first time the content was requested.
+		///
+		/// When this flag is enabled, the Microservice will not register an event subscription. This may be useful to prevent
+		/// the Microservice from receiving other unrelated Beamable platform events such as inventory-change events.
+		/// </summary>
+		public bool DisableAllBeamableEvents { get; set; } = false;
+
 		public MicroserviceAttribute(string microserviceName, [CallerFilePath] string sourcePath = "")
 		{
 			MicroserviceName = microserviceName;

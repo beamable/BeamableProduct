@@ -17,6 +17,7 @@ namespace Beamable.Editor.Assistant
 	/// whenever the <see cref="BeamableAssistantWindow"/> is opened or focused. 
 	/// </summary>
 	// ReSharper disable once ClassNeverInstantiated.Global
+	[BeamHintSystem()]
 	public class BeamHintNotificationManager : IBeamHintSystem
 	{
 		private const string NOTIFICATION_SESSION_KEY = "BEAM_HINT_NOTIFICATION_SESSION_KEY";
@@ -143,7 +144,7 @@ namespace Beamable.Editor.Assistant
 
 		/// <summary>
 		/// Detects whether or not we should take another pass to identify new notifications or not.
-		/// This is added to <see cref="EditorApplication.update"/> during <see cref="EditorAPI.Initialize"/>.
+		/// This is added to <see cref="EditorApplication.update"/> during <see cref="BeamEditor.Initialize"/>.
 		/// </summary>
 		public void Update()
 		{
@@ -156,7 +157,9 @@ namespace Beamable.Editor.Assistant
 			_lastTickTime = currTickTime;
 			_hintPreferences.RebuildPerHintPreferences();
 			CheckNotifications();
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 			BeamableToolbarExtender.Repaint();
+#endif
 		}
 
 		private void CheckNotifications()

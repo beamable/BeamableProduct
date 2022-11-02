@@ -196,6 +196,7 @@ ScrollView #ContentView.content-view {
 
 #logWindowHeader {
     flex-direction: row;
+    border-top-width: 1px;
     /*padding-top: 5px;*/
 }
 
@@ -244,7 +245,7 @@ LogVisualElement #splitter .splitWrapper.leftSplit {
 
 LogVisualElement #splitter .splitWrapper.rightSplit {
     flex-grow: 0.2;
-    min-height: 40px;
+    min-height: 75px;
 }
 
 LogVisualElement .splitWrapper {
@@ -262,11 +263,6 @@ LogVisualElement .splitWrapper > VisualElement {
 
 #clearContainer {
     padding-top: 0px;
-    /*border-bottom-width: 1px;*/
-    /*border-left-width: 1px;*/
-    /*border-top-width: 1px;*/
-    /*border-right-width: 1px;*/
-
 }
 
 #error .img {
@@ -302,11 +298,6 @@ LogVisualElement .splitWrapper > VisualElement {
 
 #logWindowBody {
     flex-grow: 1;
-}
-
-#logText {
-    /*min-height: 100px;*/
-
 }
 
 #buttonRow {
@@ -349,15 +340,10 @@ LogVisualElement .splitWrapper > VisualElement {
 }
 
 #logListRoot {
-    /*min-height: 100px;*/
-    /*margin-left: 5px;*/
-    /*margin-right: 5px;*/
-    /*top:-6px;*/
     border-bottom-width: 0px;
     border-left-width: 1px;
     border-top-width: 1px;
     border-right-width: 1px;
-
     flex-grow: 1;
 }
 
@@ -373,4 +359,41 @@ ListView ConsoleLogVisualElement:selected {
     font-size: 12px;
     -unity-text-align: middle-left;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+
+#detailWindowBottomBar {
+    flex-grow: 1;
+    flex-direction: row-reverse;
+    min-height: 24px;
+    max-height: 24px;
+    padding-left: 30px;
+    padding-right: 14px;
+    align-items: center;
+    margin-left: -2px;
+    margin-right: -2px;
+}
+
+#detailWindowBottomBar > #copyTextBtn {
+    min-width: 24px;
+    min-height: 24px;
+}
+
+#pagination {
+    flex-grow: 1;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#paginationRange {
+    width: 50px;
+    -unity-text-align: middle-center;
+}
+
+#leftArrow, #rightArrow {
+    min-width: 20px;
+}
+
+.hide {
+    position: absolute;
+    left: 100000px;
 }

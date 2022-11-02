@@ -123,7 +123,10 @@ namespace Beamable.InputManagerIntegration
 #else
 			eventSystem.AddComponent<StandaloneInputModule>();
 #endif
-			eventSystem.AddComponent<EventSystem>();
+			if (!eventSystem.TryGetComponent<EventSystem>(out _))
+			{
+				eventSystem.AddComponent<EventSystem>();
+			}
 		}
 
 		public static bool IsEscapeKeyDown()

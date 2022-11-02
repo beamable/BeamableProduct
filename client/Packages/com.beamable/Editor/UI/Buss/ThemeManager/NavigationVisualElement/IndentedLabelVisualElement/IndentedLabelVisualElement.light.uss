@@ -1,0 +1,19 @@
+﻿#indentedLabel {
+    color: rgb(0,0,0);
+}
+
+.hovered {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.selected {
+    background-color: rgba(0,0,0,0.2); 
+}
+
+
+#idLabel {
+    color: #2e5ea4;
+}
+#classLabel {
+    color: #80412f;
+}

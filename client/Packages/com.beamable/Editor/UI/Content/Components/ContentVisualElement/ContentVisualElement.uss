@@ -1,4 +1,3 @@
-
 ContentVisualElement #mainVisualElement {
     flex-direction: row;
     align-items: center;
@@ -8,6 +7,10 @@ ContentVisualElement #resizable{
     flex-grow: 1;
     flex-direction: row;
     align-content: center;
+}
+
+ContentVisualElement #resizable *{
+    font-size: 11px;
 }
 
 ContentVisualElement > TemplateContainer {

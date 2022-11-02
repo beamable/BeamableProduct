@@ -4,11 +4,11 @@ namespace Beamable.Common
 {
 	/// <summary>
 	/// This type defines the passthrough for a %Beamable %Log %Provider
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public abstract class BeamableLogProvider
 	{
@@ -32,11 +32,11 @@ namespace Beamable.Common
 
 	/// <summary>
 	/// This type defines the passthrough to %UnityEngine.Debug methods such as Log, LogWarning, and LogException.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 #if !DB_MICROSERVICE
 	public class BeamableLogUnityProvider : BeamableLogProvider
@@ -74,7 +74,6 @@ namespace Beamable.Common
 		public override void Error(string error, params object[] args)
 		{
 			UnityEngine.Debug.LogError(string.Format(error, args));
-
 		}
 	}
 #endif
@@ -83,11 +82,11 @@ namespace Beamable.Common
 	/// This type defines the provider for use on physical devices,
 	/// where spamming the device log is undesirable. This log
 	/// provider silently swallows all input it receives.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public class SilentLogProvider : BeamableLogProvider
 	{
@@ -104,11 +103,11 @@ namespace Beamable.Common
 	/// This type defines a simple mock of the %UnityEngine %Debug class.
 	/// The intention is not to replicate the entire set of functionality from Unity's Debug class,
 	/// but to provide an easy reflexive log solution for dotnet core code.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public static class BeamableLogger
 	{
@@ -167,5 +166,8 @@ namespace Beamable.Common
 		{
 			BeamableLogProvider.Provider.Error(error, args);
 		}
+
+		public static void LogErrorFormat(string format, params object[] args) =>
+			BeamableLogProvider.Provider.Error(string.Format(format, args));
 	}
 }

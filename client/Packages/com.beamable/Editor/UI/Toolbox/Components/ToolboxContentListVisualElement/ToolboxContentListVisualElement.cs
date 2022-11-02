@@ -40,7 +40,7 @@ namespace Beamable.Editor.Toolbox.Components
 			}
 		}
 
-		public ToolboxModel Model { get; set; }
+		public IToolboxViewService Model { get; set; }
 		private int ExtraElementCount = 0;
 		private int TotalWidgets = 0;
 		private List<VisualElement> _extraElements = new List<VisualElement>();
@@ -52,6 +52,13 @@ namespace Beamable.Editor.Toolbox.Components
 			base.Refresh();
 
 			_gridContainer = Root.Q("gridContainer");
+
+			Model = Provider.GetService<IToolboxViewService>();
+#if UNITY_2021_1_OR_NEWER
+			var mainVisualElement = Root.Q("mainVisualElement");
+			mainVisualElement.Add(_gridContainer);
+			mainVisualElement.Remove(Root.Q<ScrollView>("scrollView"));
+#endif
 
 			Model.OnWidgetSourceChanged += Model_OnWidgetSourceAvailable;
 			Model.OnQueryChanged += Model_OnQueryChanged;
@@ -67,6 +74,10 @@ namespace Beamable.Editor.Toolbox.Components
 			var totalElements = TotalWidgets;
 
 			var elementsPerRow = (int)(totalWidth / elementSize);
+
+			if (totalWidth < 1f || elementsPerRow <= 0)
+				return;
+
 			var completedRows = (int)(totalElements / elementsPerRow);
 			var correctElements = completedRows * elementsPerRow;
 			var leftOverElements = totalElements - correctElements;
@@ -94,7 +105,7 @@ namespace Beamable.Editor.Toolbox.Components
 			RefreshWidgetElements(_gridContainer);
 		}
 
-		private void RefreshWidgetElements(VisualElement gridRoot, string filter = null)
+		private void RefreshWidgetElements(VisualElement gridRoot)
 		{
 			gridRoot.Clear();
 
@@ -123,7 +134,7 @@ namespace Beamable.Editor.Toolbox.Components
 			for (var i = 0; i < ExtraElementCount; i++)
 			{
 				var widgetElement = new ToolboxFeatureVisualElement();
-				widgetElement.AddToClassList("invisible");
+				widgetElement.AddToClassList("toolbox-invisible-element");
 				widgetElement.Refresh();
 				_extraElements.Add(widgetElement);
 				_gridContainer.Add(widgetElement);

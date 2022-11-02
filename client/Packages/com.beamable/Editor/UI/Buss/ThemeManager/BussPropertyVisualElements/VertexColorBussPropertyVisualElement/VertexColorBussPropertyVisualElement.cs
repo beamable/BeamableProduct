@@ -35,7 +35,6 @@ namespace Beamable.Editor.UI.Components
 			set
 			{
 				Property.ColorRect = ColorRect.EditorHelper.WithDrawerMode(Property.ColorRect, (int)value);
-				TriggerStyleSheetChange();
 			}
 		}
 
@@ -85,16 +84,20 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnDrawerModeSelected(int index)
 		{
-			if (_topRow != null)
+			if (_doNotUpdateMode)
 			{
-				SetColorFieldVisibility();
+				if (_topRow != null)
+				{
+					SetColorFieldVisibility();
+				}
+				return;
 			}
-			if (_doNotUpdateMode) return;
 			var mode = (Mode)index;
 			DrawerMode = mode;
 			if (_topRow != null)
 			{
 				OnValueChange(null);
+				SetColorFieldVisibility();
 			}
 		}
 
@@ -189,7 +192,7 @@ namespace Beamable.Editor.UI.Components
 			DrawerMode = mode;
 			rect = ColorRect.EditorHelper.WithDrawerMode(rect, (int)DrawerMode);
 			Property.ColorRect = rect;
-			TriggerStyleSheetChange();
+			OnValueChanged?.Invoke(Property);
 		}
 
 		public override void OnPropertyChangedExternally()

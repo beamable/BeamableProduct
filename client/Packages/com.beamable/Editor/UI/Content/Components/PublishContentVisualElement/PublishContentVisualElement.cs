@@ -129,12 +129,11 @@ namespace Beamable.Editor.Content.Components
 			var addSource = new List<ContentDownloadEntryDescriptor>();
 			var addList = new ListView
 			{
-				itemHeight = 24,
 				itemsSource = addSource,
 				makeItem = MakeElement,
 				bindItem = CreateBinder(addSource)
 			};
-
+			addList.SetItemHeight(24);
 			addFoldoutElem.contentContainer.Add(addList);
 
 			var modifyFoldoutElem = Root.Q<Foldout>("modifyFoldout");
@@ -142,11 +141,11 @@ namespace Beamable.Editor.Content.Components
 			var modifySource = new List<ContentDownloadEntryDescriptor>();
 			var modifyList = new ListView
 			{
-				itemHeight = 24,
 				itemsSource = modifySource,
 				makeItem = MakeElement,
 				bindItem = CreateBinder(modifySource)
 			};
+			modifyList.SetItemHeight(24);
 			modifyFoldoutElem.contentContainer.Add(modifyList);
 
 
@@ -155,11 +154,11 @@ namespace Beamable.Editor.Content.Components
 			var deleteSource = new List<ContentDownloadEntryDescriptor>();
 			var deleteList = new ListView
 			{
-				itemHeight = 24,
 				itemsSource = deleteSource,
 				makeItem = MakeElement,
 				bindItem = CreateBinder(deleteSource)
 			};
+			deleteList.SetItemHeight(24);
 			deleteFoldoutElem.contentContainer.Add(deleteList);
 
 			var cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
@@ -193,14 +192,15 @@ namespace Beamable.Editor.Content.Components
 							ContentId = toAdd.Id,
 							Operation = "upload",
 							Tags = toAdd.Tags,
-							Uri = ""
+							Uri = "",
+							LastChanged = desc.LastChanged
 						};
 						addSource.Add(data);
 					}
 				}
 
-				addFoldoutElem.Q<ListView>().style.height = addList.itemHeight * addSource.Count;
-				addList.Refresh();
+				addFoldoutElem.Q<ListView>().style.SetHeight(addList.GetItemHeight() * addSource.Count, true);
+				addList.RefreshPolyfill();
 
 				foreach (var toModify in publishSet.ToModify)
 				{
@@ -212,14 +212,15 @@ namespace Beamable.Editor.Content.Components
 							ContentId = toModify.Id,
 							Operation = "modify",
 							Tags = toModify.Tags,
-							Uri = ""
+							Uri = "",
+							LastChanged = desc.LastChanged
 						};
 						modifySource.Add(data);
 					}
 				}
 
-				modifyFoldoutElem.Q<ListView>().style.height = modifyList.itemHeight * modifySource.Count;
-				modifyList.Refresh();
+				modifyFoldoutElem.Q<ListView>().style.SetHeight(modifyList.GetItemHeight() * modifySource.Count, true);
+				modifyList.RefreshPolyfill();
 
 				foreach (var toDelete in publishSet.ToDelete)
 				{
@@ -231,14 +232,15 @@ namespace Beamable.Editor.Content.Components
 							ContentId = toDelete,
 							Tags = desc.ServerTags?.ToArray(),
 							Operation = "delete",
-							Uri = ""
+							Uri = "",
+							LastChanged = desc.LastChanged
 						};
 						deleteSource.Add(data);
 					}
 				}
 
-				deleteFoldoutElem.Q<ListView>().style.height = deleteList.itemHeight * deleteSource.Count;
-				deleteList.Refresh();
+				deleteFoldoutElem.Q<ListView>().style.SetHeight(deleteList.GetItemHeight() * deleteSource.Count, true);
+				deleteList.RefreshPolyfill();
 
 
 
@@ -296,7 +298,9 @@ namespace Beamable.Editor.Content.Components
 			_manifestNameField.SetEnabled(false);
 			if (_createNewManifest && _manifestModel.ArchivedManifestModels.Any(m => m.id == ManifestName))
 			{
-				var api = await EditorAPI.Instance;
+				var api = BeamEditorContext.Default;
+				await api.InitializePromise;
+
 				var unarchiveTask = api.ContentIO.UnarchiveManifest(ManifestName);
 				_publishBtn.Load(unarchiveTask);
 				await unarchiveTask;
@@ -420,13 +424,11 @@ namespace Beamable.Editor.Content.Components
 
 		private void SetPublishMessage()
 		{
-			EditorAPI.Instance.Then(api =>
-			{
-				_messageLabel.visible = true;
-				_messageLabel.AddTextWrapStyle();
-				_messageLabel.text = string.Format(PUBLISH_MESSAGE_PREVIEW,
-					api.Realm.DisplayName, ContentConfiguration.Instance.EditorManifestID);
-			});
+			var api = BeamEditorContext.Default;
+			_messageLabel.visible = true;
+			_messageLabel.AddTextWrapStyle();
+			_messageLabel.text = string.Format(PUBLISH_MESSAGE_PREVIEW, api.CurrentRealm.DisplayName, ContentConfiguration.Instance.EditorManifestID);
+
 		}
 	}
 }

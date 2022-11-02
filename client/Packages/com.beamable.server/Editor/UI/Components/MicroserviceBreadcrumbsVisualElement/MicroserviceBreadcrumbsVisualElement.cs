@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System;
@@ -37,26 +38,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-		public event Action<bool> OnSelectAllCheckboxChanged;
 		public event Action<ServicesDisplayFilter> OnNewServicesDisplayFilterSelected;
 
 		private RealmButtonVisualElement _realmButton;
 		private Button _servicesFilter;
 		private Label _servicesFilterLabel;
-		private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
+		private ServicesDisplayFilter _filter;
 
 		public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
 		{
-		}
-
-		protected override void OnDestroy()
-		{
-			if (_selectAllLabeledCheckbox != null)
-			{
-				_selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
-			}
-
-			base.OnDestroy();
 		}
 
 		public override void Refresh()
@@ -67,6 +57,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_realmButton.Refresh();
 
 			_servicesFilter = Root.Q<Button>("servicesFilter");
+			_servicesFilter.tooltip = Constants.Tooltips.Microservice.FILTER;
 			_servicesFilterLabel = _servicesFilter.Q<Label>();
 			_servicesFilter.clickable.clicked -= HandleServicesFilterButter;
 			_servicesFilter.clickable.clicked += HandleServicesFilterButter;
@@ -74,18 +65,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
 			UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
 			_servicesFilter.visible = true;
-
-
-			_selectAllLabeledCheckbox = Root.Q<LabeledCheckboxVisualElement>("selectAllLabeledCheckbox");
-			_selectAllLabeledCheckbox.Refresh();
-			_selectAllLabeledCheckbox.DisableIcon();
-			_selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
-			_selectAllLabeledCheckbox.OnValueChanged += TriggerSelectAll;
-		}
-
-		void TriggerSelectAll(bool value)
-		{
-			OnSelectAllCheckboxChanged?.Invoke(value);
 		}
 
 		void UpdateServicesFilterText(ServicesDisplayFilter filter)
@@ -112,23 +91,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var content = new ServiceFilterDropdownVisualElement();
 			content.Refresh();
-			var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 75), content);
+			var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 100), content);
 			content.OnNewServicesDisplayFilterSelected += filter =>
 			{
 				wnd.Close();
+				_filter = filter;
 				OnNewServicesDisplayFilterSelected?.Invoke(filter);
 			};
 		}
 
-		public void UpdateSelectAllCheckboxValue(int selectedServicesAmount, int servicesAmount)
+		public void RefreshFiltering()
 		{
-			_selectAllLabeledCheckbox.SetWithoutNotify(selectedServicesAmount == servicesAmount);
-			SetSelectAllVisibility(servicesAmount > 0);
-		}
-
-		private void SetSelectAllVisibility(bool value)
-		{
-			_selectAllLabeledCheckbox.EnableInClassList("hidden", !value);
+			OnNewServicesDisplayFilterSelected?.Invoke(_filter);
 		}
 	}
 

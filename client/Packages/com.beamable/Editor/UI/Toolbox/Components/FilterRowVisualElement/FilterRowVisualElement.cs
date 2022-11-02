@@ -26,10 +26,14 @@ namespace Beamable.Editor.Toolbox.Components
 			base.Refresh();
 			var title = Root.Q<Label>("tagName");
 			_checkbox = Root.Q<Toggle>(name: "filterCheckbox");
+			title.UnregisterCallback<MouseDownEvent>(OnClick);
+			title.RegisterCallback<MouseDownEvent>(OnClick);
 			_checkbox.RegisterValueChangedCallback(evt => OnValueChanged?.Invoke(evt.newValue));
 
 			title.text = FilterName;
 		}
+
+		private void OnClick(MouseDownEvent evt) => _checkbox.value = !_checkbox.value;
 
 		public void SetValue(bool value)
 		{

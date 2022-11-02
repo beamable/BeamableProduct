@@ -4,6 +4,7 @@ using Beamable.Content;
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Shop
 {
@@ -15,7 +16,7 @@ namespace Beamable.Common.Shop
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/store-feature">Store</a> feature documentation
 	/// - See Beamable.Api.Commerce.CommerceService script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>

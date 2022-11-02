@@ -3,6 +3,8 @@ using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -19,6 +21,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		InProgress,
 		Failed,
 		Published,
+		Verifying // Checking if the image actually starts up correctly.
 	}
 
 	public class PublishManifestEntryVisualElement : MicroserviceComponent,
@@ -32,10 +35,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{ServicePublishState.Published, "published"},
 				{ServicePublishState.InProgress, "publish-inProgress"},
 				{ServicePublishState.Failed, "publish-failed"},
+				{ServicePublishState.Verifying, "publish-inProgress"},
 			};
-
-		private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
-		private const string STORAGE_IMAGE_CLASS = "storageImage";
 
 		public IEntryModel Model { get; }
 		public int Index => _index;
@@ -61,6 +62,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private BeamableCheckboxVisualElement _checkbox;
 		private DropdownVisualElement _sizeDropdown;
 		private TextField _commentField;
+		private Label _stateLabel;
+		private Label _nameLabel;
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
 												 bool argWasPublished,
@@ -84,19 +87,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
 			_checkbox.Refresh();
-			_checkbox.SetWithoutNotify(!IsRemoteOnly && Model.Enabled);
+			_checkbox.SetWithoutNotify(Model.Enabled);
 			_checkbox.OnValueChanged += b => Model.Enabled = b;
+			_checkbox.tooltip = CHECKBOX_TOOLTIP;
 
 			_sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
 			_sizeDropdown.Setup(TemplateSizes.ToList(), null);
 			_sizeDropdown.Refresh();
 
-			var nameLabel = Root.Q<Label>("nameMS");
-			nameLabel.text = Model.Name;
+			_nameLabel = Root.Q<Label>("nameMS");
+			_nameLabel.text = Model.Name;
+			_nameLabel.RegisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 
 			_commentField = Root.Q<TextField>("commentsText");
 			_commentField.value = Model.Comment;
 			_commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+
+			_stateLabel = Root.Q<Label>("stateLabel");
 
 			var icon = Root.Q<Image>("typeImage");
 			_checkImage = Root.Q<Image>("checkImage");
@@ -119,7 +126,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 				icon.AddToClassList(STORAGE_IMAGE_CLASS);
 			}
 
-			SetEnabled(!IsRemoteOnly);
+			UpdateStatus(ServicePublishState.Unpublished);
+		}
+
+		private void OnLabelSizeChanged(GeometryChangedEvent evt)
+		{
+			float width = evt.newRect.width;
+			int maxCharacters = Mathf.CeilToInt(width / 10);
+
+			if (Model.Name.TryEllipseText(maxCharacters, out string labelText))
+			{
+				_nameLabel.text = labelText;
+				_nameLabel.tooltip = Model.Name;
+				return;
+			}
+
+			_nameLabel.tooltip = string.Empty;
+			_nameLabel.text = Model.Name;
 		}
 
 		public void HandlePublishStarted()
@@ -129,22 +152,43 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_commentField.SetEnabled(false);
 		}
 
-		public void SetOddRow(bool isOdd) => EnableInClassList("oddRow", isOdd);
-
 		public void UpdateStatus(ServicePublishState state)
 		{
-			if (state == PublishState)
-				return;
+			switch (state)
+			{
+				case ServicePublishState.Failed:
+				{
+					_loadingBar.UpdateProgress(0, failed: true);
+					_stateLabel.text = "FAILED";
+					return;
+				}
+
+				case ServicePublishState.Published:
+				{
+					_stateLabel.text = "DONE";
+					break;
+				}
+
+				case ServicePublishState.InProgress:
+				{
+					_stateLabel.text = "PUBLISHING";
+					break;
+				}
+
+				case ServicePublishState.Verifying:
+				{
+					_stateLabel.text = "VERIFYING";
+					break;
+				}
+
+				default:
+				{
+					_stateLabel.text = "READY";
+					break;
+				}
+			}
+
 			PublishState = state;
-			if (state != ServicePublishState.Unpublished)
-			{
-				_checkImage.tooltip = state.ToString();
-			}
-			if (state == ServicePublishState.Failed)
-			{
-				_loadingBar.UpdateProgress(0, failed: true);
-				return;
-			}
 
 			RemoveFromClassList(_currentPublishState);
 			_currentPublishState = CheckImageClasses[state];
@@ -171,10 +215,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 					return 0;
 				case ServicePublishState.InProgress:
 					return 1;
-				case ServicePublishState.Unpublished:
+				case ServicePublishState.Verifying:
 					return 2;
-				case ServicePublishState.Published:
+				case ServicePublishState.Unpublished:
 					return 3;
+				case ServicePublishState.Published:
+					return 4;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}

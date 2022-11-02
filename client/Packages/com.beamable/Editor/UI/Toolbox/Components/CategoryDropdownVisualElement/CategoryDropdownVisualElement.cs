@@ -16,7 +16,7 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class CategoryDropdownVisualElement : ToolboxComponent
 	{
-		public ToolboxModel Model { get; set; }
+		public IToolboxViewService Model { get; set; }
 
 		public CategoryDropdownVisualElement() : base(nameof(CategoryDropdownVisualElement))
 		{
@@ -35,7 +35,6 @@ namespace Beamable.Editor.Toolbox.Components
 			{
 				SetTypesList(allTypes, listRoot, filter);
 			};
-
 
 			SetTypesList(allTypes, listRoot);
 		}

@@ -12,7 +12,21 @@ namespace Beamable.UI.Buss
 
 		private static Dictionary<string, IPropertyBinding> _bindings = new Dictionary<string, IPropertyBinding>();
 
+		/// <summary>
+		/// Get the <see cref="IPropertyBinding"/> structure for a given property name
+		/// </summary>
+		/// <param name="propertyKey">the name of the css property that the binding was created for. for example, "backgroundColor"</param>
+		/// <param name="binding">the binding will be be bound to this variable after the method has run. Will be null if the binding wasn't found</param>
+		/// <returns>true if the binding was found, false otherwise. </returns>
+		public static bool TryGetBinding(string propertyKey, out IPropertyBinding binding)
+		{
+			return _bindings.TryGetValue(propertyKey, out binding);
+		}
+
 		protected readonly Dictionary<string, IBussProperty> _properties = new Dictionary<string, IBussProperty>();
+
+		public static readonly PropertyBinding<MainTextureBussProperty> MainTextureSource =
+			new PropertyBinding<MainTextureBussProperty>("mainTexture", new MainTextureBussProperty(MainTextureBussProperty.Options.SdfSprite));
 
 		// Shape
 		public static readonly PropertyBinding<IFloatBussProperty> Threshold =
@@ -27,9 +41,15 @@ namespace Beamable.UI.Buss
 		public static readonly PropertyBinding<ImageTypeBussProperty> ImageType =
 			new PropertyBinding<ImageTypeBussProperty>("imageType", new ImageTypeBussProperty());
 
+		public static readonly PropertyBinding<FloatBussProperty> PixelsPerUnitMultiplier =
+			new PropertyBinding<FloatBussProperty>("pixelsPerUnitMultiplier", new FloatBussProperty(1f));
+
+		public static readonly PropertyBinding<NineSliceSourceBussProperty> NineSliceSource =
+			new PropertyBinding<NineSliceSourceBussProperty>("nineSliceSource", new NineSliceSourceBussProperty(Sdf.SdfImage.NineSliceSource.SdfFirst));
+
 		// Background
 		public static readonly PropertyBinding<IVertexColorBussProperty> BackgroundColor =
-			new PropertyBinding<IVertexColorBussProperty>("backgroundColor", new SingleColorBussProperty(Color.white));
+			new PropertyBinding<IVertexColorBussProperty>("backgroundColor", new SingleColorBussProperty(Color.clear));
 
 		public static readonly PropertyBinding<IFloatFromFloatBussProperty> RoundCorners =
 			new PropertyBinding<IFloatFromFloatBussProperty>("roundCorners", new FloatBussProperty());
@@ -68,29 +88,31 @@ namespace Beamable.UI.Buss
 
 		// Font
 		public static readonly PropertyBinding<IFontBussProperty> Font =
-			new PropertyBinding<IFontBussProperty>("font", new FontBussAssetProperty());
+			new PropertyBinding<IFontBussProperty>("font", new FontBussAssetProperty(), true);
 
 		public static readonly PropertyBinding<IFloatBussProperty> FontSize =
-			new PropertyBinding<IFloatBussProperty>("fontSize", new FloatBussProperty(18f));
+			new PropertyBinding<IFloatBussProperty>("fontSize", new FloatBussProperty(18f), true);
 
 		public static readonly PropertyBinding<IColorBussProperty> FontColor =
-			new PropertyBinding<IColorBussProperty>("fontColor", new SingleColorBussProperty(Color.white));
+			new PropertyBinding<IColorBussProperty>("fontColor", new SingleColorBussProperty(Color.white), true);
 
 		public static readonly PropertyBinding<TextAlignmentOptionsBussProperty> TextAlignment =
 			new PropertyBinding<TextAlignmentOptionsBussProperty>("textAlignment",
 																  new TextAlignmentOptionsBussProperty(
-																	  TextAlignmentOptions.TopLeft));
+																	  TextAlignmentOptions.TopLeft), true);
 
 		// Transitions
-		public static readonly PropertyBinding<IFloatBussProperty> TransitionDuration =
-			new PropertyBinding<IFloatBussProperty>("transitionDuration", new FloatBussProperty(0f));
+		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// public static readonly PropertyBinding<IFloatBussProperty> TransitionDuration =
+		// 	new PropertyBinding<IFloatBussProperty>("transitionDuration", new FloatBussProperty(0f));
 
-		public static readonly PropertyBinding<EasingBussProperty> TransitionEasing =
-			new PropertyBinding<EasingBussProperty>("transitionEasing", new EasingBussProperty(Easing.InOutQuad));
+		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// public static readonly PropertyBinding<EasingBussProperty> TransitionEasing =
+		// 	new PropertyBinding<EasingBussProperty>("transitionEasing", new EasingBussProperty(Easing.InOutQuad));
 
 		#endregion
 
-		internal interface IPropertyBinding
+		public interface IPropertyBinding
 		{
 			string Key
 			{
@@ -101,6 +123,11 @@ namespace Beamable.UI.Buss
 			{
 				get;
 			}
+
+			/// <summary>
+			/// When true, an element can inherit this property from the element's parent.
+			/// </summary>
+			bool Inheritable { get; }
 
 			IBussProperty GetProperty(BussStyle style);
 			void SetProperty(BussStyle style, IBussProperty property);
@@ -119,15 +146,18 @@ namespace Beamable.UI.Buss
 				get;
 			}
 
+			public bool Inheritable { get; }
+
 			public Type PropertyType => typeof(T);
 
 			private static HashSet<string> _keyControler = new HashSet<string>();
 
-			internal PropertyBinding(string key, T defaultValue)
+			internal PropertyBinding(string key, T defaultValue, bool inheritable = false)
 			{
 				Key = key;
 				DefaultValue = defaultValue;
 				_bindings[key] = this;
+				Inheritable = inheritable;
 			}
 
 			IBussProperty IPropertyBinding.GetProperty(BussStyle style) => Get(style);
@@ -169,7 +199,19 @@ namespace Beamable.UI.Buss
 					}
 					else
 					{
-						return (T)property;
+						switch (property.ValueType)
+						{
+							case BussPropertyValueType.Inherited:
+							// return GetFromStyle(style._inheritedFromStyle);
+							case BussPropertyValueType.Value:
+								return property as T;
+							case BussPropertyValueType.Initial:
+								return DefaultValue;
+
+							default:
+								throw new InvalidOperationException("Unknown property value type");
+						}
+						// return (T)property;
 					}
 				}
 

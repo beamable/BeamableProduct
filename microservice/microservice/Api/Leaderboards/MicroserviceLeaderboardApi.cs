@@ -40,27 +40,19 @@ namespace Beamable.Server.Api.Leaderboards
             var cohorts = templateLeaderboardContent.cohortSettings;
             var permissions = templateLeaderboardContent.permissions;
 
-            var ttlValue = (long?)null;
-            if (ttl != null && ttl.HasValue)
-                ttlValue = ttl.Value;
-
             var derivativesValue = default(List<string>);
             if (derivatives != null && derivatives.HasValue)
                 derivativesValue = derivatives.Value;
 
-            var freezeValue = (long?)null;
-            if (freezeTime != null && freezeTime.HasValue)
-                freezeValue = freezeTime.Value;
-
             var request = new CreateLeaderboardRequest()
             {
-                maxEntries = maxEntries.Value,
-                ttl = ttlValue,
-                partitioned = partitioned.Value,
+                maxEntries = maxEntries,
+                ttl = ttl,
+                partitioned = partitioned,
                 cohortSettings = cohorts.Value,
                 derivatives = derivativesValue,
                 permissions = permissions,
-                freezeTime = freezeValue,
+                freezeTime = freezeTime
             };
 
             return CreateLeaderboard(leaderboardId, request);
@@ -77,13 +69,13 @@ namespace Beamable.Server.Api.Leaderboards
         {
             var req = new CreateLeaderboardRequest()
             {
-                maxEntries = (maxEntries ?? new OptionalInt()).Value,
-                ttl = (ttl ?? new OptionalLong()).Value,
-                partitioned = (partitioned ?? new OptionalBoolean()).Value,
+                maxEntries = maxEntries ?? new OptionalInt(),
+                ttl = ttl ?? new OptionalLong(),
+                partitioned = partitioned ?? new OptionalBoolean(),
                 cohortSettings = (cohortSettings ?? new OptionalCohortSettings()).Value,
                 derivatives = (derivatives ?? new OptionalListString()).Value,
                 permissions = (permissions ?? new OptionalClientPermissions()).Value,
-                freezeTime = (freezeTime ?? new OptionalLong()).Value
+                freezeTime = freezeTime ?? new OptionalLong()
             };
 
             return CreateLeaderboard(leaderboardId, req);
@@ -149,6 +141,60 @@ namespace Beamable.Server.Api.Leaderboards
 
             var json = Json.Serialize(dict, pooledBuilder.Builder);
             return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE_PATH}/{leaderboardId}", json);
+        }
+
+        public async Promise<ListLeaderboardResult> ListLeaderboards(int? skip = null, int? limit=50)
+        {
+            using var pooledBuilder = StringBuilderPool.StaticPool.Spawn();
+
+            var req = new ArrayDict();
+            if (skip.HasValue)
+            {
+                req["skip"] = skip;
+            }
+            if (limit.HasValue)
+            {
+                req["limit"] = limit;
+            }
+            var json = Json.Serialize(req, pooledBuilder.Builder);
+
+            var res = await Requester.Request<ListLeaderboardResponse>(
+                Method.GET,
+                $"/basic/leaderboards/list",
+                json
+            );
+            return new ListLeaderboardResult
+            {
+                ids = res.nameList,
+                offset = res.offset,
+                total = res.total
+            };
+        }
+
+        public Promise<GetPlayerLeaderboardsResponse> GetPlayerLeaderboards(long gamerTag)
+        {
+            return Requester.Request<GetPlayerLeaderboardsResponse>(
+                Method.GET,
+                $"/basic/leaderboards/player?dbid={gamerTag}"
+            );
+        }
+
+        public Promise<EmptyResponse> RemovePlayerEntry(string leaderboardId, long gamerTag)
+        {
+	        return ResolveAssignment(leaderboardId, gamerTag).FlatMap(assignment =>
+	        {
+		        using var pooledBuilder = StringBuilderPool.StaticPool.Spawn();
+
+		        var req = new ArrayDict {{"id", gamerTag}};
+		        var body = Json.Serialize(req, pooledBuilder.Builder);
+		        string encodedBoardId = Requester.EscapeURL(assignment.leaderboardId);
+
+		        return Requester.Request<EmptyResponse>(
+			        Method.DELETE,
+			        $"/object/leaderboards/{encodedBoardId}/entry",
+			        body
+		        );
+	        });
         }
     }
 }

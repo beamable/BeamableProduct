@@ -12,8 +12,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
-#if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
-
+#if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER && !UNITY_2021_2_OR_NEWER
 namespace System.Runtime.CompilerServices
 {
 	public sealed class AsyncMethodBuilderAttribute : Attribute
@@ -40,6 +39,10 @@ namespace Beamable.Common
 	public abstract class PromiseBase
 	{
 		protected Action<Exception> errbacks;
+
+		/// <summary>
+		/// True if there are any registered error handlers.
+		/// </summary>
 		public bool HadAnyErrbacks { protected set; get; }
 
 		protected Exception err;
@@ -67,6 +70,9 @@ namespace Beamable.Common
 
 		public static Promise<Unit> SuccessfulUnit => Promise<Unit>.Successful(Unit);
 
+		/// <summary>
+		/// True when the promise has completed; false otherwise.
+		/// </summary>
 		public bool IsCompleted => done;
 
 		private static event PromiseEvent OnPotentialUncaughtError;
@@ -253,6 +259,13 @@ namespace Beamable.Common
 			return this;
 		}
 
+		/// <summary>
+		/// Combine the outcome of this promise with the given promise.
+		/// If this promise completes, the given promise will complete.
+		/// If this promise fails, the given promise will fail.
+		/// </summary>
+		/// <param name="other">Some promise other than this promise.</param>
+		/// <returns>The current promise instance</returns>
 		public Promise<T> Merge(Promise<T> other)
 		{
 			Then(other.CompleteSuccess);
@@ -488,14 +501,39 @@ namespace Beamable.Common
 
 		private ConcurrentDictionary<int, object> _indexToResult = new ConcurrentDictionary<int, object>();
 
+		/// <summary>
+		/// The current count of successful promises
+		/// </summary>
 		public int SuccessCount => _successes.Count;
+
+		/// <summary>
+		/// The current count of failed promises
+		/// </summary>
 		public int ErrorCount => _errors.Count;
+
+		/// <summary>
+		/// The current count of completed promises
+		/// </summary>
 		public int Total => _errors.Count + _successes.Count;
+
+		/// <summary>
+		/// The number of promises that this sequence reprensents
+		/// </summary>
 		public int Count { get; }
 
+		/// <summary>
+		/// The ratio of completed promises to total promises. This will be 1 when all promises have completed.
+		/// </summary>
 		public float Ratio => HasProcessedAllEntries ? 1 : Total / (float)Count;
+
+		/// <summary>
+		/// True when all promises have completed; false otherwise
+		/// </summary>
 		public bool HasProcessedAllEntries => Total == Count;
 
+		/// <summary>
+		/// An enumeration of the successful results. There will be a <see cref="T"/> for each successful promise.
+		/// </summary>
 		public IEnumerable<T> SuccessfulResults => _successes.Select(s => s.Result);
 
 		public SequencePromise(int count)
@@ -507,6 +545,11 @@ namespace Beamable.Common
 			}
 		}
 
+		/// <summary>
+		/// Attach a callback that will trigger anytime a promise fails
+		/// </summary>
+		/// <param name="handler">A callback that will be given a <see cref="SequenceEntryException"/> everytime a promise fails</param>
+		/// <returns>This instance</returns>
 		public SequencePromise<T> OnElementError(Action<SequenceEntryException> handler)
 		{
 			foreach (var existingError in _errors)
@@ -518,6 +561,11 @@ namespace Beamable.Common
 			return this;
 		}
 
+		/// <summary>
+		/// Attach a callback that will trigger anytime a promise succeeds
+		/// </summary>
+		/// <param name="handler">A callback that will be given a <see cref="SequenceEntrySuccess{T}"/> everytime a promise succeeds</param>
+		/// <returns>This instance</returns>
 		public SequencePromise<T> OnElementSuccess(Action<SequenceEntrySuccess<T>> handler)
 		{
 			foreach (var success in _successes)
@@ -529,11 +577,19 @@ namespace Beamable.Common
 			return this;
 		}
 
+		/// <summary>
+		/// Mark the entire sequence promise as complete
+		/// </summary>
 		public void CompleteSuccess()
 		{
 			base.CompleteSuccess(SuccessfulResults.ToList());
 		}
 
+		/// <summary>
+		/// When a promise has failed, report the failure.
+		/// One failed promise will cause the entire sequence promise to be considered a failed promise.
+		/// </summary>
+		/// <param name="exception">The <see cref="SequenceEntryException"/> that occured</param>
 		public void ReportEntryError(SequenceEntryException exception)
 		{
 			if (_indexToResult.ContainsKey(exception.Index) || exception.Index >= Count) return;
@@ -545,6 +601,11 @@ namespace Beamable.Common
 			CompleteError(exception.InnerException);
 		}
 
+		/// <summary>
+		/// When a promise has succeeded, report the success.
+		/// All promises must report success for the entire sequence promise to succeed.
+		/// </summary>
+		/// <param name="success">The <see cref="SequenceEntrySuccess{T}"/> that occured</param>
 		public void ReportEntrySuccess(SequenceEntrySuccess<T> success)
 		{
 			if (_indexToResult.ContainsKey(success.Index) || success.Index >= Count) return;
@@ -559,9 +620,19 @@ namespace Beamable.Common
 			}
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="ReportEntrySuccess(Beamable.Common.SequenceEntrySuccess{T})"/>
+		/// </summary>
+		/// <param name="index">The promise index that succeeded.</param>
+		/// <param name="result">The success value of the promise</param>
 		public void ReportEntrySuccess(int index, T result) =>
 		   ReportEntrySuccess(new SequenceEntrySuccess<T>(index, result));
 
+		/// <summary>
+		/// <inheritdoc cref="ReportEntryError(Beamable.Common.SequenceEntryException)"/>
+		/// </summary>
+		/// <param name="index">The promise index that failed</param>
+		/// <param name="err">The exception that failed the promise</param>
 		public void ReportEntryError(int index, Exception err) =>
 		   ReportEntryError(new SequenceEntryException(index, err));
 	}
@@ -879,6 +950,18 @@ namespace Beamable.Common
 	/// </summary>
 	public static class PromiseExtensions
 	{
+		/// <summary>
+		/// Create a new promise that potentially recovers from a failure that occurs in the given promise.
+		/// If the given promise succeeds, this method's returned promise will succeed with the same value.
+		/// If the given promise fails, the exception will be passed to the callback, and this method's returned promise will succeed
+		/// or fail based on the return value of the callback. If the callback returns a <see cref="T"/>, then the returned promise
+		/// will succeed with that value. If the callback throws the same exception, or raises a new one, then the returned promise
+		/// will fail with the given exception.
+		/// </summary>
+		/// <param name="promise">A promise</param>
+		/// <param name="callback">A recovery function</param>
+		/// <typeparam name="T">The type of the promise</typeparam>
+		/// <returns>A new promise that may recover from a potential failure in the given promise</returns>
 		public static Promise<T> Recover<T>(this Promise<T> promise, Func<Exception, T> callback)
 		{
 			var result = new Promise<T>();
@@ -887,6 +970,14 @@ namespace Beamable.Common
 			return result;
 		}
 
+		/// <summary>
+		/// Similar to <see cref="Recover{T}"/>.
+		/// However, The callback returns a <see cref="Promise{T}"/> instead of a <see cref="T"/> directly.
+		/// </summary>
+		/// <param name="promise">A promise</param>
+		/// <param name="callback">A recovery function</param>
+		/// <typeparam name="T">The type of the promise</typeparam>
+		/// <returns>A new promise that may recover from a potential failure in the given promise</returns>
 		public static Promise<T> RecoverWith<T>(this Promise<T> promise, Func<Exception, Promise<T>> callback)
 		{
 			var result = new Promise<T>();
@@ -966,11 +1057,23 @@ namespace Beamable.Common
 		}
 #endif
 
+		/// <summary>
+		/// Convert the given promise to a <see cref="Promise{Unit}"/>
+		/// </summary>
+		/// <param name="self">some promise of type <see cref="T"/></param>
+		/// <typeparam name="T">some type</typeparam>
+		/// <returns>A promise of type Unit</returns>
 		public static Promise<Unit> ToUnit<T>(this Promise<T> self)
 		{
 			return self.Map(_ => PromiseBase.Unit);
 		}
 
+		/// <summary>
+		/// Create a new promise that strips away the generic type information of the given promise.
+		/// </summary>
+		/// <param name="self">Some promise</param>
+		/// <typeparam name="T">some type</typeparam>
+		/// <returns>A typeless promise</returns>
 		public static Promise ToPromise<T>(this Promise<T> self)
 		{
 			var p = new Promise();
@@ -996,7 +1099,7 @@ namespace Beamable.Common
 		public PromiseBase Promise { get; }
 
 		public UncaughtPromiseException(PromiseBase promise, Exception ex) : base(
-		   $"Uncaught promise innerMsg=[{ex.Message}] ", ex)
+		   $"Uncaught promise innerMsg=[{ex.Message}] innerType=[{ex?.GetType()?.Name}] ", ex)
 		{
 			Promise = promise;
 		}

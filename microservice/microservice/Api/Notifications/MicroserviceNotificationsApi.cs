@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Notifications;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 
@@ -20,36 +21,63 @@ namespace Beamable.Server.Api.Notifications
 
         public Promise<EmptyResponse> NotifyPlayer(long dbid, string subscriptionId, string messagePayload)
         {
-            var notifyRequest = Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
-                new PlayerNotificationRequest { dbid = dbid, payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = messagePayload } });
-
-            return notifyRequest;
+            var payload = CreateStringPayload(messagePayload);
+            var jsonSerializedPayload = JsonConvert.SerializeObject(payload, Formatting.None, UnitySerializationSettings.Instance);
+            return SendPlayerNotificationJson(dbid, subscriptionId, jsonSerializedPayload);
         }
 
         public Promise<EmptyResponse> NotifyPlayer(List<long> dbids, string subscriptionId, string messagePayload)
         {
-            var notifyRequest = Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
-                new PlayerBatchNotificationRequest() { dbids = dbids, payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = messagePayload } });
-
-            return notifyRequest;
+            var payload = CreateStringPayload(messagePayload);
+            var jsonSerializedPayload = JsonConvert.SerializeObject(payload, Formatting.None, UnitySerializationSettings.Instance);
+            return SendPlayerNotificationJson(dbids, subscriptionId, jsonSerializedPayload);
         }
 
         public Promise<EmptyResponse> NotifyPlayer<T>(long dbid, string subscriptionId, T messagePayload)
         {
             var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None, UnitySerializationSettings.Instance);
-            return NotifyPlayer(dbid, subscriptionId, jsonSerializedPayload);
+            return SendPlayerNotificationJson(dbid, subscriptionId, jsonSerializedPayload);
         }
 
         public Promise<EmptyResponse> NotifyPlayer<T>(List<long> dbids, string subscriptionId, T messagePayload)
         {
             var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None, UnitySerializationSettings.Instance);
-            return NotifyPlayer(dbids, subscriptionId, jsonSerializedPayload);
+            return SendPlayerNotificationJson(dbids, subscriptionId, jsonSerializedPayload);
         }
+
+        private PrimitiveStringPayload CreateStringPayload(string message)
+        {
+            return new PrimitiveStringPayload
+            {
+                stringValue = message
+            };
+        }
+
+        private Promise<EmptyResponse> SendPlayerNotificationJson(long dbid, string subscriptionId, string json)
+        {
+            return Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
+                new PlayerNotificationRequest
+                {
+                    dbid = dbid,
+                    payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = json }
+                });
+        }
+        private Promise<EmptyResponse> SendPlayerNotificationJson(List<long> dbids, string subscriptionId, string json)
+        {
+            return Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
+                new PlayerBatchNotificationRequest
+                {
+                    dbids = dbids,
+                    payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = json }
+                });
+        }
+
+
     }
 
 
     /// <summary>
-    /// Notification request format. 
+    /// Notification request format.
     /// </summary>
     [Serializable]
     public class PlayerNotificationRequest
@@ -59,7 +87,7 @@ namespace Beamable.Server.Api.Notifications
     }
 
     /// <summary>
-    /// Format of the Notification request when notifying multiple players. 
+    /// Format of the Notification request when notifying multiple players.
     /// </summary>
     [Serializable]
     public class PlayerBatchNotificationRequest

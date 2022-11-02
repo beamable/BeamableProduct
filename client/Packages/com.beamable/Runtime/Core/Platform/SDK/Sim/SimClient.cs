@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Experimental.Api.Sim
 {
@@ -8,18 +9,29 @@ namespace Beamable.Experimental.Api.Sim
 
 	/// <summary>
 	/// This type defines the %Client main entry point for the %Multiplayer feature.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature documentation
 	/// - See Beamable.API script reference
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public class SimClient
 	{
+#pragma warning disable CS0067
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorStarted"/>
+		public event Action<SimFaultResult> OnErrorStarted;
+
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorRecovered"/>
+		public event Action<SimErrorReport> OnErrorRecovered;
+
+		/// <inheritdoc cref="SimNetworkInterface.OnErrorFailed"/>
+		public event Action<SimFaultResult> OnErrorFailed;
+#pragma warning restore CS0067
+
 		public int LogHash { get; private set; }
 		public int StateHash { get; private set; }
 		public long Ping { get; private set; }
@@ -62,6 +74,12 @@ namespace Beamable.Experimental.Api.Sim
 			get { return Network.ClientId; }
 		}
 
+		/// <summary>
+		/// Create a new relay client that can be used to communicate with other players.
+		/// </summary>
+		/// <param name="network">A <see cref="SimNetworkInterface"/> that controls how the events are passed between players.</param>
+		/// <param name="framesPerSecond">A target network frame rate. </param>
+		/// <param name="targetNetworkLead">Number of frames desired for the network to be ahead of the live simulation</param>
 		public SimClient(SimNetworkInterface network, long framesPerSecond, long targetNetworkLead)
 		{
 			this.Network = network;
@@ -69,28 +87,54 @@ namespace Beamable.Experimental.Api.Sim
 			this._targetNetworkLead = targetNetworkLead;
 			_virtualFramePointer = targetNetworkLead;
 
+			if (network != null)
+			{
+				network.OnErrorFailed += r => OnErrorFailed?.Invoke(r);
+				network.OnErrorStarted += r => OnErrorStarted?.Invoke(r);
+				network.OnErrorRecovered += r => OnErrorRecovered?.Invoke(r);
+			}
+
 			this.OnInit((seed) =>
 			{
 				_random = new System.Random(seed.GetHashCode());
 			});
 		}
 
+		/// <summary>
+		/// Create a snapshot at the current frame.
+		/// </summary>
+		/// <returns>A <see cref="SimLog.Snapshot"/> contains all of the <see cref="SimEvent"/> for all frames</returns>
 		public SimLog.Snapshot TakeSnapshot()
 		{
 			return log.ToSnapshot();
 		}
 
+		/// <summary>
+		/// Given a <see cref="SimLog.Snapshot"/>, restore the internal simulation to that point
+		/// </summary>
+		/// <param name="snapshot">A <see cref="SimLog.Snapshot"/> generated with the <see cref="TakeSnapshot"/> method</param>
 		public void RestoreSnapshot(SimLog.Snapshot snapshot)
 		{
 			_maxFrame = snapshot.frame;
 			log.FromSnapshot(snapshot);
 		}
 
-		// Add an event to the log eventually. It won't be 'real' until it's in the log. The network decides when/how that happens
+		/// <summary>
+		/// Add an event to the log eventually. It won't be 'real' until it's in the log. The network decides when/how that happens
+		/// This will run the <see cref="SendEvent(string, object)"/> method by using the <see cref="evt"/>'s class name as the name, and the evt itself as the body
+		/// </summary>
+		/// <param name="evt">Any json serializable object</param>
 		public void SendEvent(object evt)
 		{
 			SendEvent(evt.GetType().ToString(), evt);
 		}
+
+		/// <summary>
+		/// Send an event to the relay log. The event won't be validated until it round-trips through the other clients.
+		/// Use the <see cref="On{T}"/> event to register a callback for when the event is put onto the log.
+		/// </summary>
+		/// <param name="name">A name for the event. This can be any string, but should be a consistent channel name. </param>
+		/// <param name="evt">Any json serializable object. The object will be sent to JSON and sent to the relay server.</param>
 		public void SendEvent(string name, object evt)
 		{
 			// TODO: Eliminate these allocations
@@ -98,6 +142,10 @@ namespace Beamable.Experimental.Api.Sim
 			Network.SendEvent(new SimEvent(Network.ClientId, name, raw));
 		}
 
+		/// <summary>
+		/// Call this method on the Unity update loop.
+		/// It will make sure to sync the relay state with the configured network frames per second.
+		/// </summary>
 		public void Update()
 		{
 			if (_maxFrame > 0 && _playbackFramePointer == _maxFrame)
@@ -195,20 +243,38 @@ namespace Beamable.Experimental.Api.Sim
 			}*/
 		}
 
-		// Manage simulation entities
+		/// <summary>
+		/// Create a new GameObject from the given <see cref="SimBehavior"/> prefab
+		/// </summary>
+		/// <param name="original"></param>
+		/// <param name="id"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
 		public T Spawn<T>(SimBehavior original, string id = "")
 		{
-			SimBehavior result = MonoBehaviour.Instantiate(original) as SimBehavior;
+			SimBehavior result = Object.Instantiate(original) as SimBehavior;
 			this._sbSpawns.Add(result);
 			result.SimInit(this, id);
 			return result.GetComponent<T>();
 		}
 
+		/// <summary>
+		/// Remove a <see cref="SimBehavior"/>
+		/// </summary>
+		/// <param name="simObj"></param>
 		public void RemoveSimBehavior(SimBehavior simObj)
 		{
 			this._sbRemoves.Add(simObj);
 		}
 
+		/// <summary>
+		/// Run a callback anytime a certain relay event is received onto the simulation log.
+		/// </summary>
+		/// <param name="evt">The type of event</param>
+		/// <param name="origin">the origin string for who sent the event</param>
+		/// <param name="callback">A callback to run when the event is recieved</param>
+		/// <typeparam name="T">The type to deserialize the event json into</typeparam>
+		/// <returns>An object that can be given to <see cref="Remove"/> to remove the handler</returns>
 		public EventCallback<string> On<T>(string evt, string origin, EventCallback<T> callback)
 		{
 			return OnInternal(evt, origin, (raw) =>
@@ -228,6 +294,10 @@ namespace Beamable.Experimental.Api.Sim
 			return callback;
 		}
 
+		/// <summary>
+		/// Remove a handler registered with the <see cref="On{T}"/> method
+		/// </summary>
+		/// <param name="callback">The instance returned from the <see cref="On{T}"/> method</param>
 		public void Remove(EventCallback<string> callback)
 		{
 			foreach (KeyValuePair<string, List<EventCallback<string>>> entry in _eventCallbacks)
@@ -236,9 +306,32 @@ namespace Beamable.Experimental.Api.Sim
 			}
 		}
 
+		/// <summary>
+		/// Add a callback that will trigger after the relay has been initialized.
+		/// </summary>
+		/// <param name="callback">A callback where the only argument is the relay room id</param>
+		/// <returns>An instance that can be sent to the <see cref="Remove"/> method to remove the handler.</returns>
 		public EventCallback<string> OnInit(EventCallback<string> callback) { return OnInternal("init", "$system", callback); }
+
+		/// <summary>
+		/// Add a callback that will trigger after each player joins the game relay.
+		/// </summary>
+		/// <param name="callback">a callback where the only argument is the gamertag of the player that joined.</param>
+		/// <returns>An instance that can be sent to the <see cref="Remove"/> method to remove the handler.</returns>
 		public EventCallback<string> OnConnect(EventCallback<string> callback) { return OnInternal("connect", "$system", callback); }
+
+		/// <summary>
+		/// Add a callback that will trigger after a player disconnects from the game realy.
+		/// </summary>
+		/// <param name="callback">a callback where the only argument is the gamertag of the player that disconnected.</param>
+		/// <returns>An instance that can be sent to the <see cref="Remove"/> method to remove the handler.</returns>
 		public EventCallback<string> OnDisconnect(EventCallback<string> callback) { return OnInternal("disconnect", "$system", callback); }
+
+		/// <summary>
+		/// Add a callback that will trigger on every network tick
+		/// </summary>
+		/// <param name="callback">A callback where the only argument is the current tick number of the simulation</param>
+		/// <returns>An instance that can be sent to the <see cref="Remove"/> method to remove the handler.</returns>
 		public EventCallback<string> OnTick(EventCallback<long> callback)
 		{
 			return OnInternal("tick", "$system", (raw) =>
@@ -320,6 +413,12 @@ namespace Beamable.Experimental.Api.Sim
 			log.Prune(_playbackFramePointer - 1);
 		}
 
+		/// <summary>
+		/// Get a deterministically random number.
+		/// The seed for the random values is shared among all players in the relay.
+		/// If all clients use this method to get random values, then all clients will get the same random values.
+		/// </summary>
+		/// <returns>A number</returns>
 		public int RandomInt()
 		{
 			return _random.Next();

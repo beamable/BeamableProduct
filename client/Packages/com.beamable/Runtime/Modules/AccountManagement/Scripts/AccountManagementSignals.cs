@@ -1,7 +1,9 @@
 ﻿using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
+using Beamable.Platform.SDK.Auth;
 using Beamable.Signals;
 using Beamable.UI.Scripts;
 using System;
@@ -14,16 +16,10 @@ using Debug = UnityEngine.Debug;
 namespace Beamable.AccountManagement
 {
 	[System.Serializable]
-	public class ToggleEvent : DeSignal<bool>
-	{
-
-	}
+	public class ToggleEvent : DeSignal<bool> { }
 
 	[System.Serializable]
-	public class EmailEvent : DeSignal<string>
-	{
-
-	}
+	public class EmailEvent : DeSignal<string> { }
 
 	[System.Serializable]
 	public class ErrorEvent : DeSignal<string>
@@ -34,11 +30,7 @@ namespace Beamable.AccountManagement
 	}
 
 	[System.Serializable]
-	public class LoadingEvent : DeSignal<LoadingArg>
-	{
-
-	}
-
+	public class LoadingEvent : DeSignal<LoadingArg> { }
 
 	[System.Serializable]
 	public class LoadingArg
@@ -46,11 +38,13 @@ namespace Beamable.AccountManagement
 		public readonly Promise<Unit> Promise = new Promise<Unit>();
 		public readonly string Message = "Loading...";
 		public readonly bool Critical;
+
 		public LoadingArg(string message, bool critical = false)
 		{
 			Message = message;
 			Critical = critical;
 		}
+
 		public LoadingArg() { }
 
 		public void Complete()
@@ -61,7 +55,9 @@ namespace Beamable.AccountManagement
 
 	public static class LoadingArgPromiseExtensions
 	{
-		public static LoadingArg ToLoadingArg<T>(this Promise<T> self, string message = "loading", bool critical = false)
+		public static LoadingArg ToLoadingArg<T>(this Promise<T> self,
+												 string message = "loading",
+												 bool critical = false)
 		{
 			var arg = new LoadingArg(message, critical);
 			self.Then(x => arg.Complete());
@@ -71,15 +67,10 @@ namespace Beamable.AccountManagement
 	}
 
 	[System.Serializable]
-	public class UserEvent : DeSignal<User>
-	{
-	}
+	public class UserEvent : DeSignal<User> { }
 
 	[System.Serializable]
-	public class UsersEvent : DeSignal<DeviceUserArg>
-	{
-
-	}
+	public class UsersEvent : DeSignal<DeviceUserArg> { }
 
 	[System.Serializable]
 	public class ThirdPartyLoginPromise : Promise<ThirdPartyLoginResponse>
@@ -96,26 +87,22 @@ namespace Beamable.AccountManagement
 	{
 		public string AuthToken;
 		public readonly bool Cancelled;
+		public readonly bool AuthTokenOneUseOnly;
 
-		public ThirdPartyLoginResponse()
-		{
+		public ThirdPartyLoginResponse() { }
 
-		}
-
-		public ThirdPartyLoginResponse(string authToken, bool cancelled = false)
+		public ThirdPartyLoginResponse(string authToken, bool cancelled = false, bool oneUseOnly = false)
 		{
 			AuthToken = authToken;
 			Cancelled = cancelled;
+			AuthTokenOneUseOnly = oneUseOnly;
 		}
 
 		public static ThirdPartyLoginResponse CANCELLED = new ThirdPartyLoginResponse(null, true);
 	}
 
 	[System.Serializable]
-	public class ThirdPartyLoginPromiseEvent : DeSignal<ThirdPartyLoginPromise>
-	{
-
-	}
+	public class ThirdPartyLoginPromiseEvent : DeSignal<ThirdPartyLoginPromise> { }
 
 	[System.Serializable]
 	public class DeviceUserArg
@@ -127,14 +114,20 @@ namespace Beamable.AccountManagement
 	[HelpURL(Constants.URLs.Documentations.URL_DOC_ACCOUNT_HUD)]
 	public class AccountManagementSignals : DeSignalTower
 	{
+#pragma warning disable CS0649
+		[SerializeField] private AccountForgotPassword _accountForgotPassword;
+#pragma warning restore CS0649
+
 		[Header("Flow Events")]
 		public ToggleEvent OnToggleAccountManagement;
+
 		public LoadingEvent Loading;
 		public ErrorEvent OnError;
 
 		[Space(10f)]
 		[Header("Registration Events")]
 		public EmailEvent EmailIsAvailable;
+
 		public EmailEvent EmailIsRegistered;
 		public EmailEvent EmailIsInvalid;
 
@@ -145,6 +138,7 @@ namespace Beamable.AccountManagement
 		[Space(10f)]
 		[Header("User Change Events")]
 		public UserEvent UserAnonymous;
+
 		public UserEvent UserAvailable;
 		public UserEvent UserLoggedIn;
 		public UserEvent UserSwitchAvailable;
@@ -186,8 +180,17 @@ namespace Beamable.AccountManagement
 		public void ToggleAccountManagement()
 		{
 			_toggleState = !_toggleState;
+			var count = 0;
+			ForAll<AccountManagementSignals>(signals =>
+			{
+				count += signals?.OnToggleAccountManagement?.GetPersistentEventCount() ?? 0;
+			});
+			if (count == 0)
+			{
+				Debug.LogWarning("There is no account management flow in the scene, so this toggle button does nothing. Please ensure there is an Account Management Flow in the scene.");
+				return;
+			}
 			Broadcast(_toggleState, s => s.OnToggleAccountManagement);
-
 		}
 
 		public void ToggleAccountManagement(bool desiredState)
@@ -241,6 +244,7 @@ namespace Beamable.AccountManagement
 			{
 				return; // don't do anything for an empty email, it was probably erroneous
 			}
+
 			_currentEmail = currentEmail;
 
 			if (!IsValidEmail(currentEmail))
@@ -250,7 +254,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Checking Account...", IsEmailRegistered(_currentEmail)).Then(registered =>
+			WithLoading("Checking Account...", API.Instance.Then(api => api.IsEmailRegistered(_currentEmail).Then(registered =>
 			{
 				if (registered)
 				{
@@ -260,7 +264,7 @@ namespace Beamable.AccountManagement
 				{
 					DeferBroadcast(_currentEmail, s => s.EmailIsAvailable);
 				}
-			});
+			})));
 		}
 
 		public void Login(LoginArguments reference)
@@ -298,6 +302,7 @@ namespace Beamable.AccountManagement
 				Broadcast(email, s => s.EmailIsInvalid);
 				return;
 			}
+
 			if (!GuardPasswordStrength(password))
 			{
 				return;
@@ -306,34 +311,38 @@ namespace Beamable.AccountManagement
 			WithLoading("Logging In...", API.Instance.FlatMap(de =>
 			{
 				return de.GetDeviceUsers().FlatMap(deviceUsers =>
-			 {
-				 return IsEmailRegistered(email).FlatMap(registered =>
-			  {
-				  var currentUserHasEmail = de.User.HasDBCredentials();
-				  var storedUser = deviceUsers.FirstOrDefault(b => b.User.email != null && b.User.email.Equals(email));
+				{
+					return de.IsEmailRegistered(email).FlatMap(registered =>
+					{
+						var currentUserHasEmail = de.User.HasDBCredentials();
+						var storedUser =
+							deviceUsers.FirstOrDefault(b => b.User.email != null && b.User.email.Equals(email));
 
-				  var shouldSwitchUser = registered;
-				  var shouldCreateNewUser = !registered && currentUserHasEmail;
-				  var shouldAttachToCurrentUser = !registered && !currentUserHasEmail;
+						var shouldSwitchUser = registered;
+						var shouldCreateNewUser = !registered && currentUserHasEmail;
+						var shouldAttachToCurrentUser = !registered && !currentUserHasEmail;
 
-				  if (shouldSwitchUser)
-				  {
-					  return GetAccountWithCredentials(de, email, password)
-						.Then(OfferSwitch);
-				  }
+						if (shouldSwitchUser)
+						{
+							return GetAccountWithCredentials(de, email, password)
+								.Then(OfferSwitch);
+						}
 
-				  if (shouldCreateNewUser)
-				  {
-					  return LoginToNewUser(de)
-						.FlatMap(_ => AttachEmailToCurrentUser(de, email, password));
-				  }
-				  if (shouldAttachToCurrentUser)
-				  {
-					  return AttachEmailToCurrentUser(de, email, password);
-				  }
-				  throw new Exception($"unrecognized login state. registered=[{registered}] currentUserHasEmail=[{currentUserHasEmail}] storedUser=[{storedUser}]");
-			  });
-			 });
+						if (shouldCreateNewUser)
+						{
+							return LoginToNewUser(de)
+								.FlatMap(_ => AttachEmailToCurrentUser(de, email, password));
+						}
+
+						if (shouldAttachToCurrentUser)
+						{
+							return AttachEmailToCurrentUser(de, email, password);
+						}
+
+						throw new Exception(
+							$"unrecognized login state. registered=[{registered}] currentUserHasEmail=[{currentUserHasEmail}] storedUser=[{storedUser}]");
+					});
+				});
 			})).Error(HandleError);
 		}
 
@@ -349,47 +358,11 @@ namespace Beamable.AccountManagement
 			 * | YES                       | NO                       | attach the credentials to the current account
 			 *
 			 */
-
 			var promise = new ThirdPartyLoginPromise(argument.ThirdParty);
-			var thirdParty = argument.ThirdParty;
 
-			WithLoading("Logging In...", promise.FlatMap(thirdPartyResponse =>
-			{
-				return API.Instance.FlatMap(de =>
-			 {
-				 if (thirdPartyResponse.Cancelled)
-				 {
-					 return Promise<User>.Successful(de.User);
-				 }
-				 var token = thirdPartyResponse.AuthToken;
-
-				 return de.AuthService.IsThirdPartyAvailable(thirdParty, token)
-				 .FlatMap(available =>
-				 {
-					 var userHasCredentials = de.User.HasThirdPartyAssociation(thirdParty);
-
-					 var shouldSwitchUsers = !available;
-					 var shouldCreateUser = available && userHasCredentials;
-					 var shouldAttachToCurrentUser = available && !userHasCredentials;
-
-					 if (shouldSwitchUsers)
-					 {
-						 return GetAccountWithCredentials(de, thirdParty, token)
-						   .Then(OfferSwitch);
-					 }
-					 if (shouldCreateUser)
-					 {
-						 return LoginToNewUser(de)
-						   .FlatMap(_ => AttachThirdPartyToCurrentUser(de, thirdParty, token));
-					 }
-					 if (shouldAttachToCurrentUser)
-					 {
-						 return AttachThirdPartyToCurrentUser(de, thirdParty, token);
-					 }
-					 throw new Exception($"unrecognized third party state. thirdparty=[{thirdParty}] available=[{available}] userHasCredentials=[{userHasCredentials}]");
-				 });
-			 });
-			})).Error(HandleError);
+			WithLoading("Logging In...",
+						promise.FlatMap(response => StartThirdPartyLogin(response, argument.ThirdParty)))
+				.Error(HandleError);
 			DeferBroadcast(promise, s => s.ThirdPartyLoginAttempted);
 		}
 
@@ -398,9 +371,9 @@ namespace Beamable.AccountManagement
 			API.Instance.Then(de =>
 			{
 				WithCriticalLoading("New Account...", de.AuthService.CreateUser().Then(newToken =>
-			 {
-				 de.ApplyToken(newToken).Then(_ => { CheckSignedInUser(); });
-			 }));
+				{
+					de.ApplyToken(newToken).Then(_ => { CheckSignedInUser(); });
+				}));
 			}).Error(HandleError);
 		}
 
@@ -420,11 +393,17 @@ namespace Beamable.AccountManagement
 		public void StartForgotPassword(ForgotPasswordArguments reference)
 		{
 			var email = reference.Email.Value;
-			API.Instance.Then(de =>
+			API.Instance
+			   .Then(de =>
 			   {
 				   WithLoading("Sending Email...", de.AuthService.IssuePasswordUpdate(email))
 				   .Then(_ => DeferBroadcast(email, s => s.ForgotPasswordEmailSent));
-			   }).Error(HandleError);
+			   })
+			   .Error(ex =>
+			   {
+				   _accountForgotPassword.ChangePasswordRequestSent(false);
+				   HandleError(ex);
+			   });
 		}
 
 		public void ConfirmForgotPassword(ForgotPasswordArguments reference)
@@ -439,7 +418,11 @@ namespace Beamable.AccountManagement
 				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
 			 {
 				 Login(email, password);
-			 }).Error(HandleError);
+			 }).Error(ex =>
+				{
+					_accountForgotPassword.ChangePasswordRequestSent(false);
+					HandleError(ex);
+				});
 			});
 		}
 
@@ -447,14 +430,94 @@ namespace Beamable.AccountManagement
 		{
 			if (_pendingToken == null || _pendingUser == null)
 			{
-				throw new Exception("There was no account switch available. This can only be run after a login as been attempted, that links to another account");
+				throw new Exception(
+					"There was no account switch available. This can only be run after a login as been attempted, that links to another account");
 			}
 
 			API.Instance.Then(de =>
 			{
 				WithCriticalLoading("Switching Account...", de.ApplyToken(_pendingToken))
-				.Error(HandleError);
+					.Error(HandleError);
 			});
+		}
+
+		private Promise<User> StartThirdPartyLogin(ThirdPartyLoginResponse thirdPartyResponse,
+												   AuthThirdParty thirdParty)
+		{
+			return API.Instance.FlatMap(api => ThirdPartyLogin(api, thirdPartyResponse, thirdParty));
+		}
+
+		Promise<User> ThirdPartyLogin(IBeamableAPI beamableAPI,
+									  ThirdPartyLoginResponse thirdPartyResponse,
+									  AuthThirdParty thirdParty)
+		{
+			if (thirdPartyResponse.Cancelled)
+			{
+				return Promise<User>.Successful(beamableAPI.User);
+			}
+
+			var token = thirdPartyResponse.AuthToken;
+			return beamableAPI.AuthService.IsThirdPartyAvailable(thirdParty, token)
+							  .FlatMap(available =>
+										   HandleThirdPartyToken(beamableAPI, available, thirdPartyResponse,
+																 thirdParty));
+		}
+
+		Promise<User> HandleThirdPartyToken(IBeamableAPI beamableAPI,
+											bool available,
+											ThirdPartyLoginResponse thirdPartyResponse,
+											AuthThirdParty thirdParty)
+		{
+			var userHasCredentials = beamableAPI.User.HasThirdPartyAssociation(thirdParty);
+
+			var shouldSwitchUsers = !available;
+			var shouldCreateUser = available && userHasCredentials;
+			var shouldAttachToCurrentUser = available && !userHasCredentials;
+
+			Promise<User> ConnectTokenWithAccount(string result)
+			{
+				var token = result;
+				if (shouldSwitchUsers)
+				{
+					return GetAccountWithCredentials(beamableAPI, thirdParty, token)
+						.Then(OfferSwitch);
+				}
+
+				if (shouldCreateUser)
+				{
+					return LoginToNewUser(beamableAPI)
+						.FlatMap(_ => AttachThirdPartyToCurrentUser(beamableAPI, thirdParty, token));
+				}
+
+				if (shouldAttachToCurrentUser)
+				{
+					return AttachThirdPartyToCurrentUser(beamableAPI, thirdParty, token);
+				}
+
+				throw new Exception(
+					$"unrecognized third party state. thirdparty=[{thirdParty}] available=[{available}] userHasCredentials=[{userHasCredentials}]");
+			}
+
+			if (thirdPartyResponse.AuthTokenOneUseOnly)
+			{
+				return GetNewAuthToken(thirdParty)
+					.FlatMap(ConnectTokenWithAccount);
+			}
+
+			return ConnectTokenWithAccount(thirdPartyResponse.AuthToken);
+		}
+
+		Promise<string> GetNewAuthToken(AuthThirdParty thirdParty)
+		{
+			switch (thirdParty)
+			{
+#if BEAMABLE_GPGS && UNITY_ANDROID
+				case AuthThirdParty.GoogleGamesServices:
+					return SignInWithGPG.RequestServerSideToken();
+#endif
+				default:
+					throw new Exception($"{thirdParty} does not need new auth token each time");
+			}
 		}
 
 		private void HandleError(Exception err)
@@ -462,18 +525,24 @@ namespace Beamable.AccountManagement
 			switch (err)
 			{
 				case PlatformRequesterException ex when ex.Status == 401 || ex.Status == 403:
-					DeferBroadcast(AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.BAD_CREDENTIALS), s => s.OnError);
+					DeferBroadcast(
+						AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.BAD_CREDENTIALS),
+						s => s.OnError);
 					break;
 				case PlatformRequesterException ex when string.IsNullOrEmpty(ex.Error.message):
 					Debug.LogError("Account Flow Error with empty message ");
-					DeferBroadcast(AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.SERVER_ERROR), s => s.OnError);
+					DeferBroadcast(
+						AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.SERVER_ERROR),
+						s => s.OnError);
 					break;
 				case Exception ex:
 					Debug.LogError("Account Flow Error: " + ex.Message);
 					DeferBroadcast(ex.Message, s => s.OnError);
 					break;
 				default:
-					DeferBroadcast(AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.SERVER_ERROR), s => s.OnError);
+					DeferBroadcast(
+						AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.SERVER_ERROR),
+						s => s.OnError);
 					break;
 			}
 		}
@@ -482,27 +551,58 @@ namespace Beamable.AccountManagement
 		{
 			if (!AccountManagementConfiguration.Instance.Overrides.IsPasswordStrong(password))
 			{
-				DeferBroadcast(AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.PASSWORD_STRENGTH), s => s.OnError);
+				DeferBroadcast(
+					AccountManagementConfiguration.Instance.Overrides.GetErrorMessage(ErrorEvent.PASSWORD_STRENGTH),
+					s => s.OnError);
 				return false;
 			}
 
 			return true;
 		}
+
 		private void OfferSwitch(User user)
 		{
-			Broadcast(user, s => s.UserSwitchAvailable);
+			API.Instance.Then(api =>
+			{
+				if (api.User.id == user.id)
+				{
+					api.UpdateUserData(user);
+				}
+				else
+				{
+					Broadcast(user, s => s.UserSwitchAvailable);
+				}
+			});
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, string email, string password)
 		{
-			return de.AuthService.Login(email, password, false)
-			   .FlatMap(token => SetPendingUser(de, token));
+			return de.AuthService.Login(email, password)
+					 .RecoverWith(ex =>
+					 {
+						 if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+							 string.Equals("UnableToMergeError", platEx.Error.error))
+						 {
+							 return de.AuthService.Login(email, password, false);
+						 }
+						 return Promise<TokenResponse>.Failed(ex);
+					 })
+					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, AuthThirdParty thirdParty, string accessToken)
 		{
-			return de.AuthService.LoginThirdParty(thirdParty, accessToken, false)
-			   .FlatMap(token => SetPendingUser(de, token));
+			return de.AuthService.LoginThirdParty(thirdParty, accessToken)
+					 .RecoverWith(ex =>
+					 {
+						 if (ex is PlatformRequesterException platEx && string.Equals("auth", platEx.Error.service) &&
+							 string.Equals("UnableToMergeError", platEx.Error.error))
+						 {
+							 return de.AuthService.LoginThirdParty(thirdParty, accessToken, false);
+						 }
+						 return Promise<TokenResponse>.Failed(ex);
+					 })
+					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> SetPendingUser(IBeamableAPI de, TokenResponse token)
@@ -516,19 +616,19 @@ namespace Beamable.AccountManagement
 
 		private Promise<Unit> LoginToNewUser(IBeamableAPI de)
 		{
-			return WithCriticalLoading("New Account...", de.AuthService.CreateUser()
-			   .FlatMap(de.ApplyToken));
+			return WithCriticalLoading("New Account...", de.LoginToNewUser());
 		}
 
 		private Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
 		{
-			return WithCriticalLoading("Loading...", de.AuthService.RegisterDBCredentials(email, password)
-			   .Then(de.UpdateUserData));
+			return WithCriticalLoading("Loading...", de.AttachEmailToCurrentUser(email, password));
 		}
 
-		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de, AuthThirdParty thirdParty, string accessToken)
+		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
+															AuthThirdParty thirdParty,
+															string accessToken)
 		{
-			return WithCriticalLoading("Loading...", de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken).Then(de.UpdateUserData));
+			return WithCriticalLoading("Loading...", de.AttachThirdPartyToCurrentUser(thirdParty, accessToken));
 		}
 
 		private Promise<User> GetExistingAccount(IBeamableAPI de, UserBundle bundle)
@@ -540,7 +640,6 @@ namespace Beamable.AccountManagement
 				return _pendingUser;
 			});
 		}
-
 
 		private void TriggerUserLoggedIn(User user)
 		{
@@ -563,12 +662,6 @@ namespace Beamable.AccountManagement
 			Broadcast(arg, s => s.Loading);
 
 			return promise;
-		}
-
-		private Promise<bool> IsEmailRegistered(string email)
-		{
-			return API.Instance.FlatMap(de => de.AuthService.IsEmailAvailable(email)
-				  .Map(available => !available));
 		}
 
 		public void DeferBroadcast<TArg>(TArg arg, Func<AccountManagementSignals, DeSignal<TArg>> getter)
@@ -612,5 +705,4 @@ namespace Beamable.AccountManagement
 			_pendingToken = token;
 		}
 	}
-
 }

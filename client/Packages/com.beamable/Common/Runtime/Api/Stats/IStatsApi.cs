@@ -5,8 +5,64 @@ namespace Beamable.Common.Api.Stats
 {
 	public interface IStatsApi
 	{
+		/// <summary>
+		/// Get the <see cref="UserDataCache{T}"/> for the stat prefix
+		/// </summary>
+		/// <param name="prefix">
+		/// A stat prefix is a dot separated string containing the ordered set of stat clauses.
+		/// <para>{domain}.{access}.{type}</para>
+		/// Domain can be "client" or "game"
+		/// Access can be "public" or "private".
+		/// Type should always be "player".
+		/// </param>
+		/// <returns>The <see cref="UserDataCache{T}"/> containing stats given the prefix.</returns>
 		UserDataCache<Dictionary<string, string>> GetCache(string prefix);
+
+		/// <summary>
+		/// Get the <see cref="UserDataCache{T}"/> for the stat keys
+		/// </summary>
+		/// <param name="domain">Should be either "client" or "game"</param>
+		/// <param name="access">Should be "public" or "private"</param>
+		/// <param name="type">should always be "player" </param>
+		/// <returns>The <see cref="UserDataCache{T}"/> containing stats given the prefix.</returns>
+		UserDataCache<Dictionary<string, string>> GetCache(string domain, string access, string type);
+
+		/// <summary>
+		/// Removes any stored data for all local stats.
+		/// </summary>
+		void ClearCaches();
+
+		/// <summary>
+		/// Set the current player's client player stats.
+		/// </summary>
+		/// <param name="access">
+		/// "public" or "private".
+		/// Should always be "public", unless you are executing this method as a privileged user or from a Microserivce.</param>
+		/// <param name="stats">
+		/// A dictionary of stat keys and values to set. This will overwrite ONLY the stats that are present in the given dictionary.
+		/// </param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
 		Promise<EmptyResponse> SetStats(string access, Dictionary<string, string> stats);
+
+		/// <summary>
+		/// Get all of the stats for a given player id
+		/// </summary>
+		/// <param name="domain">
+		/// "client" or "game".
+		/// Should always be "client" unless you are executing this method as a privileged user or from a Microservice.
+		/// </param>
+		/// <param name="access">
+		/// "public" or "private". Should always be "public" unless you  are executing this method as a privileged user or from a Microserivce.
+		/// </param>
+		/// <param name="type">
+		/// Should always be "player".
+		/// </param>
+		/// <param name="id">
+		/// The player id to get stats for
+		/// </param>
+		/// <returns>
+		/// A dictionary containing all of the stats for the given domain, access, and player id.
+		/// </returns>
 		Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long id);
 	}
 

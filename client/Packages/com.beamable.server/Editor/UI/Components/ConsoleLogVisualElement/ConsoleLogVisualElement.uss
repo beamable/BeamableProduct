@@ -2,6 +2,7 @@
     flex-direction: row;
     align-content: stretch;
     -unity-overflow-clip-box: padding-box;
+    overflow: hidden;
 }
 
 Label {
@@ -38,9 +39,6 @@ Label {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/remote_wifi_light.png");
 }
 
-#statusIcon.debug {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug_dark.png");
-}
 #statusIcon.info {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info.png");
 }

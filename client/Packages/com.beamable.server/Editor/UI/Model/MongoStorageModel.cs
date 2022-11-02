@@ -1,4 +1,5 @@
-﻿using Beamable.Server.Editor;
+﻿using Beamable.Editor.UI.Components;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
+using static Beamable.Common.Constants.Features.Archive;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -40,6 +43,12 @@ namespace Beamable.Editor.UI.Model
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+
+		public override bool IsArchived
+		{
+			get => Config.Archived;
+			protected set => Config.Archived = value;
+		}
 		public StorageConfigurationEntry Config { get; protected set; }
 
 		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
@@ -73,6 +82,12 @@ namespace Beamable.Editor.UI.Model
 			return task;
 		}
 
+		public override void OpenDocs()
+		{
+			if (IsRunning)
+				AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor);
+		}
+
 		public void EnrichWithRemoteReference(ServiceStorageReference remoteReference)
 		{
 			RemoteReference = remoteReference;
@@ -81,10 +96,8 @@ namespace Beamable.Editor.UI.Model
 
 		protected void OpenRemoteMongo()
 		{
-			EditorAPI.Instance.Then(b =>
-			{
-				UnityEngine.Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.Cid}&pid={b.Pid}&token={b.Token.Token}");
-			});
+			var b = BeamEditorContext.Default;
+			Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.CurrentCustomer.Cid}&pid={b.CurrentRealm.Pid}&token={b.Requester.Token.Token}");
 		}
 
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
@@ -94,7 +107,7 @@ namespace Beamable.Editor.UI.Model
 			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor), IsRunning);
-			evt.menu.BeamableAppendAction($"{localCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/Goto data explorer", _ => OpenDocs(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), IsRunning);
@@ -103,18 +116,50 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 
-			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
+			var isFirst = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) == 0;
+			var isLast = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroservicesDataModel.Instance.Storages.Count - 1;
+
+			evt.menu.BeamableAppendAction($"Move up", pos =>
 			{
-				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>
+				MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move down", pos =>
+			{
+				MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, isLast);
+			evt.menu.BeamableAppendAction($"Move to top", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, 0, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move to bottom", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Storages.Count - 1, ServiceType.StorageObject);
+				OnSortChanged?.Invoke();
+			}, isLast);
+
+			AddArchiveSupport(evt);
+		}
+
+		protected void AddArchiveSupport(ContextualMenuPopulateEvent evt)
+		{
+			evt.menu.AppendSeparator();
+			if (Config.Archived)
+			{
+				evt.menu.AppendAction("Unarchive", _ => Unarchive());
+			}
+			else
+			{
+				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
 				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) > 0);
-				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
+					var archiveServicePopup = new ArchiveServicePopupVisualElement();
+					archiveServicePopup.ShowDeleteOption = !string.IsNullOrEmpty(this.Descriptor.AttributePath);
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility($"{ARCHIVE_WINDOW_HEADER} {Descriptor.Name}", archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.onClose += () => popupWindow.Close();
+					archiveServicePopup.onConfirm += Archive;
+				});
 			}
 		}
 
@@ -126,6 +171,7 @@ namespace Beamable.Editor.UI.Model
 			var oldBuilder = ServiceBuilder;
 			ServiceBuilder = serviceRegistry.GetStorageBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
+			Config = MicroserviceConfiguration.Instance.GetStorageEntry(Name);
 		}
 	}
 }

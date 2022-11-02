@@ -1,7 +1,12 @@
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Content
 {
@@ -53,13 +58,21 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class SimGameType : ContentObject
 	{
-		[Tooltip(ContentObject.TooltipPlayersMax1)]
-		// XXX: maxPlayers is not necessary in the future but is needed until we update game relay server
-		[MustBePositive]
+		[Obsolete("Use `CalculateMaxPlayers` instead.")]
+		[IgnoreContentField]
+		[HideInInspector]
 		public int maxPlayers;
 
+		//Hidden, so no tooltip needed
+		[FormerlySerializedAs("teams")]
+		[SerializeField]
+		[HideInInspector]
+		[IgnoreContentField]
+		public List<TeamContent> legacyTeams;
+
 		[Tooltip(ContentObject.TooltipTeamContent1)]
-		public List<TeamContent> teams;
+		[CannotBeEmpty]
+		public TeamContentList teams;
 
 		[Tooltip(ContentObject.TooltipMatchmakingRule1)]
 		public List<NumericMatchmakingRule> numericRules;
@@ -84,6 +97,46 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipRewardsPerRank1)]
 		public List<RewardsPerRank> rewards;
+
+		public int CalculateMaxPlayers()
+		{
+			int sum = 0;
+			foreach (var team in teams.listData)
+			{
+				sum += team.maxPlayers;
+			}
+
+			return sum;
+		}
+
+		public void OnBeforeSerialize()
+		{
+			// never save the legacy teams...
+			legacyTeams = null;
+		}
+
+		public void OnAfterDeserialize()
+		{
+			// if anything is in the legacy teams, move them into the new list.
+			if (legacyTeams != null && legacyTeams.Count > 0)
+			{
+				teams = new TeamContentList()
+				{
+					listData = legacyTeams.ToList()
+				};
+			}
+
+			legacyTeams = null;
+		}
+	}
+
+	[Serializable]
+	public class TeamContentList : DisplayableList<TeamContent>
+	{
+		public List<TeamContent> listData = new List<TeamContent>();
+
+		protected override IList InternalList => listData;
+		public override string GetListPropertyPath() => nameof(listData);
 	}
 
 	[Serializable]

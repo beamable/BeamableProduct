@@ -36,10 +36,12 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
+			OnBeforeChange?.Invoke();
 			Property.Vector2Value = new Vector2(
 				_fieldX.value,
 				_fieldY.value);
-			TriggerStyleSheetChange();
+
+			OnValueChanged?.Invoke(Property);
 		}
 
 		public override void OnPropertyChangedExternally()

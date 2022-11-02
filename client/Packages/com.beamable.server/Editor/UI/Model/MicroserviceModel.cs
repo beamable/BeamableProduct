@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -18,6 +19,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
+using static Beamable.Common.Constants.Features.Archive;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -42,13 +45,26 @@ namespace Beamable.Editor.UI.Model
 
 		public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
 
+		[field: SerializeField]
 		public MicroserviceBuilder ServiceBuilder { get; protected set; }
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
+
+		[field: SerializeField]
 		public ServiceReference RemoteReference { get; protected set; }
+
+
+		[field: SerializeField]
 		public ServiceStatus RemoteStatus { get; protected set; }
-		public MicroserviceConfigurationEntry Config { get; protected set; }
-		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>();
+
+		public override bool IsArchived
+		{
+			get => Config.Archived;
+			protected set => Config.Archived = value;
+		}
+
+		public MicroserviceConfigurationEntry Config => MicroserviceConfiguration.Instance.GetEntry(Descriptor.Name);
+		public List<MongoStorageModel> Dependencies { get; set; } = new List<MongoStorageModel>(); // TODO: This is whacky.
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
 		public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
 		public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
@@ -81,7 +97,6 @@ namespace Beamable.Editor.UI.Model
 				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
 				RemoteStatus = dataModel.GetStatus(descriptor),
-				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
 			};
 		}
 
@@ -98,6 +113,13 @@ namespace Beamable.Editor.UI.Model
 			OnStop?.Invoke(task);
 			return task;
 		}
+
+		public override void OpenDocs()
+		{
+			if (IsRunning)
+				OpenLocalDocs();
+		}
+
 		public Task BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
@@ -116,14 +138,12 @@ namespace Beamable.Editor.UI.Model
 			OnBuild?.Invoke(task);
 			return task;
 		}
-		public void OpenLocalDocs()
+
+		private void OpenLocalDocs()
 		{
-			EditorAPI.Instance.Then(de =>
-			{
-				var url =
-					$"{BeamableEnvironment.PortalUrl}/{de.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
-				Application.OpenURL(url);
-			});
+			var de = BeamEditorContext.Default;
+			var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Requester.Token.RefreshToken}";
+			Application.OpenURL(url);
 		}
 		public void EnrichWithRemoteReference(ServiceReference remoteReference)
 		{
@@ -152,50 +172,95 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
-			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
-
+			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenDocs(), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
+			{
+				BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
+			});
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 			evt.menu.BeamableAppendAction("Build", pos => Build());
+
+			evt.menu.AppendSeparator();
+
+			var isFirst = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) == 0;
+			var isLast = MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroservicesDataModel.Instance.Services.Count - 1;
+
+			evt.menu.BeamableAppendAction($"Move up", pos =>
+			{
+				MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move down", pos =>
+			{
+				MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, isLast);
+			evt.menu.BeamableAppendAction($"Move to top", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, 0, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, !isFirst);
+			evt.menu.BeamableAppendAction($"Move to bottom", pos =>
+			{
+				MicroserviceConfiguration.Instance.SetIndex(Name, MicroservicesDataModel.Instance.Services.Count - 1, ServiceType.MicroService);
+				OnSortChanged?.Invoke();
+			}, isLast);
+
+			evt.menu.AppendSeparator();
+
 			evt.menu.BeamableAppendAction(IncludeDebugTools
 											  ? BUILD_DISABLE_DEBUG
 											  : BUILD_ENABLE_DEBUG, pos =>
 										  {
 											  IncludeDebugTools = !IncludeDebugTools;
 										  });
-			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
-			{
-				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) > 0);
-				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
-				{
-					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
-					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
-			}
 
 			if (!AreLogsAttached)
 			{
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
 			}
-		}
-		// TODO === END
 
-		private void RunSnykTests()
+			AddArchiveSupport(evt);
+		}
+
+		protected void AddArchiveSupport(ContextualMenuPopulateEvent evt)
+		{
+			evt.menu.AppendSeparator();
+			if (Config.Archived)
+			{
+				evt.menu.AppendAction("Unarchive", _ => Unarchive());
+			}
+			else
+			{
+				evt.menu.AppendAction(ARCHIVE_WINDOW_HEADER, _ =>
+				{
+					var archiveServicePopup = new ArchiveServicePopupVisualElement();
+					archiveServicePopup.ShowDeleteOption = !string.IsNullOrEmpty(this.Descriptor.AttributePath);
+					BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowUtility($"{ARCHIVE_WINDOW_HEADER} {Descriptor.Name}", archiveServicePopup, null, ARCHIVE_WINDOW_SIZE);
+					archiveServicePopup.onClose += () => popupWindow.Close();
+					archiveServicePopup.onConfirm += Archive;
+				});
+			}
+		}
+
+		private void RunSnykTests(bool suppressOutput = false)
 		{
 			var snykCommand = new SnykTestCommand(ServiceDescriptor);
-			snykCommand.Start(null).Then(res =>
+			if (!suppressOutput)
+			{
+				Debug.Log($"Starting Docker Snyk tests for {ServiceDescriptor.Name}. The test results will appear momentarily.");
+			}
+
+			snykCommand.StartAsync().Then(res =>
 			{
 				if (res.RequiresLogin)
 				{
 					var onLogin = new Promise<Unit>();
-					onLogin.Then(_ => RunSnykTests()).Error(_ =>
+					onLogin.Then(_ => RunSnykTests(true)).Error(_ =>
 					{
 						Debug.LogError("Cannot run Snyk Tests without being logged into DockerHub");
 					});
@@ -204,6 +269,7 @@ namespace Beamable.Editor.UI.Model
 				}
 				else
 				{
+					Debug.Log("Docker Snyk tests complete");
 					Debug.Log(res.Output);
 					var date = DateTime.UtcNow.ToFileTimeUtc().ToString();
 					var filePath =
@@ -212,6 +278,9 @@ namespace Beamable.Editor.UI.Model
 					File.WriteAllText(filePath, res.Output);
 					EditorUtility.OpenWithDefaultApp(filePath);
 				}
+			}).Error(err =>
+			{
+				Debug.LogError($"Failed to run Docker Snyk tests for {ServiceDescriptor.Name}. Reason=[{err?.Message}]");
 			});
 		}
 		private void CopyVSCodeDebugTool()
@@ -241,14 +310,13 @@ $@"{{
 		protected void OpenRemoteMetrics() => OpenOnRemote("metrics");
 		protected void OpenOnRemote(string relativePath)
 		{
-			EditorAPI.Instance.Then(api =>
-			{
-				var path =
-					$"{BeamableEnvironment.PortalUrl}/{api.Alias}/" +
-					$"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
-					$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
-				Application.OpenURL(path);
-			});
+			var api = BeamEditorContext.Default;
+			var path =
+				$"{BeamableEnvironment.PortalUrl}/{api.CurrentCustomer.Alias}/" +
+				$"games/{api.ProductionRealm.Pid}/realms/{api.CurrentRealm.Pid}/" +
+				$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Requester.Token.RefreshToken}";
+			Application.OpenURL(path);
+
 		}
 		private void OpenInCli()
 		{
@@ -292,15 +360,16 @@ $@"{{
 			}
 #endif
 		}
+
 		public override void Refresh(IDescriptor descriptor)
 		{
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			ServiceDescriptor = (MicroserviceDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
+			oldBuilder.Descriptor = descriptor;
 			ServiceBuilder = serviceRegistry.GetServiceBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
-			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}
 
 		// Chris took these out because they weren't being used yet, and were throwing warnings on package builds.

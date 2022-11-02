@@ -13,6 +13,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MenuManager: {fileID: 1855707605096264864}
+  InventoryConfig:
+    Groups: []
+    ItemPreviewPrefab: {fileID: 4057779143720993516, guid: 5e01421c531e24cdc90b41b04cd49ef5,
+      type: 3}
 --- !u!1 &7340792050690760074
 GameObject:
   m_ObjectHideFlags: 0
@@ -145,6 +149,7 @@ MonoBehaviour:
   GroupContainer: {fileID: 3318937457218777123}
   GroupUIPrefab: {fileID: 8732721062531320142, guid: 9a4666e05965f4ecbac8af8cb87b3782,
     type: 3}
+  RootMenu: {fileID: 3771633555028155601}
 --- !u!114 &6594628433216150923
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -234,13 +239,12 @@ PrefabInstance:
         type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: dc36b3fdc14f47ebb36fd484a67e268a,
-        type: 2}
+      objectReference: {fileID: 0}
     - target: {fileID: 2547387664703091050, guid: 0690cad26c83649aaa70c9df5907e261,
         type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2140032, guid: dc36b3fdc14f47ebb36fd484a67e268a, type: 2}
+      objectReference: {fileID: 0}
     - target: {fileID: 2547387664703091050, guid: 0690cad26c83649aaa70c9df5907e261,
         type: 3}
       propertyPath: m_fontColor.r
@@ -876,6 +880,11 @@ PrefabInstance:
       propertyPath: m_textInfo.pageCount
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2073831858829636960, guid: 9a4666e05965f4ecbac8af8cb87b3782,
+        type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2073831858829636963, guid: 9a4666e05965f4ecbac8af8cb87b3782,
         type: 3}
       propertyPath: m_AnchorMin.y
@@ -1110,13 +1119,12 @@ PrefabInstance:
         type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: dc36b3fdc14f47ebb36fd484a67e268a,
-        type: 2}
+      objectReference: {fileID: 0}
     - target: {fileID: 4803997194534874726, guid: 9a4666e05965f4ecbac8af8cb87b3782,
         type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2140032, guid: dc36b3fdc14f47ebb36fd484a67e268a, type: 2}
+      objectReference: {fileID: 0}
     - target: {fileID: 4824795591855420569, guid: 9a4666e05965f4ecbac8af8cb87b3782,
         type: 3}
       propertyPath: m_AnchorMin.y
@@ -1206,6 +1214,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5703669837209001891, guid: 9a4666e05965f4ecbac8af8cb87b3782,
+        type: 3}
+      propertyPath: m_Material
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9a4666e05965f4ecbac8af8cb87b3782, type: 3}

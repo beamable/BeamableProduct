@@ -1,6 +1,4 @@
 using Beamable.Common;
-using Beamable.Serialization;
-using System;
 using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Chat
@@ -119,37 +117,5 @@ namespace Beamable.Experimental.Api.Chat
 				_onMessageReceived(message);
 			}
 		}
-	}
-
-	[Serializable]
-	public class Message : JsonSerializable.ISerializable
-	{
-		public string messageId;
-		public string roomId;
-		public long gamerTag;
-		public string content;
-		public string censoredContent;
-		public long timestampMillis;
-
-		public MessageType Type
-		{
-			get { return gamerTag == 0 ? MessageType.Admin : MessageType.User; }
-		}
-
-		public void Serialize(JsonSerializable.IStreamSerializer s)
-		{
-			s.Serialize("messageId", ref messageId);
-			s.Serialize("roomId", ref roomId);
-			s.Serialize("gamerTag", ref gamerTag);
-			s.Serialize("content", ref content);
-			s.Serialize("censoredContent", ref censoredContent);
-			s.Serialize("timestampMillis", ref timestampMillis);
-		}
-	}
-
-	public enum MessageType
-	{
-		Admin,
-		User
 	}
 }

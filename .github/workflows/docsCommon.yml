@@ -1,0 +1,64 @@
+name: Docs Common
+
+on:
+  workflow_call:
+    inputs:
+      s3Dest:
+        description: 'The S3 output directory. Should be "DEV", or a semantic version, like "1.1.2".'     
+        required: true
+        default: 'DEV'
+        type: string
+    secrets:
+      AWS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      S3_DOCS_BUCKET: 
+        required: true
+
+jobs:
+  doxygen:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: doxygen-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Resolve S3 Destination
+        run: |
+          S3=${{inputs.s3Dest}}
+          S3=${S3:-DEV}
+          echo $S3
+          echo '::set-output name=S3_OUTPUT::'${S3}
+        id: s3-dest-resolver
+      - name: Check S3
+        run: echo "The selected s3 dest is ${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}"
+      - uses: mattnotmitt/doxygen-action@v1.9.2
+        name: Doxygen
+        with:
+          additional-packages: graphviz
+          working-directory: './client/Packages'
+          doxyfile-path: '../Doxyfile'
+      - name: Archive
+        run: |
+          tar cfz docs-html.tar.gz ./client/Packages/html
+        shell: bash
+      - uses: actions/upload-artifact@v2
+        name: Keep Artifact
+        if: always()
+        with:
+          path: docs-html.tar.gz
+          retention-days: 3
+      - name: Upload to S3
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 sync --delete client/Packages/html/ s3://${{secrets.S3_DOCS_BUCKET}}/${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}/
+      - name: Prepare Cloudfront Invalidation 
+        run: |
+          CLOUD_DISTRO=E30NJLEQHJKLSL
+          CALLER_REFERENCE=${{github.sha}}
+          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.s3-dest-resolver.outputs.S3_OUTPUT }}/*"]}}}' >> cloudfront-invalidation.json
+      - name: Preview Cloudfront Invalidation 
+        run: |
+          cat cloudfront-invalidation.json
+      - name: Do Cloudfront Invalidation
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json

@@ -10,6 +10,9 @@ namespace Beamable.UI.Buss
 	[ExecuteAlways, DisallowMultipleComponent]
 	public class BussElement : MonoBehaviour, ISerializationCallbackReceiver
 	{
+		public event Action Change;
+		public event Action StyleRecalculated;
+
 #pragma warning disable CS0649
 		[SerializeField, BussId] private string _id;
 		[SerializeField, BussClass] private List<string> _classes = new List<string>();
@@ -24,9 +27,12 @@ namespace Beamable.UI.Buss
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
-		public event Action StyleSheetsChanged;
-		public event Action Validate;
+		private PropertySourceTracker _sources;
+		public PropertySourceTracker Sources => _sources ?? (_sources = new PropertySourceTracker(this));
 
+		[NonSerialized]
+		private List<StyleCache.StyleCacheEntry> _styleCacheEntries = new List<StyleCache.StyleCacheEntry>();
+		
 		public string Id
 		{
 			get => _id;
@@ -38,11 +44,10 @@ namespace Beamable.UI.Buss
 		}
 
 		public IEnumerable<string> Classes => _classes;
-		public IEnumerable<string> PseudoClasses => _pseudoClasses;
-		public string TypeName => GetType().Name;
-		public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
 		public BussStyleDescription InlineStyle => _inlineStyle;
 
+		public virtual string TypeName => "BussElement";
+		
 		public BussStyleSheet StyleSheet
 		{
 			get => _styleSheet;
@@ -75,10 +80,7 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public virtual void ApplyStyle()
-		{
-			// TODO: common style implementation for BUSS Elements, so: applying all properties that affect RectTransform
-		}
+		public virtual void ApplyStyle() { }
 
 		#region Unity Callbacks
 
@@ -95,18 +97,6 @@ namespace Beamable.UI.Buss
 			OnStyleChanged();
 		}
 
-		private void OnValidate()
-		{
-			if (!gameObject || !gameObject.scene.IsValid())
-			{
-				return; // OnValidate runs on prefabs, which we absolutely don't want to.
-			}
-
-			CheckParent();
-			OnStyleChanged();
-			Validate?.Invoke();
-		}
-
 		private void OnTransformParentChanged()
 		{
 			CheckParent();
@@ -116,6 +106,7 @@ namespace Beamable.UI.Buss
 
 		private void OnDisable()
 		{
+			ClearCache();
 			if (Parent != null)
 			{
 				Parent._children.Remove(this);
@@ -126,9 +117,21 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		private void OnDestroy()
+		{
+			ClearCache();
+		}
+
 		#endregion
 
 		#region Changing Classes
+
+		public void UpdateClasses(IEnumerable<string> newClasses)
+		{
+			_classes.Clear();
+			_classes = new List<string>(newClasses);
+			RecalculateStyle();
+		}
 
 		public void AddClass(string className)
 		{
@@ -147,9 +150,9 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetClass(string className, bool enabled)
+		public void SetClass(string className, bool isEnabled)
 		{
-			if (enabled)
+			if (isEnabled)
 			{
 				AddClass(className);
 			}
@@ -159,30 +162,38 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetPseudoClass(string className, bool enabled)
-		{
-			var changed = false;
-			if (enabled)
-			{
-				if (!_pseudoClasses.Contains(className))
-				{
-					_pseudoClasses.Add(className);
-					changed = true;
-				}
-			}
-			else
-			{
-				changed = _pseudoClasses.Remove(className);
-			}
-
-			if (changed)
-			{
-				Style.SetStyleAnimatedListener(ApplyStyle);
-				Style.SetPseudoStyle(className, enabled);
-			}
-		}
+		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// public void SetPseudoClass(string className, bool isEnabled)
+		// {
+		// 	var changed = false;
+		// 	if (isEnabled)
+		// 	{
+		// 		if (!_pseudoClasses.Contains(className))
+		// 		{
+		// 			_pseudoClasses.Add(className);
+		// 			changed = true;
+		// 		}
+		// 	}
+		// 	else
+		// 	{
+		// 		changed = _pseudoClasses.Remove(className);
+		// 	}
+		//
+		// 	if (changed)
+		// 	{
+		// 		// TODO: Disabled with BEAM-3130 due to incomplete implementation
+		// 		//Style.SetStyleAnimatedListener(ApplyStyle);
+		// 		//Style.SetPseudoStyle(className, isEnabled);
+		// 	}
+		// }
 
 		#endregion
+
+		public void Reenable()
+		{
+			enabled = false;
+			enabled = true;
+		}
 
 		/// <summary>
 		/// Used when the parent or the style sheet is changed.
@@ -194,14 +205,14 @@ namespace Beamable.UI.Buss
 			RecalculateStyle();
 		}
 
-		public void RecalculateStyleSheets()
+		private void RecalculateStyleSheets()
 		{
 			var hash = GetStyleSheetHash();
 			AllStyleSheets.Clear();
 			AddParentStyleSheets(this);
 			if (hash != GetStyleSheetHash())
 			{
-				StyleSheetsChanged?.Invoke();
+				Change?.Invoke();
 			}
 		}
 
@@ -233,13 +244,45 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		public void ReapplyStyles()
+		{
+			ApplyStyle();
+		}
+
+		private void ClearCache()
+		{
+			foreach (var styleCacheEntry in _styleCacheEntries)
+			{
+				styleCacheEntry.Release();
+			}
+			_styleCacheEntries.Clear();
+		}
+		
 		/// <summary>
 		/// Recalculates style for this and children BussElements.
 		/// </summary>
 		public void RecalculateStyle()
 		{
-			BussConfiguration.UseConfig(c => c.RecalculateStyle(this));
+			ClearCache();
+			Style.Inherit(Parent?.Style);
+			Sources.Recalculate();
+			StyleCache.Instance.Clear(this);
+			foreach (var key in Sources.GetKeys())
+			{
+				var source = Sources.ResolveVariableProperty(key);
+				if (source?.PropertyProvider != null && source.StyleRule != null)
+				{
+					var cacheEntry = StyleCache.Instance.AttachReference(this, key, source);
+					_styleCacheEntries.Add(cacheEntry);
+				}
+				
+				Style[key] = (source?.PropertyProvider?.GetProperty()) ??
+				             BussStyle.GetDefaultValue(key);
+			}
+			
 			ApplyStyle();
+
+			StyleRecalculated?.Invoke();
 
 			foreach (BussElement child in Children)
 			{
@@ -249,10 +292,11 @@ namespace Beamable.UI.Buss
 				}
 			}
 		}
-
+		
 		public void CheckParent()
 		{
-			var foundParent = (transform == null || transform.parent == null)
+			var mysTransform = transform;
+			var foundParent = (mysTransform == null || mysTransform.parent == null)
 				? null
 				: transform.parent.GetComponentInParent<BussElement>();
 
@@ -295,7 +339,7 @@ namespace Beamable.UI.Buss
 		{
 			foreach (BussElement element in elements.ToArray())
 			{
-				if (element != this)
+				if (element != this && element != null)
 				{
 					element.CheckParent();
 				}

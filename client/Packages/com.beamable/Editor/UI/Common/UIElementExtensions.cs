@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Beamable.Common;
 using Beamable.Editor.UI.Components;
+using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -163,7 +164,7 @@ namespace Beamable.Editor
 			return Check;
 		}
 
-		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker)
+		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker, double debounceTime = .25)
 		{
 			var constraint = new FormConstraint
 			{
@@ -193,12 +194,52 @@ namespace Beamable.Editor
 			{
 				// wait up to .25 seconds.
 				var time = EditorApplication.timeSinceStartup;
-				nextCheckTime = time + .25;
+				nextCheckTime = time + debounceTime;
 				Debounce();
 			}
 
 			self.RegisterValueChangedCallback(evt => StartDebounce());
 			var check = AddErrorLabel(self, constraint);
+			constraint.OnValidate += check;
+			return constraint;
+		}
+
+		public static FormConstraint AddErrorLabel(this LabeledTextField self, string name, FormErrorCheckWithInput checker, double debounceTime = .25)
+		{
+			var constraint = new FormConstraint
+			{
+				ErrorCheck = (out string err) =>
+				{
+					err = checker(self.TextFieldComponent.value);
+					return !string.IsNullOrEmpty(err);
+				},
+				Name = name
+			};
+
+			var nextCheckTime = 0.0;
+
+			void Debounce()
+			{
+				var time = EditorApplication.timeSinceStartup;
+				if (time < nextCheckTime)
+				{
+					EditorApplication.delayCall += Debounce;
+					return;
+				}
+
+				constraint.Check();
+			}
+
+			void StartDebounce()
+			{
+				// wait up to .25 seconds.
+				var time = EditorApplication.timeSinceStartup;
+				nextCheckTime = time + debounceTime;
+				Debounce();
+			}
+
+			self.TextFieldComponent.RegisterValueChangedCallback(evt => StartDebounce());
+			var check = AddErrorLabel(self.TextFieldComponent, constraint);
 			constraint.OnValidate += check;
 			return constraint;
 		}
@@ -280,6 +321,21 @@ namespace Beamable.Editor
 			};
 		}
 
+		public static EditorWindow GetEditorWindowWithReflection(this BeamableBasicVisualElement element)
+		{
+			try
+			{
+				var ownerProperty = element.panel.GetType().GetProperty("ownerObject");
+				var owner = ownerProperty.GetValue(element.panel);
+				var window = owner.GetType().BaseType.GetProperty("actualView", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(owner);
+				return (EditorWindow)window;
+			}
+			catch (Exception)
+			{
+				return null;
+			}
+		}
+
 		public static void AssignUIRefs(this BeamableBasicVisualElement element)
 		{
 			var type = element.GetType();
@@ -310,6 +366,19 @@ namespace Beamable.Editor
 
 				type = type.BaseType;
 			}
+		}
+
+		public static void TryAddScrollViewAsMainElement(this VisualElement self)
+		{
+#if UNITY_2021_1_OR_NEWER
+			var tree = self.Children().FirstOrDefault();
+			if (tree == null)
+				return;
+			var scrollView = new ScrollView(ScrollViewMode.Vertical) {name = "main-scrollView"};
+			scrollView.AddStyleSheet(Constants.Files.COMMON_USS_FILE);
+			scrollView.contentContainer.Add(tree);
+			self.Add(scrollView);	
+#endif
 		}
 	}
 }

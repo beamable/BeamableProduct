@@ -21,18 +21,15 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-	public class PublishWindow : CommandRunnerWindow
+	public class PublishWindow : EditorWindow
 	{
-		protected const float DEFAULT_ROW_HEIGHT = 47.0f;
-		protected const int MAX_ROW = 6;
-		private static readonly Vector2 MIN_SIZE = new Vector2(860, 330);
-
 		[SerializeField] private bool isSet;
 		private CancellationTokenSource _tokenSource;
 
-		public static PublishWindow ShowPublishWindow(EditorWindow parent)
+		public static PublishWindow ShowPublishWindow(EditorWindow parent, BeamEditorContext editorContext)
 		{
 			var wnd = CreateInstance<PublishWindow>();
+
 			wnd.name = PUBLISH;
 			wnd.titleContent = new GUIContent(PUBLISH);
 			wnd.ShowUtility();
@@ -48,8 +45,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			wnd.minSize = size;
 			wnd.position = BeamablePopupWindow.GetCenteredScreenRectForWindow(parent, size);
+
 			loadPromise.Then(model =>
 			{
+				float maxHeight = Mathf.Max(model.Services.Values.Count * ROW_HEIGHT, ROW_HEIGHT) + HEIGHT_BASE;
+				var maxSize = new Vector2(4000, maxHeight);
+				maxSize.y = Mathf.Max(maxSize.y, wnd.minSize.y);
+				wnd.maxSize = maxSize;
+
 				wnd._model = model;
 				wnd._element.Model = model;
 				wnd.RefreshElement();
@@ -102,7 +105,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
 				_element.PrepareForPublish();
 				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, _element.HandleServiceDeployed, logger);
+				await microservicesRegistry.Deploy(model, _tokenSource.Token, _element.HandleServiceDeployed, logger);
 			};
 
 			container.Add(_element);
@@ -139,6 +142,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public override Task Stop()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override void OpenDocs()
 		{
 			throw new NotImplementedException();
 		}

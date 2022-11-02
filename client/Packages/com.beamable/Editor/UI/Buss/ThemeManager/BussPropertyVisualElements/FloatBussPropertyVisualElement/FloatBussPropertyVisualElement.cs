@@ -1,4 +1,5 @@
 ﻿using Beamable.UI.Buss;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -24,13 +25,15 @@ namespace Beamable.Editor.UI.Components
 			_field.value = Property.FloatValue;
 			Root.Add(_field);
 
+
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}
 
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
+			OnBeforeChange?.Invoke();
 			Property.FloatValue = evt.newValue;
-			TriggerStyleSheetChange();
+			OnValueChanged?.Invoke(Property);
 		}
 
 		public override void OnPropertyChangedExternally()

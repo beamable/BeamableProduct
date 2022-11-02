@@ -11,6 +11,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -21,6 +22,7 @@ using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
@@ -34,6 +36,8 @@ namespace Beamable
 	public interface IObservedPlayer : IUserContext
 	{
 		PlayerStats Stats { get; }
+		PlayerLobby Lobby { get; }
+		PlayerParty Party { get; }
 	}
 
 	/// <summary>
@@ -135,6 +139,8 @@ namespace Beamable
 		[SerializeField]
 		private PlayerStats _playerStats;
 
+		[SerializeField] private PlayerLobby _playerLobby;
+
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -151,6 +157,16 @@ namespace Beamable
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
 		/// <summary>
+		/// Access the <see cref="PlayerLobby"/> for this context.
+		/// </summary>
+		public PlayerLobby Lobby => _playerLobby = _playerLobby ?? _serviceScope.GetService<PlayerLobby>();
+
+		/// <summary>
+		/// Access the <see cref="PlayerParty"/> for this context.
+		/// </summary>
+		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
+
+		/// <summary>
 		/// <para>
 		/// Access the player's inventory
 		/// </para>
@@ -160,10 +176,20 @@ namespace Beamable
 		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
 
-		public IContentApi Content =>
-			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
+		/// <summary>
+		/// Access the <see cref="IContentApi"/> for this player.
+		/// </summary>
+		public IContentApi Content => _contentService = _contentService ?? _serviceScope.GetService<IContentApi>();
 
+		/// <summary>
+		/// Access the <see cref="IBeamableAPI"/> for this player.
+		/// </summary>
 		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
+
+		/// <summary>
+		/// Access the player's friends and blocked enemies.
+		/// </summary>
+		public PlayerSocial Social => _serviceScope.GetService<PlayerSocial>();
 
 		public string TimeOverride
 		{
@@ -199,6 +225,7 @@ namespace Beamable
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
+		private OfflineCache _offlineCache;
 
 		#endregion
 
@@ -218,6 +245,40 @@ namespace Beamable
 		{
 			AuthorizedUser.OnDataUpdated += user => OnUserLoggedIn?.Invoke(user);
 		}
+
+		/// <summary>
+		/// A <see cref="BeamContext"/> is configured for one authorized user.
+		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
+		///
+		/// This method will <i>create</i> new <see cref="BeamContext"/> instance using <see cref="TokenResponse"/> values
+		/// </summary>
+		/// <param name="playerCode">id for the <see cref="BeamContext"/></param>
+		/// <param name="token">Authorization token</param>
+		/// <returns>New instance of the <see cref="BeamContext"/></returns>
+		public static BeamContext CreateAuthorizedContext(string playerCode, TokenResponse token)
+		{
+			bool isDefault = string.IsNullOrWhiteSpace(playerCode);
+			if (isDefault || _playerCodeToContext.ContainsKey(playerCode))
+			{
+#if UNITY_EDITOR
+				const string log =
+					@"<b>BeamContext</b> with id <b>{0}</b> already exists. " +
+					"In order to update existing BeamContext it is recommended to use <b>" +
+					nameof(ChangeAuthorizedPlayer) + "</b> method instead.";
+				Debug.LogError(string.Format(log, isDefault ? "Default" : playerCode));
+#endif
+				throw new BeamContextInitException(_playerCodeToContext[playerCode],
+												   new[] { new Exception($"BeamContext with \"{playerCode}\" prefix already exist.") });
+			}
+			string cid = ConfigDatabase.GetString("cid");
+			string pid = ConfigDatabase.GetString("pid");
+
+			var accessToken = new AccessToken(new AccessTokenStorage(playerCode), cid, pid, token.access_token,
+											  token.refresh_token, token.expires_in);
+			accessToken.Save();
+			return ForPlayer(playerCode);
+		}
+
 
 		/// <summary>
 		/// A <see cref="BeamContext"/> is configured for one authorized user. If you wish to change the user, you need to give it a new token.
@@ -240,6 +301,7 @@ namespace Beamable
 			// await InitStep_SaveToken();
 			await InitStep_GetUser();
 			await InitStep_StartNewSession();
+			await InitStep_StartPubnub();
 
 			OnReloadUser?.Invoke();
 
@@ -321,11 +383,18 @@ namespace Beamable
 			{
 				var success = false;
 				var attempt = 0;
-				var attemptDurations = new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
+				var coreConfig = ServiceProvider.GetService<CoreConfiguration>();
+				var attemptDurations = coreConfig.ContextRetryDelays;
+				var errors = new Exception[attemptDurations.Length];
 				while (!success)
 				{
+					var attemptIndex = attempt;
 					yield return InitializeUser()
-						.Error(Debug.LogException)
+						.Error(err =>
+						{
+							errors[attemptIndex] = err;
+							Debug.LogException(err);
+						})
 						.Then(__ =>
 						{
 							success = true;
@@ -333,10 +402,18 @@ namespace Beamable
 						}).ToYielder();
 
 					if (success) break;
+
+					if (attempt >= attemptDurations.Length - 1 && !coreConfig.EnableInfiniteContextRetries)
+					{
+						// we've failed, and we've been configured to exit early.
+						_initPromise.CompleteError(new BeamContextInitException(this, errors));
+						yield break;
+					}
+
 					var duration =
 						attemptDurations[attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt];
 					Debug.LogWarning($"Beamable couldn't start. playerCode=[{playerCode}] Will try again in {duration} seconds...");
-					yield return new WaitForSecondsRealtime(duration);
+					yield return new WaitForSecondsRealtime((float)duration);
 					attempt++;
 				}
 			}
@@ -348,8 +425,10 @@ namespace Beamable
 			builder.AddSingleton<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
+					_environment.SdkVersion,
 					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>()
+					provider.GetService<IConnectivityService>(),
+					provider.GetService<OfflineCache>()
 				)
 			);
 			builder.AddSingleton<IBeamableApiRequester>(
@@ -386,8 +465,7 @@ namespace Beamable
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
-
-
+			_offlineCache = ServiceProvider.GetService<OfflineCache>();
 		}
 
 
@@ -416,7 +494,7 @@ namespace Beamable
 			try
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
 				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
 			}
 			catch (NoConnectivityException)
@@ -454,12 +532,19 @@ namespace Beamable
 						refresh_token = "offline",
 						expires_in = long.MaxValue - 1
 					});
-					OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me", new User
+
+					if (_offlineCache.UseOfflineCache)
 					{
-						id = Random.Range(int.MinValue, 0),
-						scopes = new List<string>(),
-						thirdPartyAppAssociations = new List<string>()
-					}, Requester.AccessToken, true);
+						_offlineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me",
+							new User
+							{
+								id = Random.Range(int.MinValue, 0),
+								scopes = new List<string>(),
+								thirdPartyAppAssociations = new List<string>(),
+								deviceIds = new List<string>()
+							}, Requester.AccessToken, true);
+					}
+
 					_connectivityService.OnReconnectOnce(async () =>
 					{
 						// disable the old token, because its bad
@@ -496,7 +581,8 @@ namespace Beamable
 			{
 				id = 0,
 				scopes = new List<string>(),
-				thirdPartyAppAssociations = new List<string>()
+				thirdPartyAppAssociations = new List<string>(),
+				deviceIds = new List<string>()
 			};
 			try
 			{
@@ -532,7 +618,11 @@ namespace Beamable
 				{
 					var purchaser = ServiceProvider.GetService<IBeamablePurchaser>();
 					var promise = purchaser.Initialize(ServiceProvider);
-					await promise.Recover(err => PromiseBase.Unit);
+					await promise.Recover(err =>
+					{
+						Debug.LogError(err);
+						return PromiseBase.Unit;
+					});
 					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
 				}
 			}
@@ -547,14 +637,16 @@ namespace Beamable
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
-			_requester.Language = "en"; // TODO: Put somewhere, like in configuration
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();
 			var pubnub = InitStep_StartPubnub();
 			// Start Session
 			var session = InitStep_StartNewSession();
-			_heartbeatService.Start();
+			if (CoreConfiguration.Instance.SendHeartbeat)
+			{
+				_heartbeatService.Start();
+			}
 
 			// Check if we should initialize the purchaser
 			var purchase = InitStep_StartPurchaser();
@@ -562,10 +654,7 @@ namespace Beamable
 
 			OnReloadUser?.Invoke();
 
-			if (IsDefault)
-			{
-				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
-			}
+			ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
 		}
 
 
@@ -676,6 +765,7 @@ namespace Beamable
 
 			await _serviceScope.Dispose();
 
+			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
 
@@ -713,10 +803,35 @@ namespace Beamable
 			if (GameObject)
 			{
 				UnityEngine.Object.Destroy(GameObject);
+				_behaviour = null;
+				_gob = null;
 			}
 
 
 			return Promise.Success;
+		}
+	}
+
+	[Serializable]
+	public class BeamContextInitException : Exception
+	{
+		/// <summary>
+		/// The <see cref="BeamContext"/> that couldn't start.
+		/// </summary>
+		public BeamContext Ctx { get; }
+
+		/// <summary>
+		/// A set of exceptions that map to each failed initialization attempt.
+		/// There will be the same count of errors as there is in the <see cref="CoreConfiguration.ContextRetryDelays"/> array
+		/// </summary>
+		public Exception[] Exceptions { get; }
+
+		public BeamContextInitException(BeamContext ctx, Exception[] exceptions) : base($"Could not initialize " +
+																						$"BeamContext=[{ctx?.PlayerCode}]. " +
+																						$"Errors=[{string.Join("\n", exceptions.Where(e => e != null).Select(e => e.Message))}]")
+		{
+			Ctx = ctx;
+			Exceptions = exceptions;
 		}
 	}
 }

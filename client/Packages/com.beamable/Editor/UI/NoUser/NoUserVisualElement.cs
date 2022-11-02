@@ -1,4 +1,5 @@
 using Beamable.Editor.Login.UI;
+using System;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -19,6 +20,7 @@ namespace Beamable.Editor.NoUser
 		   "Packages/com.beamable/Editor/UI/NoUser/nouser.uss";
 
 		private VisualElement _root;
+		public event Action OnLoginCheckComplete;
 
 		public NoUserVisualElement()
 		{
@@ -29,10 +31,25 @@ namespace Beamable.Editor.NoUser
 			_root.Q<Button>().clickable.clicked += () =>
 			{
 				// go to login.
-				var _ = LoginWindow.CheckLogin();
+				LoginWindow.CheckLogin().Then(_ =>
+				{
+					OnLoginCheckComplete?.Invoke();
+				});
 			};
-
 			this.Add(_root);
+
+			if (LoginWindow.IsDomainReloaded) // domain reload fix when LoginWindow was opened
+			{
+				LoginWindow.CheckLogin().Then(_ =>
+				{
+					OnLoginCheckComplete?.Invoke();
+				});
+			}
+			_root.RegisterCallback<FocusEvent>(_ =>
+			{
+				if (BeamEditorContext.Default.IsAuthenticated)
+					OnLoginCheckComplete?.Invoke();
+			});
 		}
 	}
 }

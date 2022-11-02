@@ -20,12 +20,14 @@
 #nameMS {
     align-self: center;
     margin-left: 3px;
+    flex-grow: 1;
 }
 
 #nameC, #depsC {
     flex-direction: row;
-    flex: 1;
+    flex-grow: 1;
 }
+
 #depsColumn > * {
     padding-right: 20px;
 }
@@ -36,15 +38,15 @@
 }
 
 #enabledC {
-    width: 70px;
     justify-content: flex-start;
 }
+
 #enabledC.column {
-    width: 70px;
+    width: 50px;
 }
 
 #CommentsC {
-    width: 220px;
+    width: 180px;
     justify-content: flex-end;
 }
 #CommentsC.column {
@@ -52,14 +54,16 @@
 }
 #row #CommentsC > * {
     flex-grow: 1;
+    margin-left: 45px
 }
 
 #SizeC {
-    width: 120px;
+    width: 160px;
 }
 #SizeC DropdownVisualElement {
     flex-direction: row;
     flex-grow: 1;
+    margin-left: 45px;
 }
 #SizeC #mainContainer {
     min-width: 70px;
@@ -80,7 +84,7 @@
 }
 
 #CheckC {
-    width: 20px;
+    width: 80px;
     margin-right: 20px;
 }
 
@@ -122,9 +126,7 @@
 .bottomContainer{
     padding-top: 10px;
     padding-right: 0px;
-    padding-bottom: 10px;
     padding-left: 0px;
-    margin-bottom: 15px;
     margin-left: 0px;
     margin-right: 0px;
     min-height: 90px;
@@ -142,15 +144,31 @@
     flex-direction: row;
     justify-content: flex-end;
     flex-shrink: 0;
-    margin-bottom: 15px;
+    margin-top: 20px;
+    margin-bottom: 25px;
+    margin-right: 12px;
 }
+
 #buttonStrip Button {
-    width: 100px;
+    height: 32px;
+    width: 120px;
+}
+
+#continueBtn {
+    margin-left: 15px
 }
 
 .SubTitleText{
     font-size: 14px;
     -unity-font-style: bold;
+    color: #FFFFFF;
+    margin-left: 10px;
+}
+
+.HeaderSeparatorImage {
+    height: 20px;
+    width: 4px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/VerticalLine.png");
 }
 
 #manifestsContainer{
@@ -176,13 +194,14 @@ LoadingBarElement {
     margin-bottom: 5px;
 }
 #header .column {
-    justify-content: center;
+    justify-content: flex-start;
+    -unity-text-align: middle-center;
 }
 #header {
     border-color: rgba(0,0,0,.1);
     border-bottom-width: 2px;
 }
-#header, #topMessage, #manifestsContainer, #buttonStrip{
+#header, #topMessage, #manifestsContainer {
     margin-left: 15px;
     margin-right: 15px;
     padding-right: 10px; /*account for scroll */
@@ -205,12 +224,12 @@ LoadingBarElement {
 }
 
 .splitWrapper.leftSplit{
-    flex-grow: 0;
+    flex-grow: 1;
     min-height: 200px;
 }
 .splitWrapper.rightSplit {
-    flex-grow: 1;
-    min-height: 50px;
+    flex-grow: 0;
+    height: 150px;
 }
 .splitWrapper.rightSplit > * {
     flex-grow: 1;

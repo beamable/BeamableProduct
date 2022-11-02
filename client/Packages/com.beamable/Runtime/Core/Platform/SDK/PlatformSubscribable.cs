@@ -137,6 +137,21 @@ namespace Beamable.Api
 			};
 		}
 
+		public void UnsubscribeAllNotifications()
+		{
+			notificationService?.UnsubscribeAll($"{service}.refresh");
+		}
+
+		public void PauseAllNotifications()
+		{
+			notificationService?.Pause($"{service}.refresh");
+		}
+
+		public void ResumeAllNotifications()
+		{
+			notificationService?.Resume($"{service}.refresh");
+		}
+
 		private void OnTimeOverride()
 		{
 			Refresh();
@@ -163,8 +178,10 @@ namespace Beamable.Api
 		/// <param name="scope"></param>
 		/// <param name="callback"></param>
 		/// <returns></returns>
-		public PlatformSubscription<Data> Subscribe(string scope, Action<Data> callback)
+		public virtual PlatformSubscription<Data> Subscribe(string scope, Action<Data> callback)
 		{
+			scope = scope ?? String.Empty;
+
 			List<PlatformSubscription<Data>> subscriptions;
 			if (!scopedSubscriptions.TryGetValue(scope, out subscriptions))
 			{
@@ -242,9 +259,15 @@ namespace Beamable.Api
 			if (nextRefreshScopes.Count == 0)
 				return Promise<Unit>.Successful(PromiseBase.Unit);
 
+
 			if (nextRefreshPromise == null)
 			{
 				nextRefreshPromise = new Promise<Unit>();
+
+				// Need this null-check to cover errors that happen when leaving play-mode (where this method can run after Unity has already destroyed the CoroutineService's GameObject).
+#if UNITY_EDITOR
+				if(coroutineService != null)
+#endif
 				coroutineService.StartCoroutine(ExecuteRefresh());
 			}
 
@@ -308,19 +331,15 @@ namespace Beamable.Api
 		}
 
 		/// <summary>
-		/// Manually fetch the available data.
+		/// <inheritdoc cref="GetLatest(string)"/>
 		/// </summary>
-		/// <returns></returns>
+		/// <returns><inheritdoc cref="GetLatest(string)"/></returns>
 		public Data GetLatest()
 		{
 			return GetLatest("");
 		}
 
-		/// <summary>
-		/// Manually fetch the available data.
-		/// </summary>
-		/// <param name="scope"></param>
-		/// <returns></returns>
+		/// <inheritdoc cref="ISupportGetLatest{TData}.GetLatest(string)"/>
 		public Data GetLatest(string scope)
 		{
 			Data data;
@@ -402,7 +421,6 @@ namespace Beamable.Api
 			object delayRaw = null;
 			object scopesRaw = null;
 			int delay = 0;
-
 			if (payload != null)
 			{
 				if (payload.TryGetValue("scopes", out scopesRaw))
@@ -541,6 +559,7 @@ namespace Beamable
 {
 	public static class PlatformSubscribableExtensions
 	{
+		/// <inheritdoc cref="PlatformSubscribable{TScopedRsp, TData}.Subscribe(Action{TData})"/>
 		public static PlatformSubscription<TData> Subscribe<TPlatformSubscribable, TScopedRsp, TData>(
 		   this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
 		   Action<TData> callback)
@@ -580,6 +599,7 @@ namespace Beamable
 			   : subscribable.Subscribable.GetCurrent(scopes);
 		}
 
+		/// <inheritdoc cref="PlatformSubscribable{TScopedRsp, TData}.Subscribe(string, Action{TData})"/>
 		public static PlatformSubscription<TData> Subscribe<TPlatformSubscribable, TScopedRsp, TData>(
 		   this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
 		   string scopes,
@@ -590,6 +610,7 @@ namespace Beamable
 			return subscribable.Subscribable.Subscribe(scopes, callback);
 		}
 
+		/// <inheritdoc cref="PlatformSubscribable{TScopedRsp, TData}.GetLatest(string)"/>
 		public static TData GetLatest<TPlatformSubscribable, TScopedRsp, TData>(
 		   this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
 		   string scopes = "") where TPlatformSubscribable : PlatformSubscribable<TScopedRsp, TData>

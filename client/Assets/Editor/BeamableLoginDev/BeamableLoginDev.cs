@@ -1,4 +1,5 @@
-﻿using Beamable.Editor;
+﻿using Beamable;
+using Beamable.Editor;
 using System;
 using System.IO;
 using System.Text;
@@ -12,8 +13,10 @@ public class BeamableLoginDev
 	[MenuItem("Beamable/Login with dev credentials", false, priority = 0)]
 	public static async void Login()
 	{
-		var editorAPI = await EditorAPI.Instance;
-		var isLoggedIn = editorAPI.User != null;
+		var editorAPI = BeamEditorContext.Default; 
+		await editorAPI.InitializePromise;
+		
+		var isLoggedIn = editorAPI.CurrentUser != null;
 
 		if (isLoggedIn)
 		{
@@ -32,6 +35,7 @@ public class BeamableLoginDev
 
 		var password = Encoding.UTF8.GetString(Convert.FromBase64String(data.password));
 		await editorAPI.LoginCustomer(data.aliasOrCid, data.email, password);
+		await BeamEditorContext.Default.LoginCustomer(data.aliasOrCid, data.email, password);
 	}
 }
 

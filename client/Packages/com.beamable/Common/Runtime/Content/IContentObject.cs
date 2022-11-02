@@ -14,7 +14,9 @@ namespace Beamable.Common.Content
 	public interface IContentObject
 	{
 		/// <summary>
-		/// The id
+		/// The id. A content id is a dot separated string.
+		/// The right most part is the name of the content.
+		/// Every part to the left of the name denotes the type of the content.
 		/// </summary>
 		string Id { get; }
 
@@ -28,6 +30,8 @@ namespace Beamable.Common.Content
 		/// </summary>
 		string[] Tags { get; }
 		string ManifestID { get; }
+		long LastChanged { get; set; }
+		ContentCorruptedException ContentException { get; set; }
 
 		/// <summary>
 		/// Set Id And Version
@@ -36,6 +40,10 @@ namespace Beamable.Common.Content
 		/// <param name="version"></param>
 		void SetIdAndVersion(string id, string version);
 
+		/// <summary>
+		/// Convert content to JSON
+		/// </summary>
+		/// <returns>A JSON string</returns>
 		string ToJson();
 	}
 }

@@ -13,7 +13,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See InventoryService script reference
 	///
 	/// </summary>
@@ -35,6 +35,7 @@ namespace Beamable.Common.Api.Inventory
 
 		/// <summary>
 		/// Sets the currency.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
 		/// </summary>
 		/// <param name="currencyId"></param>
 		/// <param name="amount"></param>
@@ -44,6 +45,7 @@ namespace Beamable.Common.Api.Inventory
 
 		/// <summary>
 		/// Sets the currency.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
 		/// </summary>
 		/// <param name="currency"></param>
 		/// <param name="amount"></param>
@@ -53,6 +55,7 @@ namespace Beamable.Common.Api.Inventory
 
 		/// <summary>
 		/// Adds the currency
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
 		/// </summary>
 		/// <param name="currencyId"></param>
 		/// <param name="amount"></param>
@@ -62,6 +65,7 @@ namespace Beamable.Common.Api.Inventory
 
 		/// <summary>
 		/// Adds the currency
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
 		/// </summary>
 		/// <param name="currency"></param>
 		/// <param name="amount"></param>
@@ -69,12 +73,58 @@ namespace Beamable.Common.Api.Inventory
 		/// <returns></returns>
 		Promise<Unit> AddCurrency(CurrencyRef currency, long amount, string transaction = null);
 
+		/// <summary>
+		/// Set multiple currency values.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="currencyIdsToAmount">A dictionary where the keys are content IDs of the currency, and the values are the new currency values for the player</param>
+		/// <param name="transaction">An inventory transaction ID. Leave this argument empty.</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
 		Promise<Unit> SetCurrencies(Dictionary<string, long> currencyIdsToAmount, string transaction = null);
+
+		/// <summary>
+		/// Set multiple currency values.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="currencyToAmount">A dictionary where the keys are <see cref="CurrencyRef"/>s, and the values are the new currency values for the player</param>
+		/// <param name="transaction">An inventory transaction ID. Leave this argument empty.</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
 		Promise<Unit> SetCurrencies(Dictionary<CurrencyRef, long> currencyToAmount, string transaction = null);
+
+		/// <summary>
+		/// Add multiple currency values.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="currencyIdsToAmount">A dictionary where the keys are content IDs of the currency, and the values are the new currency values for the player</param>
+		/// <param name="transaction">An inventory transaction ID. Leave this argument empty.</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
 		Promise<Unit> AddCurrencies(Dictionary<string, long> currencyIdsToAmount, string transaction = null);
+
+		/// <summary>
+		/// Add multiple currency values.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="currencyToAmount">A dictionary where the keys are <see cref="CurrencyRef"/>s, and the values are the new currency values for the player</param>
+		/// <param name="transaction">An inventory transaction ID. Leave this argument empty.</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
 		Promise<Unit> AddCurrencies(Dictionary<CurrencyRef, long> currencyToAmount, string transaction = null);
 
+		/// <summary>
+		/// Get a set of currency values for the current player.
+		/// </summary>
+		/// <param name="currencyIds">the content IDs for the currencies that will be returned</param>
+		/// <returns>
+		/// A <see cref="Promise{T}"/> containing a dictionary where the keys are content IDs and the values are the player currency values.
+		/// </returns>
 		Promise<Dictionary<string, long>> GetCurrencies(string[] currencyIds);
+
+		/// <summary>
+		/// Get a set of currency values for the current player.
+		/// </summary>
+		/// <param name="currencyRefs"><see cref="CurrencyRef"/>s for the currencies that will be returned</param>
+		/// <returns>
+		/// A <see cref="Promise{T}"/> containing a dictionary where the keys are <see cref="CurrencyRef"/>s and the values are the player currency values.
+		/// </returns>
 		Promise<Dictionary<CurrencyRef, long>> GetCurrencies(CurrencyRef[] currencyRefs);
 
 		/// <summary>
@@ -87,28 +137,122 @@ namespace Beamable.Common.Api.Inventory
 		/// <summary>
 		/// Gets the currency.
 		/// </summary>
-		/// <param name="currency"></param>
+		/// <param name="currency">A <see cref="CurrencyRef"/></param>
 		/// <returns></returns>
 		Promise<long> GetCurrency(CurrencyRef currency);
 
+		/// <summary>
+		/// Set the <see cref="CurrencyProperty"/> values for a player's currency
+		/// </summary>
+		/// <param name="currencyId">The content id of the currency</param>
+		/// <param name="properties">A list of <see cref="CurrencyProperty"/> values</param>
+		/// <param name="transaction">An inventory transaction id.</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> SetCurrencyProperties(string currencyId, List<CurrencyProperty> properties, string transaction = null);
+
+		/// <summary>
+		/// Set the <see cref="CurrencyProperty"/> values for a player's currency
+		/// </summary>
+		/// <param name="currency">A <see cref="CurrencyRef"/></param>
+		/// <param name="properties">A list of <see cref="CurrencyProperty"/> values</param>
+		/// <param name="transaction">An inventory transaction id</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> SetCurrencyProperties(CurrencyRef currency, List<CurrencyProperty> properties, string transaction = null);
 
+		/// <summary>
+		/// Add an instance of the given <see cref="itemRef"/> to the player's inventory.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="itemRef">A <see cref="ItemRef"/></param>
+		/// <param name="properties">a set of instance properties for the new item</param>
+		/// <param name="transaction">An inventory transaction id</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> AddItem(ItemRef itemRef, Dictionary<string, string> properties = null, string transaction = null);
+
+		/// <summary>
+		/// Add an item instance of the given <see cref="contentId"/> to the player's inventory.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="contentId">A content ID of the item type</param>
+		/// <param name="properties">a set of instance properties for the new item</param>
+		/// <param name="transaction">An inventory transaction ID. Leave this argument empty.</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> AddItem(string contentId, Dictionary<string, string> properties = null, string transaction = null);
+
+		/// <summary>
+		/// Remove an item instance from the player's inventory.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="contentId">The content ID of the type of item to remove</param>
+		/// <param name="itemId">The runtime ID of the item to remove</param>
+		/// <param name="transaction">an inventory transaction ID</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> DeleteItem(string contentId, long itemId, string transaction = null);
 
+		/// <summary>
+		/// Update the instance level item properties of an item in the player's inventory.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="itemRef">An <see cref="ItemRef"/> pointing to the content type of the item to update.</param>
+		/// <param name="itemId">The runtime ID of the item to remove</param>
+		/// <param name="properties">A new set of instance property values for the item. This will overwrite the existing properties.</param>
+		/// <param name="transaction">an inventory transaction ID</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> UpdateItem(ItemRef itemRef, long itemId, Dictionary<string, string> properties,
 			string transaction = null);
+
+		/// <summary>
+		/// Update the instance level item properties of an item in the player's inventory.
+		/// If you need to make multiple inventory updates, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		/// <param name="contentId">A content ID pointing to the content type of the item to update.</param>
+		/// <param name="itemId">The runtime ID of the item to remove</param>
+		/// <param name="properties">A new set of instance property values for the item. This will overwrite the existing properties.</param>
+		/// <param name="transaction">an inventory transaction ID</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> UpdateItem(string contentId, long itemId, Dictionary<string, string> properties,
 			string transaction = null);
 
+		/// <summary>
+		///	<inheritdoc cref="Update(InventoryUpdateBuilder,string)"/>
+		/// </summary>
+		/// <param name="action">A configurator for the <see cref="InventoryUpdateBuilder"/>. You should configure the
+		/// builder with all of the inventory updates. If you already have an instance of the builder, use the
+		/// <see cref="Update(InventoryUpdateBuilder,string)"/> method instead.</param>
+		/// <param name="transaction">an inventory transaction ID</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> Update(Action<InventoryUpdateBuilder> action, string transaction = null);
+
+		/// <summary>
+		/// Perform multiple updates to the player's inventory in one network call.
+		/// The <see cref="InventoryUpdateBuilder"/> that you pass to this method will be converted into
+		/// one update call to Beamable.
+		/// </summary>
+		/// <param name="builder">
+		/// An <see cref="InventoryUpdateBuilder"/> containing all of the inventory updates.
+		/// Use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method
+		/// to configure an <see cref="InventoryUpdateBuilder"/> instead.
+		/// </param>
+		/// <param name="transaction">an inventory transaction ID</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call</returns>
 		Promise<Unit> Update(InventoryUpdateBuilder builder, string transaction = null);
 
+		/// <summary>
+		/// Get every <see cref="InventoryObject{TContent}"/> that is of a specific item content type.
+		/// </summary>
+		/// <typeparam name="TContent">The type of content to retrieve. All children types will be included the result.</typeparam>
+		/// <returns>A <see cref="Promise"/> containing the <see cref="InventoryObject{TContent}"/> that matches the given item type</returns>
 		Promise<List<InventoryObject<TContent>>> GetItems<TContent>()
 			where TContent : ItemContent, new();
 
+		/// <summary>
+		/// Get the  <see cref="InventoryObject{TContent}"/> that are of a specific item content type and match the given <see cref="itemReferences"/>
+		/// </summary>
+		/// <param name="itemReferences">
+		/// Filter for only the items that match the given <see cref="ItemRef{TContent}"/> types.
+		/// </param>
+		/// <typeparam name="TContent">The type of content to retrieve. All children types will be included the result.</typeparam>
+		/// <returns>A <see cref="Promise"/> containing the <see cref="InventoryObject{TContent}"/> that match the given item type</returns>
 		Promise<List<InventoryObject<TContent>>> GetItems<TContent>(params ItemRef<TContent>[] itemReferences)
 			where TContent : ItemContent, new();
 
@@ -120,7 +264,7 @@ namespace Beamable.Common.Api.Inventory
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
 	/// - See Beamable.Api.Inventory.InventoryService script reference
 	///
 	/// ![img beamable-logo]
@@ -154,6 +298,11 @@ namespace Beamable.Common.Api.Inventory
 		/// The timestamp of when the last modification to item occured.
 		/// </summary>
 		public long UpdatedAt;
+
+		/// <summary>
+		/// The code is a unique hashing code that combines the Content Id and the Item Id
+		/// </summary>
+		public int UniqueCode;
 	}
 
 	/// <summary>
@@ -437,8 +586,19 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class Currency
 	{
+		/// <summary>
+		/// The currency content id.
+		/// </summary>
 		public string id;
+
+		/// <summary>
+		/// The amount of currency
+		/// </summary>
 		public long amount;
+
+		/// <summary>
+		/// Properties about the currency
+		/// </summary>
 		public List<CurrencyProperty> properties;
 	}
 
@@ -457,7 +617,14 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class CurrencyProperty
 	{
+		/// <summary>
+		/// The name of the property should be unique
+		/// </summary>
 		public string name;
+
+		/// <summary>
+		/// The value of the property can be any string
+		/// </summary>
 		public string value;
 	}
 

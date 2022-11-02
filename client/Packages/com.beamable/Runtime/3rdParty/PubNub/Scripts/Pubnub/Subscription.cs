@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Beamable.Common;
+using Beamable.Common.Dependencies;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -48,33 +50,35 @@ namespace PubNubMessaging.Core
 		}
 	}
 
+	[BeamContextSystem]
 	public sealed class Subscription
 	{
-		private static volatile Subscription instance;
 		private static object syncRoot = new Object();
 
-		public static Subscription Instance
+		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
+		public static void RegisterDependencies(IDependencyBuilder builder)
 		{
-			get
+			builder.AddSingleton(provider =>
 			{
-				if (instance == null)
+				lock (syncRoot)
 				{
-					lock (syncRoot)
+					var instance = new Subscription
 					{
-						if (instance == null)
-							instance = new Subscription();
-
-						instance.ChannelsAndChannelGroupsAwaitingConnectCallback = new List<ChannelEntity>();
-						instance.AllPresenceChannelsOrChannelGroups = new List<ChannelEntity>();
-						instance.AllNonPresenceChannelsOrChannelGroups = new List<ChannelEntity>();
-						instance.AllChannels = new List<ChannelEntity>();
-						instance.AllChannelGroups = new List<ChannelEntity>();
-						instance.AllSubscribedChannelsAndChannelGroups = new List<ChannelEntity>();
-					}
+						ChannelsAndChannelGroupsAwaitingConnectCallback = new List<ChannelEntity>(),
+						AllPresenceChannelsOrChannelGroups = new List<ChannelEntity>(),
+						AllNonPresenceChannelsOrChannelGroups = new List<ChannelEntity>(),
+						AllChannels = new List<ChannelEntity>(),
+						AllChannelGroups = new List<ChannelEntity>(),
+						AllSubscribedChannelsAndChannelGroups = new List<ChannelEntity>()
+					};
+					return instance;
 				}
+			});
+		}
 
-				return instance;
-			}
+		public static Subscription GetSubscription(IDependencyProvider provider)
+		{
+			return provider.GetService<Subscription>();
 		}
 
 		public bool HasChannelGroups { get; private set; }
@@ -311,7 +315,7 @@ namespace PubNubMessaging.Core
 #if (ENABLE_PUBNUB_LOGGING)
             foreach(KeyValuePair<string, object> kvp in oldUserState){
                 LoggingMethod.WriteToLog(string.Format("DateTime {0}, EditUserState: userstate kvp: {1}, {2}, edit: {3}\n",
-                    DateTime.Now.ToString(), 
+                    DateTime.Now.ToString(),
                     kvp.Key, kvp.Value, edit), LoggingMethod.LevelInfo);
             }
 #endif
@@ -374,7 +378,7 @@ namespace PubNubMessaging.Core
 				{
 					LoggingMethod.WriteToLog(string.Format("DateTime {0}, UpdateIsAwaitingConnectCallbacksOfEntity not found key/val1 {1} {2}", DateTime.Now.ToString(),
 						ce.ChannelID.ChannelOrChannelGroupName, ce.ChannelID.IsChannelGroup.ToString()), LoggingMethod.LevelInfo);
-					Helpers.LogChannelEntitiesDictionary();
+					Helpers.LogChannelEntitiesDictionary(this);
 				}
 
 			}

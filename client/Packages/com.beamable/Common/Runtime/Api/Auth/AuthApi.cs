@@ -25,6 +25,11 @@ namespace Beamable.Common.Api.Auth
 			return _requester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
 		}
 
+		public Promise<User> SetLanguage(string languageCodeISO6391)
+		{
+			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
+		}
+
 		public virtual Promise<User> GetUser(TokenResponse token)
 		{
 			var tokenizedRequester = _requester.WithAccessToken(token);
@@ -260,7 +265,14 @@ namespace Beamable.Common.Api.Auth
 	/// </summary>
 	public class UserBundle
 	{
+		/// <summary>
+		/// The <see cref="User"/>
+		/// </summary>
 		public User User;
+
+		/// <summary>
+		/// The stored <see cref="TokenResponse"/> that the <see cref="User"/> last used to sign in.
+		/// </summary>
 		public TokenResponse Token;
 
 		public override bool Equals(object obj)
@@ -297,26 +309,79 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class User
 	{
+		/// <summary>
+		/// The unique id of the player, sometimes called a "dbid".
+		/// </summary>
 		public long id;
+
+		/// <summary>
+		/// If the player has associated an email with their account, the email will appear here. Null otherwise.
+		/// The email can be associated with the <see cref="IAuthApi.RegisterDBCredentials"/> method
+		/// </summary>
 		public string email;
+
+		/// <summary>
+		/// If the player has chosen a language for their account, the language code will appear here. EN by default.
+		/// </summary>
 		public string language;
+
+		/// <summary>
+		/// Scopes are permissions that the player has over the Beamable ecosystem.
+		/// Most players will have no scopes.
+		/// Players with the role of "tester" will have some "read" based scopes,
+		/// Players with the role of "developer" will have most all scopes except those relating to team management, and
+		/// Players with the role of "admin" will have single scope with the value of "*", which indicates ALL scopes.
+		/// </summary>
 		public List<string> scopes;
+
+		/// <summary>
+		/// If the player has associated any third party accounts with their account, those will appear here.
+		/// The values of the strings will be taken from the <see cref="AuthThirdPartyMethods.GetString"/> method.
+		/// Third parties can be associated with the <see cref="IAuthApi.RegisterThirdPartyCredentials"/> method.
+		/// </summary>
 		public List<string> thirdPartyAppAssociations;
+
+		/// <summary>
+		/// If the player has associated any device Ids with their account, those will appear here.
+		/// </summary>
+		public List<string> deviceIds;
+
+		/// <summary>
+		/// Check if the player has registered an email address with their account.
+		/// </summary>
+		/// <returns>true if the email address has been provided, false otherwise.</returns>
 		public bool HasDBCredentials()
 		{
 			return !string.IsNullOrEmpty(email);
 		}
 
+		/// <summary>
+		/// Check if a specific <see cref="AuthThirdParty"/> exists in the player's <see cref="thirdPartyAppAssociations"/> list.
+		/// </summary>
+		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> to check the player for</param>
+		/// <returns>true if the third party has been associated with the player account, false otherwise.</returns>
 		public bool HasThirdPartyAssociation(AuthThirdParty thirdParty)
 		{
 			return thirdPartyAppAssociations != null && thirdPartyAppAssociations.Contains(thirdParty.GetString());
 		}
 
+		/// <summary>
+		/// Check if any credentials have been associated with this account, whether email, device ids or third party apps.
+		/// </summary>
+		/// <returns>true if any credentials exist, false otherwise</returns>
 		public bool HasAnyCredentials()
 		{
-			return HasDBCredentials() || (thirdPartyAppAssociations != null && thirdPartyAppAssociations.Count > 0);
+			return HasDBCredentials() || (thirdPartyAppAssociations != null && thirdPartyAppAssociations.Count > 0)
+				|| (deviceIds != null && deviceIds.Count > 0);
 		}
 
+		/// <summary>
+		/// Check if a specific scope exists for the player's permissions.
+		/// If the user is an Admin, and has the * scope, then every scope check will return true.
+		/// This method reads the scope data from the <see cref="scopes"/> list
+		/// </summary>
+		/// <param name="scope">The scope you want to check</param>
+		/// <returns>true if the scope exists or if the user is an admin, false otherwise</returns>
 		public bool HasScope(string scope)
 		{
 			return scopes.Contains(scope) || scopes.Contains("*");
@@ -339,9 +404,25 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class TokenResponse
 	{
+		/// <summary>
+		/// The token that will become the <see cref="IAccessToken.Token"/> value.
+		/// </summary>
 		public string access_token;
+
+		/// <summary>
+		/// There are two different types of tokens that Beamable may issue. The possible values are "access", or "refresh"
+		/// </summary>
 		public string token_type;
+
+		/// <summary>
+		/// The number of milliseconds from when the <see cref="TokenResponse"/> was sent by the Beamable servers, to when the
+		/// token will be expired. This value informs the <see cref="IAccessToken.ExpiresAt"/> property
+		/// </summary>
 		public long expires_in;
+
+		/// <summary>
+		/// The token that will become the <see cref="IAccessToken.RefreshToken"/> value
+		/// </summary>
 		public string refresh_token;
 	}
 
@@ -358,6 +439,10 @@ namespace Beamable.Common.Api.Auth
 		public bool available;
 	}
 
+	/// <summary>
+	/// The available set of third party apps that Beamable can associate with player accounts.
+	/// Note that the serialized state of these values should use the <see cref="AuthThirdPartyMethods.GetString"/> method.
+	/// </summary>
 	public enum AuthThirdParty
 	{
 		Facebook,
@@ -366,11 +451,19 @@ namespace Beamable.Common.Api.Auth
 		Google,
 		GameCenter,
 		GameCenterLimited,
-		Steam
+		Steam,
+		GoogleGamesServices
 	}
 
 	public static class AuthThirdPartyMethods
 	{
+		/// <summary>
+		/// Convert the given <see cref="AuthThirdParty"/> into a string format that can be sent to Beamable servers.
+		/// Also, the Beamable servers treat these strings as special code names for the various third party apps.
+		/// If you need to refer to a third party in Beamable's APIs, you should use this function to get the correct string value.
+		/// </summary>
+		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> to convert to a string</param>
+		/// <returns>The string format of the enum</returns>
 		public static string GetString(this AuthThirdParty thirdParty)
 		{
 			switch (thirdParty)
@@ -389,6 +482,8 @@ namespace Beamable.Common.Api.Auth
 					return "gamecenterlimited";
 				case AuthThirdParty.Steam:
 					return "steam";
+				case AuthThirdParty.GoogleGamesServices:
+					return "googlePlayServices";
 				default:
 					return null;
 			}

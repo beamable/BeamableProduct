@@ -1,5 +1,6 @@
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
+using System.Linq;
 using UnityEditor;
 using static Beamable.Common.Constants.Features.Services;
 
@@ -16,12 +17,17 @@ namespace Beamable.Server.Editor
 
 		private static async void LogPlayModeState(PlayModeStateChange state)
 		{
+			if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.ExitingPlayMode)
+			{
+				return;
+			}
+
 			if (DockerCommand.DockerNotInstalled) return;
 
 			try
 			{
 				var microserviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				foreach (var service in microserviceRegistry.Descriptors)
+				foreach (var service in microserviceRegistry.Descriptors.ToList())
 				{
 					var command = new CheckImageCommand(service)
 					{

@@ -1,4 +1,5 @@
-using Beamable.Editor.Realms;
+using Beamable.Common.Api.Realms;
+using Beamable.Common.Runtime;
 using Beamable.Editor.UI.Common.Models;
 using System.Collections.Generic;
 using UnityEngine;
@@ -56,6 +57,8 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+
+			tooltip = Tooltips.Common.CHANGE_REALM;
 			Model = new RealmModel();
 			Model.Initialize();
 			_realmButton = Root.Q<Button>("realmButton");
@@ -87,6 +90,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void HandleRealmChanged(ISearchableElement view)
 		{
+			if (view == null) return;
+
 			RealmView realm = (RealmView)view;
 
 			_realmLabel.text = realm.DisplayName;
@@ -118,7 +123,8 @@ namespace Beamable.Editor.UI.Components
 
 			content.OnElementSelected += (realm) =>
 			{
-				EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); }); });
+				var beamable = BeamEditorContext.Default;
+				beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); });
 			};
 			content.Refresh();
 		}

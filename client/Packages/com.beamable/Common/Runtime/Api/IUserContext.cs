@@ -2,6 +2,9 @@ namespace Beamable.Common.Api
 {
 	public interface IUserContext
 	{
+		/// <summary>
+		/// The current gamertag of this context
+		/// </summary>
 		long UserId { get; }
 	}
 

@@ -22,7 +22,7 @@ namespace Beamable.Editor.UI.Model
 				if (value == _isRunning) return;
 				_isRunning = value;
 				// XXX: If OnIsRunningChanged is mutated at before delayCall triggers, non-deterministic behaviour could occur
-				EditorApplication.delayCall += () => OnIsRunningChanged?.Invoke(value);
+				BeamEditorContext.Default.Dispatcher.Schedule(() => OnIsRunningChanged?.Invoke(value));
 			}
 		}
 
@@ -35,6 +35,7 @@ namespace Beamable.Editor.UI.Model
 		{
 			_logProcess?.Kill();
 			_logProcess = new FollowLogCommand(Descriptor);
+			_logProcess.MapDotnetCompileErrors();
 			_logProcess.Start();
 		}
 
@@ -46,7 +47,14 @@ namespace Beamable.Editor.UI.Model
 				WriteCommandToUnity = false
 			};
 
-			_isRunning = await checkProcess.Start(null);
+			try
+			{
+				_isRunning = await checkProcess.StartAsync();
+			}
+			catch (DockerNotInstalledException)
+			{
+				_isRunning = false;
+			}
 		}
 
 		protected abstract Task<RunImageCommand> PrepareRunCommand();
@@ -57,6 +65,7 @@ namespace Beamable.Editor.UI.Model
 			if (IsRunning) return;
 			if (_runProcess != null) return;
 
+			IsRunning = true;
 			_runProcess = await PrepareRunCommand();
 			_runProcess.OnStandardOut += message => MicroserviceLogHelper.HandleRunCommandOutput(this, message);
 			_runProcess.OnStandardErr += message => MicroserviceLogHelper.HandleRunCommandOutput(this, message);
@@ -85,14 +94,13 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task TryToStop()
 		{
-			if (!IsRunning) return;
 			if (_isStopping) return;
 
 			_isStopping = true;
 			try
 			{
 				var stopProcess = new StopImageReturnableCommand(Descriptor);
-				await stopProcess.Start(null);
+				await stopProcess.StartAsync();
 				IsRunning = false;
 			}
 			finally
@@ -103,9 +111,11 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task TryToRestart()
 		{
-			if (!IsRunning) return;
+			if (IsRunning)
+			{
+				await TryToStop();
+			}
 
-			await TryToStop();
 			await TryToStart();
 		}
 	}

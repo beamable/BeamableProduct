@@ -1,6 +1,6 @@
 using Beamable.Common;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.Modules.Account;
-using Beamable.Editor.Realms;
 using System;
 using System.Collections.Generic;
 
@@ -52,21 +52,20 @@ namespace Beamable.Editor.Login.UI.Model
 
 		public Promise<List<RealmView>> ResetGames()
 		{
-			return EditorAPI.Instance.FlatMap(b => b.RealmService.GetGames().Map(games =>
+			var b = BeamEditorContext.Default;
+
+			return b.ServiceScope.GetService<RealmsService>().GetGames().Map(games =>
 			{
 				Games = games;
 				OnGamesUpdated?.Invoke(games);
 				return games;
-			}));
+			});
 		}
 
 		public void Destroy()
 		{
-			EditorAPI.Instance.Then(b =>
-			{
-				b.OnUserChange -= OnUserChanged;
-				b.OnRealmChange -= SetRealm;
-			});
+			BeamEditorContext.Default.OnUserChange -= OnUserChanged;
+			BeamEditorContext.Default.OnRealmChange -= SetRealm;
 		}
 
 		private void SetUser(EditorUser user)
@@ -97,51 +96,49 @@ namespace Beamable.Editor.Login.UI.Model
 
 		public Promise<LoginModel> Initialize()
 		{
-			return EditorAPI.Instance.Map(b =>
+			var b = BeamEditorContext.Default;
+			SetUser(b.CurrentUser);
+			SetRealm(b.CurrentRealm);
+			SetGame(b.ProductionRealm);
+
+			StartedWithConfiguration = BeamEditorContext.ConfigFileExists;
+			StartedWithUser = b.Requester.Token != null;
+
+			Customer.Clear();
+			if (StartedWithConfiguration)
 			{
-				SetUser(b.User);
-				SetRealm(b.Realm);
-				SetGame(b.ProductionRealm);
-
-				StartedWithConfiguration = b.HasConfiguration;
-				StartedWithUser = b.HasToken;
-
-				Customer.Clear();
-				if (b.HasConfiguration)
+				if (b.HasCustomer && b.HasRealm)
 				{
-					if (b.HasCustomer)
-					{
-						Customer.SetCidPid(b.Alias, b.Pid);
-					}
-					else
-					{
-						Customer.Clear();
-					}
+					Customer.SetCidPid(b.CurrentCustomer.Alias, b.CurrentRealm.Pid);
 				}
-
-				CurrentCustomer = b.CustomerView;
-
-				b.OnUserChange += OnUserChanged;
-				b.OnRealmChange += SetRealm;
-				b.OnCustomerChange += SetCustomer;
-
-				if (!string.IsNullOrEmpty(b.Alias))
+				else
 				{
-					b.RealmService.GetGames().Then(games =>
-					{
-						Games = games;
-						OnGamesUpdated?.Invoke(games);
-					});
+					Customer.Clear();
 				}
+			}
 
-				if (b.HasToken)
+			CurrentCustomer = b.CurrentCustomer;
+
+			b.OnUserChange += OnUserChanged;
+			b.OnRealmChange += SetRealm;
+			b.OnCustomerChange += SetCustomer;
+
+			if (b.HasCustomer)
+			{
+				b.ServiceScope.GetService<RealmsService>().GetGames().Then(games =>
 				{
-					Customer.Role = b.User.roleString;
-					Customer.SetUserInfo(b.User.id, b.User.email);
-				}
+					Games = games;
+					OnGamesUpdated?.Invoke(games);
+				});
+			}
 
-				return this;
-			});
+			if (b.HasToken && b.HasCustomer)
+			{
+				Customer.Role = b.CurrentUser.roleString;
+				Customer.SetUserInfo(b.CurrentUser.id, b.CurrentUser.email);
+			}
+
+			return Promise<LoginModel>.Successful(this);
 		}
 
 		private void OnUserChanged(EditorUser user)

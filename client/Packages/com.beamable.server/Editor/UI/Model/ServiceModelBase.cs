@@ -14,6 +14,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
+	[Serializable]
 	public abstract class ServiceModelBase : IBeamableService
 	{
 		private const float DEFAULT_HEIGHT = 300.0f;
@@ -41,6 +42,8 @@ namespace Beamable.Editor.UI.Model
 		public abstract IBeamableBuilder Builder { get; }
 		public ServiceType ServiceType => Descriptor.ServiceType;
 		public string Name => Descriptor.Name;
+		public virtual bool IsArchived { get; protected set; }
+
 		public bool IsSelected
 		{
 			get => _isSelected;
@@ -50,6 +53,8 @@ namespace Beamable.Editor.UI.Model
 				OnSelectionChanged?.Invoke(value);
 			}
 		}
+
+		[SerializeField]
 		private bool _isSelected;
 
 		public bool IsCollapsed
@@ -85,20 +90,44 @@ namespace Beamable.Editor.UI.Model
 			OnLogsAttachmentChanged?.Invoke(true);
 		}
 
-		// TODO - When MongoStorageModel will be ready feel free to implement these methods
-		// TODO === BEGIN
 		public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
-		// TODO === END
 		public abstract void Refresh(IDescriptor descriptor);
 		public abstract Task Start();
 		public abstract Task Stop();
 
-		protected void OpenCode()
+		public async void Archive(bool deleteAllFiles)
+		{
+			await Stop();
+			await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(Descriptor);
+
+			if (deleteAllFiles)
+			{
+				BeamEditorContext.Default.OnServiceDeleteProceed?.Invoke();
+				MicroserviceEditor.DeleteServiceFiles(Descriptor);
+			}
+			else
+			{
+				IsArchived = true;
+			}
+
+			MicroserviceConfiguration.Instance.Save();
+			BeamEditorContext.Default.OnServiceArchived?.Invoke();
+		}
+		public void Unarchive()
+		{
+			IsArchived = false;
+			MicroserviceConfiguration.Instance.Save();
+			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
+		}
+	
+		public void OpenCode()
 		{
 			var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
 			var fileName = $@"{path}/{Descriptor.Name}.cs";
 			var asset = AssetDatabase.LoadMainAssetAtPath(fileName);
 			AssetDatabase.OpenAsset(asset);
 		}
+
+		public abstract void OpenDocs();
 	}
 }

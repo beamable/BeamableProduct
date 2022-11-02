@@ -1,1 +1,127 @@
-<Project Sdk="Microsoft.NET.Sdk">  <PropertyGroup>    <PackageId>Beamable.Microservice</PackageId>    <Version>0.0.0</Version>    <Authors>Beamable Team</Authors>    <Company>Beamable</Company>      <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>    <TargetFramework>net6.0</TargetFramework>    <AssemblyName>BeamableMicroserviceBase</AssemblyName>    <LangVersion>10</LangVersion>  </PropertyGroup>  <PropertyGroup>    <NoWarn>1591</NoWarn>    <DocumentationFile>baseImageDocs.xml</DocumentationFile>  </PropertyGroup>  <ItemGroup>    <PackageReference Include="EmbedIO" Version="3.4.3" />    <PackageReference Include="LoxSmoke.DocXml" Version="3.4.4" />    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />    <PackageReference Include="Microsoft.OpenApi" Version="1.2.3" />    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />    <PackageReference Include="Serilog" Version="2.10.0" />    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />    <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.1" />  </ItemGroup>  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\..\client\Packages\com.beamable\Common')">    <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />  </ItemGroup>  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\..\client\Packages\com.beamable.server')">    <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />    <ProjectReference Include="..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" />  </ItemGroup>  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\unityEngineStubs\unityenginestubs.csproj')">    <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />  </ItemGroup>  <ItemGroup Condition="Exists('.\lib')">    <Reference Include="Beamable.Common">      <HintPath>.\lib\Beamable.Common.dll</HintPath>    </Reference>    <Reference Include="Beamable.Server">      <HintPath>.\lib\Beamable.Server.dll</HintPath>    </Reference>    <Reference Include="Beamable.Server.Common">      <HintPath>.\lib\Beamable.Server.Common.dll</HintPath>    </Reference>    <Reference Include="UnityEngine">      <HintPath>.\lib\UnityEngine.dll</HintPath>    </Reference>  </ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+
+    <PackageId>Beamable.Microservice</PackageId>
+    <NuspecFile>Microservice.nuspec</NuspecFile>
+    <NuspecProperties>version=$(CombinedVersion)</NuspecProperties>
+
+    <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+    <Authors>Beamable Team</Authors>
+
+    <Company>Beamable</Company>
+
+    <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
+
+    <TargetFramework>net6.0</TargetFramework>
+
+    <AssemblyName>BeamableMicroserviceBase</AssemblyName>
+
+    <LangVersion>10</LangVersion>
+
+
+
+  </PropertyGroup>
+
+
+
+  <PropertyGroup>
+
+    <NoWarn>1591</NoWarn>
+
+    <DocumentationFile>baseImageDocs.xml</DocumentationFile>
+
+  </PropertyGroup>
+
+
+
+  <ItemGroup>
+
+    <PackageReference Include="EmbedIO" Version="3.4.*" />
+
+    <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
+
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
+
+    <PackageReference Include="Microsoft.OpenApi" Version="1.2.*" />
+
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.*" />
+
+    <PackageReference Include="Serilog" Version="2.10.*" />
+
+    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.*" />
+
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.*" />
+
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
+
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.*" />
+
+  </ItemGroup>
+
+
+
+  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\..\client\Packages\com.beamable\Common')">
+
+    <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
+
+  </ItemGroup>
+
+
+
+  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\..\client\Packages\com.beamable.server')">
+
+    <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />
+    <ProjectReference Include="..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" />
+
+  </ItemGroup>
+
+
+  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\unityEngineStubs\unityenginestubs.csproj')">
+
+    <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
+
+  </ItemGroup>
+
+  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\beamable.tooling.common\beamable.tooling.common.csproj')">
+
+    <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj" />
+
+  </ItemGroup>
+
+
+
+  <ItemGroup Condition="Exists('.\lib')">
+
+    <Reference Include="Beamable.Common">
+
+      <HintPath>.\lib\Beamable.Common.dll</HintPath>
+
+    </Reference>
+
+    <Reference Include="Beamable.Server">
+
+      <HintPath>.\lib\Beamable.Server.dll</HintPath>
+
+    </Reference>
+
+    <Reference Include="Beamable.Server.Common">
+
+      <HintPath>.\lib\Beamable.Server.Common.dll</HintPath>
+
+    </Reference>
+
+    <Reference Include="UnityEngine">
+
+      <HintPath>.\lib\UnityEngine.dll</HintPath>
+
+    </Reference>
+
+    <Reference Include="Beamable.Tooling.Common">
+
+      <HintPath>.\lib\Beamable.Tooling.Common.dll</HintPath>
+
+    </Reference>
+
+  </ItemGroup>
+
+</Project>

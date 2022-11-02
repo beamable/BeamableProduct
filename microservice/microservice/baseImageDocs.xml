@@ -4,50 +4,113 @@
         <name>BeamableMicroserviceBase</name>
     </assembly>
     <members>
-        <member name="M:Beamable.Server.EasyWebSocket.Create(System.String)">
+        <member name="T:Beamable.Server.Api.Notifications.PlayerNotificationRequest">
             <summary>
-            Creates a new instance.
+            Notification request format.
             </summary>
-            <param name="uri">The URI of the WebSocket server.</param>
-            <returns></returns>
         </member>
-        <member name="M:Beamable.Server.EasyWebSocket.Connect">
+        <member name="T:Beamable.Server.Api.Notifications.PlayerBatchNotificationRequest">
             <summary>
-            Connects to the WebSocket server.
+            Format of the Notification request when notifying multiple players.
             </summary>
-            <returns></returns>
         </member>
-        <member name="M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})">
+        <member name="T:Beamable.Server.Api.Notifications.PlayerNotificationPayload">
             <summary>
-            Set the Action to call when the connection has been established.
+            Structure representing the expected format for the notification we are sending.
             </summary>
-            <param name="onConnect">The Action to call.</param>
-            <returns></returns>
         </member>
-        <member name="M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})">
+        <member name="F:Beamable.Server.BeamableMicroService._ranCustomUserInitializationHooks">
             <summary>
-            Set the Action to call when the connection has been terminated.
+            We need to guarantee <see cref="M:Beamable.Server.BeamableMicroService.ResolveCustomInitializationHook"/> only gets run once when we <see cref="M:Beamable.Server.BeamableMicroService.SetupWebsocket(Beamable.Server.IConnection)"/>.
             </summary>
-            <param name="onDisconnect">The Action to call</param>
-            <returns></returns>
         </member>
-        <member name="M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.String,System.Int64})">
+        <member name="M:Beamable.Server.BeamableMicroService.ResolveCustomInitializationHook">
             <summary>
-            Set the Action to call when a messages has been received.
+            Handles custom initialization hooks. Makes the following assumptions:
+              - User defined at least one <see cref="T:Beamable.Server.InitializeServicesAttribute"/> over a static async method that returns a <see cref="T:Beamable.Common.Promise`1"/> and receives a <see cref="T:Beamable.Server.IServiceInitializer"/>.
+              - Any exception will fail loudly and prevent the C#MS from receiving traffic.
+            <para/>
             </summary>
-            <param name="onMessage">The Action to call.</param>
-            <returns></returns>
         </member>
-        <member name="M:Beamable.Server.EasyWebSocket.SendMessage(System.String)">
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Create(System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Connect" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.String,System.Int64})" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.SendMessage(System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Close" -->
+        <member name="T:Beamable.Server.MicroserviceAuthenticationDaemon">
             <summary>
-            Send a message to the WebSocket server.
+            This class manages our authentication process between this C#MS and our Beamo service. It provides the following properties:
+            - Only a single <see cref="M:Beamable.Server.MicroserviceRequester.Request``1(Beamable.Common.Api.Method,System.String,System.Object,System.Boolean,System.Func{System.String,``0},System.Boolean)"/> task can trigger an authentication process.
+            - <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> will only run from a single thread even if many <see cref="M:Beamable.Server.MicroserviceRequester.Request``1(Beamable.Common.Api.Method,System.String,System.Object,System.Boolean,System.Func{System.String,``0},System.Boolean)"/> fail due to <see cref="T:Beamable.Server.UnauthenticatedException"/> simultaneously.
+            - All requests that come in while we <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> is running are waited to finish before this thread goes to sleep again.
             </summary>
-            <param name="message">The message to send</param>
         </member>
-        <member name="M:Beamable.Server.EasyWebSocket.Close">
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE">
             <summary>
-            Terminate the socket in a friendly way.
+            The <see cref="T:System.Threading.EventWaitHandle"/> we use to wake this thread up from its slumber so we can authenticate the C#MS with the Beamo service.
             </summary>
+        </member>
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon._OutgoingRequestCounter">
+            <summary>
+            The total number of outgoing requests that actually go out through <see cref="M:Beamable.Server.MicroserviceRequester.Request``1(Beamable.Common.Api.Method,System.String,System.Object,System.Boolean,System.Func{System.String,``0},System.Boolean)"/>.
+            </summary>
+        </member>
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon._OutgoingRequestProcessedCounter">
+            <summary>
+            The total number of outgoing requests that went out through <see cref="M:Beamable.Server.MicroserviceRequester.Request``1(Beamable.Common.Api.Method,System.String,System.Object,System.Boolean,System.Func{System.String,``0},System.Boolean)"/> and whose promise handlers (for error or success) have run.
+            </summary>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.BumpRequestCounter">
+            <summary>
+            Bumps the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon._OutgoingRequestCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
+            </summary>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.BumpRequestProcessedCounter">
+            <summary>
+            Bumps the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon._OutgoingRequestProcessedCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
+            </summary>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.WakeAuthThread">
+            <summary>
+            Increments the given <see cref="!:authCounter"/> and notifies the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up.
+            The auth counter is used to ensure that, if this thread gets woken up without the need to be authorized for some unknown reason, we don't bother running the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> task.
+            </summary>
+            <param name="authCounter"><see cref="!:SocketRequesterContext.AuthorizationCounter"/> is what you should pass here.</param>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.KillAuthThread">
+            <summary>
+            Cancels the token and notifies the <see cref="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up and catches fire 🔥.
+            </summary>
+            <param name="cancellation"><see cref="F:Beamable.Server.BeamableMicroService._serviceShutdownTokenSource"/> is what you should pass here.</param>
+        </member>
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon._env">
+            <summary>
+            The environment data that we need to make the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> request.
+            </summary>
+        </member>
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon._requester">
+            <summary>
+            The requester instance so that we can make the <see cref="M:Beamable.Server.MicroserviceAuthenticationDaemon.Authenticate"/> request.
+            </summary>
+        </member>
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon.AuthorizationCounter">
+            <summary>
+            Tracks the number of requests that failed due to <see cref="T:Beamable.Server.UnauthenticatedException"/>.
+            </summary>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.Start(Beamable.Server.IMicroserviceArgs,Beamable.Server.MicroserviceRequester,System.Threading.CancellationTokenSource)">
+            <summary>
+            Kick off a long running task that will make sure the given <see cref="!:socketContext"/> is authenticated.
+            The daemon is running in a loop, checking the <see cref="!:SocketRequesterContext.AuthorizationCounter"/> field.
+            When it is positive, the daemon will start ONE authorization flow, and then set the value to zero.
+            </summary>
+            <param name="env"></param>
+            <param name="requester"></param>
+            <param name="socketContext"></param>
+            <param name="cancellationTokenSource"></param>
+            <returns>A task that completes the loop after the given <see cref="!:cancellationTokenSource"/> has requested a cancel</returns>
         </member>
         <member name="T:Beamable.Server.MicroserviceLogFormatter">
             <summary>

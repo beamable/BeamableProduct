@@ -84,15 +84,29 @@ namespace Beamable.Experimental.Api.Matchmaking
 		  TimeSpan? maxWait = null
 		)
 		{
-			return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
-			  this,
-			  _platform,
-			  tickets.tickets,
-			  maxWait,
-			  updateHandler,
-			  readyHandler,
-			  timeoutHandler
-			));
+			if (_platform.Heartbeat.IsRunning)
+			{
+				return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
+																this,
+																_platform,
+																tickets.tickets,
+																maxWait,
+																updateHandler,
+																readyHandler,
+																timeoutHandler
+															));
+			}
+
+			const string info =
+#if UNITY_EDITOR
+				"<b>IHeartbeatService</b> is not running, " +
+				"<b>MatchmakingService</b> will not work correctly" +
+				"This could be caused by disabling <b>SendHeartbeat</b> option in <b>Beamable Core Configuration</b>.";
+#else
+				"IHeartbeatService is not running, MatchmakingService will not work correctly.";
+#endif
+			return Promise<MatchmakingHandle>.Failed(new Exception(info));
+
 		}
 
 		/// <summary>
@@ -104,8 +118,8 @@ namespace Beamable.Experimental.Api.Matchmaking
 		{
 			return _requester.Request<TicketReservationResponse>(
 			  Method.POST,
-			  $"/matchmaking/tickets",
-			  new TicketReservationRequest(new[] { _platform.User.id.ToString() }, gameTypes)
+			  "/matchmaking/tickets",
+			  new TicketReservationRequest(gameTypes)
 			);
 		}
 
@@ -197,7 +211,7 @@ namespace Beamable.Experimental.Api.Matchmaking
 
 			_service = service;
 
-			_platform.Heartbeat.UpdateInterval(2);
+			_platform.Heartbeat.UpdateLegacyInterval(2);
 			StartTimeoutTask();
 			SubscribeToUpdates();
 		}
@@ -286,7 +300,7 @@ namespace Beamable.Experimental.Api.Matchmaking
 				_platform.Notification.Unsubscribe(MessageType(ticket.matchType), OnRawUpdate);
 				_platform.Notification.Unsubscribe(TimeoutMessageType(ticket.matchType), OnRawTimeout);
 			}
-			_platform.Heartbeat.ResetInterval();
+			_platform.Heartbeat.ResetLegacyInterval();
 		}
 
 		private void OnRawUpdate(object msg)

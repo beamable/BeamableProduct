@@ -11,7 +11,7 @@ namespace Beamable.Server.Api.Stats
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/stats-feature">Stats</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/stats-feature-overview">Stats</a> feature documentation
 	/// - See Beamable.Server.IBeamableServices script reference
 	///
 	/// ![img beamable-logo]
@@ -65,6 +65,32 @@ namespace Beamable.Server.Api.Stats
 		Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long userId,
 		   string[] stats);
 
+		/// <summary>
+		/// Queries the player base for matches against specific stats defined by the given <paramref name="criteria"/>.
+		/// </summary>
+		/// <param name="domain">"game" or "player".</param>
+		/// <param name="access">"public" or "private"</param>
+		/// <param name="type">Should always be "player" (exists for legacy reasons).</param>
+		/// <param name="criteria">List of all <see cref="Criteria"/> that must match.</param>
+		/// <returns>The list of DBIDs for all users that match ALL of the criteria provided.</returns>
 		Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteria);
+
+		/// <summary>
+		/// Deletes a player's game private stats (<see cref="DeleteStats"/>).
+		/// </summary>
+		/// <param name="userId">A player's realm-specific GamerTag (for example, <see cref="RequestContext.UserId"/>).</param>
+		/// <param name="stats">The list of stats to delete.</param>
+		/// <returns></returns>
+		Promise DeleteProtectedPlayerStats(long userId, string[] stats);
+
+		/// <summary>
+		/// Deletes the given stats.
+		/// </summary>
+		/// <param name="domain">"game" or "player".</param>
+		/// <param name="access">"public" or "private"</param>
+		/// <param name="type">Should always be "player" (exists for legacy reasons).</param>
+		/// <param name="userId">A player's realm-specific GamerTag (for example, <see cref="RequestContext.UserId"/>).</param>
+		/// <param name="stats">The list of stats to delete.</param>
+		Promise DeleteStats(string domain, string access, string type, long userId, string[] stats);
 	}
 }

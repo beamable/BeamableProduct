@@ -11,12 +11,11 @@
 }
 #rightContentVisualElement {
     flex-grow: 1;
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex-direction: row;
     padding-left: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
-    min-width: 220px;
 }
 
 .boundedButton {
@@ -43,6 +42,7 @@
     margin-right: 2px;
     margin-left: 2px;
 }
+
 #contentManagerIcon{
     top: 4px;
     width: 10px;
@@ -118,6 +118,7 @@
     align-self: center;
     border-radius: 8px;
     flex-grow: 1;
+    min-width: 100px;
 }
 
 Button.unity-button,

@@ -15,7 +15,7 @@ namespace Beamable.Editor.Content
 #endif
 	public class ContentRefPropertyDrawer : PropertyDrawer
 	{
-		private static EditorAPI _beamable;
+		private static BeamEditorContext _beamable;
 		private static bool _requestedBeamable;
 		private static Dictionary<Type, HashSet<string>> _typeToContent = new Dictionary<Type, HashSet<string>>();
 		private static Dictionary<Type, double> _typeToRefreshAt = new Dictionary<Type, double>();
@@ -29,6 +29,8 @@ namespace Beamable.Editor.Content
 			var fieldRect = new Rect(position.x + EditorGUIUtility.labelWidth, position.y, position.width - EditorGUIUtility.labelWidth, position.height);
 			var labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, position.height);
 			var fieldValue = GetTargetObjectOfProperty(property) as BaseContentRef;
+
+			if (fieldValue == null) return;
 
 			label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
 
@@ -44,7 +46,8 @@ namespace Beamable.Editor.Content
 				if (!_requestedBeamable)
 				{
 					_requestedBeamable = true;
-					EditorAPI.Instance.Then(beamable => { _beamable = beamable; });
+					var beamable = BeamEditorContext.Default;
+					_beamable = beamable;
 				}
 			}
 			else if (!_typeToContent.ContainsKey(referenceType) || time > _typeToRefreshAt[referenceType])
@@ -214,10 +217,11 @@ namespace Beamable.Editor.Content
 
 		public async void Init()
 		{
-
 			var referenceType = FieldValue.GetReferencedBaseType();
-			_typeName = ContentRegistry.TypeToName(referenceType);
-			var de = await EditorAPI.Instance;
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			_typeName = contentTypeReflectionCache.TypeToName(referenceType);
+			var de = BeamEditorContext.Default;
+			await de.InitializePromise;
 
 			de.ContentIO.EnsureDefaultContentByType(referenceType);
 			_allContent = de.ContentIO.FindAllContentByType(referenceType).ToList();

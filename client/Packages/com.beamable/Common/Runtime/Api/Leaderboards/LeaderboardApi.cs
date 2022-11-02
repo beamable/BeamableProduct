@@ -3,6 +3,7 @@ using Beamable.Common.Leaderboards;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Beamable.Common.Api.Leaderboards
@@ -100,7 +101,8 @@ namespace Beamable.Common.Api.Leaderboards
 			return Requester.Request<LeaderBoardV2ViewResponse>(
 			   Method.GET,
 			   $"/object/leaderboards/{encodedBoardId}/view?{query}"
-			).Map(rsp => rsp.lb);
+			).Map(rsp => rsp.lb)
+			 .Then(lbv => lbv.userId = UserContext.UserId);
 		}
 
 		/// <inheritdoc/>
@@ -213,7 +215,9 @@ namespace Beamable.Common.Api.Leaderboards
 					{
 						entry = new RankEntry();
 						entry.gt = gamerTags[i];
+#pragma warning disable CS0612
 						entry.columns = new RankEntryColumns();
+#pragma warning restore CS0612
 					}
 
 					result.Add(gamerTags[i], entry);
@@ -222,5 +226,9 @@ namespace Beamable.Common.Api.Leaderboards
 			});
 		}
 
+		public Promise<EmptyResponse> FreezeLeaderboard(string boardId)
+		{
+			return Requester.Request<EmptyResponse>(Method.PUT, $"/object/leaderboards/{boardId}/freeze");
+		}
 	}
 }

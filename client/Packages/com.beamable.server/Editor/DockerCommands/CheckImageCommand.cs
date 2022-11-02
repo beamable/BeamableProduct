@@ -1,11 +1,14 @@
 using Beamable.Common;
+using UnityEngine;
+
+using static Beamable.Common.Constants.Features.Docker;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class CheckImageReturnableCommand : DockerCommandReturnable<bool>
 	{
 		public string ContainerName { get; }
-		public bool IsRunning { get; private set; }
+		public bool IsRunning { get; protected set; }
 
 		public CheckImageReturnableCommand(IDescriptor descriptor)
 		   : this(descriptor.ContainerName)
@@ -52,7 +55,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public new Promise<bool> Start()
 		{
-			return Start(null);
+			return StartAsync();
 		}
 	}
 }

@@ -88,14 +88,35 @@ namespace Beamable.Server
 			_scopeGenerator = scopeGenerator;
 		}
 
-
-		protected RequestHandlerData AssumeUser(long userId)
+		/// <summary>
+		/// Build a request context and collection of services that represents another player.
+		/// <para>
+		/// This can be used to take API actions on behalf of another player. For example, if
+		/// you needed to modify another player's currency, you could use this method's return object
+		/// to access an <see cref="IMicroserviceInventoryApi"/> and make a call.
+		/// </para>
+		/// </summary>
+		/// <param name="userId">The user id of the player for whom you'd like to make actions on behalf of</param>
+		/// <param name="requireAdminUser">
+		/// By default, this method can only be called by a user with admin access token.
+		/// <para> If you pass in false for this parameter, then any user's request can assume another user.
+		/// <b> This can be dangerous, and you should be careful that the code you write cannot be exploited. </b>
+		/// </para>
+		/// </param>
+		/// <returns>
+		/// A <see cref="RequestHandlerData"/> object that contains a request context, and a collection of services to execute SDK calls against.
+		/// </returns>
+		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser = true)
 		{
 			// require admin privs.
-			Context.CheckAdmin();
+			if (requireAdminUser)
+			{
+				Context.CheckAdmin();
+			}
+
 			var newCtx = new RequestContext(
 			   Context.Cid, Context.Pid, Context.Id, Context.Status, userId, Context.Path, Context.Method, Context.Body,
-			   Context.Scopes);
+			   Context.Scopes, Context.Headers);
 			var provider = _scopeGenerator(newCtx);
 
 			var requester = provider.GetService<IBeamableRequester>();

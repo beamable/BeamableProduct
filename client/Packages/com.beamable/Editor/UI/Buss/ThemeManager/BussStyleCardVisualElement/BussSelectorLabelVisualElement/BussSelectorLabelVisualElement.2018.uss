@@ -1,9 +1,0 @@
-﻿#styleId {
-    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    -unity-text-align: middle-left;
-    margin-left: 10px;
-    min-width: 50px;
-    height: 14px;
-    font-size: 12px;
-    flex-grow: 1;
-}

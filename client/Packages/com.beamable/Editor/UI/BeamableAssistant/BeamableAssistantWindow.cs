@@ -1,11 +1,14 @@
 using Beamable.Common.Assistant;
+using Beamable.Common.Reflection;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
+using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -25,19 +28,24 @@ namespace Beamable.Editor.Assistant
 	/// <summary>
 	/// Handles the rendering and initialization of the <see cref="BeamHint"/>s system as well as any other future system tied to the Beamable Assistant.
 	/// </summary>
-	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
+	public class BeamableAssistantWindow : BeamEditorWindow<BeamableAssistantWindow>
 	{
+		static BeamableAssistantWindow()
+		{
+			WindowDefaultConfig = new BeamEditorWindowInitConfig()
+			{
+				Title = MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
+				FocusOnShow = true,
+				RequireLoggedUser = false,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName
+			};
+		}
+
 		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 				  Commons.OPEN + " " +
 				  MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
 				  priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
-		public static BeamableAssistantWindow ShowWindow()
-		{
-			var window = GetWindow<BeamableAssistantWindow>(MenuItems.Windows.Names.BEAMABLE_ASSISTANT, true, typeof(SceneView));
-			window.Show();
-
-			return window;
-		}
+		public static async Task<BeamableAssistantWindow> Init() => await GetFullyInitializedWindow();
 
 		private readonly Vector2 MIN_SIZE = new Vector2(450, 200);
 
@@ -60,61 +68,47 @@ namespace Beamable.Editor.Assistant
 		[SerializeField]
 		private BeamHintsDataModel _beamHintsDataModel;
 
-		/// <summary>
-		/// <see cref="Beamable.Common.Reflection.IReflectionSystem"/> that holds all cached reflection data around the <see cref="BeamHint"/> feature. 
-		/// </summary>
-		private BeamHintReflectionCache.Registry _hintDetailsReflectionCache;
-
-		private BeamHintNotificationManager _hintNotificationManager;
-
-		private void OnEnable()
+		protected override void Build()
 		{
 			Refresh();
 		}
 
 		private void OnFocus()
 		{
-			// BeamEditor is not yet initialized --- delay callback until it is.
-			if (!BeamEditor.IsInitialized)
+			BeamEditor.DelayedInitializationCall(RunFocus, true);
+			void RunFocus()
 			{
-				EditorApplication.delayCall += OnFocus;
-				return;
+				if (_windowRoot != null && ActiveContext?.ServiceScope != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
+				else Refresh();
+				// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
+				// For now, just clear notifications whenever the window is focused
+				var hintNotificationManager = ActiveContext?.ServiceScope?.GetService<BeamHintNotificationManager>();
+				hintNotificationManager?.ClearPendingNotifications();
 			}
-
-			if (_windowRoot != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
-			else Refresh();
-			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
-			// For now, just clear notifications whenever the window is focused
-			_hintNotificationManager.ClearPendingNotifications();
 		}
 
 		private void Update()
 		{
+			if (ActiveContext == null) return;
+
+			var hintNotificationManager = ActiveContext.ServiceScope.GetService<BeamHintNotificationManager>();
+
 			// If there are any new notifications, we refresh to get the new data rendered.
-			if ((_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any()) || _beamHintsDataModel.RefreshDisplayingHints())
+			if ((hintNotificationManager.AllPendingNotifications.Any()) || _beamHintsDataModel.RefreshDisplayingHints())
 			{
 				FillTreeViewFromDomains(_treeViewIMGUI, _beamHintsDataModel.SortedDomainsInStorage, _beamHintsDataModel.SelectedDomains);
 				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
-				_hintNotificationManager.ClearPendingNotifications();
+				hintNotificationManager.ClearPendingNotifications();
 				_windowRoot.MarkDirtyRepaint();
+#if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 				BeamableToolbarExtender.Repaint();
+#endif
 			}
 		}
 
 		void Refresh()
 		{
-			// BeamEditor is not yet initialized --- delay callback until it is.
-			if (!BeamEditor.IsInitialized)
-			{
-				EditorApplication.delayCall += Refresh;
-				return;
-			}
-
 			minSize = MIN_SIZE;
-
-			// Cache the newest instances of relevant reflection and hint systems
-			_hintDetailsReflectionCache = BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>();
-			BeamEditor.GetBeamHintSystem(ref _hintNotificationManager);
 
 			// Initialize a data model if we didn't deserialize one already.
 			var beamHintsDataModel = _beamHintsDataModel = _beamHintsDataModel ?? new BeamHintsDataModel();
@@ -210,11 +204,16 @@ namespace Beamable.Editor.Assistant
 		/// </summary>
 		public void FillDisplayingBeamHints(VisualElement container, List<BeamHintHeader> hintHeaders)
 		{
+			var hintDetailsReflectionCache = ActiveContext?.ServiceScope?.GetService<ReflectionCache>()?.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
+			if (hintDetailsReflectionCache == null)
+				return;
+
 			container.Clear();
+
 			for (var headerIdx = 0; headerIdx < hintHeaders.Count; headerIdx++)
 			{
 				var beamHintHeader = hintHeaders[headerIdx];
-				var hintVisualElement = new BeamHintHeaderVisualElement(_beamHintsDataModel, _hintDetailsReflectionCache, beamHintHeader, headerIdx);
+				var hintVisualElement = new BeamHintHeaderVisualElement(_beamHintsDataModel, hintDetailsReflectionCache, beamHintHeader, headerIdx);
 
 				hintVisualElement.Refresh();
 				hintVisualElement.UpdateFromBeamHintHeader(in beamHintHeader, headerIdx);
@@ -228,10 +227,15 @@ namespace Beamable.Editor.Assistant
 		/// </summary>
 		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains, List<string> selectedDomains)
 		{
+			var hintDetailsReflectionCache = ActiveContext?.ServiceScope?.GetService<ReflectionCache>()?.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
+			if (hintDetailsReflectionCache == null)
+				return;
+
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
 			var selectedIds = new List<int>();
 			var parentCache = new Dictionary<string, BeamHintDomainTreeViewItem>();
 			var id = 1;
+
 			foreach (string domain in sortedDomains)
 			{
 				var currDomainsDepth = BeamHintDomains.GetDomainDepth(domain);
@@ -246,7 +250,7 @@ namespace Beamable.Editor.Assistant
 					// Guarantee uniqueness within first layer of domains
 					if (!parentCache.TryGetValue(domainSubstring, out var item))
 					{
-						_ = _hintDetailsReflectionCache.TryGetDomainTitleText(parentDomain, out var domainTitle);
+						_ = hintDetailsReflectionCache.TryGetDomainTitleText(parentDomain, out var domainTitle);
 						item = new BeamHintDomainTreeViewItem(id, parentDepth, domainSubstring, domainTitle);
 						parentCache.Add(domainSubstring, item);
 						treeViewItems.Add(item);
@@ -280,10 +284,6 @@ namespace Beamable.Editor.Assistant
 			imgui.OnSelectionChanged += onSelectionChange;
 			imgui.OnSelectedBranchChanged += onSelectionBranchChange;
 		}
-
-		public void OnBeforeSerialize() { }
-
-		public void OnAfterDeserialize() { }
 
 		public void ExpandHint(BeamHintHeader beamHintHeader)
 		{

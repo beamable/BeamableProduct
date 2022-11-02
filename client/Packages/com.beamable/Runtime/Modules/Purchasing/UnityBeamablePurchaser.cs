@@ -33,9 +33,6 @@ namespace Beamable.Purchasing
 		static readonly int[] RETRY_DELAYS = { 1, 2, 5, 10, 20 }; // TODO: Just double a few times. ~ACM 2021-03-10
 
 
-		/// <summary>
-		/// Begin initialization of Beamable purchasing.
-		/// </summary>
 		public Promise<Unit> Initialize(IDependencyProvider provider)
 		{
 			_serviceProvider = provider;
@@ -211,6 +208,8 @@ namespace Beamable.Purchasing
 					InAppPurchaseLogger.Log("Unknown billing error: '{error}'");
 					break;
 			}
+			_initPromise.CompleteError(new BeamableIAPInitializationException(error));
+
 		}
 
 		/// <summary>
@@ -359,10 +358,21 @@ namespace Beamable.Purchasing
 			return _unityBeamablePurchaser ?? (_unityBeamablePurchaser = new UnityBeamablePurchaser());
 		}
 
-		[RegisterBeamableDependencies]
+		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
 		public static void Register(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
+		}
+	}
+
+	public class BeamableIAPInitializationException : Exception
+	{
+		public InitializationFailureReason Reason { get; }
+
+		public BeamableIAPInitializationException(InitializationFailureReason reason) : base(
+			$"Beamable IAP failed due to: {reason}")
+		{
+			Reason = reason;
 		}
 	}
 

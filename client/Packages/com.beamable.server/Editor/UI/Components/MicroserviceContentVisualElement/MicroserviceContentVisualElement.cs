@@ -1,5 +1,8 @@
+using Beamable.Common;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Assistant;
+using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI.Components;
@@ -39,6 +42,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
 		private MicroserviceActionPrompt _actionPrompt;
 		private bool _dockerHubIsRunning;
+		private Promise<DockerStatus> _dockerStatusPromise;
 
 		public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
 			_servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
@@ -74,10 +78,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+			SetView();
 
-			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
-				DockerCommand.CheckDockerAppRunning();
+			Context.OnRealmChange -= RefreshFromRealmChange;
+			Context.OnUserChange -= RefreshFromUserChange;
+			Context.OnRealmChange += RefreshFromRealmChange;
+			Context.OnUserChange += RefreshFromUserChange;
+		}
 
+		private void RefreshFromRealmChange(RealmView _) => Refresh();
+		private void RefreshFromUserChange(EditorUser _) => Refresh();
+
+		private void RefreshView()
+		{
+			SetView(false);
+		}
+
+		private void SetView(bool isInit = true) // we don't want to destroy & recreate whole view every time docker is disabled
+		{
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_scrollView = Root.Q<ScrollView>();
 			_servicesListElement = Root.Q<VisualElement>("listRoot");
@@ -88,26 +106,46 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
 				ShowDockerNotInstalledAnnouncement();
-				EditorDebouncer.Debounce("Refresh C#MS Window", Refresh, 1f);
+				EditorDebouncer.Debounce("Refresh C#MS Window", RefreshView, 1f);
 			}
+			else if (!isInit)
+			{
+				Refresh();
+				return;
+			}
+
 			if (DockerCommand.DockerNotInstalled)
 				return;
 
-			CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
-			CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
+			if (isInit)
+			{
+				CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
+				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
+				_modelToVisual.Clear();
+				SetupServicesStatus();
+			}
 
-			_modelToVisual.Clear();
-
-			SetupServicesStatus();
+			CheckLoginStatus();
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
 			EditorApplication.delayCall +=
 				() =>
 				{
+					if (_dockerStatusPromise != null && !_dockerStatusPromise.IsCompleted)
+						return;
+
 					var command = new GetDockerLocalStatus();
-					command.Start();
+					_dockerStatusPromise = command.StartAsync();
 				};
+		}
+
+		private void CheckLoginStatus()
+		{
+			foreach (var kvp in _modelToVisual)
+			{
+				kvp.Value.ChangeStartButtonState(true, Constants.Tooltips.Microservice.PLAY_MICROSERVICE, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+			}
 		}
 
 		private void HandleSelectionChanged(bool _)
@@ -129,7 +167,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_modelToVisual[service] = serviceElement;
 			service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
-			serviceElement.Refresh();
+			serviceElement.Refresh(_dockerHubIsRunning);
 			service.OnSelectionChanged -= HandleSelectionChanged;
 			service.OnSelectionChanged += HandleSelectionChanged;
 
@@ -150,7 +188,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
 
 				_modelToVisual[service] = serviceElement;
-				serviceElement.Refresh();
+				serviceElement.Refresh(_dockerHubIsRunning);
 
 				service.OnSortChanged -= SortMicroservices;
 				service.OnSortChanged += SortMicroservices;
@@ -171,7 +209,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
-				mongoServiceElement.Refresh();
+				mongoServiceElement.Refresh(_dockerHubIsRunning);
 				mongoService.OnSelectionChanged -= HandleSelectionChanged;
 				mongoService.OnSelectionChanged += HandleSelectionChanged;
 
@@ -195,7 +233,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
-				mongoServiceElement.Refresh();
+				mongoServiceElement.Refresh(_dockerHubIsRunning);
 
 				mongoService.OnSortChanged -= SortStorages;
 				mongoService.OnSortChanged += SortStorages;
@@ -217,9 +255,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_actionPrompt.SetVisible(PROMPT_STOPPED_FAILURE, true, false);
 		}
 
-		public void DisplayCreatingNewService(ServiceType serviceType)
+		public void DisplayCreatingNewService(ServiceType serviceType, Action onClose)
 		{
-			_servicesCreateElements[serviceType].Refresh();
+			if (_servicesCreateElements.Values.Any(x => x.hierarchy.childCount != 0))
+				return;
+
+			_servicesCreateElements[serviceType].Refresh(() => onClose?.Invoke());
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
 
@@ -234,19 +275,57 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
 		{
 			var children = new List<LoadingBarUpdater>();
+			var dependencyStorages = new List<string>();
+
 			foreach (var microservice in Model.Services)
 			{
 				if (!microservice.IsSelected)
 					continue;
 
-				if (microservice.IsRunning)
-					microservice.BuildAndRestart();
+				if (microservice.Dependencies.Count > 0)
+				{
+					foreach (MongoStorageModel dependencyService in microservice.Dependencies)
+					{
+						dependencyStorages.Add(dependencyService.Name);
+
+						void OnDependencyRunFinished(bool isFinished)
+						{
+							if (isFinished)
+							{
+								if (microservice.IsRunning)
+									microservice.BuildAndRestart();
+								else
+									microservice.BuildAndStart();
+							}
+
+							dependencyService.Builder.OnStartingFinished -= OnDependencyRunFinished;
+						};
+
+						dependencyService.Builder.OnStartingFinished += OnDependencyRunFinished;
+						dependencyService.Start();
+					}
+
+				}
 				else
-					microservice.BuildAndStart();
+				{
+					if (microservice.IsRunning)
+						microservice.BuildAndRestart();
+					else
+						microservice.BuildAndStart();
+				}
 
 				var element = _modelToVisual[microservice];
 				var subLoader = element.Q<LoadingBarElement>();
 				children.Add(subLoader.Updater);
+			}
+
+			foreach (var storage in Model.Storages)
+			{
+				if (!storage.IsSelected)
+					continue;
+
+				if (!storage.IsRunning && !dependencyStorages.Contains(storage.Name))
+					storage.Start();
 			}
 
 			var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
@@ -293,16 +372,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 			SortServices(ServiceType.StorageObject);
 		}
 
-		private bool ShouldDisplayService(ServiceType type)
+		private bool ShouldDisplayService(ServiceType type, bool isArchived)
 		{
 			switch (Model.Filter)
 			{
 				case ServicesDisplayFilter.AllTypes:
-					return true;
+					return !isArchived;
 				case ServicesDisplayFilter.Microservices:
-					return type == ServiceType.MicroService;
+					return !isArchived && type == ServiceType.MicroService;
 				case ServicesDisplayFilter.Storages:
-					return type == ServiceType.StorageObject;
+					return !isArchived && type == ServiceType.StorageObject;
+				case ServicesDisplayFilter.Archived:
+					return isArchived;
 				default:
 					return false;
 			}
@@ -312,25 +393,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var dockerAnnouncement = new DockerAnnouncementModel();
 			dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
+			Root.Q<VisualElement>("announcementList").Clear();
+
 			if (DockerCommand.DockerNotInstalled)
 			{
-				dockerAnnouncement.OnInstall = () =>
+				dockerAnnouncement.OnInstall = async () =>
 				{
-					BeamableAssistantWindow.ShowWindow()
-										   .ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-																					BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-																					BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
+					var window = await BeamableAssistantWindow.Init();
+					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+														 BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
 
 				};
 			}
 			else
 			{
-				dockerAnnouncement.OnInstall = () =>
+				dockerAnnouncement.OnInstall = async () =>
 				{
-					BeamableAssistantWindow.ShowWindow()
-								.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-																		 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-																		 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
+					var window = await BeamableAssistantWindow.Init();
+					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+														 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
 				};
 
 			}
@@ -355,7 +438,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 					continue;
 
 				var serviceType = Model.GetModelServiceType(serviceStatus.Key);
-				if (!ShouldDisplayService(serviceType))
+				var isArchived = serviceType == ServiceType.MicroService ?
+					MicroserviceConfiguration.Instance.GetEntry(serviceStatus.Key).Archived :
+					MicroserviceConfiguration.Instance.GetStorageEntry(serviceStatus.Key).Archived;
+				if (!ShouldDisplayService(serviceType, isArchived))
 					continue;
 
 				ServiceBaseVisualElement serviceElement = null;
@@ -390,6 +476,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
+		public void StopAllServices(bool showDialog = false, string dialogTitle = "", string dialogMessage = "", string dialogConfirm = "")
+		{
+			var isAnyServiceStopped = false;
+			foreach (var service in _modelToVisual.Keys)
+				if (service.IsRunning)
+				{
+					isAnyServiceStopped = true;
+					service.Stop();
+				}
 
+			if (!showDialog || !isAnyServiceStopped)
+				return;
+
+			EditorUtility.DisplayDialog(dialogTitle, dialogMessage, dialogConfirm);
+		}
 	}
 }

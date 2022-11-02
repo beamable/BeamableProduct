@@ -38,22 +38,62 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     flex-direction: row;
     height: 30px;
     flex-shrink: 0;
+    margin-right: 1px;
+    margin-left: 1px;
 }
 
-#logHeader > .leftArea{
-    justify-content: center;
-    padding-left: 5px;
-    flex-direction: row;
+#logHeader > .leftArea,
+#logHeader > .rightArea {
     flex-grow: 1;
+    flex-basis: 1;
+    flex-direction: row;
+    align-items: center;
 }
 
-#logHeader > .rightArea{
-    padding-right: 5px;
-    flex-direction: row;
+#logHeader > .leftArea {
+    align-content: flex-start;
+    justify-content: flex-start;
+}
+
+#logHeader > .centerArea {
+    width: 30px;
+    justify-content: center;
+    align-items: center;
+}
+
+#logHeader > .rightArea {
+    padding-right: 10px;
     align-content: flex-end;
     justify-content: flex-end;
 }
 
+#serviceIcon {
+    margin-left: 5px;
+    min-width: 20px;
+    min-height: 20px;
+    height: 20px;
+    width: 20px;
+}
+
+#serviceName {
+    padding-left: 5px;
+    padding-right: 0px;
+    margin-right: 5px;
+    -unity-font-style: bold;
+    font-size: 13px;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+#startBtn {
+    width: 28px;
+    flex-basis: auto;
+    position: relative;
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-top-left-radius: 0px;
+}
 #logContainer {
     flex-grow: 1;
 }
@@ -76,7 +116,7 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     padding-left: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
-    
+
 }
 
 #statusIcon, #remoteStatusIcon{
@@ -86,8 +126,14 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     align-self: center;
     margin-left: 10px;
     margin-right: 5px;
+    flex-shrink: 0;
 }
 
+.separator {
+    width: 2px;
+    height: 18px;
+    align-self: center;
+}
 
 #logText{
     min-height: 100px;
@@ -120,15 +166,10 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 .confirmBtn{
     font-size: 12px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-top-width: 1px;
-    border-right-width: 1px;
     margin-right: 0px;
     background-image: none;
     height: 23px;
     cursor: pan;
-    background-image: none;
     align-self: center;
 }
 
@@ -150,42 +191,18 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 	margin-right: 0px;
 }
 
-#moreBtn{
-    -unity-slice-bottom: 0;
-    -unity-slice-top: 0;
-    -unity-slice-right: 0;
-    -unity-slice-left: 0;
-    border-right-width: 0px;
-    border-top-width: 0px;
-    border-bottom-width: 0px;
-    border-left-width: 0px;
-    padding-left: 11px;
-    padding-right: 11px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-    margin-right: 0px;
-    margin-left: 0px;
-    margin-bottom: 0px;
-    margin-top: 0px;
+#openDocsBtn, #openScriptBtn, #moreBtn {
+    width: 30px;
+    height: 30px;
+    justify-content: center;
 }
 
-#buttonsContainer {
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-#dependentServicesBtn {
-    font-size: 10px;
-    background-image: none;
-    background-color: rgba(0,0,0,0);
-    padding-top: 4px;
-    border-bottom-width: 1px;
-}
-
-LabeledCheckboxVisualElement{
-    margin-left: 10px;
-	align-self: center;
-    justify-content: flex-start;
+#openDocsBtn > #btnIcon,
+#openScriptBtn > #btnIcon,
+#moreBtn > #btnIcon {
+    width: 24px;
+    height: 24px;
+    align-self: center;
 }
 
 .hide {
@@ -206,8 +223,11 @@ LabeledCheckboxVisualElement{
 
 #stopImage, #buildImage {
     align-self: center;
-    width: 18px;
-    height: 18px;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
 }
 
 .foldIcon {
@@ -217,3 +237,4 @@ LabeledCheckboxVisualElement{
 .unfoldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light_dark.png");
 }
+

@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
+using UnityEngine;
 
 namespace Beamable.Tests.Runtime.Api
 {
@@ -18,6 +19,11 @@ namespace Beamable.Tests.Runtime.Api
 		public Promise<User> GetUser()
 		{
 			return GetCurrentUserDelegate();
+		}
+
+		public Promise<User> SetLanguage(string languageCodeISO6391)
+		{
+			throw new NotImplementedException();
 		}
 
 		public Promise<User> GetUserForEditor()
@@ -109,12 +115,22 @@ namespace Beamable.Tests.Runtime.Api
 			throw new System.NotImplementedException();
 		}
 
+		public Promise<CurrentProjectResponse> GetCurrentProject()
+		{
+			throw new NotImplementedException();
+		}
+
+		public Promise<User> SetLanguage(SystemLanguage language)
+		{
+			throw new NotImplementedException();
+		}
+
 		public Promise<bool> IsThisDeviceIdAvailable()
 		{
 			throw new NotImplementedException();
 		}
 
-		public Promise<TokenResponse> LoginDeviceId()
+		public Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount)
 		{
 			throw new NotImplementedException();
 		}
@@ -135,6 +151,11 @@ namespace Beamable.Tests.Runtime.Api
 		}
 
 		public Promise<User> RemoveAllDeviceIds()
+		{
+			throw new NotImplementedException();
+		}
+
+		public Promise<string> GetDeviceId()
 		{
 			throw new NotImplementedException();
 		}

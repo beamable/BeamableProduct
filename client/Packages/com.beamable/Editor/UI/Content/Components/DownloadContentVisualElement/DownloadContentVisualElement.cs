@@ -72,11 +72,11 @@ namespace Beamable.Editor.Content.Components
 				var modifiedSource = new List<ContentDownloadEntryDescriptor>();
 				_modifiedList = new ListView
 				{
-					itemHeight = 24,
 					itemsSource = modifiedSource,
 					makeItem = MakeElement,
 					bindItem = CreateBinder(modifiedSource)
 				};
+				_modifiedList.SetItemHeight(24);
 				modifiedFold.contentContainer.Add(_modifiedList);
 
 				var tmpModified = GetModiffiedSource(summary);
@@ -89,11 +89,12 @@ namespace Beamable.Editor.Content.Components
 				var addSource = new List<ContentDownloadEntryDescriptor>();
 				_addList = new ListView
 				{
-					itemHeight = 24,
+
 					itemsSource = addSource,
 					makeItem = MakeElement,
 					bindItem = CreateBinder(addSource)
 				};
+				_addList.SetItemHeight(24);
 				additionFold.contentContainer.Add(_addList);
 
 				var tmpAdditional = GetAdditionSource(summary);
@@ -110,11 +111,11 @@ namespace Beamable.Editor.Content.Components
 				var deleteSource = new List<ContentDownloadEntryDescriptor>();
 				var deleteList = new ListView
 				{
-					itemHeight = 24,
 					itemsSource = deleteSource,
 					makeItem = MakeElement,
 					bindItem = CreateBinder(deleteSource)
 				};
+				deleteList.SetItemHeight(24);
 				deleteFoldoutElem.contentContainer.Add(deleteList);
 
 				var tmpDeletions = GetDeleteSource(summary);
@@ -148,8 +149,8 @@ namespace Beamable.Editor.Content.Components
 			if (entries.Count > 0)
 			{
 				source.AddRange(entries);
-				foldout.Q<ListView>().style.height = _modifiedList.itemHeight * entries.Count();
-				listView.Refresh();
+				foldout.Q<ListView>().style.SetHeight(_modifiedList.GetItemHeight() * entries.Count(), true);
+				listView.RefreshPolyfill();
 			}
 			else
 			{

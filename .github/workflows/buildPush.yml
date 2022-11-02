@@ -56,9 +56,9 @@ jobs:
           - playmode
           - editmode
         unityVersion:
-          - 2018.4.36f1
           - 2019.4.30f1
           - 2020.3.19f1
+          - 2021.3.2f1
     steps:
       - uses: actions/checkout@v2
       - name: Login to Docker Hub
@@ -138,7 +138,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2020.3.19f1
+          - 2021.3.2f1
         projectPath:
           - client
     steps:
@@ -191,7 +191,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2.0.4
         if: ${{ github.ref == 'refs/heads/main' }}
         timeout-minutes: 30
         env:
@@ -209,7 +209,7 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2.0.4
         if: ${{ github.ref == 'refs/heads/staging' }}
         timeout-minutes: 30
         env:
@@ -227,7 +227,7 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Staging
-      - uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2.0.4
         if: ${{ github.ref == 'refs/heads/production' }}
         timeout-minutes: 30
         env:
@@ -260,12 +260,12 @@ jobs:
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}} --acl public-read
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
         if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/index.html)
+          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/index.html)
 
   ios:
     name: Build iOS .ipa and upload to Testflight
@@ -282,15 +282,15 @@ jobs:
         with:
           name: Build-iOS
       - name: Make build scripts executable and change directory to the location of the xcode project
-        run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
+        run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
       - name: Edit the plist to automatically manage encryption notice in Testflight.
         run:  /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" /Users/runner/work/BeamableProduct/BeamableProduct/iOS/Info.plist || echo "Could not set encryption exception, this means it already exists"
       - name: Download p12
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp s3://beamable-certificates/beamable.p12 /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/beamable.p12
       - name: Download cer
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp s3://beamable-certificates/ios_distribution.cer /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/ios_distribution.cer
-      - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.ref == 'refs/heads/main' }}
+      - uses: yukiarrr/ios-build-action@v1.5.0
+        if: ${{ github.ref == 'refs/heads/main' }} 
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
@@ -300,7 +300,7 @@ jobs:
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductDev.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
           team-id: A6C4565DLF
-      - uses: yukiarrr/ios-build-action@v1.4.0
+      - uses: yukiarrr/ios-build-action@v1.5.0
         if: ${{ github.ref == 'refs/heads/staging' }}
         with:
           update-targets: Unity-iPhone
@@ -311,7 +311,7 @@ jobs:
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductStaging.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
           team-id: A6C4565DLF
-      - uses: yukiarrr/ios-build-action@v1.4.0
+      - uses: yukiarrr/ios-build-action@v1.5.0
         if: ${{ github.ref == 'refs/heads/production' }}
         with:
           update-targets: Unity-iPhone

@@ -8,6 +8,7 @@ namespace Beamable.Server.Editor.CodeGen
 	public class DockerfileGenerator
 	{
 		public MicroserviceDescriptor Descriptor { get; }
+		public bool Watch { get; }
 		public MicroserviceConfigurationEntry Config { get; }
 
 		private bool DebuggingEnabled = true;
@@ -17,16 +18,17 @@ namespace Beamable.Server.Editor.CodeGen
 
 #if BEAMABLE_DEVELOPER
       public const string BASE_IMAGE = "beamservice"; // Use a locally built image.
-      public string BASE_TAG = "latest"; // Use a locally built image.
+      public static string BASE_TAG => "latest"; // Use a locally built image.
 #else
 		public const string BASE_IMAGE = "beamableinc/beamservice"; // use the public online image.
-		public string BASE_TAG = BeamableEnvironment.BeamServiceTag;
+		public static string BASE_TAG => BeamableEnvironment.BeamServiceTag;
 #endif
 
-		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools)
+		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
 		{
 			DebuggingEnabled = includeDebugTools;
 			Descriptor = descriptor;
+			Watch = watch;
 			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}
 
@@ -57,7 +59,7 @@ user=root
 loglevel=error
 
 [program:${Descriptor.Name}]
-command=/usr/bin/dotnet {GetProgramDll()}
+command={ (Watch ? "dotnet watch" : $"/usr/bin/dotnet {GetProgramDll()}")}
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 
@@ -76,11 +78,25 @@ command=/usr/sbin/sshd -D
 		{
 			if (!DebuggingEnabled) return "";
 
+			//RUN curl -sSL -o /riderdbg https://download.jetbrains.com/rider/ssh-remote-debugging/linux-arm64/jetbrains_debugger_agent_20210604.19.0
+
+			var riderTools = "";
+			MicroserviceConfiguration.Instance.RiderDebugTools.DoIfExists(tools =>
+			{
+				riderTools = $@"
+RUN curl -sSL {tools.RiderToolsDownloadUrl} -o ridertemp.zip
+RUN mkdir -p /root/.local/share/JetBrains/RiderRemoteDebugger/{tools.RiderVersion}
+RUN unzip -q -o ridertemp.zip -d /root/.local/share/JetBrains/RiderRemoteDebugger/{tools.RiderVersion}
+";
+			});
+
 			return $@"
 #inject the debugging tools
 RUN apt update && \
     apt install -y unzip curl supervisor openssh-server && \
     curl -sSL https://aka.ms/getvsdbgsh | /bin/sh /dev/stdin -v latest -l /vsdbg
+
+{riderTools}
 
 RUN mkdir -p /var/log/supervisor /run/sshd
 
@@ -105,6 +121,10 @@ EXPOSE 80 2222
 			{
 				return @"ENTRYPOINT [""/usr/bin/supervisord"", ""-c"", ""/etc/supervisor/conf.d/supervisord.conf""]";
 			}
+			else if (Watch)
+			{
+				return $@"ENTRYPOINT [""dotnet"", ""watch""]";
+			}
 			else
 			{
 				return $@"ENTRYPOINT [""dotnet"", ""{GetProgramDll()}""]";
@@ -116,8 +136,37 @@ EXPOSE 80 2222
 			return DebuggingEnabled ? "debug" : "release";
 		}
 
+		private string GetWatchDockerFile()
+		{
+			var text = $@"
+FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
+RUN dotnet --version
+WORKDIR /subapp
+
+COPY {Descriptor.ImageName}.csproj .
+RUN cp /src/baseImageDocs.xml .
+
+RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
+
+{GetDebugLayer()}
+
+EXPOSE {HEALTH_PORT}
+ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
+ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+RUN dotnet restore .
+{GetEntryPoint()}
+";
+			return text;
+		}
+
 		public string GetString()
 		{
+
+			if (Watch)
+			{
+				return GetWatchDockerFile();
+			}
+
 			var text = $@"
 # step 1. Build...
 FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
@@ -154,8 +203,7 @@ ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 			var content = GetString();
 
 #if BEAMABLE_DEVELOPER
-			Beamable.Common.BeamableLogger.Log("DOCKER FILE");
-			Beamable.Common.BeamableLogger.Log(content);
+			Beamable.Common.BeamableLogger.Log($"DOCKER FILE {Descriptor.Name}\n{content}");
 #endif
 
 			File.WriteAllText(filePath, content);

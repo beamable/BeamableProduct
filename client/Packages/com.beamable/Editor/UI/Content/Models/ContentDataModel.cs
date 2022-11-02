@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Extensions;
+using Beamable.Editor.Content.Helpers;
 using Beamable.Editor.Content.SaveRequest;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 
 namespace Beamable.Editor.Content.Models
 {
@@ -35,6 +37,7 @@ namespace Beamable.Editor.Content.Models
 		public event Action OnSoftReset;
 		public event Action OnManifestChanged;
 
+		public ContentSortType CurrentSorter { get; private set; } = ContentSortType.IdAZ;
 		public EditorContentQuery Filter { get; private set; }
 		public EditorContentQuery SystemFilter { get; private set; } = new EditorContentQuery();
 
@@ -303,6 +306,8 @@ namespace Beamable.Editor.Content.Models
 
 				_filteredContent.Add(content);
 			}
+
+			_filteredContent.Sort(CurrentSorter);
 			OnFilteredContentsChanged?.Invoke();
 		}
 
@@ -484,7 +489,6 @@ namespace Beamable.Editor.Content.Models
 			}
 
 		}
-
 		public void ContentItemRename(ContentItemDescriptor contentItemDescriptor)
 		{
 			if (_content.IndexOf(contentItemDescriptor) == -1)
@@ -516,7 +520,7 @@ namespace Beamable.Editor.Content.Models
 		{
 			if (_idToContent.TryGetValue(oldId, out var oldItem))
 			{
-				var typeName = ContentRegistry.GetTypeNameFromId(content.Id);
+				var typeName = ContentTypeReflectionCache.GetTypeNameFromId(content.Id);
 				if (!_nameToType.ContainsKey(typeName))
 				{
 					var newTypeDesc = new ContentTypeDescriptor();
@@ -650,7 +654,7 @@ namespace Beamable.Editor.Content.Models
 			}
 			else
 			{
-				var typeName = ContentRegistry.GetTypeNameFromId(content.Id);
+				var typeName = ContentTypeReflectionCache.GetTypeNameFromId(content.Id);
 				if (!_nameToType.ContainsKey(typeName))
 				{
 					var newTypeDesc = new ContentTypeDescriptor();
@@ -679,6 +683,8 @@ namespace Beamable.Editor.Content.Models
 
 		private void ContentItemDescriptor_OnEnriched(ContentItemDescriptor contentItemDescriptor)
 		{
+			EditorApplication.delayCall -= RefreshFilteredContents;
+			EditorApplication.delayCall += RefreshFilteredContents;
 			AccumulateContentTags(contentItemDescriptor);
 			OnItemEnriched?.Invoke(contentItemDescriptor);
 		}
@@ -865,6 +871,14 @@ namespace Beamable.Editor.Content.Models
 		{
 			return _idToContent.TryGetValue(descriptor.Id, out latest);
 		}
-	}
 
+		public void SetSorter(ContentSortType newSorter)
+		{
+			if (CurrentSorter == newSorter)
+				return;
+
+			CurrentSorter = newSorter;
+			RefreshFilteredContents();
+		}
+	}
 }

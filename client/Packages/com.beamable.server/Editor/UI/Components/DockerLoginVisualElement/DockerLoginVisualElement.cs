@@ -74,7 +74,7 @@ namespace Beamable.Server.Editor.UI.Components.DockerLoginWindow
 		private void OnLoginClicked()
 		{
 			var command = new DockerLoginCommand(_usernameInput.value, _passwordInput.value);
-			var loginPromise = command.Start(null);
+			var loginPromise = command.StartAsync();
 
 			_loginBtn.SetText("Logging In");
 			_loginBtn.Load(loginPromise);

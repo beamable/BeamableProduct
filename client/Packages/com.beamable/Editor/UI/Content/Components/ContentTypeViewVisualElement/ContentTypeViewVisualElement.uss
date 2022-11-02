@@ -35,6 +35,7 @@ ContentTypeViewVisualElement IMGUIContainer {
 ContentTypeViewVisualElement #lowerBackgroundVisualElement {
 	flex-grow:1;
 }
+
 ContentTypeViewVisualElement #statusBar{
     position: absolute;
     top: 0px;
@@ -44,3 +45,25 @@ ContentTypeViewVisualElement #statusBar{
     color: #4F80F8;
 }
 
+#showAllContent {
+    margin-top: 2px;
+    margin-bottom: 0px;
+}
+
+#showAllContent:hover {
+    background-color: rgba(0,0,0,.1);
+}
+
+#showAllContentLabel {
+    -unity-text-align: middle-left;
+    margin-left: 20px;
+}
+
+#separator {
+    height: 1px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    margin-left: 15px;
+    margin-right: 15px;
+    background-color: #484848;
+}

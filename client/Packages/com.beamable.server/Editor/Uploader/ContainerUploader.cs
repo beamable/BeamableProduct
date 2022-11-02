@@ -39,13 +39,13 @@ namespace Beamable.Server.Editor.Uploader
 		private long _partsCompleted;
 		private long _partsAmount;
 
-		public ContainerUploader(EditorAPI api, ContainerUploadHarness harness, MicroserviceDescriptor descriptor, string imageId)
+		public ContainerUploader(BeamEditorContext api, ContainerUploadHarness harness, MicroserviceDescriptor descriptor, string imageId)
 		{
 			_client = new HttpClient();
-			_client.DefaultRequestHeaders.Add("x-ks-clientid", api.CustomerView.Cid);
-			_client.DefaultRequestHeaders.Add("x-ks-projectid", api.Pid);
-			_client.DefaultRequestHeaders.Add("x-ks-token", api.Token.Token);
-			var serviceUniqueName = GetHash($"{api.CustomerView.Cid}_{api.ProductionRealm.Pid}_{descriptor.Name}").Substring(0, 30);
+			_client.DefaultRequestHeaders.Add("x-ks-clientid", api.CurrentCustomer.Cid);
+			_client.DefaultRequestHeaders.Add("x-ks-projectid", api.CurrentRealm.Pid);
+			_client.DefaultRequestHeaders.Add("x-ks-token", api.Requester.Token.Token);
+			var serviceUniqueName = GetHash($"{api.CurrentCustomer.Cid}_{api.ProductionRealm.Pid}_{descriptor.Name}").Substring(0, 30);
 			_uploadBaseUri = $"{BeamableEnvironment.DockerRegistryUrl}{serviceUniqueName}";
 			_sha256 = SHA256.Create();
 			_harness = harness;
@@ -110,22 +110,84 @@ namespace Beamable.Server.Editor.Uploader
 			}
 
 			// Upload manifest JSON.
-			await UploadManifestJson(uploadManifest, _imageId);
+			await UploadManifestJson(uploadManifest, _imageId, token);
 		}
 
 		/// <summary>
 		/// Upload the manifest JSON to complete the Docker image push.
 		/// </summary>
 		/// <param name="uploadManifest">Data structure containing image data.</param>
-		private async Task UploadManifestJson(Dictionary<string, object> uploadManifest, string imageId)
+		private async Task UploadManifestJson(Dictionary<string, object> uploadManifest, string imageId, CancellationToken token)
 		{
 			var manifestJson = Json.Serialize(uploadManifest, new StringBuilder());
 			var uri = new Uri($"{_uploadBaseUri}/manifests/{imageId}");
-			var content = new StringContent(manifestJson, Encoding.Default, MediaManifest);
-			var response = await _client.PutAsync(uri, content);
+			var response = await SendPutRequest("uploading image manifest json", uri, () => new StringContent(manifestJson, Encoding.Default, MediaManifest), token);
 			response.EnsureSuccessStatusCode();
 			_harness.Log("image manifest uploaded");
 		}
+		
+		private async Task<HttpResponseMessage> SendRequestWithRetries(string name, Func<Task<HttpResponseMessage>> requestGenerator, CancellationToken cancellationToken, int maxAttempts = 500)
+		{
+			var attemptCount = 0;
+			var timeoutStatusCodes = new HttpStatusCode[]
+			{
+				HttpStatusCode.BadGateway, HttpStatusCode.GatewayTimeout, HttpStatusCode.GatewayTimeout
+			};
+			async Task<HttpResponseMessage> Attempt()
+			{
+				if (attemptCount++ >= maxAttempts)
+				{
+					throw new HttpRequestException("Request timed out, and exhausted all retries.");
+				}
+				cancellationToken.ThrowIfCancellationRequested();
+				try
+				{
+					var result = await requestGenerator();
+					if (timeoutStatusCodes.Contains(result.StatusCode))
+					{
+						// failed, try again :( 
+						Debug.LogWarning(
+							$"Request failed with bad status code, trying again... name=[{name}] attempt=[{attemptCount}] status=[{result.StatusCode}]");
+						return await Attempt();
+					}
+
+					return result;
+				}
+
+				catch (IOException io)
+				{
+					Debug.LogWarning($"Request failed out due to io, trying again... name=[{name}] attempt=[{attemptCount}] message=[{io.Message}]");
+					return await Attempt();
+				}
+				catch (HttpRequestException ex) when (ex.InnerException is IOException inner)
+				{
+					Debug.LogWarning($"Request failed out due to inner io, trying again... name=[{name}] attempt=[{attemptCount}] message=[{ex.Message}] inner=[{inner.Message}]");
+					return await Attempt();
+				}
+				catch (TaskCanceledException)
+				{
+					Debug.LogWarning($"Request timed out, trying again... name=[{name}] attempt=[{attemptCount}]");
+					return await Attempt();
+				}
+				catch (Exception ex)
+				{
+					Debug.Log("Unknown upload exception!!");
+					Debug.LogException(ex);
+					throw;
+				}
+			}
+
+			return await Attempt();
+		}
+
+		private async Task<HttpResponseMessage> SendRequest(string name,
+		                                                    Func<HttpRequestMessage> requestGenerator,
+		                                                    CancellationToken token) =>
+			await SendRequestWithRetries(name, () => _client.SendAsync(requestGenerator()), token);
+		private async Task<HttpResponseMessage> SendPutRequest(string name, Uri uri, Func<StringContent> contentGenerator, CancellationToken token) =>
+			await SendRequestWithRetries(name, () => _client.PutAsync(uri, contentGenerator()), token);
+		private async Task<HttpResponseMessage> SendPostRequest(string name, Uri uri, Func<StringContent> contentGenerator, CancellationToken token) =>
+			await SendRequestWithRetries(name, () => _client.PostAsync(uri, contentGenerator()), token);
 
 		/// <summary>
 		/// Upload one layer of a Docker image, adding its digest to the upload
@@ -156,7 +218,7 @@ namespace Beamable.Server.Editor.Uploader
 			using (var fileStream = File.OpenRead(filename))
 			{
 				var digest = HashDigest(fileStream);
-				if (await CheckBlobExistence(digest))
+				if (await CheckBlobExistence(digest, token))
 				{
 					return new FileBlobResult
 					{
@@ -165,7 +227,7 @@ namespace Beamable.Server.Editor.Uploader
 					};
 				}
 				fileStream.Position = 0;
-				var location = NormalizeWithDigest(await PrepareUploadLocation(), digest);
+				var location = NormalizeWithDigest(await PrepareUploadLocation(token), digest);
 				while (fileStream.Position < fileStream.Length)
 				{
 					token.ThrowIfCancellationRequested();
@@ -199,18 +261,33 @@ namespace Beamable.Server.Editor.Uploader
 		{
 			var uri = location;
 			var method = chunk.IsLast ? HttpMethod.Put : new HttpMethod("PATCH");
-			var request = new HttpRequestMessage(method, uri) { Content = new StreamContent(chunk.Stream) };
-			request.Content.Headers.ContentLength = chunk.Length;
-			request.Content.Headers.ContentRange = new ContentRangeHeaderValue(chunk.Start, chunk.End, chunk.FullLength);
-			var response = await _client.SendAsync(request, token);
+			var content = new StreamContent(chunk.Stream);
+
+			HttpRequestMessage Generator()
+			{
+				var request = new HttpRequestMessage(method, uri) { Content = content };
+				request.Content.Headers.ContentLength = chunk.Length;
+				request.Content.Headers.ContentRange = new ContentRangeHeaderValue(chunk.Start, chunk.End, chunk.FullLength);
+				return request;
+			}
+
+			var response = await SendRequest("uploading chunk " + location, Generator, token);
 			try
 			{
 				response.EnsureSuccessStatusCode();
 			}
 			catch (HttpRequestException ex)
 			{
-				var body = await response.Content.ReadAsStringAsync();
-				Debug.LogError($"Failed to upload image chunk. message=[{ex.Message}] body=[{body}]");
+				try
+				{
+					var body = await response.Content.ReadAsStringAsync();
+					Debug.LogError($"Failed to upload image chunk. message=[{ex.Message}] body=[{body}]");
+				}
+				catch (ObjectDisposedException disposedException)
+				{
+					Debug.LogError($"Failed to upload image chunk. message=[{ex.Message} Cannot display body. {disposedException.Message}]");
+				}
+
 				throw ex;
 			}
 			return response;
@@ -221,11 +298,10 @@ namespace Beamable.Server.Editor.Uploader
 		/// </summary>
 		/// <param name="digest"></param>
 		/// <returns></returns>
-		private async Task<bool> CheckBlobExistence(string digest)
+		private async Task<bool> CheckBlobExistence(string digest, CancellationToken token)
 		{
 			var uri = new Uri($"{_uploadBaseUri}/blobs/{digest}");
-			var request = new HttpRequestMessage(HttpMethod.Head, uri);
-			var response = await _client.SendAsync(request);
+			var response = await SendRequest("checking blob existence " + digest, () => new HttpRequestMessage(HttpMethod.Head, uri), token);
 			return response.StatusCode == HttpStatusCode.OK;
 		}
 
@@ -234,10 +310,10 @@ namespace Beamable.Server.Editor.Uploader
 		/// upload path.
 		/// </summary>
 		/// <returns>The upload location URI.</returns>
-		private async Task<Uri> PrepareUploadLocation()
+		private async Task<Uri> PrepareUploadLocation(CancellationToken token)
 		{
 			var uri = new Uri($"{_uploadBaseUri}/blobs/uploads/");
-			var response = await _client.PostAsync(uri, new StringContent(""));
+			var response = await SendPostRequest("preparing upload location", uri, () => new StringContent(""), token);
 			try
 			{
 				response.EnsureSuccessStatusCode();

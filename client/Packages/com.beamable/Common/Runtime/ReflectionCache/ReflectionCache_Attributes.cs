@@ -61,11 +61,11 @@ namespace Beamable.Common.Reflection
 		/// <summary>
 		/// Mask for all possible <see cref="MemberTypes"/> that can be "Members" of declared classes/structs.
 		/// </summary>
-		private const MemberTypes INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES = MemberTypes.Constructor |
-																			  MemberTypes.Event |
-																			  MemberTypes.Field |
-																			  MemberTypes.Method |
-																			  MemberTypes.Property;
+		public const MemberTypes INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES = MemberTypes.Constructor |
+																			 MemberTypes.Event |
+																			 MemberTypes.Field |
+																			 MemberTypes.Method |
+																			 MemberTypes.Property;
 
 		/// <summary>
 		/// Type of the attribute you are interested in.
@@ -103,8 +103,12 @@ namespace Beamable.Common.Reflection
 
 			// Assert instead of failing silently. Failing silently here means we could fail due to the member not having the correct flag. This is a case where we should fail loudly, as it's
 			// supposed to be impossible.
-			Debug.Assert(INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES.ContainsAnyFlag(info.MemberType),
-						 $"Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause. member=[{info.MemberType}] type=[{info.ReflectedType}] attr=[{attribute}]");
+#if UNITY_EDITOR
+			if (!INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES.ContainsAnyFlag(info.MemberType) && info.GetCustomAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute)) == null)
+				throw new ArgumentException(
+					$"Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause. member=[{info.MemberType}] name=[{info.Name}] type=[{info.ReflectedType}] attr=[{attribute}]");
+#endif
+
 			return attribute != null;
 		}
 
@@ -192,16 +196,19 @@ namespace Beamable.Common.Reflection
 		/// <param name="declaredMemberAttributesToSearchFor">List of pre-filtered <see cref="AttributeOfInterest"/> that passes <see cref="AttributeOfInterest.TargetsDeclaredMember"/>.</param>
 		/// <param name="foundAttributes">Dictionary with pre-allocated lists for all registered <see cref="AttributeOfInterest"/>.</param>
 		private void GatherMembersFromAttributesOfInterest(MemberInfo member,
-																		IReadOnlyList<AttributeOfInterest> attributesToSearchFor,
-																		IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
-																		Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
+														   IReadOnlyList<AttributeOfInterest> attributesToSearchFor,
+														   IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
+														   Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
 		{
 			// Check for attributes over the type itself.
 			foreach (var attributeOfInterest in attributesToSearchFor)
 			{
-				var attribute = member.GetCustomAttribute(attributeOfInterest.AttributeType, false);
-				if (attribute != null)
+				var attributes = member.GetCustomAttributes(attributeOfInterest.AttributeType, false);
+				foreach (var attrObj in attributes)
+				{
+					var attribute = attrObj as Attribute;
 					foundAttributes[attributeOfInterest].Add(new MemberAttribute(member, attribute));
+				}
 			}
 
 			// Checks for Attributes declared over types' members
@@ -216,10 +223,10 @@ namespace Beamable.Common.Reflection
 
 					// For each declared member, check if they have the current attribute of interest -- if they do, add them to the found attribute list.
 					// In this step we catch every member with the attribute --- individual systems are welcome to parse and yield errors at a later step.
-					foreach (var memberInfo in type.GetMembers(BindingFlags.Public |
-															   BindingFlags.NonPublic |
-															   BindingFlags.Instance |
-															   BindingFlags.Static))
+					foreach (var memberInfo in type.FindMembers(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES, BindingFlags.Public |
+																															   BindingFlags.NonPublic |
+																															   BindingFlags.Instance |
+																															   BindingFlags.Static, null, null))
 					{
 						if (attributeOfInterest.TryGetFromMemberInfo(memberInfo, out var attribute))
 							foundAttributes[attributeOfInterest].Add(new MemberAttribute(memberInfo, attribute));

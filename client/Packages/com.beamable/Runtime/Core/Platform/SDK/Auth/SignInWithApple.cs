@@ -70,7 +70,9 @@ namespace Beamable.Platform.SDK.Auth
         private delegate void LoginCompleted(int result, UserInfo info);
 
         [MonoPInvokeCallback(typeof(LoginCompleted))]
+#pragma warning disable 0618
         private static void LoginCompletedCallback(int result, [MarshalAs(UnmanagedType.Struct)]UserInfo info)
+#pragma warning restore 0618
         {
             var args = new CallbackArgs();
             if (result != 0)

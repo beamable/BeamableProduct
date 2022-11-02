@@ -39,7 +39,12 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (var child in _children)
 			{
-				child.LoadingBar.OnUpdated += HandleUpdates;
+				if (child == null)
+					continue;
+
+				if (child.LoadingBar != null)
+					child.LoadingBar.OnUpdated += HandleUpdates;
+
 				child.OnKilledEvent += HandleUpdates;
 			}
 		}
@@ -73,6 +78,7 @@ namespace Beamable.Editor.UI.Components
 				TotalSteps = _children.Sum(lb => lb.TotalSteps);
 			}
 			Succeeded = _children.All(lb => lb.Succeeded || lb.Killed);
+			Succeeded |= Step > TotalSteps;
 			var errors = _children.Count(lb => lb.GotError);
 			GotError = errors > 0;
 
@@ -104,7 +110,9 @@ namespace Beamable.Editor.UI.Components
 		{
 			foreach (var child in _children)
 			{
-				child.LoadingBar.OnUpdated -= HandleUpdates;
+				if (child.LoadingBar != null)
+					child.LoadingBar.OnUpdated -= HandleUpdates;
+
 				child.OnKilledEvent -= HandleUpdates;
 			}
 		}

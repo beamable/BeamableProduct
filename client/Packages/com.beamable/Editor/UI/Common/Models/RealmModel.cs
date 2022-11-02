@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
-using Beamable.Editor.Realms;
+using Beamable.Common.Api.Realms;
+using Beamable.Common.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,29 +21,25 @@ namespace Beamable.Editor.UI.Common.Models
 		{
 			RefreshAvailable();
 
-			EditorAPI.Instance.Then(api =>
-			{
-				api.OnRealmChange += HandleRealmChanged;
-				Current = api.Realm;
-				OnElementChanged?.Invoke(Current);
-			});
+			var api = BeamEditorContext.Default;
+			api.OnRealmChange -= HandleRealmChanged;
+			api.OnRealmChange += HandleRealmChanged;
+			Current = api.CurrentRealm;
+			OnElementChanged?.Invoke(Current);
 		}
 
 		public Promise<List<ISearchableElement>> RefreshAvailable()
 		{
-			return EditorAPI.Instance.FlatMap(api =>
-			{
-				Current = api.Realm;
-				return api.RealmService.GetRealms().Map(realms =>
-				{
-					return realms.ToList<ISearchableElement>();
-				});
-			}).Then(realms =>
-			{
+			var api = BeamEditorContext.Default;
+			Current = api.CurrentRealm;
 
-				Elements = realms.ToList<ISearchableElement>();
-				OnAvailableElementsChanged?.Invoke(Elements);
-			});
+			return api.ServiceScope.GetService<RealmsService>().GetRealms()
+					  .Map(realms => realms.ToList<ISearchableElement>())
+					  .Then(realms =>
+					  {
+						  Elements = realms.ToList<ISearchableElement>();
+						  OnAvailableElementsChanged?.Invoke(Elements);
+					  });
 		}
 
 		private void HandleRealmChanged(RealmView realm)

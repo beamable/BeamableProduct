@@ -12,20 +12,18 @@ namespace Beamable.Server.Editor.ManagerClient
 	{
 		public const string SERVICE = "/basic/beamo";
 
-		public PlatformRequester Requester { get; }
+		public IPlatformRequester Requester { get; }
 
-		public MicroserviceManager(PlatformRequester requester)
+		public MicroserviceManager(IPlatformRequester requester)
 		{
 			Requester = requester;
 		}
-
-
 
 		public Promise<ServiceManifest> GetCurrentManifest()
 		{
 			return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest/current", "{}")
 			   .Map(res => res.manifest)
-			   .RecoverFrom404(ex => new ServiceManifest());
+			   .RecoverFrom40x(ex => new ServiceManifest());
 		}
 
 		[Obsolete(Constants.Commons.OBSOLETE_WILL_BE_REMOVED)]
@@ -49,7 +47,7 @@ namespace Beamable.Server.Editor.ManagerClient
 		{
 			return Requester.Request<GetManifestsResponse>(Method.GET, $"{SERVICE}/manifests")
 			   .Map(res => res.manifests)
-			   .RecoverFrom404(err => new List<ServiceManifest>());
+			   .RecoverFrom40x(err => new List<ServiceManifest>());
 		}
 
 		public Promise<Unit> Deploy(ServiceManifest manifest)
@@ -66,11 +64,11 @@ namespace Beamable.Server.Editor.ManagerClient
 		public Promise<GetStatusResponse> GetStatus()
 		{
 			return Requester.Request<GetStatusResponse>(Method.GET, $"{SERVICE}/status")
-			   .RecoverFrom404(err => new GetStatusResponse
-			   {
-				   isCurrent = false,
-				   services = new List<ServiceStatus>()
-			   });
+							.RecoverFrom40x(err => new GetStatusResponse
+							{
+								isCurrent = false,
+								services = new List<ServiceStatus>()
+							});
 		}
 
 	}
@@ -110,7 +108,9 @@ namespace Beamable.Server.Editor.ManagerClient
 		public string serviceName;
 		public string checksum;
 		public bool enabled;
+		public bool archived;
 		public string imageId;
+		public string imageCpuArch;
 		public string templateId;
 		public string comments;
 		public List<ServiceDependency> dependencies;
@@ -124,6 +124,7 @@ namespace Beamable.Server.Editor.ManagerClient
 		public string id;
 		public string storageType;
 		public bool enabled;
+		public bool archived;
 		public string templateId;
 		public string checksum;
 	}

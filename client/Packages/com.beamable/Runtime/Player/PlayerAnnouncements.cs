@@ -14,14 +14,39 @@ namespace Beamable.Player
 	{
 		private readonly PlayerAnnouncements _group;
 
+		/// <summary>
+		/// The id of the announcement
+		/// </summary>
 		public string Id;
+
+		/// <summary>
+		/// The title of the announcement
+		/// </summary>
 		public string Title;
+
+		/// <summary>
+		/// The channel of the announcement
+		/// </summary>
 		public string Channel;
+
+		/// <summary>
+		/// The main body and message of the announcement
+		/// </summary>
 		public string Body;
 
 		// public AnnouncementRef ContentRef; // TODO: It would be cool to know which piece of content spawned this.
 
-		public bool IsRead, IsClaimed, IsIgnored;
+		/// <summary>
+		/// True when the player has marked the announcement as read. Use the <see cref="Read"/> method.
+		/// </summary>
+		public bool IsRead;
+
+		/// <summary>
+		/// True when the player has claimed the associated rewards with an announcement. Use the <see cref="Claim"/> method.
+		/// </summary>
+		public bool IsClaimed;
+
+		public bool IsIgnored;
 
 
 		internal Announcement(PlayerAnnouncements group)
@@ -30,7 +55,18 @@ namespace Beamable.Player
 		}
 
 		// TODO: _could_ have custom editor tooling to perform this method.
+
+		/// <summary>
+		/// Mark the announcement as "read", so that the <see cref="IsRead"/> becomes true.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> representing the work.</returns>
 		public Promise Read() => _group.Read(this);
+
+		/// <summary>
+		/// Claim the rewards associated with the announcement.
+		/// An announcement can only be claimed once, and then the <see cref="IsClaimed"/> field will be true.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> representing the work.</returns>
 		public Promise Claim() => _group.Claim(this);
 
 
@@ -68,6 +104,10 @@ namespace Beamable.Player
 		#endregion
 	}
 
+	/// <summary>
+	/// A readonly list of the player's <see cref="Announcement"/>s.
+	/// The data will be updated by the Beamable SDK.
+	/// </summary>
 	[Serializable]
 	public class PlayerAnnouncements : AbsObservableReadonlyList<Announcement>, IBeamableDisposable
 	{
@@ -145,13 +185,30 @@ namespace Beamable.Player
 			SetData(nextAnnouncements);
 		}
 
+		/// <summary>
+		/// Get the first <see cref="Announcement"/> that matches the given id.
+		/// It is possible that the announcement hasn't been pulled from the Beamable Cloud yet, so
+		/// consider using the <see cref="IRefreshable.Refresh"/> method.
+		/// </summary>
+		/// <param name="id">The id of the announcement to find</param>
+		/// <returns>The first matching <see cref="Announcement"/></returns>
 		public Announcement GetAnnouncement(string id) => this.FirstOrDefault(a => string.Equals(a.Id, id));
 
+		/// <summary>
+		/// <inheritdoc cref="Announcement.Read"/>
+		/// </summary>
+		/// <param name="announcement">The <see cref="Announcement"/> instance to mark read</param>
+		/// <returns>A <see cref="Promise"/> representing the work.</returns>
 		public Promise Read(Announcement announcement)
 		{
 			return _sdkEventService.Add(new SdkEvent(nameof(Announcements), "read", announcement.Id));
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="Announcement.Claim"/>
+		/// </summary>
+		/// <param name="announcement">The <see cref="Announcement"/> instance to claim</param>
+		/// <returns>A <see cref="Promise"/> representing the work.</returns>
 		public Promise Claim(Announcement announcement)
 		{
 			return _sdkEventService.Add(new SdkEvent(nameof(Announcements), "claim", announcement.Id));

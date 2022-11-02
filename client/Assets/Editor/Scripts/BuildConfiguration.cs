@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
@@ -8,24 +9,62 @@ using UnityEngine;
 public class BuildSampleProject
 {
 	public readonly static string teamId = "A6C4565DLF";
+
 	private static string[] GetActiveScenes()
 	{
 		var scenes = EditorBuildSettings.scenes.Where(scene => scene.enabled).Select(scene => scene.path).ToArray();
 		return scenes;
 	}
 
+	private static string GetBaseBuildPath()
+	{
+		string path = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName;
+		path = string.IsNullOrEmpty(path) ? "/github/workspace/dist" : Path.Combine(path, "dist");
+
+		return path;
+	}
+
+	private static string GetBuildPathForTarget(BuildTarget target, string prefix)
+	{
+		switch (target)
+		{
+			case BuildTarget.iOS:
+				return Path.Combine(prefix, "iOS", "iOS");
+			case BuildTarget.Android:
+				return Path.Combine(prefix, "Android");
+			case BuildTarget.StandaloneWindows:
+			case BuildTarget.StandaloneWindows64:
+				return Path.Combine(prefix, "StandaloneWindows");
+			case BuildTarget.StandaloneOSX:
+				return Path.Combine(prefix, "StandaloneOSX");
+			case BuildTarget.WebGL:
+				return Path.Combine(prefix, "WebGL");
+			default:
+				throw new Exception(
+					$"Invalid Build Target! Cannot get an output directory for this target. Target=[{target}]");
+		}
+	}
+
 	private static void BuildActiveTarget()
 	{
 		try
 		{
+			// Clean first
+			var basePath = GetBaseBuildPath();
+			if (Directory.Exists(basePath))
+			{
+				Directory.Delete(basePath, true);
+			}
+
 			//Build
-			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), "/github/workspace/dist/iOS/iOS", BuildTarget.iOS, BuildOptions.None);
+			var target = EditorUserBuildSettings.activeBuildTarget;
+			var path = GetBuildPathForTarget(target, basePath);
+			var results = BuildPipeline.BuildPlayer(GetActiveScenes(), path, target, BuildOptions.None);
 
 			if (results.summary.result != BuildResult.Succeeded)
 			{
 				throw new BuildFailedException("Build failed.");
 			}
-
 		}
 		catch (BuildFailedException e)
 		{
@@ -34,6 +73,7 @@ public class BuildSampleProject
 			Debug.LogError(e.Data);
 		}
 	}
+
 	[MenuItem("Beamable/SampleBuild/Development")]
 	public static void Development()
 	{
@@ -43,6 +83,7 @@ public class BuildSampleProject
 		PlayerSettings.bundleVersion = "1.2.0";
 		BuildActiveTarget();
 	}
+
 	[MenuItem("Beamable/SampleBuild/Staging")]
 	public static void Staging()
 	{
@@ -52,6 +93,7 @@ public class BuildSampleProject
 		PlayerSettings.bundleVersion = "1.2.0";
 		BuildActiveTarget();
 	}
+
 	[MenuItem("Beamable/SampleBuild/Production")]
 	public static void Production()
 	{

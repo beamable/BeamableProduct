@@ -4,6 +4,18 @@ using System.Collections.Generic;
 
 namespace Beamable.Server.Api.Commerce
 {
+	/// <summary>
+	/// This type defines the %Microservice main entry point for the %Commerce feature.
+	/// 
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	/// 
+	/// #### Related Links
+	/// - See the <a target="_blank" href="https://docs.beamable.com/reference/commerce-overview">Commerce</a> feature documentation
+	/// - See Beamable.Server.IBeamableServices script reference
+	/// 
+	/// ![img beamable-logo]
+	/// 
+	/// </summary>
 	public interface IMicroserviceCommerceApi : ICommerceApi
 	{
 		Promise<Unit> AccelerateListingCooldown(long gamerTag, List<CooldownReductionRequest> cooldownReductions);

@@ -8,11 +8,14 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
+using Beamable.Server.Common;
 using Beamable.Server.Content;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Serilog;
+using System.Linq.Expressions;
 
 namespace Beamable.Microservice.Tests.Socket
 {
@@ -69,6 +72,11 @@ namespace Beamable.Microservice.Tests.Socket
         public static TestSocketMessageMatcher WithDelete(this TestSocketMessageMatcher matcher)
         {
             return And(matcher, MessageMatcher.WithDelete());
+        }
+
+        public static TestSocketMessageMatcher WithFrom(this TestSocketMessageMatcher matcher, long fromId)
+        {
+            return And(matcher, MessageMatcher.WithFrom(fromId));
         }
 
         public static TestSocketMessageMatcher WithBody<T>(this TestSocketMessageMatcher matcher,
@@ -193,7 +201,7 @@ namespace Beamable.Microservice.Tests.Socket
                                }
                             }
                         }
-                    case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken):
+                    case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken) :
                         {
                             bool success = true;
                             var settings = new JsonSerializerSettings
@@ -207,7 +215,8 @@ namespace Beamable.Microservice.Tests.Socket
                             };
 
                             // validate that object could be deserializabled if not check again (json string etc.)
-                            var payload = JsonConvert.DeserializeObject<T>(payloadToken.ToString(), settings);
+                            var str = payloadToken.ToString();
+                            var payload = JsonConvert.DeserializeObject<T>(str, settings);
                             return success ? matcher(payload) : Check(payloadToken.ToObject<T>());
                         }
                     case JObject payloadJObject:
@@ -243,6 +252,11 @@ namespace Beamable.Microservice.Tests.Socket
             return req => method.ToString().ToLower().Equals(req.method?.ToLower());
         }
 
+        public static TestSocketMessageMatcher WithFrom(long from)
+        {
+            return req => req.from == from;
+        }
+
         public static TestSocketMessageMatcher WithPost()
         {
             return WithMethod(Method.POST);
@@ -271,6 +285,11 @@ namespace Beamable.Microservice.Tests.Socket
             return req => req?.id == id;
         }
 
+        public static TestSocketMessageMatcher WithPositiveReqId()
+        {
+            return req => req?.id > 0;
+        }
+
         public static TestSocketMessageMatcher WithStatus(int status)
         {
             return req => req?.status == status;
@@ -288,19 +307,32 @@ namespace Beamable.Microservice.Tests.Socket
             return req => req.Succeed(body);
         }
 
+        public static TestSocketResponseGenerator Success<T>(Func<T> generator)
+        {
+	        return req => req.Succeed(generator());
+        }
+
         public static TestSocketResponseGenerator AuthFailure()
         {
             return req => req.AuthFailure();
         }
 
-        public static TestSocketResponseGeneratorAsync SuccessWithDelay<T>(int ms, T body)
+        public static TestSocketResponseGenerator Custom(TestSocketResponseGenerator generator)
         {
-            return async res =>
-            {
-                await Task.Delay(ms);
-                return res.Succeed(body);
-            };
+	        return generator;
         }
+
+        public static TestSocketResponseGeneratorAsync SuccessWithDelay<T>(int ms, Func<T> bodyGenerator)
+        {
+	        return async res =>
+	        {
+		        await Task.Delay(ms);
+		        return res.Succeed(bodyGenerator());
+	        };
+        }
+
+        public static TestSocketResponseGeneratorAsync SuccessWithDelay<T>(int ms, T body) =>
+	        SuccessWithDelay(ms, () => body);
 
         public static TestSocketResponseGeneratorAsync SuccessAfterCondition<T>(Func<bool> condition, T body)
         {
@@ -312,6 +344,11 @@ namespace Beamable.Microservice.Tests.Socket
                 }
                 return res.Succeed(body);
             };
+        }
+
+        public static TestSocketResponseGeneratorAsync CustomAsync(TestSocketResponseGeneratorAsync response)
+        {
+	        return response;
         }
 
         public static TestSocketResponseGenerator NoResponse()
@@ -352,6 +389,15 @@ namespace Beamable.Microservice.Tests.Socket
                 Min = min
             };
         }
+
+        public static MessageFrequencyRequirements Between(int min, int max)
+        {
+	        return new MessageFrequencyRequirements
+	        {
+		        Min = min,
+		        Max = max
+	        };
+        }
     }
 
     public class MessageFrequencyRequirements
@@ -391,7 +437,16 @@ namespace Beamable.Microservice.Tests.Socket
 
     public class MockTestRequestHandler
     {
-        public TestSocketMessageMatcher Matcher;
+	    /// <summary>
+	    /// An optional, hopefully helpful, string that describes the request.
+	    /// </summary>
+	    public string Description;
+
+	    /// <summary>
+	    /// An optional, but usually true, value that indicates if the socket must be authorized for this request to match.
+	    /// </summary>
+	    public bool? RequiresAuthorization = true;
+        public Expression<TestSocketMessageMatcher> Matcher;
         public TestSocketResponseGeneratorAsync Responder;
         public MessageFrequencyRequirements Frequency = new MessageFrequencyRequirements();
     }
@@ -433,6 +488,21 @@ namespace Beamable.Microservice.Tests.Socket
             };
         }
 
+        public static WebsocketRequest ClientCallableAsAdmin(string serviceName, string methodName, int reqId, int dbid, params object[] args)
+        {
+            return new WebsocketRequest
+            {
+                id = reqId,
+                path = $"{serviceName}/{methodName}",
+                body = new
+                {
+                    payload = args
+                },
+                from = dbid,
+                method = "post",
+                scopes = new[]{"*"}
+            };
+        }
 
         public static WebsocketRequest ClientCallablePayloadArgs(string serviceName, string methodName, int reqId, int dbid, string payloadArgs)
         {
@@ -547,6 +617,12 @@ namespace Beamable.Microservice.Tests.Socket
         public Action<Action<IConnection, string, long>> MockOnMessage;
         // public Action<string> MockSendMessage;
 
+        /// <summary>
+        /// A mock implementation of an authenticated socket.
+        /// Defaults to false, and will be true when the /auth callback returns.
+        /// </summary>
+        public bool IsAuthenticated { get; set; }
+
         public string Name;
 
         private long id;
@@ -560,17 +636,14 @@ namespace Beamable.Microservice.Tests.Socket
         {
             MockConnect = () =>
             {
-                Console.WriteLine("Connecting Test Socket...");
                 _onConnectionCallbacks?.Invoke(this);
             };
             MockOnConnect = (cb) =>
             {
-                Console.WriteLine("Adding Socket Connection Listener...");
                 _onConnectionCallbacks += cb;
             };
             MockOnMessage = (cb) =>
             {
-                Console.WriteLine("Adding Socket Message Listener...");
                 _onMessageCallbacks += cb;
             };
             // MockSendMessage = async (msg) =>
@@ -597,11 +670,16 @@ namespace Beamable.Microservice.Tests.Socket
         public async Task HandleRequestWithResponders(string message)
         {
             var req = JsonConvert.DeserializeObject<WebsocketResponse>(message);
-            var handler = _handlers.FirstOrDefault(h => h.Matcher(req)
-            && h.Frequency.CanCall());
+            var handler = _handlers.FirstOrDefault(h =>
+            {
+	            var func = h.Matcher.Compile();
+	            var matches = func(req) && h.Frequency.CanCall();
+	            return matches;
+            });
 
             if (handler == null)
             {
+	            Log.Verbose("Test socket found no handler for " + message);
                 Fail(new NoHandlerException(message, req));
                 return;
             }
@@ -613,6 +691,11 @@ namespace Beamable.Microservice.Tests.Socket
             }
             try
             {
+	            if ((handler.RequiresAuthorization ?? false) && !IsAuthenticated)
+	            {
+		            Fail(new Exception("found a handler, but it required authorization, and the socket isn't."));
+		            return;
+	            }
                 var res = await handler.Responder(req);
 
                 if (res == null) return;
@@ -663,6 +746,12 @@ namespace Beamable.Microservice.Tests.Socket
             );
         }
 
+        public TestSocket SetAuthentication(bool isAuthenticated)
+        {
+	        IsAuthenticated = isAuthenticated;
+	        return this;
+        }
+
         public TestSocket AddInitialContentMessageHandler(Func<long, bool> reqIdMatcher, params ContentReference[] references)
         {
             return AddMessageHandler(
@@ -683,29 +772,43 @@ namespace Beamable.Microservice.Tests.Socket
 
         public TestSocket AddAuthMessageHandlers(int requestIdOffset = 0)
         {
-            return AddMessageHandler(
-                  MessageMatcher.WithRouteContains("nonce").WithReqId(-1 - requestIdOffset),
-                  MessageResponder.Success(new MicroserviceNonceResponse { nonce = "testnonce" }),
-                  MessageFrequency.OnlyOnce()
-               )
-               .AddMessageHandler(
-                  MessageMatcher.WithRouteContains("auth").WithReqId(-2 - requestIdOffset),
-                  MessageResponder.Success(new MicroserviceAuthResponse { result = "ok" }),
-                  MessageFrequency.OnlyOnce()
-               );
+	        return AddMessageHandler(
+			        MessageMatcher.WithRouteContains("nonce").WithReqId(-1 - requestIdOffset),
+			        MessageResponder.Success(new MicroserviceNonceResponse { nonce = "testnonce" }),
+			        MessageFrequency.OnlyOnce(),
+			        "nonce", false
+		        )
+		        .AddMessageHandler(
+			        MessageMatcher.WithRouteContains("auth").WithReqId(-2 - requestIdOffset),
+			        MessageResponder.Success(() =>
+			        {
+				        IsAuthenticated = true;
+				        return new MicroserviceAuthResponse { result = "ok" };
+			        }),
+			        MessageFrequency.OnlyOnce(),
+			        "auth", false
+		        );
         }
 
-        public TestSocket AddAuthMessageHandlersWithDelay(int nonceDelay, int authDelay, int requestIdOffset = 0)
+        public TestSocket AddAuthMessageHandlersWithDelay(int nonceDelay, int authDelay, int requestIdOffset = 0, int authRequestIdOffset= 0)
         {
             return AddMessageHandler(
                   MessageMatcher.WithRouteContains("nonce").WithReqId(-1 - requestIdOffset),
                   MessageResponder.SuccessWithDelay(nonceDelay, new MicroserviceNonceResponse { nonce = "testnonce" }),
-                  MessageFrequency.OnlyOnce()
+                  MessageFrequency.OnlyOnce(),
+                  "nonce",
+                  false
                )
                .AddMessageHandler(
-                  MessageMatcher.WithRouteContains("auth").WithReqId(-2 - requestIdOffset),
-                  MessageResponder.SuccessWithDelay(authDelay, new MicroserviceAuthResponse { result = "ok" }),
-                  MessageFrequency.OnlyOnce()
+                  MessageMatcher.WithRouteContains("auth").WithReqId(-2 - requestIdOffset - authRequestIdOffset),
+                  MessageResponder.SuccessWithDelay(authDelay, () =>
+                  {
+	                  IsAuthenticated = true;
+	                  return new MicroserviceAuthResponse { result = "ok" };
+                  }),
+                  MessageFrequency.OnlyOnce(),
+                  "aut",
+                  false
                );
         }
 
@@ -716,7 +819,7 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithRouteContains("gateway/provider")
                      .WithReqId(-3 - requestIdOffset)
                      .WithPost()
-                     .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
+                     .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
                   MessageFrequency.OnlyOnce()
                )
@@ -725,47 +828,54 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithRouteContains("gateway/provider")
                      .WithReqId(-4 - requestIdOffset)
                      .WithPost()
-                     .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
+                     .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
                   MessageFrequency.OnlyOnce()
                );
             if (addShutdownResponder)
             {
-                socket = socket.AddMessageHandler(
-                   MessageMatcher
-                      .WithRouteContains("gateway/provider")
-                      .WithDelete()
-                      .WithBody<MicroserviceProviderRequest>(body => body.type == "basic"),
-                   MessageResponder.Success(new MicroserviceProviderResponse()),
-                   MessageFrequency.OnlyOnce()
-                );
+	            socket = AddProviderShutdownMessageHandler();
             }
 
             return socket;
 
         }
 
-        public TestSocket AddMessageHandler(TestSocketMessageMatcher matcher, TestSocketResponseGenerator responder, MessageFrequencyRequirements frequencyRequirements = null)
+        public TestSocket AddProviderShutdownMessageHandler()
         {
-            async Task<object> Example(WebsocketResponse req)
+	        return AddMessageHandler(
+		        MessageMatcher
+			        .WithRouteContains("gateway/provider")
+			        .WithDelete()
+			        .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
+		        MessageResponder.Success(new MicroserviceProviderResponse()),
+		        MessageFrequency.OnlyOnce()
+	        );
+        }
+
+        public TestSocket AddMessageHandler(TestSocketMessageMatcher matcher, TestSocketResponseGenerator responder, MessageFrequencyRequirements frequencyRequirements = null, string desc=null, bool? requiresAuth=true)
+        {
+	        Task<object> Example(WebsocketResponse req)
             {
-                return responder(req);
+                return Task.FromResult(responder(req));
             }
 
             AddMessageHandler(matcher, (req) =>
             {
                 var t = Example(req);
                 return t;
-            }, frequencyRequirements);
+            }, frequencyRequirements, desc, requiresAuth);
             return this;
         }
-        public TestSocket AddMessageHandler(TestSocketMessageMatcher matcher, TestSocketResponseGeneratorAsync responder, MessageFrequencyRequirements frequencyRequirements = null)
+        public TestSocket AddMessageHandler(TestSocketMessageMatcher matcher, TestSocketResponseGeneratorAsync responder, MessageFrequencyRequirements frequencyRequirements = null, string desc=null, bool? requiresAuth=true)
         {
             AddMessageHandler(new MockTestRequestHandler
             {
-                Matcher = matcher,
+                Matcher = (req) => matcher(req),
                 Responder = responder,
-                Frequency = frequencyRequirements ?? new MessageFrequencyRequirements()
+                Frequency = frequencyRequirements ?? new MessageFrequencyRequirements(),
+                Description = desc,
+                RequiresAuthorization = requiresAuth
             });
             return this;
         }
@@ -773,7 +883,8 @@ namespace Beamable.Microservice.Tests.Socket
 
         public void SendToClient(string msg)
         {
-            _onMessageCallbacks(this, msg, id++);
+            var next = Interlocked.Increment(ref id);
+            _onMessageCallbacks(this, msg, next);
         }
 
         public void SendToClient<T>(T obj)
@@ -800,11 +911,17 @@ namespace Beamable.Microservice.Tests.Socket
 
         public void Fault()
         {
+	        MockIsConnectionOpen = false;
             _onDisconnectionCallbacks?.Invoke(this, false);
         }
 
-        public async void SendMessage(string message)
+        public bool MockIsConnectionOpen = true;
+        public async Task SendMessage(string message)
         {
+            if (!MockIsConnectionOpen)
+            {
+                throw new Exception("Connection is not open");
+            }
             await HandleRequestWithResponders(message);
         }
 

@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -124,9 +125,12 @@ namespace UnityEngine.Experimental.UIElements
 			self.width = value;
 		}
 
-		public static void SetHeight(this IStyle self, float value)
+		public static void SetHeight(this IStyle self, float value, bool overrideMaxHeight = false)
 		{
 			self.height = value;
+
+			if (overrideMaxHeight)
+				self.maxHeight = value;
 		}
 
 		public static float GetMaxHeight(this IStyle self)
@@ -137,6 +141,10 @@ namespace UnityEngine.Experimental.UIElements
 		public static void SetFlexDirection(this IStyle self, FlexDirection direction)
 		{
 			self.flexDirection = direction;
+		}
+
+		public static void SetFlexGrow(this IStyle self, float value){
+			self.flexGrow = StyleValue<float>.Create(value);
 		}
 
 		public static void SetImage(this Image self, Texture texture)
@@ -344,9 +352,12 @@ namespace UnityEngine.UIElements
       self.width = new StyleLength(value);
     }
 
-    public static void SetHeight(this IStyle self, float value)
+    public static void SetHeight(this IStyle self, float value, bool overrideMaxHeight = false)
     {
       self.height = new StyleLength(value);
+      
+      if (overrideMaxHeight)
+	      self.maxHeight = new StyleLength(value);
     }
 
 
@@ -358,6 +369,11 @@ namespace UnityEngine.UIElements
     public static void SetFlexDirection(this IStyle self, FlexDirection direction)
     {
 	    self.flexDirection = direction;
+    }
+
+    public static void SetFlexGrow(this IStyle self, float value)
+    {
+	    self.flexGrow = new StyleFloat(value);
     }
 
     public static void SetImage(this Image self, Texture texture)
@@ -383,6 +399,39 @@ namespace UnityEngine.UIElements
   }
 }
 #endif
+
+
+public static class UIElementsPolyfill2021
+{
+	public static void SetItemHeight(this ListView listView, float newHeight)
+	{
+#if UNITY_2021_2_OR_NEWER
+		listView.fixedItemHeight = newHeight;
+#else
+		listView.itemHeight = (int)newHeight;
+#endif
+	}
+
+	public static float GetItemHeight(this ListView listView)
+	{
+#if UNITY_2021_2_OR_NEWER
+		return listView.fixedItemHeight;
+#else
+		return (float)listView.itemHeight;
+#endif
+	}
+
+
+	public static void RefreshPolyfill(this ListView listView)
+	{
+#if UNITY_2021_2_OR_NEWER
+		listView.RefreshItems();
+#else
+		listView.Refresh();
+#endif
+	}
+}
+
 
 #if UNITY_2020_1_OR_NEWER
 public static class UIElementsPolyfill2020
@@ -411,6 +460,8 @@ public static class UIElementsPolyfillPre2020
 }
 #endif
 
+
+
 public static class UssLoader
 {
 	public static List<string> GetAvailableSheetPaths(string ussPath)
@@ -422,11 +473,13 @@ public static class UssLoader
 		var u2018Path = ussPath.Replace(".uss", ".2018.uss");
 		var u2019Path = ussPath.Replace(".uss", ".2019.uss");
 		var u2020Path = ussPath.Replace(".uss", ".2020.uss");
+		var u2021Path = ussPath.Replace(".uss", ".2021.uss");
 		var darkAvailable = File.Exists(darkPath);
 		var lightAvailable = File.Exists(lightPath);
 		var u2018Available = File.Exists(u2018Path);
 		var u2019Available = File.Exists(u2019Path);
 		var u2020Available = File.Exists(u2020Path);
+		var u2021Available = File.Exists(u2021Path);
 
 		if (EditorGUIUtility.isProSkin && darkAvailable)
 		{
@@ -453,8 +506,15 @@ public static class UssLoader
 
 		if (u2020Available)
 		{
-#if UNITY_2020_1_OR_NEWER // 2020 is the max supported version, so we forward lean and assume all uss works in 2021.
-        ussPaths.Add(u2020Path);
+#if UNITY_2020_1_OR_NEWER
+			ussPaths.Add(u2020Path);
+#endif
+		}
+
+		if (u2021Available)
+		{
+#if UNITY_2021_1_OR_NEWER // 2021 is the max supported version, so we forward lean and assume all uss works in 2022.
+			ussPaths.Add(u2021Path);
 #endif
 		}
 

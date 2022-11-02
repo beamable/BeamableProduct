@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Shop
 {
@@ -187,10 +188,10 @@ namespace Beamable.Common.Shop
 	}
 
 	[System.Serializable]
-	public class ListingPrice
+	public class ListingPrice : ISerializationCallbackReceiver
 	{
 		[Tooltip(ContentObject.TooltipType1)]
-		[MustBeOneOf("sku", "currency")]
+		[MustBeOneOf("skus", "currency")]
 		public string type;
 
 		[Tooltip(ContentObject.TooltipSymbol1)]
@@ -200,6 +201,22 @@ namespace Beamable.Common.Shop
 		[Tooltip(ContentObject.TooltipAmount1)]
 		[MustBeNonNegative]
 		public int amount;
+
+		public void OnBeforeSerialize()
+		{
+			if (type == "sku")
+			{
+				type = "skus";
+			}
+		}
+
+		public void OnAfterDeserialize()
+		{
+			if (type == "sku")
+			{
+				type = "skus";
+			}
+		}
 	}
 
 	[System.Serializable]
