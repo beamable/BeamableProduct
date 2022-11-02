@@ -126,12 +126,12 @@ namespace Beamable.UI.Buss
 		/// </summary>
 		public int ForcedVisualPriority { get; private set; }
 		private static int _nextForcedVisualPriority;
-		
+
 		/// <summary>
 		/// Mark the current rule has the most important visual rule in ordering until the next domain reload.
 		/// </summary>
 		public void SetForcedVisualPriority() => ForcedVisualPriority = ++_nextForcedVisualPriority;
-		
+
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
 
 		public string SelectorString

@@ -18,7 +18,7 @@ namespace Beamable.Editor.UI.Components
 		Inherited,
 		NotApplied
 	}
-	
+
 	public class StyleCardModel
 	{
 		public event Action Change;
@@ -56,7 +56,7 @@ namespace Beamable.Editor.UI.Components
 				return _previousAppliedStatus = RuleAppliedStatus.NotApplied;
 			}
 		}
-		
+
 		private BussElement SelectedElement { get; }
 
 		public StyleCardModel(ThemeModel parentModel, BussStyleSheet styleSheet,

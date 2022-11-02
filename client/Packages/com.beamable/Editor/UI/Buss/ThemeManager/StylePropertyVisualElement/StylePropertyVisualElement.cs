@@ -64,7 +64,7 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			_valueParent.Clear();
-			
+
 			if (_model.IsInherited)
 			{
 				if (_model.HasElementContext)
@@ -199,7 +199,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			var element = _propertyVisualElement = property.GetVisualElement();
 
-			
+
 			if (_propertyVisualElement == null)
 			{
 				return null;
@@ -217,7 +217,7 @@ namespace Beamable.Editor.UI.Components
 					Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
 				}
 			};
-			
+
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
 			_propertyVisualElement.Init();
 			_valueParent.Add(_propertyVisualElement);
