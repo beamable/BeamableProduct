@@ -49,6 +49,18 @@ namespace Beamable.Editor.UI.Buss
 			return finalList;
 		}
 
+		public static string ClassListString(IEnumerable<string> classes)
+		{
+			var str = string.Join(".", classes.Where(x => !string.IsNullOrEmpty(x)));
+
+			if (str.Length > 0)
+			{
+				return $".{str}";
+			}
+
+			return String.Empty;
+		}
+
 		public static string GetFormattedLabel(BussElement element)
 		{
 			return GetLabel(element).Replace(" ", string.Empty);

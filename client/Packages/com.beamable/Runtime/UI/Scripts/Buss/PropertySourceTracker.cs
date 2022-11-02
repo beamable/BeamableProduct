@@ -169,8 +169,8 @@ namespace Beamable.UI.Buss
 						var variableProperty = reference.PropertyProvider.GetProperty() as VariableProperty;
 						var variableName = variableProperty.VariableName;
 
-						var referenceValue = GetUsedPropertyProvider(variableName, out var nestedRank);
-						return (referenceValue, reference);
+						var referenceValue = GetUsedPropertyProvider(variableName, baseType, true, out var nestedRank);
+						return (referenceValue.Item1, referenceValue.Item2);
 					}
 
 					if (reference.PropertyProvider.IsPropertyOfType(baseType) ||
