@@ -32,7 +32,23 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _container;
 		private BussElement _bussElement;
 		private bool _selected;
-		public bool IsFolded { get; private set; }
+
+		private bool _isFolded;
+		private Image _foldIcon;
+
+		public bool IsFolded
+		{
+			get => _isFolded;
+			private set
+			{
+				if (_isFolded == value) return;
+				_isFolded = value;
+				_foldIcon.EnableInClassList("folded", _isFolded);
+				_foldIcon.EnableInClassList("unfolded", !_isFolded);
+
+				OnFoldChanged?.Invoke(IsFolded);
+			}
+		}
 
 		public IndentedLabelVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(NavigationVisualElement)}/{nameof(IndentedLabelVisualElement)}/{nameof(IndentedLabelVisualElement)}.uss")
@@ -71,22 +87,18 @@ namespace Beamable.Editor.UI.Components
 			var classLabel = new TextElement {name = "classLabel", text = BussNameUtility.ClassListString(_bussElement.Classes)};
 
 			var iconContainer = new VisualElement {name = "iconContainer"};
-			Image foldIcon = new Image { name = "foldIcon" };
-			foldIcon.EnableInClassList("folded", IsFolded);
-			foldIcon.EnableInClassList("unfolded", !IsFolded);
+			_foldIcon = new Image { name = "foldIcon" };
+			_foldIcon.EnableInClassList("folded", IsFolded);
+			_foldIcon.EnableInClassList("unfolded", !IsFolded);
 			
 			iconContainer.RegisterCallback<MouseDownEvent>(e =>
 			{
 				IsFolded = !IsFolded;
-				foldIcon.EnableInClassList("folded", IsFolded);
-				foldIcon.EnableInClassList("unfolded", !IsFolded);
-
-				OnFoldChanged?.Invoke(IsFolded);
 				e.StopPropagation();
 				e.PreventDefault();
 			});
 			
-			iconContainer.Add(foldIcon);
+			iconContainer.Add(_foldIcon);
 
 			if (_bussElement.Children.Any())
 			{

@@ -104,23 +104,10 @@ namespace Beamable.Editor.UI.Components
 							continue;
 						}
 						
-						
-						if (master.IsFolded)
+						curr.EnableInClassList("hidden", master.IsFolded);
+						if (!master.IsFolded && curr.IsFolded)
 						{
-							// if the the parent is folded, then we hide everything...
-							curr.EnableInClassList("hidden", true);
-						}
-						else
-						{
-							// otherwise, we can enable this element.
-							curr.EnableInClassList("hidden", false);
-							
-							// and, if this element itself IS folded, then we need to hide its sub elements.
-							if (curr.IsFolded)
-							{
-								stack.Push(curr);
-								
-							}
+							stack.Push(curr);
 						}
 					}
 					

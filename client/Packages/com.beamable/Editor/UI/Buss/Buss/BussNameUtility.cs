@@ -58,7 +58,7 @@ namespace Beamable.Editor.UI.Buss
 				return $".{str}";
 			}
 
-			return "";
+			return String.Empty;
 		}
 
 		public static string GetFormattedLabel(BussElement element)
