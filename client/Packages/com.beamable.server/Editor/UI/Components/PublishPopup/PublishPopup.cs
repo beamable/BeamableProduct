@@ -107,8 +107,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mainLoadingBar.Hidden = true;
 			_mainLoadingBar.Refresh();
 
-			_scrollContainer = Root.Q<ScrollView>("manifestsContainer");
-			_scrollContainer.horizontalScroller.RemoveFromHierarchy();
+			_scrollContainer = new ScrollView(ScrollViewMode.Vertical);
+			_scrollContainer.horizontalScroller?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("services").Add(_scrollContainer);
 
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
 
