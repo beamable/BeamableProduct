@@ -44,6 +44,20 @@ namespace Beamable.Editor.UI.Buss
 		{
 			Selection.activeGameObject = Selection.activeGameObject == element.gameObject ? null : element.gameObject;
 		}
+		
+		protected void HandleUndo()
+		{
+			foreach (var kvp in FoundElements)
+			{
+				kvp.Key.RecalculateStyle();
+			}
+			ForceRefresh();
+		}
+		
+		public void Destroy()
+		{
+			Undo.undoRedoPerformed -= HandleUndo;
+		}
 
 		#region Action bar buttons' actions
 

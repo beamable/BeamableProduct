@@ -42,8 +42,6 @@ namespace Beamable.Editor.UI.Components
 				_fieldY.value);
 
 			OnValueChanged?.Invoke(Property);
-
-			TriggerStyleSheetChange();
 		}
 
 		public override void OnPropertyChangedExternally()

@@ -139,17 +139,7 @@ namespace Beamable.UI.Buss
 
 		#region Styles parsing
 
-		public void RecalculateStyle(BussElement element)
-		{
-			element.Style.Inherit(element?.Parent?.Style);
-			element.Sources.Recalculate();
-			foreach (var key in element.Sources.GetKeys())
-			{
-				element.Style[key] = (element.Sources.GetUsedPropertyProvider(key, out _)?.GetProperty()) ??
-									 BussStyle.GetDefaultValue(key);
-			}
-			element.ApplyStyle();
-		}
+
 
 		#endregion
 
