@@ -44,7 +44,7 @@ namespace Beamable.UI.Buss
 		public BussStyleDescription InlineStyle => _inlineStyle;
 
 		public virtual string TypeName => "BussElement";
-		
+
 		public BussStyleSheet StyleSheet
 		{
 			get => _styleSheet;
