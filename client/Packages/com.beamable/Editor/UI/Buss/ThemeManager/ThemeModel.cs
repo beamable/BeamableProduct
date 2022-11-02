@@ -49,6 +49,8 @@ namespace Beamable.Editor.UI.Buss
 
 		public abstract BussElement SelectedElement { get; set; }
 
+		public bool HasElementContext => SelectedElement != null;
+
 		protected abstract List<BussStyleSheet> SceneStyleSheets { get; }
 
 		public abstract Dictionary<BussStyleRule, BussStyleSheet> FilteredRules { get; }
