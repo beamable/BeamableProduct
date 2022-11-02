@@ -22,11 +22,11 @@ namespace Beamable.Editor.UI.Components
 
 		private int? _selectedClassListIndex;
 		private readonly ThemeManagerModel _model;
-		
+
 		// this structure is for holding the registered callbacks in the virtual class list.
 		private Dictionary<TextField, EventCallback<ChangeEvent<string>>> _changeHandlers =
 			new Dictionary<TextField, EventCallback<ChangeEvent<string>>>();
-		
+
 		public SelectedElementVisualElement(ThemeManagerModel model) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(SelectedElementVisualElement)}/{nameof(SelectedElementVisualElement)}.uss")
 		{
@@ -228,7 +228,7 @@ namespace Beamable.Editor.UI.Components
 			classElement.Add(new TextField());
 			return classElement;
 		}
-		
+
 		private void BindListViewElement(VisualElement element, int index)
 		{
 			TextField textField = (TextField)element.Children().ToList()[1];

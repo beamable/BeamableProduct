@@ -61,10 +61,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (string.IsNullOrWhiteSpace(model.Message))
 				return;
-				
+
 			var text = model.Message.Split('\n');
-			_description.text = text.Length > 0 
-				? text[0].SplitStringIntoParts(_descriptionChunkSize)[0] 
+			_description.text = text.Length > 0
+				? text[0].SplitStringIntoParts(_descriptionChunkSize)[0]
 				: model.Message.SplitStringIntoParts(_descriptionChunkSize)[0];
 
 			if (!model.MessageColor.Equals(Color.clear))

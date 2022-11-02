@@ -370,7 +370,7 @@ namespace Beamable.Editor.ToolbarExtender
 					}
 				}
 			}
-			
+
 			if (!_hasPreviewPackages && (_packageListRequest == null || _packageListRequest?.Error != null))
 			{
 				_packageListRequest = Client.List(true);

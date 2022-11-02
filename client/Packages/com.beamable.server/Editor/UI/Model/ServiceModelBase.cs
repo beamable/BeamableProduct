@@ -119,7 +119,7 @@ namespace Beamable.Editor.UI.Model
 			MicroserviceConfiguration.Instance.Save();
 			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
 		}
-	
+
 		public void OpenCode()
 		{
 			var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);

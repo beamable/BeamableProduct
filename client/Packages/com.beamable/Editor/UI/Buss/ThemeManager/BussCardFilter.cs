@@ -16,11 +16,11 @@ namespace Beamable.Editor.UI.Buss
 			{
 				unsortedRules.Add((rule, styleSheet));
 			}
-			
+
 			unsortedRules.Sort((a, b) =>
 			{
 				var forcedOrder = b.Item1.ForcedVisualPriority.CompareTo(a.Item1.ForcedVisualPriority);
-				
+
 				return forcedOrder;
 			});
 
@@ -57,7 +57,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				var forcedOrder = b.Item1.ForcedVisualPriority.CompareTo(a.Item1.ForcedVisualPriority);
 				if (forcedOrder != 0) return forcedOrder;
-				
+
 				// first, sort by exact matches. Inherited styles always play second fiddle 
 				var exactMatchComparison = a.Item3.CompareTo(b.Item3);
 				if (exactMatchComparison != 0) return exactMatchComparison;
@@ -70,7 +70,7 @@ namespace Beamable.Editor.UI.Buss
 				var styleSheetComparison = a.Item2.IsReadOnly.CompareTo(b.Item2.IsReadOnly);
 				return styleSheetComparison;
 			});
-			
+
 
 			var sortedRules = unsortedRules.ToDictionary(tuple => tuple.Item1, tuple => tuple.Item2);
 			return sortedRules;

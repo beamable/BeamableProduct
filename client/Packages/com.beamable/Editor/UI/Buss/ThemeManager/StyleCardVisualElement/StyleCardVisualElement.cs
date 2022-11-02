@@ -68,8 +68,8 @@ namespace Beamable.Editor.UI.Components
 			_model.Change += OnChange;
 			_colorBlock.RegisterCallback<MouseDownEvent>(_model.FoldButtonClicked);
 		}
-		
-		
+
+
 		public void RepaintProperties()
 		{
 			SetSelectorStatus();
@@ -140,7 +140,7 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.OnSelectorChanged,  _model.PrepareCommands);
+			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.OnSelectorChanged, _model.PrepareCommands);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 			SetSelectorStatus();
 		}
