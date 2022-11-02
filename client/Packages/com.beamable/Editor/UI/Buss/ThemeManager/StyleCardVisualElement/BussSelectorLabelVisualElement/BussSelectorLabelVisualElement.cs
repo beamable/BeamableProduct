@@ -47,7 +47,7 @@ namespace Beamable.Editor.UI.Components
 		private new void Refresh()
 		{
 			Root.Clear();
-			
+
 			var labelRow = new VisualElement();
 			labelRow.name = "labelRow";
 			Root.Add(labelRow);
@@ -55,14 +55,14 @@ namespace Beamable.Editor.UI.Components
 			var inheritedLabel = new Label("(Inherited)");
 			inheritedLabel.name = "inheritedLabel";
 			labelRow.Add(inheritedLabel);
-			
+
 			var notAppliedLabel = new Label("(Selector does not match current selection)");
 			notAppliedLabel.name = "notApplied";
 			labelRow.Add(notAppliedLabel);
-			
+
 			var mainRow = new VisualElement();
 			Root.Add(mainRow);
-			
+
 #if BEAMABLE_DEVELOPER
 			_editableLabel = new TextField();
 			_editableLabel.AddToClassList("interactable");
@@ -152,7 +152,7 @@ namespace Beamable.Editor.UI.Components
 				_styleSheet.TriggerChange();
 				_onSelectorChanged?.Invoke(_styleRule, _styleSheet);
 			});
-			
+
 		}
 	}
 }

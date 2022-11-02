@@ -41,7 +41,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 		AddOption(new Option<string>("--filter", () => null,
 			"a string to filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
-		
+
 		AddOption(new Option<string>("--engine", () => "",
 				"a string to filter which engine code we should generate (unity | unreal). An empty string matches everything"),
 			(args, val) => args.Engine = val);
