@@ -121,9 +121,17 @@ namespace Beamable.Editor.UI.Components
 				_optionModels.Add(singleOption);
 			}
 
-			initialIndex = Mathf.Clamp(initialIndex, 0, _optionModels.Count - 1);
+			initialIndex = Mathf.Clamp(initialIndex, -1, _optionModels.Count - 1);
 
-			Value = _optionModels[initialIndex].Label;
+			if (initialIndex == -1)
+			{
+				Value = "Invalid";
+			}
+			else
+			{
+				Value = _optionModels[initialIndex].Label;
+			}
+			
 
 			if (invokeOnStart)
 			{
