@@ -107,6 +107,10 @@ namespace Beamable.Editor.UI.Components
 					{
 						variableName = variableName.Substring(2);
 					}
+					else
+					{
+						variableName = "";
+					}
 					
 					tf.SetValueWithoutNotify(variableName);
 					tf.RegisterValueChangedCallback(evt =>
@@ -140,9 +144,7 @@ namespace Beamable.Editor.UI.Components
 						{
 							var appliedPropertyProvider =
 								srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
-
-
-
+							
 							if (appliedPropertyProvider != null)
 							{
 								var field = CreateEditableField(appliedPropertyProvider.PropertyProvider.GetProperty());
@@ -157,6 +159,10 @@ namespace Beamable.Editor.UI.Components
 								}
 
 								appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged += UpdateField;
+							}
+							else
+							{
+								CreateMessageField($"\"{variableName.Substring(2)}\" not found");
 							}
 						}
 					}

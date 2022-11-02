@@ -239,7 +239,7 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				var value = options.FindIndex(option => option.DisplayName.Equals(variableName));
-				value = Mathf.Clamp(value, 0, options.Count - 1);
+				value = Mathf.Clamp(value, -1, options.Count - 1);
 				return value;
 			}
 			else
