@@ -646,17 +646,30 @@ namespace Beamable
 			{
 				var games = await realmService.GetGames();
 
-				if (string.IsNullOrEmpty(pid))
+				if (EditorPrefs.HasKey("last-pid"))
 				{
-					var realms = await realmService.GetRealms(games.First());
-					realm = realms.First(rv => !rv.Archived);
-				}
-				else
-				{
-					realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
-					if (realm == null)
+					string lastPid = EditorPrefs.GetString("last-pid");
+					if (!string.IsNullOrEmpty(lastPid))
 					{
-						Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+						var realms = await realmService.GetRealms(lastPid);
+						realm = realms.FirstOrDefault(rv => rv.Pid == lastPid);
+					}
+				}
+
+				if (realm == null)
+				{
+					if (string.IsNullOrEmpty(pid))
+					{
+						var realms = await realmService.GetRealms(games.First());
+						realm = realms.First(rv => !rv.Archived);
+					}
+					else
+					{
+						realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
+						if (realm == null)
+						{
+							Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+						}
 					}
 				}
 			}
@@ -830,6 +843,7 @@ namespace Beamable
 			requester.DeleteToken();
 			if (ConfigDatabase.HasKey("pid"))
 			{
+				EditorPrefs.SetString("last-pid", ConfigDatabase.GetString("pid"));
 				ConfigDatabase.Reset("pid");
 				SaveConfig(CurrentCustomer?.Alias, "", cid: CurrentCustomer?.Cid);
 			}
