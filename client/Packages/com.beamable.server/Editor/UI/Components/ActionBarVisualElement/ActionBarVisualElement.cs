@@ -50,7 +50,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public event Action OnPublishClicked;
 		public event Action OnRefreshButtonClicked;
 		public event Action<ServiceType> OnCreateNewClicked;
-		
+
 		private Button _refreshButton;
 		private Button _createNew;
 		private Button _startAll;
@@ -63,8 +63,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
 		bool IsDockerActive => !(DockerCommand.DockerNotInstalled ||
 								 (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow && DockerCommand.DockerNotRunning));
-		bool CanHaveDependencies => IsDockerActive && MicroservicesDataModel.Instance.localServices.Count(x => !x.IsArchived) > 0 && 
-		                            MicroservicesDataModel.Instance.localStorages.Count(x => !x.IsArchived) > 0;
+		bool CanHaveDependencies => IsDockerActive && MicroservicesDataModel.Instance.localServices.Count(x => !x.IsArchived) > 0 &&
+									MicroservicesDataModel.Instance.localStorages.Count(x => !x.IsArchived) > 0;
 
 		public override void Refresh()
 		{
@@ -130,7 +130,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				wnd.Close();
 			};
 		}
-		
+
 		private void HandlePlayButton(Rect visualElementBounds)
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);

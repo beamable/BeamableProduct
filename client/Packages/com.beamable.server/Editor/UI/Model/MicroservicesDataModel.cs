@@ -43,7 +43,6 @@ namespace Beamable.Editor.UI.Model
 				return temp;
 			}
 		}
-
 		public IReadOnlyList<IBeamableService> AllRemoteOnlyServices
 		{
 			get
@@ -54,7 +53,16 @@ namespace Beamable.Editor.UI.Model
 				return temp;
 			}
 		}
-
+		public IReadOnlyList<MongoStorageModel> AllStorages
+		{
+			get
+			{
+				var temp = new List<MongoStorageModel>();
+				temp.AddRange(localStorages);
+				temp.AddRange(remoteStorages);
+				return temp;
+			}
+		}
 		public List<MicroserviceModel> Services => localServices;
 		public List<MongoStorageModel> Storages => localStorages;
 

@@ -23,9 +23,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
+			base.UpdateVisualElements();
+
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 			Root.Q("startBtn")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openDocsBtn")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openScriptBtn")?.RemoveFromHierarchy();
 			Root.Q<MicroserviceVisualElementSeparator>("separator")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER
