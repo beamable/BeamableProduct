@@ -30,13 +30,8 @@
 				public const string DESELECT = "Deselect";
 				public const string SELECT = "Select";
 
-				public const string ICON_REMOTE_RUNNING = "Remote Running";
-				public const string ICON_LOCAL_RUNNING = "Local Running";
-				public const string ICON_REMOTE_STOPPING = "Remote Stopping";
-				public const string ICON_LOCAL_STOPPING = "Local Stopping";
-				public const string ICON_REMOTE_DEPLOYING = "Remote Deploying";
-				public const string ICON_LOCAL_BUILDING = "Local Building";
-				public const string ICON_REMOTE_DISABLE = "Remote Disable";
+				public const string ICON_REMOTE_RUNNING = "Remote-Running";
+				public const string ICON_REMOTE_DISABLE = "Remote-Stopped";
 				public const string ICON_DIFFERENT = "Different";
 				public const string ICON_UP_TO_DATE = "Up to date";
 			}

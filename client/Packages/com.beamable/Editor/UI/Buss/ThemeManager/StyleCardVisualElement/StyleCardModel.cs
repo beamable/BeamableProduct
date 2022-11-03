@@ -12,9 +12,17 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
+	public enum RuleAppliedStatus
+	{
+		Exact,
+		Inherited,
+		NotApplied
+	}
+
 	public class StyleCardModel
 	{
 		public event Action Change;
+		public event Action SelectorChanged;
 		private readonly ThemeModel.PropertyDisplayFilter _currentDisplayFilter;
 		private readonly Action _globalRefresh;
 
@@ -26,9 +34,32 @@ namespace Beamable.Editor.UI.Components
 		public bool IsWritable => StyleSheet.IsWritable;
 		public bool IsFolded => StyleRule.Folded;
 		public bool ShowAll => StyleRule.ShowAll;
+
+		private RuleAppliedStatus _previousAppliedStatus = RuleAppliedStatus.Exact;
+		private ThemeModel _parentModel;
+
+		public RuleAppliedStatus RuleAppliedStatus
+		{
+			get
+			{
+				if (StyleRule?.Selector == null || SelectedElement == null)
+				{
+					return _previousAppliedStatus;
+				}
+				if (StyleRule.Selector.IsElementIncludedInSelector(SelectedElement, out var exact))
+				{
+					return _previousAppliedStatus = exact
+						? RuleAppliedStatus.Exact
+						: RuleAppliedStatus.Inherited;
+				}
+
+				return _previousAppliedStatus = RuleAppliedStatus.NotApplied;
+			}
+		}
+
 		private BussElement SelectedElement { get; }
 
-		public StyleCardModel(BussStyleSheet styleSheet,
+		public StyleCardModel(ThemeModel parentModel, BussStyleSheet styleSheet,
 							  BussStyleRule styleRule,
 							  BussElement selectedElement,
 							  bool isSelected,
@@ -37,6 +68,7 @@ namespace Beamable.Editor.UI.Components
 							  Action globalRefresh,
 							  ThemeModel.PropertyDisplayFilter currentDisplayFilter)
 		{
+			_parentModel = parentModel;
 			StyleSheet = styleSheet;
 			StyleRule = styleRule;
 			SelectedElement = selectedElement;
@@ -76,6 +108,7 @@ namespace Beamable.Editor.UI.Components
 														  : ThemeManagerHelper.FormatKey(key));
 					context.AddItem(new GUIContent(label), false, () =>
 					{
+						Undo.RecordObject(StyleSheet, $"Add {label}");
 						StyleRule.Properties.Add(
 							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
 #if UNITY_EDITOR
@@ -100,11 +133,11 @@ namespace Beamable.Editor.UI.Components
 			{
 				window.Init((key, property) =>
 				{
+					Undo.RecordObject(StyleSheet, $"Add {key}");
 					if (!StyleRule.TryAddProperty(key, property))
 					{
 						return;
 					}
-
 #if UNITY_EDITOR
 					EditorUtility.SetDirty(StyleSheet);
 #endif
@@ -153,9 +186,9 @@ namespace Beamable.Editor.UI.Components
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
-												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
-												   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
+				var model = new StylePropertyModel(_parentModel, StyleSheet, StyleRule, propertyProvider,
+				                                   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
+				                                   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 
 				if (!(_currentDisplayFilter == ThemeModel.PropertyDisplayFilter.IgnoreOverridden && model.IsOverriden))
 				{
@@ -187,6 +220,15 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			context.ShowAsContext();
+		}
+
+		public void OnSelectorChanged(BussStyleRule rule, BussStyleSheet sheet)
+		{
+			if (SelectedElement != null)
+			{
+				SelectedElement.RecalculateStyle();
+			}
+			SelectorChanged?.Invoke();
 		}
 
 		public List<GenericMenuCommand> PrepareCommands()
@@ -235,6 +277,13 @@ namespace Beamable.Editor.UI.Components
 			{
 				commands.Add(new GenericMenuCommand(Constants.Features.Buss.MenuItems.REMOVE, RemoveStyleClicked));
 			}
+			
+			commands.Add(new GenericMenuCommand($"Select {StyleSheet.name} in inspector", () =>
+			{
+				Selection.activeObject = StyleSheet;
+				var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+				EditorWindow.GetWindow(inspector).Focus();
+			}));
 
 			return commands;
 		}
@@ -245,6 +294,7 @@ namespace Beamable.Editor.UI.Components
 			EditorUtility.SetDirty(StyleSheet);
 #endif
 
+			Undo.RecordObject(StyleSheet, StyleRule.ShowAll ? "Hide All" : "Show All");
 			StyleRule.SetShowAll(!StyleRule.ShowAll);
 			AssetDatabase.SaveAssets();
 			_globalRefresh?.Invoke();
@@ -261,9 +311,9 @@ namespace Beamable.Editor.UI.Components
 					continue;
 				}
 
-				var model = new StylePropertyModel(StyleSheet, StyleRule, propertyProvider,
-												   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
-												   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
+				var model = new StylePropertyModel(_parentModel, StyleSheet, StyleRule, propertyProvider,
+				                                   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
+				                                   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
 				variables.Add(model);
 			}
 
@@ -291,6 +341,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemovePropertyClicked(string propertyKey)
 		{
+			Undo.RecordObject(StyleSheet, "Remove property");
+
 			var propertyModel = GetProperties(false).Find(property => property.PropertyProvider.Key == propertyKey);
 
 			if (propertyModel == null)

@@ -36,6 +36,7 @@ namespace Beamable.Editor.UI.Buss
 
 		public static List<string> AsClassesList(List<string> classesList)
 		{
+			if (classesList == null) return new List<string>();
 			List<string> finalList = new List<string>();
 			finalList.AddRange(classesList.Select(AsClassSelector));
 			return finalList;
@@ -46,6 +47,18 @@ namespace Beamable.Editor.UI.Buss
 			List<string> finalList = new List<string>();
 			finalList.AddRange(list.Select(CleanString));
 			return finalList;
+		}
+
+		public static string ClassListString(IEnumerable<string> classes)
+		{
+			var str = string.Join(".", classes.Where(x => !string.IsNullOrEmpty(x)));
+
+			if (str.Length > 0)
+			{
+				return $".{str}";
+			}
+
+			return String.Empty;
 		}
 
 		public static string GetFormattedLabel(BussElement element)
@@ -60,7 +73,7 @@ namespace Beamable.Editor.UI.Buss
 			using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
 			{
 				pooledBuilder.Builder.Append(string.IsNullOrWhiteSpace(element.Id)
-												 ? element.GetType().Name
+												 ? element.TypeName
 												 : AsIdSelector(element.Id));
 
 				foreach (string className in element.Classes)

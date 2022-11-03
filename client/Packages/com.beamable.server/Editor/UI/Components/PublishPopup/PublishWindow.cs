@@ -146,6 +146,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			throw new NotImplementedException();
 		}
 
+		public override void OpenDocs()
+		{
+			throw new NotImplementedException();
+		}
+
 		public override void Refresh(IDescriptor descriptor)
 		{
 			throw new NotImplementedException();

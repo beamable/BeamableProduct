@@ -180,7 +180,7 @@ namespace Beamable.Player
 			get => _state;
 			private set
 			{
-				if (_state?.id != null && _state != value)
+				if (_state?.id != null && _state?.id != value?.id)
 				{
 					_notificationService.Unsubscribe(PlayersLeftName(_state.id), (Action<PlayerLeftNotification>)PlayerLeft);
 					_notificationService.Unsubscribe(PlayersJoinedName(_state.id), (Action<PlayerJoinedNotification>)PlayerJoined);
@@ -189,7 +189,7 @@ namespace Beamable.Player
 					_notificationService.Unsubscribe(PlayerKickedName(_state.id), (Action<PlayerKickedNotification>)PlayerKicked);
 				}
 
-				if (value?.id != null && _state != value)
+				if (value?.id != null && _state?.id != value.id)
 				{
 					_notificationService.Subscribe(PlayersLeftName(value.id), (Action<PlayerLeftNotification>)PlayerLeft);
 					_notificationService.Subscribe(PlayersJoinedName(value.id), (Action<PlayerJoinedNotification>)PlayerJoined);

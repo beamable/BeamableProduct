@@ -106,5 +106,6 @@ namespace Beamable.Editor.UI.Buss
 
 			_model.ForceRefresh();
 		}
+
 	}
 }

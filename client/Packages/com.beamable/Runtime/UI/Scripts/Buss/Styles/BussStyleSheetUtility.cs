@@ -105,6 +105,7 @@ namespace Beamable.UI.Buss
 				BeamableLogger.LogWarning("Style to copy can't be null");
 				return;
 			}
+			BeamableUndoUtility.Undo(targetStyleSheet, "Copy Style");
 
 			BussStyleRule rule = BussStyleRule.Create(style.SelectorString, new List<BussPropertyProvider>());
 

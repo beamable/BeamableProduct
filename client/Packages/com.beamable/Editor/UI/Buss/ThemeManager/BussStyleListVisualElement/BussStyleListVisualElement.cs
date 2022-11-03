@@ -41,9 +41,16 @@ namespace Beamable.Editor.UI.Buss
 		{
 			bool isSelected = _model.SelectedElement != null && styleRule.Selector.CheckMatch(_model.SelectedElement);
 			StyleCardModel model =
-				new StyleCardModel(styleSheet, styleRule, _model.SelectedElement, isSelected,
+				new StyleCardModel(_model, styleSheet, styleRule, _model.SelectedElement, isSelected,
 								   _model.PropertyDatabase, _model.WritableStyleSheets,
 								   _model.ForceRefresh, _model.DisplayFilter);
+			model.SelectorChanged += () =>
+			{
+				foreach (var card in _styleCardsVisualElements)
+				{
+					card.RepaintProperties();
+				}
+			};
 			StyleCardVisualElement styleCard = new StyleCardVisualElement(model);
 			styleCard.Refresh();
 
