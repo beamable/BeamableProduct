@@ -25,15 +25,18 @@ NewStyleSheetVisualElement > TemplateContainer > #mainVisualElement {
 }
 
 #confirmButton {
+    margin-top: 20px;
     width: 100px;
     height: 28px;
     align-self: center;
 }
 
+
 LabeledTextField > * {
     min-height: 20px;
     font-size: 16px;
     -unity-font-style: bold;
+    margin-bottom: 100px;
 }
 
 Label {
@@ -79,4 +82,8 @@ TextField {
 
 #propertyValue {
     flex-grow: 1;
+}
+
+.beamableErrorLabel {
+    left: 29%;
 }

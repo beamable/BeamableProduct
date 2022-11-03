@@ -58,7 +58,28 @@ namespace Beamable.Api
 		public string Language { get; set; }
 		public string TimeOverride { get; set; }
 		public IAuthApi AuthService { private get; set; }
-		public string RequestTimeoutMs { get; set; }
+
+		private string _requestTimeoutMs = null;
+		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+
+		public string RequestTimeoutMs
+		{
+			get => _requestTimeoutMs;
+			set
+			{
+				_requestTimeoutMs = value;
+				if (int.TryParse(value, out var ms) && ms > 0)
+				{
+					_timeoutSeconds = ms / 1000;
+				}
+				else
+				{
+					_timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+				}
+			}
+		}
+
+
 
 		private readonly OfflineCache _offlineCache;
 
@@ -180,6 +201,7 @@ namespace Beamable.Api
 				request.uploadHandler = upload;
 			}
 
+			request.timeout = _timeoutSeconds;
 			return request;
 		}
 
@@ -257,7 +279,7 @@ namespace Beamable.Api
 							   return Promise<T>.Failed(new NoConnectivityException(uri + " should not be cached and requires internet connectivity. Internet connection lost."));
 
 						   // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
-						   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
+						   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError" || code?.Error.error == "TokenValidationError":
 							   Debug.LogError("Invalid token, trying again");
 							   return AuthService.LoginRefreshToken(Token.RefreshToken)
 							 .Map(rsp =>
@@ -378,7 +400,13 @@ namespace Beamable.Api
 			{
 				var responsePayload = request.downloadHandler.text;
 
-				if (request.responseCode >= 300 || request.IsNetworkError())
+
+				if (request.IsNetworkError())
+				{
+					PlatformLogger.Log($"<b>[PlatformRequester][NetworkError]</b> {typeof(T).Name}");
+					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. status=[{request.responseCode}] error=[{request.error}]"));
+				}
+				else if (request.responseCode >= 300)
 				{
 					// Handle errors
 					PlatformError platformError = null;
@@ -397,6 +425,7 @@ namespace Beamable.Api
 				else
 				{
 					// Parse JSON object and resolve promise
+
 					if (string.IsNullOrWhiteSpace(responsePayload))
 					{
 						PlatformLogger.Log($"<b>[PlatformRequester][Response]</b> {typeof(T).Name}");

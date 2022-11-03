@@ -31,6 +31,12 @@ namespace Beamable.Common.Player
 		Promise Refresh();
 	}
 
+	public class ObservableChangeEvent<T1, T2> where T1 : Enum
+	{
+		public T1 Event;
+		public T2 Data;
+	}
+
 	public class DefaultObservable : IObservable
 	{
 		/// <summary>
@@ -55,6 +61,13 @@ namespace Beamable.Common.Player
 				OnUpdated?.Invoke();
 			}
 		}
+
+		/// <summary>
+		/// In case when some object looks for some additional data after <see cref="OnUpdated"/> was called this data
+		/// can be reseted in overriden method 
+		/// </summary>
+		protected virtual void ResetChangeData()
+		{ }
 
 		/// <summary>
 		/// The broadcast checksum is a concept for change-detection.
@@ -98,7 +111,6 @@ namespace Beamable.Common.Player
 		/// </summary>
 		public event Action OnLoadingFinished;
 
-
 		private Promise _pendingRefresh;
 
 		/// <summary>
@@ -133,6 +145,7 @@ namespace Beamable.Common.Player
 				_pendingRefresh = null;
 				IsLoading = false;
 				OnLoadingFinished?.Invoke();
+				ResetChangeData();
 			}
 		}
 
@@ -319,6 +332,8 @@ namespace Beamable.Common.Player
 				}
 			}
 
+			_data = nextData;
+
 			if (existing.Count > 0)
 			{
 				OnElementRemoved?.Invoke(existing);
@@ -328,8 +343,6 @@ namespace Beamable.Common.Player
 			{
 				OnElementsAdded?.Invoke(added);
 			}
-
-			_data = nextData;
 		}
 
 		// public override object GetData() => _data;

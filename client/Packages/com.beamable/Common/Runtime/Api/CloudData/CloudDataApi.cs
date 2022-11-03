@@ -140,5 +140,11 @@ namespace Beamable.Common.Api.CloudData
 				return Promise<string>.Successful(s);
 			});
 		}
+
+		public Promise<string> GetCloudDataContent(CloudMetaData metaData)
+		{
+			return Requester.Request(Method.GET,
+									 $"https://{metaData.uri}", parser: s => s);
+		}
 	}
 }

@@ -2,6 +2,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using cli.Services;
+using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -56,19 +58,21 @@ public class App
 		Services.AddSingleton<CidOption>();
 		Services.AddSingleton<PidOption>();
 		Services.AddSingleton<PlatformOption>();
+		Services.AddSingleton<LimitOption>();
+		Services.AddSingleton<SkipOption>();
+		Services.AddSingleton<DeployFilePathOption>();
 		Services.AddSingleton<AccessTokenOption>();
 		Services.AddSingleton<RefreshTokenOption>();
 		Services.AddSingleton<LogOption>();
 		Services.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
-			root.AddOption(provider.GetRequiredService<DryRunOption>());
-			root.AddOption(provider.GetRequiredService<CidOption>());
-			root.AddOption(provider.GetRequiredService<PidOption>());
-			root.AddOption(provider.GetRequiredService<PlatformOption>());
-			root.AddOption(provider.GetRequiredService<AccessTokenOption>());
-			root.AddOption(provider.GetRequiredService<RefreshTokenOption>());
-			root.AddOption(provider.GetRequiredService<LogOption>());
+			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
+			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PlatformOption>());
+			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
+			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -82,10 +86,13 @@ public class App
 		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		Services.AddSingleton<IAuthApi, AuthApi>();
 		Services.AddSingleton<ConfigService>();
+		Services.AddSingleton<BeamoService>();
+		Services.AddSingleton<BeamoLocalSystem>();
 		Services.AddSingleton<CliEnvironment>();
 		Services.AddSingleton<SwaggerService>();
 		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
 		Services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
+		Services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>();
 
 		// add commands
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();
@@ -102,6 +109,21 @@ public class App
 		Services.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
 
 
+		Services.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
+		Services.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
+		Services.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
+
 		// customize
 		configurator?.Invoke(Services);
 	}
@@ -117,7 +139,6 @@ public class App
 		// automatically create all commands
 		Provider.GetServices<ICommandFactory>();
 	}
-
 
 
 	protected virtual Parser GetProgram()

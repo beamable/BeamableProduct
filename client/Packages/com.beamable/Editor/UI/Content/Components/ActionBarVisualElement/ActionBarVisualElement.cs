@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Components;
@@ -17,6 +18,7 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Content.Components
 {
+	// TODO: TD213896
 	public class ActionBarVisualElement : ContentManagerComponent
 	{
 		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
@@ -50,9 +52,9 @@ namespace Beamable.Editor.Content.Components
 		public ContentDataModel Model { get; internal set; }
 
 		private SearchBarVisualElement _searchBar;
-		private Button _createNewButton, _validateButton, _publishButton, _publishDropdownButton, _downloadButton;
+		private Button _validateButton;
 		private Button _tagButton, _typeButton, _statusButton, _refreshButton, _docsButton;
-		private bool _mouseOverPublishDropdown;
+		private DropdownButton _downloadButton, _publishButton, _createNewButton;
 
 		public ActionBarVisualElement() : base(nameof(ActionBarVisualElement))
 		{
@@ -64,34 +66,24 @@ namespace Beamable.Editor.Content.Components
 
 			//Buttons (Left To Right in UX)
 
-			_createNewButton = Root.Q<Button>("createNewButton");
-			var manipulator = new ContextualMenuManipulator(CreateNewButton_CreateMenu);
-			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_createNewButton.clickable.activators.Clear();
-			_createNewButton.AddManipulator(manipulator);
+			_createNewButton = Root.Q<DropdownButton>("createNewButton");
+			_createNewButton.OnDropdownClick += HandleCreateButtonClick;
 
 			// _createNewButton.clickable.clicked += () => { CreateNewButton_OnClicked(_createNewButton.worldBound); };
 
 			_validateButton = Root.Q<Button>("validateButton");
 			_validateButton.clickable.clicked += () => { OnValidateButtonClicked?.Invoke(); };
 
-			_publishButton = Root.Q<Button>("publishButton");
+			_publishButton = Root.Q<DropdownButton>("publishButton");
 			_publishButton.SetEnabled(Model.UserCanPublish);
-
-			_publishDropdownButton = Root.Q<Button>("publishDropdownButton");
-			_publishDropdownButton.RegisterCallback<MouseEnterEvent>(evt => _mouseOverPublishDropdown = true);
-			_publishDropdownButton.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverPublishDropdown = false);
-			_publishDropdownButton.clickable.activators.Clear();
-
-			var publishButtonManipulator = new ContextualMenuManipulator(HandlePublishButtonClick);
-			publishButtonManipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_publishButton.clickable.activators.Clear();
-			_publishButton.AddManipulator(publishButtonManipulator);
+			_publishButton.OnBaseClick += () => OnPublishButtonClicked?.Invoke(false);
+			_publishButton.OnDropdownClick += HandlePublishDropdown;
 
 			Model.OnUserCanPublishChanged += _publishButton.SetEnabled;
 
-			_downloadButton = Root.Q<Button>("downloadButton");
-			_downloadButton.clickable.clicked += () => { OnDownloadButtonClicked?.Invoke(); };
+			_downloadButton = Root.Q<DropdownButton>("downloadButton");
+			_downloadButton.OnBaseClick += () => OnDownloadButtonClicked?.Invoke();
+			_downloadButton.OnDropdownClick += HandleDownloadDropdown;
 
 			_tagButton = Root.Q<Button>("tagButton");
 			_tagButton.clickable.clicked += () => { TagButton_OnClicked(_tagButton.worldBound); };
@@ -128,42 +120,23 @@ namespace Beamable.Editor.Content.Components
 
 		private void SearchBar_OnSearchChanged(string obj)
 		{
-			var query = EditorContentQuery.Parse(obj);
-			Model.SetFilter(query);
+			try
+			{
+				var query = EditorContentQuery.Parse(obj);
+				Model.SetFilter(query);
+			}
+			catch (ContentNotFoundException)
+			{
+				// do nothing - same behaviour as in Unity searchbars
+			}
 		}
 
 		public void RefreshPublishDropdownVisibility()
 		{
-			if (_publishDropdownButton?.parent == null) return;
-
-			_publishDropdownButton.parent.EnableInClassList("hidden",
-														!ContentConfiguration.Instance.EnableMultipleContentNamespaces);
+			_publishButton.EnableDropdown(ContentConfiguration.Instance.EnableMultipleContentNamespaces);
 		}
 
-		private void CreateNewButton_OnClicked(Rect visualElementBounds)
-		{
-			//
-			// Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
-			//
-			// var content = new CreateNewPopupVisualElement();
-			// content.Model = Model;
-			// int selectedItemCount = content.GetSelectedItemCount();
-			//
-			// var wnd = BeamablePopupWindow.ShowDropdown(ContentManagerConstants.CreateNewPopupWindowTitle,
-			//    popupWindowRect, new Vector2(160, Math.Min(400, 30*selectedItemCount)), content);
-			// // var wnd = BeamablePopupWindow.ShowDropdown(ContentManagerConstants.CreateNewPopupWindowTitle,
-			// //    popupWindowRect, ContentManagerConstants.CreateNewPopupWindowSize, content);
-			//
-			// content.OnAddItemButtonClicked += (typeDescriptor) =>
-			// {
-			//    OnAddItemButtonClicked?.Invoke(typeDescriptor);
-			//
-			//    wnd.Close();
-			// };
-
-		}
-
-		private void CreateNewButton_CreateMenu(ContextualMenuPopulateEvent evt)
+		private void HandleCreateButtonClick(ContextualMenuPopulateEvent evt)
 		{
 			// Create menu for create button
 			List<ContentTypeDescriptor> typeDescriptors = new List<ContentTypeDescriptor>();
@@ -202,16 +175,17 @@ namespace Beamable.Editor.Content.Components
 			}
 		}
 
-		private void HandlePublishButtonClick(ContextualMenuPopulateEvent evt)
+		private void HandlePublishDropdown(ContextualMenuPopulateEvent evt)
 		{
-			if (_mouseOverPublishDropdown)
-			{
-				evt.menu.BeamableAppendAction("Publish new Content namespace", pos => { OnPublishButtonClicked(true); });
-				evt.menu.BeamableAppendAction("Archive namespaces", pos => ArchiveManifestsVisualElement.OpenAsUtilityWindow());
-				evt.menu.BeamableAppendAction("Publish (default)", pos => { OnPublishButtonClicked(false); });
-			}
-			else
-				OnPublishButtonClicked?.Invoke(false);
+			evt.menu.BeamableAppendAction("Publish new Content namespace", pos => { OnPublishButtonClicked(true); });
+			evt.menu.BeamableAppendAction("Archive namespaces", pos => ArchiveManifestsVisualElement.OpenAsUtilityWindow());
+			evt.menu.BeamableAppendAction("Publish (default)", pos => { OnPublishButtonClicked(false); });
+		}
+
+		private void HandleDownloadDropdown(ContextualMenuPopulateEvent evt)
+		{
+			evt.menu.BeamableAppendAction("Reset Content", async pos => { await ContentManagerWindow.ResetContent(); });
+			evt.menu.BeamableAppendAction("Download Content (default)", pos => { OnDownloadButtonClicked?.Invoke(); });
 		}
 
 		private void TagButton_OnClicked(Rect visualElementBounds)
@@ -219,18 +193,10 @@ namespace Beamable.Editor.Content.Components
 			Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 			var content = new TagFilterPopupVisualElement();
 			content.Model = Model;
-			var longest = "";
-			foreach (var name in Model.GetAllTags())
-			{
-				if (name.Length > longest.Length)
-				{
-					longest = name;
-				}
-			}
 
-			var width = Mathf.Max(120, longest.Length * 7 + 30);
+			int longest = Model.GetAllTags().Max(s => s.Length);
+			var width = Mathf.Max(120, longest * 7 + 30);
 			var wnd = BeamablePopupWindow.ShowDropdown("Filter Tag", popupWindowRect, new Vector2(width, 200), content);
-
 
 			//content.OnSelected += (wrapper, name) =>
 			//{
@@ -253,16 +219,8 @@ namespace Beamable.Editor.Content.Components
 			var content = new TypeFilterPopupVisualElement();
 			content.Model = Model;
 
-			var longest = "";
-			foreach (var name in Model.GetContentTypes().Select(t => t.TypeName))
-			{
-				if (name.Length > longest.Length)
-				{
-					longest = name;
-				}
-			}
-
-			var width = Mathf.Max(120, longest.Length * 7 + 30);
+			int longest = Model.GetContentTypes().Max(s => s.TypeName.Length);
+			var width = Mathf.Max(120, longest * 7 + 30);
 			var wnd = BeamablePopupWindow.ShowDropdown("Filter Tag", popupWindowRect, new Vector2(width, 200), content);
 
 			//content.OnSelected += (wrapper, name) =>

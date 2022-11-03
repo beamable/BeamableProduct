@@ -17,8 +17,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
-		private BussStyleDescription _styleRule;
-		private Action<string, IBussProperty> _onPropertyCreated;
+		private readonly Action<string, IBussProperty> _onPropertyCreated;
 
 		private LabeledTextField _variableName;
 		private Label _propertyLabel;
@@ -30,14 +29,14 @@ namespace Beamable.Editor.UI.Buss
 		private IBussProperty _selectedBussProperty;
 
 		private const int LABEL_WIDTH = 160;
+
 		// Can start exactly with two dashes ("--") OR with any letter 
 		// Numbers and special characters are not valid
 		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
 
-		public NewVariableVisualElement(BussStyleDescription styleRule, Action<string, IBussProperty> onPropertyCreated) : base(
+		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated) : base(
 			$"{BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
-			_styleRule = styleRule;
 			_onPropertyCreated = onPropertyCreated;
 		}
 
@@ -64,7 +63,6 @@ namespace Beamable.Editor.UI.Buss
 		};
 
 		private PrimaryButtonVisualElement _confirmButton;
-		private List<string> _reservedVariableNames = new List<string>();
 
 		public override void Refresh()
 		{
@@ -82,6 +80,12 @@ namespace Beamable.Editor.UI.Buss
 
 			_selectType = Root.Q<LabeledDropdownVisualElement>("selectType");
 			_selectType.Setup(_typesDict.Keys.ToList(), HandleTypeSwitchProperty);
+			_variableName.AddErrorLabel(null, _ =>
+			{
+
+				IsNameValid(out var msg);
+				return msg;
+			});
 			_selectType.Refresh();
 			_selectType.OverrideLabelWidth(LABEL_WIDTH);
 
@@ -91,12 +95,10 @@ namespace Beamable.Editor.UI.Buss
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += NewVariableWindow.CloseWindow;
 
-			_reservedVariableNames = _styleRule?.GetVariablePropertyProviders()?.Select(x => x.Key.Substring(2)).ToList();
-
-			OnValidate();
+			OnValidate(String.Empty);
 		}
 
-		private void OnValidate()
+		private void OnValidate(string value)
 		{
 			if (!IsNameValid(out var message))
 			{
@@ -118,21 +120,11 @@ namespace Beamable.Editor.UI.Buss
 				message = "Variable name can't be empty";
 				return false;
 			}
+
 			if (!Regex.IsMatch(variableName, VARIABLE_NAME_REGEX))
 			{
 				message = "Variable name can contain only letters";
 				return false;
-			}
-			if (_reservedVariableNames.Count != 0)
-			{
-				if (variableName.StartsWith("--"))
-					variableName = variableName.Substring(2);
-
-				if (_reservedVariableNames.Contains(variableName))
-				{
-					message = "Variable name already exists in local variable list";
-					return false;
-				}
 			}
 
 			return true;
@@ -142,7 +134,7 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (string.IsNullOrWhiteSpace(_variableName.Value))
 			{
-				Debug.LogError("Variable name cannot be empty!");
+				Debug.LogError("Variable name can't be empty!");
 				return;
 			}
 

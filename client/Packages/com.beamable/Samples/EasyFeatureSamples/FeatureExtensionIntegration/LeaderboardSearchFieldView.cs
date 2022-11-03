@@ -18,6 +18,12 @@ namespace EasyFeaturesIntegrationExamples.FeatureExtensionIntegration
 		public BeamableViewGroup OwnerGroup;
 		public TMP_InputField Filter;
 
+		public bool IsVisible
+		{
+			get => gameObject.activeSelf;
+			set => gameObject.SetActive(value);
+		}
+
 		public int GetEnrichOrder() => int.MaxValue;
 
 		public void EnrichWithContext(BeamContextGroup managedPlayers)

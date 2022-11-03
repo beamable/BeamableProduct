@@ -13,7 +13,6 @@
                 <engine:VisualElement class="leftArea" name="clearContainer" >
                     <engine:Button name="clear" text="clear"/>
                     <engine:Button name="popupBtn" class="squareBtn"/>
-                    <engine:Button name="advanceBtn" class="squareBtn"/>
                 </engine:VisualElement>
                 <engine:VisualElement class="rightArea" name="white">
                   <beamable:SearchBarVisualElement name="searchBar"/>
@@ -41,6 +40,14 @@
                     <engine:ScrollView>
                         <engine:TextField/>
                     </engine:ScrollView>
+                    <engine:VisualElement name="detailWindowBottomBar">
+                        <engine:VisualElement name="copyTextBtn"/>
+                        <engine:VisualElement name="pagination">
+                            <engine:VisualElement name="leftArrow"/>
+                            <engine:Label name="paginationRange" text="1/4"/>
+                            <engine:VisualElement name="rightArrow"/>
+                        </engine:VisualElement>
+                    </engine:VisualElement>
                 </engine:VisualElement>
             </engine:VisualElement>
         </engine:VisualElement>

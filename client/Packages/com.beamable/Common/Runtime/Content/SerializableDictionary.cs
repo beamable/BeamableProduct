@@ -12,8 +12,9 @@ namespace Beamable.Common.Content
 	[Serializable] public class MapOfInt : SerializableDictionaryStringToInt { }
 	[Serializable] public class OptionalMapOfInt : Optional<MapOfInt> { }
 	[Serializable] public class MapOfString : SerializableDictionaryStringToString { }
+	[Serializable] public class MapOfStringArray : SerializableDictionaryStringToSomething<string[]> { }
+	[Serializable] public class MapOfMapOfString : SerializableDictionaryStringToSomething<MapOfString> { }
 	[Serializable] public class OptionalMapOfString : Optional<MapOfString> { }
-
 	[Serializable] public class MapOfObject : SerializableDictionaryStringToObject { }
 	[Serializable] public class OptionalMapOfObject : Optional<MapOfObject> { }
 	[Serializable] public class MapOfBool : SerializableDictionaryStringToBool { }
@@ -49,6 +50,13 @@ namespace Beamable.Common.Content
 
 	[Serializable]
 	public class OptionalSerializableDictionaryStringToSomething<T> : Optional<SerializableDictionaryStringToSomething<T>> { }
+
+	[Serializable]
+	public class SerializableDictionaryStringToStringArray : SerializableDictionaryStringToSomething<string[]> { }
+
+
+	[Serializable]
+	public class SerializableDictionaryStringToStringMap : SerializableDictionaryStringToSomething<SerializableDictionaryStringToString> { }
 
 	[Serializable]
 	public class SerializableDictionaryStringToString : SerializableDictionaryStringToSomething<string>

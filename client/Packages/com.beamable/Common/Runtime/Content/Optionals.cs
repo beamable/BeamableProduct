@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Content
 {
@@ -40,6 +41,15 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class Optional<T> : Optional
 	{
+		public static implicit operator T(Optional<T> option) => option?.HasValue == true ? (T)option.Value : default(T);
+		public static implicit operator Optional<T>(T val)
+		{
+			var x = new Optional<T>();
+			x.Value = val;
+			x.HasValue = true;
+			return x;
+		}
+
 		public T Value;
 		public override object GetValue()
 		{

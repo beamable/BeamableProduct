@@ -68,6 +68,7 @@ loadtests/
 /cli/tests/obj/
 /cli/tests/.idea/
 /cli/*.sln.DotSettings.*
+cli/cli/beamoLocalRuntime.json
 
 # Server generated files.
 /server/tmp/
@@ -119,3 +120,4 @@ client/Assets/Beamable/Resources/config-defaults.txt
 client/Assets/Editor.meta
 client/Assets/Plugins/Editor.meta
 client/Assets/Editor/BeamableLoginDev/login_data.json
+client/Assets/BeamSemiAutomatedTester/Reports

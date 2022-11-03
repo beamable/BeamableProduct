@@ -60,7 +60,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		public void RefreshWindowContent()
 		{
-			checkDockerPromise = new CheckDockerCommand().StartAsync().Then(_ =>
+			checkDockerPromise = PerformCheck().Then(_ =>
 			{
 				Model.RefreshState().Then(__ =>
 				{
@@ -71,11 +71,24 @@ namespace Beamable.Editor.Microservice.UI
 			});
 		}
 
+		async Promise<bool> PerformCheck()
+		{
+			var result = await new CheckDockerCommand().StartAsync();
+
+			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
+			{
+				var midResult = await DockerCommand.CheckDockerAppRunning();
+				result |= midResult;
+			}
+
+			return result;
+		}
+
 		protected override async void Build()
 		{
-			minSize = new Vector2(380, 200);
+			minSize = new Vector2(425, 200);
 
-			checkDockerPromise = new CheckDockerCommand().StartAsync();
+			checkDockerPromise = PerformCheck();
 			await checkDockerPromise;
 
 			void OnUserChange(EditorUser _) => BuildWithContext();
@@ -125,19 +138,12 @@ namespace Beamable.Editor.Microservice.UI
 
 			root.Add(_windowRoot);
 
-			bool localServicesAvailable = Model?.AllLocalServices != null;
-			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
-			int selectedServicesAmount = localServicesAvailable
-				? Model.AllLocalServices.Count(beamService => beamService.IsSelected)
-				: 0;
-
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, Model?.AllUnarchivedServiceCount ?? 0);
+			_actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue(selectedServicesAmount, localServicesAmount);
 
 			_loadingBar = root.Q<LoadingBarElement>("loadingBar");
 			_loadingBar.Hidden = true;
@@ -159,28 +165,18 @@ namespace Beamable.Editor.Microservice.UI
 				};
 			}
 
-			_microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=
-				_microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
 			_microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
-
-			_microserviceContentVisualElement.OnServiceSelectionAmountChange +=
-				_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue;
-			_microserviceContentVisualElement.OnServiceSelectionAmountChange += _actionBarVisualElement.UpdateButtonsState;
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
 				Application.OpenURL(URLs.Documentations.URL_DOC_MICROSERVICES);
 			};
 
-			_actionBarVisualElement.OnCreateNewClicked += _microserviceContentVisualElement
-				.DisplayCreatingNewService;
+			_actionBarVisualElement.OnCreateNewClicked += serviceType => _microserviceContentVisualElement.DisplayCreatingNewService(serviceType, _actionBarVisualElement.Refresh);
 
 			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this, ActiveContext);
 
 			_actionBarVisualElement.OnRefreshButtonClicked += RefreshWindowContent;
-
-			_actionBarVisualElement.OnStartAllClicked += () =>
-				_microserviceContentVisualElement.BuildAndStartAllMicroservices(_loadingBar);
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			if (serviceRegistry != null)
@@ -217,6 +213,7 @@ namespace Beamable.Editor.Microservice.UI
 		private void ServiceArchived()
 		{
 			_microserviceBreadcrumbsVisualElement.RefreshFiltering();
+			_actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
 		}
 
 		private void OnServiceDeleteProceed()
