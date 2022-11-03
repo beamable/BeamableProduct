@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnValueChange(ChangeEvent<Object> evt)
 		{
+			OnBeforeChange?.Invoke();
 			Property.GenericAsset = evt.newValue;
 			OnValueChanged?.Invoke(Property);
 			TriggerStyleSheetChange();
