@@ -5,7 +5,7 @@ using TMPro;
 
 namespace Beamable.UI.Buss
 {
-	public abstract class EnumBussProperty : IEnumBussProperty
+	public abstract class EnumBussProperty : DefaultBussProperty, IEnumBussProperty
 	{
 		public abstract Enum EnumValue
 		{

@@ -45,7 +45,6 @@
 
                     <engine:VisualElement name="CheckC" class="column"/>
                 </engine:VisualElement>
-                <engine:ScrollView name="manifestsContainer"/>
             </engine:VisualElement>
 
             <engine:VisualElement class="bottomContainer">

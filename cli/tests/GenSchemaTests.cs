@@ -2,11 +2,14 @@ using cli;
 using Microsoft.OpenApi.Models;
 using NUnit.Framework;
 using System;
+using UnityEngine;
 
 namespace tests;
 
 public class GenSchemaTests
 {
+
+
 	[TestCase("number", "double", typeof(double), "double", TestName = "primitive double")]
 	[TestCase("number", "float", typeof(float), "float", TestName = "primitive float")]
 	[TestCase("number", null, typeof(double), "double", TestName = "primitive double by default")]

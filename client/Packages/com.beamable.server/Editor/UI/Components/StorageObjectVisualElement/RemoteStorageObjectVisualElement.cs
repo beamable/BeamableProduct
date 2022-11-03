@@ -23,9 +23,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
+			base.UpdateVisualElements();
+
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 			Root.Q("startBtn")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openDocsBtn")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openScriptBtn")?.RemoveFromHierarchy();
+			Root.Q<MicroserviceVisualElementSeparator>("separator")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER
 			Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);
@@ -33,26 +38,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q<VisualElement>("mainVisualElement").style.height = StyleValue<float>.Create(DEFAULT_HEADER_HEIGHT);
 #endif
 
-			_statusIcon.RemoveFromHierarchy();
+			// _statusIcon.RemoveFromHierarchy();
 			Root.Q("foldContainer").visible = false;
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = "More...";
 
-			_checkbox.Refresh();
-			_checkbox.SetText(Model.Name);
-			_checkbox.SetWithoutNotify(Model.IsSelected);
-			_checkbox.SetEnabled(false);
-			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
-			_checkbox.OnValueChanged += b => Model.IsSelected = b;
-
-			_separator.Refresh();
-
 			UpdateLocalStatus();
-			UpdateRemoteStatusIcon();
+			UpdateRemoteStatusIcon("remoteEnabled");
 			UpdateModel();
 		}
 
@@ -62,14 +57,5 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_mongoStorageModel = (RemoteMongoStorageModel)Model;
 		}
-
-		protected override void UpdateRemoteStatusIcon()
-		{
-			_remoteStatusIcon.ClearClassList();
-			string statusClassName = "remoteEnabled";
-			_remoteStatusIcon.tooltip = REMOTE_ONLY;
-			_remoteStatusIcon.AddToClassList(statusClassName);
-		}
-
 	}
 }

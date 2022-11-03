@@ -1,3 +1,0 @@
-﻿LabeledCheckboxVisualElement #icon {
-    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_dark.png");
-}

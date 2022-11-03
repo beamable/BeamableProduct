@@ -15,6 +15,9 @@ namespace Beamable.Editor.UI.Components
 		public abstract IBussProperty BaseProperty { get; }
 
 		public Action<IBussProperty> OnValueChanged;
+		public Action OnBeforeChange;
+
+		public bool IsRemoved { get; private set; }
 
 		protected BussPropertyVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/{nameof(BussPropertyVisualElement)}.uss", false)
@@ -23,7 +26,20 @@ namespace Beamable.Editor.UI.Components
 		public override void Init()
 		{
 			base.Init();
+			OnValueChanged += _ => BaseProperty?.NotifyValueChange();
 			AddToClassList("bussPropertyRoot");
+
+			RegisterCallback<DetachFromPanelEvent>(evt =>
+			{
+				// TODO: there is tech debt here- if someone detaches Theme Manager, this will trigger the clean up event by accident.
+				IsRemoved = true;
+			});
+		}
+
+		public void DisableInput(string tooltip = "Disabled")
+		{
+			this.Q<BindableElement>().SetEnabled(false);
+			this.tooltip = tooltip;
 		}
 
 		protected void AddBussPropertyFieldClass(VisualElement ve)

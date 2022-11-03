@@ -57,7 +57,7 @@ namespace Beamable.Player
 			{
 				foreach (var friend in _state.members)
 				{
-					friends.Add(new PartyMember(this) {playerId = long.Parse(friend)});
+					friends.Add(new PartyMember(this) { playerId = long.Parse(friend) });
 				}
 			}
 
@@ -74,7 +74,8 @@ namespace Beamable.Player
 				{
 					invites.Add(new ReceivedPartyInvite(this)
 					{
-						partyId = invite.partyId, invitedBy = long.Parse(invite.invitedBy)
+						partyId = invite.partyId,
+						invitedBy = long.Parse(invite.invitedBy)
 					});
 				}
 			}
@@ -97,7 +98,7 @@ namespace Beamable.Player
 		/// </summary>
 		public async Promise Refresh()
 		{
-			if (State?.id == null) return;
+			if (!IsInParty) return;
 
 			State = await _partyApi.GetParty(State.id);
 			await RefreshMembersFromState();
@@ -127,9 +128,9 @@ namespace Beamable.Player
 			OnPlayerLeft?.Invoke(notification);
 		}
 
-		private void PlayerInvited(PartyInviteNotification data)
+		private async void PlayerInvited(PartyInviteNotification data)
 		{
-			ReceivedPartyInvites.Refresh();
+			await ReceivedPartyInvites.Refresh();
 			OnPlayerInvited?.Invoke(data);
 		}
 
@@ -145,9 +146,14 @@ namespace Beamable.Player
 			OnPlayerPromoted?.Invoke(notification);
 		}
 
-		private async void PlayerKicked(PlayerKickedNotification notification)
+		private void PlayerKicked(PlayerKickedNotification notification)
 		{
-			await Refresh();
+			long kickedPlayerId = long.Parse(notification.kickedPlayerId);
+			if (kickedPlayerId == _userContext.UserId)
+			{
+				State = null;
+			}
+
 			OnPlayerKicked?.Invoke(notification);
 		}
 
@@ -174,18 +180,18 @@ namespace Beamable.Player
 			get => _state;
 			private set
 			{
-				if (_state?.id != null && _state != value)
+				if (_state?.id != null && _state?.id != value?.id)
 				{
 					_notificationService.Unsubscribe(PlayersLeftName(_state.id), (Action<PlayerLeftNotification>)PlayerLeft);
-					_notificationService.Unsubscribe(PlayersJoinedName(_state.id),(Action<PlayerJoinedNotification>)PlayerJoined);
+					_notificationService.Unsubscribe(PlayersJoinedName(_state.id), (Action<PlayerJoinedNotification>)PlayerJoined);
 					_notificationService.Unsubscribe(PartyUpdatedName(_state.id), (Action<PartyUpdatedNotification>)PartyUpdated);
 					_notificationService.Unsubscribe(PlayerPromotedName(_state.id), (Action<PlayerPromotedNotification>)PlayerPromoted);
 					_notificationService.Unsubscribe(PlayerKickedName(_state.id), (Action<PlayerKickedNotification>)PlayerKicked);
 				}
 
-				if (value?.id != null && _state != value)
+				if (value?.id != null && _state?.id != value.id)
 				{
-					_notificationService.Subscribe(PlayersLeftName(value.id),  (Action<PlayerLeftNotification>)PlayerLeft);
+					_notificationService.Subscribe(PlayersLeftName(value.id), (Action<PlayerLeftNotification>)PlayerLeft);
 					_notificationService.Subscribe(PlayersJoinedName(value.id), (Action<PlayerJoinedNotification>)PlayerJoined);
 					_notificationService.Subscribe(PartyUpdatedName(value.id), (Action<PartyUpdatedNotification>)PartyUpdated);
 					_notificationService.Subscribe(PlayerPromotedName(value.id), (Action<PlayerPromotedNotification>)PlayerPromoted);
@@ -206,7 +212,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// Checks if the player is in a party.
 		/// </summary>
-		public bool IsInParty => State != null;
+		public bool IsInParty => State != null && !string.IsNullOrEmpty(State.id);
 
 		/// <inheritdoc cref="Party.id"/>
 		/// <para>This references the data in the <see cref="State"/> field, which is the player's current party.</para>
@@ -263,12 +269,12 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
 		public async Promise Create(PartyRestriction restriction,
-		                            int maxSize = 0,
-		                            Action<PlayerJoinedNotification> onPlayerJoined = null,
-		                            Action<PlayerLeftNotification> onPlayerLeft = null,
-		                            Action<PartyUpdatedNotification> onPartyUpdated = null,
-		                            Action<PlayerPromotedNotification> onPlayerPromoted = null,
-		                            Action<PlayerKickedNotification> onPlayerKicked = null)
+									int maxSize = 0,
+									Action<PlayerJoinedNotification> onPlayerJoined = null,
+									Action<PlayerLeftNotification> onPlayerLeft = null,
+									Action<PartyUpdatedNotification> onPartyUpdated = null,
+									Action<PlayerPromotedNotification> onPlayerPromoted = null,
+									Action<PlayerKickedNotification> onPlayerKicked = null)
 		{
 			State = await _partyApi.CreateParty(restriction, maxSize);
 			await RefreshMembersFromState();
@@ -422,7 +428,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PartyMember) obj);
+			return Equals((PartyMember)obj);
 		}
 
 		public override int GetHashCode()
@@ -486,7 +492,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((ReceivedPartyInvite) obj);
+			return Equals((ReceivedPartyInvite)obj);
 		}
 
 		public override int GetHashCode()

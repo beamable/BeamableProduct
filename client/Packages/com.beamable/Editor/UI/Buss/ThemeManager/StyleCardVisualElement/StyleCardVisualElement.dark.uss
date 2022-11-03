@@ -1,27 +1,19 @@
 #cardHeader {
     color: rgb(255, 255, 255);
-    background-color: rgba(49, 49, 49, 1);
+    background-color: #282828;
 }
 
 #sectionHeader {
     color: rgb(255,255,255);
-    background-color: rgb(89,89,89);
 }
 
 #sectionLabel {
     color: rgb(255,255,255);
+    -unity-font-style: bold;
 }
 
 #properties {
-    background-color: rgb(77,77,77);
-}
-
-#variables {
-    background-color: rgb(77,77,77);
-}
-
-.button {
-    background-color: rgb(100,100,100);
+    margin-bottom: 10px;
 }
 
 .button > TextElement {
@@ -32,16 +24,7 @@
     background-color: rgb(120,120,120);
 }
 
-.headerButton {
-    background-color: rgb(142,142,142);
-}
-
-.clicked {
-    background-color: rgb(49, 49, 49);
-}
-
 .add {
-    background-color: rgb(89,89,89);
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
 }
 .edit {
@@ -61,9 +44,9 @@
 }
 
 .unfolded {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_down_light.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Fold out_light.png");
 }
 
 .folded {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/triangle_right_light.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/foldoutRight.png");
 }

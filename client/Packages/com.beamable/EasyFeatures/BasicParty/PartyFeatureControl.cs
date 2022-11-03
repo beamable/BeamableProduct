@@ -58,7 +58,7 @@ namespace Beamable.EasyFeatures.BasicParty
 
 			Run();
 		}
-		
+
 		public async void Run()
 		{
 			await PartyViewGroup.RebuildPlayerContexts(PartyViewGroup.AllPlayerCodes);
@@ -84,7 +84,7 @@ namespace Beamable.EasyFeatures.BasicParty
 			{
 				await PartyViewGroup.Enrich();
 			}
-			
+
 			OverlaysController.ShowConfirm($"{inviteNotification.invitingPlayerId} invited you to a party. Would you like to join?", () => AcceptPartyInvite(inviteNotification.partyId));
 		}
 

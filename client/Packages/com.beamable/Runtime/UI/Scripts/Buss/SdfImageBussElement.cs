@@ -9,6 +9,8 @@ namespace Beamable.UI.Buss
 		private SdfImage _image;
 		private bool _hasImage;
 
+		public override string TypeName => "div";
+
 		public override void ApplyStyle()
 		{
 			if (!_hasImage)

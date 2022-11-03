@@ -5,7 +5,7 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	public abstract class BaseAssetProperty : IBussProperty
+	public abstract class BaseAssetProperty : DefaultBussProperty, IBussProperty
 	{
 		public int AssetSerializationKey = -1;
 

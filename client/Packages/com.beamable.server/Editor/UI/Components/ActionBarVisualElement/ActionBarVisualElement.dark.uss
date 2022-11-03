@@ -1,13 +1,12 @@
-#mainVisualElement {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+ #mainVisualElement,
+.boundedButton,
+.unboundedButton {
+    background-color: #414141;
 }
 
-.boundedButton {
-    border-color: #383838;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
-}
-.unboundedButton {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+.boundedButton:hover,
+.unboundedButton:hover {
+    background-color: #474747;
 }
 
 #startIcon{
@@ -19,7 +18,7 @@
 }
 
 #publishIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/publish L.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/publis_light.png");
 }
 
 #infoIcon{

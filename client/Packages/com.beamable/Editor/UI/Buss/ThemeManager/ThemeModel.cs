@@ -33,7 +33,6 @@ namespace Beamable.Editor.UI.Buss
 
 		public abstract List<BussStyleSheet> WritableStyleSheets { get; }
 
-		public VariableDatabase VariablesDatabase => BussConfiguration.OptionalInstance.Value.VariableDatabase;
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public void ForceRefresh()
@@ -85,16 +84,19 @@ namespace Beamable.Editor.UI.Buss
 
 		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string selectorName = "*")
 		{
+			Undo.RecordObject(selectedStyleSheet, "Add style rule");
+
 			if (SelectedElement != null)
 			{
 				selectorName = BussNameUtility.GetLabel(SelectedElement);
 			}
 
 			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
+			selector.SetForcedVisualPriority();
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
 			AssetDatabase.SaveAssets();
-
+			selector.SetForcedVisualPriority();
 			Change?.Invoke();
 		}
 

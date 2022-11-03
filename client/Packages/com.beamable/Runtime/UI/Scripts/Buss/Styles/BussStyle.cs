@@ -10,14 +10,7 @@ namespace Beamable.UI.Buss
 		private Action _styleAnimatedAction;
 		private Dictionary<string, BussPseudoStyle> PseudoStyles { get; set; }
 
-
-		public BussStyle Copy()
-		{
-			var clone = new BussStyle();
-			clone.Inherit(this);
-
-			return clone;
-		}
+		protected BussStyle _inheritedFromStyle;
 
 		/// <summary>
 		/// Set all the styles in the current instance to the inheritable values from the given style.
@@ -31,6 +24,8 @@ namespace Beamable.UI.Buss
 		{
 			Clear(); // always clear out the style so that we start clean.
 			if (other == null) return;
+			_inheritedFromStyle = other;
+
 
 			foreach (var kvp in other._properties)
 			{
@@ -115,6 +110,7 @@ namespace Beamable.UI.Buss
 
 		public void Clear()
 		{
+			_inheritedFromStyle = null;
 			_properties.Clear();
 			PseudoStyles?.Clear();
 		}

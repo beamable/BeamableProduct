@@ -7,11 +7,11 @@
 }
 
 .microserviceImage {
-    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_dark.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not runnning light without wifi.png");
 }
 
 .storageImage {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Database_Dark.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running light without wifi.png");
 }
 
 .unpublished #checkImage, .publish-inProgress #checkImage, .publish-failed #checkImage {
