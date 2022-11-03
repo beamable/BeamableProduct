@@ -17,6 +17,9 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Net.Http;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
@@ -73,23 +76,27 @@ namespace Beamable.Server
 
         private static ActivityProvider ConfigureOpenTelemetry<T>(IMicroserviceArgs args)
         {
+	        BeamableLogger.Log($"We are about to set up Telemetry! {args.EmitOtel}, {args.EmitOtelMetrics}");
 	        var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild);
 
 	        if (args.EmitOtelMetrics)
 	        {
+		        BeamableLogger.Log("We are adding a Metrics Provider!");
 		        var metricBuilder = Sdk.CreateMeterProviderBuilder()
 				        .AddMeter(activityProvider.ActivityName)
 				        .AddOtlpExporter(config =>
 				        {
 					        config.Protocol = OtlpExportProtocol.Grpc;
 				        });
-
+		        
 		        if (args.OtelMetricsIncludeProcessInstrumentation)
 		        {
+			        BeamableLogger.Log("We are adding process instrumentation!");
 			        metricBuilder = metricBuilder.AddProcessInstrumentation();
 		        }
 		        if (args.OtelMetricsIncludeRuntimeInstrumentation)
 		        {
+			        BeamableLogger.Log("We are adding runtime instrumentation!");
 			        metricBuilder = metricBuilder.AddRuntimeInstrumentation();
 		        }
 
@@ -98,7 +105,8 @@ namespace Beamable.Server
 
 	        if (args.EmitOtel)
 	        {
-		        using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+		        BeamableLogger.Log("We are creating the tracer provider!");
+		        var tracerProvider = Sdk.CreateTracerProviderBuilder()
 			        .AddSource(activityProvider.ActivityName)
 			        .SetResourceBuilder(ResourceBuilder.CreateEmpty()
 				        .AddService(typeof(T).Name)
