@@ -47,7 +47,14 @@ namespace Beamable.Editor.UI.Model
 				WriteCommandToUnity = false
 			};
 
-			_isRunning = await checkProcess.StartAsync();
+			try
+			{
+				_isRunning = await checkProcess.StartAsync();
+			}
+			catch (DockerNotInstalledException)
+			{
+				_isRunning = false;
+			}
 		}
 
 		protected abstract Task<RunImageCommand> PrepareRunCommand();

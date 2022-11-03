@@ -108,7 +108,6 @@ namespace Beamable.Editor.UI.Buss
 							// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 							EditorUtility.SetDirty(SelectedElement);
 							SelectedElement.RecalculateStyle();
-							VariablesDatabase.ReconsiderAllStyleSheets();
 							ForceRefresh();
 						}
 					});
@@ -135,7 +134,6 @@ namespace Beamable.Editor.UI.Buss
 						// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 						EditorUtility.SetDirty(SelectedElement);
 						SelectedElement.RecalculateStyle();
-						VariablesDatabase.ReconsiderAllStyleSheets();
 						ForceRefresh();
 					}
 				});
@@ -175,6 +173,7 @@ namespace Beamable.Editor.UI.Buss
 				return;
 			}
 
+			Undo.RecordObject(SelectedElement, "Change Id");
 			SelectedElement.Id = BussNameUtility.CleanString(value);
 
 			EditorUtility.SetDirty(SelectedElement);
@@ -199,6 +198,19 @@ namespace Beamable.Editor.UI.Buss
 			ForceRefresh();
 		}
 
+		public void SetInlinePropertyValueType(string propertyKey, BussPropertyValueType valueType)
+		{
+			if (SelectedElement == null) return;
+			var propertyProvider = SelectedElement.InlineStyle.Properties.Find(property => property.Key == propertyKey);
+			if (propertyProvider == null) return;
+
+			propertyProvider.GetProperty().ValueType = valueType;
+			// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
+			EditorUtility.SetDirty(SelectedElement);
+			SelectedElement.RecalculateStyle();
+			ForceRefresh();
+		}
+
 		public void RemoveInlineProperty(string value)
 		{
 			if (SelectedElement == null)
@@ -215,7 +227,6 @@ namespace Beamable.Editor.UI.Buss
 				// TODO: TD000004. We shouldn't need to call this from model. This should happen "under the hood". Subject for deeper refactor of buss core system.
 				EditorUtility.SetDirty(SelectedElement);
 				SelectedElement.RecalculateStyle();
-				VariablesDatabase.ReconsiderAllStyleSheets();
 				ForceRefresh();
 			}
 		}
@@ -272,7 +283,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnStyleSheetChanged()
 		{
-			VariablesDatabase.ReconsiderAllStyleSheets();
+
 		}
 
 		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
