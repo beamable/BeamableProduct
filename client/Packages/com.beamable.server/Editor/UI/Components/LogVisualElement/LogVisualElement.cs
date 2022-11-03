@@ -258,7 +258,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void UpdateSelectedMessageText()
 		{
 			var detailText = string.Empty;
-			_copyTextBtn.SetEnabled(true);
 			_paginationIndex = 0;
 			_pagination.EnableInClassList("hide", true);
 
