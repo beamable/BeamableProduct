@@ -4,11 +4,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [Unreleased]
+
+### Added
+- Displaying log pagination if message contains more that 5000 chars
+- Quick action buttons for opening C# code and local documentation for service cards
+- Copy button to copy full log message
+
+### Changed
+- New `Microservice Manager` UI styling 
+- Play-all button request microservice selection
+- New service icons in `Publish Window`
+
+### Fixed
+- Various `DockerNotInstalledException` events when MicroserviceManager window isn't open, but Docker ins't running.
+- `Microservice Manager` no longer freezes when log has more than 65535 vertices
+
+### Removed
+- Checkboxes and local status icon on microservice cards
+
 ## [1.5.2]
 ### Fixed
 - `curl error 52` while publishing Microservices and performing health-checks.
 - Task Cancellation exceptions while publishing Microservice.
 - Various `DockerNotInstalledException` events when MicroserviceManager window isn't open, but Docker ins't running.
+
+### [1.5.1]
+### Added
+- `EnablePrePublishHealthCheck` option in _Project Settings/Beamable/Microservices_ can be used to disable Microservice health checks when publishing. Disabling this is dangerous and may lead to unhealthy servers being deployed to production.
+- `PrePublishHealthCheckTimeout` option in _Project Settings/Beamable/Microservices_ can optionally override the amount of seconds before a health check is considered to timeout. The default value is 10 seconds.
 
 ## [1.5.1]
 ### Added

@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -44,6 +45,11 @@ namespace Beamable.Editor.UI.Components
 			_optionModels = new List<DropdownSingleOption>();
 		}
 
+		public void SetValueWithoutVerification(string value)
+		{
+			Value = value;
+		}
+
 		public void OnOptionSelectedInternal(int id)
 		{
 			Value = _optionModels.Find(opt => opt.Id == id).Label;
@@ -64,6 +70,8 @@ namespace Beamable.Editor.UI.Components
 			_label.text = Value;
 
 			_button = Root.Q<VisualElement>("button");
+			_label.UnregisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound));
+			_label.RegisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound));
 			_button.UnregisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound));
 			_button.RegisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound));
 		}
@@ -78,22 +86,37 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
+
 		public void Setup(List<string> labels,
+						  Action<int> onOptionSelected,
+						  int initialIndex = 0,
+						  bool invokeOnStart = true)
+		{
+			Setup(labels.Select(x => new DropdownEntry
+			{
+				DisplayName = x,
+				LineBelow = false
+			}).ToList(), onOptionSelected, initialIndex, invokeOnStart);
+		}
+
+		public void Setup(List<DropdownEntry> entries,
 						  Action<int> onOptionSelected,
 						  int initialIndex = 0,
 						  bool invokeOnStart = true)
 		{
 			_optionModels.Clear();
 			_onSelection = onOptionSelected;
-			for (var i = 0; i < labels.Count; i++)
+			for (var i = 0; i < entries.Count; i++)
 			{
-				string label = labels[i];
+				var entry = entries[i];
+				string label = entry.DisplayName;
 				int currentId = i;
 				DropdownSingleOption singleOption = new DropdownSingleOption(i, label, (s) =>
 				{
 					OnOptionSelectedInternal(currentId);
 					onOptionSelected?.Invoke(currentId);
-				});
+				})
+				{ LineBelow = entry.LineBelow };
 
 				_optionModels.Add(singleOption);
 			}
@@ -130,9 +153,10 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (DropdownSingleOption option in _optionModels)
 			{
-				allOptions.Add(new DropdownSingleOptionVisualElement().Setup(option.Label,
-																			 option.OnClick, _root.localBound.width,
-																			 _root.localBound.height));
+				var element = new DropdownSingleOptionVisualElement().Setup(option.Label,
+																			option.OnClick, _root.localBound.width,
+																			_root.localBound.height, option.LineBelow);
+				allOptions.Add(element);
 			}
 
 			DropdownOptionsVisualElement optionsWindow =
@@ -147,6 +171,46 @@ namespace Beamable.Editor.UI.Components
 		private void OnOptionsClosed()
 		{
 			_optionsPopup = null;
+		}
+	}
+
+	public class DropdownEntry
+	{
+		public string DisplayName;
+		public bool LineBelow;
+
+		public DropdownEntry()
+		{
+
+		}
+
+		public DropdownEntry(string name)
+		{
+			DisplayName = name;
+		}
+
+		public DropdownEntry(string name, bool lineBelow)
+		{
+			DisplayName = name;
+			LineBelow = lineBelow;
+		}
+	}
+
+	public static class DropdownEntryExtensions
+	{
+		public static DropdownEntry Add(this List<DropdownEntry> set, string name)
+		{
+			var entry = new DropdownEntry(name);
+			set.Add(entry);
+			return entry;
+		}
+
+		public static void AddRange(this List<DropdownEntry> set, IEnumerable<string> names)
+		{
+			foreach (var name in names)
+			{
+				set.Add(new DropdownEntry(name));
+			}
 		}
 	}
 }

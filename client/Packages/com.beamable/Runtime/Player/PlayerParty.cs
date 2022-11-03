@@ -57,7 +57,7 @@ namespace Beamable.Player
 			{
 				foreach (var friend in _state.members)
 				{
-					friends.Add(new PartyMember(this) {playerId = long.Parse(friend)});
+					friends.Add(new PartyMember(this) { playerId = long.Parse(friend) });
 				}
 			}
 
@@ -74,7 +74,8 @@ namespace Beamable.Player
 				{
 					invites.Add(new ReceivedPartyInvite(this)
 					{
-						partyId = invite.partyId, invitedBy = long.Parse(invite.invitedBy)
+						partyId = invite.partyId,
+						invitedBy = long.Parse(invite.invitedBy)
 					});
 				}
 			}
@@ -150,9 +151,9 @@ namespace Beamable.Player
 			long kickedPlayerId = long.Parse(notification.kickedPlayerId);
 			if (kickedPlayerId == _userContext.UserId)
 			{
-				State = null;	
+				State = null;
 			}
-			
+
 			OnPlayerKicked?.Invoke(notification);
 		}
 
@@ -179,18 +180,18 @@ namespace Beamable.Player
 			get => _state;
 			private set
 			{
-				if (_state?.id != null && _state != value)
+				if (_state?.id != null && _state?.id != value?.id)
 				{
 					_notificationService.Unsubscribe(PlayersLeftName(_state.id), (Action<PlayerLeftNotification>)PlayerLeft);
-					_notificationService.Unsubscribe(PlayersJoinedName(_state.id),(Action<PlayerJoinedNotification>)PlayerJoined);
+					_notificationService.Unsubscribe(PlayersJoinedName(_state.id), (Action<PlayerJoinedNotification>)PlayerJoined);
 					_notificationService.Unsubscribe(PartyUpdatedName(_state.id), (Action<PartyUpdatedNotification>)PartyUpdated);
 					_notificationService.Unsubscribe(PlayerPromotedName(_state.id), (Action<PlayerPromotedNotification>)PlayerPromoted);
 					_notificationService.Unsubscribe(PlayerKickedName(_state.id), (Action<PlayerKickedNotification>)PlayerKicked);
 				}
 
-				if (value?.id != null && _state != value)
+				if (value?.id != null && _state?.id != value.id)
 				{
-					_notificationService.Subscribe(PlayersLeftName(value.id),  (Action<PlayerLeftNotification>)PlayerLeft);
+					_notificationService.Subscribe(PlayersLeftName(value.id), (Action<PlayerLeftNotification>)PlayerLeft);
 					_notificationService.Subscribe(PlayersJoinedName(value.id), (Action<PlayerJoinedNotification>)PlayerJoined);
 					_notificationService.Subscribe(PartyUpdatedName(value.id), (Action<PartyUpdatedNotification>)PartyUpdated);
 					_notificationService.Subscribe(PlayerPromotedName(value.id), (Action<PlayerPromotedNotification>)PlayerPromoted);
@@ -268,12 +269,12 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="IPartyApi.CreateParty"/>
 		public async Promise Create(PartyRestriction restriction,
-		                            int maxSize = 0,
-		                            Action<PlayerJoinedNotification> onPlayerJoined = null,
-		                            Action<PlayerLeftNotification> onPlayerLeft = null,
-		                            Action<PartyUpdatedNotification> onPartyUpdated = null,
-		                            Action<PlayerPromotedNotification> onPlayerPromoted = null,
-		                            Action<PlayerKickedNotification> onPlayerKicked = null)
+									int maxSize = 0,
+									Action<PlayerJoinedNotification> onPlayerJoined = null,
+									Action<PlayerLeftNotification> onPlayerLeft = null,
+									Action<PartyUpdatedNotification> onPartyUpdated = null,
+									Action<PlayerPromotedNotification> onPlayerPromoted = null,
+									Action<PlayerKickedNotification> onPlayerKicked = null)
 		{
 			State = await _partyApi.CreateParty(restriction, maxSize);
 			await RefreshMembersFromState();
@@ -427,7 +428,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PartyMember) obj);
+			return Equals((PartyMember)obj);
 		}
 
 		public override int GetHashCode()
@@ -491,7 +492,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((ReceivedPartyInvite) obj);
+			return Equals((ReceivedPartyInvite)obj);
 		}
 
 		public override int GetHashCode()
