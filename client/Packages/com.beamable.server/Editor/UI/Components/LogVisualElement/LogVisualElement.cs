@@ -167,7 +167,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				}
 			}));
 			_copyTextBtn.tooltip = "Copy full log";
-
+			_copyTextBtn.SetEnabled(Model.Logs.Selected != null);
+			
 			_leftArrow = Root.Q<VisualElement>("leftArrow");
 			_leftArrow.AddManipulator(new Clickable(_ => PreviousMessagePart()));
 			_rightArrow = Root.Q<VisualElement>("rightArrow");
@@ -257,6 +258,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void UpdateSelectedMessageText()
 		{
 			var detailText = string.Empty;
+			_copyTextBtn.SetEnabled(true);
 			_paginationIndex = 0;
 			_pagination.EnableInClassList("hide", true);
 
@@ -285,8 +287,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 					}
 				}
 			}
-
 			_detailLabel.SetValueWithoutNotify(detailText);
+			_copyTextBtn.SetEnabled(true);
 		}
 
 		private void NextMessagePart()
@@ -314,6 +316,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandleClearButtonClicked()
 		{
 			Model.Logs.Clear();
+			_copyTextBtn.SetEnabled(false);
 			_pagination.EnableInClassList("hide", true);
 			_paginationIndex = 0;
 
