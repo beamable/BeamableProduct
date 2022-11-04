@@ -168,7 +168,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}));
 			_copyTextBtn.tooltip = "Copy full log";
 			_copyTextBtn.SetEnabled(Model.Logs.Selected != null);
-			
+
 			_leftArrow = Root.Q<VisualElement>("leftArrow");
 			_leftArrow.AddManipulator(new Clickable(_ => PreviousMessagePart()));
 			_rightArrow = Root.Q<VisualElement>("rightArrow");
