@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.0]
 ### Fixed
 - Fixed empty list for OnElementsAdded and OnElementRemoved events in ObservableReadonlyList type 
 - Party events will not fire more than once anymore
@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.5.2]
 ### Fixed
 - Party state is nullified after leaving the party (either by `Leave` and `Kick` methods)
+- Beamable button shouldn't overlap experimental package option
 
 ## [1.5.1]
 - no changes
