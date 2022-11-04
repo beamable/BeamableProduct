@@ -20,7 +20,12 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_color":{"r":0.20784315466880799,"g":0.1411764770746231,"b":0.44705885648727419,"a":1.0}}'
+        _json: '{"_valueType":0,"_color":{"r":0.46491244435310366,"g":0.31578952074050906,"b":1.0,"a":1.0}}'
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":0}'
     _cachedProperties: []
     _selector: .background
   - _folded: 0
@@ -80,7 +85,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     _cachedProperties: []
     _selector: .button.menu.label
   - _folded: 0
@@ -95,7 +100,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_colorRect":{"BottomLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.9019607901573181},"BottomRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":0.9019607901573181},"TopLeftColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"TopRightColor":{"r":0.3333333432674408,"g":0.2705882489681244,"b":0.5764706134796143,"a":1.0},"_drawerMode":0}}'
+        _json: '{"_valueType":0,"_colorRect":{"BottomLeftColor":{"r":0.5098039507865906,"g":0.43529412150382998,"b":0.7960784435272217,"a":0.7882353067398071},"BottomRightColor":{"r":0.5098039507865906,"g":0.43529412150382998,"b":0.7960784435272217,"a":0.7882353067398071},"TopLeftColor":{"r":0.3450980484485626,"g":0.27843138575553896,"b":0.5882353186607361,"a":1.0},"TopRightColor":{"r":0.3450980484485626,"g":0.27843138575553896,"b":0.5882353186607361,"a":1.0},"_drawerMode":3}}'
     - _key: textAlignment
       _property:
         _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
@@ -170,7 +175,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     - _key: textAlignment
       _property:
         _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
@@ -225,14 +230,14 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":1}'
+        _json: '{"_valueType":0,"AssetSerializationKey":2}'
     - _key: backgroundColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
     _cachedProperties: []
-    _selector: .back .icon
+    _selector: .back.icon
   - _folded: 0
     _showAll: 0
     _properties:
@@ -240,7 +245,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":2}'
+        _json: '{"_valueType":0,"AssetSerializationKey":3}'
     _cachedProperties: []
     _selector: .options
   - _folded: 0
@@ -295,7 +300,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     _cachedProperties: []
     _selector: .label.text
   - _folded: 0
@@ -330,7 +335,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     _cachedProperties: []
     _selector: .textarea.text
   - _folded: 0
@@ -420,7 +425,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     - _key: fontSize
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -465,7 +470,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     _cachedProperties: []
     _selector: .button.disable.label
   - _folded: 0
@@ -490,7 +495,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     _cachedProperties: []
     _selector: .button.primary.label
   - _folded: 0
@@ -515,7 +520,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     _cachedProperties: []
     _selector: .button.secondary.label
   - _folded: 0
@@ -615,7 +620,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     - _key: textAlignment
       _property:
         _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
@@ -660,7 +665,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     - _key: textAlignment
       _property:
         _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
@@ -680,7 +685,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     - _key: fontColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -745,7 +750,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     - _key: fontSize
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -770,7 +775,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":0}'
+        _json: '{"_valueType":0,"AssetSerializationKey":1}'
     - _key: fontSize
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -860,7 +865,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":3}'
+        _json: '{"_valueType":0,"AssetSerializationKey":4}'
     - _key: fontColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -895,7 +900,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":4}'
+        _json: '{"_valueType":0,"AssetSerializationKey":5}'
     _cachedProperties: []
     _selector: .presenceDot
   - _folded: 0
@@ -945,7 +950,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":5}'
+        _json: '{"_valueType":0,"AssetSerializationKey":6}'
     - _key: fontColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -970,7 +975,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":5}'
+        _json: '{"_valueType":0,"AssetSerializationKey":6}'
     - _key: fontColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -1075,7 +1080,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":5}'
+        _json: '{"_valueType":0,"AssetSerializationKey":6}'
     - _key: fontColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -1110,7 +1115,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":3}'
+        _json: '{"_valueType":0,"AssetSerializationKey":4}'
     - _key: fontSize
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -1155,7 +1160,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":6}'
+        _json: '{"_valueType":0,"AssetSerializationKey":7}'
     - _key: fontColor
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -1225,9 +1230,9 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_floatValue":6.0}'
+        _json: '{"_valueType":0,"_floatValue":20.0}'
     _cachedProperties: []
-    _selector: .back
+    _selector: .button
   - _folded: 0
     _showAll: 0
     _properties: []
@@ -1243,7 +1248,23 @@ MonoBehaviour:
         _json: '{"_valueType":0,"Enum":513}'
     _cachedProperties: []
     _selector: .panel.rank text.alias
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":8}'
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    _cachedProperties: []
+    _selector: .home.icon
   _assetReferences:
+  - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   - {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}
   - {fileID: 21300000, guid: bc7ea403e291d45408e34a2c22501a60, type: 3}
@@ -1251,5 +1272,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 44e528430d3396b45982754daab3b07d, type: 3}
   - {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   - {fileID: 11400000, guid: e1df5e1d027b84bdcb1c0b760bc4c5db, type: 2}
+  - {fileID: 21300000, guid: 0243220d3beac094f95ffe233612e503, type: 3}
   _isReadOnly: 1
   _sortingOrder: 0
