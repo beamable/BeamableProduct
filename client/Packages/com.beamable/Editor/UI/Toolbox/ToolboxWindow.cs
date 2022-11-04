@@ -291,12 +291,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 			updateAvailableAnnouncement.OnInstall = () =>
 			{
-				EditorUtility.DisplayDialog(
-					"Beamable package updater",
-					$"Updating the Beamable package to version=[{BeamablePackageUpdateMeta.NewestVersionNumber}]. It may take a while...",
-					"Ok");
-				
-				BeamableLogger.Log($"Updating the Beamable package to version=[{BeamablePackageUpdateMeta.NewestVersionNumber}]");
+				BeamableLogger.Log($"Updating the Beamable package to version=[{BeamablePackageUpdateMeta.NewestVersionNumber}]. It may take a while...");
 				BeamablePackages.UpdatePackage().Then(_ =>
 				{
 					BeamableLogger.Log("The Beamable package update process completed successfully!");
