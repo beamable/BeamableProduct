@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using cli.Content;
 using cli.Services;
 using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
@@ -124,6 +125,8 @@ public class App
 		Services.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 
+		Services.AddRootCommand<ContentCommand, ContentCommandArgs>();
+		Services.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
 		// customize
 		configurator?.Invoke(Services);
 	}
