@@ -4,8 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [Unreleased]
+## [Unreleased]
+### Fixed
+- There can only be one instance of the `Publish Window` in the `Microservice Manager`
 
+### [1.6.0]
 ### Added
 - Displaying log pagination if message contains more that 5000 chars
 - Quick action buttons for opening C# code and local documentation for service cards
@@ -27,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `curl error 52` while publishing Microservices and performing health-checks.
 - Task Cancellation exceptions while publishing Microservice.
+- Various `DockerNotInstalledException` events when MicroserviceManager window isn't open, but Docker ins't running.
 
 ### [1.5.1]
 ### Added
