@@ -25,9 +25,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		[SerializeField] private bool isSet;
 		private CancellationTokenSource _tokenSource;
+		private static PublishWindow Instance { get; set; }
+		private static bool IsAlreadyOpened => Instance != null;
 
 		public static PublishWindow ShowPublishWindow(EditorWindow parent, BeamEditorContext editorContext)
 		{
+			if (IsAlreadyOpened)
+				return null;
+
 			var wnd = CreateInstance<PublishWindow>();
 
 			wnd.name = PUBLISH;
@@ -66,6 +71,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void OnEnable()
 		{
+			Instance = this;
 			if (!isSet) return;
 
 			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
@@ -117,6 +123,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void OnDestroy()
 		{
+			Instance = null;
 			_tokenSource?.Cancel();
 			WindowStateUtility.EnableAllWindows();
 		}
@@ -142,6 +149,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public override Task Stop()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override void OpenDocs()
 		{
 			throw new NotImplementedException();
 		}

@@ -2,12 +2,12 @@
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -20,57 +20,61 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public abstract class CreateServiceBaseVisualElement : MicroserviceComponent
 	{
-		protected CreateServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
-		{
-		}
+		protected CreateServiceBaseVisualElement() : base(nameof(CreateServiceBaseVisualElement)) { }
 
 		protected abstract string NewServiceName { get; set; }
 		protected abstract string ScriptName { get; }
+		protected abstract ServiceType ServiceType { get; }
 
+		public Action OnClose;
 		public event Action OnCreateServiceClicked;
 
 		protected ServiceCreateDependentService _serviceCreateDependentService;
 
 		private const int MAX_NAME_LENGTH = 28;
 
-		private static readonly string[] ElementsToRemove = {
-			"collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn", "startBtn"
-		};
-
+		private VisualElement _serviceIcon;
 		private TextField _nameTextField;
-		private Button _cancelBtn;
-		private LabeledCheckboxVisualElement _checkbox;
 		private PrimaryButtonVisualElement _createBtn;
-		private VisualElement _logContainerElement;
-		private VisualElement _rootVisualElement;
-
+		private PrimaryButtonVisualElement _cancelBtn;
 
 		private FormConstraint _isNameValid;
 		private FormConstraint _isNameSizedRight;
 		private FormConstraint _isNameUnique;
 
+		public void Refresh(Action onClose)
+		{
+			OnClose = onClose;
+			Refresh();
+		}
 		public override void Refresh()
 		{
 			base.Refresh();
 			QueryVisualElements();
-			InjectStyleSheets();
 			UpdateVisualElements();
 		}
-		protected virtual void QueryVisualElements()
+		private void QueryVisualElements()
 		{
-			foreach (string element in ElementsToRemove)
-				Root.Q(element)?.RemoveFromHierarchy();
+			_serviceIcon = Root.Q<VisualElement>("serviceIcon");
+			_nameTextField = Root.Q<TextField>("nameTextField");
+			_createBtn = Root.Q<PrimaryButtonVisualElement>("createBtn");
+			_cancelBtn = Root.Q<PrimaryButtonVisualElement>("cancelBtn");
+		}
+		private void UpdateVisualElements()
+		{
+			_serviceIcon.AddToClassList(ServiceType.ToString());
+			_nameTextField.AddPlaceholder("Enter service name");
 
-			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
-			_cancelBtn = Root.Q<Button>("cancelBtn");
-			_createBtn = new PrimaryButtonVisualElement();
-			_cancelBtn.parent.Add(_createBtn);
-			_createBtn.Refresh();
-
-			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
-			_logContainerElement = Root.Q<VisualElement>("logContainer");
-			_nameTextField = Root.Q<TextField>("microserviceNewTitle");
-			_nameTextField.SetValueWithoutNotify(NewServiceName);
+			_cancelBtn.Button.clicked += () =>
+			{
+				Root.RemoveFromHierarchy();
+				OnClose?.Invoke();
+			};
+			_createBtn.Button.clicked += () =>
+			{
+				HandleContinueButtonClicked();
+				OnClose?.Invoke();
+			};
 
 			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName, .01);
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
@@ -79,50 +83,29 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_createBtn.AddGateKeeper(_isNameValid, _isNameSizedRight, _isNameUnique);
 
-			Root.Q("foldContainer").visible = false;
-		}
-		private void InjectStyleSheets()
-		{
-			if (string.IsNullOrWhiteSpace(ScriptName)) return;
-			_rootVisualElement.AddStyleSheet($"{COMPONENTS_PATH}/{ScriptName}/{ScriptName}.uss");
-			_rootVisualElement.AddStyleSheet($"{COMPONENTS_PATH}/ServiceBaseVisualElement/CreateService.uss");
-		}
-		protected virtual void UpdateVisualElements()
-		{
 			ShowServiceCreateDependentService();
 			_nameTextField.maxLength = MAX_NAME_LENGTH;
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
 
-			_cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
-			_createBtn.SetText("Create");
-			_createBtn.Button.clickable.clicked += HandleContinueButtonClicked;
-
-
-			_checkbox.Refresh();
-			_checkbox.SetWithoutNotify(false);
-			_checkbox.SetEnabled(false);
-			_checkbox.DisableLabel();
-
-			_logContainerElement.RemoveFromHierarchy();
 			RenameGestureBegin();
 		}
 
 		private void ShowServiceCreateDependentService()
 		{
-			if (!ShouldShowCreateDependentService) return;
+			if (!ShouldShowCreateDependentService)
+				return;
 			_serviceCreateDependentService = new ServiceCreateDependentService();
 			_serviceCreateDependentService.Refresh();
 			InitCreateDependentService();
-			_createBtn.parent.parent.parent.Insert(3, _serviceCreateDependentService);
+			_createBtn.parent.parent.Insert(1, _serviceCreateDependentService);
 		}
 
 		private void HandleContinueButtonClicked()
 		{
 			if (!_createBtn.CheckGateKeepers())
-			{
 				return;
-			}
+
 			var additionalReferences = _serviceCreateDependentService?.GetReferences();
 			_createBtn.SetText("Creating...");
 			_createBtn.Load(new Promise()); // spin forever, because a re-compile will save us!
@@ -142,10 +125,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandleNameLabelKeyUp(KeyUpEvent evt)
 		{
 			if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _isNameValid.IsValid && _isNameSizedRight.IsValid && _isNameUnique.IsValid)
-			{
 				HandleContinueButtonClicked();
-				return;
-			}
 		}
 		private void RenameGestureBegin()
 		{
@@ -161,7 +141,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			return localServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)) ||
 				   remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase))
-				? "Service name must be unique "
+				? "Service name must be unique"
 				: null;
 		}
 	}
