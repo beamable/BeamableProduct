@@ -19,6 +19,8 @@ namespace Beamable.Editor.ToolbarExtender
 {
 	public static class BeamableToolbarExtender
 	{
+		const string GET_ALL_METHOD_NAME = "GetAll";
+		
 		private static int _toolCount;
 		private static GUIStyle _commandStyle = null;
 
@@ -231,7 +233,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 #if UNITY_2019_4_OR_NEWER // Handling of preview packages
 			Type type = typeof(UnityEditor.PackageManager.PackageInfo);
-			MethodInfo methodInfo = type?.GetMethod("GetAll", BindingFlags.NonPublic | BindingFlags.Static);
+			MethodInfo methodInfo = type?.GetMethod(GET_ALL_METHOD_NAME, BindingFlags.NonPublic | BindingFlags.Static);
 			var result =  methodInfo?.Invoke(null, null);
 
 			if (result != null)
