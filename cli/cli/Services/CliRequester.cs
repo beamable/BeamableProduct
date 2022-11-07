@@ -111,7 +111,8 @@ public class CliRequester : IBeamableRequester
 
 	private static HttpRequestMessage PrepareRequest(Method method, string? basePath, string uri, object body = null)
 	{
-		var request = new HttpRequestMessage(FromMethod(method), basePath + uri);
+		var address = uri.Contains("://") ? uri : $"{basePath}{uri}";
+		var request = new HttpRequestMessage(FromMethod(method), address);
 
 		if (body == null)
 		{
