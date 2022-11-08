@@ -89,6 +89,8 @@ public class App
 		Services.AddSingleton<ConfigService>();
 		Services.AddSingleton<BeamoService>();
 		Services.AddSingleton<BeamoLocalSystem>();
+		Services.AddSingleton<ContentLocalCache>();
+		Services.AddSingleton<ContentService>();
 		Services.AddSingleton<CliEnvironment>();
 		Services.AddSingleton<SwaggerService>();
 		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
