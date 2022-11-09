@@ -860,7 +860,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_color":{"r":0.34117648005485537,"g":0.27843138575553896,"b":0.5843137502670288,"a":1.0}}'
+        _json: '{"_valueType":0,"_color":{"r":0.3490196168422699,"g":0.2823529541492462,"b":0.5921568870544434,"a":1.0}}'
     _cachedProperties: []
     _selector: .button.tab.selected
   - _folded: 0

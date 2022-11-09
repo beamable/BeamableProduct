@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using Beamable.EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,11 +12,11 @@ namespace Beamable.EasyFeatures.BasicSocial
 	[BeamContextSystem]
 	public class SocialFeatureControl : MonoBehaviour, IBeamableFeatureControl
 	{
-		private enum View
+		public enum View
 		{
-			Friends,
-			Invites,
-			Blocked,
+			Friends = 0,
+			Invites = 1,
+			Blocked = 2,
 		}
 		
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get; }
@@ -29,18 +30,16 @@ namespace Beamable.EasyFeatures.BasicSocial
 		}
 
 		public BeamableViewGroup ViewGroup;
-		public Toggle FriendsTab;
-		public Toggle InvitesTab;
-		public Toggle BlockedTab;
+		public MultiToggleComponent TabToggles;
 		public FriendInfoPopup InfoPopup;
 		public GameObject LoadingOverlay;
 		public OverlaysController OverlaysController;
+		public View DefaultView = View.Friends;
 
 		protected BeamContext Context;
 
 		private IBeamableView _currentView;
 		private readonly Dictionary<View, IBeamableView> views = new Dictionary<View, IBeamableView>();
-		private readonly Dictionary<View, Toggle> viewTabs = new Dictionary<View, Toggle>();
 
 		[RegisterBeamableDependencies]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
@@ -75,27 +74,18 @@ namespace Beamable.EasyFeatures.BasicSocial
 				views.Add(TypeToViewEnum(view.GetType()), view);
 				view.IsVisible = false;
 			}
-			
-			FriendsTab.onValueChanged.ReplaceOrAddListener(isOn => TabPicked(isOn, View.Friends));
-			InvitesTab.onValueChanged.ReplaceOrAddListener(isOn => TabPicked(isOn, View.Invites));
-			BlockedTab.onValueChanged.ReplaceOrAddListener(isOn => TabPicked(isOn, View.Blocked));
-			viewTabs.Add(View.Friends, FriendsTab);
-			viewTabs.Add(View.Invites, InvitesTab);
-			viewTabs.Add(View.Blocked, BlockedTab);
 
-			await OpenView(View.Friends);
+			await OpenView(DefaultView);
+			
+			var names = Enum.GetNames(typeof(View)).ToList();
+			TabToggles.Setup(names, OnTabSelected, (int)DefaultView);
 			
 			SetLoadingOverlay(false);
 		}
 
-		private async void TabPicked(bool isOn, View view)
+		private async void OnTabSelected(int tabId)
 		{
-			if (!isOn)
-			{
-				return;
-			}
-
-			await OpenView(view);
+			await OpenView((View)tabId);
 		}
 
 		private View TypeToViewEnum(Type type)
@@ -120,8 +110,6 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		private async Promise OpenView(View view)
 		{
-			viewTabs[view].isOn = true;
-			
 			if (_currentView != null)
 			{
 				_currentView.IsVisible = false;	

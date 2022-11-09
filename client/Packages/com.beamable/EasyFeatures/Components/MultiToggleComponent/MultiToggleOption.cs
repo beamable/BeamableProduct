@@ -26,9 +26,6 @@ namespace Beamable.EasyFeatures.Components
 			_toggle.onValueChanged.AddListener(ToggleClicked);
 			_toggle.SetIsOnWithoutNotify(selected);
 
-			MainBussElement.UpdateClasses(new List<string> { "toggle", "option" });
-			LabelBussElement.UpdateClasses(new List<string> { "toggle", "option", "text" });
-
 			SetSelected(selected);
 		}
 
