@@ -31,7 +31,7 @@ namespace Beamable
 			eventBase.RemoveListener(action);
 			eventBase.AddListener(action);
 		}
-		
+
 		public static Type[] GetAllDerivedTypes(AppDomain aAppDomain, Type aType)
 		{
 			var result = new List<Type>();
