@@ -72,6 +72,10 @@ namespace Beamable.EasyFeatures.BasicSocial
 		private void SetViewData(ViewData viewData)
 		{
 			AvatarImage.sprite = viewData.Avatar;
+			if (viewData.Avatar == null)
+			{
+				AvatarImage.color = Color.clear;
+			}
 			UsernameText.text = viewData.PlayerName;
 			DescriptionText.text = viewData.Description;
 		}

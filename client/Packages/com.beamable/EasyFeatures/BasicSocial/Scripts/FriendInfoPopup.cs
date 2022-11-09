@@ -32,7 +32,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 				playerName = playerId.ToString();
 			}
 
-			Sprite avatar = AvatarConfiguration.Instance.Default.Sprite;
+			Sprite avatar = null;
 			if (stats.TryGetValue("avatar", out string avatarName))
 			{
 				var accountAvatar = AvatarConfiguration.Instance.Avatars.Find(av => av.Name == avatarName);
@@ -45,6 +45,10 @@ namespace Beamable.EasyFeatures.BasicSocial
 			UsernameText.text = playerName;
 			GamertagText.text = $"#{playerId}";
 			AvatarImage.sprite = avatar;
+			if (avatar == null)
+			{
+				AvatarImage.color = Color.clear;
+			}
 
 			OnDeleteButton = onDeleteButton;
 			OnBlockButton = onBlockButton;

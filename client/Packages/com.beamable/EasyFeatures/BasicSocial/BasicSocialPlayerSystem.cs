@@ -34,7 +34,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 					playerName = playerIds[i].ToString();
 				}
 
-				Sprite avatar = AvatarConfiguration.Instance.Default.Sprite;
+				Sprite avatar = null;
 				if (stats.TryGetValue("avatar", out string avatarName))
 				{
 					var accountAvatar = AvatarConfiguration.Instance.Avatars.Find(av => av.Name == avatarName);
