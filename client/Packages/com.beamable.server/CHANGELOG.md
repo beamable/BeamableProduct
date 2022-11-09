@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.2]
 ### Fixed
 - There can only be one instance of the `Publish Window` in the `Microservice Manager`
+### Changed
+- The `Publish Window` is now centered on show relative to the editor
 
 ## [1.6.1]
 - no changes

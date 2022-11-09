@@ -47,10 +47,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			wnd.Refresh();
 
 			var size = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(servicesRegistry.AllDescriptors.Count, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
-
 			wnd.minSize = size;
-			wnd.position = BeamablePopupWindow.GetCenteredScreenRectForWindow(parent, size);
-
+			wnd.position = BeamablePopupWindow.GetCenterOnMainWin(wnd);
+			
 			loadPromise.Then(model =>
 			{
 				float maxHeight = Mathf.Max(model.Services.Values.Count * ROW_HEIGHT, ROW_HEIGHT) + HEIGHT_BASE;
