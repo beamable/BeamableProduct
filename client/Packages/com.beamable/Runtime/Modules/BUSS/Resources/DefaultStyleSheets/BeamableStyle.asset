@@ -510,14 +510,19 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_floatValue":2.0}'
+        _json: '{"_valueType":0,"_floatValue":3.0}'
     - _key: roundCorners
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_floatValue":10.0}'
+    - _key: fontColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.7411764860153198,"g":0.7137255072593689,"b":0.8509804010391235,"a":1.0}}'
     _cachedProperties: []
-    _selector: .toggle.option.deselected
+    _selector: .toggle.option
   - _folded: 0
     _showAll: 0
     _properties:
@@ -535,12 +540,17 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_floatValue":2.0}'
+        _json: '{"_valueType":0,"_floatValue":3.0}'
     - _key: roundCorners
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_floatValue":10.0}'
+    - _key: fontColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
     _cachedProperties: []
     _selector: .toggle.option.selected
   - _folded: 0
@@ -1043,16 +1053,6 @@ MonoBehaviour:
         _json: '{"_valueType":0,"Enum":513}'
     _cachedProperties: []
     _selector: .text.placeholder
-  - _folded: 0
-    _showAll: 0
-    _properties:
-    - _key: fontColor
-      _property:
-        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
-    _cachedProperties: []
-    _selector: .toggle.text.selected
   - _folded: 0
     _showAll: 0
     _properties:

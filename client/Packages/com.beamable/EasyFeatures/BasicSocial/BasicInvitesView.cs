@@ -1,6 +1,7 @@
 ﻿using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Player;
+using Beamable.EasyFeatures.Components;
 using Beamable.Player;
 using System;
 using System.Collections.Generic;
@@ -20,19 +21,26 @@ namespace Beamable.EasyFeatures.BasicSocial
 			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
 		}
 
+		public enum View
+		{
+			Sent = 0,
+			Received = 1,
+		}
+
 		public SocialFeatureControl FeatureControl;
 		public TextMeshProUGUI PlayerIdText;
 		public TMP_InputField PlayerIdInputField;
-		public Toggle PendingListToggle;
-		public Toggle SentListToggle;
+		public View DefaultView = View.Sent;
+		public MultiToggleComponent Tabs;
 		public FriendsListPresenter ReceivedListPresenter;
 		public FriendsListPresenter SentListPresenter;
 		public Button CopyIdButton;
 
 		protected IDependencies System;
 
+		private Dictionary<View, FriendsListPresenter> _views = new Dictionary<View, FriendsListPresenter>();
+		private View _currentView;
 		private FriendsListPresenter _currentListView;
-		private Dictionary<FriendsListPresenter, Toggle> _tabToggles = new Dictionary<FriendsListPresenter, Toggle>();
 
 		public bool IsVisible
 		{
@@ -63,16 +71,21 @@ namespace Beamable.EasyFeatures.BasicSocial
 			PlayerIdText.text = $"#{context.PlayerId}";
 			ReceivedListPresenter.gameObject.SetActive(false);
 			SentListPresenter.gameObject.SetActive(false);
-			_tabToggles.Clear();
-			_tabToggles.Add(ReceivedListPresenter, PendingListToggle);
-			_tabToggles.Add(SentListPresenter, SentListToggle);
+			_views.Clear();
+			_views.Add(View.Sent, SentListPresenter);
+			_views.Add(View.Received, ReceivedListPresenter);
 			
-			PendingListToggle.onValueChanged.ReplaceOrAddListener(isOn => TabPicked(isOn, ReceivedListPresenter));
-			SentListToggle.onValueChanged.ReplaceOrAddListener(isOn => TabPicked(isOn, SentListPresenter));
+			Tabs.Setup(Enum.GetNames(typeof(View)).ToList(), OnTabSelected, (int)DefaultView);
+			
 			PlayerIdInputField.onEndEdit.ReplaceOrAddListener(SendInvite);
 			CopyIdButton.onClick.ReplaceOrAddListener(CopyPlayerId);
 			
-			await OpenTab(ReceivedListPresenter);
+			await OpenTab(DefaultView);
+		}
+
+		private async void OnTabSelected(int tabId)
+		{
+			await OpenTab((View)tabId);
 		}
 
 		private void OnDisable()
@@ -120,27 +133,17 @@ namespace Beamable.EasyFeatures.BasicSocial
 			}
 		}
 
-		private async void TabPicked(bool isOn, FriendsListPresenter list)
-		{
-			if (!isOn)
-			{
-				return;
-			}
-
-			await OpenTab(list);
-		}
-
-		private async Promise OpenTab(FriendsListPresenter tab)
+		private async Promise OpenTab(View view)
 		{
 			FeatureControl.SetLoadingOverlay(true);
-			_tabToggles[tab].isOn = true;
-			
+
 			if (_currentListView != null)
 			{
 				_currentListView.gameObject.SetActive(false);
 			}
-
-			_currentListView = tab;
+			
+			_currentView = view;
+			_currentListView = _views[_currentView];
 			_currentListView.gameObject.SetActive(true);
 
 			UnsubscribeFromInvitesEvents();
@@ -173,7 +176,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			await RefreshView();
 		}
 
-		private async Promise RefreshView() => await OpenTab(_currentListView);
+		private async Promise RefreshView() => await OpenTab(_currentView);
 
 		private async void AcceptInviteFrom(long invitingPlayerId)
 		{
