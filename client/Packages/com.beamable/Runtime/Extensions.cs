@@ -1,5 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.UI.Scripts;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Events;
@@ -28,6 +30,22 @@ namespace Beamable
 		{
 			eventBase.RemoveListener(action);
 			eventBase.AddListener(action);
+		}
+		
+		public static Type[] GetAllDerivedTypes(AppDomain aAppDomain, Type aType)
+		{
+			var result = new List<Type>();
+			var assemblies = aAppDomain.GetAssemblies();
+			foreach (var assembly in assemblies)
+			{
+				var types = assembly.GetTypes();
+				foreach (var type in types)
+				{
+					if (type.IsSubclassOf(aType))
+						result.Add(type);
+				}
+			}
+			return result.ToArray();
 		}
 	}
 }
