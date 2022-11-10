@@ -22,7 +22,7 @@ public class ContentService
 		string url = $"{SERVICE}/manifest/public?id={manifestId}";
 		return _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 		{
-			if (ex is RequesterException err && err.Status == 404)
+			if (ex is RequesterException { Status: 404 })
 			{
 				return new ClientManifest { entries = new List<ClientContentInfo>() };
 			}

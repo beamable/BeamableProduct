@@ -10,7 +10,7 @@ public class ContentLocalCache
 	private readonly IAppContext _context;
 	private readonly CliRequester _requester;
 	private Dictionary<string, string> _localAssetsVersions;
-	private string DirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content", $"{_context.Cid}_{_context.Pid}");
+	private string DirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
 
 	public Dictionary<string, string> AssetsVersions => _localAssetsVersions;
 
@@ -50,27 +50,6 @@ public class ContentLocalCache
 			_localAssetsVersions.Add(arrayDict["id"] as string ?? throw new InvalidOperationException(), arrayDict["version"] as string);
 			
 			BeamableLogger.Log(Path.GetFileName(path));
-		}
-	}
-
-	public async Promise UpdateData(ClientManifest manifest)
-	{
-		Init();
-		foreach (var contentInfo in manifest.entries)
-		{
-			if (_localAssetsVersions.TryGetValue(contentInfo.contentId, out var localVersion) &&
-			    localVersion == contentInfo.version)
-				continue;
-			try
-			{
-				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri, parser: s => s);
-				BeamableLogger.Log($"Writing to: {Path.Combine(DirPath, $"{contentInfo.contentId}.json")}");
-				await File.WriteAllTextAsync(Path.Combine(DirPath, $"{contentInfo.contentId}.json"), result);
-			}
-			catch (Exception e)
-			{
-				BeamableLogger.LogException(e);
-			}
 		}
 	}
 
