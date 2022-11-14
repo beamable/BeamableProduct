@@ -30,6 +30,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public SocialFeatureControl FeatureControl;
 		public TextMeshProUGUI PlayerIdText;
 		public TMP_InputField PlayerIdInputField;
+		public PlayerInviteUI InviteUI;
 		public View DefaultView = View.Sent;
 		public MultiToggleComponent Tabs;
 		public FriendsListPresenter ReceivedListPresenter;
@@ -77,10 +78,15 @@ namespace Beamable.EasyFeatures.BasicSocial
 			
 			Tabs.Setup(Enum.GetNames(typeof(View)).ToList(), OnTabSelected, (int)DefaultView);
 			
-			PlayerIdInputField.onEndEdit.ReplaceOrAddListener(SendInvite);
+			PlayerIdInputField.onSelect.ReplaceOrAddListener(OpenInviteOverlay);
 			CopyIdButton.onClick.ReplaceOrAddListener(CopyPlayerId);
 			
 			await OpenTab(DefaultView);
+		}
+
+		private void OpenInviteOverlay(string ignore)
+		{
+			FeatureControl.OverlaysController.ShowCustomOverlay(InviteUI.gameObject);
 		}
 
 		private async void OnTabSelected(int tabId)
@@ -105,32 +111,6 @@ namespace Beamable.EasyFeatures.BasicSocial
 		private void CopyPlayerId()
 		{
 			GUIUtility.systemCopyBuffer = System.Context.PlayerId.ToString();
-		}
-
-		private async void SendInvite(string playerId)
-		{
-			if (!long.TryParse(playerId, out long id))
-			{
-				Debug.LogError($"Provided id '{playerId}' is invalid");
-				return;
-			}
-
-			try
-			{
-				await System.Context.Social.Invite(id);
-				FeatureControl.OverlaysController.ShowInform($"Sent invite to player {playerId}", null);
-			}
-			catch (PlatformRequesterException e)
-			{
-				if (e.Error.status == 404)
-				{
-					FeatureControl.OverlaysController.ShowError($"No player found with id {playerId}");
-				}
-				else
-				{
-					throw;
-				}
-			}
 		}
 
 		private async Promise OpenTab(View view)

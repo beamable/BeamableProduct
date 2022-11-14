@@ -1150,7 +1150,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_floatValue":2.0}'
+        _json: '{"_valueType":0,"_floatValue":3.0}'
     - _key: roundCorners
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -1378,6 +1378,16 @@ MonoBehaviour:
         _json: '{"_valueType":0,"Enum":514}'
     _cachedProperties: []
     _selector: .text.placeholder.center
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: borderWidth
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_floatValue":0.0}'
+    _cachedProperties: []
+    _selector: .panel.account.borderless
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}

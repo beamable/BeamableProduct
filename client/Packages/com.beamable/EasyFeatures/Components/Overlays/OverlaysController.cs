@@ -14,6 +14,7 @@ namespace Beamable.EasyFeatures.Components
 		public OverlayedModalWindow ModalWindow;
 		public OverlayedLabelWithButton LabelWithButton;
 		public OverlayedToastPopup ToastPopup;
+		public CustomOverlay CustomOverlay;
 
 		private IOverlayComponent _currentObject;
 
@@ -81,6 +82,11 @@ namespace Beamable.EasyFeatures.Components
 		public void ShowToast(string message, float duration = 3f)
 		{
 			ToastPopup.Show(message, duration);
+		}
+
+		public void ShowCustomOverlay(GameObject overlayObject)
+		{
+			CustomOverlay.Show(overlayObject);
 		}
 	}
 }
