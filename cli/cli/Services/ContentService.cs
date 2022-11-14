@@ -1,10 +1,14 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Serialization;
+using Beamable.Serialization.SmallerJSON;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services;
 
-public class ContentService
+public partial class ContentService
 {
 	// string url = $"/basic/content/manifest/public?id={ManifestId}";
 	const string SERVICE = "/basic/content";
@@ -31,26 +35,22 @@ public class ContentService
 		});
 	}
 
-	public async Promise<List<string>> PullContent(ClientManifest manifest, bool saveToDisk = true)
+	public async Promise<List<ContentDocument>> PullContent(ClientManifest manifest, bool saveToDisk = true)
 	{
 		_contentLocal.Init();
-		List<string> contents = new List<string>(manifest.entries.Count);
+		var contents = new List<ContentDocument>(manifest.entries.Count);
 		
 		foreach (var contentInfo in manifest.entries)
 		{
-			if (_contentLocal.HasSameVersion(contentInfo))
-			{
-				var result = await _contentLocal.GetContent(contentInfo.contentId);
-				contents.Add(result);
-			};
 			try
 			{
-				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri, parser: s => s);
-				contents.Add(result);
-				if(saveToDisk)
+				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri, parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
+				
+				if(!_contentLocal.HasSameVersion(result))
 				{
-					await _contentLocal.UpdateContent(contentInfo, result);
+					await _contentLocal.UpdateContent(result);
 				}
+				contents.Add(result);
 			}
 			catch (Exception e)
 			{

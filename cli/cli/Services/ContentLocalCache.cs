@@ -1,28 +1,24 @@
 ﻿using Beamable.Common;
-using Beamable.Common.Api;
-using Beamable.Common.Content;
-using Beamable.Serialization.SmallerJSON;
+using System.Text.Json;
 
 namespace cli.Services;
 
 public class ContentLocalCache
 {
 	private readonly IAppContext _context;
-	private readonly CliRequester _requester;
-	private Dictionary<string, string> _localAssetsVersions;
+	private Dictionary<string, ContentDocument> _localAssets;
 	private string DirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
 
-	public Dictionary<string, string> AssetsVersions => _localAssetsVersions;
+	public Dictionary<string, ContentDocument> Assets => _localAssets;
 
-	public ContentLocalCache(IAppContext context, CliRequester requester)
+	public ContentLocalCache(IAppContext context)
 	{
 		_context = context;
-		_requester = requester;
 	}
 
-	public bool HasSameVersion(ClientContentInfo contentInfo) =>
-		AssetsVersions.TryGetValue(contentInfo.contentId, out var localVersion) &&
-		localVersion == contentInfo.version;
+	public bool HasSameVersion(ContentDocument otherDoc) =>
+		Assets.TryGetValue(otherDoc.id, out var localVersion) &&
+		localVersion.CalculateChecksum() == otherDoc.CalculateChecksum();
 
 	public async Promise<string> GetContent(string id)
 	{
@@ -34,29 +30,28 @@ public class ContentLocalCache
 	
 	public void Init()
 	{
-		if (_localAssetsVersions != null)
+		if (_localAssets != null)
 			return;
 		
 		if (!Directory.Exists(DirPath))
 		{
 			Directory.CreateDirectory(DirPath);
 		}
-		_localAssetsVersions = new Dictionary<string, string>();
+		_localAssets = new Dictionary<string, ContentDocument>();
 
 		foreach (var path in Directory.EnumerateFiles(DirPath, "*json"))
 		{
-			var fileContent = File.ReadAllText(path);
-			var arrayDict = (ArrayDict)Json.Deserialize(fileContent);
-			_localAssetsVersions.Add(arrayDict["id"] as string ?? throw new InvalidOperationException(), arrayDict["version"] as string);
-			
-			BeamableLogger.Log(Path.GetFileName(path));
+			var content = ContentDocument.AtPath(path);
+			_localAssets.Add(content.id, content);
 		}
 	}
 
-	public async Task UpdateContent(ClientContentInfo contentInfo, string result)
+	public async Task UpdateContent(ContentDocument result)
 	{
-		var path = Path.Combine(DirPath, $"{contentInfo.contentId}.json");
+		var path = Path.Combine(DirPath, $"{result.id}.json");
 		BeamableLogger.Log($"Writing to: {path}");
-		await File.WriteAllTextAsync(path, result);
+		var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true } );
+		_localAssets[result.id] = result;
+		await File.WriteAllTextAsync(path, value);
 	}
 }

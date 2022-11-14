@@ -1,8 +1,6 @@
 ﻿using Beamable.Common;
-using Beamable.Common.Api;
-using Beamable.Common.Content;
 using cli.Services;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace cli.Content;
 
@@ -19,7 +17,8 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 	{
 		var manifest = await _contentService.GetManifest();
 		var result = await _contentService.PullContent(manifest);
-		
+		var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+		BeamableLogger.Log(json);
 	}
 
 	public override void Configure()
