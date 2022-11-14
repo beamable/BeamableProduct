@@ -1,14 +1,11 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
-using Beamable.Common.Content.Serialization;
-using Beamable.Serialization.SmallerJSON;
-using Newtonsoft.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services;
 
-public partial class ContentService
+public class ContentService
 {
 	// string url = $"/basic/content/manifest/public?id={ManifestId}";
 	const string SERVICE = "/basic/content";
@@ -42,22 +39,22 @@ public partial class ContentService
 		
 		foreach (var contentInfo in manifest.entries)
 		{
+			if(_contentLocal.HasSameVersion(contentInfo))
+			{
+				contents.Add(await _contentLocal.GetContent(contentInfo.contentId));
+				continue;
+			}
 			try
 			{
 				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri, parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
-				
-				if(!_contentLocal.HasSameVersion(result))
-				{
-					await _contentLocal.UpdateContent(result);
-				}
 				contents.Add(result);
+				_contentLocal.UpdateContent(result);
 			}
 			catch (Exception e)
 			{
 				BeamableLogger.LogException(e);
 			}
 		}
-
 		return contents;
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Content;
 using System.Text.Json;
 
 namespace cli.Services;
@@ -16,14 +17,21 @@ public class ContentLocalCache
 		_context = context;
 	}
 
-	public bool HasSameVersion(ContentDocument otherDoc) =>
-		Assets.TryGetValue(otherDoc.id, out var localVersion) &&
-		localVersion.CalculateChecksum() == otherDoc.CalculateChecksum();
+	public bool HasSameVersion(ClientContentInfo contentInfo)
+	{
+		if (Assets.TryGetValue(contentInfo.contentId, out var localVersion))
+		{
+			var local = localVersion.CalculateChecksum();
+			return local == contentInfo.version;
+		}
 
-	public async Promise<string> GetContent(string id)
+		return false;
+	}
+
+	public async Promise<ContentDocument> GetContent(string id)
 	{
 		var path = Path.Combine(DirPath, $"{id}.json");
-		var content = await File.ReadAllTextAsync(path);
+		var content = ContentDocument.AtPath(path);
 		return content;
 	}
 	

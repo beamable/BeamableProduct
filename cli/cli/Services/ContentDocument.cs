@@ -12,17 +12,12 @@ public class ContentDocument
 
 	public string CalculateChecksum()
 	{
-		using var md5 = MD5.Create();
-		string json = properties?.ToString();
-		if (json != null)
-		{
-			var bytes = Encoding.ASCII.GetBytes(json);
-			var hash = md5.ComputeHash(bytes);
-			var checksum = BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
-			return checksum;
-		}
-
-		return string.Empty;
+		using var sha1 = SHA1.Create();
+		string json = JsonSerializer.Serialize(properties, new JsonSerializerOptions{WriteIndented = false});
+		var bytes = Encoding.ASCII.GetBytes(json);
+		var hash = sha1.ComputeHash(bytes);
+		var checksum = BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
+		return checksum;
 	}
 
 	public static ContentDocument AtPath(string path)
