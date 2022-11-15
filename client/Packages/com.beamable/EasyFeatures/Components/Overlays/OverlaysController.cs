@@ -84,9 +84,9 @@ namespace Beamable.EasyFeatures.Components
 			ToastPopup.Show(message, duration);
 		}
 
-		public void ShowCustomOverlay(GameObject overlayObject)
+		public T ShowCustomOverlay<T>(T overlayObject) where T : MonoBehaviour
 		{
-			CustomOverlay.Show(overlayObject);
+			return CustomOverlay.Show(overlayObject);
 		}
 	}
 }

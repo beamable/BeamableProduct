@@ -86,7 +86,8 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		private void OpenInviteOverlay(string ignore)
 		{
-			FeatureControl.OverlaysController.ShowCustomOverlay(InviteUI.gameObject);
+			var overlay = FeatureControl.OverlaysController.ShowCustomOverlay(InviteUI);
+			overlay.Setup(System);
 		}
 
 		private async void OnTabSelected(int tabId)

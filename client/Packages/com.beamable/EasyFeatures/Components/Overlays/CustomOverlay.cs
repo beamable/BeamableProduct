@@ -9,14 +9,17 @@ namespace Beamable.EasyFeatures.Components
 
 		private GameObject _instantiated;
 		
-		public void Show(GameObject objectToInstantiate)
+		public T Show<T>(T objectToInstantiate) where T : MonoBehaviour
 		{
 			CloseButton.onClick.RemoveAllListeners();
 			CloseButton.onClick.AddListener(Hide);
 
-			_instantiated = Instantiate(objectToInstantiate, transform, true);
+			T instance = Instantiate(objectToInstantiate, transform, true);
+			_instantiated = instance.gameObject;
 			
 			gameObject.SetActive(true);
+
+			return instance;
 		}
 
 		public void Hide()
