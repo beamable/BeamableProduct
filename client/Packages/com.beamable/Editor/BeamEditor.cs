@@ -435,7 +435,7 @@ namespace Beamable
 		/// <param name="beamable">A component that will invite other Beamable components to exist on its GameObject</param>
 		/// <param name="playerCode">A named code that represents a player slot on the device. The <see cref="Default"/> context uses an empty string. </param>
 		/// <returns></returns>
-		public static BeamEditorContext Instantiate(string playerCode = null, IDependencyBuilder dependencyBuilder = null, bool resetCid = false)
+		public static BeamEditorContext Instantiate(string playerCode = null, IDependencyBuilder dependencyBuilder = null)
 		{
 			dependencyBuilder = dependencyBuilder ?? BeamEditor.BeamEditorContextDependencies;
 			playerCode = playerCode ?? string.Format(EDITOR_PLAYER_CODE_TEMPLATE, All.Count.ToString());
@@ -451,12 +451,6 @@ namespace Beamable
 				return existingContext;
 			}
 
-			// only needed for tests to pass
-			if (resetCid)
-			{
-				ConfigDatabase.SetString("cid", "", createField: true);
-			}
-			
 			var ctx = new BeamEditorContext();
 			ctx.Init(playerCode, dependencyBuilder);
 			All.Add(ctx);

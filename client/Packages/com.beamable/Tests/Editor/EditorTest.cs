@@ -32,7 +32,7 @@ namespace Beamable.Editor.Tests
 			var builder = BeamEditorDependencies.DependencyBuilder.Clone();
 			Configure(builder);
 
-			Context = BeamEditorContext.Instantiate("test", builder, true);
+			Context = BeamEditorContext.Instantiate("test", builder);
 
 			Context.CurrentCustomer = new CustomerView();
 			Context.ProductionRealm = new RealmView();
