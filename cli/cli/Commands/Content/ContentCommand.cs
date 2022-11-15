@@ -1,4 +1,6 @@
-﻿namespace cli.Content;
+﻿using System.CommandLine;
+
+namespace cli.Content;
 
 public class ContentCommand : AppCommand<ContentCommandArgs>
 {
@@ -8,6 +10,8 @@ public class ContentCommand : AppCommand<ContentCommandArgs>
 
 	public override void Configure()
 	{
+		AddOption(new Option<string>("manifestId", "set the manifest to use, 'global' by default"),
+			(args, s) => args.ManifestId = s);
 	}
 
 	public override Task Handle(ContentCommandArgs args)
@@ -18,4 +22,5 @@ public class ContentCommand : AppCommand<ContentCommandArgs>
 
 public class ContentCommandArgs : CommandArgs
 {
+	public string ManifestId;
 }

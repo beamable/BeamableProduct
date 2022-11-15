@@ -129,6 +129,7 @@ public class App
 
 		Services.AddRootCommand<ContentCommand, ContentCommandArgs>();
 		Services.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
 		// customize
 		configurator?.Invoke(Services);
 	}

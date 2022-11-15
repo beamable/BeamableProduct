@@ -28,7 +28,7 @@ public class ContentLocalCache
 		return false;
 	}
 
-	public async Promise<ContentDocument> GetContent(string id)
+	public async Promise<ContentDocument?> GetContent(string id)
 	{
 		var path = Path.Combine(DirPath, $"{id}.json");
 		var content = ContentDocument.AtPath(path);

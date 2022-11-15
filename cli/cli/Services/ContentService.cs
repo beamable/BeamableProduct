@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Spectre.Console;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services;
@@ -20,6 +21,7 @@ public class ContentService
 
 	public Promise<ClientManifest> GetManifest(string manifestId = "global")
 	{
+		_contentLocal.Init();
 		string url = $"{SERVICE}/manifest/public?id={manifestId}";
 		return _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 		{
@@ -56,5 +58,34 @@ public class ContentService
 			}
 		}
 		return contents;
+	}
+
+	public async Task DisplayStatusTable()
+	{
+		var contentManifest = await GetManifest();
+		var table = new Table();
+		table.AddColumn("ID");
+		table.AddColumn("Current status");
+		table.AddColumn(new TableColumn("tags").RightAligned());
+		foreach (ClientContentInfo contentManifestEntry in contentManifest.entries)
+		{
+			if (_contentLocal.HasSameVersion(contentManifestEntry))
+			{
+				table.AddRow(contentManifestEntry.contentId, "Up to date", string.Join(",",contentManifestEntry.tags));
+			}else if (_contentLocal.Assets.ContainsKey(contentManifestEntry.contentId))
+			{
+				table.AddRow(contentManifestEntry.contentId, "[yellow]Different content[/]", string.Join(",",contentManifestEntry.tags));
+			}
+			else
+			{
+				table.AddRow(contentManifestEntry.contentId, "[red]Remote only[/]", string.Join(",",contentManifestEntry.tags));
+			}
+		}
+
+		foreach (var pair in _contentLocal.Assets.Where(pair => contentManifest.entries.All(info => info.contentId != pair.Key)))
+		{
+			table.AddRow(pair.Key, "[green]Local only[/]", string.Empty);
+		}
+		AnsiConsole.Write(table);
 	}
 }
