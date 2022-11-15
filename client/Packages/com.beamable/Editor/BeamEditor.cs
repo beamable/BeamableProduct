@@ -518,7 +518,11 @@ namespace Beamable
 
 			// Load up the current Configuration data
 			ConfigDatabase.TryGetString("alias", out var alias);
-			var cid = ConfigDatabase.GetString("cid");
+			string cid = "";
+			if (ConfigDatabase.HasKey("cid"))
+			{
+				cid = ConfigDatabase.GetString("cid");
+			}
 			string pid = "";
 			if (ConfigDatabase.HasKey("pid"))
 			{
