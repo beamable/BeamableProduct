@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fixed
+- There can only be one instance of the `Publish Window` in the `Microservice Manager`
+
+### Changed
+- The `Publish Window` is now centered on show relative to the editor
+
 ### [1.6.0]
 ### Added
 - Displaying log pagination if message contains more that 5000 chars

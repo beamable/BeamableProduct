@@ -25,9 +25,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		[SerializeField] private bool isSet;
 		private CancellationTokenSource _tokenSource;
+		private static PublishWindow Instance { get; set; }
+		private static bool IsAlreadyOpened => Instance != null;
 
 		public static PublishWindow ShowPublishWindow(EditorWindow parent, BeamEditorContext editorContext)
 		{
+			if (IsAlreadyOpened)
+				return null;
+
 			var wnd = CreateInstance<PublishWindow>();
 
 			wnd.name = PUBLISH;
@@ -42,9 +47,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			wnd.Refresh();
 
 			var size = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(servicesRegistry.AllDescriptors.Count, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
-
 			wnd.minSize = size;
-			wnd.position = BeamablePopupWindow.GetCenteredScreenRectForWindow(parent, size);
+			wnd.position = BeamablePopupWindow.GetCenterOnMainWin(wnd);
 
 			loadPromise.Then(model =>
 			{
@@ -66,6 +70,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void OnEnable()
 		{
+			Instance = this;
 			if (!isSet) return;
 
 			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
@@ -117,6 +122,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void OnDestroy()
 		{
+			Instance = null;
 			_tokenSource?.Cancel();
 			WindowStateUtility.EnableAllWindows();
 		}
