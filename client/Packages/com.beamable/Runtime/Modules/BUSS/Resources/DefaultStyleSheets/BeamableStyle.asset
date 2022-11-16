@@ -1301,6 +1301,11 @@ MonoBehaviour:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_floatValue":42.0}'
+    - _key: textAlignment
+      _property:
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"Enum":514}'
     _cachedProperties: []
     _selector: .subHeader
   - _folded: 0

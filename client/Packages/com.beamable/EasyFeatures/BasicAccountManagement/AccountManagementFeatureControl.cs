@@ -15,6 +15,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			CreateAccount,
 			SignIn,
 			ForgotPassword,
+			Management,
+			Editing,
 		}
 		
 		public BeamableViewGroup ViewGroup;
