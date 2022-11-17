@@ -12,9 +12,18 @@ public class ContentLocalCache
 
 	public Dictionary<string, ContentDocument> Assets => _localAssets;
 
+	public Dictionary<string, ClientManifest> Manifests => _manifests;
+
+	private readonly Dictionary<string, ClientManifest> _manifests = new ();
+
 	public ContentLocalCache(IAppContext context)
 	{
 		_context = context;
+	}
+
+	public void UpdateManifest(string manifestId, ClientManifest manifest)
+	{
+		_manifests[manifestId] = manifest;
 	}
 
 	public bool HasSameVersion(ClientContentInfo contentInfo)
@@ -57,7 +66,6 @@ public class ContentLocalCache
 	public async Task UpdateContent(ContentDocument result)
 	{
 		var path = Path.Combine(DirPath, $"{result.id}.json");
-		BeamableLogger.Log($"Writing to: {path}");
 		var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true } );
 		_localAssets[result.id] = result;
 		await File.WriteAllTextAsync(path, value);

@@ -8,10 +8,17 @@ namespace cli.Services;
 
 public class ContentService
 {
-	// string url = $"/basic/content/manifest/public?id={ManifestId}";
 	const string SERVICE = "/basic/content";
 	private readonly CliRequester _requester;
 	private readonly ContentLocalCache _contentLocal;
+	public ContentLocalCache ContentLocal
+	{
+		get
+		{
+			_contentLocal.Init();
+			return _contentLocal;
+		}
+	}
 
 	public ContentService(CliRequester requester, ContentLocalCache contentLocal)
 	{
@@ -21,7 +28,12 @@ public class ContentService
 
 	public Promise<ClientManifest> GetManifest(string manifestId = "global")
 	{
-		_contentLocal.Init();
+		if (ContentLocal.Manifests.ContainsKey(manifestId))
+		{
+			var promise = new Promise<ClientManifest>();
+			promise.CompleteSuccess(ContentLocal.Manifests[manifestId]);
+			return promise;
+		}
 		string url = $"{SERVICE}/manifest/public?id={manifestId}";
 		return _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 		{
@@ -36,21 +48,23 @@ public class ContentService
 
 	public async Promise<List<ContentDocument>> PullContent(ClientManifest manifest, bool saveToDisk = true)
 	{
-		_contentLocal.Init();
 		var contents = new List<ContentDocument>(manifest.entries.Count);
 		
 		foreach (var contentInfo in manifest.entries)
 		{
-			if(_contentLocal.HasSameVersion(contentInfo))
+			if(ContentLocal.HasSameVersion(contentInfo))
 			{
-				contents.Add(await _contentLocal.GetContent(contentInfo.contentId));
+				contents.Add(await ContentLocal.GetContent(contentInfo.contentId));
 				continue;
 			}
 			try
 			{
 				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri, parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
 				contents.Add(result);
-				_contentLocal.UpdateContent(result);
+				if(saveToDisk)
+				{
+					await ContentLocal.UpdateContent(result);
+				}
 			}
 			catch (Exception e)
 			{
@@ -60,31 +74,32 @@ public class ContentService
 		return contents;
 	}
 
-	public async Task DisplayStatusTable()
+	public async Task DisplayStatusTable(string manifestId = "global")
 	{
-		var contentManifest = await GetManifest();
+		var contentManifest = await GetManifest(manifestId);
 		var table = new Table();
-		table.AddColumn("ID");
 		table.AddColumn("Current status");
+		table.AddColumn("ID");
+		table.AddColumn("Content type");
 		table.AddColumn(new TableColumn("tags").RightAligned());
 		foreach (ClientContentInfo contentManifestEntry in contentManifest.entries)
 		{
-			if (_contentLocal.HasSameVersion(contentManifestEntry))
+			if (ContentLocal.HasSameVersion(contentManifestEntry))
 			{
-				table.AddRow(contentManifestEntry.contentId, "Up to date", string.Join(",",contentManifestEntry.tags));
-			}else if (_contentLocal.Assets.ContainsKey(contentManifestEntry.contentId))
+				table.AddRow("Up to date", contentManifestEntry.contentId, contentManifestEntry.type, string.Join(",",contentManifestEntry.tags));
+			}else if (ContentLocal.Assets.ContainsKey(contentManifestEntry.contentId))
 			{
-				table.AddRow(contentManifestEntry.contentId, "[yellow]Different content[/]", string.Join(",",contentManifestEntry.tags));
+				table.AddRow("[yellow]Different content[/]", contentManifestEntry.contentId, contentManifestEntry.type, string.Join(",",contentManifestEntry.tags));
 			}
 			else
 			{
-				table.AddRow(contentManifestEntry.contentId, "[red]Remote only[/]", string.Join(",",contentManifestEntry.tags));
+				table.AddRow("[red]Remote only[/]", contentManifestEntry.contentId, contentManifestEntry.type, string.Join(",",contentManifestEntry.tags));
 			}
 		}
 
-		foreach (var pair in _contentLocal.Assets.Where(pair => contentManifest.entries.All(info => info.contentId != pair.Key)))
+		foreach (var pair in ContentLocal.Assets.Where(pair => contentManifest.entries.All(info => info.contentId != pair.Key)))
 		{
-			table.AddRow(pair.Key, "[green]Local only[/]", string.Empty);
+			table.AddRow("[green]Local only[/]", pair.Key, string.Empty, string.Empty);
 		}
 		AnsiConsole.Write(table);
 	}
