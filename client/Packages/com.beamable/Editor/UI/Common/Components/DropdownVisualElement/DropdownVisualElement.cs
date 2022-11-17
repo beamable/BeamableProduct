@@ -130,13 +130,18 @@ namespace Beamable.Editor.UI.Components
 					if (tempTextSize < safeSize)
 					{
 						_toTruncate = i;
-						if (_label != null) _label.text = FormatString(_value);
 						break;
 					}
 				}
 			}
+			else
+			{
+				_toTruncate = 0;
+			}
+
+			if (_label != null) _label.text = FormatString(_value);
 		}
-		
+
 		private string FormatString(string value)
 		{
 			return _toTruncate == 0 ? value : $"{value.Remove(value.Length - 1 - _toTruncate)}...";
