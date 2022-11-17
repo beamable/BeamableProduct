@@ -28,8 +28,8 @@ namespace Beamable.Api.Caches
 
 		private Dictionary<string, object> _offlineCacheData = new Dictionary<string, object>();
 
-		private readonly static string _cid = Config.ConfigDatabase.GetString("cid");
-		private readonly static string _pid = Config.ConfigDatabase.GetString("pid");
+		private readonly static string _cid = Config.ConfigDatabase.HasKey("cid") ? Config.ConfigDatabase.GetString("cid") : "";
+		private readonly static string _pid = Config.ConfigDatabase.HasKey("pid") ? Config.ConfigDatabase.GetString("pid") : "";
 		private readonly static string _offlineCacheRootDir = Path.Combine(Application.persistentDataPath, _offlineCacheRoot, _offlineCacheDir, _cid, _pid, Application.version);
 		private readonly MD5 _md5 = MD5.Create();
 

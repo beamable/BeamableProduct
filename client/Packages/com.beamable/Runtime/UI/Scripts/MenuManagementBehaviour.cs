@@ -129,7 +129,7 @@ namespace Beamable.UI.Scripts
 			var current = Current;
 			if (current != null)
 			{
-				if (current.Prefab.DestoryOnLeave)
+				if (current.Prefab.DestroyOnLeave)
 				{
 					current = _history.Pop();
 					current.Close();

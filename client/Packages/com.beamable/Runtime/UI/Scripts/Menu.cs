@@ -2,6 +2,7 @@ using Beamable.Theme.Palettes;
 using System;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 
 namespace Beamable.UI.Scripts
 {
@@ -10,7 +11,7 @@ namespace Beamable.UI.Scripts
 	{
 		public StringBinding Title;
 		public bool Float = false;
-		public bool DestoryOnLeave;
+		[FormerlySerializedAs("DestoryOnLeave")] public bool DestroyOnLeave;
 		public UnityEvent OnOpen;
 		public UnityEvent OnClosed;
 

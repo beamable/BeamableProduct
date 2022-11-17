@@ -145,7 +145,7 @@ namespace Beamable.Common.Api.Realms
 				   .Map(resp => ProcessProjects(resp.projects))
 				   .Recover(ex =>
 				   {
-					   if (ex is RequesterException err && err.Status == 403)
+					   if (ex is RequesterException err && (err.Status == 403 || err.Status == 404))
 					   {
 						   return new List<RealmView>(); // empty set.
 					   }
