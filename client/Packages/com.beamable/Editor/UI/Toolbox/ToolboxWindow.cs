@@ -4,10 +4,10 @@ using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Toolbox;

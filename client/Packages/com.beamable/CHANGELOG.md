@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed empty list for OnElementsAdded and OnElementRemoved events in ObservableReadonlyList type 
 - Party events will not fire more than once anymore
+- Fixed error preventing user from switching between Beamable accounts 
 
 ## [1.5.2]
 ### Fixed
