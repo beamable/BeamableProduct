@@ -5,10 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.6.2]
-### Fixed
-- There can only be one instance of the `Publish Window` in the `Microservice Manager`
 ### Changed
 - The `Publish Window` is now centered on show relative to the editor
+
+### Fixed
+- There can only be one instance of the `Publish Window` in the `Microservice Manager`
 
 ## [1.6.1]
 - no changes
