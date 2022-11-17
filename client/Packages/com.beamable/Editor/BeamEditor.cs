@@ -517,17 +517,9 @@ namespace Beamable
 			}
 
 			// Load up the current Configuration data
-			ConfigDatabase.TryGetString("alias", out var alias);
-			string cid = "";
-			if (ConfigDatabase.HasKey("cid"))
-			{
-				cid = ConfigDatabase.GetString("cid");
-			}
-			string pid = "";
-			if (ConfigDatabase.HasKey("pid"))
-			{
-				pid = ConfigDatabase.GetString("pid");
-			}
+			ConfigDatabase.TryGetString(Features.Config.ALIAS_KEY, out var alias);
+			ConfigDatabase.TryGetString(Features.Config.CID_KEY, out string cid);
+			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out string pid);
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
@@ -596,7 +588,7 @@ namespace Beamable
 			var cid = res.Cid.GetOrThrow();
 
 			// Gets the stored pid, if its there
-			ConfigDatabase.TryGetString("pid", out var pid);
+			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out var pid);
 
 			// Set the config defaults to reflect the new Customer.
 			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
@@ -654,9 +646,9 @@ namespace Beamable
 			{
 				var games = await realmService.GetGames();
 
-				if (EditorPrefs.HasKey("last-pid"))
+				if (EditorPrefs.HasKey(Features.Config.LAST_PID_KEY))
 				{
-					string lastPid = EditorPrefs.GetString("last-pid");
+					string lastPid = EditorPrefs.GetString(Features.Config.LAST_PID_KEY);
 					if (!string.IsNullOrEmpty(lastPid))
 					{
 						var realms = await realmService.GetRealms(lastPid);
@@ -849,10 +841,10 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm?.Pid);
 			requester.DeleteToken();
-			if (ConfigDatabase.HasKey("pid"))
+			if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
 			{
-				EditorPrefs.SetString("last-pid", ConfigDatabase.GetString("pid"));
-				ConfigDatabase.Reset("pid");
+				EditorPrefs.SetString(Features.Config.LAST_PID_KEY, ConfigDatabase.GetString(Features.Config.PID_KEY));
+				ConfigDatabase.Reset(Features.Config.PID_KEY);
 				SaveConfig(CurrentCustomer?.Alias, "", cid: CurrentCustomer?.Cid);
 			}
 			CurrentUser = null;
@@ -942,7 +934,7 @@ namespace Beamable
 
 			if (!string.IsNullOrEmpty(pid))
 			{
-				ConfigDatabase.SetString("pid", pid, createField: true);
+				ConfigDatabase.SetString(Features.Config.PID_KEY, pid, createField: true);
 			}
 
 			WriteConfig(alias, pid, host, cid);
