@@ -107,7 +107,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mainLoadingBar.Hidden = true;
 			_mainLoadingBar.Refresh();
 
-			_scrollContainer = Root.Q<ScrollView>("manifestsContainer");
+			_scrollContainer = new ScrollView(ScrollViewMode.Vertical);
+			_scrollContainer.horizontalScroller?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("services").Add(_scrollContainer);
+
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
 
 			var entryModels = new List<IEntryModel>(Model.Services.Values);
@@ -167,17 +170,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return 0;
 			}
 			_scrollContainer.Sort(Comparer);
-
-			var publishElements = _scrollContainer.Children();
-			bool isOdd = false;
-			foreach (VisualElement child in publishElements)
-			{
-				if (!(child is PublishManifestEntryVisualElement manifestEntryVisualElement))
-					continue;
-
-				manifestEntryVisualElement.SetOddRow(isOdd);
-				isOdd = !isOdd;
-			}
 		}
 
 		private void HandlePrimaryButtonClicked()

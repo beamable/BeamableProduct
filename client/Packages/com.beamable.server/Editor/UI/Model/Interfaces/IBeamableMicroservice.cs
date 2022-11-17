@@ -14,7 +14,6 @@ namespace Beamable.Editor.UI.Model
 		Task Build();
 		Task BuildAndStart();
 		Task BuildAndRestart();
-		void OpenLocalDocs();
 		void EnrichWithRemoteReference(ServiceReference remoteReference);
 		void EnrichWithStatus(ServiceStatus status);
 	}

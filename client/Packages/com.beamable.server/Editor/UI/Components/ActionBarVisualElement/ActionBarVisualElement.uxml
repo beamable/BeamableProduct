@@ -8,9 +8,9 @@
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="leftContentVisualElement">
 
-            <engine:Button name="startAll" class="boundedButton">
-                <engine:Image name="startIcon"/>
-                <engine:Label class="buttonText" text="Play All"/>
+            <engine:Button name="publish" class="boundedButton">
+                <engine:Image name="publishIcon"/>
+                <engine:Label class="buttonText" text="Publish"/>
             </engine:Button>
 
             <engine:Button name="dependencies" class="boundedButton">
@@ -23,14 +23,17 @@
                     <engine:Image name="createNewIcon"/>
                     <engine:Label class="buttonText" text="Create New"/>
                 </engine:VisualElement>
-                <engine:Image name="dropDownImg" class="--image-scale-to-fit">
-                </engine:Image>
+                <engine:Image name="dropDownImg" class="--image-scale-to-fit"/>
             </engine:Button>
-
-            <engine:Button name="publish" class="boundedButton">
-                <engine:Image name="publishIcon"/>
-                <engine:Label class="buttonText" text="Publish"/>
+            
+            <engine:Button name="startAll" class="boundedButton --noPadding">
+                <engine:VisualElement class="mainPart">
+                    <engine:Image name="startIcon"/>
+                    <engine:Label class="buttonText" text="Play"/>
+                </engine:VisualElement>
+                <engine:Image name="dropDownImg" class="--image-scale-to-fit"/>
             </engine:Button>
+     
         </engine:VisualElement>
 
         <engine:VisualElement name="rightContentVisualElement">
