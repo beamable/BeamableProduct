@@ -45,10 +45,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			UsernameText.text = playerName;
 			GamertagText.text = $"#{playerId}";
 			AvatarImage.sprite = avatar;
-			if (avatar == null)
-			{
-				AvatarImage.color = Color.clear;
-			}
+			AvatarImage.color = avatar == null ? Color.clear : Color.white;
 
 			OnDeleteButton = onDeleteButton;
 			OnBlockButton = onBlockButton;
