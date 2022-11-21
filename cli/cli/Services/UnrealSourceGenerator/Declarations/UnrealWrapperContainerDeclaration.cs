@@ -14,7 +14,7 @@ public struct UnrealEnumDeclaration
 		var enumValues = string.Join(",\n\t", EnumValues.Select(v =>
 		{
 			var enumValue = $@"{v} UMETA(DisplayName=""{v.SpaceOutOnUpperCase()}"")";
-			
+
 			return enumValue;
 		}));
 
