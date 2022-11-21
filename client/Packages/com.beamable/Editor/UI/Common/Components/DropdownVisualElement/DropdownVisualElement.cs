@@ -12,6 +12,9 @@ namespace Beamable.Editor.UI.Components
 	{
 		public new class UxmlFactory : UxmlFactory<DropdownVisualElement, UxmlTraits> { }
 
+		private const float _SAFE_MIN_WIDTH = 1000;
+		private const float _SAFE_MIN_HEIGHT = 24.0f;
+
 		private readonly List<DropdownSingleOption> _optionModels;
 
 		private VisualElement _button;
@@ -116,7 +119,8 @@ namespace Beamable.Editor.UI.Components
 		private void GeometryChanged(GeometryChangedEvent evt)
 		{
 			float safeSize = evt.newRect.width - 25.0f;
-			bool shouldTruncate = safeSize < CalculateTextSize(_value);
+			float calculateTextSize = CalculateTextSize(_value);
+			bool shouldTruncate = safeSize < calculateTextSize;
 
 			var valueLength = _value.Length - 1;
 
@@ -149,7 +153,8 @@ namespace Beamable.Editor.UI.Components
 
 		private float CalculateTextSize(string value)
 		{
-			return _label.MeasureTextSize(value, 1000.0f, MeasureMode.AtMost, 24.0f, MeasureMode.AtMost).x;
+			return _label.MeasureTextSize(value, _SAFE_MIN_WIDTH, MeasureMode.AtMost, _SAFE_MIN_HEIGHT,
+			                              MeasureMode.AtMost).x;
 		}
 
 		private async Promise OnButtonClicked(Rect bounds)
