@@ -21,7 +21,7 @@ public struct UnrealEndpointDeclaration
 	public string ResponseBodyUnrealType;
 	public string ResponseBodyNamespacedType;
 	public string ResponseBodyNonPtrUnrealType;
-	
+
 
 	private string _capitalizedEndpointVerb;
 	private string _buildBodyImpl;
@@ -192,8 +192,8 @@ public struct UnrealEndpointDeclaration
 							if (tp.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 							{
 								return $"// Assumes the object is constructed and have the new request take ownership of the memory for it\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
+									   $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
+									   $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
 							}
 
 							return $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};";
@@ -777,7 +777,7 @@ public:
 
 #undef LOCTEXT_NAMESPACE
 ";
-	
+
 	public const string BEAM_FLOW_BP_NODE_CPP = $@"
 
 #include ""BeamFlow/ApiRequest/AutoGen/₢{nameof(NamespacedOwnerServiceName)}₢/K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢.h""
@@ -849,6 +849,6 @@ FString UK2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢::Get
 
 #undef LOCTEXT_NAMESPACE
 ";
-	
-	
+
+
 }
