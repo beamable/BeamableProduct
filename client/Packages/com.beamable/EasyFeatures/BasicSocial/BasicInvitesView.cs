@@ -1,5 +1,4 @@
-﻿using Beamable.Api;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Common.Player;
 using Beamable.EasyFeatures.Components;
 using Beamable.Player;
@@ -18,7 +17,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		{
 			BeamContext Context { get; set; }
 			List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list) where T : IPlayerId;
-			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
+			Promise<List<AccountSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
 		}
 
 		public enum View
@@ -33,15 +32,15 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public PlayerInviteUI InviteUI;
 		public View DefaultView = View.Sent;
 		public MultiToggleComponent Tabs;
-		public FriendsListPresenter ReceivedListPresenter;
-		public FriendsListPresenter SentListPresenter;
+		public AccountsListPresenter ReceivedListPresenter;
+		public AccountsListPresenter SentListPresenter;
 		public Button CopyIdButton;
 
 		protected IDependencies System;
 
-		private Dictionary<View, FriendsListPresenter> _views = new Dictionary<View, FriendsListPresenter>();
+		private Dictionary<View, AccountsListPresenter> _views = new Dictionary<View, AccountsListPresenter>();
 		private View _currentView;
-		private FriendsListPresenter _currentListView;
+		private AccountsListPresenter _currentListView;
 
 		public bool IsVisible
 		{

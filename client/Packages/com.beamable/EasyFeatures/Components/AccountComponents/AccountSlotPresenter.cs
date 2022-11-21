@@ -5,9 +5,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Beamable.EasyFeatures.BasicSocial
+namespace Beamable.EasyFeatures.Components
 {
-	public class FriendSlotPresenter : MonoBehaviour
+	public class AccountSlotPresenter : MonoBehaviour
 	{
 		private const string ONLINE_CLASS = "online";
 		private const string OFFLINE_CLASS = "offline";
@@ -72,10 +72,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		private void SetViewData(ViewData viewData)
 		{
 			AvatarImage.sprite = viewData.Avatar;
-			if (viewData.Avatar == null)
-			{
-				AvatarImage.color = Color.clear;
-			}
+			AvatarImage.color = viewData.Avatar == null ? Color.clear : Color.white;
 			UsernameText.text = viewData.PlayerName;
 			DescriptionText.text = viewData.Description;
 		}

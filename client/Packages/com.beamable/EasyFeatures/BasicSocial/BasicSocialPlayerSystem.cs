@@ -1,6 +1,7 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Player;
+using Beamable.EasyFeatures.Components;
 using Beamable.Player;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,9 +24,9 @@ namespace Beamable.EasyFeatures.BasicSocial
 			return ids;
 		}
 
-		public async Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds)
+		public async Promise<List<AccountSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds)
 		{
-			FriendSlotPresenter.ViewData[] viewData = new FriendSlotPresenter.ViewData[playerIds.Count];
+			AccountSlotPresenter.ViewData[] viewData = new AccountSlotPresenter.ViewData[playerIds.Count];
 			for (int i = 0; i < playerIds.Count; i++)
 			{
 				var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerIds[i]);
@@ -44,7 +45,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 					}
 				}
 
-				viewData[i] = new FriendSlotPresenter.ViewData
+				viewData[i] = new AccountSlotPresenter.ViewData
 				{
 					PlayerId = playerIds[i],
 					PlayerName = playerName,

@@ -1384,7 +1384,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a44bf56fa498a14408b257d64fa2a913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FriendSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
+  AccountSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
     type: 3}
   ScrollView: {fileID: 7490988531272875777}
   DefaultElementHeight: 150
@@ -1829,7 +1829,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a44bf56fa498a14408b257d64fa2a913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FriendSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
+  AccountSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
     type: 3}
   ScrollView: {fileID: 6759755934608048051}
   DefaultElementHeight: 150
@@ -2135,7 +2135,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a44bf56fa498a14408b257d64fa2a913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FriendSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
+  AccountSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
     type: 3}
   ScrollView: {fileID: 7874961338647484446}
   DefaultElementHeight: 150
@@ -3518,7 +3518,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PlayerIdInputField: {fileID: 1785394947917148937}
   FoundPlayerObject: {fileID: 1500384630738637564}
-  FriendPresenter: {fileID: 5570379653537365967}
+  accountPresenter: {fileID: 5570379653537365967}
 --- !u!1 &3431058030881738381
 GameObject:
   m_ObjectHideFlags: 0
@@ -4272,7 +4272,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a44bf56fa498a14408b257d64fa2a913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FriendSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
+  AccountSlotPrefab: {fileID: 2456856759780890128, guid: c5cb533faf2e3694680a7411cd262bf9,
     type: 3}
   ScrollView: {fileID: 4275837522260219682}
   DefaultElementHeight: 150
@@ -10073,7 +10073,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FeatureControl: {fileID: 3369240479560661917}
   EnrichOrder: 0
-  FriendsListPresenter: {fileID: 3448889029767353281}
+  AccountsListPresenter: {fileID: 3448889029767353281}
 --- !u!114 &5708635178842788192
 MonoBehaviour:
   m_ObjectHideFlags: 0

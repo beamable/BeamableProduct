@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Player;
+using Beamable.EasyFeatures.Components;
 using Beamable.Player;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,10 +13,10 @@ namespace Beamable.EasyFeatures.BasicSocial
 		{
 			BeamContext Context { get; set; }
 			List<long> GetPlayersIds<T>(ObservableReadonlyList<T> list) where T : IPlayerId;
-			Promise<List<FriendSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
+			Promise<List<AccountSlotPresenter.ViewData>> GetPlayersViewData(List<long> playerIds);
 		}
 		
-		public FriendsListPresenter BlockedListPresenter;
+		public AccountsListPresenter BlockedListPresenter;
 
 		protected IDependencies System;
 		

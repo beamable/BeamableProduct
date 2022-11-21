@@ -1,5 +1,6 @@
 ﻿using Beamable.Api;
 using Beamable.Common;
+using Beamable.EasyFeatures.Components;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -10,7 +11,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 	{
 		public TMP_InputField PlayerIdInputField;
 		public GameObject FoundPlayerObject;
-		public FriendSlotPresenter FriendPresenter;
+		public AccountSlotPresenter accountPresenter;
 
 		private BasicInvitesView.IDependencies PlayerSystem;
 
@@ -53,9 +54,9 @@ namespace Beamable.EasyFeatures.BasicSocial
 		private async Promise PlayerFound(long playerId)
 		{
 			var list = await PlayerSystem.GetPlayersViewData(new List<long> {playerId});
-			FriendSlotPresenter.ViewData viewData = list[0];
-			FriendSlotPresenter.PoolData data = new FriendSlotPresenter.PoolData {ViewData = viewData};
-			FriendPresenter.Setup(data, null, SendInvite, "Invite");
+			AccountSlotPresenter.ViewData viewData = list[0];
+			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData {ViewData = viewData};
+			accountPresenter.Setup(data, null, SendInvite, "Invite");
 			FoundPlayerObject.SetActive(true);
 		}
 

@@ -1,22 +1,20 @@
-﻿using Beamable.Avatars;
-using Beamable.Common;
-using Beamable.UI.Scripts;
+﻿using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace Beamable.EasyFeatures.BasicSocial
+namespace Beamable.EasyFeatures.Components
 {
-	public class FriendsListPresenter : MonoBehaviour, PoolableScrollView.IContentProvider
+	public class AccountsListPresenter : MonoBehaviour, PoolableScrollView.IContentProvider
 	{
-		public FriendSlotPresenter FriendSlotPrefab;
+		public AccountSlotPresenter AccountSlotPrefab;
 		public PoolableScrollView ScrollView;
 		public float DefaultElementHeight = 150;
 
-		protected List<FriendSlotPresenter> SpawnedEntries = new List<FriendSlotPresenter>();
-		protected List<FriendSlotPresenter.ViewData> Slots;
+		protected List<AccountSlotPresenter> SpawnedEntries = new List<AccountSlotPresenter>();
+		protected List<AccountSlotPresenter.ViewData> Slots;
 		protected Action<long> onButtonPressed;
 		protected Action<long> onEntryPressed;
 		protected Action<long> onAcceptPressed;
@@ -25,7 +23,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 
 		private bool isAcceptCancelVariant;
 
-		public void Setup(List<FriendSlotPresenter.ViewData> viewData, Action<long> onButtonPressed = null, string buttonText = "Confirm", Action<long> onEntryPressed = null)
+		public void Setup(List<AccountSlotPresenter.ViewData> viewData, Action<long> onButtonPressed = null, string buttonText = "Confirm", Action<long> onEntryPressed = null)
 		{
 			isAcceptCancelVariant = false;
 			
@@ -36,7 +34,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			SetupInternal(viewData);
 		}
 
-		public void Setup(List<FriendSlotPresenter.ViewData> viewData, Action<long> onAcceptPressed, Action<long> onCancelPressed, Action<long> onEntryPressed = null)
+		public void Setup(List<AccountSlotPresenter.ViewData> viewData, Action<long> onAcceptPressed, Action<long> onCancelPressed, Action<long> onEntryPressed = null)
 		{
 			isAcceptCancelVariant = true;
 
@@ -47,7 +45,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			SetupInternal(viewData);
 		}
 
-		private void SetupInternal(List<FriendSlotPresenter.ViewData> viewData)
+		private void SetupInternal(List<AccountSlotPresenter.ViewData> viewData)
 		{
 			Slots = viewData.ToList();
 			ScrollView.SetContentProvider(this);
@@ -58,7 +56,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 		
 		public void ClearEntries()
 		{
-			foreach (FriendSlotPresenter slotPresenter in SpawnedEntries)
+			foreach (AccountSlotPresenter slotPresenter in SpawnedEntries)
 			{
 				Destroy(slotPresenter.gameObject);
 			}
@@ -72,7 +70,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			for (int i = 0; i < Slots.Count; i++)
 			{
 				var data = Slots[i];
-				var poolData = new FriendSlotPresenter.PoolData
+				var poolData = new AccountSlotPresenter.PoolData
 				{
 					ViewData = data, Index = i, Height = DefaultElementHeight
 				};
@@ -85,11 +83,11 @@ namespace Beamable.EasyFeatures.BasicSocial
 		public RectTransform Spawn(PoolableScrollView.IItem item, out int order)
 		{
 			// TODO: implement object pooling
-			var spawned = Instantiate(FriendSlotPrefab);
+			var spawned = Instantiate(AccountSlotPrefab);
 			SpawnedEntries.Add(spawned);
 			order = -1;
 
-			var data = item as FriendSlotPresenter.PoolData;
+			var data = item as AccountSlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be FriendSlotPresenter");
 
 			if (isAcceptCancelVariant)
@@ -109,7 +107,7 @@ namespace Beamable.EasyFeatures.BasicSocial
 			if (transform == null) return;
 			
 			// TODO: implement object pooling
-			var slotPresenter = transform.GetComponent<FriendSlotPresenter>();
+			var slotPresenter = transform.GetComponent<AccountSlotPresenter>();
 			SpawnedEntries.Remove(slotPresenter);
 			Destroy(slotPresenter.gameObject);
 		}
