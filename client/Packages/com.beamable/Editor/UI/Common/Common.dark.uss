@@ -2,7 +2,6 @@
 
 .announcement-main * {
     color: #FFFFFF;
-    background-color: none;
 }
 
 .announcement-buttons {

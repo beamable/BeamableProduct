@@ -3,8 +3,6 @@
 }
 
 
-
-
 .unboundedButton {
 
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");

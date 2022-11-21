@@ -59,14 +59,6 @@
     border-radius: 0px;
 }
 
-/*.unboundedButtonLabel {*/
-/*    margin-top: -5px;*/
-/*    margin-left: 0px;*/
-/*    margin-right: 0px;*/
-/*    font-size: 9px;*/
-/*    !*color: #FFFFFF;*!*/
-/*    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");*/
-/*}*/
 
 #downloadButton {
     border-right-width: 1px;
