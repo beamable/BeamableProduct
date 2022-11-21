@@ -866,10 +866,6 @@ namespace Beamable.Server
 
       async Task HandleWebsocketMessage(IConnection ws, string msg)
       {
-	      using var activity = _activityProvider.StartActivity(OTElConstants.ACT_MESSAGE);
-	      activity?.SetTag(OTElConstants.TAG_NET_SOCK_PEER_NAME, _args.Host);
-	      _activityProvider.IncrementRequestCounter();
-
 	      Log.Debug("Handling WS Message. {msg}", msg);
 
 	      if (!msg.TryBuildRequestContext(_args, out var ctx))
@@ -877,6 +873,11 @@ namespace Beamable.Server
 		      Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
 		      return;
 	      }
+
+	      ctx.Headers.TryGetValue("x__dash__datadog__dash__parent__dash__id", out var parentId);
+	      using var activity = _activityProvider.StartActivity(OTElConstants.ACT_MESSAGE, parentId);
+	      activity?.SetTag(OTElConstants.TAG_NET_SOCK_PEER_NAME, _args.Host);
+	      _activityProvider.IncrementRequestCounter();
 
 	      var reqLog = Log.ForContext("requestContext", ctx, true);
 	      BeamableSerilogProvider.LogContext.Value = reqLog;

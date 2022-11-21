@@ -1,4 +1,5 @@
 using beamable.server.Tracing;
+using OpenTelemetry.Context.Propagation;
 using OpenTelemetry.Trace;
 using System;
 using System.Collections.Concurrent;
@@ -11,7 +12,7 @@ namespace Beamable.Server;
 
 public interface IActivityProvider
 {
-	Activity StartActivity(string name);
+	Activity StartActivity(string name, string parentId = null);
 	Counter<T> GetCounter<T>(string name, string unit = null, string description = null) where T : struct;
 }
 
@@ -108,9 +109,9 @@ public class ActivityProvider : IActivityProvider
 		_meter = new Meter(NAME, version);
 	}
 
-	public Activity StartActivity(string name)
+	public Activity StartActivity(string name, string parentId = null)
 	{
-		var activity = _activitySource.StartActivity(name, ActivityKind.Server);
+		var activity = _activitySource.StartActivity(name, ActivityKind.Server, parentId);
 		activity?.SetTag(OTElConstants.TAG_PEER_SERVICE, "Microservice");
 		return activity;
 	}
