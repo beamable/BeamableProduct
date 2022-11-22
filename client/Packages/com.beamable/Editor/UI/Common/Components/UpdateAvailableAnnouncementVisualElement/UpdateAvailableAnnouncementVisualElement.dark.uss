@@ -3,5 +3,5 @@
 }
 
 #announcement-ignore {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_light_SM.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_light.png");
 }
