@@ -6,7 +6,6 @@ using Beamable.Common.Api.Stats;
 using Beamable.Common.Dependencies;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
 
 namespace Beamable.Server.Api.Stats
 {
@@ -15,7 +14,6 @@ namespace Beamable.Server.Api.Stats
         private const string OBJECT_SERVICE = "object/stats";
 
         public IBeamableRequester Requester { get; }
-
 
         public RequestContext Context { get; }
 
@@ -80,7 +78,6 @@ namespace Beamable.Server.Api.Stats
             return Requester.Request<EmptyResponse>(Method.POST, $"{OBJECT_SERVICE}/{key}", new StatUpdates(stats));
         }
 
-        [Obsolete("Use either GetPublicPlayerStat(s) or GetProtectedPlayerStat(s) instead.")]
         public Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long userId,
            string[] stats)
         {

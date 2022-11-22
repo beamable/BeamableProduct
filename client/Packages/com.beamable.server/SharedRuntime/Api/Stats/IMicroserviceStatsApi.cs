@@ -23,6 +23,29 @@ namespace Beamable.Server.Api.Stats
 		/// Retrieve a stat value, by key
 		/// </summary>
 		/// <param name="userId"></param>
+		/// <param name="stat"></param>
+		/// <returns></returns>
+		public Promise<string> GetPublicPlayerStat(long userId, string stat);
+
+		/// <summary>
+		/// Retrieve one or more stat values, each by key
+		/// </summary>
+		/// <param name="userId"></param>
+		/// <param name="stats"></param>
+		/// <returns></returns>
+		public Promise<Dictionary<string, string>> GetPublicPlayerStats(long userId, string[] stats);
+
+		/// <summary>
+		/// Retrieve all stat values, each by key
+		/// </summary>
+		/// <param name="userId"></param>
+		/// <returns></returns>
+		public Promise<Dictionary<string, string>> GetAllPublicPlayerStats(long userId);
+		
+		/// <summary>
+		/// Retrieve a stat value, by key
+		/// </summary>
+		/// <param name="userId"></param>
 		/// <param name="key"></param>
 		/// <returns></returns>
 		Promise<string> GetProtectedPlayerStat(long userId, string key);
