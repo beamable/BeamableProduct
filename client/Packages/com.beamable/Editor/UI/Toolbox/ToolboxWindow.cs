@@ -8,6 +8,7 @@ using UnityEditor.UIElements;
 using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 using UnityEngine.UIElements;
+
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Toolbox;
 using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
@@ -296,7 +297,7 @@ namespace Beamable.Editor.Toolbox.UI
 					BeamableLogger.Log("The Beamable package update process completed successfully!");
 					_model.RemoveAnnouncement(updateAvailableAnnouncement);
 					if (!BeamablePackageUpdateMeta.IsBlogVisited &&
-						BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+					    BeamablePackageUpdateMeta.IsBlogSiteAvailable)
 					{
 						ShowWhatsNewAnnouncement();
 					}
