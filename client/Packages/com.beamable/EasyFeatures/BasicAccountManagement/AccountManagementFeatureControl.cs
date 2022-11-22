@@ -9,7 +9,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 	[BeamContextSystem]
 	public class AccountManagementFeatureControl : MonoBehaviour, IBeamableFeatureControl
 	{
-		private enum View
+		public enum View
 		{
 			CurrentAccount,
 			CreateAccount,
@@ -21,6 +21,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		
 		public BeamableViewGroup ViewGroup;
 		public OverlaysController OverlaysController;
+		public View DefaultView = View.CurrentAccount;
 		
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get; }
 
@@ -42,7 +43,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		[RegisterBeamableDependencies]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
-			// initialize player systems here
+			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CurrentAccountView.IDependencies>();
 		}
 		
 		public void OnEnable()
@@ -70,6 +71,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				_views.Add(TypeToViewEnum(view.GetType()), view);
 			}
+			
+			OpenView(DefaultView);
 		}
 
 		private View TypeToViewEnum(Type type)
