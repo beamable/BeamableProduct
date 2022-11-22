@@ -5,14 +5,16 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 #endif
 using Beamable.Common;
-using Beamable.Editor;
+
 using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
 using UnityEngine;
+using Beamable.Editor;
+using System.Linq;
+
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.ContentManager;
 
@@ -82,11 +84,11 @@ namespace Beamable.Editor.UI.Components
 			var halfSize = size * .5f;
 			return new Rect(pt.x - halfSize.x, pt.y - halfSize.y, size.x, size.y);
 		}
-
+		
 		private static Rect GetEditorMainWindowPos()
 		{
 			var containerWinType = Extensions.GetAllDerivedTypes(AppDomain.CurrentDomain, typeof(ScriptableObject))
-											 .FirstOrDefault(t => t.Name == "ContainerWindow");
+			                                 .FirstOrDefault(t => t.Name == "ContainerWindow");
 			if (containerWinType == null)
 				throw new MissingMemberException(
 					"Can't find internal type ContainerWindow. Maybe something has changed inside Unity");
@@ -110,7 +112,7 @@ namespace Beamable.Editor.UI.Components
 			throw new NotSupportedException(
 				"Can't find internal main window. Maybe something has changed inside Unity");
 		}
-
+		
 		/// <summary>
 		/// Centers the window relative to the editor. It uses <a href="https://answers.unity.com/questions/960413/editor-window-how-to-center-a-window.html">THIS</a> solution.
 		/// </summary>
