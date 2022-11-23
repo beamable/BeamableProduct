@@ -466,8 +466,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			Assert.AreEqual(0, o.Color.b);
 			Assert.AreEqual(1, o.Color.a);
 		}
-		
-		
+
+
 		[Test]
 		public void PropertyColor_Legacy_1_2_10()
 		{
