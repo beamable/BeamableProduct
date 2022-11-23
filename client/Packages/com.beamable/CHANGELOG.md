@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - By default, content will be put into local mode. Remote content can be configured by disabling the _Project Setting/Beamable/Content/Enable Local Content In Editor_  option.
 
+### Fixed
+- Content classes with properties with backing field properties serialize correctly when upgrading directly from 1.2.10
+
+
 ## [1.6.2]
 ### Fixed
 - Fixed package updating error related to `Unable to add package`
