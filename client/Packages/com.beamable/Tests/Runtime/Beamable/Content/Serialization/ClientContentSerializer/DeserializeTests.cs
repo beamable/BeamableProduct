@@ -467,6 +467,34 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			Assert.AreEqual(1, o.Color.a);
 		}
 
+
+		[Test]
+		public void PropertyColor_Legacy_1_2_10()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""<Color>k__BackingField"": {
+         ""data"": {
+            ""r"":1,
+            ""g"":0,
+            ""b"":0,
+            ""a"":1
+         }
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<PropertyColorContent>(json);
+
+			Assert.AreEqual(1, o.Color.r);
+			Assert.AreEqual(0, o.Color.g);
+			Assert.AreEqual(0, o.Color.b);
+			Assert.AreEqual(1, o.Color.a);
+		}
+
 		[Test]
 		public void Ref_Legacy()
 		{
