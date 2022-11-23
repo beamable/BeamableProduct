@@ -1,33 +1,28 @@
-#actionBarVisualElement{
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
-}
 
 .boundedButton {
-    border-color: #383838;
+    border-color: #282828;
 }
 
 .unboundedButton {
-    border-color: #383838;
+    border-color: #282828;
 }
 
 #tagButtonImg {
     width: 30px;
     height: 30px;
-    margin-top: -3px;
+    align-self: center;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Tag.png")
 }
 
 #typeButtonImg {
     width: 30px;
     height: 30px;
-    margin-top: -3px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Type.png")
 }
 
 #statusButtonImg {
     width: 30px;
     height: 30px;
-    margin-top: -3px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Statuses.png")
 }
 
