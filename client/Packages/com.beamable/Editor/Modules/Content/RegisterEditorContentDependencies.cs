@@ -43,6 +43,10 @@ namespace Beamable.Editor.Content
 			_defaultFactory = provider.GetService<DefaultContentCacheFactory>();
 		}
 		
+		/// <summary>
+		/// Creates a local content cache for the given content type. The content cache will use the local on-disk content
+		/// to resolve cache misses. 
+		/// </summary>
 		public ContentCache CreateCache(ContentService service, string manifestId, Type contentType)
 		{
 			if (!string.Equals(manifestId, _config.EditorManifestID))
@@ -70,6 +74,13 @@ namespace Beamable.Editor.Content
 			_defaultResolver = new DefaultManifestResolver();
 		}
 
+		/// <summary>
+		/// Gets the manifest from the local on-disk content data.
+		/// If the requested manifest ID is *NOT* the currently configured editor manifest,
+		/// then the <see cref="DefaultManifestResolver.ResolveManifest"/> function must be used to download the manifest.
+		///
+		/// If this manifest can be sourced locally, artifical delay may be injected based on the value of <see cref="ContentConfiguration.LocalContentManifestDelaySeconds"/>
+		/// </summary>
 		public Promise<ClientManifest> ResolveManifest(IBeamableRequester requester, string url, ManifestSubscription subscription)
 		{
 			if (!string.Equals(subscription.ManifestID, _config.EditorManifestID))
@@ -94,11 +105,17 @@ namespace Beamable.Editor.Content
 				                        .ToList()
 			};
 
+			if (manifest.entries.Count == 0)
+			{
+				Debug.LogWarning(@"You are using local content mode, but there was no local content found! Did you forget to download content?
+You can change the content mode with the <i>Project Settings/Beamable/Content/Enable Local Content In Editor</i> option.");
+			}
+			
 			var delayPromise = new Promise();
 			// simulate some delay... 
 			IEnumerator Delay()
 			{
-				var delay = _config.LocalContentManifestDelaySeconds.GetOrElse(.2f);
+				var delay = _config.LocalContentManifestDelaySeconds.GetOrElse(0);
 				yield return new WaitForSeconds(delay);
 				delayPromise.CompleteSuccess();
 			}

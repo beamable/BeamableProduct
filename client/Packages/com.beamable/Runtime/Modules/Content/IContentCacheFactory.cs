@@ -6,6 +6,9 @@ namespace Beamable.Content
 {
 	public interface IContentCacheFactory
 	{
+		/// <summary>
+		/// Create a <see cref="ContentCache"/>
+		/// </summary>
 		public ContentCache CreateCache(ContentService contentService, string manifestId, Type contentType);
 	}
 
@@ -24,6 +27,13 @@ namespace Beamable.Content
 			_coroutineService = coroutineService;
 		}
 		
+		/// <summary>
+		/// Create a <see cref="ContentCache{T}"/> for the given type of content that will use the Remote
+		/// realm to resolve a cache miss. 
+		/// </summary>
+		/// <param name="contentService"></param>
+		/// <param name="manifestId"></param>
+		/// <param name="contentType">The type of content that will be available in the content cache</param>
 		public ContentCache CreateCache(ContentService contentService, string manifestId, Type contentType)
 		{
 			var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);

@@ -4,7 +4,6 @@ using Beamable.Content;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,6 +22,12 @@ namespace Beamable.Editor.Content
 			_config = config;
 		}
 
+		/// <summary>
+		/// Resolve the requested content reference.
+		/// If the content is requested from the current selected editor manifest namespace,
+		///  then the content will always be reloaded from the AssetDatabase.
+		///  Otherwise, the content must be downloaded from the remote realm. 
+		/// </summary>
 		public override Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
 		{
 			var content = (ContentObject) AssetDatabase.LoadAssetAtPath(requestedInfo.uri, _contentType);

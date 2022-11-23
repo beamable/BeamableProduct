@@ -127,7 +127,6 @@ namespace Beamable.Content
 		protected override Promise<ClientManifest> ExecuteRequest(IBeamableRequester requester, string url)
 		{
 			return _provider.GetService<IManifestResolver>().ResolveManifest(requester, url, this);
-			
 		}
 
 		protected override void OnRefresh(ClientManifest data)
