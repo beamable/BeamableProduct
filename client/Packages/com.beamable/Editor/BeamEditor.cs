@@ -233,25 +233,13 @@ namespace Beamable
 
 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
-			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
+			var reflectionCacheSystemPaths = BeamableAssetDatabase.FindAssetPaths<ReflectionSystemObject>(
 				coreConfiguration.ReflectionSystemPaths
 								 .Where(Directory.Exists)
 								 .ToArray());
-			
-			// Convert the guids into paths
-			var reflectionCacheAssetPaths = reflectionCacheSystemGuids.Select(AssetDatabase.GUIDToAssetPath).ToList();
 
-			// It is possible that Unity may return us a bad path, in the form of a .cs file instead of an .asset file.
-			// in this case, we must assume the asset database is not ready, delay, and try again later.
-			var allAssetPathsAreValid = reflectionCacheAssetPaths.All(path => path?.EndsWith(".asset") ?? false);
-			if (!allAssetPathsAreValid)
-			{
-				EditorApplication.delayCall += Initialize;
-				return;
-			}
-			
 			// Get ReflectionSystemObjects and sort them
-			var reflectionSystemObjects = reflectionCacheAssetPaths
+			var reflectionSystemObjects = reflectionCacheSystemPaths
 			                              .Select(AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>)
 			                              .Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
 			                              .Where(system => system.Enabled)

@@ -434,13 +434,12 @@ namespace Beamable.Editor.Content
 
 		private ContentObject Find(ContentObject content)
 		{
-			var assetGuids = BeamableAssetDatabase.FindAssets(
+			var assetPaths = BeamableAssetDatabase.FindAssetPaths(
 				content.GetType(),
 				new[] { Directories.DATA_DIR }
 			);
-			foreach (var guid in assetGuids)
+			foreach (var assetPath in assetPaths)
 			{
-				var assetPath = AssetDatabase.GUIDToAssetPath(guid);
 				ContentObject asset = (ContentObject)AssetDatabase.LoadAssetAtPath(assetPath, content.GetType());
 				if (asset.Id == content.Id)
 					return asset;
@@ -459,14 +458,13 @@ namespace Beamable.Editor.Content
 				yield break; // there is no folder, therefore, no content. Nothing to search for.
 			}
 
-			var assetGuids = BeamableAssetDatabase.FindAssets<TContent>(
+			var assetPaths = BeamableAssetDatabase.FindAssetPaths<TContent>(
 				new[] { Directories.DATA_DIR }
 			);
 			var contentType = _contentTypeReflectionCache.TypeToName(typeof(TContent));
 
-			foreach (var guid in assetGuids)
+			foreach (var path in assetPaths)
 			{
-				var path = AssetDatabase.GUIDToAssetPath(guid);
 				var asset = AssetDatabase.LoadAssetAtPath<TContent>(path);
 
 				if (asset == null || !query.Accept(asset))
@@ -529,15 +527,14 @@ namespace Beamable.Editor.Content
 
 			foreach (var contentType in _contentTypeReflectionCache.GetContentTypes()) // TODO check hierarchy types.
 			{
-				var assetGuids = BeamableAssetDatabase.FindAssets(
+				var assetPaths = BeamableAssetDatabase.FindAssetPaths(
 					contentType,
 					new[] { Directories.DATA_DIR }
 				);
 				var typeName = _contentTypeReflectionCache.TypeToName(contentType);
 
-				foreach (var assetGuid in assetGuids)
+				foreach (var assetPath in assetPaths)
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
 					var rawAsset = AssetDatabase.LoadAssetAtPath(assetPath, typeof(IContentObject));
 					var content = rawAsset as IContentObject;
 
@@ -641,14 +638,13 @@ namespace Beamable.Editor.Content
 		{
 			foreach (var nextContentType in _contentTypeReflectionCache.GetContentTypes()) // TODO check heirarchy types.
 			{
-				var assetGuids = BeamableAssetDatabase.FindAssets(
+				var assetPaths = BeamableAssetDatabase.FindAssetPaths(
 					nextContentType,
 					new[] { Directories.DATA_DIR }
 				);
 
-				foreach (var assetGuid in assetGuids)
+				foreach (var assetPath in assetPaths)
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
 					var rawAsset = AssetDatabase.LoadAssetAtPath(assetPath, typeof(IContentObject));
 					var nextContent = rawAsset as IContentObject;
 

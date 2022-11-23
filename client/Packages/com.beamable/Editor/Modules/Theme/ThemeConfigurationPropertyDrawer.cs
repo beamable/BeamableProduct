@@ -17,14 +17,14 @@ namespace Beamable.Editor.Modules.Theme
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			var rect = new Rect(position.x + 5, position.y, position.width - 5, position.height);
-			string[] guids = BeamableAssetDatabase.FindAssets<ThemeObject>();
-			string[] names = new string[guids.Length + 1];
-			names[guids.Length] = "New...";
-			ThemeObject[] styles = new ThemeObject[guids.Length];
+			string[] paths = BeamableAssetDatabase.FindAssetPaths<ThemeObject>().ToArray();
+			string[] names = new string[paths.Length + 1];
+			names[paths.Length] = "New...";
+			ThemeObject[] styles = new ThemeObject[paths.Length];
 			int selectedIndex = 0;
-			for (int i = 0; i < guids.Length; i++)
+			for (int i = 0; i < paths.Length; i++)
 			{
-				string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+				string path = paths[i];
 				string name = Path.GetFileNameWithoutExtension(path);
 				var style = AssetDatabase.LoadAssetAtPath<ThemeObject>(path);
 				names[i] = name;
@@ -36,7 +36,7 @@ namespace Beamable.Editor.Modules.Theme
 			var outputIndex = EditorGUI.Popup(rect, "Theme", selectedIndex, names);
 			if (outputIndex != selectedIndex)
 			{
-				if (outputIndex == guids.Length)
+				if (outputIndex == paths.Length)
 				{
 					string path = EditorUtility.SaveFilePanelInProject("Create Theme", "Custom", "asset",
 					   "Please enter a file name for your new theme");

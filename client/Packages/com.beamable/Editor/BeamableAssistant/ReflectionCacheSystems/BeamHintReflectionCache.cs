@@ -123,14 +123,13 @@ namespace Beamable.Editor.Reflection
 			{
 				_loadedTextMaps.Clear();
 
-				var beamHintTextMapGuids = BeamableAssetDatabase.FindAssets<BeamHintTextMap>(hintConfigPaths
+				var beamHintTextMapPaths = BeamableAssetDatabase.FindAssetPaths<BeamHintTextMap>(hintConfigPaths
 																									.Where(Directory.Exists)
 																									.ToArray());
 
 				// Reload Detail Config Scriptable Objects
-				foreach (string beamHintTextMapGuid in beamHintTextMapGuids)
+				foreach (string assetPath in beamHintTextMapPaths)
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(beamHintTextMapGuid);
 					var hintTextMap = AssetDatabase.LoadAssetAtPath<BeamHintTextMap>(assetPath);
 					_loadedTextMaps.Add(hintTextMap);
 				}
@@ -152,14 +151,13 @@ namespace Beamable.Editor.Reflection
 			{
 				_loadedConfigs.Clear();
 
-				var beamHintDetailsConfigsGuids = BeamableAssetDatabase.FindAssets<BeamHintDetailsConfig>(hintConfigPaths
+				var beamHintDetailsConfigsPaths = BeamableAssetDatabase.FindAssetPaths<BeamHintDetailsConfig>(hintConfigPaths
 																												 .Where(Directory.Exists)
 																												 .ToArray());
 
 				// Reload Detail Config Scriptable Objects
-				foreach (string beamHintDetailConfigGuid in beamHintDetailsConfigsGuids)
+				foreach (string assetPath in beamHintDetailsConfigsPaths)
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(beamHintDetailConfigGuid);
 					var hintDetailsConfig = AssetDatabase.LoadAssetAtPath<BeamHintDetailsConfig>(assetPath);
 					_loadedConfigs.Add(hintDetailsConfig);
 				}

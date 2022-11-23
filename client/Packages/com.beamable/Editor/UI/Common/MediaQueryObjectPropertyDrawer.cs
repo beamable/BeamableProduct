@@ -11,15 +11,15 @@ namespace Beamable.Editor.Style
 	{
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
-			var guids = BeamableAssetDatabase.FindAssets<MediaQueryObject>();
-			var names = new string[guids.Length + 1];
+			var paths = BeamableAssetDatabase.FindAssetPaths<MediaQueryObject>().ToArray();
+			var names = new string[paths.Length + 1];
 			names[0] = "<none>";
 
-			var mediaQueryObjects = new MediaQueryObject[guids.Length];
+			var mediaQueryObjects = new MediaQueryObject[paths.Length];
 			var selectedIndex = 0;
-			for (int i = 0; i < guids.Length; i++)
+			for (int i = 0; i < paths.Length; i++)
 			{
-				string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+				string path = paths[i];
 				string name = Path.GetFileNameWithoutExtension(path);
 				var mediaQueryObject = AssetDatabase.LoadAssetAtPath<MediaQueryObject>(path);
 				names[i + 1] = name;
