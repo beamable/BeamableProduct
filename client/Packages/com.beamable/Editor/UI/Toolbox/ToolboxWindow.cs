@@ -297,7 +297,7 @@ namespace Beamable.Editor.Toolbox.UI
 					BeamableLogger.Log("The Beamable package update process completed successfully!");
 					_model.RemoveAnnouncement(updateAvailableAnnouncement);
 					if (!BeamablePackageUpdateMeta.IsBlogVisited &&
-					    BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+						BeamablePackageUpdateMeta.IsBlogSiteAvailable)
 					{
 						ShowWhatsNewAnnouncement();
 					}
