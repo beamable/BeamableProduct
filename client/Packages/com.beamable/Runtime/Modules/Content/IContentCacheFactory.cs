@@ -9,7 +9,7 @@ namespace Beamable.Content
 		/// <summary>
 		/// Create a <see cref="ContentCache"/>
 		/// </summary>
-		public ContentCache CreateCache(ContentService contentService, string manifestId, Type contentType);
+		ContentCache CreateCache(ContentService contentService, string manifestId, Type contentType);
 	}
 
 	public class DefaultContentCacheFactory : IContentCacheFactory

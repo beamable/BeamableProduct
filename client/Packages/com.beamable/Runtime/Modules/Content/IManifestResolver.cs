@@ -13,7 +13,7 @@ namespace Beamable.Content
 		/// Based on the implementation, this could fetch the manifest from the remote Realm, or use local content.
 		/// See <see cref="DefaultManifestResolver.ResolveManifest"/> and <see cref="LocalManifestResolver.ResolveManifest"/>
 		/// </summary>
-		public Promise<ClientManifest> ResolveManifest(IBeamableRequester requester,
+		Promise<ClientManifest> ResolveManifest(IBeamableRequester requester,
 		                                              string url,
 		                                              ManifestSubscription subscription);
 	}
