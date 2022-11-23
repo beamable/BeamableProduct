@@ -42,7 +42,7 @@ namespace Beamable.Server.Api.Stats
 		/// <param name="userId"></param>
 		/// <returns></returns>
 		Promise<Dictionary<string, string>> GetPublicPlayerStats(long userId);
-		
+
 		/// <summary>
 		/// Retrieve a stat value, by key
 		/// </summary>
@@ -65,7 +65,7 @@ namespace Beamable.Server.Api.Stats
 		/// <param name="userId"></param>
 		/// <returns></returns>
 		Promise<Dictionary<string, string>> GetProtectedPlayerStats(long userId);
-		
+
 		/// <summary>
 		/// Retrieve all stat values, each by key
 		/// </summary>

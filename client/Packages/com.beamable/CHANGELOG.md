@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - `NotificationService.Unsubscribe<T>` now correctly unsubscribes from events.
+- Content classes with properties with backing field properties serialize correctly when upgrading directly from 1.2.10
 
 ## [1.6.2]
 ### Fixed
