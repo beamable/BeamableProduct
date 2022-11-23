@@ -6,6 +6,7 @@ using Beamable.Common.Api.Stats;
 using Beamable.Common.Dependencies;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 
 namespace Beamable.Server.Api.Stats
 {
@@ -35,11 +36,12 @@ namespace Beamable.Server.Api.Stats
 	        return GetStats("game", "public", "player", userId, stats);
         }
 
-        public Promise<Dictionary<string, string>> GetAllPublicPlayerStats(long userId)
+        public Promise<Dictionary<string, string>> GetPublicPlayerStats(long userId)
         {
 	        return GetStats("game", "public", "player", userId, null);
         }
 
+        [Obsolete("Use GetProtectedPlayerStats(long userId) instead")]
         public Promise<string> GetProtectedPlayerStat(long userId, string stat)
         {
             return GetStats("game", "private", "player", userId, new string[]
@@ -52,6 +54,11 @@ namespace Beamable.Server.Api.Stats
         public Promise<Dictionary<string, string>> GetProtectedPlayerStats(long userId, string[] stats)
         {
             return GetStats("game", "private", "player", userId, stats);
+        }
+        
+        public Promise<Dictionary<string, string>> GetProtectedPlayerStats(long userId)
+        {
+	        return GetStats("game", "private", "player", userId, null);
         }
 
         public Promise<Dictionary<string, string>> GetAllProtectedPlayerStats(long userId)

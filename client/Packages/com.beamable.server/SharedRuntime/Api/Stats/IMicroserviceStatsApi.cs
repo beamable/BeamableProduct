@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Stats;
+using System;
 using System.Collections.Generic;
 
 namespace Beamable.Server.Api.Stats
@@ -40,7 +41,7 @@ namespace Beamable.Server.Api.Stats
 		/// </summary>
 		/// <param name="userId"></param>
 		/// <returns></returns>
-		Promise<Dictionary<string, string>> GetAllPublicPlayerStats(long userId);
+		Promise<Dictionary<string, string>> GetPublicPlayerStats(long userId);
 		
 		/// <summary>
 		/// Retrieve a stat value, by key
@@ -63,6 +64,14 @@ namespace Beamable.Server.Api.Stats
 		/// </summary>
 		/// <param name="userId"></param>
 		/// <returns></returns>
+		Promise<Dictionary<string, string>> GetProtectedPlayerStats(long userId);
+		
+		/// <summary>
+		/// Retrieve all stat values, each by key
+		/// </summary>
+		/// <param name="userId"></param>
+		/// <returns></returns>
+		[Obsolete("Use GetProtectedPlayerStats(long userId) instead")]
 		Promise<Dictionary<string, string>> GetAllProtectedPlayerStats(long userId);
 
 		/// <summary>
