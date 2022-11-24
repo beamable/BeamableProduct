@@ -174,6 +174,12 @@ namespace microserviceTests.microservice
       {
          return vec;
       }
+      
+      [ClientCallable]
+      public InventoryView MethodWithInventoryView_AsParameter(InventoryView view)
+      {
+	      return view;
+      }
 
       [ClientCallable]
       public string MethodWithExceptionThrow(string msg)

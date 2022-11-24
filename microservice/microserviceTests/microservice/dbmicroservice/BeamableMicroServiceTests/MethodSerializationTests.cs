@@ -8,6 +8,7 @@ using Beamable.Server.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -454,6 +455,58 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
+      [Test]
+      [NonParallelizable]
+      public async Task Call_MethodWithInventoryView_AsParameter()
+      {
+	      InventoryView view = new InventoryView();
+	      view.currencies = new Dictionary<string, long>() { { "coin", 1 } };
+	      view.items = new Dictionary<string, List<ItemView>>();
+	      view.currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
+	      
+	      var item1 = new ItemView()
+	      {
+		      id = 1,
+		      createdAt = 100,
+		      properties = new Dictionary<string, string>() { { "prop1", "tst1" } },
+		      updatedAt = 1001
+	      };
+	      
+	      view.items.Add("items1", new List<ItemView>() {item1});
+	      
+	      var currencyProperty = new CurrencyProperty()
+	      {
+		      name = "xyz",
+		      value = "val1"
+	      };
+	      
+	      view.currencyProperties.Add("items1", new List<CurrencyProperty>() {currencyProperty});
+	      
+	      TestSocket testSocket = null;
+	      var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+	      {
+		      testSocket = socket;
+		      socket.AddStandardMessageHandlers()
+			      .AddMessageHandler(
+				      MessageMatcher
+					      .WithReqId(1)
+					      .WithStatus(200)
+					      .WithPayload<InventoryView>(v => string.Equals(JsonConvert.SerializeObject(v), JsonConvert.SerializeObject(view))),
+				      MessageResponder.NoResponse(),
+				      MessageFrequency.OnlyOnce()
+			      );
+	      }));
+
+	      await ms.Start<SimpleMicroservice>(new TestArgs());
+	      Assert.IsTrue(ms.HasInitialized);
+
+	      testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithInventoryView_AsParameter", 1, 1, view));
+
+	      // simulate shutdown event...
+	      await ms.OnShutdown(this, null);
+	      Assert.IsTrue(testSocket.AllMocksCalled());
       }
 
       [Test]
