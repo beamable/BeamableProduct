@@ -44,6 +44,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CurrentAccountView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CreateAccountView.IDependencies>();
 		}
 		
 		public void OnEnable()

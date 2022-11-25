@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
 {
-	public class AccountManagementPlayerSystem : CurrentAccountView.IDependencies
+	public class AccountManagementPlayerSystem : CurrentAccountView.IDependencies, CreateAccountView.IDependencies
 	{
 		public BeamContext Context { get; set; }
 		

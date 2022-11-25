@@ -1393,6 +1393,31 @@ MonoBehaviour:
         _json: '{"_valueType":0,"_floatValue":0.0}'
     _cachedProperties: []
     _selector: .panel.account.borderless
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":18}'
+    _cachedProperties: []
+    _selector: .icon.eye
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":19}'
+    _cachedProperties: []
+    _selector: .icon.eye.off
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
@@ -1412,5 +1437,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 0ec0d8ca560ba8048a040dfb07735cf7, type: 3}
   - {fileID: 21300000, guid: e1ef6def2af45ed4dba40528ea286851, type: 3}
   - {fileID: 21300000, guid: f92e444b1e659644fa182feb8601b974, type: 3}
+  - {fileID: 21300000, guid: 542a2f25c57de9c4e9b1fd8f3cb02dc0, type: 3}
+  - {fileID: 21300000, guid: 8f8a4ace060db6641bfff44c15df8b0f, type: 3}
   _isReadOnly: 1
   _sortingOrder: 0
