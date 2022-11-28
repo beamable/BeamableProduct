@@ -43,7 +43,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var loadPromise = servicesRegistry.GenerateUploadModel();
 
-			wnd._element = new PublishPopup { Model = wnd._model, InitPromise = loadPromise, Registry = servicesRegistry };
+			wnd._publishPopup = new PublishPopup { Model = wnd._model, InitPromise = loadPromise, Registry = servicesRegistry };
 			wnd.Refresh();
 
 			var size = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(servicesRegistry.AllDescriptors.Count, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
@@ -58,7 +58,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				wnd.maxSize = maxSize;
 
 				wnd._model = model;
-				wnd._element.Model = model;
+				wnd._publishPopup.Model = model;
 				wnd.RefreshElement();
 			});
 
@@ -66,7 +66,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		private ManifestModel _model;
-		private PublishPopup _element;
+		private PublishPopup _publishPopup;
 
 		private void OnEnable()
 		{
@@ -77,7 +77,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			servicesRegistry.GenerateUploadModel().Then(model =>
 			{
 				_model = model;
-				_element = new PublishPopup { Model = _model, InitPromise = Promise<ManifestModel>.Successful(model), Registry = servicesRegistry };
+				_publishPopup = new PublishPopup { Model = _model, InitPromise = Promise<ManifestModel>.Successful(model), Registry = servicesRegistry };
 				Refresh();
 				RefreshElement();
 			});
@@ -85,7 +85,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void RefreshElement()
 		{
-			_element.Refresh();
+			_publishPopup.Refresh();
 			Repaint();
 		}
 
@@ -94,13 +94,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			VisualElement container = this.GetRootVisualContainer();
 			container.Clear();
 			_tokenSource = new CancellationTokenSource();
-			_element.OnCloseRequested += () =>
+			_publishPopup.OnCloseRequested += () =>
 			{
 				_tokenSource?.Cancel();
 				WindowStateUtility.EnableAllWindows();
 				Close();
 			};
-			_element.OnSubmit += async (model, logger) =>
+			_publishPopup.OnSubmit += async (model, logger) =>
 			{
 				/*
 				 * We need to build each image...
@@ -108,14 +108,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 				 * upload the manifest file...
 				 */
 				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
-				_element.PrepareForPublish();
+				_publishPopup.PrepareForPublish();
 				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				await microservicesRegistry.Deploy(model, _tokenSource.Token, _element.HandleServiceDeployed, logger);
+				await microservicesRegistry.Deploy(model, _tokenSource.Token, _publishPopup.HandleServiceDeployed, logger);
 			};
 
-			container.Add(_element);
-			_element.PrepareParent();
-			_element.Refresh();
+			container.Add(_publishPopup);
+			_publishPopup.PrepareParent();
+			_publishPopup.Refresh();
 			Repaint();
 			isSet = true;
 		}

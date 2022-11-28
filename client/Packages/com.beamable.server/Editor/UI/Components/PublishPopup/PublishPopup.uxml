@@ -6,9 +6,6 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-
-    <beamable:LoadingBarElement name="mainLoadingBar"/>
-
     <engine:VisualElement>
         <beamable:LoadingIndicatorVisualElement>
             <beamable:LoadingSpinnerVisualElement/>
@@ -16,49 +13,67 @@
     </engine:VisualElement>
 
     <engine:VisualElement name="mainVisualElement">
-        <beamable:PublishStatusVisualElement name="topMessage"/>
 
-        <engine:VisualElement name="splitPane">
-            <engine:VisualElement name="services">
-                <engine:VisualElement name="header">
-                    <engine:VisualElement name="enabledC" class="column"/>
+        <beamable:LoadingBarElement name="mainLoadingBar"/>
 
-                    <engine:VisualElement name="nameC" class="column">
-                        <engine:Image class="HeaderSeparatorImage"/>
-                        <engine:Label text="Name" class="SubTitleText"/>
-                    </engine:VisualElement>
-
-                    <engine:VisualElement name="depsC" class="column">
-                        <engine:Image class="HeaderSeparatorImage"/>
-                        <engine:Label text="Dependencies" class="SubTitleText"/>
-                    </engine:VisualElement>
-
-                    <engine:VisualElement name="SizeC" class="column">
-                        <engine:Image class="HeaderSeparatorImage"/>
-                        <engine:Label text="Size" class="SubTitleText"/>
-                    </engine:VisualElement>
-
-                    <engine:VisualElement name="CommentsC" class="column">
-                        <engine:Image class="HeaderSeparatorImage"/>
-                        <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
-                    </engine:VisualElement>
-
-                    <engine:VisualElement name="CheckC" class="column"/>
-                </engine:VisualElement>
+        <engine:VisualElement name="infoContainer">
+            <engine:VisualElement>
+                <engine:Label name="infoTitle" text="Publish Service To Real Name"/>
             </engine:VisualElement>
-
-            <engine:VisualElement class="bottomContainer">
-                    <engine:TextField name="largeCommentsArea" multiline="true"/>
+            <engine:VisualElement name="infoCards">
+                <engine:Image name="infoCardStep1" class="card"/>
+                <engine:Image name="infoCardStep2" class="card"/>
+                <engine:Image name="infoCardStep3" class="card"/>
+                <engine:Image name="infoCardStep4" class="card"/>
+            </engine:VisualElement>
+            <engine:VisualElement name="infoDetails">
+                <engine:Label name="infoStep" text="Step 2/4:"/>
+                <engine:Label name="infoDescription" text="Build and Upload All Local Services to Docker-Hub"/>
             </engine:VisualElement>
         </engine:VisualElement>
+        
+        <engine:VisualElement name="servicesContainer">
+            <engine:VisualElement name="servicesHeaders">
+                <engine:VisualElement name="enableC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="On/Off" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="nameC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Name" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="knownLocationC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Known Location" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="dependenciesC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Dependencies" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="sizeC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Size" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="commentsC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Comments" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="statusC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Status" class="SubTitleText"/>
+                </engine:VisualElement>
+            </engine:VisualElement>
+            <engine:VisualElement name="separator"/>
+            <engine:VisualElement name="servicesList"/>
+        </engine:VisualElement>
 
+        <engine:VisualElement name="logContainer"/>
 
-
-        <engine:VisualElement name="buttonStrip">
+        <engine:VisualElement name="bottomBarContainer">
+            <engine:TextField name="userDescription"/>
             <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="continueBtn" text="Publish"/>
         </engine:VisualElement>
-
 
     </engine:VisualElement>
 

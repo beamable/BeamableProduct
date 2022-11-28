@@ -36,7 +36,7 @@ namespace Beamable.Common
 				public const string STORAGE_IMAGE_CLASS = "storageImage";
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
 
-				public const float DEFAULT_ROW_HEIGHT = 56.0f;
+				public const float DEFAULT_ROW_HEIGHT = 60.0f;
 				public const int MAX_ROW = 6;
 				public static readonly Vector2 MIN_SIZE = new Vector2(900, 440);
 				public const float ROW_HEIGHT = 65;
