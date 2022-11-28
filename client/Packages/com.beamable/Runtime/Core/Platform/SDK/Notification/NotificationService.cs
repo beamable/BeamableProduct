@@ -189,7 +189,7 @@ namespace Beamable.Api.Notification
 			{
 				Debug.LogWarning("No existing wrapped handler was found for the given typed handler.");
 			}
-			
+
 			if (handlers.TryGetValue(name, out var found))
 			{
 				found.Remove(actualHandler);
