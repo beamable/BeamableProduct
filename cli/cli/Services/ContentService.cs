@@ -80,26 +80,25 @@ public class ContentService
 		var table = new Table();
 		table.AddColumn("Current status");
 		table.AddColumn("ID");
-		table.AddColumn("Content type");
 		table.AddColumn(new TableColumn("tags").RightAligned());
 		foreach (ClientContentInfo contentManifestEntry in contentManifest.entries)
 		{
 			if (ContentLocal.HasSameVersion(contentManifestEntry))
 			{
-				table.AddRow("Up to date", contentManifestEntry.contentId, contentManifestEntry.type, string.Join(",",contentManifestEntry.tags));
+				table.AddRow("Up to date", contentManifestEntry.contentId, string.Join(",",contentManifestEntry.tags));
 			}else if (ContentLocal.Assets.ContainsKey(contentManifestEntry.contentId))
 			{
-				table.AddRow("[yellow]Different content[/]", contentManifestEntry.contentId, contentManifestEntry.type, string.Join(",",contentManifestEntry.tags));
+				table.AddRow("[yellow]Different content[/]", contentManifestEntry.contentId, string.Join(",",contentManifestEntry.tags));
 			}
 			else
 			{
-				table.AddRow("[red]Remote only[/]", contentManifestEntry.contentId, contentManifestEntry.type, string.Join(",",contentManifestEntry.tags));
+				table.AddRow("[red]Remote only[/]", contentManifestEntry.contentId, string.Join(",",contentManifestEntry.tags));
 			}
 		}
 
 		foreach (var pair in ContentLocal.Assets.Where(pair => contentManifest.entries.All(info => info.contentId != pair.Key)))
 		{
-			table.AddRow("[green]Local only[/]", pair.Key, string.Empty, string.Empty);
+			table.AddRow("[green]Local only[/]", pair.Key, string.Empty);
 		}
 		AnsiConsole.Write(table);
 	}
