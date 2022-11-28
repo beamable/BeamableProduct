@@ -6,10 +6,11 @@ using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
 {
-	public class AccountManagementPlayerSystem : CurrentAccountView.IDependencies, CreateAccountView.IDependencies
+	public class AccountManagementPlayerSystem : CurrentAccountView.IDependencies, CreateAccountView.IDependencies,
+	                                             SignInView.IDependencies, ForgotPasswordView.IDependencies
 	{
 		public BeamContext Context { get; set; }
-		
+
 		public async Promise<AccountSlotPresenter.ViewData> GetAccountViewData()
 		{
 			long playerId = Context.PlayerId;
@@ -31,36 +32,49 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 			var data = new AccountSlotPresenter.ViewData
 			{
-				PlayerId = playerId,
-				PlayerName = playerName,
-				Avatar = avatar,
-				Description = "Description"
+				PlayerId = playerId, PlayerName = playerName, Avatar = avatar, Description = "Description"
 			};
-			
+
 			return data;
 		}
-		
+
 		public bool IsAccountDataValid(string email, string password, string confirmPassword, out string errorMessage)
+		{
+			if (!IsEmailValid(email, out errorMessage))
+			{
+				return false;
+			}
+
+			return IsPasswordValid(password, confirmPassword, out errorMessage);
+		}
+
+		public bool IsEmailValid(string email, out string errorMessage)
 		{
 			if (string.IsNullOrWhiteSpace(email))
 			{
 				errorMessage = "You must provide an email address";
 				return false;
 			}
-			
+
 			if (!Regex.IsMatch(email, @"^[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*$"))
 			{
 				errorMessage = "Email address is incorrect";
 				return false;
 			}
 
+			errorMessage = "";
+			return true;
+		}
+
+		public bool IsPasswordValid(string password, string confirmation, out string errorMessage)
+		{
 			if (string.IsNullOrWhiteSpace(password))
 			{
 				errorMessage = "You must provide a password";
 				return false;
 			}
 
-			if (confirmPassword != password)
+			if (confirmation != password)
 			{
 				errorMessage = "Passwords don't match";
 				return false;

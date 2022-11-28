@@ -45,6 +45,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CurrentAccountView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CreateAccountView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, SignInView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, ForgotPasswordView.IDependencies>();
 		}
 		
 		public void OnEnable()
