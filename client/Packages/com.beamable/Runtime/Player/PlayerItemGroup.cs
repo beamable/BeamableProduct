@@ -149,15 +149,26 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerItemGroup : AbsObservableReadonlyList<PlayerItem>
 	{
-		private readonly ItemRef _rootRef;
-		private readonly IPlatformService _platformService;
-		private readonly InventoryService _inventoryService;
+		private ItemRef _rootRef;
+		private IPlatformService _platformService;
+		private InventoryService _inventoryService;
 
 		public PlayerItemGroup(ItemRef rootRef, IPlatformService platformService, InventoryService inventoryService, IDependencyProvider provider)
 		{
 			_rootRef = rootRef;
 			_platformService = platformService;
 			_inventoryService = inventoryService;
+			_platformService.OnReady.Then(_ =>
+			{
+				_inventoryService.Subscribe(rootRef, OnItemsUpdated);
+			});
+		}
+
+		internal void OnAfterDeserialized(ItemRef rootRef, IDependencyProvider provider)
+		{
+			_rootRef = rootRef;
+			_platformService = provider.GetService<IPlatformService>();
+			_inventoryService = provider.GetService<InventoryService>();
 			_platformService.OnReady.Then(_ =>
 			{
 				_inventoryService.Subscribe(rootRef, OnItemsUpdated);

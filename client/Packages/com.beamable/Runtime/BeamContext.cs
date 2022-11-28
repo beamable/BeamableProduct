@@ -64,7 +64,7 @@ namespace Beamable
 	/// </para>
 	/// </summary>
 	[Serializable]
-	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposable
+	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposable, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
 
 		#region Internal State
@@ -443,6 +443,8 @@ namespace Beamable
 			builder.AddSingleton<BeamContext>(this);
 			builder.AddSingleton<IPlatformService>(this);
 			builder.AddSingleton<IGameObjectContext>(this);
+			builder.AddScoped<IDependencyScopeNameProvider>(this);
+			builder.AddSingleton<IDependencyNameProvider>(this);
 			builder.AddSingleton(new AccessTokenStorage(PlayerCode));
 		}
 
@@ -593,6 +595,8 @@ namespace Beamable
 				// Debug.Log("Will get user when reconnect...");
 				// _connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
 			}
+			
+			
 			AuthorizedUser.Value = user;
 		}
 
@@ -810,6 +814,9 @@ namespace Beamable
 
 			return Promise.Success;
 		}
+
+		string IDependencyNameProvider.DependencyProviderName => PlayerCode;
+		string IDependencyScopeNameProvider.DependencyScopeName => PlayerCode;
 	}
 
 	[Serializable]

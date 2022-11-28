@@ -1,4 +1,5 @@
 using Beamable.Api;
+using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Api.Inventory;
 using Beamable.Common;
@@ -10,6 +11,7 @@ using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -30,6 +32,7 @@ namespace Beamable.Player
 		/// </summary>
 		public string CurrencyId;
 
+		[SerializeField]
 		private long _amount;
 
 		/// <summary>
@@ -87,7 +90,7 @@ namespace Beamable.Player
 	/// It represents <b>all</b> currencies for a player.
 	/// </summary>
 	[Serializable]
-	public class PlayerCurrencyGroup : AbsObservableReadonlyList<PlayerCurrency>
+	public class PlayerCurrencyGroup : AbsObservableReadonlyList<PlayerCurrency>, IStorageHandler<PlayerCurrencyGroup>
 	{
 		private readonly IPlatformService _platformService;
 		private readonly InventoryService _inventoryApi;
@@ -95,13 +98,14 @@ namespace Beamable.Player
 		private readonly ISdkEventService _sdkEventService;
 		private readonly IConnectivityService _connectivityService;
 		private readonly IDependencyProvider _provider;
+		private StorageHandle<PlayerCurrencyGroup> _saveHandle;
 
 		public PlayerCurrencyGroup(IPlatformService platformService,
-								   InventoryService inventoryApi,
-								   INotificationService notificationService,
-								   ISdkEventService sdkEventService,
-								   IConnectivityService connectivityService,
-								   IDependencyProvider provider)
+		                           InventoryService inventoryApi,
+		                           INotificationService notificationService,
+		                           ISdkEventService sdkEventService,
+		                           IConnectivityService connectivityService,
+		                           IDependencyProvider provider)
 		{
 			_platformService = platformService;
 			_inventoryApi = inventoryApi;
@@ -112,6 +116,12 @@ namespace Beamable.Player
 
 			platformService.OnReady.Then(__ =>
 			{
+				// if (!_connectivityService.HasConnectivity)
+				// {
+				// 	var token = _provider.GetService<IBeamableRequester>().AccessToken;
+				// 	cache.Get<PlayerCurrencyGroup>("player-currency-group", token, false);
+				// }
+				
 				_inventoryApi.Subscribe("currency", HandleSubscriptionUpdate);
 			});
 			_connectivityService.OnConnectivityChanged += connection =>
@@ -193,6 +203,7 @@ namespace Beamable.Player
 				}
 
 				SetData(next);
+				_saveHandle.Save();
 			}
 			catch (NoConnectivityException)
 			{
@@ -234,6 +245,11 @@ namespace Beamable.Player
 			// any writes should go through the inventory service itself to optimize performance and code-single-use.
 			// we can't pre-fetch the PlayerInventory service because it would cause a cyclic reference in the dependency graph.
 			return _provider.GetService<PlayerInventory>().Update(b => b.CurrencyChange(currency, amount));
+		}
+
+		public void ReceiveStorageHandle(StorageHandle<PlayerCurrencyGroup> handle)
+		{
+			_saveHandle = handle;
 		}
 	}
 }

@@ -1,4 +1,5 @@
 using Beamable.Api;
+using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Api.Inventory;
 using Beamable.Common;
@@ -29,7 +30,7 @@ namespace Beamable.Player
 	/// </para>
 	/// </summary>
 	[Serializable]
-	public class PlayerInventory
+	public class PlayerInventory : IStorageHandler<PlayerInventory>, IServiceStorable
 	{
 		private readonly InventoryService _inventoryApi;
 		private readonly IPlatformService _platformService;
@@ -52,6 +53,8 @@ namespace Beamable.Player
 		[SerializeField]
 		private InventoryUpdateBuilder _offlineUpdate = new InventoryUpdateBuilder();
 
+		private StorageHandle<PlayerInventory> _saveHandle;
+
 		public PlayerInventory(
 			InventoryService inventoryApi,
 			IPlatformService platformService,
@@ -61,7 +64,8 @@ namespace Beamable.Player
 			CoreConfiguration config,
 			IContentApi contentService,
 			IConnectivityService connectivityService,
-			ISdkEventService sdkEventService)
+			ISdkEventService sdkEventService,
+			OfflineCache cache)
 		{
 			_inventoryApi = inventoryApi;
 			_platformService = platformService;
@@ -72,9 +76,7 @@ namespace Beamable.Player
 			_contentService = contentService;
 			_sdkEventService = sdkEventService;
 
-			Currencies = new PlayerCurrencyGroup(
-				_platformService, _inventoryApi, _notificationService, _sdkEventService, connectivityService, _provider
-			);
+			Currencies = _provider.GetService<PlayerCurrencyGroup>();
 
 			// var updateRoutine = _coroutineService.StartNew("playerInvOfflineLoop", Update());
 			_consumer = _sdkEventService.Register(nameof(PlayerInventory), HandleEvent);
@@ -100,9 +102,10 @@ namespace Beamable.Player
 			itemRef = itemRef ?? "items";
 
 			if (_items.TryGetValue(itemRef, out var group)) return group;
-
+			
 			var itemGroup = new PlayerItemGroup(itemRef, _platformService, _inventoryApi, _provider);
 			_items.Add(itemRef, itemGroup);
+			_saveHandle.Save();
 			return itemGroup;
 		}
 
@@ -371,6 +374,7 @@ namespace Beamable.Player
 					_itemIdToReqId.Clear();
 					break;
 			}
+			_saveHandle.Save();
 		}
 
 		/// <summary>
@@ -381,6 +385,27 @@ namespace Beamable.Player
 		public async Promise Refresh()
 		{
 			await _inventoryApi.Subscribable.Refresh();
+			_saveHandle.Save();
+		}
+
+		public void ReceiveStorageHandle(StorageHandle<PlayerInventory> handle)
+		{
+			_saveHandle = handle;
+		}
+
+		public void OnBeforeSaveState()
+		{
+			
+		}
+
+		public void OnAfterLoadState()
+		{
+			// need to rehydrate the items list :/ 
+			Debug.Log("Rehydrating...");
+			foreach (var item in _items)
+			{
+				item.Value.OnAfterDeserialized(item.Key, _provider);
+			}
 		}
 	}
 }
