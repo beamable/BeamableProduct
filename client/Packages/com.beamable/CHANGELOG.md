@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Content classes with properties with backing field properties serialize correctly when upgrading directly from 1.2.10
 
+### Added
+- Added `OnLeft`,`OnPromoted` and `OnKicked` event support in `PartyMember` class.
+
 ## [1.6.2]
 ### Fixed
 - Fixed package updating error related to `Unable to add package`
