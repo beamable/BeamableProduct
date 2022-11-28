@@ -7,38 +7,52 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainContainer">
-        <engine:VisualElement name="row" class="manifestRow">
-            <engine:VisualElement name="enabledC" class="column">
-                <beamable:BeamableCheckboxVisualElement name="checkbox"/>
+        <engine:VisualElement name="serviceEntry">
+
+            <engine:VisualElement name="enableC" class="column">
+                <engine:Image class="HeaderSeparatorImage"/>
+                <beamable:BeamableCheckboxVisualElement name="enableState" text="On/Off" class="enabled"/>
             </engine:VisualElement>
-            
-            <engine:VisualElement name="nameColumn" class="column" display="none">
-                <engine:Image name="typeImage"/>
-                <engine:Label name="nameMS" text="Angie's Test"/>
+            <engine:VisualElement name="nameC" class="column">
+                <engine:Image class="HeaderSeparatorImage"/>
+                <engine:VisualElement>
+                    <engine:Image name="serviceIcon"/>
+                    <engine:Label name="serviceName"/>
+                </engine:VisualElement>
             </engine:VisualElement>
-    
-            <engine:VisualElement name="depsColumn" class="column">
-                <beamable:ExpandableListVisualElement name="depsList" />
+            <engine:VisualElement name="knownLocationC" class="column">
+                <engine:Image class="HeaderSeparatorImage"/>
+                <engine:VisualElement>
+                    <engine:Label text="Known Location"/>
+                </engine:VisualElement>
             </engine:VisualElement>
-    
-            <engine:VisualElement name="SizeC" class="column">
-                <beamable:DropdownVisualElement name="sizeDropdown" />
+            <engine:VisualElement name="dependenciesC" class="column">
+                <engine:Image class="HeaderSeparatorImage"/>
+                <engine:VisualElement name="dependenciesWrapper">
+                    <beamable:ExpandableListVisualElement name="dependenciesList"/>
+                </engine:VisualElement>
             </engine:VisualElement>
-    
-            <engine:VisualElement name="CommentsC" class="column">
-                <engine:TextField name="commentsText"/>
+            <engine:VisualElement name="sizeC" class="column">
+                <engine:Image class="HeaderSeparatorImage"/>
+                <engine:VisualElement>
+                    <beamable:DropdownVisualElement name="sizeDropdown" text="Size"/>
+                </engine:VisualElement>
             </engine:VisualElement>
-    
-            <engine:VisualElement name="CheckC" class="column">
-                <engine:Image name="checkImage"/>
-                <engine:Label name="stateLabel"/>
+            <engine:VisualElement name="commentsC" class="column">
+                <engine:Image class="HeaderSeparatorImage"/>
+                <engine:VisualElement>
+                    <engine:TextField name="comment"/>
+                </engine:VisualElement>
+            </engine:VisualElement>
+            <engine:VisualElement name="statusC" class="column">
+                <engine:Image class="HeaderSeparatorImage"/>
+                <engine:VisualElement>
+                    <engine:Label name="status" text="status"/>
+                </engine:VisualElement>
             </engine:VisualElement>
             
         </engine:VisualElement>
         
-        <beamable:LoadingBarElement name="loadingBar"/>
     </engine:VisualElement>
-
-
 
 </engine:UXML>

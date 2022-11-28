@@ -1,104 +1,118 @@
 ﻿PublishManifestEntryVisualElement {
-    overflow: hidden;
+    height: 50px;
 }
-.manifestRow {
+
+#serviceEntry {
+    align-items: center;
+    padding-left: 20px;
+    /* 7px because vertical scroll has width eq to 13px so we need to recalculate paddings (20px-13px) */
+    padding-right: 7px; 
     flex-grow: 1;
     flex-direction: row;
-    align-content: stretch;
-    justify-content: space-between;
 }
 
-.oddRow {
-    background-color: #545454;
-}
-
-#nameColumn, #depsColumn {
+#serviceEntry > VisualElement > VisualElement {
     flex-direction: row;
-    align-self: center;
-    flex: 1;
+    flex-grow: 1;
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
-#depsColumn {
-    flex-direction: column;
-}
-
-#SizeC, #CommentsC {
-    flex-direction: row;
-    align-self: center;
-}
-
-
-#commentsText {
-    height: 25px;
-}
-
-#enabledC {
-    height: 20px;
-    flex-direction: row;
-    justify-content: flex-end;
-    align-self: center;
-}
-
-
-#nameMS {
-    -unity-font-style: bold;
-}
-
-#typeImage {
-    align-self: center;
-}
-
-#typeC {
-    align-self: flex-start;
-}
-
-#checkbox{
-    align-self: center;
-    justify-content: center;
-    width: 18px;
-    min-width: 18px;
-    margin-right: 5px;
-}
-.column{
-    flex-direction: row;
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-.microserviceImage, #checkImage {
-    width: 20px;
-    height: 20px;
-}
-
-.microserviceImage, 
-.storageImage {
-    margin-left: 2px;
-    margin-right: 2px;
-    width: 26px;
-    height: 26px;
-}
-.published #mainContainer> LoadingBarElement {
-    height: 0px;
-    visibility: hidden;
-}
-
-.published #checkImage {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
-}
-
-#mainContainer > LoadingBarElement {
-    margin-left: 100px;
-    margin-right: 100px;
-    margin-bottom: 1px;
-}
-
-#CheckC {
-    margin-left: 15px;
-    flex-direction: column;
+#enableC {
     align-items: center;
-    justify-content: center;
 }
 
-#stateLabel {
-    margin-top: 10px;
+#enableState > TemplateContainer > Button,
+#enableState > TemplateContainer > Button > VisualElement {
+    background-color: rgba(0,0,0,0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    flex-grow: 1;
+    width: auto;
+    height: auto;
+}
+
+#nameC {
+    align-items: center;
+}
+
+#serviceIcon {
+    min-width: 24px;
+    min-height: 24px;
+}
+
+#serviceName {
+    align-items: center;
+    flex-grow: 1;
+    padding-left: 5px;
+    -unity-text-align: middle-left;
+}
+
+#knownLocationC {
+    align-items: center;
+}
+
+#dependenciesC {
+    align-items: center;
+}
+
+#dependenciesWrapper {
+    flex-direction: column;
+}
+
+#dependenciesList {
+    flex-grow: 1;
+}
+
+#sizeC {
+    align-items: center;
+}
+
+#sizeDropdown > TemplateContainer > #mainVisualElement > #mainContainer {
+    min-width: 50px;
+}
+
+#commentsC {
+    align-items: center;
+}
+
+#comment {
+    flex-grow: 1;
+}
+
+#statusC {
+    align-items: center;
+}
+
+#enableState {
+    margin-left: 10px;
+    width: 40px;
+    height: 20px;
+}
+
+
+.HeaderSeparatorImage {
+    height: 50px;
+}
+
+.enabled {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/switch_on.png");
+}
+
+.disabled {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/switch_off.png");
+}
+
+.MicroService {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/MS not running without wifi.png");
+}
+
+.StorageObject {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running without wifi.png");
 }
