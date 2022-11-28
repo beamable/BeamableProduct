@@ -1,6 +1,7 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.EasyFeatures.Components;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
@@ -37,6 +38,36 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			};
 			
 			return data;
+		}
+		
+		public bool IsAccountDataValid(string email, string password, string confirmPassword, out string errorMessage)
+		{
+			if (string.IsNullOrWhiteSpace(email))
+			{
+				errorMessage = "You must provide an email address";
+				return false;
+			}
+			
+			if (!Regex.IsMatch(email, @"^[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*$"))
+			{
+				errorMessage = "Email address is incorrect";
+				return false;
+			}
+
+			if (string.IsNullOrWhiteSpace(password))
+			{
+				errorMessage = "You must provide a password";
+				return false;
+			}
+
+			if (confirmPassword != password)
+			{
+				errorMessage = "Passwords don't match";
+				return false;
+			}
+
+			errorMessage = "";
+			return true;
 		}
 	}
 }
