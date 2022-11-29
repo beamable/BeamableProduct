@@ -16,6 +16,16 @@ namespace Beamable.Server
       public bool EmitOtelMetrics { get; }
       public bool OtelMetricsIncludeRuntimeInstrumentation { get; }
       public bool OtelMetricsIncludeProcessInstrumentation { get; }
+
+      public string Environment {
+	      get
+	      {
+		      if (string.IsNullOrEmpty(Host)) return "none";
+		      if (Host.Contains("dev")) return "dev";
+		      if (Host.Contains("staging")) return "staging";
+		      return "prod";
+	      }
+      }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs

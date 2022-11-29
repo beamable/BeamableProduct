@@ -62,6 +62,7 @@ public static class OTElConstants
 	public const string BeamableActivityName = "Beamable.BeamService.Core";
 
 	public const string TAG_PEER_SERVICE = "peer.service";
+	public const string TAG_ENV= "env";
 	public const string TAG_NET_SOCK_PEER_NAME = "net.sock.peer.name";
 	public const string TAG_BEAM_ROUTE = "beam.route";
 	public const string TAG_BEAM_PARAM_PROVIDER = "beam.param.provider";
@@ -96,6 +97,7 @@ public static class OTElConstants
 
 public class ActivityProvider : IActivityProvider
 {
+	private readonly string _env;
 	public const string NAME = OTElConstants.BeamableActivityName;
 
 	private ActivitySource _activitySource;
@@ -104,8 +106,9 @@ public class ActivityProvider : IActivityProvider
 	public string ActivityName => _activitySource.Name;
 	public string ActivityVersion => _activitySource.Version;
 
-	public ActivityProvider(string version=null)
+	public ActivityProvider(string version=null, string env=null)
 	{
+		_env = env;
 		version ??= "0.0.0";
 		_activitySource = new ActivitySource(NAME, version);
 		_meter = new Meter(NAME, version);
@@ -164,6 +167,7 @@ public class ActivityProvider : IActivityProvider
 
 		activity?.SetStatus(ActivityStatusCode.Ok);
 		activity?.SetTag(OTElConstants.TAG_PEER_SERVICE, "Microservice");
+		activity?.SetTag(OTElConstants.TAG_ENV, _env);
 		return activity;
 	}
 

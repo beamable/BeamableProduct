@@ -77,7 +77,7 @@ namespace Beamable.Server
         private static ActivityProvider ConfigureOpenTelemetry<T>(IMicroserviceArgs args)
         {
 	        BeamableLogger.Log($"We are about to set up Telemetry! {args.EmitOtel}, {args.EmitOtelMetrics}");
-	        var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild);
+	        var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild, args.Environment);
 
 	        if (args.EmitOtelMetrics)
 	        {
