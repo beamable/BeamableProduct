@@ -874,8 +874,17 @@ namespace Beamable.Server
 		      return;
 	      }
 
-	      ctx.Headers.TryGetValue("x__dash__datadog__dash__parent__dash__id", out var parentId);
-	      using var activity = _activityProvider.StartActivity(OTElConstants.ACT_MESSAGE, parentId);
+	      if (!ctx.Headers.TryGetValue("x__dash__datadog__dash__parent__dash__id", out var spanId))
+	      {
+		      ctx.Headers.TryGetValue("x-datadog-parent-id", out spanId);
+	      }
+
+	      if (!ctx.Headers.TryGetValue("x__dash__datadog__dash__trace__dash__id", out var traceId))
+	      {
+		      ctx.Headers.TryGetValue("x-datadog-trace-id", out traceId);
+	      }
+
+	      using var activity = _activityProvider.StartActivity(OTElConstants.ACT_MESSAGE, traceId, spanId);
 	      activity?.SetTag(OTElConstants.TAG_NET_SOCK_PEER_NAME, _args.Host);
 	      _activityProvider.IncrementRequestCounter();
 

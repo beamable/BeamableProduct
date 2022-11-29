@@ -1,6 +1,8 @@
+using Beamable.Common;
 using beamable.server.Tracing;
 using OpenTelemetry.Context.Propagation;
 using OpenTelemetry.Trace;
+using Serilog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,7 +14,7 @@ namespace Beamable.Server;
 
 public interface IActivityProvider
 {
-	Activity StartActivity(string name, string parentId = null);
+	Activity StartActivity(string name, string parentId = null, string spanId = null);
 	Counter<T> GetCounter<T>(string name, string unit = null, string description = null) where T : struct;
 }
 
@@ -109,9 +111,56 @@ public class ActivityProvider : IActivityProvider
 		_meter = new Meter(NAME, version);
 	}
 
-	public Activity StartActivity(string name, string parentId = null)
+	public Activity StartActivity(string name, string traceId = null, string spanId = null)
 	{
-		var activity = _activitySource.StartActivity(name, ActivityKind.Server, parentId);
+		BeamableLogger.Log($"starting a trace activity {traceId} and {spanId}");
+
+		Activity activity;
+		if (string.IsNullOrEmpty(traceId) || string.IsNullOrEmpty(spanId))
+		{
+			activity = _activitySource.StartActivity(name, ActivityKind.Server);
+		}
+		else
+		{
+			if (!ulong.TryParse(traceId, out var parentIdULong) )
+			{
+				throw new ArgumentOutOfRangeException(nameof(traceId), "Trace isn't right format.");
+			}
+			if (!ulong.TryParse(traceId, out var spanIdULong) )
+			{
+				throw new ArgumentOutOfRangeException(nameof(spanId), "Span isn't right format.");
+			}
+
+			BeamableLogger.Log($"starting a trace activity longs {parentIdULong} and {spanIdULong}");
+
+			var traceBytes = BitConverter.GetBytes(parentIdULong);
+			var spanBytes = BitConverter.GetBytes(spanIdULong);
+			
+
+			var largerTraceBytes = new byte[16];
+			for (var i = 0; i < 8; i++)
+			{
+				largerTraceBytes[i + 8] = traceBytes[i];
+			}
+			
+			BeamableLogger.Log($"starting a trace activity bytes {largerTraceBytes.Length} and {spanBytes.Length}");
+
+			var parentContent = new ActivityContext(
+				traceId: ActivityTraceId.CreateFromBytes(largerTraceBytes),
+				spanId: ActivitySpanId.CreateFromBytes(spanBytes), 
+				traceFlags: ActivityTraceFlags.Recorded, 
+				isRemote: true);
+			BeamableLogger.Log($"Trace parent id=[{parentContent.TraceId}] span id=[{parentContent.SpanId}]");
+			activity = _activitySource.StartActivity(name, ActivityKind.Server, parentContent);
+			if (activity == null)
+			{
+				BeamableLogger.Log($"Making a trace activity -- but activity was null?");
+			}
+			else
+			{
+				BeamableLogger.Log($"Making a trace activity {activity?.Id}");
+			}
+		}
 		activity?.SetTag(OTElConstants.TAG_PEER_SERVICE, "Microservice");
 		return activity;
 	}
