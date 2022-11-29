@@ -21,9 +21,9 @@ namespace Beamable.Server
 	      get
 	      {
 		      if (string.IsNullOrEmpty(Host)) return "none";
-		      if (Host.Contains("dev")) return "dev";
-		      if (Host.Contains("staging")) return "staging";
-		      return "prod";
+		      if (Host.Contains("dev")) return "platform-dev";
+		      if (Host.Contains("staging")) return "platform-staging";
+		      return "platform-prod";
 	      }
       }
    }
