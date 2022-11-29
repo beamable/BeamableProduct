@@ -277,13 +277,13 @@ namespace Beamable.Player
 									Action<PlayerKickedNotification> onPlayerKicked = null)
 		{
 			State = await _partyApi.CreateParty(restriction, maxSize);
-			
+
 			OnPlayerJoined = onPlayerJoined;
 			OnPlayerLeft = onPlayerLeft;
 			OnPartyUpdated = onPartyUpdated;
 			OnPlayerPromoted = onPlayerPromoted;
 			OnPlayerKicked = onPlayerKicked;
-			
+
 			await RefreshMembersFromState();
 		}
 
@@ -410,7 +410,7 @@ namespace Beamable.Player
 		public Action OnLeft;
 		public Action OnPromoted;
 		public Action OnKicked;
-		
+
 		protected bool Equals(PartyMember other)
 		{
 			return playerId == other.playerId;
@@ -453,7 +453,7 @@ namespace Beamable.Player
 		internal PartyMember(PlayerParty sdk)
 		{
 			_sdk = sdk;
-			
+
 			_sdk.OnPlayerLeft += OnPlayerLeft;
 			_sdk.OnPlayerPromoted += OnPlayerPromoted;
 			_sdk.OnPlayerKicked += OnPlayerKicked;
@@ -470,7 +470,7 @@ namespace Beamable.Player
 		{
 			return _sdk.Promote(playerId);
 		}
-		
+
 		private void OnPlayerLeft(PlayerLeftNotification obj)
 		{
 			if (CheckID(obj.playerThatLeftId))
@@ -478,7 +478,7 @@ namespace Beamable.Player
 				OnLeft?.Invoke();
 			}
 		}
-		
+
 		private void OnPlayerPromoted(PlayerPromotedNotification obj)
 		{
 			if (CheckID(obj.playerPromotedId))
@@ -486,7 +486,7 @@ namespace Beamable.Player
 				OnPromoted?.Invoke();
 			}
 		}
-		
+
 		private void OnPlayerKicked(PlayerKickedNotification obj)
 		{
 			if (CheckID(obj.kickedPlayerId))
@@ -494,7 +494,7 @@ namespace Beamable.Player
 				OnKicked?.Invoke();
 			}
 		}
-		
+
 		private bool CheckID(string id)
 		{
 			return string.Equals(id, playerId.ToString());
