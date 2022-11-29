@@ -82,8 +82,8 @@ namespace Beamable.Editor.UI.Components
 			var halfSize = size * .5f;
 			return new Rect(pt.x - halfSize.x, pt.y - halfSize.y, size.x, size.y);
 		}
-		
-		
+
+
 		/// <summary>
 		/// Centers the window relative to the editor. It uses <a href="https://answers.unity.com/questions/960413/editor-window-how-to-center-a-window.html">THIS</a> solution.
 		/// </summary>
