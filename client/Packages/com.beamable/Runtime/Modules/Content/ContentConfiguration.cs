@@ -29,13 +29,13 @@ namespace Beamable.Content
         [HideInInspector]
         public string EditorManifestID = DEFAULT_MANIFEST_ID;
 #endif
-		
+
 		[Tooltip("When enabled, any content requests for the editor manifest will be resolved using your on-disk Scriptable Object content items, and any content from another manifest will be fetched from the remote realm. When disabled, all content is fetched from the remote realm.")]
 		public bool EnableLocalContentInEditor = true;
 
 		[Tooltip("When using Local Content Mode In Editor, simulate how long each content reference will take to fetch.")]
 		public OptionalFloat LocalContentReferenceDelaySeconds;
-		
+
 		[Tooltip("When using Local Content Mode In Editor, simulate how long the manifest will take to fetch.")]
 		public OptionalFloat LocalContentManifestDelaySeconds;
 

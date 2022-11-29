@@ -19,14 +19,14 @@ namespace Beamable.Content
 		private readonly CoroutineService _coroutineService;
 
 		public DefaultContentCacheFactory(IHttpRequester requester,
-		                                  IBeamableFilesystemAccessor filesystemAccessor,
-		                                  CoroutineService coroutineService)
+										  IBeamableFilesystemAccessor filesystemAccessor,
+										  CoroutineService coroutineService)
 		{
 			_requester = requester;
 			_filesystemAccessor = filesystemAccessor;
 			_coroutineService = coroutineService;
 		}
-		
+
 		/// <summary>
 		/// Create a <see cref="ContentCache{T}"/> for the given type of content that will use the Remote
 		/// realm to resolve a cache miss. 
@@ -38,7 +38,7 @@ namespace Beamable.Content
 		{
 			var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 			var constructor = cacheType.GetConstructor(new[]
-				                                           {typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService), typeof(CoroutineService)});
+														   {typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService), typeof(CoroutineService)});
 			return (ContentCache)constructor.Invoke(new object[] { _requester, _filesystemAccessor, contentService, _coroutineService });
 		}
 	}

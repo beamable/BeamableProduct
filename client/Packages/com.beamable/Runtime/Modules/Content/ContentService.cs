@@ -52,7 +52,7 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
-		                            string manifestID) : base(provider, "content")
+									string manifestID) : base(provider, "content")
 		{
 			_provider = provider;
 			ManifestID = manifestID;
@@ -377,7 +377,7 @@ namespace Beamable.Content
 		{
 			if (Subscribables.ContainsKey(manifestID))
 				return;
-			
+
 			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID));
 			Subscribables[manifestID].Subscribe(cb => { });
 		}
