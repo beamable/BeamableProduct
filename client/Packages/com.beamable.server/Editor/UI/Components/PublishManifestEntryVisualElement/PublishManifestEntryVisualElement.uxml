@@ -22,9 +22,7 @@
             </engine:VisualElement>
             <engine:VisualElement name="knownLocationC" class="column">
                 <engine:Image class="HeaderSeparatorImage"/>
-                <engine:VisualElement>
-                    <engine:Label text="Known Location"/>
-                </engine:VisualElement>
+                <engine:VisualElement name="knowLocationEntry"/>
             </engine:VisualElement>
             <engine:VisualElement name="dependenciesC" class="column">
                 <engine:Image class="HeaderSeparatorImage"/>
@@ -32,12 +30,12 @@
                     <beamable:ExpandableListVisualElement name="dependenciesList"/>
                 </engine:VisualElement>
             </engine:VisualElement>
-            <engine:VisualElement name="sizeC" class="column">
-                <engine:Image class="HeaderSeparatorImage"/>
-                <engine:VisualElement>
-                    <beamable:DropdownVisualElement name="sizeDropdown" text="Size"/>
-                </engine:VisualElement>
-            </engine:VisualElement>
+<!--            <engine:VisualElement name="sizeC" class="column">-->
+<!--                <engine:Image class="HeaderSeparatorImage"/>-->
+<!--                <engine:VisualElement>-->
+<!--                    <beamable:DropdownVisualElement name="sizeDropdown" text="Size"/>-->
+<!--                </engine:VisualElement>-->
+<!--            </engine:VisualElement>-->
             <engine:VisualElement name="commentsC" class="column">
                 <engine:Image class="HeaderSeparatorImage"/>
                 <engine:VisualElement>

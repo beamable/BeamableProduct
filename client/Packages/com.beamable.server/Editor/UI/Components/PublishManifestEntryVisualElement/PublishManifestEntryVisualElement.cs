@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
+using Random = UnityEngine.Random;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -29,7 +30,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		public IEntryModel Model { get; }
 		public int Index => _index;
-		public bool IsRemoteOnly => _remoteOnly;
+		public bool IsRemote => _isRemote;
+		public bool IsLocal => _isLocal;
+		
 		public ServicePublishState PublishState { get; private set; }
 		public ILoadingBar LoadingBar
 		{
@@ -42,18 +45,21 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private Image _checkImage;
 		private LoadingBarElement _loadingBar;
-		private string _currentPublishState;
 		private BeamableCheckboxVisualElement _enableState;
 		private DropdownVisualElement _sizeDropdown;
 		private TextField _commentField;
 		private Label _stateLabel;
 		private Label _serviceName;
-		
+		private VisualElement _knowLocationEntry;
+
+		private string _currentPublishState;
+
 		private readonly bool _wasPublished;
 		private readonly int _index;
-		private readonly bool _remoteOnly;
+		private readonly bool _isRemote;
+		private readonly bool _isLocal;
 
-		private static readonly string[] TemplateSizes = { "small", "medium", "large" };
+		// private static readonly string[] TemplateSizes = { "small", "medium", "large" };
 		private static readonly Dictionary<ServicePublishState, string> CheckImageClasses =
 			new Dictionary<ServicePublishState, string>
 			{
@@ -73,12 +79,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public PublishManifestEntryVisualElement(IEntryModel model,
 		                                         bool argWasPublished,
 		                                         int elementIndex,
-		                                         bool isRemoteOnly) : base(nameof(PublishManifestEntryVisualElement))
+		                                         bool isLocal,
+		                                         bool isRemote) : base(nameof(PublishManifestEntryVisualElement))
 		{
 			Model = model;
 			_wasPublished = argWasPublished;
 			_index = elementIndex;
-			_remoteOnly = isRemoteOnly;
+			_isLocal = isLocal;
+			_isRemote = isRemote;
 		}
 
 		public override void Refresh()
@@ -103,15 +111,40 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_serviceName.text = Model.Name;
 			_serviceName.RegisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 
+			_knowLocationEntry = Root.Q<VisualElement>("knowLocationEntry");
+			var locationString = string.Empty;
+
+			if (IsLocal)
+			{
+				var image = new Image { name = "locationLocal" };
+				locationString += "Local";
+				_knowLocationEntry.Add(image);
+			}
+			if (IsLocal && IsRemote)
+			{
+				var image = new Image { name = "separator"};
+				locationString += " & ";
+				_knowLocationEntry.Add(image);
+			}
+			if (IsRemote)
+			{
+				var image = new Image { name = "locationRemote" };
+				locationString += "Remote";
+				_knowLocationEntry.Add(image);
+			}
+			
+			var locationLabel = new Label {name = "locationLabel", text = locationString};
+			_knowLocationEntry.Add(locationLabel);
+
 			if (Model is ManifestEntryModel serviceModel)
 			{
 				var dependencies = serviceModel.Dependencies.Select(dep => dep.id).ToList();
 				Root.Q<ExpandableListVisualElement>("dependenciesList").Setup(dependencies);
 			}
 			
-			_sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
-			_sizeDropdown.Setup(TemplateSizes.ToList(), null);
-			_sizeDropdown.Refresh();
+			// _sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
+			// _sizeDropdown.Setup(TemplateSizes.ToList(), null);
+			// _sizeDropdown.Refresh();
 			
 			_commentField = Root.Q<TextField>("comment");
 			_commentField.value = Model.Comment;
@@ -145,7 +178,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void HandlePublishStarted()
 		{
 			_enableState.SetEnabled(false);
-			_sizeDropdown.SetEnabled(false);
+			// _sizeDropdown.SetEnabled(false);
 			_commentField.SetEnabled(false);
 		}
 		public void UpdateStatus(ServicePublishState state)
@@ -178,9 +211,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		public int CompareTo(PublishManifestEntryVisualElement other)
 		{
-			if (IsRemoteOnly)
+			if (IsRemote)
 				return 1;
-			if (other.IsRemoteOnly)
+			if (other.IsRemote)
 				return -1;
 			if (PublishState == other.PublishState)
 				return Index.CompareTo(other.Index);
