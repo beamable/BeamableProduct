@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.Server.Common;
+using System.Diagnostics;
 
 namespace Beamable.Server
 {
@@ -39,10 +40,11 @@ namespace Beamable.Server
             }
 
             object result = null;
-            using (var _ = _activityProvider.StartActivity(path + OTElConstants.ACT_CLIENT_CALLABLE))
+            using (var _activity = _activityProvider.StartActivity(path + OTElConstants.ACT_CLIENT_CALLABLE))
             {
 	            var output = method.Execute(ctx, parameterProvider);
 	            result = await output;
+	            _activity.SetStatus(ActivityStatusCode.Ok, "Finished");
             }
             BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);
 
