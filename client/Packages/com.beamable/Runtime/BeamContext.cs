@@ -807,10 +807,10 @@ namespace Beamable
 		///
 		/// Suggested usage.
 		/// <code>
-		/// var ctx = await BeamContext.Default.OnInitialized;
+		/// var ctx = await BeamContext.Default.Instance;
 		/// </code>
 		/// </summary>
-		public Promise<BeamContext> OnInitialized => OnReady?.Map(_ => this);
+		public Promise<BeamContext> Instance => OnReady?.Map(_ => this);
 		
 		INotificationService IPlatformService.Notification => _notification;
 		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
