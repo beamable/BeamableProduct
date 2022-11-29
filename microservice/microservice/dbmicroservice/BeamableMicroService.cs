@@ -772,7 +772,7 @@ namespace Beamable.Server
 		      activity?.SetTag(OTElConstants.TAG_BEAM_PARAM_PROVIDER, parameterProvider.GetType().Name);
 		      var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
 		      activity?.SetTag(OTElConstants.TAG_BEAM_RES_BODY, responseJson);
-		      BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
+		      BeamableSerilogProvider.LogContext.Value.Debug("Responding but not sending json");
 		      await _socketRequesterContext.SendMessageSafely(responseJson);
 		      // TODO: Kill Scope
 	      }
