@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
 {
-	public class CurrentAccountView : MonoBehaviour, IAsyncBeamableView
+	public class AccountsView : MonoBehaviour, IAsyncBeamableView
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{

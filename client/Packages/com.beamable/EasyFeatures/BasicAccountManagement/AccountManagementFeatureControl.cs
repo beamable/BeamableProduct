@@ -11,17 +11,16 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 	{
 		public enum View
 		{
-			CurrentAccount,
+			Accounts,
 			CreateAccount,
 			SignIn,
 			ForgotPassword,
-			Management,
-			Editing,
+			AccountInfo,
 		}
 		
 		public BeamableViewGroup ViewGroup;
 		public OverlaysController OverlaysController;
-		public View DefaultView = View.CurrentAccount;
+		public View DefaultView = View.Accounts;
 		
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get; }
 
@@ -43,7 +42,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		[RegisterBeamableDependencies]
 		public static void RegisterDefaultViewDeps(IDependencyBuilder builder)
 		{
-			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CurrentAccountView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, AccountsView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CreateAccountView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, SignInView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, ForgotPasswordView.IDependencies>();
@@ -80,9 +79,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private View TypeToViewEnum(Type type)
 		{
-			if (type == typeof(CurrentAccountView))
+			if (type == typeof(AccountsView))
 			{
-				return View.CurrentAccount;
+				return View.Accounts;
 			}
 
 			if (type == typeof(CreateAccountView))
@@ -105,7 +104,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		public void OpenCurrentAccountView()
 		{
-			OpenView(View.CurrentAccount);
+			OpenView(View.Accounts);
 		}
 		
 		public void OpenCreateAccountView()
