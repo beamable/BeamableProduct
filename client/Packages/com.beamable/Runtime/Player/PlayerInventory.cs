@@ -401,7 +401,6 @@ namespace Beamable.Player
 		public void OnAfterLoadState()
 		{
 			// need to rehydrate the items list :/ 
-			Debug.Log("Rehydrating...");
 			foreach (var item in _items)
 			{
 				item.Value.OnAfterDeserialized(item.Key, _provider);

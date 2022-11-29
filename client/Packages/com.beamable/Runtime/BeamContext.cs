@@ -77,7 +77,10 @@ namespace Beamable
 		/// <summary>
 		/// The User that this context is authenticated with. Any web-calls that are made from this <see cref="BeamContext"/> are made by this User
 		/// </summary>
-		public ObservableUser AuthorizedUser = new ObservableUser();
+		public ObservableUser AuthorizedUser = new ObservableUser
+		{
+			Value = new User()
+		};
 
 		/// <summary>
 		/// The <see cref="IDependencyProvider"/> is a collection of all services required to provide a Beamable SDK full funcitonality
@@ -796,6 +799,19 @@ namespace Beamable
 
 		User IPlatformService.User => AuthorizedUser.Value;
 		public Promise<Unit> OnReady => _initPromise;
+
+		/// <summary>
+		/// A <see cref="Promise{T}"/> that is completed when the <see cref="BeamContext"/> is ready to be used.
+		/// This promise happens immediately after the <see cref="OnReady"/> promise, but returns the current instance
+		/// of the context.
+		///
+		/// Suggested usage.
+		/// <code>
+		/// var ctx = await BeamContext.Default.OnInitialized;
+		/// </code>
+		/// </summary>
+		public Promise<BeamContext> OnInitialized => OnReady?.Map(_ => this);
+		
 		INotificationService IPlatformService.Notification => _notification;
 		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
 		IConnectivityService IPlatformService.ConnectivityService => _connectivityService;
