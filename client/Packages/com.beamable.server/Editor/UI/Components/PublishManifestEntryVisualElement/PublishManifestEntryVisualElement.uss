@@ -58,6 +58,32 @@
     align-items: center;
 }
 
+#locationLocal, #locationRemote {
+    min-width: 24px;
+    min-height: 24px;
+}
+
+#locationLocal {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying L.png");
+}
+
+#separator {
+    background-color: #d9d9d9;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    min-height: 20px;
+    width: 2px;
+}
+
+#locationRemote {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/remote_wifi_light.png");
+}
+
+#locationLabel {
+    -unity-font-style: bold;
+    -unity-text-align: middle-left;
+}
+
 #dependenciesC {
     align-items: center;
 }

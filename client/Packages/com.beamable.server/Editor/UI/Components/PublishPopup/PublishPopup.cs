@@ -6,6 +6,7 @@ using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -57,10 +58,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private PrimaryButtonVisualElement _primarySubmitButton;
 		private ScrollView _scrollContainer;
 		private LoadingBarElement _mainLoadingBar;
-		// private PublishStatusVisualElement _topMessage;
 		private LogVisualElement _logger;
-		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
+		private Label _infoTitle;
 
+		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 		private readonly Dictionary<IBeamableService, Action> _logForwardActions = new Dictionary<IBeamableService, Action>();
 		private readonly List<PublishManifestEntryVisualElement> _servicesToPublish = new List<PublishManifestEntryVisualElement>();
 
@@ -99,6 +100,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_servicesList = Root.Q<VisualElement>("servicesList");
 			_servicesList.Add(_scrollContainer);
 
+			_infoTitle = Root.Q<Label>("infoTitle");
+			_infoTitle.text = $"Publish Service to {Context.CurrentRealm.DisplayName} realm";
+			
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
 
 			var entryModels = new List<IEntryModel>(Model.Services.Values);
@@ -108,8 +112,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				var model = entryModels[index];
 				var wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
-				var remoteOnly = !MicroservicesDataModel.Instance.ContainsModel(model.Name);
-				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, index, remoteOnly);
+				var isLocal = MicroservicesDataModel.Instance.ContainsModel(model.Name);
+				var isRemote = MicroservicesDataModel.Instance.ContainsRemoteOnlyModel(model.Name);
+				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, index, isLocal, isRemote);
 				newElement.Refresh();
 				_publishManifestElements.Add(model.Name, newElement);
 				_scrollContainer.Add(newElement);
@@ -127,11 +132,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
 			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
-			
-			// _topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
-			// _topMessage.Refresh();
 
-			SortServices();
+			// SortServices();
 			AddLogger();
 		}
 		public void PrepareParent()
@@ -156,21 +158,21 @@ namespace Beamable.Editor.Microservice.UI.Components
 					continue;
 
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
-				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
+				// new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
 				_servicesToPublish.Add(kvp.Value);
 			}
 		}
 		
-		private void SortServices()
-		{
-			int Comparer(VisualElement a, VisualElement b) =>
-				a is PublishManifestEntryVisualElement firstManifestElement &&
-				b is PublishManifestEntryVisualElement secondManifestElement
-					? firstManifestElement.CompareTo(secondManifestElement)
-					: 0;
-			
-			_scrollContainer.Sort(Comparer);
-		}
+		// private void SortServices()
+		// {
+		// 	int Comparer(VisualElement a, VisualElement b) =>
+		// 		a is PublishManifestEntryVisualElement firstManifestElement &&
+		// 		b is PublishManifestEntryVisualElement secondManifestElement
+		// 			? firstManifestElement.CompareTo(secondManifestElement)
+		// 			: 0;
+		// 	
+		// 	_scrollContainer.Sort(Comparer);
+		// }
 		private void AddLogger()
 		{
 			_logger = new LogVisualElement
@@ -219,7 +221,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			// _topMessage.HandleSubmitClicked();
 			_primarySubmitButton.SetText("Publishing...");
 			_primarySubmitButton.Disable();
-			AddLogger();
+			// AddLogger();
 			OnSubmit?.Invoke(Model, (message) => _logger.Model.Logs.AddMessage(message));
 		}
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
@@ -228,7 +230,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 
 			element?.UpdateStatus(state);
-			SortServices();
+			// SortServices();
 			switch (state)
 			{
 				case ServicePublishState.Failed:
