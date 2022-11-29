@@ -46,7 +46,7 @@ namespace Beamable.Server
 	            result = await output;
 	            _activity.SetStatus(ActivityStatusCode.Ok, "Finished");
             }
-            BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);
+            BeamableSerilogProvider.LogContext.Value.Debug("Method finished but not showing result ");
 
             using var serializeActivity = _activityProvider.StartActivity(OTElConstants.ACT_SERIALIZE);
             var serializedResult = method.ResponseSerializer.SerializeResponse(ctx, result);
