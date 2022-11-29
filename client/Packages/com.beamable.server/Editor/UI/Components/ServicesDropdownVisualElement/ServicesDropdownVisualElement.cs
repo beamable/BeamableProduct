@@ -16,7 +16,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private PrimaryButtonVisualElement _playSelectedBtn;
 		private readonly List<ServiceEntry> _serviceEntries = new List<ServiceEntry>();
 
-		public ServicesDropdownVisualElement(IReadOnlyList<IBeamableService> services) : base(nameof(ServicesDropdownVisualElement))
+		public ServicesDropdownVisualElement(IReadOnlyList<IBeamableService> services) : base(
+			nameof(ServicesDropdownVisualElement))
 		{
 			Services = services;
 		}
@@ -39,6 +40,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_serviceEntries.Add(serviceEntry);
 				_servicesList.Add(serviceEntry.Dropdown);
 			}
+
 			_playSelectedBtn.Button.SetEnabled(_serviceEntries.Any(x => x.Service.IsSelected));
 		}
 
@@ -52,7 +54,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			foreach (var serviceEntry in _serviceEntries)
 				if (serviceEntry.Service.IsSelected && !serviceEntry.Service.IsRunning)
-					serviceEntry.Service.Start();
+				{
+					if (serviceEntry.Service is IBeamableMicroservice ms)
+					{
+						ms.BuildAndStart();
+					}
+					else
+					{
+						serviceEntry.Service.Start();
+					}
+				}
+
 			OnCloseRequest?.Invoke();
 		}
 	}

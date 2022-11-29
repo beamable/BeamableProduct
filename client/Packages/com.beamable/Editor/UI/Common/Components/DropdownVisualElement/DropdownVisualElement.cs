@@ -3,13 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
@@ -17,6 +11,9 @@ namespace Beamable.Editor.UI.Components
 	public class DropdownVisualElement : BeamableVisualElement
 	{
 		public new class UxmlFactory : UxmlFactory<DropdownVisualElement, UxmlTraits> { }
+
+		private const float _SAFE_MIN_WIDTH = 1000;
+		private const float _SAFE_MIN_HEIGHT = 24.0f;
 
 		private readonly List<DropdownSingleOption> _optionModels;
 
@@ -26,15 +23,16 @@ namespace Beamable.Editor.UI.Components
 		private Action<int> _onSelection;
 		private BeamablePopupWindow _optionsPopup;
 		private VisualElement _root;
+		private int _toTruncate;
 		private string _value;
 
-		public string Value
+		private string Value
 		{
 			get => _value;
-			private set
+			set
 			{
 				_value = value;
-				if (_label != null) _label.text = Value;
+				if (_label != null) _label.text = FormatString(_value);
 			}
 		}
 
@@ -43,21 +41,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			Value = String.Empty;
 			_optionModels = new List<DropdownSingleOption>();
-		}
-
-		public void SetValueWithoutVerification(string value)
-		{
-			Value = value;
-		}
-
-		public void OnOptionSelectedInternal(int id)
-		{
-			Value = _optionModels.Find(opt => opt.Id == id).Label;
-			if (_optionsPopup && _optionsPopup != null)
-			{
-				_optionsPopup.Close();
-				OnOptionsClosed();
-			}
 		}
 
 		public override void Refresh()
@@ -74,6 +57,8 @@ namespace Beamable.Editor.UI.Components
 			_label.RegisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound));
 			_button.UnregisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound));
 			_button.RegisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound));
+
+			_label.RegisterCallback<GeometryChangedEvent>(GeometryChanged);
 		}
 
 		public void Set(int id, bool invokeSelection = true)
@@ -86,17 +71,13 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-
 		public void Setup(List<string> labels,
 						  Action<int> onOptionSelected,
 						  int initialIndex = 0,
 						  bool invokeOnStart = true)
 		{
-			Setup(labels.Select(x => new DropdownEntry
-			{
-				DisplayName = x,
-				LineBelow = false
-			}).ToList(), onOptionSelected, initialIndex, invokeOnStart);
+			Setup(labels.Select(x => new DropdownEntry { DisplayName = x, LineBelow = false }).ToList(), onOptionSelected,
+				  initialIndex, invokeOnStart);
 		}
 
 		public void Setup(List<DropdownEntry> entries,
@@ -129,6 +110,52 @@ namespace Beamable.Editor.UI.Components
 			{
 				onOptionSelected?.Invoke(initialIndex);
 			}
+		}
+
+		public void SetValueWithoutVerification(string value)
+		{
+			Value = value;
+		}
+
+		private void GeometryChanged(GeometryChangedEvent evt)
+		{
+			float safeSize = evt.newRect.width - 25.0f;
+			float calculateTextSize = CalculateTextSize(_value);
+			bool shouldTruncate = safeSize < calculateTextSize;
+
+			var valueLength = _value.Length - 1;
+
+			if (shouldTruncate)
+			{
+				for (int i = 0; i <= valueLength; i++)
+				{
+					string tempValue = _value.Remove(valueLength - i);
+					float tempTextSize = CalculateTextSize(tempValue);
+
+					if (tempTextSize < safeSize)
+					{
+						_toTruncate = i;
+						break;
+					}
+				}
+			}
+			else
+			{
+				_toTruncate = 0;
+			}
+
+			if (_label != null) _label.text = FormatString(_value);
+		}
+
+		private string FormatString(string value)
+		{
+			return _toTruncate == 0 ? value : $"{value.Remove(value.Length - 1 - _toTruncate)}...";
+		}
+
+		private float CalculateTextSize(string value)
+		{
+			return _label.MeasureTextSize(value, _SAFE_MIN_WIDTH, MeasureMode.AtMost, _SAFE_MIN_HEIGHT,
+										  MeasureMode.AtMost).x;
 		}
 
 		private async Promise OnButtonClicked(Rect bounds)
@@ -172,6 +199,19 @@ namespace Beamable.Editor.UI.Components
 		{
 			_optionsPopup = null;
 		}
+
+		private void OnOptionSelectedInternal(int id)
+		{
+			Value = _optionModels.Find(opt => opt.Id == id).Label;
+
+			if (!_optionsPopup || _optionsPopup == null)
+			{
+				return;
+			}
+
+			_optionsPopup.Close();
+			OnOptionsClosed();
+		}
 	}
 
 	public class DropdownEntry
@@ -179,10 +219,7 @@ namespace Beamable.Editor.UI.Components
 		public string DisplayName;
 		public bool LineBelow;
 
-		public DropdownEntry()
-		{
-
-		}
+		public DropdownEntry() { }
 
 		public DropdownEntry(string name)
 		{

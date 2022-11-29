@@ -3,5 +3,7 @@
 	public class ContentParameterProvider
 	{
 		public string manifestID;
+
+		public bool EnableLocalContentInEditor;
 	}
 }
