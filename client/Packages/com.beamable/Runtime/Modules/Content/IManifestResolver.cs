@@ -14,8 +14,8 @@ namespace Beamable.Content
 		/// See <see cref="DefaultManifestResolver.ResolveManifest"/> and <see cref="LocalManifestResolver.ResolveManifest"/>
 		/// </summary>
 		Promise<ClientManifest> ResolveManifest(IBeamableRequester requester,
-		                                              string url,
-		                                              ManifestSubscription subscription);
+													  string url,
+													  ManifestSubscription subscription);
 	}
 
 	public class DefaultManifestResolver : IManifestResolver

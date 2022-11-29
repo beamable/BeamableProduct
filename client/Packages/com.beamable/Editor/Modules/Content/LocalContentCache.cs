@@ -30,7 +30,7 @@ namespace Beamable.Editor.Content
 		/// </summary>
 		public override Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
 		{
-			var content = (ContentObject) AssetDatabase.LoadAssetAtPath(requestedInfo.uri, _contentType);
+			var content = (ContentObject)AssetDatabase.LoadAssetAtPath(requestedInfo.uri, _contentType);
 
 			var delayPromise = new Promise();
 			IEnumerator Delay()

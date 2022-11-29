@@ -42,7 +42,7 @@ namespace Beamable.Editor.Content
 			_config = config;
 			_defaultFactory = provider.GetService<DefaultContentCacheFactory>();
 		}
-		
+
 		/// <summary>
 		/// Creates a local content cache for the given content type. The content cache will use the local on-disk content
 		/// to resolve cache misses. 
@@ -56,7 +56,7 @@ namespace Beamable.Editor.Content
 			return new LocalContentCache(contentType, _coroutineService, _config);
 		}
 	}
-	
+
 	public class LocalManifestResolver : IManifestResolver
 	{
 		private readonly IContentIO _contentIO;
@@ -88,21 +88,21 @@ namespace Beamable.Editor.Content
 				// we don't have access to this manifest locally, so we'll need to go get it from the remote :( 
 				return _defaultResolver.ResolveManifest(requester, url, subscription);
 			}
-			
+
 			var manifest = new ClientManifest
 			{
 				entries = _localManifest.Content
-				                        .Select(kvp => new ClientContentInfo
-				                        {
-					                        contentId = kvp.Value.Id,
-					                        manifestID = subscription.ManifestID,
-					                        tags = kvp.Value.Tags,
-					                        uri = kvp.Value.AssetPath,
-					                        type = kvp.Value.TypeName,
-					                        version = kvp.Value.Version,
-					                        visibility = ContentVisibility.Public
-				                        })
-				                        .ToList()
+										.Select(kvp => new ClientContentInfo
+										{
+											contentId = kvp.Value.Id,
+											manifestID = subscription.ManifestID,
+											tags = kvp.Value.Tags,
+											uri = kvp.Value.AssetPath,
+											type = kvp.Value.TypeName,
+											version = kvp.Value.Version,
+											visibility = ContentVisibility.Public
+										})
+										.ToList()
 			};
 
 			if (manifest.entries.Count == 0)
@@ -110,7 +110,7 @@ namespace Beamable.Editor.Content
 				Debug.LogWarning(@"You are using local content mode, but there was no local content found! Did you forget to download content?
 You can change the content mode with the <i>Project Settings/Beamable/Content/Enable Local Content In Editor</i> option.");
 			}
-			
+
 			var delayPromise = new Promise();
 			// simulate some delay... 
 			IEnumerator Delay()
@@ -123,5 +123,5 @@ You can change the content mode with the <i>Project Settings/Beamable/Content/En
 			return delayPromise.Map(_ => manifest);
 		}
 	}
-	
+
 }
