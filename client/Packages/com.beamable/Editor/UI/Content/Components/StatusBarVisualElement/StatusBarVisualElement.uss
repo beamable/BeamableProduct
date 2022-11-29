@@ -13,9 +13,22 @@ StatusBarVisualElement #mainVisualElement {
 
 StatusBarVisualElement #UpdateDate {
     -unity-text-align: middle-right;
-    flex: 1;
 	padding-right: 10px;
     font-size: 10px;
+}
+
+#messages {
+	flex-grow: 1;
+	flex-direction: row;
+	justify-content: flex-end;
+}
+
+#remoteModeWarning {
+	margin-right: 4px;
+	cursor: link;
+}
+#remoteModeWarning.remote {
+	-unity-font-style: bold;
 }
 
 #status-icon {

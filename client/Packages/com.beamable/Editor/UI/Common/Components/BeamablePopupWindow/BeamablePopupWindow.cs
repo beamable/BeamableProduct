@@ -5,14 +5,14 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 #endif
 using Beamable.Common;
+using Beamable.Editor;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
 using UnityEngine;
-using Beamable.Editor;
-using System.Linq;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.ContentManager;
 
