@@ -113,7 +113,7 @@ public class ActivityProvider : IActivityProvider
 
 	public Activity StartActivity(string name, string traceId = null, string spanId = null)
 	{
-		BeamableLogger.Log($"starting a trace activity {traceId} and {spanId}");
+		BeamableLogger.Log($"starting a trace called {name} activity with  parent {traceId} and {spanId}");
 
 		Activity activity;
 		if (string.IsNullOrEmpty(traceId) || string.IsNullOrEmpty(spanId))
@@ -161,6 +161,8 @@ public class ActivityProvider : IActivityProvider
 				BeamableLogger.Log($"Making a trace activity {activity?.Id}");
 			}
 		}
+
+		activity?.SetStatus(ActivityStatusCode.Ok);
 		activity?.SetTag(OTElConstants.TAG_PEER_SERVICE, "Microservice");
 		return activity;
 	}
