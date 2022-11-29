@@ -20,7 +20,6 @@ namespace Beamable.Editor.ToolbarExtender
 	public static class BeamableToolbarExtender
 	{
 		const string GET_ALL_METHOD_NAME = "GetAll";
-
 		private static int _toolCount;
 		private static GUIStyle _commandStyle = null;
 
