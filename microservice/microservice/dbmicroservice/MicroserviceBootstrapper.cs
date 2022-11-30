@@ -26,7 +26,9 @@ namespace Beamable.Server
 {
     public static class MicroserviceBootstrapper
     {
-        public static LoggingLevelSwitch LogLevel;
+	    private const int MSG_SIZE_LIMIT = 1000;
+
+	    public static LoggingLevelSwitch LogLevel;
 
         private static void ConfigureLogging()
         {
@@ -39,7 +41,7 @@ namespace Beamable.Server
 
             // https://github.com/serilog/serilog/wiki/Configuration-Basics
             Log.Logger = new LoggerConfiguration()
-               .MinimumLevel.ControlledBy(LogLevel)
+               .MinimumLevel.ControlledBy(LogLevel).Enrich.FromLogContext().Enrich.With(new LogMsgSizeEnricher(MSG_SIZE_LIMIT))
                .WriteTo.Console(new MicroserviceLogFormatter())
                .Destructure.ToMaximumStringLength(5)
                .CreateLogger();
@@ -175,5 +177,31 @@ namespace Beamable.Server
 
             beamableService.RunForever();
         }
+    }
+
+    internal class LogMsgSizeEnricher : ILogEventEnricher
+    {
+	    private const string MSG_PROPERTY_NAME = "msg";
+	    private readonly int _width;
+	    
+	    public LogMsgSizeEnricher(int width)
+	    {
+		    _width = width;
+	    }
+	    
+	    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
+	    {
+		    if (logEvent.Properties.ContainsKey(MSG_PROPERTY_NAME))
+		    {
+			    var typeName = logEvent.Properties.GetValueOrDefault(MSG_PROPERTY_NAME)?.ToString();
+
+			    if (typeName != null && typeName.Length > _width)
+			    {
+				    typeName = typeName.Substring(0, _width) + "...";
+			    }
+
+			    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(MSG_PROPERTY_NAME, typeName));
+		    }
+	    }
     }
 }
