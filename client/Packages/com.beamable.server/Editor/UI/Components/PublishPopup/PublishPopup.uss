@@ -114,8 +114,8 @@
 #bottomBarContainer {
     padding-top: 10px;
     padding-bottom: 10px;
-    padding-left: 30px;
-    padding-right: 30px;
+    padding-left: 28px;
+    padding-right: 28px;
     flex-direction: row;
     height: 50px;
 }
@@ -123,13 +123,29 @@
 #bottomBarContainer Button {
     flex-grow: 1;
     align-self: center;
-    height: 32px;
+    height: 30px;
     width: 120px;
 }
 
 #userDescription {
     flex-grow: 9;
     height: 30px;
+}
+
+#userDescription > TextInput {
+    background-color: #515253;
+    border-left-color: #9a9b9b;
+    border-right-color: #9a9b9b;
+    border-top-color: #9a9b9b;
+    border-bottom-color: #9a9b9b;
+}
+
+#cancelBtn > TemplateContainer > Button {
+    background-color: rgba(0,0,0,0);
+    border-left-color: #c0c0c0;
+    border-right-color: #c0c0c0;
+    border-top-color: #c0c0c0;
+    border-bottom-color: #c0c0c0;
 }
 
 .card {

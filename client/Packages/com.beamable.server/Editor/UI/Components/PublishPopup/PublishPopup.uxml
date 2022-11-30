@@ -71,7 +71,7 @@
 
         <engine:VisualElement name="bottomBarContainer">
             <engine:TextField name="userDescription"/>
-            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel"/>
+            <beamable:PrimaryButtonVisualElement name="cancelBtn" text="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="continueBtn" text="Publish"/>
         </engine:VisualElement>
 
