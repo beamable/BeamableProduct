@@ -19,7 +19,7 @@ namespace microserviceTests.microservice
       public bool OtelMetricsIncludeProcessInstrumentation { get; }
       public bool RateLimitWebsocket { get; } = false;
       public int RateLimitWebsocketTokens { get; } = 10;
-      public int RateLimitWebsocketPeriodMinutes { get; } = 1;
+      public int RateLimitWebsocketPeriodSeconds { get; } = 1;
       public int RateLimitWebsocketTokensPerPeriod { get; } = 5;
       public int RateLimitWebsocketMaxQueueSize { get; } = 10;
    }

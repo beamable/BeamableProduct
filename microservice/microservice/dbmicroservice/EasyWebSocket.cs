@@ -307,7 +307,7 @@ namespace Beamable.Server
 	            TokenLimit = _args.RateLimitWebsocketTokens,
 	            TokensPerPeriod = _args.RateLimitWebsocketTokensPerPeriod,
 	            AutoReplenishment = true,
-	            ReplenishmentPeriod = TimeSpan.FromMinutes(_args.RateLimitWebsocketPeriodMinutes)
+	            ReplenishmentPeriod = TimeSpan.FromSeconds(_args.RateLimitWebsocketPeriodSeconds)
             });
             
             try

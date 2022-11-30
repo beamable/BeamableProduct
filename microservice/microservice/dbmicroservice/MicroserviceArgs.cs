@@ -28,7 +28,7 @@ namespace Beamable.Server
       }
       public bool RateLimitWebsocket { get; }
       public int RateLimitWebsocketTokens { get; }
-      public int RateLimitWebsocketPeriodMinutes { get; }
+      public int RateLimitWebsocketPeriodSeconds { get; }
       public int RateLimitWebsocketTokensPerPeriod { get; }
       public int RateLimitWebsocketMaxQueueSize { get; }
    }
@@ -50,7 +50,7 @@ namespace Beamable.Server
       public bool OtelMetricsIncludeProcessInstrumentation { get; set; }
       public bool RateLimitWebsocket { get; set; }
       public int RateLimitWebsocketTokens { get; set; }
-      public int RateLimitWebsocketPeriodMinutes { get; set; }
+      public int RateLimitWebsocketPeriodSeconds { get; set; }
       public int RateLimitWebsocketTokensPerPeriod { get; set; }
       public int RateLimitWebsocketMaxQueueSize { get; set; }
    }
@@ -77,7 +77,7 @@ namespace Beamable.Server
             RateLimitWebsocket = args.RateLimitWebsocket,
             RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
             RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
-            RateLimitWebsocketPeriodMinutes = args.RateLimitWebsocketPeriodMinutes,
+            RateLimitWebsocketPeriodSeconds = args.RateLimitWebsocketPeriodSeconds,
             RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod
          };
       }
@@ -112,13 +112,13 @@ namespace Beamable.Server
 	      }
       }
 
-      public int RateLimitWebsocketPeriodMinutes 
+      public int RateLimitWebsocketPeriodSeconds 
       {
 	      get
 	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_MINUTES"), out var limit))
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_SECONDS"), out var limit))
 		      {
-			      limit = 1;
+			      limit = 60;
 		      }
 		      return limit;
 	      }
