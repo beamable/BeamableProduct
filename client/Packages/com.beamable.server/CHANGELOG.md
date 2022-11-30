@@ -10,7 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `GetPublicPlayerStat`
   - `GetPublicPlayerStats`
   - `GetAllPublicPlayerStats`
-
+  
+### Added
+- Microservice message log size limit. 
 
 ## [1.6.2]
 ### Changed
