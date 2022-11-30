@@ -55,7 +55,19 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			
 			SetCodeSentState(false);
 			
+			FeatureControl.SetBackAction(GoBack);
+			FeatureControl.SetHomeAction(OpenAccountsView);
 			TryAgainButton.onClick.ReplaceOrAddListener(SendCode);
+		}
+
+		private void OpenAccountsView()
+		{
+			FeatureControl.OpenAccountsView();
+		}
+
+		private void GoBack()
+		{
+			throw new System.NotImplementedException();
 		}
 
 		private void SetCodeSentState(bool wasSent)

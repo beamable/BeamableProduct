@@ -3,6 +3,8 @@ using Beamable.EasyFeatures.Components;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
 {
@@ -21,6 +23,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public BeamableViewGroup ViewGroup;
 		public OverlaysController OverlaysController;
 		public View DefaultView = View.Accounts;
+		public Button BackButton;
+		public Button HomeButton;
 		
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get; }
 
@@ -46,6 +50,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, CreateAccountView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, SignInView.IDependencies>();
 			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, ForgotPasswordView.IDependencies>();
+			builder.SetupUnderlyingSystemSingleton<AccountManagementPlayerSystem, AccountInfoView.IDependencies>();
 		}
 		
 		public void OnEnable()
@@ -98,11 +103,16 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return View.ForgotPassword;
 			}
+
+			if (type == typeof(AccountInfoView))
+			{
+				return View.AccountInfo;
+			}
 			
 			throw new ArgumentException("View enum does not support provided type.");
 		}
 
-		public void OpenCurrentAccountView()
+		public void OpenAccountsView()
 		{
 			OpenView(View.Accounts);
 		}
@@ -122,6 +132,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			OpenView(View.ForgotPassword);
 		}
 
+		public void OpenAccountInfoView()
+		{
+			OpenView(View.AccountInfo);
+		}
+
 		private async void OpenView(View view)
 		{
 			if (_currentView != null)
@@ -133,6 +148,18 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			_currentView.IsVisible = true;
 
 			await ViewGroup.Enrich();
+		}
+
+		public void SetHomeAction(UnityAction action)
+		{
+			HomeButton.onClick.RemoveAllListeners();
+			HomeButton.onClick.AddListener(action);
+		}
+
+		public void SetBackAction(UnityAction action)
+		{
+			BackButton.onClick.RemoveAllListeners();
+			BackButton.onClick.AddListener(action);
 		}
 	}
 }

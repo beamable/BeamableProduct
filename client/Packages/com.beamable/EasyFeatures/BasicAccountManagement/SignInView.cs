@@ -41,9 +41,21 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 			
+			FeatureControl.SetBackAction(GoBack);
+			FeatureControl.SetHomeAction(OpenAccountsView);
 			ForgotPasswordButton.onClick.ReplaceOrAddListener(OpenForgotPasswordView);
 			SignInButton.onClick.ReplaceOrAddListener(OnSignInPressed);
 			SignUpButton.onClick.ReplaceOrAddListener(OpenCreateAccountView);
+		}
+
+		private void OpenAccountsView()
+		{
+			FeatureControl.OpenAccountsView();
+		}
+
+		private void GoBack()
+		{
+			throw new System.NotImplementedException();
 		}
 
 		private void OnSignInPressed()

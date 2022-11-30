@@ -43,6 +43,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			}
 			
 			// setup callbacks
+			FeatureControl.SetBackAction(GoBack);
+			FeatureControl.SetHomeAction(OpenAccountsView);
 			SignInButton.onClick.ReplaceOrAddListener(OnSignIn);
 			CreateAccountButton.onClick.ReplaceOrAddListener(OnCreateAccount);
 
@@ -51,17 +53,32 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				Height = 150, Index = 0, ViewData = await System.GetAccountViewData()
 			};
 			
-			AccountPresenter.Setup(data, null, null);
+			AccountPresenter.Setup(data, OpenAccountInfoView, null);
 		}
-		
-		private void OnSignIn()
+
+		private void OpenAccountsView()
+		{
+			FeatureControl.OpenAccountsView();
+		}
+
+		private void GoBack()
 		{
 			throw new System.NotImplementedException();
 		}
 
+		private void OpenAccountInfoView(long playerId)
+		{
+			FeatureControl.OpenAccountInfoView();
+		}
+
+		private void OnSignIn()
+		{
+			FeatureControl.OpenSignInView();
+		}
+
 		private void OnCreateAccount()
 		{
-			throw new System.NotImplementedException();
+			FeatureControl.OpenCreateAccountView();
 		}
 	}
 }
