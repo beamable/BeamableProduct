@@ -1,0 +1,17 @@
+﻿.card {
+    background-color: #eaeaea;
+}
+
+#logContainer > LogVisualElement {
+    background-color: #d9d9d9;
+}
+
+#userDescription > TextInput {
+    background-color: #d9d9d9;
+}
+
+#cancelBtn > TemplateContainer > Button {
+    background-color: rgba(0,0,0,0);
+    border-color: #000000;
+    color: #000000;
+}

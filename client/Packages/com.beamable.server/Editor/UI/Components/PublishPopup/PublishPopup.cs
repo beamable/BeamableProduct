@@ -54,7 +54,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private VisualElement _servicesList;
 		private TextField _userDescription;
-		private GenericButtonVisualElement _cancelButton;
+		private PrimaryButtonVisualElement _cancelButton;
 		private PrimaryButtonVisualElement _primarySubmitButton;
 		private ScrollView _scrollContainer;
 		private LoadingBarElement _mainLoadingBar;
@@ -127,13 +127,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_userDescription.AddPlaceholder("Description here...");
 			_userDescription.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
-			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
-			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();
+			_cancelButton = Root.Q<PrimaryButtonVisualElement>("cancelBtn");
+			_cancelButton.Button.clickable.clicked += () => OnCloseRequested?.Invoke();
 
 			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
 			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
 
-			// SortServices();
 			AddLogger();
 		}
 		public void PrepareParent()
@@ -163,16 +162,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 		
-		// private void SortServices()
-		// {
-		// 	int Comparer(VisualElement a, VisualElement b) =>
-		// 		a is PublishManifestEntryVisualElement firstManifestElement &&
-		// 		b is PublishManifestEntryVisualElement secondManifestElement
-		// 			? firstManifestElement.CompareTo(secondManifestElement)
-		// 			: 0;
-		// 	
-		// 	_scrollContainer.Sort(Comparer);
-		// }
 		private void AddLogger()
 		{
 			_logger = new LogVisualElement
@@ -221,7 +210,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			// _topMessage.HandleSubmitClicked();
 			_primarySubmitButton.SetText("Publishing...");
 			_primarySubmitButton.Disable();
-			// AddLogger();
 			OnSubmit?.Invoke(Model, (message) => _logger.Model.Logs.AddMessage(message));
 		}
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
@@ -230,7 +218,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 
 			element?.UpdateStatus(state);
-			// SortServices();
 			switch (state)
 			{
 				case ServicePublishState.Failed:
