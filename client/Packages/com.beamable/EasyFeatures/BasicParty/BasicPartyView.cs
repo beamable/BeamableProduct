@@ -60,11 +60,21 @@ namespace Beamable.EasyFeatures.BasicParty
 			NextButton.onClick.ReplaceOrAddListener(NextButtonClicked);
 
 			// set party events
-			Context.Party.OnPlayerJoined = OnPlayerJoined;
-			Context.Party.OnPlayerLeft = OnPlayerLeft;
-			Context.Party.OnPartyUpdated = OnPartyUpdated;
-			Context.Party.OnPlayerPromoted = OnPlayerPromoted;
-			Context.Party.OnPlayerKicked = OnPlayerKicked;
+			Context.Party.OnPlayerJoined -= OnPlayerJoined;
+			Context.Party.OnPlayerJoined += OnPlayerJoined;
+
+			Context.Party.OnPlayerLeft -= OnPlayerLeft;
+			Context.Party.OnPlayerLeft += OnPlayerLeft;
+
+			Context.Party.OnPartyUpdated -= OnPartyUpdated;
+			Context.Party.OnPartyUpdated += OnPartyUpdated;
+
+			Context.Party.OnPlayerPromoted -= OnPlayerPromoted;
+			Context.Party.OnPlayerPromoted += OnPlayerPromoted;
+
+			Context.Party.OnPlayerKicked -= OnPlayerKicked;
+			Context.Party.OnPlayerKicked += OnPlayerKicked;
+
 		}
 
 		protected void RefreshView()
@@ -106,7 +116,10 @@ namespace Beamable.EasyFeatures.BasicParty
 
 		protected virtual void OnPlayerLeft(PlayerLeftNotification notification)
 		{
-			RefreshView();
+			if (Context.Party.IsInParty)
+			{
+				RefreshView();
+			}
 		}
 
 		private void OnAddMember()

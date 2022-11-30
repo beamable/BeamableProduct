@@ -3,6 +3,7 @@ using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
@@ -60,8 +61,11 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
+			_labelComponent.text = _model.IsVariable
+				? _model.PropertyProvider.Key
+				: ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
+			_valueParent.Clear();
 
 			if (_model.IsInherited)
 			{
@@ -102,8 +106,6 @@ namespace Beamable.Editor.UI.Components
 					{
 						var appliedPropertyProvider = srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
 
-
-
 						if (appliedPropertyProvider != null)
 						{
 							var field = CreateEditableField(appliedPropertyProvider.GetProperty());
@@ -115,6 +117,7 @@ namespace Beamable.Editor.UI.Components
 								field.OnPropertyChangedExternally();
 								appliedPropertyProvider.GetProperty().OnValueChanged += UpdateField;
 							}
+
 							appliedPropertyProvider.GetProperty().OnValueChanged += UpdateField;
 						}
 					}
@@ -157,6 +160,10 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_propertyVisualElement.OnValueChanged = _model.OnPropertyChanged;
+			_propertyVisualElement.OnBeforeChange += () =>
+			{
+				Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
+			};
 
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
 			_propertyVisualElement.Init();
@@ -200,12 +207,14 @@ namespace Beamable.Editor.UI.Components
 			if (_model.PropertyProvider.IsVariable)
 				return;
 
-			if (_variableConnection == null)
+			if (_variableConnection != null)
 			{
-				_variableConnection = new VariableConnectionVisualElement(_model);
-				_variableConnection.Init();
-				_variableParent.Add(_variableConnection);
+				return;
 			}
+
+			_variableConnection = new VariableConnectionVisualElement(_model);
+			_variableConnection.Init();
+			_variableParent.Add(_variableConnection);
 		}
 	}
 }

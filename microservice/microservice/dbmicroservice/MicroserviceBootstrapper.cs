@@ -41,6 +41,7 @@ namespace Beamable.Server
             Log.Logger = new LoggerConfiguration()
                .MinimumLevel.ControlledBy(LogLevel)
                .WriteTo.Console(new MicroserviceLogFormatter())
+               .Destructure.ToMaximumStringLength(5)
                .CreateLogger();
 
             // use newtonsoft for JsonUtility

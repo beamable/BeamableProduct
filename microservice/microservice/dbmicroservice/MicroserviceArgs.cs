@@ -26,6 +26,11 @@ namespace Beamable.Server
 		      return "platform-prod";
 	      }
       }
+      public bool RateLimitWebsocket { get; }
+      public int RateLimitWebsocketTokens { get; }
+      public int RateLimitWebsocketPeriodMinutes { get; }
+      public int RateLimitWebsocketTokensPerPeriod { get; }
+      public int RateLimitWebsocketMaxQueueSize { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -43,6 +48,11 @@ namespace Beamable.Server
       public bool EmitOtelMetrics { get; set; }
       public bool OtelMetricsIncludeRuntimeInstrumentation { get; set; }
       public bool OtelMetricsIncludeProcessInstrumentation { get; set; }
+      public bool RateLimitWebsocket { get; set; }
+      public int RateLimitWebsocketTokens { get; set; }
+      public int RateLimitWebsocketPeriodMinutes { get; set; }
+      public int RateLimitWebsocketTokensPerPeriod { get; set; }
+      public int RateLimitWebsocketMaxQueueSize { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -63,7 +73,12 @@ namespace Beamable.Server
             EmitOtel = args.EmitOtel,
             EmitOtelMetrics = args.EmitOtelMetrics,
             OtelMetricsIncludeProcessInstrumentation = args.OtelMetricsIncludeProcessInstrumentation,
-            OtelMetricsIncludeRuntimeInstrumentation = args.OtelMetricsIncludeRuntimeInstrumentation
+            OtelMetricsIncludeRuntimeInstrumentation = args.OtelMetricsIncludeRuntimeInstrumentation,
+            RateLimitWebsocket = args.RateLimitWebsocket,
+            RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
+            RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
+            RateLimitWebsocketPeriodMinutes = args.RateLimitWebsocketPeriodMinutes,
+            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod
          };
       }
    }
@@ -82,6 +97,55 @@ namespace Beamable.Server
       public bool EmitOtelMetrics => (Environment.GetEnvironmentVariable("EMIT_OTEL_METRICS")?.ToLowerInvariant() ?? "") == "true";
       public bool OtelMetricsIncludeRuntimeInstrumentation => (Environment.GetEnvironmentVariable("OTEL_INCLUDE_RUNTIME_INSTRUMENTATION")?.ToLowerInvariant() ?? "") == "true";
       public bool OtelMetricsIncludeProcessInstrumentation => (Environment.GetEnvironmentVariable("OTEL_INCLUDE_PROCESS_INSTRUMENTATION")?.ToLowerInvariant() ?? "") == "true";
+
+      public bool RateLimitWebsocket => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_RATE_LIMIT"));
+
+      public int RateLimitWebsocketTokens
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS"), out var limit))
+		      {
+			      limit = 20;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int RateLimitWebsocketPeriodMinutes 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_MINUTES"), out var limit))
+		      {
+			      limit = 1;
+		      }
+		      return limit;
+	      }
+      }
+      public int RateLimitWebsocketTokensPerPeriod 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
+		      {
+			      limit = 15;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int RateLimitWebsocketMaxQueueSize
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE"), out var limit))
+		      {
+			      limit = 10000;
+		      }
+		      return limit;
+	      }
+      }
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
    }
 }

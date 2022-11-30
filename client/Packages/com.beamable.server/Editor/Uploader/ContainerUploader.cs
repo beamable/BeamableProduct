@@ -180,7 +180,6 @@ namespace Beamable.Server.Editor.Uploader
 			return await Attempt();
 		}
 
-
 		private async Task<HttpResponseMessage> SendRequest(string name,
 															Func<HttpRequestMessage> requestGenerator,
 															CancellationToken token) =>

@@ -32,7 +32,7 @@
             <para/>
             </summary>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Create(System.String)" -->
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Create(System.String,Beamable.Server.IMicroserviceArgs,Beamable.Server.IActivityProvider)" -->
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Connect" -->
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})" -->
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})" -->
@@ -60,6 +60,11 @@
         <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon._OutgoingRequestProcessedCounter">
             <summary>
             The total number of outgoing requests that went out through <see cref="M:Beamable.Server.MicroserviceRequester.Request``1(Beamable.Common.Api.Method,System.String,System.Object,System.Boolean,System.Func{System.String,``0},System.Boolean)"/> and whose promise handlers (for error or success) have run.
+            </summary>
+        </member>
+        <member name="P:Beamable.Server.MicroserviceAuthenticationDaemon.NoPendingOrInProgressAuth">
+            <summary>
+            A non thread safe utility boolean that tells us if the auth daemon is currently performing auth, or SHOULD perform auth.
             </summary>
         </member>
         <member name="M:Beamable.Server.MicroserviceAuthenticationDaemon.BumpRequestCounter">

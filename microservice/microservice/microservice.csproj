@@ -72,6 +72,8 @@
     
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
 
+    <PackageReference Include="System.Threading.RateLimiting" Version="7.0.0" />
+
   </ItemGroup>
 
 
