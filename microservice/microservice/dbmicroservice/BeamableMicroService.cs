@@ -518,7 +518,7 @@ namespace Beamable.Server
          void Attempt()
          {
             Log.Debug($"connecting to ws ({Host}) ... ");
-            var ws = _connectionProvider.Create(Host);
+            var ws = _connectionProvider.Create(Host, _args);
             ws.OnConnect(socket =>
             {
                Log.Debug("connection made.");

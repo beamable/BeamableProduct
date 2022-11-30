@@ -8,7 +8,7 @@ namespace Beamable.Server
 {
    public interface IConnectionProvider
    {
-      IConnection Create(string host);
+      IConnection Create(string host, IMicroserviceArgs args);
    }
 
    public interface IConnection

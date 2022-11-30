@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Serilog;
+using System.Threading.RateLimiting;
 
 
 namespace Beamable.Server
@@ -21,11 +22,11 @@ namespace Beamable.Server
 
     {
 
-        public IConnection Create(string host)
+        public IConnection Create(string host, IMicroserviceArgs args)
 
         {
 
-            var ws = EasyWebSocket.Create(host);
+            var ws = EasyWebSocket.Create(host, args);
 
             return ws;
 
@@ -36,8 +37,9 @@ namespace Beamable.Server
     public class EasyWebSocket : IConnection
 
     {
+	    private readonly IMicroserviceArgs _args;
 
-        private const int ReceiveChunkSize = 1024;
+	    private const int ReceiveChunkSize = 1024;
 
         private const int SendChunkSize = 1024;
 
@@ -67,11 +69,12 @@ namespace Beamable.Server
         public WebSocketState State => _ws.State;
 
 
-        protected EasyWebSocket(string uri)
+        protected EasyWebSocket(string uri, IMicroserviceArgs args)
 
         {
+	        _args = args;
 
-            _ws = new ClientWebSocket();
+	        _ws = new ClientWebSocket();
 
 
 
@@ -95,11 +98,11 @@ namespace Beamable.Server
 
         /// <returns></returns>
 
-        public static EasyWebSocket Create(string uri)
+        public static EasyWebSocket Create(string uri, IMicroserviceArgs args)
 
         {
 
-            return new EasyWebSocket(uri);
+            return new EasyWebSocket(uri, args);
 
         }
 
@@ -295,72 +298,52 @@ namespace Beamable.Server
 
 
         private async void StartListen()
-
         {
 
             var buffer = new byte[ReceiveChunkSize];
-
-
-
-            try
-
+            
+            var tokenLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
             {
+	            QueueLimit = _args.RateLimitWebsocketMaxQueueSize,
+	            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+	            TokenLimit = _args.RateLimitWebsocketTokens,
+	            TokensPerPeriod = _args.RateLimitWebsocketTokensPerPeriod,
+	            AutoReplenishment = true,
+	            ReplenishmentPeriod = TimeSpan.FromMinutes(_args.RateLimitWebsocketPeriodMinutes)
+            });
+            
+            try
+            {
+	            while (_ws.State == WebSocketState.Open)
+	            {
+		            if (_args.RateLimitWebsocket)
+		            {
+			            await tokenLimiter.AcquireAsync();
+		            }
 
-                while (_ws.State == WebSocketState.Open)
+		            var stringResult = new StringBuilder();
 
-                {
+		            WebSocketReceiveResult result;
 
-                    var stringResult = new StringBuilder();
-
-
-
-
-
-                    WebSocketReceiveResult result;
-
-                    do
-
-                    {
-
-                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationToken);
-
-
-
-                        if (result.MessageType == WebSocketMessageType.Close)
-
-                        {
-
-
-
-                            await
-
-                                _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-
-                            CallOnDisconnected(true);
-
-                        }
-
-                        else
-
-                        {
-
-                            var str = Encoding.UTF8.GetString(buffer, 0, result.Count);
-
-                            stringResult.Append(str);
-
-                        }
+		            do
+		            {
+			            result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationToken);
+			            if (result.MessageType == WebSocketMessageType.Close)
+			            {
+				            await  _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
+						            CancellationToken.None);
+				            CallOnDisconnected(true);
+			            }
+			            else
+			            {
+				            var str = Encoding.UTF8.GetString(buffer, 0, result.Count);
+				            stringResult.Append(str);
+			            }
+		            } while (!result.EndOfMessage);
 
 
-
-                    } while (!result.EndOfMessage);
-
-
-
-                    CallOnMessage(stringResult);
-
-
-
-                }
+		            CallOnMessage(stringResult);
+	            }
 
             }
 

@@ -13,5 +13,10 @@ namespace microserviceTests.microservice
       public string SdkVersionExecution { get; set; } = "test";
       public bool WatchToken { get; }
       public bool DisableCustomInitializationHooks { get; }
+      public bool RateLimitWebsocket { get; } = false;
+      public int RateLimitWebsocketTokens { get; } = 10;
+      public int RateLimitWebsocketPeriodMinutes { get; } = 1;
+      public int RateLimitWebsocketTokensPerPeriod { get; } = 5;
+      public int RateLimitWebsocketMaxQueueSize { get; } = 10;
    }
 }

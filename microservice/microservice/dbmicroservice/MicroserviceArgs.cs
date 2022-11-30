@@ -12,6 +12,11 @@ namespace Beamable.Server
       string SdkVersionExecution { get; }
       bool WatchToken { get; }
       public bool DisableCustomInitializationHooks { get; }
+      public bool RateLimitWebsocket { get; }
+      public int RateLimitWebsocketTokens { get; }
+      public int RateLimitWebsocketPeriodMinutes { get; }
+      public int RateLimitWebsocketTokensPerPeriod { get; }
+      public int RateLimitWebsocketMaxQueueSize { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -25,6 +30,11 @@ namespace Beamable.Server
       public string SdkVersionExecution { get; set; }
       public bool WatchToken { get; set; }
       public bool DisableCustomInitializationHooks { get; set; }
+      public bool RateLimitWebsocket { get; set; }
+      public int RateLimitWebsocketTokens { get; set; }
+      public int RateLimitWebsocketPeriodMinutes { get; set; }
+      public int RateLimitWebsocketTokensPerPeriod { get; set; }
+      public int RateLimitWebsocketMaxQueueSize { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -41,7 +51,12 @@ namespace Beamable.Server
             SdkVersionBaseBuild = args.SdkVersionBaseBuild,
             SdkVersionExecution = args.SdkVersionExecution,
             WatchToken = args.WatchToken,
-            DisableCustomInitializationHooks = args.DisableCustomInitializationHooks
+            DisableCustomInitializationHooks = args.DisableCustomInitializationHooks,
+            RateLimitWebsocket = args.RateLimitWebsocket,
+            RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
+            RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
+            RateLimitWebsocketPeriodMinutes = args.RateLimitWebsocketPeriodMinutes,
+            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod
          };
       }
    }
@@ -56,6 +71,54 @@ namespace Beamable.Server
       public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
       public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
       public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
+      public bool RateLimitWebsocket => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_RATE_LIMIT"));
+
+      public int RateLimitWebsocketTokens
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS"), out var limit))
+		      {
+			      limit = 20;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int RateLimitWebsocketPeriodMinutes 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_MINUTES"), out var limit))
+		      {
+			      limit = 1;
+		      }
+		      return limit;
+	      }
+      }
+      public int RateLimitWebsocketTokensPerPeriod 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
+		      {
+			      limit = 15;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int RateLimitWebsocketMaxQueueSize
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE"), out var limit))
+		      {
+			      limit = 10000;
+		      }
+		      return limit;
+	      }
+      }
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
    }
 }
