@@ -96,7 +96,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_scrollContainer = new ScrollView(ScrollViewMode.Vertical);
 			_scrollContainer.horizontalScroller?.RemoveFromHierarchy();
+			
+#if UNITY_2021_1_OR_NEWER
+			_scrollContainer.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
+#else
 			_scrollContainer.showVertical = true;
+#endif
 			_servicesList = Root.Q<VisualElement>("servicesList");
 			_servicesList.Add(_scrollContainer);
 
