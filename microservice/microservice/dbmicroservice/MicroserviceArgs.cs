@@ -98,7 +98,7 @@ namespace Beamable.Server
       public bool OtelMetricsIncludeRuntimeInstrumentation => (Environment.GetEnvironmentVariable("OTEL_INCLUDE_RUNTIME_INSTRUMENTATION")?.ToLowerInvariant() ?? "") == "true";
       public bool OtelMetricsIncludeProcessInstrumentation => (Environment.GetEnvironmentVariable("OTEL_INCLUDE_PROCESS_INSTRUMENTATION")?.ToLowerInvariant() ?? "") == "true";
 
-      public bool RateLimitWebsocket => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_RATE_LIMIT"));
+      public bool RateLimitWebsocket => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_DISABLE_RATE_LIMIT"));
 
       public int RateLimitWebsocketTokens
       {
