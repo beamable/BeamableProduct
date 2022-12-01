@@ -837,15 +837,24 @@ namespace Beamable.Server
          var reqLog = Log.ForContext("requestContext", ctx, true);
          BeamableSerilogProvider.LogContext.Value = reqLog;
 
-         if (_socketRequesterContext.IsPlatformMessage(ctx))
+         try
          {
-            // the request is a platform request.
-            await HandlePlatformMessage(ctx, msg);
+	         if (_socketRequesterContext.IsPlatformMessage(ctx))
+	         {
+		         // the request is a platform request.
+		         await HandlePlatformMessage(ctx, msg);
+	         }
+	         else
+	         {
+		         // this is a client request. Handle the service method.
+		         await HandleClientMessage(ctx, msg);
+	         }
          }
-         else
+         finally
          {
-            // this is a client request. Handle the service method.
-            await HandleClientMessage(ctx, msg);
+	         // TODO: test to see if this makes a difference
+	         (BeamableSerilogProvider.LogContext.Value as IDisposable)?.Dispose();
+	         BeamableSerilogProvider.LogContext.Value = null;
          }
       }
 
