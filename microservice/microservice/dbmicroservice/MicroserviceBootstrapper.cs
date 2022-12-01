@@ -25,6 +25,8 @@ namespace Beamable.Server
         {
             // TODO pull "LOG_LEVEL" into a const?
             var logLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
+			
             var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
 
             // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
@@ -32,7 +34,7 @@ namespace Beamable.Server
 
             // https://github.com/serilog/serilog/wiki/Configuration-Basics
             Log.Logger = new LoggerConfiguration()
-               .MinimumLevel.ControlledBy(LogLevel).Enrich.FromLogContext().Enrich.With(new LogMsgSizeEnricher(MSG_SIZE_LIMIT))
+               .MinimumLevel.ControlledBy(LogLevel).Enrich.FromLogContext().Enrich.With(new LogMsgSizeEnricher(MSG_SIZE_LIMIT, !disableLogTruncate))
                .WriteTo.Console(new MicroserviceLogFormatter())
                .CreateLogger();
 
@@ -115,26 +117,30 @@ namespace Beamable.Server
 
     internal class LogMsgSizeEnricher : ILogEventEnricher
     {
-	    private const string MSG_PROPERTY_NAME = "msg";
 	    private readonly int _width;
+	    private readonly bool _isEnabled;
 	    
-	    public LogMsgSizeEnricher(int width)
+	    public LogMsgSizeEnricher(int width, bool isEnabled)
 	    {
 		    _width = width;
+		    _isEnabled = isEnabled;
 	    }
 	    
 	    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
 	    {
-		    if (logEvent.Properties.ContainsKey(MSG_PROPERTY_NAME))
+		    if (_isEnabled)
 		    {
-			    var typeName = logEvent.Properties.GetValueOrDefault(MSG_PROPERTY_NAME)?.ToString();
-
-			    if (typeName != null && typeName.Length > _width)
+			    foreach (var singleProp in logEvent.Properties)
 			    {
-				    typeName = typeName.Substring(0, _width) + "...";
-			    }
+				    var typeName = logEvent.Properties.GetValueOrDefault(singleProp.Key)?.ToString();
 
-			    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(MSG_PROPERTY_NAME, typeName));
+				    if (typeName != null && typeName.Length > _width)
+				    {
+					    typeName = typeName.Substring(0, _width) + "...";
+				    }
+				    
+				    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, typeName));
+			    }
 		    }
 	    }
     }
