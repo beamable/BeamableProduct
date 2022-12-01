@@ -132,7 +132,7 @@ namespace Beamable.Server
 		    {
 			    foreach (var singleProp in logEvent.Properties)
 			    {
-				    var typeName = logEvent.Properties.GetValueOrDefault(singleProp.Key)?.ToString();
+				    var typeName = singleProp.Value?.ToString();
 
 				    if (typeName != null && typeName.Length > _width)
 				    {
