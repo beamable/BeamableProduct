@@ -10,27 +10,54 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
-using UnityEngine;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
     public static class MicroserviceBootstrapper
     {
-        public static LoggingLevelSwitch LogLevel;
+	    private const int MSG_SIZE_LIMIT = 1000;
 
-        private static void ConfigureLogging()
+	    public static LoggingLevelSwitch LogLevel;
+
+        private static void ConfigureLogging(IMicroserviceArgs args)
         {
             // TODO pull "LOG_LEVEL" into a const?
             var logLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
+			
             var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
 
             // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
             LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
 
             // https://github.com/serilog/serilog/wiki/Configuration-Basics
-            Log.Logger = new LoggerConfiguration()
-               .MinimumLevel.ControlledBy(LogLevel)
+            var logConfig = new LoggerConfiguration()
+	            .MinimumLevel.ControlledBy(LogLevel)
+	            .Enrich.FromLogContext();
+
+            if (!disableLogTruncate)
+            {
+	            logConfig = logConfig
+		            .Enrich.With(new LogMsgSizeEnricher(args.LogTruncateLimit))
+		            .Destructure.ToMaximumCollectionCount(args.LogMaxCollectionSize)
+		            .Destructure.ToMaximumDepth(args.LogMaxDepth)
+		            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
+            }
+            
+            Log.Logger = logConfig
                .WriteTo.Console(new MicroserviceLogFormatter())
+               .Destructure.ToMaximumStringLength(5)
                .CreateLogger();
 
             // use newtonsoft for JsonUtility
@@ -63,14 +90,71 @@ namespace Beamable.Server
             XmlDocsHelper.ProviderFactory = XmlDocsHelper.FileIOProvider;
         }
 
+
+        private static ActivityProvider ConfigureOpenTelemetry<T>(IMicroserviceArgs args)
+        {
+	        BeamableLogger.Log($"We are about to set up Telemetry! {args.EmitOtel}, {args.EmitOtelMetrics}");
+	        var activityProvider = new ActivityProvider(args.SdkVersionBaseBuild, args.Environment);
+
+	        if (args.EmitOtelMetrics)
+	        {
+		        BeamableLogger.Log("We are adding a Metrics Provider!");
+		        var metricBuilder = Sdk.CreateMeterProviderBuilder()
+				        .AddMeter(activityProvider.ActivityName)
+				        .AddOtlpExporter(config =>
+				        {
+					        config.Protocol = OtlpExportProtocol.Grpc;
+				        });
+		        
+		        if (args.OtelMetricsIncludeProcessInstrumentation)
+		        {
+			        BeamableLogger.Log("We are adding process instrumentation!");
+			        metricBuilder = metricBuilder.AddProcessInstrumentation();
+		        }
+		        if (args.OtelMetricsIncludeRuntimeInstrumentation)
+		        {
+			        BeamableLogger.Log("We are adding runtime instrumentation!");
+			        metricBuilder = metricBuilder.AddRuntimeInstrumentation();
+		        }
+
+		        metricBuilder.Build();
+	        }
+
+	        if (args.EmitOtel)
+	        {
+		        BeamableLogger.Log("We are creating the tracer provider!");
+		        var tracerProvider = Sdk.CreateTracerProviderBuilder()
+			        .AddSource(activityProvider.ActivityName)
+			        .SetResourceBuilder(ResourceBuilder.CreateEmpty()
+				        .AddService(typeof(T).Name)
+				        .AddAttributes(new Dictionary<string, object>
+				        {
+					        ["cid"] = args.CustomerID,
+					        ["pid"] = args.ProjectName,
+					        ["beam-version"] = args.SdkVersionExecution,
+				        })
+			        )
+			        .AddOtlpExporter(config =>
+			        {
+				        config.Protocol = OtlpExportProtocol.Grpc;
+			        })
+			        .Build();
+	        }
+	        
+
+	        return activityProvider;
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-            ConfigureLogging();
+	        var args = new EnviornmentArgs();
+	        ConfigureLogging(args);
             ConfigureUnhandledError();
             ConfigureDocsProvider();
 
-            var beamableService = new BeamableMicroService();
-            var args = new EnviornmentArgs();
+            var activityProvider = ConfigureOpenTelemetry<TMicroService>(args);
+            var beamableService = new BeamableMicroService(activityProvider: activityProvider);
+
 
             var localDebug = new LocalDebugService(beamableService);
 
@@ -108,5 +192,31 @@ namespace Beamable.Server
 
             beamableService.RunForever();
         }
+    }
+
+    internal class LogMsgSizeEnricher : ILogEventEnricher
+    {
+	    private readonly int _width;
+	    
+	    public LogMsgSizeEnricher(int width)
+	    {
+		    _width = width;
+	    }
+
+	    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
+	    {
+		    foreach (var singleProp in logEvent.Properties)
+		    {
+			    var typeName = singleProp.Value?.ToString();
+
+			    if (typeName != null && typeName.Length > _width)
+			    {
+				    typeName = typeName.Substring(0, _width) + "...";
+			    }
+
+			    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, typeName));
+		    }
+
+	    }
     }
 }

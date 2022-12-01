@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Open Telemetry configuration in base image.
 - Exposed methods for access to public player stats:
   - `GetPublicPlayerStat`
   - `GetPublicPlayerStats`
   - `GetAllPublicPlayerStats`
+- Inbound requests are rate limited to avoid out of memory failures. 
 
+### Added
+- Microservice message log size limit. 
 
 ## [1.6.2]
 ### Changed

@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Serilog;
+using System.Threading.RateLimiting;
 
 
 namespace Beamable.Server
@@ -21,14 +22,10 @@ namespace Beamable.Server
 
     {
 
-        public IConnection Create(string host)
-
+        public IConnection Create(string host, IMicroserviceArgs args, IActivityProvider activityProvider=null)
         {
-
-            var ws = EasyWebSocket.Create(host);
-
+	        var ws = EasyWebSocket.Create(host, args, activityProvider);
             return ws;
-
         }
     }
 
@@ -36,8 +33,9 @@ namespace Beamable.Server
     public class EasyWebSocket : IConnection
 
     {
+	    private readonly IMicroserviceArgs _args;
 
-        private const int ReceiveChunkSize = 1024;
+	    private const int ReceiveChunkSize = 1024;
 
         private const int SendChunkSize = 1024;
 
@@ -62,16 +60,18 @@ namespace Beamable.Server
 
 
         private long messageNumber = 0;
+        private static IActivityProvider _activityProvider;
 
 
         public WebSocketState State => _ws.State;
 
 
-        protected EasyWebSocket(string uri)
+        protected EasyWebSocket(string uri, IMicroserviceArgs args)
 
         {
+	        _args = args;
 
-            _ws = new ClientWebSocket();
+	        _ws = new ClientWebSocket();
 
 
 
@@ -94,13 +94,13 @@ namespace Beamable.Server
         /// <param name="uri">The URI of the WebSocket server.</param>
 
         /// <returns></returns>
-
-        public static EasyWebSocket Create(string uri)
-
+        
+        public static EasyWebSocket Create(string uri, IMicroserviceArgs args, IActivityProvider activityProvider)
         {
+	        _activityProvider = activityProvider;
 
-            return new EasyWebSocket(uri);
-
+            return new EasyWebSocket(uri, args);
+            
         }
 
 
@@ -226,6 +226,7 @@ namespace Beamable.Server
             {
                 throw new Exception($"Connection is not open. state=[{_ws.State}]");
             }
+            using var activity = _activityProvider.StartActivity(OTElConstants.ACT_SEND_WEBSOCKET);
 
 
             var messageBuffer = Encoding.UTF8.GetBytes(message);
@@ -295,72 +296,52 @@ namespace Beamable.Server
 
 
         private async void StartListen()
-
         {
 
             var buffer = new byte[ReceiveChunkSize];
-
-
-
-            try
-
+            
+            var tokenLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
             {
+	            QueueLimit = _args.RateLimitWebsocketMaxQueueSize,
+	            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+	            TokenLimit = _args.RateLimitWebsocketTokens,
+	            TokensPerPeriod = _args.RateLimitWebsocketTokensPerPeriod,
+	            AutoReplenishment = true,
+	            ReplenishmentPeriod = TimeSpan.FromSeconds(_args.RateLimitWebsocketPeriodSeconds)
+            });
+            
+            try
+            {
+	            while (_ws.State == WebSocketState.Open)
+	            {
+		            if (_args.RateLimitWebsocket)
+		            {
+			            await tokenLimiter.AcquireAsync();
+		            }
 
-                while (_ws.State == WebSocketState.Open)
+		            var stringResult = new StringBuilder();
 
-                {
+		            WebSocketReceiveResult result;
 
-                    var stringResult = new StringBuilder();
-
-
-
-
-
-                    WebSocketReceiveResult result;
-
-                    do
-
-                    {
-
-                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationToken);
-
-
-
-                        if (result.MessageType == WebSocketMessageType.Close)
-
-                        {
-
-
-
-                            await
-
-                                _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-
-                            CallOnDisconnected(true);
-
-                        }
-
-                        else
-
-                        {
-
-                            var str = Encoding.UTF8.GetString(buffer, 0, result.Count);
-
-                            stringResult.Append(str);
-
-                        }
+		            do
+		            {
+			            result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationToken);
+			            if (result.MessageType == WebSocketMessageType.Close)
+			            {
+				            await  _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
+						            CancellationToken.None);
+				            CallOnDisconnected(true);
+			            }
+			            else
+			            {
+				            var str = Encoding.UTF8.GetString(buffer, 0, result.Count);
+				            stringResult.Append(str);
+			            }
+		            } while (!result.EndOfMessage);
 
 
-
-                    } while (!result.EndOfMessage);
-
-
-
-                    CallOnMessage(stringResult);
-
-
-
-                }
+		            CallOnMessage(stringResult);
+	            }
 
             }
 

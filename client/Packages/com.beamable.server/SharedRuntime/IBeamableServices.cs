@@ -16,6 +16,7 @@ using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
 using Beamable.Server.Api.Tournament;
+using beamable.server.Tracing;
 
 namespace Beamable.Server
 {
@@ -155,5 +156,10 @@ namespace Beamable.Server
 		/// %Microservice entry point for payment operations.
 		/// </summary>
 		IMicroservicePaymentsApi Payments { get; }
+
+		/// <summary>
+		/// Add custom tracing to client callables
+		/// </summary>
+		IBeamableTracer Tracing { get; }
 	}
 }
