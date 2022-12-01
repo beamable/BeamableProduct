@@ -1,6 +1,7 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.EasyFeatures.Components;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -57,7 +58,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return false;
 			}
 
-			if (!Regex.IsMatch(email, @"^[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*$"))
+			bool hasLessThan3Characters = email.Length < 3;
+			bool hasOneAtCharacter = email.Count(c => c == '@') == 1;
+			bool atCharacterIsInTheMiddle = email.First() != '@' && email.Last() != '@';
+			if (hasLessThan3Characters || !hasOneAtCharacter || !atCharacterIsInTheMiddle)
 			{
 				errorMessage = "Email address is incorrect";
 				return false;
