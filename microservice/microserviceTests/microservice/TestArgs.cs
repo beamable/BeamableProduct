@@ -22,5 +22,11 @@ namespace microserviceTests.microservice
       public int RateLimitWebsocketPeriodSeconds { get; } = 1;
       public int RateLimitWebsocketTokensPerPeriod { get; } = 5;
       public int RateLimitWebsocketMaxQueueSize { get; } = 10;
+      public string LogLevel { get; } = "debug";
+      public bool DisableLogTruncate { get; } = false;
+      public int LogTruncateLimit { get; } = 1000;
+      public int LogMaxCollectionSize { get; } = 5;
+      public int LogMaxDepth { get; } = 3;
+      public int LogDestructureMaxLength { get; } = 50;
    }
 }

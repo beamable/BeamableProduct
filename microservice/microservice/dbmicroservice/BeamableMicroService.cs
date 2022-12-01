@@ -889,28 +889,36 @@ namespace Beamable.Server
 	      _activityProvider.IncrementRequestCounter();
 
 	      var reqLog = Log.ForContext("requestContext", ctx, true);
+	      
 	      BeamableSerilogProvider.LogContext.Value = reqLog;
-
-	      activity?.SetTag(OTElConstants.TAG_BEAM_CID, ctx.Cid);
-	      activity?.SetTag(OTElConstants.TAG_BEAM_PID, ctx.Pid);
-	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_ID, ctx.Id);
-	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_METHOD, ctx.Method);
-	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_PATH ,ctx.Path);
-	      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_BODY, ctx.Body);
-	      activity?.SetTag(OTElConstants.TAG_BEAM_USER_ID, ctx.UserId);
-	      activity?.SetTag(OTElConstants.TAG_BEAM_USER_SCOPES, string.Join(", ", ctx.Scopes));
-
-	      if (_socketRequesterContext.IsPlatformMessage(ctx))
+	      try
 	      {
-		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_TYPE, "platform");
-		      // the request is a platform request.
-		      await HandlePlatformMessage(ctx, msg);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_CID, ctx.Cid);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_PID, ctx.Pid);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_ID, ctx.Id);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_METHOD, ctx.Method);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_PATH, ctx.Path);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_BODY, ctx.Body);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_USER_ID, ctx.UserId);
+		      activity?.SetTag(OTElConstants.TAG_BEAM_USER_SCOPES, string.Join(", ", ctx.Scopes));
+
+		      if (_socketRequesterContext.IsPlatformMessage(ctx))
+		      {
+			      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_TYPE, "platform");
+			      // the request is a platform request.
+			      await HandlePlatformMessage(ctx, msg);
+		      }
+		      else
+		      {
+			      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_TYPE, "client");
+			      // this is a client request. Handle the service method.
+			      await HandleClientMessage(ctx, msg);
+		      }
 	      }
-	      else
+	      finally
 	      {
-		      activity?.SetTag(OTElConstants.TAG_BEAM_REQ_TYPE, "client");
-		      // this is a client request. Handle the service method.
-		      await HandleClientMessage(ctx, msg);
+		      (BeamableSerilogProvider.LogContext.Value as IDisposable)?.Dispose();
+		      BeamableSerilogProvider.LogContext.Value = null;
 	      }
       }
 

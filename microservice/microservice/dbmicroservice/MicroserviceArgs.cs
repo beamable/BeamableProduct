@@ -31,28 +31,41 @@ namespace Beamable.Server
       public int RateLimitWebsocketPeriodSeconds { get; }
       public int RateLimitWebsocketTokensPerPeriod { get; }
       public int RateLimitWebsocketMaxQueueSize { get; }
+      public string LogLevel { get; }
+      public bool DisableLogTruncate { get; }
+      public int LogTruncateLimit { get; }
+      public int LogMaxCollectionSize { get; }
+      public int LogMaxDepth { get; }
+      public int LogDestructureMaxLength { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
    {
-      public string CustomerID { get; set; }
-      public string ProjectName { get; set; }
-      public string Secret { get; set; }
-      public string Host { get; set; }
-      public string NamePrefix { get; set; }
-      public string SdkVersionBaseBuild { get; set; }
-      public string SdkVersionExecution { get; set; }
-      public bool WatchToken { get; set; }
-      public bool DisableCustomInitializationHooks { get; set; }
-      public bool EmitOtel { get; set; }
-      public bool EmitOtelMetrics { get; set; }
-      public bool OtelMetricsIncludeRuntimeInstrumentation { get; set; }
-      public bool OtelMetricsIncludeProcessInstrumentation { get; set; }
-      public bool RateLimitWebsocket { get; set; }
-      public int RateLimitWebsocketTokens { get; set; }
-      public int RateLimitWebsocketPeriodSeconds { get; set; }
-      public int RateLimitWebsocketTokensPerPeriod { get; set; }
-      public int RateLimitWebsocketMaxQueueSize { get; set; }
+	 
+	   public string CustomerID { get; set; }
+	   public string ProjectName { get; set; }
+	   public string Secret { get; set; }
+	   public string Host { get; set; }
+	   public string NamePrefix { get; set; }
+	   public string SdkVersionBaseBuild { get; set; }
+	   public string SdkVersionExecution { get; set; }
+	   public bool WatchToken { get; set; }
+	   public bool DisableCustomInitializationHooks { get; set; }
+	   public bool EmitOtel { get; set; }
+	   public bool EmitOtelMetrics { get; set; }
+	   public bool OtelMetricsIncludeRuntimeInstrumentation { get; set; }
+	   public bool OtelMetricsIncludeProcessInstrumentation { get; set; }
+	   public bool RateLimitWebsocket { get; set; }
+	   public int RateLimitWebsocketTokens { get; set; }
+	   public int RateLimitWebsocketPeriodSeconds { get; set; }
+	   public int RateLimitWebsocketTokensPerPeriod { get; set; }
+	   public int RateLimitWebsocketMaxQueueSize { get; set; }
+	   public string LogLevel { get; set; }
+	   public bool DisableLogTruncate { get; set; }
+	   public int LogTruncateLimit { get; set; }
+	   public int LogMaxCollectionSize { get; set; }
+	   public int LogMaxDepth { get; set; }
+	   public int LogDestructureMaxLength { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -78,7 +91,13 @@ namespace Beamable.Server
             RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
             RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
             RateLimitWebsocketPeriodSeconds = args.RateLimitWebsocketPeriodSeconds,
-            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod
+            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod,
+            LogLevel = args.LogLevel,
+            LogMaxDepth = args.LogMaxDepth,
+            LogTruncateLimit = args.LogTruncateLimit,
+            LogDestructureMaxLength = args.LogDestructureMaxLength,
+            LogMaxCollectionSize = args.LogMaxCollectionSize,
+            DisableLogTruncate = args.DisableLogTruncate
          };
       }
    }
@@ -143,7 +162,58 @@ namespace Beamable.Server
 		      {
 			      limit = 10000;
 		      }
+
 		      return limit;
+	      }
+      }
+
+      public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+
+      public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
+
+      public int LogTruncateLimit
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_TRUNCATE_LIMIT"), out var val))
+		      {
+			      val = 1000;
+		      }
+
+		      return val;
+	      }
+      }
+      public int LogMaxCollectionSize {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_COLLECTION_SIZE"), out var val))
+		      {
+			      val = 5;
+		      }
+
+		      return val;
+	      }
+      }
+      public int LogMaxDepth{
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_DEPTH"), out var val))
+		      {
+			      val = 3;
+		      }
+
+		      return val;
+	      }
+      }
+      public int LogDestructureMaxLength{
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_LENGTH"), out var val))
+		      {
+			      val = 50;
+		      }
+
+		      return val;
 	      }
       }
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();

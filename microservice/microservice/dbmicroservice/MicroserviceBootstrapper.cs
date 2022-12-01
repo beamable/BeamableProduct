@@ -30,18 +30,32 @@ namespace Beamable.Server
 
 	    public static LoggingLevelSwitch LogLevel;
 
-        private static void ConfigureLogging()
+        private static void ConfigureLogging(IMicroserviceArgs args)
         {
             // TODO pull "LOG_LEVEL" into a const?
             var logLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
+			
             var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
 
             // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
             LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
 
             // https://github.com/serilog/serilog/wiki/Configuration-Basics
-            Log.Logger = new LoggerConfiguration()
-               .MinimumLevel.ControlledBy(LogLevel).Enrich.FromLogContext().Enrich.With(new LogMsgSizeEnricher(MSG_SIZE_LIMIT))
+            var logConfig = new LoggerConfiguration()
+	            .MinimumLevel.ControlledBy(LogLevel)
+	            .Enrich.FromLogContext();
+
+            if (!disableLogTruncate)
+            {
+	            logConfig = logConfig
+		            .Enrich.With(new LogMsgSizeEnricher(args.LogTruncateLimit))
+		            .Destructure.ToMaximumCollectionCount(args.LogMaxCollectionSize)
+		            .Destructure.ToMaximumDepth(args.LogMaxDepth)
+		            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
+            }
+            
+            Log.Logger = logConfig
                .WriteTo.Console(new MicroserviceLogFormatter())
                .Destructure.ToMaximumStringLength(5)
                .CreateLogger();
@@ -133,13 +147,14 @@ namespace Beamable.Server
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
-	        ConfigureLogging();
+	        var args = new EnviornmentArgs();
+	        ConfigureLogging(args);
             ConfigureUnhandledError();
             ConfigureDocsProvider();
 
-            var args = new EnviornmentArgs();
             var activityProvider = ConfigureOpenTelemetry<TMicroService>(args);
             var beamableService = new BeamableMicroService(activityProvider: activityProvider);
+
 
             var localDebug = new LocalDebugService(beamableService);
 
@@ -181,27 +196,27 @@ namespace Beamable.Server
 
     internal class LogMsgSizeEnricher : ILogEventEnricher
     {
-	    private const string MSG_PROPERTY_NAME = "msg";
 	    private readonly int _width;
 	    
 	    public LogMsgSizeEnricher(int width)
 	    {
 		    _width = width;
 	    }
-	    
+
 	    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
 	    {
-		    if (logEvent.Properties.ContainsKey(MSG_PROPERTY_NAME))
+		    foreach (var singleProp in logEvent.Properties)
 		    {
-			    var typeName = logEvent.Properties.GetValueOrDefault(MSG_PROPERTY_NAME)?.ToString();
+			    var typeName = singleProp.Value?.ToString();
 
 			    if (typeName != null && typeName.Length > _width)
 			    {
 				    typeName = typeName.Substring(0, _width) + "...";
 			    }
 
-			    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(MSG_PROPERTY_NAME, typeName));
+			    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, typeName));
 		    }
+
 	    }
     }
 }
