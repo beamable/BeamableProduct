@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using Beamable.EasyFeatures.Components;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,7 +28,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public TMP_InputField CodeInput;
 		public TMP_InputField PasswordInput;
 		public TMP_InputField ConfirmPasswordInput;
-		public TextMeshProUGUI ErrorText;
+		public ErrorMessageText ErrorText;
 		public Button ConfirmButton;
 		public TextMeshProUGUI ConfirmButtonLabel;
 		public Button CancelButton;
@@ -77,7 +78,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			TryAgainLabel.SetActive(wasSent);
 			HiddenFieldsGroup.SetActive(wasSent);
 			ConfirmButtonLabel.text = wasSent ? CONFIRM_TEXT : SEND_TEXT;
-			ErrorText.text = "";
+			ErrorText.SetErrorMessage("");
 			
 			ConfirmButton.onClick.RemoveAllListeners();
 			CancelButton.onClick.RemoveAllListeners();
@@ -102,7 +103,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				throw new System.NotImplementedException();
 			}
 
-			ErrorText.text = errorMessage;
+			ErrorText.SetErrorMessage(errorMessage);
 		}
 
 		private void ChangePassword()
@@ -116,7 +117,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				throw new System.NotImplementedException();
 			}
 
-			ErrorText.text = errorMessage;
+			ErrorText.SetErrorMessage(errorMessage);
 		}
 	}
 }

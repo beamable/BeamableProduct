@@ -77,6 +77,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			foreach (var view in ViewGroup.ManagedViews)
 			{
 				_views.Add(TypeToViewEnum(view.GetType()), view);
+				view.IsVisible = false;
 			}
 			
 			OpenView(DefaultView);

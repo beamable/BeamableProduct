@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using Beamable.EasyFeatures.Components;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,7 +19,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public TMP_InputField EmailInput;
 		public TMP_InputField PasswordInput;
 		public TMP_InputField ConfirmPasswordInput;
-		public TextMeshProUGUI ErrorText;
+		public ErrorMessageText ErrorText;
 		public Button SignUpButton;
 		public Button SignInButton;
 
@@ -43,7 +44,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
-			ErrorText.text = "";
+			ErrorText.SetErrorMessage("");
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
 			SignUpButton.onClick.ReplaceOrAddListener(OnSignUpPressed);
@@ -75,7 +76,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				// create an account
 			}
 			
-			ErrorText.text = errorMessage;
+			ErrorText.SetErrorMessage(errorMessage);
 		}
 	}
 }

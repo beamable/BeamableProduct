@@ -1458,6 +1458,16 @@ MonoBehaviour:
         _json: '{"_valueType":0,"_floatValue":30.0}'
     _cachedProperties: []
     _selector: .button.link
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":21}'
+    _cachedProperties: []
+    _selector: .icon.error
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
@@ -1480,5 +1490,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 542a2f25c57de9c4e9b1fd8f3cb02dc0, type: 3}
   - {fileID: 21300000, guid: 8f8a4ace060db6641bfff44c15df8b0f, type: 3}
   - {fileID: 21300000, guid: 6594a387a01c541ea8935ee0cccd25ac, type: 3}
+  - {fileID: 21300000, guid: 1c04cbf291b1d7a4bb9bac4945921e78, type: 3}
   _isReadOnly: 1
   _sortingOrder: 0
