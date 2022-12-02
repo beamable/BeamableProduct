@@ -19,5 +19,10 @@ namespace microserviceTests.microservice
       public int LogMaxCollectionSize { get; } = 5;
       public int LogMaxDepth { get; } = 3;
       public int LogDestructureMaxLength { get; } = 50;
+      public bool RateLimitWebsocket { get; } = false;
+      public int RateLimitWebsocketTokens { get; } = 10;
+      public int RateLimitWebsocketPeriodSeconds { get; } = 1;
+      public int RateLimitWebsocketTokensPerPeriod { get; } = 5;
+      public int RateLimitWebsocketMaxQueueSize { get; } = 10;
    }
 }

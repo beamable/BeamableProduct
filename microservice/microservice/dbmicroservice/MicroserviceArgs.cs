@@ -12,13 +12,17 @@ namespace Beamable.Server
       string SdkVersionExecution { get; }
       bool WatchToken { get; }
       public bool DisableCustomInitializationHooks { get; }
-      
       public string LogLevel { get; }
       public bool DisableLogTruncate { get; }
       public int LogTruncateLimit { get; }
       public int LogMaxCollectionSize { get; }
       public int LogMaxDepth { get; }
       public int LogDestructureMaxLength { get; }
+      public bool RateLimitWebsocket { get; }
+      public int RateLimitWebsocketTokens { get; }
+      public int RateLimitWebsocketPeriodSeconds { get; }
+      public int RateLimitWebsocketTokensPerPeriod { get; }
+      public int RateLimitWebsocketMaxQueueSize { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -38,6 +42,11 @@ namespace Beamable.Server
 	   public int LogMaxCollectionSize { get; set; }
 	   public int LogMaxDepth { get; set; }
 	   public int LogDestructureMaxLength { get; set; }
+	   public bool RateLimitWebsocket { get; set; }
+	   public int RateLimitWebsocketTokens { get; set; }
+	   public int RateLimitWebsocketPeriodSeconds { get; set; }
+	   public int RateLimitWebsocketTokensPerPeriod { get; set; }
+	   public int RateLimitWebsocketMaxQueueSize { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -60,7 +69,12 @@ namespace Beamable.Server
             LogTruncateLimit = args.LogTruncateLimit,
             LogDestructureMaxLength = args.LogDestructureMaxLength,
             LogMaxCollectionSize = args.LogMaxCollectionSize,
-            DisableLogTruncate = args.DisableLogTruncate
+            DisableLogTruncate = args.DisableLogTruncate,
+            RateLimitWebsocket = args.RateLimitWebsocket,
+            RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
+            RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
+            RateLimitWebsocketPeriodSeconds = args.RateLimitWebsocketPeriodSeconds,
+            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod
          };
       }
    }
@@ -75,7 +89,6 @@ namespace Beamable.Server
       public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
       public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
       public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
-
 
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
 
@@ -115,7 +128,9 @@ namespace Beamable.Server
 		      return val;
 	      }
       }
-      public int LogDestructureMaxLength{
+
+      public int LogDestructureMaxLength
+      {
 	      get
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_LENGTH"), out var val))
@@ -124,6 +139,58 @@ namespace Beamable.Server
 		      }
 
 		      return val;
+	      }
+      }
+
+      /// <summary>
+      /// By default, rate limiting is on, so if you pass anything to WS_DISABLE_RATE_LIMIT, it'll disable it.
+      /// </summary>
+      public bool RateLimitWebsocket => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_DISABLE_RATE_LIMIT"));
+
+      public int RateLimitWebsocketTokens
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS"), out var limit))
+		      {
+			      limit = 1000;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int RateLimitWebsocketPeriodSeconds 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_SECONDS"), out var limit))
+		      {
+			      limit = 30;
+		      }
+		      return limit;
+	      }
+      }
+      public int RateLimitWebsocketTokensPerPeriod 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
+		      {
+			      limit = 500;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int RateLimitWebsocketMaxQueueSize
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE"), out var limit))
+		      {
+			      limit = 10000;
+		      }
+		      return limit;
 	      }
       }
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
