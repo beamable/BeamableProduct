@@ -174,13 +174,16 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_DISABLE_EMOJI = "DOTNET_WATCH_SUPPRESS_EMOJIS";
 		public const string ENV_DISABLE_LOG_TRUNCATE = "DISABLE_LOG_TRUNCATE";
 
+		protected override bool CaptureStandardBuffers => false;
+		
+
 		public RunServiceCommand(MicroserviceDescriptor service,
-								 string cid,
-								 string pid,
-								 string secret,
-								 Dictionary<string, string> env,
-								 bool watch = true,
-								 bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
+		                         string cid,
+		                         string pid,
+		                         string secret,
+		                         Dictionary<string, string> env,
+		                         bool watch = true,
+		                         bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
 			_watch = watch;
