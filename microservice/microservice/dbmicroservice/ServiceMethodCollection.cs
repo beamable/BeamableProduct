@@ -21,7 +21,7 @@ namespace Beamable.Server
 
       public async Task<string> Handle(RequestContext ctx, string path, IParameterProvider parameterProvider)
       {
-         BeamableSerilogProvider.LogContext.Value.Debug("Handling {path}", path);
+         BeamableSerilogProvider.LogContext.Value.Debug($"Handling {path}");
          if (_pathToMethod.TryGetValue(path, out var method) )
          {
             if (!ctx.HasScopes(method.RequiredScopes))
@@ -44,7 +44,7 @@ namespace Beamable.Server
          }
          else
          {
-            BeamableSerilogProvider.LogContext.Value.Warning("No method available for {path}", path);
+            BeamableSerilogProvider.LogContext.Value.Warning($"No method available for {path}");
 
             throw new UnhandledPathException(path);
          }

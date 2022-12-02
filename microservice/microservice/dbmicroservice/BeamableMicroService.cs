@@ -744,7 +744,7 @@ namespace Beamable.Server
 
             var parameterProvider = new AdaptiveParameterProvider(ctx);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
-            BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
+            BeamableSerilogProvider.LogContext.Value.Verbose("Responding with " + responseJson);
             await _socketRequesterContext.SendMessageSafely(responseJson);
             // TODO: Kill Scope
          }
@@ -826,7 +826,7 @@ namespace Beamable.Server
 
       async Task HandleWebsocketMessage(IConnection ws, string msg)
       {
-         Log.Debug("Handling WS Message. {msg}",msg);
+         Log.Verbose("Handling WS Message " + msg);
 
          if (!msg.TryBuildRequestContext(_args, out var ctx))
          {
@@ -852,7 +852,6 @@ namespace Beamable.Server
          }
          finally
          {
-	         // TODO: test to see if this makes a difference
 	         (BeamableSerilogProvider.LogContext.Value as IDisposable)?.Dispose();
 	         BeamableSerilogProvider.LogContext.Value = null;
          }

@@ -35,7 +35,18 @@ namespace Beamable.Server
             // https://github.com/serilog/serilog/wiki/Configuration-Basics
             var logConfig = new LoggerConfiguration()
 	            .MinimumLevel.ControlledBy(LogLevel)
-	            .Enrich.FromLogContext();
+	            .Enrich.FromLogContext()
+	            .Destructure.ByTransforming<RequestContext>(ctx => new
+	            {
+		            cid = ctx.Cid,
+		            pid = ctx.Pid,
+		            path = ctx.Path,
+		            status = ctx.Status,
+		            id = ctx.Id,
+		            isEvent = ctx.IsEvent,
+		            userId = ctx.UserId,
+		            scopes = ctx.Scopes
+	            });
 
             if (!disableLogTruncate)
             {
