@@ -27,7 +27,8 @@ public class MicroserviceRequestContext : RequestContext
 			{
 				return _body;
 			}
-			_body = BodyElement.GetRawText();
+			
+			_body = BodyElement.ToString();
 			BodyElement = default;
 
 			return _body;
@@ -42,7 +43,17 @@ public class MicroserviceRequestContext : RequestContext
 			{
 				return _headers;
 			}
-			_headers = new RequestHeaders(JsonConvert.DeserializeObject<Dictionary<string, string>>(HeaderElement.GetRawText()));
+
+			if (HeaderElement.ValueKind == JsonValueKind.Object)
+			{
+				_headers = new RequestHeaders(
+					JsonConvert.DeserializeObject<Dictionary<string, string>>(HeaderElement.GetRawText()));
+			}
+			else
+			{
+				_headers = new RequestHeaders();
+			}
+
 			HeaderElement = default;
 			return _headers;
 		}

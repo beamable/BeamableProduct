@@ -556,13 +556,10 @@ namespace Beamable.Server
 
          try
          {
-
-            if (!_runningTaskTable.TryAdd(messageNumber, task))
+	         if (!_runningTaskTable.TryAdd(messageNumber, task))
             {
                BeamableLogger.LogWarning("Could not monitor task. {id} {status}", messageNumber, task.Status);
             }
-            BeamableLogger.Log($"Started task. approx size=[{_runningTaskTable.Count}]");
-
             // watch the task...
             var _ = task.ContinueWith(finishedTask =>
             {
@@ -570,9 +567,6 @@ namespace Beamable.Server
                {
                   BeamableLogger.LogWarning("Could not discard monitored task {id}", messageNumber);
                }
-               BeamableLogger.Log($"Finished task. approx size=[{_runningTaskTable.Count}]");
-
-
                if (finishedTask.IsFaulted)
                {
                   BeamableLogger.LogException(finishedTask.Exception);
