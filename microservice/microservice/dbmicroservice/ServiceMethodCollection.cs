@@ -37,7 +37,7 @@ namespace Beamable.Server
 
             var output = method.Execute(ctx, parameterProvider);
             var result = await output;
-            BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);
+            BeamableSerilogProvider.LogContext.Value.Verbose("Method finished with {result}", result);
 
             var serializedResult = method.ResponseSerializer.SerializeResponse(ctx, result);
             return serializedResult;
