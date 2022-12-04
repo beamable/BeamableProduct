@@ -29,6 +29,7 @@ using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Payments;
+using Beamable.Server.Common;
 using Beamable.Server.Content;
 using Core.Server.Common;
 using microservice;
@@ -46,6 +47,7 @@ using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Stats;
 using Beamable.Common.Reflection;
+using Beamable.Experimental.Api.Chat;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Api.Notifications;
 using microservice.Common;
@@ -366,11 +368,12 @@ namespace Beamable.Server
          _connection = socket;
 
          socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
-         socket.OnMessage( async (s, message, messageNumber) =>
+
+         socket.OnMessage( async (s, message, messageNumber, sw) =>
          {
             try
             {
-               await MonitorTask(messageNumber, () => HandleWebsocketMessage(socket, message));
+	            await MonitorTask(messageNumber, () => HandleWebsocketMessage(socket, message, sw));
             }
             catch (Exception ex)
             {
@@ -558,6 +561,7 @@ namespace Beamable.Server
             {
                BeamableLogger.LogWarning("Could not monitor task. {id} {status}", messageNumber, task.Status);
             }
+            BeamableLogger.Log($"Started task. approx size=[{_runningTaskTable.Count}]");
 
             // watch the task...
             var _ = task.ContinueWith(finishedTask =>
@@ -566,6 +570,8 @@ namespace Beamable.Server
                {
                   BeamableLogger.LogWarning("Could not discard monitored task {id}", messageNumber);
                }
+               BeamableLogger.Log($"Finished task. approx size=[{_runningTaskTable.Count}]");
+
 
                if (finishedTask.IsFaulted)
                {
@@ -730,7 +736,7 @@ namespace Beamable.Server
          return service;
       }
 
-      async Task HandleClientMessage(RequestContext ctx, string msg)
+      async Task HandleClientMessage(RequestContext ctx, Stopwatch sw)
       {
          if (RefuseNewClientMessages)
          {
@@ -745,7 +751,7 @@ namespace Beamable.Server
             var parameterProvider = new AdaptiveParameterProvider(ctx);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
             BeamableSerilogProvider.LogContext.Value.Verbose("Responding with " + responseJson);
-            await _socketRequesterContext.SendMessageSafely(responseJson);
+            await _socketRequesterContext.SendMessageSafely(responseJson, sw: sw);
             // TODO: Kill Scope
          }
          catch (MicroserviceException ex)
@@ -759,7 +765,7 @@ namespace Beamable.Server
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
             BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", ex.GetType().Name, ex.Message,
                ex.Source, failResponseJson, ex.StackTrace);
-            await _socketRequesterContext.SendMessageSafely(failResponseJson);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
          }
          catch (TargetInvocationException ex)
          {
@@ -798,7 +804,7 @@ namespace Beamable.Server
                   inner.Source, inner.StackTrace);
             }
 
-            await _socketRequesterContext.SendMessageSafely(failResponseJson);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
          }
          catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
          {
@@ -820,11 +826,11 @@ namespace Beamable.Server
                }
             };
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            await _socketRequesterContext.SendMessageSafely(failResponseJson);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
          }
       }
 
-      async Task HandleWebsocketMessage(IConnection ws, string msg)
+      async Task HandleWebsocketMessage(IConnection ws, string msg, Stopwatch sw)
       {
          Log.Verbose("Handling WS Message " + msg);
 
@@ -833,7 +839,7 @@ namespace Beamable.Server
             Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
             return;
          }
-
+         
          var reqLog = Log.ForContext("requestContext", ctx, true);
          BeamableSerilogProvider.LogContext.Value = reqLog;
 
@@ -847,7 +853,7 @@ namespace Beamable.Server
 	         else
 	         {
 		         // this is a client request. Handle the service method.
-		         await HandleClientMessage(ctx, msg);
+		         await HandleClientMessage(ctx, sw);
 	         }
          }
          finally

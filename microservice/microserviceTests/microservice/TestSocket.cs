@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Serilog;
+using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace Beamable.Microservice.Tests.Socket
@@ -609,12 +610,12 @@ namespace Beamable.Microservice.Tests.Socket
     public class TestSocket : IConnection
     {
         private event Action<TestSocket> _onConnectionCallbacks;
-        private Action<IConnection, string, long> _onMessageCallbacks = (s, m, id) => { };
+        private Action<IConnection, string, long, Stopwatch> _onMessageCallbacks = (s, m, id, sw) => { };
 
         public Action MockConnect;
         public Action<Action<TestSocket>> MockOnConnect;
         public event Action<TestSocket, bool> _onDisconnectionCallbacks;
-        public Action<Action<IConnection, string, long>> MockOnMessage;
+        public Action<Action<IConnection, string, long, Stopwatch>> MockOnMessage;
         // public Action<string> MockSendMessage;
 
         /// <summary>
@@ -884,7 +885,7 @@ namespace Beamable.Microservice.Tests.Socket
         public void SendToClient(string msg)
         {
             var next = Interlocked.Increment(ref id);
-            _onMessageCallbacks(this, msg, next);
+            _onMessageCallbacks(this, msg, next, null);
         }
 
         public void SendToClient<T>(T obj)
@@ -916,7 +917,7 @@ namespace Beamable.Microservice.Tests.Socket
         }
 
         public bool MockIsConnectionOpen = true;
-        public async Task SendMessage(string message)
+        public async Task SendMessage(string message, Stopwatch sw=null)
         {
             if (!MockIsConnectionOpen)
             {
@@ -937,7 +938,10 @@ namespace Beamable.Microservice.Tests.Socket
             return this;
         }
 
-        public IConnection OnMessage(Action<IConnection, string, long> onMessage)
+        public IConnection OnMessage(Action<IConnection, string, long> onMessage) =>
+	        OnMessage((c, msg, id, _) => onMessage(c, msg, id));
+
+        public IConnection OnMessage(Action<IConnection, string, long, Stopwatch> onMessage)
         {
             MockOnMessage?.Invoke(onMessage);
             return this;

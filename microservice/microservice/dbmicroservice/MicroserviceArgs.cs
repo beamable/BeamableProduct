@@ -111,7 +111,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_COLLECTION_SIZE"), out var val))
 		      {
-			      val = 5;
+			      val = 15;
 		      }
 
 		      return val;
@@ -135,7 +135,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_LENGTH"), out var val))
 		      {
-			      val = 50;
+			      val = 250;
 		      }
 
 		      return val;
@@ -153,7 +153,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS"), out var limit))
 		      {
-			      limit = 1000;
+			      limit = 5000;
 		      }
 		      return limit;
 	      }
@@ -165,7 +165,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_SECONDS"), out var limit))
 		      {
-			      limit = 30;
+			      limit = 1;
 		      }
 		      return limit;
 	      }
@@ -176,7 +176,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
 		      {
-			      limit = 500;
+			      limit = 2000;
 		      }
 		      return limit;
 	      }
@@ -188,7 +188,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE"), out var limit))
 		      {
-			      limit = 10000;
+			      limit = 100000;
 		      }
 		      return limit;
 	      }

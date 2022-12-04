@@ -12,6 +12,7 @@ using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
+using System.Diagnostics;
 
 namespace Beamable.Server
 {
@@ -201,7 +202,7 @@ namespace Beamable.Server
 	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }
 
-      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10)
+      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null)
       {
          var failures = new List<Exception>();
          for (var retry = 0; retry < retryCount; retry++)
@@ -215,7 +216,7 @@ namespace Beamable.Server
 		         }
 
 		         // authorization needs to be complete if this is any message _other_ than auth related
-		         await connection.SendMessage(message);
+		         await connection.SendMessage(message, sw);
 		         return;
 	         }
 	         catch (Exception ex)

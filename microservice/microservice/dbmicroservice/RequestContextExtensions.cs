@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Beamable.Common;
-using Newtonsoft.Json;
 
 namespace Beamable.Server
 {
@@ -26,7 +25,8 @@ namespace Beamable.Server
             context = null;
             return false;
          }
-
+         JsonElement bodyElement = default;
+         JsonElement headerElement = default;
          try
          {
             using (JsonDocument document = JsonDocument.Parse(msg))
@@ -36,9 +36,8 @@ namespace Beamable.Server
 
                if (document.RootElement.TryGetProperty("body", out temp))
                {
-                  body = temp.ToString();
+	               bodyElement = temp.Clone();
                }
-//               body = document.RootElement.GetProperty("body")?.ToString() ?? null;
                if (document.RootElement.TryGetProperty("path", out temp))
                   path = temp.GetString();
                if (document.RootElement.TryGetProperty("method", out temp))
@@ -63,7 +62,7 @@ namespace Beamable.Server
 
                if (document.RootElement.TryGetProperty("headers", out temp) && temp.ValueKind == JsonValueKind.Object)
                {
-	               headers = JsonConvert.DeserializeObject<Dictionary<string, string>>(temp.GetRawText());
+	               headerElement = temp.Clone();
                }
 
             }
@@ -74,7 +73,12 @@ namespace Beamable.Server
             throw;
          }
 
-         context = new RequestContext(args.CustomerID, args.ProjectName, id, status, userID, path, methodName, body, scopes, headers);
+         var microserviceRequestContext = new MicroserviceRequestContext(args.CustomerID, args.ProjectName, id, status, userID, path, methodName, body, scopes, null)
+         {
+	         BodyElement = bodyElement,
+	         HeaderElement = headerElement
+         };
+         context = microserviceRequestContext;
          return true;
       }
    }

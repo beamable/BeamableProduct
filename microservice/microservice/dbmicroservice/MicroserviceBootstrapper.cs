@@ -36,7 +36,7 @@ namespace Beamable.Server
             var logConfig = new LoggerConfiguration()
 	            .MinimumLevel.ControlledBy(LogLevel)
 	            .Enrich.FromLogContext()
-	            .Destructure.ByTransforming<RequestContext>(ctx => new
+	            .Destructure.ByTransforming<MicroserviceRequestContext>(ctx => new
 	            {
 		            cid = ctx.Cid,
 		            pid = ctx.Pid,
@@ -59,7 +59,6 @@ namespace Beamable.Server
             
             Log.Logger = logConfig
                .WriteTo.Console(new MicroserviceLogFormatter())
-               .Destructure.ToMaximumStringLength(5)
                .CreateLogger();
 
             // use newtonsoft for JsonUtility
@@ -79,6 +78,7 @@ namespace Beamable.Server
 		            await Task.Delay(1);;
 		            if (promise?.HadAnyErrbacks ?? true) return;
 
+		            Console.Error.WriteLine($"Uncaught promise error!!! {exception.GetType().Name} {exception.Message} -- {exception.StackTrace}");
 		            BeamableLogger.LogError("Uncaught promise error. {promiseType} {message} {stack}", promise.GetType(), exception.Message, exception.StackTrace);
 		            throw exception;
 	            }
@@ -92,11 +92,26 @@ namespace Beamable.Server
             XmlDocsHelper.ProviderFactory = XmlDocsHelper.FileIOProvider;
         }
 
+        public static void ConfigureUncaughtExceptions()
+        {
+	        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+	        {
+		        Console.Error.WriteLine($"Uncaught exception error!!! {args.ExceptionObject.GetType().Name}");
+		        if (args.ExceptionObject is Exception ex)
+		        {
+			        Console.Error.WriteLine($"{ex.Message} -- {ex.StackTrace}");
+		        }
+		        
+				Log.Fatal($"Unhandled exception. type=[{args.ExceptionObject?.GetType()?.Name}]");
+	        };
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
 	        var args = new EnviornmentArgs();
 
             ConfigureLogging(args);
+            ConfigureUncaughtExceptions();
             ConfigureUnhandledError();
             ConfigureDocsProvider();
 

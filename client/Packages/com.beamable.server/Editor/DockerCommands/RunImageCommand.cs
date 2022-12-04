@@ -174,7 +174,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_DISABLE_EMOJI = "DOTNET_WATCH_SUPPRESS_EMOJIS";
 		public const string ENV_DISABLE_LOG_TRUNCATE = "DISABLE_LOG_TRUNCATE";
 
-		protected override bool CaptureStandardBuffers => false;
+		protected override bool CaptureStandardBuffers => true;
 		
 
 		public RunServiceCommand(MicroserviceDescriptor service,

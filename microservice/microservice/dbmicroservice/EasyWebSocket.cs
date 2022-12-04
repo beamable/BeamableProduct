@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Serilog;
+using System.Diagnostics;
 using System.Threading.RateLimiting;
 
 
@@ -57,7 +58,7 @@ namespace Beamable.Server
 
         private Action<EasyWebSocket> _onConnected;
 
-        private Action<EasyWebSocket, string, long> _onMessage;
+        private Action<EasyWebSocket, string, long, Stopwatch> _onMessage;
 
         private Action<EasyWebSocket, bool> _onDisconnected;
 
@@ -79,7 +80,6 @@ namespace Beamable.Server
 
 
             _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
-
             _uri = new Uri(uri);
 
             _cancellationToken = _cancellationTokenSource.Token;
@@ -170,17 +170,15 @@ namespace Beamable.Server
 
 
 
+        public IConnection OnMessage(Action<IConnection, string, long> onMessage) =>
+	        OnMessage((c, msg, id, _) => onMessage(c, msg, id));
+        
         /// <summary>
-
         /// Set the Action to call when a messages has been received.
-
         /// </summary>
-
         /// <param name="onMessage">The Action to call.</param>
-
         /// <returns></returns>
-
-        public IConnection OnMessage(Action<IConnection, string, long> onMessage)
+        public IConnection OnMessage(Action<IConnection, string, long, Stopwatch> onMessage)
 
         {
 
@@ -200,9 +198,9 @@ namespace Beamable.Server
 
         /// <param name="message">The message to send</param>
 
-        public Task SendMessage(string message)
+        public Task SendMessage(string message, Stopwatch sw=null)
         {
-            return SendMessageAsync(message);
+            return SendMessageAsync(message, sw);
         }
 
 
@@ -223,7 +221,7 @@ namespace Beamable.Server
 
 
 
-        private async Task SendMessageAsync(string message)
+        private async Task SendMessageAsync(string message, Stopwatch sw)
         {
             if (_ws.State != WebSocketState.Open)
             {
@@ -261,6 +259,12 @@ namespace Beamable.Server
 
                 await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count), WebSocketMessageType.Text, lastMessage, _cancellationToken);
 
+            }
+            
+            if (sw != null)
+            {
+	            sw.Stop();
+	            Log.Verbose($"client message time=[{sw.ElapsedMilliseconds}]");
             }
 
         }
@@ -314,20 +318,22 @@ namespace Beamable.Server
             
             try
             {
+	            var readSegment = new ArraySegment<byte>(buffer);
+	            var stringResult = new StringBuilder();
 	            while (_ws.State == WebSocketState.Open)
 	            {
 		            if (_args.RateLimitWebsocket)
 		            {
 			            await tokenLimiter.AcquireAsync();
 		            }
-
-		            var stringResult = new StringBuilder();
-
+		            
 		            WebSocketReceiveResult result;
-
+		            var sw = new Stopwatch();
+		            
+		            sw.Start();
 		            do
 		            {
-			            result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationToken);
+			            result = await _ws.ReceiveAsync(readSegment, _cancellationToken);
 			            if (result.MessageType == WebSocketMessageType.Close)
 			            {
 				            await  _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
@@ -341,8 +347,8 @@ namespace Beamable.Server
 			            }
 		            } while (!result.EndOfMessage);
 
-
-		            CallOnMessage(stringResult);
+		            CallOnMessage(stringResult, sw);
+		            stringResult.Clear();
 	            }
 
             }
@@ -366,23 +372,18 @@ namespace Beamable.Server
             }
 
         }
-
-
-
-        private void CallOnMessage(StringBuilder stringResult)
-
+        
+        private void CallOnMessage(StringBuilder stringResult, Stopwatch sw)
         {
-
-            if (_onMessage != null)
-
+	        if (_onMessage != null)
             {
-
-                var next = Interlocked.Increment(ref messageNumber);
-
-                RunInTask(() => _onMessage(this, stringResult.ToString(), next));
-
+	            var next = Interlocked.Increment(ref messageNumber);
+                var text = stringResult.ToString();
+                RunInTask(() =>
+                {
+	                _onMessage(this, text, next, sw);
+                });
             }
-
         }
 
 
@@ -414,8 +415,8 @@ namespace Beamable.Server
         private static void RunInTask(Action action)
 
         {
-
-            Task.Factory.StartNew(action);
+	        Task.Run(action);
+	        // Task.Factory.StartNew(action, );
 
         }
 
