@@ -11,6 +11,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
 using Beamable.Server;
+using Beamable.Server.Content;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -48,12 +49,39 @@ namespace microserviceTests.microservice
 	   }
 
    }
+   
+   public static class Ext
+   {
+	   public static async Promise<List<T>> GetContents<T>(this ClientManifest manifest) where T : ContentObject
+	   {
+		   var content = await manifest.Filter(new ContentQuery
+		   {
+			   TypeConstraints = new HashSet<Type>{typeof(T)}
+		   }).ResolveAll();
+
+		   return content.Cast<T>().ToList();
+	   }
+		
+	   public async static Task<List<T>> GetContents<T>(this IBeamableServices services) where T : ContentObject, new()
+	   {
+		   var manifest = await services.Content.GetManifest();
+		   var res = await manifest.GetContents<T>();
+		   return res;
+	   }
+   }
 
    [Microservice("simple", UseLegacySerialization = true)]
    public class SimpleMicroservice : Microservice
    {
       public static MicroserviceFactory<SimpleMicroservice> Factory => () => new SimpleMicroservice();
-
+      
+      [ClientCallable]
+      public async Promise<List<ItemContent>> GetContents()
+      {
+	      var output = await Services.GetContents<ItemContent>();
+	      return output;
+      }
+      
       [ClientCallable]
       public int Sum(int[] numbers)
       {
