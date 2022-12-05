@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `GetPublicPlayerStats`
   - `GetAllPublicPlayerStats`
 
+### Fixed
+- Timeouts due to large amount of content in microservice should no longer occur due to content caching during start of the microservice.
 
 ## [1.6.2]
 ### Changed
