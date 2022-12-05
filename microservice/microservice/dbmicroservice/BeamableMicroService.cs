@@ -238,20 +238,18 @@ namespace Beamable.Server
 
          InitServices();
 
-         _serviceInitialized.Then(_ =>
-         {
-            _contentService.Init();
-         }).Error(ex =>
+		_serviceInitialized.Error(ex =>
          {
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
-
 
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
          await SetupWebsocket(socket);
+         
+         await _contentService.Init();    
       }
 
       private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)

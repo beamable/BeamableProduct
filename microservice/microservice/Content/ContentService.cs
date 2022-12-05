@@ -152,9 +152,13 @@ namespace Beamable.Server.Content
          return _waitForManifest;
       }
 
-      public void Init()
+      public async Promise Init()
       {
          _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
+         
+         // cache entire content
+         var manifest = await GetManifest();
+         await manifest.ResolveAll();
       }
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)
