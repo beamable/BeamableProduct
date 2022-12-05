@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Common.Api.Inventory
 {
@@ -665,6 +666,21 @@ namespace Beamable.Common.Api.Inventory
 			}
 		}
 	}
+	
+	[Serializable]
+	public class
+		SerializedDictionaryStringToItemViewList : SerializableDictionaryStringToSomething<ItemViewList>
+	{
+		public SerializedDictionaryStringToItemViewList() { }
+
+		public SerializedDictionaryStringToItemViewList(IDictionary<string, List<ItemView>> existing)
+		{
+			foreach (var kvp in existing)
+			{
+				Add(kvp.Key, new ItemViewList(kvp.Value));
+			}
+		}
+	}
 
 	/// <summary>
 	/// This type defines the %Beamable item %content related to the %InventoryService.
@@ -737,16 +753,62 @@ namespace Beamable.Common.Api.Inventory
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class InventoryView
+
+	[Serializable]
+	public class InventoryView : ISerializationCallbackReceiver
 	{
 		public Dictionary<string, long> currencies = new Dictionary<string, long>();
 		public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
 		public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
+		
+		[SerializeField]
+		private SerializableDictionaryStringToLong _currencies;
+		[SerializeField]
+		private SerializedDictionaryStringToCurrencyPropertyList _currencyProperties;
+		[SerializeField]
+		private SerializedDictionaryStringToItemViewList _items;
 
 		public void Clear()
 		{
 			currencies.Clear();
 			items.Clear();
+		}
+		
+		public void OnBeforeSerialize()
+		{
+			_currencies = new SerializableDictionaryStringToLong(currencies);
+			_currencyProperties = new SerializedDictionaryStringToCurrencyPropertyList(currencyProperties);
+			_items = new SerializedDictionaryStringToItemViewList(items);
+		}
+
+		public void OnAfterDeserialize()
+		{
+			if (_currencies != null)
+			{
+				foreach (KeyValuePair<string, long> element in _currencies)
+				{
+					if (!currencies.ContainsKey(element.Key))
+						currencies.Add(element.Key, element.Value);
+				}
+			}
+
+			if (_currencyProperties != null)
+			{
+				foreach (KeyValuePair<string, CurrencyPropertyList> element in _currencyProperties)
+				{
+					if (!currencyProperties.ContainsKey(element.Key))
+						currencyProperties.Add(element.Key, element.Value.Properties);
+				}
+			}
+
+			if (_items != null)
+			{
+				foreach (KeyValuePair<string, ItemViewList> element in _items)
+				{
+					if (!items.ContainsKey(element.Key))
+						items.Add(element.Key, element.Value.Items);
+				}
+			}
 		}
 	}
 
@@ -768,5 +830,28 @@ namespace Beamable.Common.Api.Inventory
 		public Dictionary<string, string> properties;
 		public long createdAt;
 		public long updatedAt;
+	}
+	
+	[Serializable]
+	public class ItemViewList : DisplayableList<ItemView>
+	{
+		public List<ItemView> Items = new List<ItemView>();
+		public ItemViewList(List<ItemView> existing)
+		{
+			foreach (var elem in existing)
+			{
+				Add(elem);
+			}
+		}
+
+		protected override IList InternalList => Items;
+
+		public override string GetListPropertyPath() => nameof(Items);
+
+		public new ItemView this[int index]
+		{
+			get => Items[index];
+			set => Items[index] = value;
+		}
 	}
 }
