@@ -824,6 +824,7 @@ namespace Beamable.Common.Api.Inventory
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+	[Serializable]
 	public class ItemView
 	{
 		public long id;
