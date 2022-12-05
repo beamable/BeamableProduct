@@ -1468,6 +1468,71 @@ MonoBehaviour:
         _json: '{"_valueType":0,"AssetSerializationKey":21}'
     _cachedProperties: []
     _selector: .icon.error
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: roundCorners
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_floatValue":40.0}'
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.2352941334247589,"g":0.16470588743686677,"b":0.49803924560546877,"a":1.0}}'
+    - _key: borderColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.4941176772117615,"g":0.4274510145187378,"b":0.7882353663444519,"a":1.0}}'
+    - _key: borderWidth
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_floatValue":2.0}'
+    _cachedProperties: []
+    _selector: .button.round
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":22}'
+    _cachedProperties: []
+    _selector: .icon.facebook
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":23}'
+    _cachedProperties: []
+    _selector: .icon.gameCenter
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":24}'
+    _cachedProperties: []
+    _selector: .icon.steam
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":25}'
+    _cachedProperties: []
+    _selector: .icon.googlePlay
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
@@ -1489,7 +1554,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: f92e444b1e659644fa182feb8601b974, type: 3}
   - {fileID: 21300000, guid: 542a2f25c57de9c4e9b1fd8f3cb02dc0, type: 3}
   - {fileID: 21300000, guid: 8f8a4ace060db6641bfff44c15df8b0f, type: 3}
-  - {fileID: 21300000, guid: 6594a387a01c541ea8935ee0cccd25ac, type: 3}
+  - {fileID: 21300000, guid: 3bc6be4866606c343be3d08bb5259d55, type: 3}
   - {fileID: 21300000, guid: 1c04cbf291b1d7a4bb9bac4945921e78, type: 3}
+  - {fileID: 21300000, guid: 35a3c33748dc8614fa7d67c1e6e66a14, type: 3}
+  - {fileID: 21300000, guid: 332084343d8329b449b249fd3a338d9c, type: 3}
+  - {fileID: 21300000, guid: efd675b446ae3d54e867caf379072c0f, type: 3}
+  - {fileID: 21300000, guid: 629037f29afc7204994c55f58f474745, type: 3}
   _isReadOnly: 1
   _sortingOrder: 0
