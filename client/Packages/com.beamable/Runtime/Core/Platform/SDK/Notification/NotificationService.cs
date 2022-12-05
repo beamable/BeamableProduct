@@ -47,6 +47,9 @@ namespace Beamable.Api.Notification
 		private Dictionary<string, List<Action<object>>> handlers = new Dictionary<string, List<Action<object>>>();
 		private HashSet<object> typedHandlerObjects = new HashSet<object>();
 
+		private Dictionary<object, Action<object>> _boxedCallbackToActualCallback =
+			new Dictionary<object, Action<object>>();
+
 		/* Maximum number of local notifications allowed to be scheduled at the same time. */
 		public const int MaxLocalNotifications = 25;
 		// Scheduled notifications must fall between 10AM - 10PM
@@ -98,8 +101,6 @@ namespace Beamable.Api.Notification
 		/// <inheritdoc cref="INotificationService.Subscribe{T}(string, Action{T})"/>
 		public void Subscribe<T>(string name, Action<T> callback)
 		{
-			object boxedCallback = callback;
-			typedHandlerObjects.Add(boxedCallback);
 			void Handler(object raw)
 			{
 				if (raw == null)
@@ -133,6 +134,9 @@ namespace Beamable.Api.Notification
 				}
 			}
 
+			object boxedCallback = callback;
+			typedHandlerObjects.Add(boxedCallback);
+			_boxedCallbackToActualCallback.Add(callback, Handler);
 			Subscribe(name, Handler);
 		}
 
@@ -179,6 +183,17 @@ namespace Beamable.Api.Notification
 			if (!typedHandlerObjects.Remove(boxedCallback))
 			{
 				Debug.LogWarning("No existing handler was found for the given handler.");
+			}
+
+			if (!_boxedCallbackToActualCallback.TryGetValue(handler, out var actualHandler))
+			{
+				Debug.LogWarning("No existing wrapped handler was found for the given typed handler.");
+			}
+
+			if (handlers.TryGetValue(name, out var found))
+			{
+				found.Remove(actualHandler);
+				_boxedCallbackToActualCallback.Remove(handler);
 			}
 		}
 

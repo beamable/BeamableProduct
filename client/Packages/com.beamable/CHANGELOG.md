@@ -5,8 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Local content mode
+- Added `OnLeft`,`OnPromoted` and `OnKicked` event support in `PartyMember` class.
+
+### Changed
+- By default, content will be put into local mode. Remote content can be configured by disabling the _Project Setting/Beamable/Content/Enable Local Content In Editor_  option.
+
 ### Fixed
+- `NotificationService.Unsubscribe<T>` now correctly unsubscribes from events.
 - Content classes with properties with backing field properties serialize correctly when upgrading directly from 1.2.10
+
 
 ## [1.6.2]
 ### Fixed
