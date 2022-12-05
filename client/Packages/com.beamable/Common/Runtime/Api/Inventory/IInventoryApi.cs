@@ -806,7 +806,9 @@ namespace Beamable.Common.Api.Inventory
 				foreach (KeyValuePair<string, ItemViewList> element in _items)
 				{
 					if (!items.ContainsKey(element.Key))
+					{
 						items.Add(element.Key, element.Value.Items);
+					}
 				}
 			}
 		}
@@ -825,22 +827,46 @@ namespace Beamable.Common.Api.Inventory
 	///
 	/// </summary>
 	[Serializable]
-	public class ItemView
+	public class ItemView : ISerializationCallbackReceiver
 	{
 		public long id;
-		public Dictionary<string, string> properties;
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
 		public long createdAt;
 		public long updatedAt;
+
+		[SerializeField] private SerializableDictionaryStringToString _properties;
+		
+		public ItemView() { }
+		
+		public void OnBeforeSerialize()
+		{
+			_properties = new SerializableDictionaryStringToString(properties);
+		}
+
+		public void OnAfterDeserialize()
+		{
+			if (_properties != null)
+			{
+				foreach (KeyValuePair<string, string> element in _properties)
+				{
+					if (!properties.ContainsKey(element.Key))
+						properties.Add(element.Key, element.Value);
+				}
+			}
+		}
 	}
 	
 	[Serializable]
 	public class ItemViewList : DisplayableList<ItemView>
 	{
 		public List<ItemView> Items = new List<ItemView>();
+		
+		public ItemViewList() { }
 		public ItemViewList(List<ItemView> existing)
 		{
 			foreach (var elem in existing)
 			{
+				elem.OnBeforeSerialize();
 				Add(elem);
 			}
 		}
@@ -848,11 +874,15 @@ namespace Beamable.Common.Api.Inventory
 		protected override IList InternalList => Items;
 
 		public override string GetListPropertyPath() => nameof(Items);
-
+		
 		public new ItemView this[int index]
 		{
 			get => Items[index];
-			set => Items[index] = value;
+			set
+			{
+				Items[index] = value;
+				Items[index]?.OnAfterDeserialize();
+			}
 		}
 	}
 }
