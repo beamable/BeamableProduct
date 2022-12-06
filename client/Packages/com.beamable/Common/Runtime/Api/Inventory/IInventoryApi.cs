@@ -849,7 +849,7 @@ namespace Beamable.Common.Api.Inventory
 		public long createdAt;
 		public long updatedAt;
 		
-		[SerializeField] private MapOfString _serializedProperties = new MapOfString();
+		[SerializeField] private SerializableDictionaryStringToString _serializedProperties = new SerializableDictionaryStringToString();
 		
 		public void OnBeforeSerialize()
 		{
