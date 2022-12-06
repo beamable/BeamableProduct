@@ -761,7 +761,7 @@ namespace Beamable.Common.Api.Inventory
 		[SerializeField] public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
 		[SerializeField] public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
 		
-		[SerializeField] private MapOfLong _serializedCurrencies = new MapOfLong();
+		[SerializeField] private SerializableDictionaryStringToLong _serializedCurrencies = new SerializableDictionaryStringToLong();
 		[SerializeField] private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
 		[SerializeField] private SerializedDictionaryStringToItemViewList _serializedItems = new SerializedDictionaryStringToItemViewList();
 
