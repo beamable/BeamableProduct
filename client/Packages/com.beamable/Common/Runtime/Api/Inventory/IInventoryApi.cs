@@ -757,16 +757,13 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class InventoryView : ISerializationCallbackReceiver
 	{
-		public Dictionary<string, long> currencies = new Dictionary<string, long>();
-		public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
-		public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
+		[SerializeField] public Dictionary<string, long> currencies = new Dictionary<string, long>();
+		[SerializeField] public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
+		[SerializeField] public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
 		
-		[SerializeField]
-		private SerializableDictionaryStringToLong _currencies;
-		[SerializeField]
-		private SerializedDictionaryStringToCurrencyPropertyList _currencyProperties;
-		[SerializeField]
-		private SerializedDictionaryStringToItemViewList _items;
+		[SerializeField] private MapOfLong _serializedCurrencies = new MapOfLong();
+		[SerializeField] private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
+		[SerializeField] private SerializedDictionaryStringToItemViewList _serializedItems = new SerializedDictionaryStringToItemViewList();
 
 		public void Clear()
 		{
@@ -776,34 +773,52 @@ namespace Beamable.Common.Api.Inventory
 		
 		public void OnBeforeSerialize()
 		{
-			_currencies = new SerializableDictionaryStringToLong(currencies);
-			_currencyProperties = new SerializedDictionaryStringToCurrencyPropertyList(currencyProperties);
-			_items = new SerializedDictionaryStringToItemViewList(items);
+			_serializedCurrencies.Clear();
+			_serializedCurrencyProperties.Clear();
+			_serializedItems.Clear();
+			
+			foreach (var element in currencies)
+			{
+				if (!_serializedCurrencies.ContainsKey(element.Key))
+					_serializedCurrencies.Add(element.Key, element.Value);
+			}
+			
+			foreach (var element in currencyProperties)
+			{
+				if (!_serializedCurrencyProperties.ContainsKey(element.Key))
+					_serializedCurrencyProperties.Add(element.Key, new CurrencyPropertyList(element.Value));
+			}
+			
+			foreach (var element in items)
+			{
+				if (!_serializedItems.ContainsKey(element.Key))
+					_serializedItems.Add(element.Key, new ItemViewList(element.Value));
+			}
 		}
 
 		public void OnAfterDeserialize()
 		{
-			if (_currencies != null)
+			if (_serializedCurrencies != null)
 			{
-				foreach (KeyValuePair<string, long> element in _currencies)
+				foreach (KeyValuePair<string, long> element in _serializedCurrencies)
 				{
 					if (!currencies.ContainsKey(element.Key))
 						currencies.Add(element.Key, element.Value);
 				}
 			}
 
-			if (_currencyProperties != null)
+			if (_serializedCurrencyProperties != null)
 			{
-				foreach (KeyValuePair<string, CurrencyPropertyList> element in _currencyProperties)
+				foreach (KeyValuePair<string, CurrencyPropertyList> element in _serializedCurrencyProperties)
 				{
 					if (!currencyProperties.ContainsKey(element.Key))
 						currencyProperties.Add(element.Key, element.Value.Properties);
 				}
 			}
 
-			if (_items != null)
+			if (_serializedItems != null)
 			{
-				foreach (KeyValuePair<string, ItemViewList> element in _items)
+				foreach (KeyValuePair<string, ItemViewList> element in _serializedItems)
 				{
 					if (!items.ContainsKey(element.Key))
 					{
@@ -833,21 +848,25 @@ namespace Beamable.Common.Api.Inventory
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 		public long createdAt;
 		public long updatedAt;
-
-		[SerializeField] private SerializableDictionaryStringToString _properties;
 		
-		public ItemView() { }
+		[SerializeField] private MapOfString _serializedProperties = new MapOfString();
 		
 		public void OnBeforeSerialize()
 		{
-			_properties = new SerializableDictionaryStringToString(properties);
+			_serializedProperties.Clear();
+			
+			foreach (KeyValuePair<string, string> element in properties)
+			{
+				if (!_serializedProperties.ContainsKey(element.Key))
+					_serializedProperties.Add(element.Key, element.Value);
+			}
 		}
 
 		public void OnAfterDeserialize()
 		{
-			if (_properties != null)
+			if (_serializedProperties != null)
 			{
-				foreach (KeyValuePair<string, string> element in _properties)
+				foreach (KeyValuePair<string, string> element in _serializedProperties)
 				{
 					if (!properties.ContainsKey(element.Key))
 						properties.Add(element.Key, element.Value);
