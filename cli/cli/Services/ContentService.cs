@@ -101,32 +101,16 @@ public class ContentService
 	public async Task DisplayStatusTable(string manifestId, bool skipUpToDate, int limit)
 	{
 		var contentManifest = await GetManifest(manifestId);
+		var localContentStatus = ContentLocal.GetLocalContentStatus(contentManifest);
+		var range = limit > 0 && limit < localContentStatus.Count ? limit : contentManifest.entries.Count;
 		var table = new Table();
 		table.AddColumn("Current status");
 		table.AddColumn("ID");
 		table.AddColumn(new TableColumn("tags").RightAligned());
 
-		foreach (var pair in ContentLocal.Assets.Where(pair => contentManifest.entries.All(info => info.contentId != pair.Key)))
+		foreach (var content in localContentStatus.GetRange(0,range))
 		{
-			table.AddRow("[green]created[/]", pair.Key, string.Empty);
-		}
-		foreach (ClientContentInfo contentManifestEntry in contentManifest.entries.GetRange(0,limit > 0 ? limit : contentManifest.entries.Count))
-		{
-			if (ContentLocal.HasSameVersion(contentManifestEntry))
-			{
-				if(!skipUpToDate)
-				{
-					table.AddRow("up to date", contentManifestEntry.contentId,
-						string.Join(",", contentManifestEntry.tags));
-				}
-			}else if (ContentLocal.Assets.ContainsKey(contentManifestEntry.contentId))
-			{
-				table.AddRow("[yellow]modified[/]", contentManifestEntry.contentId, string.Join(",",contentManifestEntry.tags));
-			}
-			else
-			{
-				table.AddRow("[red]deleted[/]", contentManifestEntry.contentId, string.Join(",",contentManifestEntry.tags));
-			}
+			table.AddRow(content.StatusString(), content.contentId, string.Join(",",content.tags));
 		}
 		AnsiConsole.Write(table);
 	}

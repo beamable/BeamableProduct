@@ -21,6 +21,20 @@ public class TagsLocalFile
 		} 
 	}
 
+	public string[] TagsForContent(string contentId)
+	{
+		var resultList = new List<string>();
+		foreach (var tag in tags.Keys)
+		{
+			if (tags[tag].Contains(contentId))
+			{
+				resultList.Add(tag);
+			}
+		}
+
+		return resultList.ToArray();
+	}
+
 	public void WriteToFile(string dir)
 	{
 		var path = Path.Combine(dir, FILENAME);

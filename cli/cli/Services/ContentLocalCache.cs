@@ -28,6 +28,38 @@ public class ContentLocalCache
 		_manifests[manifestId] = manifest;
 	}
 
+
+
+	public List<LocalContent> GetLocalContentStatus(ClientManifest manifest)
+	{
+		var resultList = new List<LocalContent>();
+		
+		foreach (var pair in Assets.Where(pair => manifest.entries.All(info => info.contentId != pair.Key)))
+		{
+			resultList.Add(new LocalContent{contentId = pair.Key, status = ContentStatus.Created, tags = _localTags.TagsForContent(pair.Key)});
+		}
+		foreach (ClientContentInfo contentManifestEntry in manifest.entries)
+		{
+			ContentStatus localStatus;
+			if (HasSameVersion(contentManifestEntry))
+			{
+				// todo should we compare tags if there are the same?
+				localStatus = ContentStatus.UpToDate;
+			}else if (Assets.ContainsKey(contentManifestEntry.contentId))
+			{
+				localStatus = ContentStatus.Modified;
+			}
+			else
+			{
+				localStatus = ContentStatus.Deleted;
+			}
+			resultList.Add(new LocalContent{contentId = contentManifestEntry.contentId, status = localStatus, tags = contentManifestEntry.tags});
+		}
+		resultList.Sort((a, b) => a.status.CompareTo(b.status));
+
+		return resultList;
+	}
+
 	public bool HasSameVersion(ClientContentInfo contentInfo)
 	{
 		if (Assets.TryGetValue(contentInfo.contentId, out var localVersion))
