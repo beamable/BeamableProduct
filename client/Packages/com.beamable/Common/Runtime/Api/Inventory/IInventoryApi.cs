@@ -767,7 +767,7 @@ namespace Beamable.Common.Api.Inventory
 		[SerializeField] private SerializableDictionaryStringToLong _serializedCurrencies = new SerializableDictionaryStringToLong();
 		[SerializeField] private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
 		[SerializeField] private SerializedDictionaryStringToItemViewList _serializedItems = new SerializedDictionaryStringToItemViewList();
-
+		
 		public void Clear()
 		{
 			currencies.Clear();
@@ -796,10 +796,6 @@ namespace Beamable.Common.Api.Inventory
 				if (!_serializedItems.ContainsKey(element.Key))
 					_serializedItems.Add(element.Key, new ItemViewList(element.Value));
 			}
-			
-			currencies.Clear();
-			currencyProperties.Clear();
-			items.Clear();
 			
 			_serializedCurrencies.OnBeforeSerialize();
 			_serializedCurrencyProperties.OnBeforeSerialize();
