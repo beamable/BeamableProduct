@@ -462,27 +462,29 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       public async Task Call_MethodWithInventoryView_AsParameter()
       {
 	      InventoryView view = new InventoryView();
-	      view.currencies = new Dictionary<string, long>() { { "coin", 1 } };
-	      view.items = new Dictionary<string, List<ItemView>>();
-	      view.currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
-	      
-	      var item1 = new ItemView()
+	      view.currencies.Add("xx", 1);
+
+
+	      List<ItemView> itemViews = new List<ItemView>();
+
+	      Dictionary<string, string> prop = new Dictionary<string, string> {{"A", "B"}};
+
+	      itemViews.Add(new ItemView()
 	      {
-		      id = 1,
 		      createdAt = 100,
-		      properties = new Dictionary<string, string>() { { "prop1", "tst1" } },
-		      updatedAt = 1001
-	      };
-	      
-	      view.items.Add("items1", new List<ItemView>() {item1});
-	      
-	      var currencyProperty = new CurrencyProperty()
-	      {
-		      name = "xyz",
-		      value = "val1"
-	      };
-	      
-	      view.currencyProperties.Add("items1", new List<CurrencyProperty>() {currencyProperty});
+		      updatedAt = 1,
+		      properties = prop
+	      });
+
+	      view.currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
+
+
+	      CurrencyProperty cr = new CurrencyProperty();
+	      cr.name = "nn";
+	      cr.value = "val1";
+		     
+	      view.currencyProperties.Add("prop1",new List<CurrencyProperty>(){cr});
+	      view.items.Add("tt", itemViews);
 	      
 	      TestSocket testSocket = null;
 	      var ms = new BeamableMicroService(new TestSocketProvider(socket =>

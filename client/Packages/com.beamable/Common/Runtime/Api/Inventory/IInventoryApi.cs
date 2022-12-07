@@ -627,12 +627,15 @@ namespace Beamable.Common.Api.Inventory
 		/// The value of the property can be any string
 		/// </summary>
 		public string value;
+		
 	}
 
 	[Serializable]
 	public class CurrencyPropertyList : DisplayableList<CurrencyProperty>
 	{
 		public List<CurrencyProperty> Properties = new List<CurrencyProperty>();
+		
+		public CurrencyPropertyList() {}
 		public CurrencyPropertyList(List<CurrencyProperty> existing)
 		{
 			foreach (var elem in existing)
@@ -794,10 +797,18 @@ namespace Beamable.Common.Api.Inventory
 				if (!_serializedItems.ContainsKey(element.Key))
 					_serializedItems.Add(element.Key, new ItemViewList(element.Value));
 			}
+			
+			_serializedCurrencies.OnBeforeSerialize();
+			_serializedCurrencyProperties.OnBeforeSerialize();
+			_serializedItems.OnBeforeSerialize();	
 		}
 
 		public void OnAfterDeserialize()
 		{
+			_serializedCurrencies.OnAfterDeserialize();
+			_serializedCurrencyProperties.OnAfterDeserialize();
+			_serializedItems.OnAfterDeserialize();	
+			
 			if (_serializedCurrencies != null)
 			{
 				foreach (KeyValuePair<string, long> element in _serializedCurrencies)
@@ -809,16 +820,16 @@ namespace Beamable.Common.Api.Inventory
 
 			if (_serializedCurrencyProperties != null)
 			{
-				foreach (KeyValuePair<string, CurrencyPropertyList> element in _serializedCurrencyProperties)
+				foreach (var element in _serializedCurrencyProperties)
 				{
 					if (!currencyProperties.ContainsKey(element.Key))
-						currencyProperties.Add(element.Key, element.Value.Properties);
+						currencyProperties.Add(element.Key,  element.Value.Properties);
 				}
 			}
 
 			if (_serializedItems != null)
 			{
-				foreach (KeyValuePair<string, ItemViewList> element in _serializedItems)
+				foreach (var element in _serializedItems)
 				{
 					if (!items.ContainsKey(element.Key))
 					{
