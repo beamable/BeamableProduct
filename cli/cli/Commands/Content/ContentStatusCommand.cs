@@ -17,15 +17,18 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 			(args, s) => args.ManifestId = s);
 		AddOption(new ConfigurableOptionFlag("skipUpToDate", "Skip displaying up to date content"),
 			(args, b) => args.skipUpToDate = b);
+		AddOption(new ConfigurableIntOption("limitDisplay", "Limit content displayed amount"),
+			(args, s) => args.limitDisplay = s);
 	}
 
 	public override async Task Handle(ContentStatusCommandArgs args)
 	{
-		await _contentService.DisplayStatusTable(args.ManifestId,args.skipUpToDate);
+		await _contentService.DisplayStatusTable(args.ManifestId,args.skipUpToDate, args.limitDisplay);
 	}
 }
 
 public class ContentStatusCommandArgs : ContentCommandArgs
 {
 	public bool skipUpToDate;
+	public int limitDisplay;
 }
