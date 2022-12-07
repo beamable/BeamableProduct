@@ -26,8 +26,12 @@ public class ContentService
 		_contentLocal = contentLocal;
 	}
 
-	public Promise<ClientManifest> GetManifest(string manifestId = "global")
+	public Promise<ClientManifest> GetManifest(string manifestId)
 	{
+		if (string.IsNullOrWhiteSpace(manifestId))
+		{
+			manifestId = "global";
+		}
 		if (ContentLocal.Manifests.ContainsKey(manifestId))
 		{
 			var promise = new Promise<ClientManifest>();
@@ -74,7 +78,7 @@ public class ContentService
 		return contents;
 	}
 
-	public async Task DisplayStatusTable(string manifestId = "global")
+	public async Task DisplayStatusTable(string manifestId = "global", bool skipUpToDate = false)
 	{
 		var contentManifest = await GetManifest(manifestId);
 		var table = new Table();
@@ -85,7 +89,11 @@ public class ContentService
 		{
 			if (ContentLocal.HasSameVersion(contentManifestEntry))
 			{
-				table.AddRow("Up to date", contentManifestEntry.contentId, string.Join(",",contentManifestEntry.tags));
+				if(!skipUpToDate)
+				{
+					table.AddRow("Up to date", contentManifestEntry.contentId,
+						string.Join(",", contentManifestEntry.tags));
+				}
 			}else if (ContentLocal.Assets.ContainsKey(contentManifestEntry.contentId))
 			{
 				table.AddRow("[yellow]Different content[/]", contentManifestEntry.contentId, string.Join(",",contentManifestEntry.tags));

@@ -7,7 +7,6 @@ namespace cli.Content;
 public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 {
 	private readonly ContentService _contentService;
-	private string ManifestId = "global";
 	public ContentPullCommand(ContentService contentService) : base("pull", "Pulls currently deployed content")
 	{
 		_contentService = contentService;
@@ -15,7 +14,7 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 
 	public override async Task Handle(ContentPullCommandArgs args)
 	{
-		var manifest = await _contentService.GetManifest();
+		var manifest = await _contentService.GetManifest(args.ManifestId);
 		var result = await _contentService.PullContent(manifest);
 		var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
 		BeamableLogger.Log(json);
@@ -26,6 +25,6 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 	}
 }
 
-public class ContentPullCommandArgs : CommandArgs
+public class ContentPullCommandArgs : ContentCommandArgs
 {
 }

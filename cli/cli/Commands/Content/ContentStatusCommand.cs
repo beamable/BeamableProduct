@@ -13,16 +13,19 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("manifestId", "set the manifest to use, 'global' by default"),
+		AddOption(new ConfigurableOption("manifestId", "set the manifest to use, 'global' by default"),
 			(args, s) => args.ManifestId = s);
+		AddOption(new ConfigurableOptionFlag("skipUpToDate", "Skip displaying up to date content"),
+			(args, b) => args.skipUpToDate = b);
 	}
 
 	public override async Task Handle(ContentStatusCommandArgs args)
 	{
-		await _contentService.DisplayStatusTable();
+		await _contentService.DisplayStatusTable(args.ManifestId,args.skipUpToDate);
 	}
 }
 
 public class ContentStatusCommandArgs : ContentCommandArgs
 {
+	public bool skipUpToDate;
 }
