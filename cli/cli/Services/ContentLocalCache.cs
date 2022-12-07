@@ -73,8 +73,7 @@ public class ContentLocalCache
 
 	public async Promise<ContentDocument?> GetContent(string id)
 	{
-		var path = Path.Combine(ContentDirPath, $"{id}.json");
-		var content = ContentDocument.AtPath(path);
+		var content = ContentDocument.AtPath(GetContentPath(id));
 		return content;
 	}
 	
@@ -111,4 +110,6 @@ public class ContentLocalCache
 		_localTags = tags;
 		_localTags.WriteToFile(BaseDirPath);
 	}
+
+	string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
 }
