@@ -7,7 +7,7 @@ namespace cli.Services;
 [Serializable]
 public class TagsLocalFile
 {
-	private const string FILENAME = "tags";
+	private const string FILENAME = "localTags.json";
 	public Dictionary<string, string[]> tags = new();
 
 	public TagsLocalFile()
