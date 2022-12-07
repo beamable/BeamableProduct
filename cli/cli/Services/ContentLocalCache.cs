@@ -8,7 +8,9 @@ public class ContentLocalCache
 {
 	private readonly IAppContext _context;
 	private Dictionary<string, ContentDocument> _localAssets;
-	private string DirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
+	private TagsLocalFile _localTags;
+	private string ContentDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
+	private string BaseDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER);
 
 	public Dictionary<string, ContentDocument> Assets => _localAssets;
 
@@ -39,7 +41,7 @@ public class ContentLocalCache
 
 	public async Promise<ContentDocument?> GetContent(string id)
 	{
-		var path = Path.Combine(DirPath, $"{id}.json");
+		var path = Path.Combine(ContentDirPath, $"{id}.json");
 		var content = ContentDocument.AtPath(path);
 		return content;
 	}
@@ -50,24 +52,31 @@ public class ContentLocalCache
 		if (_localAssets != null)
 			return;
 		
-		if (!Directory.Exists(DirPath))
+		if (!Directory.Exists(ContentDirPath))
 		{
-			Directory.CreateDirectory(DirPath);
+			Directory.CreateDirectory(ContentDirPath);
 		}
 		_localAssets = new Dictionary<string, ContentDocument>();
 
-		foreach (var path in Directory.EnumerateFiles(DirPath, "*json"))
+		foreach (var path in Directory.EnumerateFiles(ContentDirPath, "*json"))
 		{
 			var content = ContentDocument.AtPath(path);
 			_localAssets.Add(content.id, content);
 		}
+		_localTags = TagsLocalFile.ReadFromFile(BaseDirPath);
 	}
 
 	public async Task UpdateContent(ContentDocument result)
 	{
-		var path = Path.Combine(DirPath, $"{result.id}.json");
+		var path = Path.Combine(ContentDirPath, $"{result.id}.json");
 		var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true } );
 		_localAssets[result.id] = result;
 		await File.WriteAllTextAsync(path, value);
+	}
+
+	public void UpdateTags(TagsLocalFile tags)
+	{
+		_localTags = tags;
+		_localTags.WriteToFile(BaseDirPath);
 	}
 }

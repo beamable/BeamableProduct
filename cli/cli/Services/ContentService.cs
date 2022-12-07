@@ -2,6 +2,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Spectre.Console;
+using System.Text.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services;
@@ -48,6 +49,25 @@ public class ContentService
 
 			throw ex;
 		});
+	}
+
+	public void UpdateTags(ClientManifest manifest)
+	{
+		Dictionary<string, List<string>> tags = new();
+		foreach (ClientContentInfo clientContentInfo in manifest.entries)
+		{
+			foreach (string tag in clientContentInfo.tags)
+			{
+				if (!tags.ContainsKey(tag))
+				{
+					tags[tag] = new List<string>();
+				}
+				tags[tag].Add(clientContentInfo.contentId);
+			}
+		}
+
+		var localTags = new TagsLocalFile(tags);
+		_contentLocal.UpdateTags(localTags);
 	}
 
 	public async Promise<List<ContentDocument>> PullContent(ClientManifest manifest, bool saveToDisk = true)
