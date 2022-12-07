@@ -760,9 +760,9 @@ namespace Beamable.Common.Api.Inventory
 	[Serializable]
 	public class InventoryView : ISerializationCallbackReceiver
 	{
-		[SerializeField] public Dictionary<string, long> currencies = new Dictionary<string, long>();
-		[SerializeField] public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
-		[SerializeField] public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
+		public Dictionary<string, long> currencies = new Dictionary<string, long>();
+		public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
+		public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
 		
 		[SerializeField] private SerializableDictionaryStringToLong _serializedCurrencies = new SerializableDictionaryStringToLong();
 		[SerializeField] private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
@@ -776,10 +776,6 @@ namespace Beamable.Common.Api.Inventory
 		
 		public void OnBeforeSerialize()
 		{
-			_serializedCurrencies.Clear();
-			_serializedCurrencyProperties.Clear();
-			_serializedItems.Clear();
-			
 			foreach (var element in currencies)
 			{
 				if (!_serializedCurrencies.ContainsKey(element.Key))
@@ -792,51 +788,48 @@ namespace Beamable.Common.Api.Inventory
 					_serializedCurrencyProperties.Add(element.Key, new CurrencyPropertyList(element.Value));
 			}
 			
-			foreach (var element in items)
+			foreach (KeyValuePair<string, List<ItemView>> element in items)
 			{
+				foreach (var t in element.Value)
+					t.OnBeforeSerialize();
+
 				if (!_serializedItems.ContainsKey(element.Key))
 					_serializedItems.Add(element.Key, new ItemViewList(element.Value));
 			}
 			
+			currencies.Clear();
+			currencyProperties.Clear();
+			items.Clear();
+			
 			_serializedCurrencies.OnBeforeSerialize();
 			_serializedCurrencyProperties.OnBeforeSerialize();
-			_serializedItems.OnBeforeSerialize();	
+			_serializedItems.OnBeforeSerialize();
 		}
 
 		public void OnAfterDeserialize()
 		{
-			if (_serializedCurrencies != null)
+			_serializedCurrencies.OnAfterDeserialize();
+			_serializedCurrencyProperties.OnAfterDeserialize();
+			_serializedItems.OnAfterDeserialize();
+
+			foreach (KeyValuePair<string, long> element in _serializedCurrencies)
 			{
-				_serializedCurrencies.OnAfterDeserialize();
-				
-				foreach (KeyValuePair<string, long> element in _serializedCurrencies)
-				{
-					if (!currencies.ContainsKey(element.Key))
-						currencies.Add(element.Key, element.Value);
-				}
+				if (!currencies.ContainsKey(element.Key))
+					currencies.Add(element.Key, element.Value);
 			}
 
-			if (_serializedCurrencyProperties != null)
+			foreach (var element in _serializedCurrencyProperties)
 			{
-				_serializedCurrencyProperties.OnAfterDeserialize();
-				
-				foreach (var element in _serializedCurrencyProperties)
-				{
-					if (!currencyProperties.ContainsKey(element.Key))
-						currencyProperties.Add(element.Key,  element.Value.Properties);
-				}
+				if (!currencyProperties.ContainsKey(element.Key))
+					currencyProperties.Add(element.Key, element.Value.Properties);
 			}
 
-			if (_serializedItems != null)
+
+			foreach (var element in _serializedItems)
 			{
-				_serializedItems.OnAfterDeserialize();	
-				
-				foreach (var element in _serializedItems)
+				if (!items.ContainsKey(element.Key))
 				{
-					if (!items.ContainsKey(element.Key))
-					{
-						items.Add(element.Key, element.Value.Items);
-					}
+					items.Add(element.Key, element.Value.Items);
 				}
 			}
 		}
@@ -873,7 +866,6 @@ namespace Beamable.Common.Api.Inventory
 				if (!_serializedProperties.ContainsKey(element.Key))
 					_serializedProperties.Add(element.Key, element.Value);
 			}
-			
 			_serializedProperties.OnBeforeSerialize();
 		}
 
@@ -893,7 +885,7 @@ namespace Beamable.Common.Api.Inventory
 	}
 	
 	[Serializable]
-	public class ItemViewList : DisplayableList<ItemView>
+	public class ItemViewList : DisplayableList<ItemView>, ISerializationCallbackReceiver
 	{
 		public List<ItemView> Items = new List<ItemView>();
 		
@@ -902,7 +894,6 @@ namespace Beamable.Common.Api.Inventory
 		{
 			foreach (var elem in existing)
 			{
-				elem.OnBeforeSerialize();
 				Add(elem);
 			}
 		}
@@ -917,8 +908,19 @@ namespace Beamable.Common.Api.Inventory
 			set
 			{
 				Items[index] = value;
-				Items[index]?.OnAfterDeserialize();
 			}
+		}
+
+		public void OnBeforeSerialize()
+		{
+			for (int i = 0; i < Items.Count; i++)
+				Items[i].OnBeforeSerialize();
+		}
+
+		public void OnAfterDeserialize()
+		{
+			for (int i = 0; i < Items.Count; i++)
+				Items[i].OnAfterDeserialize();
 		}
 	}
 }
