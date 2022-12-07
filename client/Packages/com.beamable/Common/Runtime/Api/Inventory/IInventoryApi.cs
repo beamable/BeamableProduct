@@ -805,12 +805,10 @@ namespace Beamable.Common.Api.Inventory
 
 		public void OnAfterDeserialize()
 		{
-			_serializedCurrencies.OnAfterDeserialize();
-			_serializedCurrencyProperties.OnAfterDeserialize();
-			_serializedItems.OnAfterDeserialize();	
-			
 			if (_serializedCurrencies != null)
 			{
+				_serializedCurrencies.OnAfterDeserialize();
+				
 				foreach (KeyValuePair<string, long> element in _serializedCurrencies)
 				{
 					if (!currencies.ContainsKey(element.Key))
@@ -820,6 +818,8 @@ namespace Beamable.Common.Api.Inventory
 
 			if (_serializedCurrencyProperties != null)
 			{
+				_serializedCurrencyProperties.OnAfterDeserialize();
+				
 				foreach (var element in _serializedCurrencyProperties)
 				{
 					if (!currencyProperties.ContainsKey(element.Key))
@@ -829,6 +829,8 @@ namespace Beamable.Common.Api.Inventory
 
 			if (_serializedItems != null)
 			{
+				_serializedItems.OnAfterDeserialize();	
+				
 				foreach (var element in _serializedItems)
 				{
 					if (!items.ContainsKey(element.Key))
@@ -871,12 +873,16 @@ namespace Beamable.Common.Api.Inventory
 				if (!_serializedProperties.ContainsKey(element.Key))
 					_serializedProperties.Add(element.Key, element.Value);
 			}
+			
+			_serializedProperties.OnBeforeSerialize();
 		}
 
 		public void OnAfterDeserialize()
 		{
 			if (_serializedProperties != null)
 			{
+				_serializedProperties.OnAfterDeserialize();
+				
 				foreach (KeyValuePair<string, string> element in _serializedProperties)
 				{
 					if (!properties.ContainsKey(element.Key))
