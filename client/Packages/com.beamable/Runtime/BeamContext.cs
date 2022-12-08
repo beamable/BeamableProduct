@@ -233,7 +233,6 @@ namespace Beamable
 		private EnvironmentData _environment;
 		private IPlatformRequester _requester;
 		private IBeamableApiRequester _beamableApiRequester;
-		private IBeamableConnection _connection;
 
 		// TODO: Assess each of these as "do we need this as hard field state"
 		private IAuthService _authService;
@@ -470,10 +469,6 @@ namespace Beamable
 			builder.AddSingleton<IPlatformService>(this);
 			builder.AddSingleton<IGameObjectContext>(this);
 			builder.AddSingleton(new AccessTokenStorage(PlayerCode));
-			builder.AddSingleton<IBeamableConnection>(
-				provider => new WebSocketConnection(provider.GetService<CoroutineService>())
-			);
-
 		}
 
 		protected virtual void InitServices(string cid, string pid)
@@ -496,7 +491,6 @@ namespace Beamable
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
-			_connection = ServiceProvider.GetService<IBeamableConnection>();
 		}
 
 
@@ -646,20 +640,23 @@ namespace Beamable
 		{
 			// Let's make sure that we get a fresh new JWT before attempting to connect.
 			await _beamableApiRequester.RefreshToken();
+
+			// Need to get this in order to subscribe the message callbacks.
+			var _ = _serviceScope.GetService<BeamableSubscriptionManager>();
+			var connection = _serviceScope.GetService<IBeamableConnection>();
 			
 #if UNITY_EDITOR
 			EditorApplication.playModeStateChanged += state =>
 			{
 				if (state == PlayModeStateChange.ExitingPlayMode)
 				{
-					_connection.Disconnect();
+					connection.Disconnect();
 				}
 			};
 #endif
-			// TODO: Move this into configuration
-			// string connectionAddress = ConfigDatabase.GetString("connection");
-			const string connectionAddress = "ws://localhost:5060/connect";
-			await _connection.Connect(connectionAddress, _beamableApiRequester.Token);
+			// string connectionAddress = "ws://localhost:5060/connect";
+			string connectionAddress = BeamableEnvironment.PlayerSocketUrl;
+			await connection.Connect(BeamableEnvironment.PlayerSocketUrl, _beamableApiRequester.Token);
 		}
 
 		private async Promise InitStep_StartPurchaser()
@@ -822,9 +819,6 @@ namespace Beamable
 			_contentService = null;
 			_announcements = null;
 			_playerStats = null;
-			
-			await _connection.Disconnect();
-			_connection = null;
 
 			OnShutdownComplete?.Invoke();
 			OnShutdownComplete = null;

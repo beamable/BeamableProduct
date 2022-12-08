@@ -36,6 +36,7 @@ namespace Beamable.Editor.UI.Environment
 		private TextField _envTextBox;
 		private TextField _apiTextBox;
 		private TextField _portalApiTextBox;
+		private TextField _playerSocketTextBox;
 		private TextField _mongoExpressTextBox;
 		private TextField _dockerRegTextBox;
 		private TextField _sdkVersionTextBox;
@@ -69,6 +70,7 @@ namespace Beamable.Editor.UI.Environment
 			_envTextBox = root.Q<TextField>("env");
 			_apiTextBox = root.Q<TextField>("api");
 			_portalApiTextBox = root.Q<TextField>("portalApi");
+			_playerSocketTextBox = root.Q<TextField>("playerSocket");
 			_mongoExpressTextBox = root.Q<TextField>("mongoExpress");
 			_dockerRegTextBox = root.Q<TextField>("dockerReg");
 			_sdkVersionTextBox = root.Q<TextField>("sdkVersion");
@@ -84,6 +86,16 @@ namespace Beamable.Editor.UI.Environment
 
 				return null;
 			});
+
+			string CheckSocketProtocol(string url)
+			{
+				if (!url.StartsWith("ws://") && !url.StartsWith("wss://"))
+				{
+					return "invalid protocol";
+				}
+
+				return null;
+			}
 
 
 			string CheckUrl(string url)
@@ -104,10 +116,11 @@ namespace Beamable.Editor.UI.Environment
 
 			_applyButton = root.Q<PrimaryButtonVisualElement>();
 			_applyButton.AddGateKeeper(validVersion,
-								_apiTextBox.AddErrorLabel("valid api url", CheckUrl),
-								_portalApiTextBox.AddErrorLabel("valid portal url", CheckUrl),
-								_mongoExpressTextBox.AddErrorLabel("valid mongo express url", CheckUrl),
-								_dockerRegTextBox.AddErrorLabel("valid docker registry url", CheckUrl));
+			                           _apiTextBox.AddErrorLabel("valid api url", CheckUrl),
+			                           _portalApiTextBox.AddErrorLabel("valid portal url", CheckUrl),
+			                           _playerSocketTextBox.AddErrorLabel("valid websocket url", CheckSocketProtocol),
+									_mongoExpressTextBox.AddErrorLabel("valid mongo express url", CheckUrl),
+									_dockerRegTextBox.AddErrorLabel("valid docker registry url", CheckUrl));
 			_applyButton.Button.clickable.clicked += OnApplyClicked;
 
 			SetUIFromData();
@@ -125,6 +138,7 @@ namespace Beamable.Editor.UI.Environment
 				_envTextBox.value,
 				_apiTextBox.value,
 				_portalApiTextBox.value,
+				_playerSocketTextBox.value,
 				_mongoExpressTextBox.value,
 				_dockerRegTextBox.value,
 				_isVspToggle.value,
@@ -138,6 +152,7 @@ namespace Beamable.Editor.UI.Environment
 			_envTextBox.SetValueWithoutNotify(_data.Environment);
 			_apiTextBox.SetValueWithoutNotify(_data.ApiUrl);
 			_portalApiTextBox.SetValueWithoutNotify(_data.PortalUrl);
+			_playerSocketTextBox.SetValueWithoutNotify(_data.PlayerSocketUrl);
 			_mongoExpressTextBox.SetValueWithoutNotify(_data.BeamMongoExpressUrl);
 			_dockerRegTextBox.SetValueWithoutNotify(_data.DockerRegistryUrl);
 			_sdkVersionTextBox.SetValueWithoutNotify(_data.SdkVersion.ToString());

@@ -20,6 +20,9 @@
             <engine:Label name="portalApi" text="Portal" class="labelText"/>
             <engine:TextField name="portalApi" class="input"/>
 
+            <engine:Label name="playerSocket" text="Websocket" class="labelText"/>
+            <engine:TextField name="playerSocket" class="input"/>
+
             <engine:Label name="mongoExpress" text="Mongo Express" class="labelText"/>
             <engine:TextField name="mongoExpress" class="input"/>
 

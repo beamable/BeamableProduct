@@ -2,6 +2,7 @@
   "environment": "dev",
   "apiUrl": "https://dev.api.beamable.com",
   "portalUrl": "https://dev-portal.beamable.com",
+  "playerSocketUrl": "wss://dev.socket.beamable.com/connect",
   "beamMongoExpressUrl": "https://dev.storage.beamable.com",
   "dockerRegistryUrl": "https://dev-microservices.beamable.com/v2/",
   "isUnityVsp": "UNITY__VSP__UID",

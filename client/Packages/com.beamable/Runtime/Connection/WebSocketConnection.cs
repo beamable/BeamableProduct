@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Connection
@@ -18,48 +19,54 @@ namespace Connection
 		public event Action<string> Message;
 		public event Action<string> Error;
 		public event Action Close;
-		
-		
+
+		private bool _disconnecting;
 		private WebSocket _webSocket;
 		private readonly CoroutineService _coroutineService;
 		private IEnumerator _dispatchMessagesRoutine;
+		private Promise onConnectPromise;
 
 		public WebSocketConnection(CoroutineService coroutineService)
 		{
 			_coroutineService = coroutineService;
 		}
 
-		public Promise<Unit> Connect(string address, AccessToken token)
+		public Promise Connect(string address, AccessToken token)
 		{
 			_webSocket = CreateWebSocket(address, token);
 			SetUpEventCallbacks();
 			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
 			// is closed.
-			var p = new Promise<Unit>();
-			p.CompleteSuccess(PromiseBase.Unit);
-			_webSocket
-				.Connect()
-				.ContinueWith(_ => p.CompleteSuccess(PromiseBase.Unit));
+			DoConnect();
+
 #if !UNITY_WEBGL || UNITY_EDITOR
 			_dispatchMessagesRoutine = DispatchMessages();
 			_coroutineService.StartCoroutine(_dispatchMessagesRoutine);
 #endif
-			return p;
+			return onConnectPromise;
 		}
 
-		public Promise<Unit> Disconnect()
+		public Promise Disconnect()
 		{
+			_disconnecting = true;
 #if !UNITY_WEBGL || UNITY_EDITOR
 			if (_dispatchMessagesRoutine != null)
 			{
 				_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
 			}
 #endif
-			var p = new Promise<Unit>();
+			var p = new Promise();
 			_webSocket
 				.Close()
-				.ContinueWith(_ => p.CompleteSuccess(PromiseBase.Unit));
+				.ContinueWith(_ => p.CompleteSuccess());
 			return p;
+		}
+
+		private Promise DoConnect()
+		{
+			onConnectPromise = new Promise();
+			Task _ = _webSocket.Connect();
+			return onConnectPromise;
 		}
 
 		private static WebSocket CreateWebSocket(string address, IAccessToken token)
@@ -76,24 +83,66 @@ namespace Connection
 		{
 			_webSocket.OnOpen += () =>
 			{
+				_disconnecting = false;
 				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnOpen received");
-				Open?.Invoke();
+				try
+				{
+					onConnectPromise.CompleteSuccess();
+					Open?.Invoke();
+				}
+				catch (Exception e)
+				{
+					Debug.LogException(e);
+				}
 			};
 			_webSocket.OnMessage += message =>
 			{
 				string messageString = Encoding.UTF8.GetString(message);
 				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnMessage received: {messageString}");
-				Message?.Invoke(messageString);
+				try
+				{
+					Message?.Invoke(messageString);
+				}
+				catch (Exception e)
+				{
+					Debug.LogException(e);
+				}
 			};
-			_webSocket.OnError += e =>
+			_webSocket.OnError += error =>
 			{
-				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnError received: {e}");
-				Error?.Invoke(e);
+				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnError received: {error}");
+				try
+				{
+					onConnectPromise.CompleteError(new WebSocketConnectionException(error));
+					Error?.Invoke(error);
+				}
+				catch (Exception e)
+				{
+					Debug.LogException(e);
+				}
 			};
-			_webSocket.OnClose += code =>
+			_webSocket.OnClose += async code =>
 			{
 				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnClose received: {code}");
-				Close?.Invoke();
+				try
+				{
+					if (_disconnecting)
+					{
+						Close?.Invoke();
+					}
+					else
+					{
+						PlatformLogger.Log($"<b>[WebSocketConnection]</b> Ungraceful close of websocket. Reconnecting!");
+						// eh?
+						// TODO: Add retry interval
+						await DoConnect();
+					}
+
+				}
+				catch (Exception e)
+				{
+					Debug.LogException(e);
+				}
 			};
 		}
 
@@ -106,6 +155,11 @@ namespace Connection
 				_webSocket.DispatchMessageQueue();
 				yield return wait;
 			}
+		}
+
+		public async Promise OnDispose()
+		{
+			await Disconnect();
 		}
 	}
 }

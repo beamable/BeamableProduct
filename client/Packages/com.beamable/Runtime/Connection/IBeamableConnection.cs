@@ -1,18 +1,18 @@
 using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using System;
-using System.Collections.Generic;
 
 namespace Connection
 {
-	public interface IBeamableConnection
+	public interface IBeamableConnection : IBeamableDisposable
 	{
 		event Action Open;
 		event Action<string> Message;
 		event Action<string> Error;
 		event Action Close;
 		
-		Promise<Unit> Connect(string address, AccessToken token);
-		Promise<Unit> Disconnect();
+		Promise Connect(string address, AccessToken token);
+		Promise Disconnect();
 	}
 }
