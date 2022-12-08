@@ -92,8 +92,7 @@ public class CliRequester : IBeamableRequester
 			switch (error)
 			{
 				// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
-				case RequesterException e when e.RequestError.error == "InvalidTokenError" || e.RequestError.error == "ExpiredTokenError":
-
+				case RequesterException e when e.RequestError.error == "InvalidTokenError" || e.RequestError.error == "ExpiredTokenError" || e.Status == 403:
 					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>

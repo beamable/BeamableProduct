@@ -22,6 +22,8 @@ public class ContentLocalCache
 		_context = context;
 	}
 
+	public string[] GetTags(string contentId) => _localTags.TagsForContent(contentId);
+
 	public void UpdateManifest(string manifestId, ClientManifest manifest)
 	{
 		_manifests[manifestId] = manifest;
@@ -112,4 +114,6 @@ public class ContentLocalCache
 	}
 
 	public string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
+
+	public long GetLastEdit(string id) => File.GetLastWriteTime(GetContentPath(id)).ToFileTime();
 }

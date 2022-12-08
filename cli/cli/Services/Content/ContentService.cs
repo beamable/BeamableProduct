@@ -1,7 +1,10 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Serialization.SmallerJSON;
 using Spectre.Console;
+using System.Text;
+using System.Text.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services.Content;
@@ -117,5 +120,87 @@ public class ContentService
 			table.AddRow(content.StatusString(), content.contentId, string.Join(",",content.tags));
 		}
 		AnsiConsole.Write(table);
+	}
+
+
+	public async Task<Unit> PublishContentAndManifest(string manifestId)
+	{
+		if (string.IsNullOrWhiteSpace(manifestId))
+		{
+			manifestId = "global";
+		}
+		var contentManifest = await GetManifest(manifestId);
+		var localContent = ContentLocal.GetLocalContentStatus(contentManifest)
+			.Where(content => content.status != ContentStatus.Deleted)
+			.Select(content => PrepareContentForPublish(_contentLocal.GetContent(content.contentId))).ToList();
+		var workingReferenceSet = BuildLocalManifestReferenceSupersets(ContentLocal.GetLocalContentStatus(contentManifest));
+		
+		var dict = new ArrayDict
+		{
+			{"content", localContent}
+		};
+		var reqJson = Json.Serialize(dict, new StringBuilder());
+		var result = await _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);
+
+		result.content.ForEach(entry =>
+		{
+			var reference = new ManifestReferenceSuperset
+			{
+				Checksum = entry.checksum,
+				Id = entry.id,
+				Tags = entry.tags,
+				Uri = entry.uri,
+				Version = entry.version,
+				Visibility = entry.visibility,
+				Type = "content",
+				LastChanged = entry.lastChanged
+			};
+			var key = reference.Key;
+
+			if (workingReferenceSet.ContainsKey(key))
+			{
+				workingReferenceSet[key] = reference;
+			}
+			else
+			{
+				workingReferenceSet.Add(key, reference);
+			}
+		});
+		var manifest = new ManifestSaveRequest
+		{
+			Id = manifestId,
+			References = workingReferenceSet.Values.ToList()
+		};
+		var s = await _requester.CustomRequest(Method.POST, $"/basic/content/manifest?id={manifest.Id}", manifest, parser:s=>s);
+
+		return new Unit();
+	}
+
+	Dictionary<string, ManifestReferenceSuperset> BuildLocalManifestReferenceSupersets(List<LocalContent> localContents)
+	{
+		var dict = new Dictionary<string, ManifestReferenceSuperset>();
+		foreach (var doc in 
+		         localContents.Where(content => content.status != ContentStatus.Deleted).Select(localContent => _contentLocal.GetContent(localContent.contentId)))
+		{
+			var definition = PrepareContentForPublish(doc);
+			var publicVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, true);
+			var privateVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, false);
+			dict.Add(publicVersion.Key,publicVersion);
+			dict.Add(privateVersion.Key,privateVersion);
+		}
+
+		return dict;
+	}
+
+	ContentDefinition PrepareContentForPublish(ContentDocument document)
+	{
+		return new ContentDefinition
+		{
+			id = document.id,
+			checksum = document.CalculateChecksum(),
+			properties = JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false }),
+			tags = _contentLocal.GetTags(document.id),
+			lastChanged = _contentLocal.GetLastEdit(document.id)
+		};
 	}
 }
