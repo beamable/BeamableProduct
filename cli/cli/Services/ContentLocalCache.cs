@@ -9,7 +9,7 @@ public class ContentLocalCache
 	private readonly IAppContext _context;
 	private Dictionary<string, ContentDocument> _localAssets;
 	private TagsLocalFile _localTags;
-	private string ContentDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
+	public string ContentDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
 	private string BaseDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER);
 
 	public Dictionary<string, ContentDocument> Assets => _localAssets;
@@ -114,5 +114,5 @@ public class ContentLocalCache
 		_localTags.WriteToFile(BaseDirPath);
 	}
 
-	string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
+	public string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
 }
