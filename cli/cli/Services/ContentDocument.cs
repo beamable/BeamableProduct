@@ -20,8 +20,12 @@ public class ContentDocument
 		return checksum;
 	}
 
-	public static ContentDocument AtPath(string path)
+	public static ContentDocument? AtPath(string path)
 	{
+		if (!File.Exists(path))
+		{
+			return null;
+		}
 		var fileContent = File.ReadAllText(path);
 		var id = Path.GetFileName(path).Replace(".json", string.Empty);
 		var properties = JsonSerializer.Deserialize<JsonElement>(fileContent);

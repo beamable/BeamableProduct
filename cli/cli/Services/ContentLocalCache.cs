@@ -71,7 +71,7 @@ public class ContentLocalCache
 		return false;
 	}
 
-	public async Promise<ContentDocument?> GetContent(string id)
+	public ContentDocument? GetContent(string id)
 	{
 		var content = ContentDocument.AtPath(GetContentPath(id));
 		return content;
@@ -100,9 +100,12 @@ public class ContentLocalCache
 	public async Task UpdateContent(ContentDocument result)
 	{
 		var path = Path.Combine(ContentDirPath, $"{result.id}.json");
-		var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true } );
-		_localAssets[result.id] = result;
-		await File.WriteAllTextAsync(path, value);
+		if (result.properties != null)
+		{
+			var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true } );
+			_localAssets[result.id] = result;
+			await File.WriteAllTextAsync(path, value);
+		}
 	}
 
 	public void UpdateTags(TagsLocalFile tags)

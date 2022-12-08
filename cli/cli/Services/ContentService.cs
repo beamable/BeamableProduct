@@ -78,7 +78,7 @@ public class ContentService
 		{
 			if(ContentLocal.HasSameVersion(contentInfo))
 			{
-				contents.Add(await ContentLocal.GetContent(contentInfo.contentId));
+				contents.Add(ContentLocal.GetContent(contentInfo.contentId));
 				continue;
 			}
 			try
@@ -102,11 +102,16 @@ public class ContentService
 	{
 		var contentManifest = await GetManifest(manifestId);
 		var localContentStatus = ContentLocal.GetLocalContentStatus(contentManifest);
-		var range = limit > 0 && limit < localContentStatus.Count ? limit : contentManifest.entries.Count;
 		var table = new Table();
 		table.AddColumn("Current status");
 		table.AddColumn("ID");
 		table.AddColumn(new TableColumn("tags").RightAligned());
+
+		if (skipUpToDate)
+		{
+			localContentStatus = localContentStatus.Where(content => content.status != ContentStatus.UpToDate).ToList();
+		}
+		var range = limit > 0 && limit < localContentStatus.Count ? limit : localContentStatus.Count;
 
 		foreach (var content in localContentStatus.GetRange(0,range))
 		{
