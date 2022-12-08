@@ -1,8 +1,7 @@
-﻿using Beamable.Common;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using System.Text.Json;
 
-namespace cli.Services;
+namespace cli.Services.Content;
 
 public class ContentLocalCache
 {
@@ -27,8 +26,6 @@ public class ContentLocalCache
 	{
 		_manifests[manifestId] = manifest;
 	}
-
-
 
 	public List<LocalContent> GetLocalContentStatus(ClientManifest manifest)
 	{

@@ -2,10 +2,9 @@
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Spectre.Console;
-using System.Text.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace cli.Services;
+namespace cli.Services.Content;
 
 public class ContentService
 {

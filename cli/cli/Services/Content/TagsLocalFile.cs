@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using System.Text;
 
-namespace cli.Services;
+namespace cli.Services.Content;
 
 [Serializable]
 public class TagsLocalFile

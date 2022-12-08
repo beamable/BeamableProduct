@@ -1,4 +1,4 @@
-﻿namespace cli.Services;
+﻿namespace cli.Services.Content;
 
 public enum ContentStatus
 {

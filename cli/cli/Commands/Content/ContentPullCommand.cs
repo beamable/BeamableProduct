@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using cli.Services;
+using cli.Services.Content;
 using System.Text.Json;
 
 namespace cli.Content;

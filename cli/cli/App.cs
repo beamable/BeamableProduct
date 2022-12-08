@@ -4,6 +4,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using cli.Content;
 using cli.Services;
+using cli.Services.Content;
 using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;

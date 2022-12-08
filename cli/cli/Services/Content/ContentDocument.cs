@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace cli.Services;
+namespace cli.Services.Content;
 
 public class ContentDocument
 {
@@ -13,7 +13,7 @@ public class ContentDocument
 	public string CalculateChecksum()
 	{
 		using var sha1 = SHA1.Create();
-		string json = JsonSerializer.Serialize(properties, new JsonSerializerOptions{WriteIndented = false});
+		string json = JsonSerializer.Serialize(properties, new JsonSerializerOptions { WriteIndented = false });
 		var bytes = Encoding.ASCII.GetBytes(json);
 		var hash = sha1.ComputeHash(bytes);
 		var checksum = BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
@@ -26,10 +26,16 @@ public class ContentDocument
 		{
 			return null;
 		}
+
 		var fileContent = File.ReadAllText(path);
 		var id = Path.GetFileName(path).Replace(".json", string.Empty);
 		var properties = JsonSerializer.Deserialize<JsonElement>(fileContent);
-		var content = new ContentDocument { id = id, version = string.Empty, properties = properties };
+		var content = new ContentDocument
+		{
+			id = id,
+			version = string.Empty,
+			properties = properties
+		};
 		return content;
 	}
 }
