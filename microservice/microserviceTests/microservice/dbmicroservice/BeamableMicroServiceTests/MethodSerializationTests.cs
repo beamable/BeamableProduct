@@ -467,13 +467,30 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
 	      List<ItemView> itemViews = new List<ItemView>();
 
-	      Dictionary<string, string> prop = new Dictionary<string, string> {{"A", "B"}};
+	      Dictionary<string, string> prop1 = new Dictionary<string, string>
+	      {
+		      {"A", "B"},
+		      {"C", "D"}
+	      };
+	      
+	      Dictionary<string, string> prop2 = new Dictionary<string, string>
+	      {
+		      {"E", "F"},
+		      {"G", "H"}
+	      };
 
 	      itemViews.Add(new ItemView()
 	      {
 		      createdAt = 100,
 		      updatedAt = 1,
-		      properties = prop
+		      properties = prop1
+	      });
+	      
+	      itemViews.Add(new ItemView()
+	      {
+		      createdAt = 200,
+		      updatedAt = 2,
+		      properties = prop2
 	      });
 
 	      view.currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
@@ -485,6 +502,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		     
 	      view.currencyProperties.Add("prop1",new List<CurrencyProperty>(){cr});
 	      view.items.Add("tt", itemViews);
+	      view.OnBeforeSerialize();
 	      
 	      TestSocket testSocket = null;
 	      var ms = new BeamableMicroService(new TestSocketProvider(socket =>

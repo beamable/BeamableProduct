@@ -1,5 +1,7 @@
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
+using Beamable.Common.Pooling;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -627,7 +629,6 @@ namespace Beamable.Common.Api.Inventory
 		/// The value of the property can be any string
 		/// </summary>
 		public string value;
-		
 	}
 
 	[Serializable]
@@ -635,7 +636,6 @@ namespace Beamable.Common.Api.Inventory
 	{
 		public List<CurrencyProperty> Properties = new List<CurrencyProperty>();
 		
-		public CurrencyPropertyList() {}
 		public CurrencyPropertyList(List<CurrencyProperty> existing)
 		{
 			foreach (var elem in existing)
@@ -670,21 +670,6 @@ namespace Beamable.Common.Api.Inventory
 		}
 	}
 	
-	[Serializable]
-	public class
-		SerializedDictionaryStringToItemViewList : SerializableDictionaryStringToSomething<ItemViewList>
-	{
-		public SerializedDictionaryStringToItemViewList() { }
-
-		public SerializedDictionaryStringToItemViewList(IDictionary<string, List<ItemView>> existing)
-		{
-			foreach (var kvp in existing)
-			{
-				Add(kvp.Key, new ItemViewList(kvp.Value));
-			}
-		}
-	}
-
 	/// <summary>
 	/// This type defines the %Beamable item %content related to the %InventoryService.
 	///
@@ -763,10 +748,8 @@ namespace Beamable.Common.Api.Inventory
 		public Dictionary<string, long> currencies = new Dictionary<string, long>();
 		public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
 		public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
-		
-		[SerializeField] private SerializableDictionaryStringToLong _serializedCurrencies = new SerializableDictionaryStringToLong();
-		[SerializeField] private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
-		[SerializeField] private SerializedDictionaryStringToItemViewList _serializedItems = new SerializedDictionaryStringToItemViewList();
+
+		[SerializeField] private string _serializedData;
 		
 		public void Clear()
 		{
@@ -776,57 +759,141 @@ namespace Beamable.Common.Api.Inventory
 		
 		public void OnBeforeSerialize()
 		{
-			foreach (var element in currencies)
-			{
-				if (!_serializedCurrencies.ContainsKey(element.Key))
-					_serializedCurrencies.Add(element.Key, element.Value);
-			}
-			
-			foreach (var element in currencyProperties)
-			{
-				if (!_serializedCurrencyProperties.ContainsKey(element.Key))
-					_serializedCurrencyProperties.Add(element.Key, new CurrencyPropertyList(element.Value));
-			}
-			
-			foreach (KeyValuePair<string, List<ItemView>> element in items)
-			{
-				foreach (var t in element.Value)
-					t.OnBeforeSerialize();
-
-				if (!_serializedItems.ContainsKey(element.Key))
-					_serializedItems.Add(element.Key, new ItemViewList(element.Value));
-			}
-			
-			_serializedCurrencies.OnBeforeSerialize();
-			_serializedCurrencyProperties.OnBeforeSerialize();
-			_serializedItems.OnBeforeSerialize();
+			_serializedData = ToJson();
 		}
 
 		public void OnAfterDeserialize()
 		{
-			_serializedCurrencies.OnAfterDeserialize();
-			_serializedCurrencyProperties.OnAfterDeserialize();
-			_serializedItems.OnAfterDeserialize();
-
-			foreach (KeyValuePair<string, long> element in _serializedCurrencies)
+			FromJson(_serializedData);
+		}
+		private void FromJson(string str)
+		{
+			Dictionary<string, string> ExtractProperty(ArrayDict dc, string name)
 			{
-				if (!currencies.ContainsKey(element.Key))
-					currencies.Add(element.Key, element.Value);
-			}
-
-			foreach (var element in _serializedCurrencyProperties)
-			{
-				if (!currencyProperties.ContainsKey(element.Key))
-					currencyProperties.Add(element.Key, element.Value.Properties);
-			}
-
-
-			foreach (var element in _serializedItems)
-			{
-				if (!items.ContainsKey(element.Key))
+				if (dc.TryGetValue(name, out var currencyObj) &&
+				    currencyObj is List<object> objs)
 				{
-					items.Add(element.Key, element.Value.Items);
+					var subDict = objs.Cast<ArrayDict>();
+
+					var nn = subDict.Select(x => new KeyValuePair<string, string>(
+						x["Key"]?.ToString(),
+						x["Value"]?.ToString())).ToDictionary(item => item.Key,
+						item => item.Value);
+					
+					return nn;
 				}
+
+				return null;
+			}
+			
+			var dict = Json.Deserialize(str) as ArrayDict;
+
+			if (dict != null)
+			{
+				if (dict.TryGetValue(nameof(currencies), out var currencyObj) &&
+				    currencyObj is ArrayDict storedCurrencies)
+				{
+					currencies = storedCurrencies.ToDictionary(kvp => kvp.Key, kvp => (long)kvp.Value);
+					;
+				}
+
+				if (dict.TryGetValue(nameof(currencyProperties), out var currPropsObj) &&
+				    currPropsObj is ArrayDict storedCurrProps)
+				{
+					currencyProperties = storedCurrProps.ToDictionary(
+						kvp => kvp.Key,
+						kvp =>
+						{
+							List<CurrencyProperty> props = null;
+							if (kvp.Value is List<object> objs)
+							{
+								var subDict = objs.Cast<ArrayDict>();
+								props = subDict.Select(x => new CurrencyProperty
+								{
+									name = x[nameof(CurrencyProperty.name)]?.ToString(),
+									value = x[nameof(CurrencyProperty.value)]?.ToString(),
+								}).ToList();
+							}
+
+							return props ?? new List<CurrencyProperty>();
+						});
+				}
+
+				if (dict.TryGetValue(nameof(items), out var currItemsObj) && currItemsObj is ArrayDict storedItems)
+				{
+					items = storedItems.ToDictionary(
+						kvp => kvp.Key,
+						kvp =>
+						{
+							List<ItemView> props = null;
+							if (kvp.Value is List<object> objs)
+							{
+								var subDict = objs.Cast<ArrayDict>();
+								props = subDict.Select(x => new ItemView()
+								{
+									id = long.Parse(x[nameof(ItemView.id)]?.ToString() ?? string.Empty),
+									createdAt = long.Parse(x[nameof(ItemView.createdAt)]?.ToString() ?? string.Empty),
+									updatedAt = long.Parse(x[nameof(ItemView.updatedAt)]?.ToString() ?? string.Empty),
+									properties = ExtractProperty(x, nameof(ItemView.properties))
+								}).ToList();
+							}
+
+							return props ?? new List<ItemView>();
+						});
+				}
+			}
+		}
+		private string ToJson()
+		{
+			using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
+			{
+				var dict = new ArrayDict();
+				
+				if (currencies != null && currencies.Count > 0)
+				{
+					dict.Add(nameof(currencies), currencies);
+				}
+
+				if (currencyProperties != null && currencyProperties.Count > 0)
+				{
+					var currencyDict = new ArrayDict();
+					foreach (var kvp in currencyProperties)
+					{
+						var newProperties = kvp.Value.Select(newProperty => new ArrayDict
+						{
+							{nameof(CurrencyProperty.name), newProperty.name},
+							{nameof(CurrencyProperty.value), newProperty.value}
+						}).ToArray();
+						currencyDict.Add(kvp.Key, newProperties);
+					}
+
+					dict.Add(nameof(currencyProperties), currencyDict);
+				}
+				
+				if (items!= null && items.Count > 0)
+				{
+					var itemsDict = new ArrayDict();
+					foreach (var kvp in items)
+					{
+						var singleItem = kvp.Value.Select(selectedItem => new ArrayDict
+						{
+							{nameof(ItemView.id), selectedItem.id},
+							{nameof(ItemView.createdAt), selectedItem.createdAt},
+							{nameof(ItemView.updatedAt), selectedItem.updatedAt},	
+							{nameof(ItemView.properties), selectedItem.properties.Select(newProperty => new ArrayDict {
+								{nameof(newProperty.Key), newProperty.Key},
+								{nameof(newProperty.Value), newProperty.Value}
+							}).ToArray()}
+						}).ToArray();
+						
+						itemsDict.Add(kvp.Key, singleItem);
+					}
+
+					dict.Add(nameof(items), itemsDict);
+				}
+				
+				var json = Json.Serialize(dict, pooledBuilder.Builder);
+				return json;
 			}
 		}
 	}
@@ -844,79 +911,11 @@ namespace Beamable.Common.Api.Inventory
 	///
 	/// </summary>
 	[Serializable]
-	public class ItemView : ISerializationCallbackReceiver
+	public class ItemView
 	{
 		public long id;
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 		public long createdAt;
 		public long updatedAt;
-		
-		[SerializeField] private SerializableDictionaryStringToString _serializedProperties = new SerializableDictionaryStringToString();
-		
-		public void OnBeforeSerialize()
-		{
-			_serializedProperties.Clear();
-			
-			foreach (KeyValuePair<string, string> element in properties)
-			{
-				if (!_serializedProperties.ContainsKey(element.Key))
-					_serializedProperties.Add(element.Key, element.Value);
-			}
-			_serializedProperties.OnBeforeSerialize();
-		}
-
-		public void OnAfterDeserialize()
-		{
-			if (_serializedProperties != null)
-			{
-				_serializedProperties.OnAfterDeserialize();
-				
-				foreach (KeyValuePair<string, string> element in _serializedProperties)
-				{
-					if (!properties.ContainsKey(element.Key))
-						properties.Add(element.Key, element.Value);
-				}
-			}
-		}
-	}
-	
-	[Serializable]
-	public class ItemViewList : DisplayableList<ItemView>, ISerializationCallbackReceiver
-	{
-		public List<ItemView> Items = new List<ItemView>();
-		
-		public ItemViewList() { }
-		public ItemViewList(List<ItemView> existing)
-		{
-			foreach (var elem in existing)
-			{
-				Add(elem);
-			}
-		}
-
-		protected override IList InternalList => Items;
-
-		public override string GetListPropertyPath() => nameof(Items);
-		
-		public new ItemView this[int index]
-		{
-			get => Items[index];
-			set
-			{
-				Items[index] = value;
-			}
-		}
-
-		public void OnBeforeSerialize()
-		{
-			for (int i = 0; i < Items.Count; i++)
-				Items[i].OnBeforeSerialize();
-		}
-
-		public void OnAfterDeserialize()
-		{
-			for (int i = 0; i < Items.Count; i++)
-				Items[i].OnAfterDeserialize();
-		}
 	}
 }

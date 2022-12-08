@@ -122,14 +122,9 @@ namespace Beamable.Common.Content
 		{
 			keys.Clear();
 			values.Clear();
-			
 			foreach (KeyValuePair<TKey, TValue> pair in this)
 			{
 				keys.Add(pair.Key);
-				
-				if (pair.Value is ISerializationCallbackReceiver val)
-					val.OnBeforeSerialize();
-				
 				values.Add(pair.Value);
 			}
 		}
@@ -142,14 +137,9 @@ namespace Beamable.Common.Content
 			if (keys.Count != values.Count)
 				throw new System.Exception(string.Format(
 				   "there are {0} keys and {1} values after deserialization. Make sure that both key and value types are serializable."));
-			
+
 			for (int i = 0; i < keys.Count; i++)
-			{
-				if (values[i] is ISerializationCallbackReceiver val)
-					val.OnAfterDeserialize();
-				
 				this.Add(keys[i], values[i]);
-			}
 		}
 	}
 }
