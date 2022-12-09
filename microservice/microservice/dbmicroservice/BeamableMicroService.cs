@@ -831,7 +831,7 @@ namespace Beamable.Server
             return;
          }
          
-         var reqLog = Log.ForContext("requestContext", ctx, false);
+         var reqLog = Log.ForContext("requestContext", ctx, true);
          BeamableSerilogProvider.LogContext.Value = reqLog;
 
          try

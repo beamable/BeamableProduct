@@ -172,7 +172,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS"), out var limit))
 		      {
-			      limit = 5000;
+			      limit = 1000;
 		      }
 		      return limit;
 	      }
@@ -195,7 +195,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
 		      {
-			      limit = 2000;
+			      limit = 1000;
 		      }
 		      return limit;
 	      }
@@ -207,7 +207,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var limit))
 		      {
-			      limit = 10;
+			      limit = 30;
 		      }
 		      return limit;
 	      }
@@ -231,7 +231,7 @@ namespace Beamable.Server
 	      {
 		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_LOW"), out var limit))
 		      {
-			      limit = 0;
+			      limit = -.2;
 		      }
 		      return limit;
 	      }
@@ -243,7 +243,7 @@ namespace Beamable.Server
 	      {
 		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_HIGH"), out var limit))
 		      {
-			      limit = 2;
+			      limit = .1;
 		      }
 		      return limit;
 	      }
@@ -255,7 +255,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_OFFSET"), out var limit))
 		      {
-			      limit = 3;
+			      limit = 0;
 		      }
 		      return limit;
 	      }
