@@ -341,24 +341,25 @@ namespace Beamable.Common.Reflection
 				}
 
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
-				foreach (var type in reflectionBasedSystem.BaseTypesOfInterest)
+				
+				for (int i = 0; i < reflectionBasedSystem.BaseTypesOfInterest.Count; i++)
 				{
-					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(type, out var mappedSubtypes))
+					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(reflectionBasedSystem.BaseTypesOfInterest[i], out var mappedSubtypes))
 					{
 						// TODO: Add a conditional log line.
 						continue;
 					}
-					reflectionBasedSystem.OnBaseTypeOfInterestFound(type, mappedSubtypes);
+					reflectionBasedSystem.OnBaseTypeOfInterestFound(reflectionBasedSystem.BaseTypesOfInterest[i], mappedSubtypes);
 				}
 
-				foreach (var attributeType in reflectionBasedSystem.AttributesOfInterest)
+				for (int k = 0; k < reflectionBasedSystem.AttributesOfInterest.Count; k++)
 				{
-					if (!_perAttributeCache.AttributeMappings.TryGetValue(attributeType, out var mappedAttributes))
+					if (!_perAttributeCache.AttributeMappings.TryGetValue(reflectionBasedSystem.AttributesOfInterest[k], out var mappedAttributes))
 					{
 						// TODO: Add a conditional log line
 						continue;
 					}
-					reflectionBasedSystem.OnAttributeOfInterestFound(attributeType, mappedAttributes);
+					reflectionBasedSystem.OnAttributeOfInterestFound(reflectionBasedSystem.AttributesOfInterest[k], mappedAttributes);
 				}
 			}
 		}
@@ -416,23 +417,23 @@ namespace Beamable.Common.Reflection
 									  .SelectMany(group => group.ToList())
 									  .ToList();
 
-				foreach (var assembly in validAssemblies)
+				for (int i = 0; i < validAssemblies.Count; i++)
 				{
-					var types = assembly.GetTypes();
+					var types = validAssemblies[i].GetTypes();
 
-					foreach (var type in types)
+					for (int k = 0; k < types.Length; k++)
 					{
 						// Get a list of all attributes of interest that were found on this type.
-						GatherMembersFromAttributesOfInterest(type,
-																		   perAttributeLists.AttributeTypes,
-																		   perAttributeLists.MemberAttributeTypes,
-																		   perAttributeLists.AttributeMappings);
+						GatherMembersFromAttributesOfInterest(types[k],
+						                                      perAttributeLists.AttributeTypes,
+						                                      perAttributeLists.MemberAttributeTypes,
+						                                      perAttributeLists.AttributeMappings);
 
 						// Check for base types of interest
-						if (TryFindBaseTypesOfInterest(type, baseTypesOfInterest, out var foundType))
+						if (TryFindBaseTypesOfInterest(types[k], baseTypesOfInterest, out var foundType))
 						{
 							if (perBaseTypeLists.MappedSubtypes.TryGetValue(foundType, out var baseTypesList))
-								baseTypesList.Add(type);
+								baseTypesList.Add(types[k]);
 						}
 					}
 				}
