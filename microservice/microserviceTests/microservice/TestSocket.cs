@@ -15,7 +15,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Serilog;
+using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Text.Json;
 
 namespace Beamable.Microservice.Tests.Socket
 {
@@ -27,7 +29,7 @@ namespace Beamable.Microservice.Tests.Socket
         {
             _configure = configure;
         }
-        public IConnection Create(string _)
+        public IConnection Create(string _, IMicroserviceArgs __)
         {
             var socket = new TestSocket();
             _configure(socket);
@@ -609,12 +611,12 @@ namespace Beamable.Microservice.Tests.Socket
     public class TestSocket : IConnection
     {
         private event Action<TestSocket> _onConnectionCallbacks;
-        private Action<IConnection, string, long> _onMessageCallbacks = (s, m, id) => { };
+        private Action<IConnection, JsonDocument, long, Stopwatch> _onMessageCallbacks = (s, m, id, sw) => { };
 
         public Action MockConnect;
         public Action<Action<TestSocket>> MockOnConnect;
         public event Action<TestSocket, bool> _onDisconnectionCallbacks;
-        public Action<Action<IConnection, string, long>> MockOnMessage;
+        public Action<Action<IConnection, JsonDocument, long, Stopwatch>> MockOnMessage;
         // public Action<string> MockSendMessage;
 
         /// <summary>
@@ -627,6 +629,7 @@ namespace Beamable.Microservice.Tests.Socket
 
         private long id;
         private List<MockTestRequestHandler> _handlers = new List<MockTestRequestHandler>();
+
 
         public WebSocketState State => WebSocketState.Open;
         private bool _failOnException = true;
@@ -884,7 +887,8 @@ namespace Beamable.Microservice.Tests.Socket
         public void SendToClient(string msg)
         {
             var next = Interlocked.Increment(ref id);
-            _onMessageCallbacks(this, msg, next);
+            var doc = JsonDocument.Parse(msg);
+            _onMessageCallbacks(this, doc, next, null);
         }
 
         public void SendToClient<T>(T obj)
@@ -916,7 +920,7 @@ namespace Beamable.Microservice.Tests.Socket
         }
 
         public bool MockIsConnectionOpen = true;
-        public async Task SendMessage(string message)
+        public async Task SendMessage(string message, Stopwatch sw=null)
         {
             if (!MockIsConnectionOpen)
             {
@@ -937,11 +941,15 @@ namespace Beamable.Microservice.Tests.Socket
             return this;
         }
 
-        public IConnection OnMessage(Action<IConnection, string, long> onMessage)
+        public IConnection OnMessage(Action<IConnection, JsonDocument, long, Stopwatch> onMessage)
         {
-            MockOnMessage?.Invoke(onMessage);
-            return this;
+	        MockOnMessage?.Invoke(onMessage);
+	        return this;
         }
+
+        public IConnection OnMessage(Action<IConnection, JsonDocument, long> onMessage) =>
+	        OnMessage((c, msg, id, _) => onMessage(c, msg, id));
+
 
         public bool AllMocksCalled()
         {
