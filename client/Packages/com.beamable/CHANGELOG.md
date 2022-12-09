@@ -4,10 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.7.0]
 ### Added
 - Local content mode 
 - Added `OnLeft`,`OnPromoted` and `OnKicked` event support in `PartyMember` class.
+
+### Changed
+- Portal opens to `https://portal.beamable.com` instead of `https://beta-portal.beamable.com`
+- Content Manager and Toolbox have flat UI
 
 ### Fixed
 - `NotificationService.Unsubscribe<T>` now correctly unsubscribes from events.
