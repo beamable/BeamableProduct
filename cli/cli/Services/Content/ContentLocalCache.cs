@@ -40,19 +40,21 @@ public class ContentLocalCache
 		foreach (ClientContentInfo contentManifestEntry in manifest.entries)
 		{
 			ContentStatus localStatus;
-			if (HasSameVersion(contentManifestEntry))
+			var contentExistsLocally = Assets.ContainsKey(contentManifestEntry.contentId);
+			if (contentExistsLocally)
 			{
-				// todo should we compare tags if there are the same?
-				localStatus = ContentStatus.UpToDate;
-			}else if (Assets.ContainsKey(contentManifestEntry.contentId))
-			{
-				localStatus = ContentStatus.Modified;
+				var sameTags = _localTags.TagsForContent(contentManifestEntry.contentId).All(contentManifestEntry.tags.Contains);
+				localStatus = HasSameVersion(contentManifestEntry) && sameTags ? ContentStatus.UpToDate : ContentStatus.Modified;
 			}
 			else
 			{
 				localStatus = ContentStatus.Deleted;
 			}
-			resultList.Add(new LocalContent{contentId = contentManifestEntry.contentId, status = localStatus, tags = contentManifestEntry.tags});
+
+			var tags = contentExistsLocally
+				? _localTags.TagsForContent(contentManifestEntry.contentId)
+				: contentManifestEntry.tags;
+			resultList.Add(new LocalContent{contentId = contentManifestEntry.contentId, status = localStatus, tags = tags});
 		}
 		resultList.Sort((a, b) => a.status.CompareTo(b.status));
 
