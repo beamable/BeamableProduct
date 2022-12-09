@@ -9,6 +9,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using microservice.Common;
+using Serilog;
 using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Server.Content
@@ -154,11 +155,31 @@ namespace Beamable.Server.Content
 
       public async Promise Init()
       {
-         _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
+	      _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
          
-         // cache entire content
-         var manifest = await GetManifest();
-         await manifest.ResolveAll();
+	      // cache entire content
+	      var manifest = await GetManifest();
+	      Log.Debug($"MANIFEST CONTAINS {manifest.entries.Count} OBJECTS");
+	      
+	      int processed = 0;
+	      int chunkSize = 100;
+	      while (processed < manifest.entries.Count)
+	      {
+		      if (processed + chunkSize > manifest.entries.Count)
+		      {
+			      chunkSize = manifest.entries.Count - processed;
+		      }
+		      
+		      var chunk = manifest.entries.GetRange(processed, chunkSize);
+		      await chunk.ResolveAll();
+		      processed += chunkSize;
+		      Log.Debug($"PROCESSED {processed} ITEMS");
+	      }
+	      
+	      Log.Debug("FINISHED LOADING CONTENT");
+	      
+	      // var test = await manifest.ResolveAll();
+	      // Log.Debug($"RESOLVED {test.Count} OBJECTS");
       }
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)
