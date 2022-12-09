@@ -31,7 +31,7 @@ namespace Beamable.Content
 #endif
 
 		[Tooltip("When enabled, any content requests for the editor manifest will be resolved using your on-disk Scriptable Object content items, and any content from another manifest will be fetched from the remote realm. When disabled, all content is fetched from the remote realm.")]
-		public bool EnableLocalContentInEditor = true;
+		public bool EnableLocalContentInEditor = false;
 
 		[Tooltip("When using Local Content Mode In Editor, simulate how long each content reference will take to fetch.")]
 		public OptionalFloat LocalContentReferenceDelaySeconds;

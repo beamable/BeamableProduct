@@ -7,81 +7,80 @@ namespace Beamable.Server
    {
       object[] GetParameters(ServiceMethod method);
    }
+
    public class AdaptiveParameterProvider : IParameterProvider
    {
-      private IParameterProvider internalProvider;
-      private bool _jsonHasPayloadProperty;
-      private RequestContext _ctx;
-      private bool _isPayloadArray;
+	   private MicroserviceRequestContext _ctx;
 
-      public AdaptiveParameterProvider(RequestContext ctx)
-      {
-         _ctx = ctx;
-         using var bodyDoc = JsonDocument.Parse(ctx.Body);
+	   public AdaptiveParameterProvider(MicroserviceRequestContext ctx)
+	   {
+		   _ctx = ctx;
+	   }
 
-         _jsonHasPayloadProperty = bodyDoc.RootElement.TryGetProperty("payload", out var payloadElem);
-         _isPayloadArray = _jsonHasPayloadProperty && payloadElem.ValueKind == JsonValueKind.Array;
-      }
-      public object[] GetParameters(ServiceMethod method)
-      {
-         var methodHasPayloadField = method.ParameterNames.Contains("payload");
+	   public object[] GetParameters(ServiceMethod method)
+	   {
+		   var hasPayloadProperty = _ctx.BodyElement.TryGetProperty("payload", out var payloadElem);
 
-         if (_jsonHasPayloadProperty && methodHasPayloadField)
-         {
-            if (!_isPayloadArray)
-            {
-               internalProvider = new NamedParameterProvider(_ctx);
-            }
-            else
-            {
-               // TODO: This is really stupid. But I don't know how to figure out which serialization to use; so just don't play the game, and let this fail early in testing.
-               throw new ParameterLegacyException();
-            }
-         }
-         else if (_jsonHasPayloadProperty && !methodHasPayloadField)
-         {
-            internalProvider = new PayloadArrayParameterProvider(_ctx);
-         }
-         else
-         {
-            internalProvider = new NamedParameterProvider(_ctx);
-         }
+		   var isPayloadArray = hasPayloadProperty && payloadElem.ValueKind == JsonValueKind.Array;
 
-         return internalProvider.GetParameters(method);
-      }
+		   var methodHasPayloadField = method.ParameterNames.Contains("payload");
+		   IParameterProvider internalProvider = null;
+		   if (hasPayloadProperty && methodHasPayloadField)
+		   {
+			   if (!isPayloadArray)
+			   {
+				   internalProvider = new NamedParameterProvider(_ctx.BodyElement);
+			   }
+			   else
+			   {
+				   // TODO: This is really stupid. But I don't know how to figure out which serialization to use; so just don't play the game, and let this fail early in testing.
+				   throw new ParameterLegacyException();
+			   }
+		   }
+		   else if (hasPayloadProperty && !methodHasPayloadField)
+		   {
+			   internalProvider = new PayloadArrayParameterProvider(_ctx.BodyElement);
+		   }
+		   else
+		   {
+			   internalProvider = new NamedParameterProvider(_ctx.BodyElement);
+		   }
+
+		   return internalProvider.GetParameters(method);
+	   }
    }
 
    public class PayloadArrayParameterProvider : IParameterProvider
    {
-      private List<string> jsonArgs;
+	   private readonly JsonElement _bodyElement;
+	   private List<string> jsonArgs;
 
-      public PayloadArrayParameterProvider(RequestContext ctx)
+      public PayloadArrayParameterProvider(JsonElement bodyElement)
       {
-         jsonArgs = new List<string>();
-
-         using var bodyDoc = JsonDocument.Parse(ctx.Body);
-         // extract the payload object.
-         if (bodyDoc.RootElement.TryGetProperty("payload", out var payloadString))
-         {
-            if (payloadString.ValueKind == JsonValueKind.Null)
-            {
-               jsonArgs.Add("null");
-            }
-            else
-            {
-               using (var payloadDoc = JsonDocument.Parse(payloadString.ToString()))
-               {
-                  foreach (var argJson in payloadDoc.RootElement.EnumerateArray())
-                  {
-                     jsonArgs.Add(argJson.GetRawText());
-                  }
-               }
-            }
-         }
+	      _bodyElement = bodyElement;
+	      jsonArgs = new List<string>();
       }
 
       public object[] GetParameters(ServiceMethod method)
       {
+	      if (_bodyElement.TryGetProperty("payload", out var payloadString))
+	      {
+		      if (payloadString.ValueKind == JsonValueKind.Null)
+		      {
+			      jsonArgs.Add("null");
+		      }
+		      else
+		      {
+			      using (var payloadDoc = JsonDocument.Parse(payloadString.ToString()))
+			      {
+				      foreach (var argJson in payloadDoc.RootElement.EnumerateArray())
+				      {
+					      jsonArgs.Add(argJson.GetRawText());
+				      }
+			      }
+		      }
+	      }
+	      
          var args = new object[method.Deserializers.Count];
          if (jsonArgs == null)
          {
@@ -105,11 +104,16 @@ namespace Beamable.Server
 
    public class NamedParameterProvider : IParameterProvider
    {
-      private JsonDocument _bodyDoc;
+	   private readonly JsonElement _bodyElement;
 
-      public NamedParameterProvider(RequestContext ctx)
+      // public NamedParameterProvider(MicroserviceRequestContext ctx)
+      // {
+      //    _bodyDoc = JsonDocument.Parse(ctx.Body);
+      // }
+
+      public NamedParameterProvider(JsonElement bodyElement)
       {
-         _bodyDoc = JsonDocument.Parse(ctx.Body);
+	      _bodyElement = bodyElement;
       }
 
       public object[] GetParameters(ServiceMethod method)
@@ -120,7 +124,7 @@ namespace Beamable.Server
          {
             var parameterName = method.ParameterNames[i];
 
-            if (!_bodyDoc.RootElement.TryGetProperty(parameterName, out var jsonElement))
+            if (!_bodyElement.TryGetProperty(parameterName, out var jsonElement))
             {
                throw new ParameterMissingRequiredException(parameterName);
             }

@@ -4,18 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.7.0]
 ### Added
-- Local content mode
+- Local content mode 
 - Added `OnLeft`,`OnPromoted` and `OnKicked` event support in `PartyMember` class.
 
 ### Changed
-- By default, content will be put into local mode. Remote content can be configured by disabling the _Project Setting/Beamable/Content/Enable Local Content In Editor_  option.
+- Portal opens to `https://portal.beamable.com` instead of `https://beta-portal.beamable.com`
+- Content Manager and Toolbox have flat UI
 
 ### Fixed
 - `NotificationService.Unsubscribe<T>` now correctly unsubscribes from events.
 - Content classes with properties with backing field properties serialize correctly when upgrading directly from 1.2.10
-
+- Regression in parsing nested `OptionalString` objects for content.
 
 ## [1.6.2]
 ### Fixed
