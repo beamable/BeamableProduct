@@ -16,6 +16,7 @@ public class ContentService
 	const string SERVICE = "/basic/content";
 	private readonly CliRequester _requester;
 	private readonly ContentLocalCache _contentLocal;
+
 	public ContentLocalCache ContentLocal
 	{
 		get
@@ -37,12 +38,14 @@ public class ContentService
 		{
 			manifestId = "global";
 		}
+
 		if (ContentLocal.Manifests.ContainsKey(manifestId))
 		{
 			var promise = new Promise<ClientManifest>();
 			promise.CompleteSuccess(ContentLocal.Manifests[manifestId]);
 			return promise;
 		}
+
 		string url = $"{SERVICE}/manifest/public?id={manifestId}";
 		return _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 		{
@@ -66,6 +69,7 @@ public class ContentService
 				{
 					tags[tag] = new List<string>();
 				}
+
 				tags[tag].Add(clientContentInfo.contentId);
 			}
 		}
@@ -77,19 +81,21 @@ public class ContentService
 	public async Promise<List<ContentDocument>> PullContent(ClientManifest manifest, bool saveToDisk = true)
 	{
 		var contents = new List<ContentDocument>(manifest.entries.Count);
-		
+
 		foreach (var contentInfo in manifest.entries)
 		{
-			if(ContentLocal.HasSameVersion(contentInfo))
+			if (ContentLocal.HasSameVersion(contentInfo))
 			{
 				contents.Add(ContentLocal.GetContent(contentInfo.contentId));
 				continue;
 			}
+
 			try
 			{
-				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri, parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
+				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri,
+					parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
 				contents.Add(result);
-				if(saveToDisk)
+				if (saveToDisk)
 				{
 					await ContentLocal.UpdateContent(result);
 				}
@@ -99,6 +105,7 @@ public class ContentService
 				BeamableLogger.LogException(e);
 			}
 		}
+
 		return contents;
 	}
 
@@ -115,12 +122,14 @@ public class ContentService
 		{
 			localContentStatus = localContentStatus.Where(content => content.status != ContentStatus.UpToDate).ToList();
 		}
+
 		var range = limit > 0 && limit < localContentStatus.Count ? limit : localContentStatus.Count;
 
-		foreach (var content in localContentStatus.GetRange(0,range))
+		foreach (var content in localContentStatus.GetRange(0, range))
 		{
-			table.AddRow(content.StatusString(), content.contentId, string.Join(",",content.tags));
+			table.AddRow(content.StatusString(), content.contentId, string.Join(",", content.tags));
 		}
+
 		AnsiConsole.Write(table);
 	}
 
@@ -131,18 +140,16 @@ public class ContentService
 		{
 			manifestId = "global";
 		}
+
 		var contentManifest = await GetManifest(manifestId);
 		var localContent = ContentLocal.GetLocalContentStatus(contentManifest)
-			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate) )
+			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate))
 			.Select(content => PrepareContentForPublish(_contentLocal.GetContent(content.contentId))).ToList();
 		var workingReferenceSet = BuildLocalManifestReferenceSupersets(ContentLocal
 			.GetLocalContentStatus(contentManifest)
-			.Where(content => content.status is not ContentStatus.Deleted).ToList());
-		
-		var dict = new ArrayDict
-		{
-			{"content", localContent.ToList()}
-		};
+			.Where(content => content.status is not ContentStatus.Deleted).ToList(),contentManifest);
+
+		var dict = new ArrayDict { { "content", localContent.ToList() } };
 		var reqJson = Json.Serialize(dict, new StringBuilder());
 
 		var result = await _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);
@@ -171,29 +178,28 @@ public class ContentService
 				workingReferenceSet.Add(key, reference);
 			}
 		});
-		var manifest = new ManifestSaveRequest
-		{
-			id = manifestId,
-			references = workingReferenceSet.Values.ToList()
-		};
+		var manifest = new ManifestSaveRequest { id = manifestId, references = workingReferenceSet.Values.ToList() };
 		var s = await _requester.RequestJson<string>(Method.POST, $"/basic/content/manifest?id={manifestId}", manifest);
-		
+
 		Console.WriteLine("RESPONSE BELOW\n\n\n");
 		Console.WriteLine(s);
 		return new Unit();
 	}
 
-	Dictionary<string, ManifestReferenceSuperset> BuildLocalManifestReferenceSupersets(List<LocalContent> localContents)
+	Dictionary<string, ManifestReferenceSuperset> BuildLocalManifestReferenceSupersets(List<LocalContent> localContents,
+		ClientManifest currentManifest)
 	{
 		var dict = new Dictionary<string, ManifestReferenceSuperset>();
-		foreach (var doc in 
-		         localContents.Where(content => content.status != ContentStatus.Deleted).Select(localContent => _contentLocal.GetContent(localContent.contentId)))
+		foreach (var doc in
+		         localContents.Where(content => content.status != ContentStatus.Deleted)
+			         .Select(localContent => _contentLocal.GetContent(localContent.contentId)))
 		{
 			var definition = PrepareContentForPublish(doc);
-			var publicVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, true);
-			var privateVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, false);
-			dict.Add(publicVersion.Key,publicVersion);
-			dict.Add(privateVersion.Key,privateVersion);
+			var matchingContent = currentManifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));
+			var publicVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, true);
+			var privateVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, false);
+			dict.Add(publicVersion.Key, publicVersion);
+			dict.Add(privateVersion.Key, privateVersion);
 		}
 
 		return dict;
@@ -205,9 +211,10 @@ public class ContentService
 		{
 			id = document.id,
 			checksum = document.CalculateChecksum(),
-			properties = JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false }),
+			properties =
+				JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false }),
 			tags = _contentLocal.GetTags(document.id),
-			lastChanged = _contentLocal.GetLastEdit(document.id)
+			lastChanged = 0
 		};
 	}
 }

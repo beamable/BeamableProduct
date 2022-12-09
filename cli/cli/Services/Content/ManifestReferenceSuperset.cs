@@ -1,4 +1,5 @@
-﻿using Beamable.Serialization;
+﻿using Beamable.Common.Content;
+using Beamable.Serialization;
 using JetBrains.Annotations;
 
 namespace cli.Services.Content;
@@ -42,14 +43,14 @@ public class ManifestReferenceSuperset : JsonSerializable.ISerializable
 		return $"{id}/{visibility}";
 	}
 
-	public static ManifestReferenceSuperset CreateFromDefinition(ContentDefinition definition, bool isPublic = true)
+	public static ManifestReferenceSuperset CreateFromDefinition(ContentDefinition definition, [CanBeNull] ClientContentInfo info, bool isPublic = true)
 	{
 		return new ManifestReferenceSuperset
 		{
 			Type = "content",
 			Id = definition.id,
-			Version = string.Empty,
-			Uri = string.Empty,
+			Version = info?.version ?? string.Empty,
+			Uri = info?.uri ?? string.Empty,
 			Created = 0,
 			Tags = definition.tags,
 			Checksum = definition.checksum,

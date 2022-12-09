@@ -114,13 +114,4 @@ public class ContentLocalCache
 	}
 
 	public string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
-
-	public long GetLastEdit(string id) => ConvertToTimestamp(File.GetLastWriteTime(GetContentPath(id)));
-	
-	private static readonly DateTime Epoch = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-	private static long ConvertToTimestamp(DateTime value)
-	{
-		TimeSpan elapsedTime = value - Epoch;
-		return (long) elapsedTime.TotalSeconds;
-	}
 }
