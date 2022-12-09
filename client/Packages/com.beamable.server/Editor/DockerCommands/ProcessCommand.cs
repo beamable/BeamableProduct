@@ -21,6 +21,7 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		const int PROCESS_NOT_FOUND_EXIT_CODE = 127; // TODO: Check this for windows?
 
+		protected virtual bool CaptureStandardBuffers => true;
 		public static bool DockerNotInstalled
 		{
 			get => EditorPrefs.GetBool("DockerNotInstalled", true);
@@ -230,8 +231,8 @@ namespace Beamable.Server.Editor.DockerCommands
 					_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 					_process.EnableRaisingEvents = true;
 					_process.StartInfo.RedirectStandardInput = true;
-					_process.StartInfo.RedirectStandardOutput = true;
-					_process.StartInfo.RedirectStandardError = true;
+					_process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
+					_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
 					ModifyStartInfo(_process.StartInfo);
