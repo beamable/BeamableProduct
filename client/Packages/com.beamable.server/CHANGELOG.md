@@ -10,12 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `GetPublicPlayerStat`
   - `GetPublicPlayerStats`
   - `GetAllPublicPlayerStats`
-- Microservices no longer emit log body and headers on every log statement.
-- Microservices no longer emit log messages for receiving and responding to `[ClientCallable]` methods.
-  
+- Microservice request context body and header properties are lazily deserialized.
+- Deployed Microservices run multiple local instances to improve reliability and performance. 
+- Microservices no longer represent inbound messages with an intermediate `string`. Instead, messages byte arrays are parsed directly to `JsonDocument` 
+
 ### Added
 - Microservice message log size limit. 
 - Inbound requests are rate limited to avoid out of memory failures. 
+
+### Removed
+- Microservice log messages no longer include message hash, `"__i"` field.
+- Microservices no longer emit log body and headers on every log statement.
+- Microservices no longer emit log messages for receiving and responding to `[ClientCallable]` methods.
 
 ## [1.6.2]
 ### Changed

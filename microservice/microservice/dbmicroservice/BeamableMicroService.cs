@@ -729,7 +729,7 @@ namespace Beamable.Server
          return service;
       }
 
-      async Task HandleClientMessage(RequestContext ctx, Stopwatch sw)
+      async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw)
       {
          if (RefuseNewClientMessages)
          {

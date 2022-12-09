@@ -29,5 +29,6 @@ namespace microserviceTests.microservice
       public int RateLimitCPUOffset => 0;
       public int ReceiveChunkSize => 1024;
       public int SendChunkSize => 1024;
+      public int BeamInstanceCount => 1;
    }
 }

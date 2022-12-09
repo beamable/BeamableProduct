@@ -28,6 +28,7 @@ namespace Beamable.Server
       public int RateLimitCPUOffset { get; }
       public int ReceiveChunkSize { get; }
       public int SendChunkSize { get; }
+      public int BeamInstanceCount { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -57,6 +58,8 @@ namespace Beamable.Server
 	   public int RateLimitCPUOffset { get; set; }
 	   public int ReceiveChunkSize { get; set; }
 	   public int SendChunkSize { get; set; }
+	   public int BeamInstanceCount { get; set; }
+
    }
 
    public static class MicroserviceArgsExtensions
@@ -89,7 +92,8 @@ namespace Beamable.Server
             ReceiveChunkSize = args.ReceiveChunkSize,
             RateLimitCPUMultiplierLow = args.RateLimitCPUMultiplierLow,
             RateLimitCPUMultiplierHigh = args.RateLimitCPUMultiplierHigh,
-            RateLimitCPUOffset = args.RateLimitCPUOffset
+            RateLimitCPUOffset = args.RateLimitCPUOffset,
+            BeamInstanceCount = args.BeamInstanceCount
          };
       }
    }
@@ -192,6 +196,18 @@ namespace Beamable.Server
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
 		      {
 			      limit = 2000;
+		      }
+		      return limit;
+	      }
+      }
+      
+      public int BeamInstanceCount 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var limit))
+		      {
+			      limit = 10;
 		      }
 		      return limit;
 	      }

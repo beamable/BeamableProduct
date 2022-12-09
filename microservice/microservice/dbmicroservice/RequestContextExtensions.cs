@@ -9,7 +9,7 @@ namespace Beamable.Server
 	public static class RequestContextExtensions
 	{
 		public static bool TryBuildRequestContext(this JsonDocument document, IMicroserviceArgs args,
-			out RequestContext context)
+			out MicroserviceRequestContext context)
 		{
 			long id = 0;
 			string path = "";

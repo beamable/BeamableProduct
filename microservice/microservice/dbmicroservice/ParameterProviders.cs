@@ -10,17 +10,16 @@ namespace Beamable.Server
 
    public class AdaptiveParameterProvider : IParameterProvider
    {
-	   private RequestContext _ctx;
+	   private MicroserviceRequestContext _ctx;
 
-	   public AdaptiveParameterProvider(RequestContext ctx)
+	   public AdaptiveParameterProvider(MicroserviceRequestContext ctx)
 	   {
 		   _ctx = ctx;
 	   }
 
 	   public object[] GetParameters(ServiceMethod method)
 	   {
-		   using var bodyDoc = JsonDocument.Parse(_ctx.Body);
-		   var hasPayloadProperty = bodyDoc.RootElement.TryGetProperty("payload", out var payloadElem);
+		   var hasPayloadProperty = _ctx.BodyElement.TryGetProperty("payload", out var payloadElem);
 
 		   var isPayloadArray = hasPayloadProperty && payloadElem.ValueKind == JsonValueKind.Array;
 
@@ -30,7 +29,7 @@ namespace Beamable.Server
 		   {
 			   if (!isPayloadArray)
 			   {
-				   internalProvider = new NamedParameterProvider(bodyDoc);
+				   internalProvider = new NamedParameterProvider(_ctx.BodyElement);
 			   }
 			   else
 			   {
@@ -40,11 +39,11 @@ namespace Beamable.Server
 		   }
 		   else if (hasPayloadProperty && !methodHasPayloadField)
 		   {
-			   internalProvider = new PayloadArrayParameterProvider(bodyDoc);
+			   internalProvider = new PayloadArrayParameterProvider(_ctx.BodyElement);
 		   }
 		   else
 		   {
-			   internalProvider = new NamedParameterProvider(bodyDoc);
+			   internalProvider = new NamedParameterProvider(_ctx.BodyElement);
 		   }
 
 		   return internalProvider.GetParameters(method);
@@ -53,24 +52,18 @@ namespace Beamable.Server
 
    public class PayloadArrayParameterProvider : IParameterProvider
    {
-      private List<string> jsonArgs;
-      private JsonDocument _bodyDoc;
+	   private readonly JsonElement _bodyElement;
+	   private List<string> jsonArgs;
 
-      public PayloadArrayParameterProvider(RequestContext ctx)
+      public PayloadArrayParameterProvider(JsonElement bodyElement)
       {
-         jsonArgs = new List<string>();
-         _bodyDoc = JsonDocument.Parse(ctx.Body);
-      }
-
-      public PayloadArrayParameterProvider(JsonDocument document)
-      {
+	      _bodyElement = bodyElement;
 	      jsonArgs = new List<string>();
-	      _bodyDoc = document;
       }
 
       public object[] GetParameters(ServiceMethod method)
       {
-	      if (_bodyDoc.RootElement.TryGetProperty("payload", out var payloadString))
+	      if (_bodyElement.TryGetProperty("payload", out var payloadString))
 	      {
 		      if (payloadString.ValueKind == JsonValueKind.Null)
 		      {
@@ -111,16 +104,16 @@ namespace Beamable.Server
 
    public class NamedParameterProvider : IParameterProvider
    {
-      private JsonDocument _bodyDoc;
+	   private readonly JsonElement _bodyElement;
 
-      public NamedParameterProvider(RequestContext ctx)
-      {
-         _bodyDoc = JsonDocument.Parse(ctx.Body);
-      }
+      // public NamedParameterProvider(MicroserviceRequestContext ctx)
+      // {
+      //    _bodyDoc = JsonDocument.Parse(ctx.Body);
+      // }
 
-      public NamedParameterProvider(JsonDocument document)
+      public NamedParameterProvider(JsonElement bodyElement)
       {
-	      _bodyDoc = document;
+	      _bodyElement = bodyElement;
       }
 
       public object[] GetParameters(ServiceMethod method)
@@ -131,7 +124,7 @@ namespace Beamable.Server
          {
             var parameterName = method.ParameterNames[i];
 
-            if (!_bodyDoc.RootElement.TryGetProperty(parameterName, out var jsonElement))
+            if (!_bodyElement.TryGetProperty(parameterName, out var jsonElement))
             {
                throw new ParameterMissingRequiredException(parameterName);
             }

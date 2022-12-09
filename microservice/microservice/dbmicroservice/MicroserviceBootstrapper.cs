@@ -78,7 +78,6 @@ namespace Beamable.Server
 		            await Task.Delay(1);;
 		            if (promise?.HadAnyErrbacks ?? true) return;
 
-		            Console.Error.WriteLine($"Uncaught promise error!!! {exception.GetType().Name} {exception.Message} -- {exception.StackTrace}");
 		            BeamableLogger.LogError("Uncaught promise error. {promiseType} {message} {stack}", promise.GetType(), exception.Message, exception.StackTrace);
 		            throw exception;
 	            }
@@ -115,13 +114,7 @@ namespace Beamable.Server
             ConfigureUnhandledError();
             ConfigureDocsProvider();
 
-            if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var count))
-            {
-	            count = 1;
-            }
-
-            
-            for (var i = 0; i < count; i++)
+            for (var i = 0; i < args.BeamInstanceCount; i++)
             {
 	            var beamableService = new BeamableMicroService();
 

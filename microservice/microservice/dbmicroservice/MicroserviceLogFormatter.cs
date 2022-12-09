@@ -58,10 +58,6 @@ namespace Beamable.Server
       output.Write(logEvent.Timestamp.UtcDateTime.ToString("O"));
       output.Write("\",\"__m\":");
       JsonValueFormatter.WriteQuotedJsonString(logEvent.MessageTemplate.Render(logEvent.Properties, (IFormatProvider) null), output);
-      // output.Write(",\"__i\":\"");
-      // uint num = EventIdHash.Compute(logEvent.MessageTemplate.Text);
-      // output.Write(num.ToString("x8"));
-      // output.Write('"');
       if (logEvent.Level != LogEventLevel.Information)
       {
         output.Write(",\"__l\":\"");

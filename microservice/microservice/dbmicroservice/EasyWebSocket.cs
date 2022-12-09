@@ -50,6 +50,7 @@ namespace Beamable.Server
 
 	    private int SendChunkSize => _args.SendChunkSize;
 
+	    public const int LargeObjectHeapAllocationLimit = 85000;
 
 
         private readonly ClientWebSocket _ws;
@@ -343,16 +344,17 @@ namespace Beamable.Server
 				            await stream.WriteAsync(readSegment.Array, 0, result.Count);
 			            }
 		            } while (!result.EndOfMessage);
-		            cpu.EndSample();
 
 		            var payloadSize = ReceiveChunkSize * readCount;
-		            if (payloadSize > 85000) // LOH allocation
+		            if (payloadSize > LargeObjectHeapAllocationLimit) // LOH allocation
 		            {
 			            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 		            }
 
 		            stream.Seek(0, SeekOrigin.Begin);
 		            var document = await JsonDocument.ParseAsync(stream);
+		            cpu.EndSample();
+
 		            EmitMessage(document, sw);
 	            }
 
@@ -406,11 +408,8 @@ namespace Beamable.Server
 
 
         private static void RunInTask(Action action)
-
         {
 	        Task.Run(action);
-	        //Task.Factory.StartNew(action, TaskCreationOptions.PreferFairness );
-
         }
 
 
