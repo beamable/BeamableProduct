@@ -178,15 +178,15 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_BEAM_INSTANCE_COUNT = "BEAM_INSTANCE_COUNT";
 
 		protected override bool CaptureStandardBuffers => true;
-		
+
 
 		public RunServiceCommand(MicroserviceDescriptor service,
-		                         string cid,
-		                         string pid,
-		                         string secret,
-		                         Dictionary<string, string> env,
-		                         bool watch = true,
-		                         bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
+								 string cid,
+								 string pid,
+								 string secret,
+								 Dictionary<string, string> env,
+								 bool watch = true,
+								 bool shouldRunCustomHooks = true) : base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
 			_watch = watch;
@@ -208,7 +208,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_BEAM_INSTANCE_COUNT] = "1"
 			};
 
-			
+
 			if (_watch)
 			{
 				var dependencies = DependencyResolver.GetDependencies(service);
