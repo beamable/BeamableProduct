@@ -231,7 +231,7 @@ namespace Beamable.Server
 	      {
 		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_LOW"), out var limit))
 		      {
-			      limit = 0;
+			      limit = -.2;
 		      }
 		      return limit;
 	      }
@@ -243,7 +243,7 @@ namespace Beamable.Server
 	      {
 		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_HIGH"), out var limit))
 		      {
-			      limit = 2;
+			      limit = .1;
 		      }
 		      return limit;
 	      }
