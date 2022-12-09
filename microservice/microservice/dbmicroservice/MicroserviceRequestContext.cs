@@ -29,8 +29,6 @@ public class MicroserviceRequestContext : RequestContext
 			}
 			
 			_body = BodyElement.ToString();
-			BodyElement = default;
-
 			return _body;
 		}
 	}
@@ -54,7 +52,6 @@ public class MicroserviceRequestContext : RequestContext
 				_headers = new RequestHeaders();
 			}
 
-			HeaderElement = default;
 			return _headers;
 		}
 	}
