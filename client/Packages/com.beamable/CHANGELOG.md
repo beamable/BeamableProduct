@@ -6,11 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Local content mode
+- Local content mode 
 - Added `OnLeft`,`OnPromoted` and `OnKicked` event support in `PartyMember` class.
-
-### Changed
-- By default, content will be put into local mode. Remote content can be configured by disabling the _Project Setting/Beamable/Content/Enable Local Content In Editor_  option.
 
 ### Fixed
 - `NotificationService.Unsubscribe<T>` now correctly unsubscribes from events.
