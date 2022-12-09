@@ -24,5 +24,10 @@ namespace microserviceTests.microservice
       public int RateLimitWebsocketPeriodSeconds { get; } = 1;
       public int RateLimitWebsocketTokensPerPeriod { get; } = 5;
       public int RateLimitWebsocketMaxQueueSize { get; } = 10;
+      public double RateLimitCPUMultiplierLow => 0;
+      public double RateLimitCPUMultiplierHigh => 0;
+      public int RateLimitCPUOffset => 0;
+      public int ReceiveChunkSize => 1024;
+      public int SendChunkSize => 1024;
    }
 }

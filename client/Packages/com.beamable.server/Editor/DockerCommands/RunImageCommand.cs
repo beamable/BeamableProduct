@@ -173,6 +173,9 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_DISABLE_RUN_CUSTOM_HOOK = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
 		public const string ENV_DISABLE_EMOJI = "DOTNET_WATCH_SUPPRESS_EMOJIS";
 		public const string ENV_DISABLE_LOG_TRUNCATE = "DISABLE_LOG_TRUNCATE";
+		public const string ENV_CPU_RATE_LIMIT_LOW = "WS_RATE_LIMIT_CPU_MULT_LOW";
+		public const string ENV_CPU_RATE_LIMIT_HIGH = "WS_RATE_LIMIT_CPU_MULT_HIGH";
+		public const string ENV_BEAM_INSTANCE_COUNT = "BEAM_INSTANCE_COUNT";
 
 		protected override bool CaptureStandardBuffers => true;
 		
@@ -199,9 +202,13 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_WATCH_TOKEN] = watch.ToString(),
 				[ENV_DISABLE_RUN_CUSTOM_HOOK] = (!shouldRunCustomHooks).ToString(),
 				[ENV_DISABLE_EMOJI] = "1",
-				[ENV_DISABLE_LOG_TRUNCATE] = "true"
+				[ENV_DISABLE_LOG_TRUNCATE] = "true",
+				[ENV_CPU_RATE_LIMIT_LOW] = "0",
+				[ENV_CPU_RATE_LIMIT_HIGH] = "0",
+				[ENV_BEAM_INSTANCE_COUNT] = "1"
 			};
 
+			
 			if (_watch)
 			{
 				var dependencies = DependencyResolver.GetDependencies(service);

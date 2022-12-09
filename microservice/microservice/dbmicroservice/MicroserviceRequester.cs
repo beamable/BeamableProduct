@@ -197,7 +197,7 @@ namespace Beamable.Server
 			      var exitCount = Daemon.AuthorizationCounter;
 			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
-		      await Task.Delay(1);
+		      await Task.Delay(100);
 	      }
 	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }
@@ -288,7 +288,7 @@ namespace Beamable.Server
          return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
       }
 
-      public void HandleMessage(RequestContext ctx, string msg)
+      public void HandleMessage(RequestContext ctx)
       {
          if (ctx.IsEvent)
          {

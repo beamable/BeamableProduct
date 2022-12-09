@@ -23,6 +23,11 @@ namespace Beamable.Server
       public int RateLimitWebsocketPeriodSeconds { get; }
       public int RateLimitWebsocketTokensPerPeriod { get; }
       public int RateLimitWebsocketMaxQueueSize { get; }
+      public double RateLimitCPUMultiplierLow { get; }
+      public double RateLimitCPUMultiplierHigh { get; }
+      public int RateLimitCPUOffset { get; }
+      public int ReceiveChunkSize { get; }
+      public int SendChunkSize { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -47,6 +52,11 @@ namespace Beamable.Server
 	   public int RateLimitWebsocketPeriodSeconds { get; set; }
 	   public int RateLimitWebsocketTokensPerPeriod { get; set; }
 	   public int RateLimitWebsocketMaxQueueSize { get; set; }
+	   public double RateLimitCPUMultiplierLow { get; set; }
+	   public double RateLimitCPUMultiplierHigh { get; set; }
+	   public int RateLimitCPUOffset { get; set; }
+	   public int ReceiveChunkSize { get; set; }
+	   public int SendChunkSize { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -74,7 +84,12 @@ namespace Beamable.Server
             RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
             RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
             RateLimitWebsocketPeriodSeconds = args.RateLimitWebsocketPeriodSeconds,
-            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod
+            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod,
+            SendChunkSize = args.SendChunkSize,
+            ReceiveChunkSize = args.ReceiveChunkSize,
+            RateLimitCPUMultiplierLow = args.RateLimitCPUMultiplierLow,
+            RateLimitCPUMultiplierHigh = args.RateLimitCPUMultiplierHigh,
+            RateLimitCPUOffset = args.RateLimitCPUOffset
          };
       }
    }
@@ -193,6 +208,66 @@ namespace Beamable.Server
 		      return limit;
 	      }
       }
+
+      public double RateLimitCPUMultiplierLow
+      {
+	      get
+	      {
+		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_LOW"), out var limit))
+		      {
+			      limit = 0;
+		      }
+		      return limit;
+	      }
+      }
+
+      public double RateLimitCPUMultiplierHigh
+      {
+	      get
+	      {
+		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_HIGH"), out var limit))
+		      {
+			      limit = 2;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int RateLimitCPUOffset 
+      {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_OFFSET"), out var limit))
+		      {
+			      limit = 3;
+		      }
+		      return limit;
+	      }
+      }
+
+
+      public int ReceiveChunkSize {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RECEIVE_CHUNK_SIZE"), out var limit))
+		      {
+			      limit = 65536;
+		      }
+		      return limit;
+	      }
+      }
+
+      public int SendChunkSize{
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_SEND_CHUNK_SIZE"), out var limit))
+		      {
+			      limit = 65536;
+		      }
+		      return limit;
+	      }
+      }
+
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
    }
 }

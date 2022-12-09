@@ -55,6 +55,7 @@ using Newtonsoft.Json;
 using Serilog;
 
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
@@ -232,7 +233,7 @@ namespace Beamable.Server
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
 
-         _contentService = CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
+         _contentService ??= CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
@@ -263,15 +264,14 @@ namespace Beamable.Server
 		      : new ContentService(requester, socket, contentResolver, reflectionCache);
       }
 
-      public void RunForever()
+      public async Task RunForever()
       {
          AppDomain.CurrentDomain.ProcessExit += async (sender, args) =>
          {
             await OnShutdown(sender, args);
          };
 
-         CancellationTokenSource cancelSource = new CancellationTokenSource();
-         cancelSource.Token.WaitHandle.WaitOne();
+         await Task.Delay(-1);
       }
 
       public async Task OnShutdown(object sender, EventArgs args)
@@ -369,23 +369,22 @@ namespace Beamable.Server
 
          socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
 
-         socket.OnMessage( async (s, message, messageNumber, sw) =>
+         socket.OnMessage(async (s, message, messageNumber, sw) =>
          {
-            try
-            {
-	            await MonitorTask(messageNumber, () => HandleWebsocketMessage(socket, message, sw));
-            }
-            catch (Exception ex)
-            {
-               BeamableLogger.LogException(ex);
-            }
+	         try
+	         {
+		         await MonitorTask(messageNumber, () => HandleWebsocketMessage(socket, message, sw));
+	         }
+	         catch (Exception ex)
+	         {
+		         BeamableLogger.LogException(ex);
+	         }
          });
 
          try
          {
 	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization();
-
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
@@ -587,11 +586,11 @@ namespace Beamable.Server
       }
 
 
-      async Task HandlePlatformMessage(RequestContext ctx, string msg)
+      async Task HandlePlatformMessage(RequestContext ctx)
       {
          try
          {
-            _socketRequesterContext.HandleMessage(ctx, msg);
+            _socketRequesterContext.HandleMessage(ctx);
             await _requester.Acknowledge(ctx);
          }
          catch (Exception ex)
@@ -824,17 +823,15 @@ namespace Beamable.Server
          }
       }
 
-      async Task HandleWebsocketMessage(IConnection ws, string msg, Stopwatch sw)
+      async Task HandleWebsocketMessage(IConnection ws, JsonDocument document, Stopwatch sw)
       {
-         Log.Verbose("Handling WS Message " + msg);
-
-         if (!msg.TryBuildRequestContext(_args, out var ctx))
+	      if (!document.TryBuildRequestContext(_args, out var ctx))
          {
             Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
             return;
          }
          
-         var reqLog = Log.ForContext("requestContext", ctx, true);
+         var reqLog = Log.ForContext("requestContext", ctx, false);
          BeamableSerilogProvider.LogContext.Value = reqLog;
 
          try
@@ -842,7 +839,7 @@ namespace Beamable.Server
 	         if (_socketRequesterContext.IsPlatformMessage(ctx))
 	         {
 		         // the request is a platform request.
-		         await HandlePlatformMessage(ctx, msg);
+		         await HandlePlatformMessage(ctx);
 	         }
 	         else
 	         {

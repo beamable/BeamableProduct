@@ -115,43 +115,61 @@ namespace Beamable.Server
             ConfigureUnhandledError();
             ConfigureDocsProvider();
 
-            var beamableService = new BeamableMicroService();
-
-            var localDebug = new LocalDebugService(beamableService);
-
-            if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
+            if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var count))
             {
-                Log.Fatal("Version mismatch. Image built with {buildVersion}, but is executing with {executionVersion}. This is a fatal mistake.", args.SdkVersionBaseBuild, args.SdkVersionExecution);
-                throw new Exception($"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
+	            count = 1;
             }
 
-            try
+            
+            for (var i = 0; i < count; i++)
             {
-                await beamableService.Start<TMicroService>(args);
+	            var beamableService = new BeamableMicroService();
+
+	            if (i == 0)
+	            {
+		            var localDebug = new LocalDebugService(beamableService);
+	            }
+
+	            if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
+	            {
+		            Log.Fatal(
+			            "Version mismatch. Image built with {buildVersion}, but is executing with {executionVersion}. This is a fatal mistake.",
+			            args.SdkVersionBaseBuild, args.SdkVersionExecution);
+		            throw new Exception(
+			            $"Version mismatch. Image built with {args.SdkVersionBaseBuild}, but is executing with {args.SdkVersionExecution}. This is a fatal mistake.");
+	            }
+
+	            try
+	            {
+		            await beamableService.Start<TMicroService>(args);
+	            }
+	            catch (Exception ex)
+	            {
+		            var message = new StringBuilder(1024 * 10);
+
+		            if (ex is not BeamableMicroserviceException beamEx)
+			            message.AppendLine(
+				            $"[BeamErrorCode=BMS{BeamableMicroserviceException.kBMS_UNHANDLED_EXCEPTION_ERROR_CODE}]" +
+				            $" Unhandled Exception Found! Please notify Beamable of your use case that led to this.");
+		            else
+			            message.AppendLine($"[BeamErrorCode=BMS{beamEx.ErrorCode}] " +
+			                               $"Beamable Exception Found! If the message is unclear, please contact Beamable with your feedback.");
+
+		            message.AppendLine("Exception Info:");
+		            message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
+		            message.AppendLine("Stack Trace:");
+		            message.AppendLine(ex.StackTrace);
+		            Log.Fatal(message.ToString());
+		            throw;
+	            }
+
+	            if (args.WatchToken)
+		            HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
+
+	            var _ = beamableService.RunForever();
             }
-            catch (Exception ex)
-            {
-                var message = new StringBuilder(1024 * 10);
 
-                if (ex is not BeamableMicroserviceException beamEx)
-                    message.AppendLine($"[BeamErrorCode=BMS{BeamableMicroserviceException.kBMS_UNHANDLED_EXCEPTION_ERROR_CODE}]" +
-                                       $" Unhandled Exception Found! Please notify Beamable of your use case that led to this.");
-                else
-                    message.AppendLine($"[BeamErrorCode=BMS{beamEx.ErrorCode}] " +
-                                       $"Beamable Exception Found! If the message is unclear, please contact Beamable with your feedback.");
-
-                message.AppendLine("Exception Info:");
-                message.AppendLine($"Name={ex.GetType().Name}, Message={ex.Message}");
-                message.AppendLine("Stack Trace:");
-                message.AppendLine(ex.StackTrace);
-                Log.Fatal(message.ToString());
-                throw;
-            }
-
-            if (args.WatchToken)
-                HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
-
-            beamableService.RunForever();
+            await Task.Delay(-1);
         }
     }
 
