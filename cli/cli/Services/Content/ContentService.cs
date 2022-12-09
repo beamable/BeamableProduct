@@ -134,27 +134,27 @@ public class ContentService
 	}
 
 
-	public async Task<Unit> PublishContentAndManifest(string manifestId)
+	public async Promise<ContentManifest> PublishContentAndManifest(string manifestId)
 	{
 		if (string.IsNullOrWhiteSpace(manifestId))
 		{
 			manifestId = "global";
 		}
 
-		var contentManifest = await GetManifest(manifestId);
-		var localContent = ContentLocal.GetLocalContentStatus(contentManifest)
-			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate))
-			.Select(content => PrepareContentForPublish(_contentLocal.GetContent(content.contentId))).ToList();
-		var workingReferenceSet = BuildLocalManifestReferenceSupersets(ContentLocal
-			.GetLocalContentStatus(contentManifest)
-			.Where(content => content.status is not ContentStatus.Deleted).ToList(),contentManifest);
+		var clientManifest = await GetManifest(manifestId);
+		var contentSaveResponse = await PublishChangedContent(clientManifest);
+		var contentManifest = await PublishNewManifest(contentSaveResponse, clientManifest, manifestId);
 
-		var dict = new ArrayDict { { "content", localContent.ToList() } };
-		var reqJson = Json.Serialize(dict, new StringBuilder());
+		return contentManifest;
+	}
 
-		var result = await _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);
-
-		result.content.ForEach(entry =>
+	private async Promise<ContentManifest> PublishNewManifest(ContentSaveResponse contentSaveResponse, ClientManifest manifest, string manifestId)
+	{
+		var localContent = ContentLocal
+			.GetLocalContentStatus(manifest)
+			.Where(content => content.status is not ContentStatus.Deleted).ToList();
+		var referenceSet = BuildLocalManifestReferenceSupersets(localContent,manifest);
+		contentSaveResponse.content.ForEach(entry =>
 		{
 			var reference = new ManifestReferenceSuperset
 			{
@@ -169,21 +169,30 @@ public class ContentService
 			};
 			var key = reference.Key;
 
-			if (workingReferenceSet.ContainsKey(key))
+			if (referenceSet.ContainsKey(key))
 			{
-				workingReferenceSet[key] = reference;
+				referenceSet[key] = reference;
 			}
 			else
 			{
-				workingReferenceSet.Add(key, reference);
+				referenceSet.Add(key, reference);
 			}
 		});
-		var manifest = new ManifestSaveRequest { id = manifestId, references = workingReferenceSet.Values.ToList() };
-		var s = await _requester.RequestJson<string>(Method.POST, $"/basic/content/manifest?id={manifestId}", manifest);
+		var manifestRequest = new ManifestSaveRequest { id = manifestId, references = referenceSet.Values.ToList() };
+		return await _requester.RequestJson<ContentManifest>(Method.POST, $"/basic/content/manifest?id={manifestId}", manifestRequest);
+	}
 
-		Console.WriteLine("RESPONSE BELOW\n\n\n");
-		Console.WriteLine(s);
-		return new Unit();
+	private async Promise<ContentSaveResponse> PublishChangedContent(ClientManifest contentManifest)
+	{
+		var localContent = ContentLocal.GetLocalContentStatus(contentManifest)
+			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate))
+			.Select(content => PrepareContentForPublish(_contentLocal.GetContent(content.contentId))).ToList();
+
+
+		var dict = new ArrayDict { { "content", localContent.ToList() } };
+		var reqJson = Json.Serialize(dict, new StringBuilder());
+
+		return await _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);
 	}
 
 	Dictionary<string, ManifestReferenceSuperset> BuildLocalManifestReferenceSupersets(List<LocalContent> localContents,
