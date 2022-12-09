@@ -1,6 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Serialization;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
@@ -17,6 +19,15 @@ public class CliRequester : IBeamableRequester
 	public CliRequester(IAppContext ctx)
 	{
 		_ctx = ctx;
+	}
+
+	public async Promise<T> RequestJson<T>(Method method, string uri, JsonSerializable.ISerializable body,
+		bool includeAuthHeader = true)
+	{
+		var jsonFields = JsonSerializable.Serialize(body);
+		var json = Json.Serialize(jsonFields, new StringBuilder());
+
+		return await CustomRequest<T>(method, uri, json, includeAuthHeader);
 	}
 
 	public async Promise<T> CustomRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,

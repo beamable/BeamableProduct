@@ -2,13 +2,14 @@
 
 namespace cli.Services.Content;
 
+[Serializable]
 public class ManifestSaveRequest : JsonSerializable.ISerializable
 {
-	public string Id;
-	public List<ManifestReferenceSuperset> References;
+	public string id;
+	public List<ManifestReferenceSuperset> references;
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
-		s.Serialize("id", ref Id);
-		s.SerializeList("references", ref References);
+		s.Serialize("id", ref id);
+		s.SerializeList("references", ref references);
 	}
 }

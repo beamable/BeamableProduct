@@ -1,7 +1,9 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using Newtonsoft.Json;
 using Spectre.Console;
 using System.Text;
 using System.Text.Json;
@@ -131,15 +133,18 @@ public class ContentService
 		}
 		var contentManifest = await GetManifest(manifestId);
 		var localContent = ContentLocal.GetLocalContentStatus(contentManifest)
-			.Where(content => content.status != ContentStatus.Deleted)
+			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate) )
 			.Select(content => PrepareContentForPublish(_contentLocal.GetContent(content.contentId))).ToList();
-		var workingReferenceSet = BuildLocalManifestReferenceSupersets(ContentLocal.GetLocalContentStatus(contentManifest));
+		var workingReferenceSet = BuildLocalManifestReferenceSupersets(ContentLocal
+			.GetLocalContentStatus(contentManifest)
+			.Where(content => content.status is not ContentStatus.Deleted).ToList());
 		
 		var dict = new ArrayDict
 		{
-			{"content", localContent}
+			{"content", localContent.ToList()}
 		};
 		var reqJson = Json.Serialize(dict, new StringBuilder());
+
 		var result = await _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);
 
 		result.content.ForEach(entry =>
@@ -168,11 +173,13 @@ public class ContentService
 		});
 		var manifest = new ManifestSaveRequest
 		{
-			Id = manifestId,
-			References = workingReferenceSet.Values.ToList()
+			id = manifestId,
+			references = workingReferenceSet.Values.ToList()
 		};
-		var s = await _requester.CustomRequest(Method.POST, $"/basic/content/manifest?id={manifest.Id}", manifest, parser:s=>s);
-
+		var s = await _requester.RequestJson<string>(Method.POST, $"/basic/content/manifest?id={manifestId}", manifest);
+		
+		Console.WriteLine("RESPONSE BELOW\n\n\n");
+		Console.WriteLine(s);
 		return new Unit();
 	}
 
