@@ -247,9 +247,7 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         await SetupWebsocket(socket);
-         
-         await _contentService.Init();    
+         await SetupWebsocket(socket, true);
       }
 
       private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
@@ -359,7 +357,7 @@ namespace Beamable.Server
          SwaggerGenerator.InvalidateSwagger(this);
       }
 
-      async Task SetupWebsocket(IConnection socket)
+      async Task SetupWebsocket(IConnection socket, bool initContent = false)
       {
          _connection = socket;
 
@@ -393,6 +391,11 @@ namespace Beamable.Server
                     await ResolveCustomInitializationHook();
                     _ranCustomUserInitializationHooks = true;
                 }
+            }
+
+            if (initContent)
+            {
+	            await _contentService.Init();
             }
 
             await ProvideService(QualifiedName);
