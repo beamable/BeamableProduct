@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Portal opens to `https://portal.beamable.com` instead of `https://beta-portal.beamable.com`
+- Content Manager and Toolbox have flat UI
 
 ### Fixed
 - `NotificationService.Unsubscribe<T>` now correctly unsubscribes from events.
