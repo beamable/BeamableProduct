@@ -13,6 +13,7 @@ namespace cli.Services.Content;
 
 public class ContentService
 {
+	const int DEFAULT_TABLE_LIMIT = 100;
 	const string SERVICE = "/basic/content";
 	private readonly CliRequester _requester;
 	private readonly ContentLocalCache _contentLocal;
@@ -109,7 +110,7 @@ public class ContentService
 		return contents;
 	}
 
-	public async Task DisplayStatusTable(string manifestId, bool showUpToDate, int limit)
+	public async Task DisplayStatusTable(string manifestId, bool showUpToDate, int limit, int skipAmount)
 	{
 		var contentManifest = await GetManifest(manifestId);
 		var localContentStatus = ContentLocal.GetLocalContentStatus(contentManifest);
@@ -124,20 +125,17 @@ public class ContentService
 			localContentStatus = localContentStatus.Where(content => content.status != ContentStatus.UpToDate).ToList();
 		}
 
-		var range = limit > 0 && limit < localContentStatus.Count ? limit : localContentStatus.Count;
-		if (!showUpToDate && range == 0)
+		if (!showUpToDate && localContentStatus.Count == 0)
 		{
 			AnsiConsole.MarkupLine("[green]Your local content is up to date with remote.[/]");
 			return;
 		}
 
-		foreach (var content in localContentStatus.GetRange(0, range))
-		{
-			table.AddRow(content.StatusString(), content.contentId, string.Join(",", content.tags));
-		}
-
+		var range = localContentStatus.Skip(skipAmount).Take(limit > 0 ? limit : DEFAULT_TABLE_LIMIT).ToList();
+		range.ForEach(
+			content => table.AddRow(content.StatusString(), content.contentId, string.Join(",", content.tags)));
 		AnsiConsole.Write(table);
-		AnsiConsole.WriteLine($"Content: {range} out of {totalCount}");
+		AnsiConsole.WriteLine($"Content: {range.Count} out of {totalCount}");
 	}
 
 
@@ -155,12 +153,13 @@ public class ContentService
 		return contentManifest;
 	}
 
-	private async Promise<ContentManifest> PublishNewManifest(ContentSaveResponse contentSaveResponse, ClientManifest manifest, string manifestId)
+	private async Promise<ContentManifest> PublishNewManifest(ContentSaveResponse contentSaveResponse,
+		ClientManifest manifest, string manifestId)
 	{
 		var localContent = ContentLocal
 			.GetLocalContentStatus(manifest)
 			.Where(content => content.status is not ContentStatus.Deleted).ToList();
-		var referenceSet = BuildLocalManifestReferenceSupersets(localContent,manifest);
+		var referenceSet = BuildLocalManifestReferenceSupersets(localContent, manifest);
 		contentSaveResponse.content.ForEach(entry =>
 		{
 			var reference = new ManifestReferenceSuperset
@@ -186,7 +185,8 @@ public class ContentService
 			}
 		});
 		var manifestRequest = new ManifestSaveRequest { id = manifestId, references = referenceSet.Values.ToList() };
-		return await _requester.RequestJson<ContentManifest>(Method.POST, $"/basic/content/manifest?id={manifestId}", manifestRequest);
+		return await _requester.RequestJson<ContentManifest>(Method.POST, $"/basic/content/manifest?id={manifestId}",
+			manifestRequest);
 	}
 
 	private async Promise<ContentSaveResponse> PublishChangedContent(ClientManifest contentManifest)
