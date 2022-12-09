@@ -109,21 +109,27 @@ public class ContentService
 		return contents;
 	}
 
-	public async Task DisplayStatusTable(string manifestId, bool skipUpToDate, int limit)
+	public async Task DisplayStatusTable(string manifestId, bool showUpToDate, int limit)
 	{
 		var contentManifest = await GetManifest(manifestId);
 		var localContentStatus = ContentLocal.GetLocalContentStatus(contentManifest);
+		var totalCount = localContentStatus.Count;
 		var table = new Table();
 		table.AddColumn("Current status");
 		table.AddColumn("ID");
 		table.AddColumn(new TableColumn("tags").RightAligned());
 
-		if (skipUpToDate)
+		if (!showUpToDate)
 		{
 			localContentStatus = localContentStatus.Where(content => content.status != ContentStatus.UpToDate).ToList();
 		}
 
 		var range = limit > 0 && limit < localContentStatus.Count ? limit : localContentStatus.Count;
+		if (!showUpToDate && range == 0)
+		{
+			AnsiConsole.MarkupLine("[green]Your local content is up to date with remote.[/]");
+			return;
+		}
 
 		foreach (var content in localContentStatus.GetRange(0, range))
 		{
@@ -131,6 +137,7 @@ public class ContentService
 		}
 
 		AnsiConsole.Write(table);
+		AnsiConsole.WriteLine($"Content: {range} out of {totalCount}");
 	}
 
 

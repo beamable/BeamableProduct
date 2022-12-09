@@ -16,20 +16,20 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 	{
 		AddOption(new ConfigurableOption("manifestId", "set the manifest to use, 'global' by default"),
 			(args, s) => args.ManifestId = s);
-		AddOption(new ConfigurableOptionFlag("skipUpToDate", "Skip displaying up to date content"),
-			(args, b) => args.skipUpToDate = b);
+		AddOption(new ConfigurableOptionFlag(nameof(ContentStatusCommandArgs.showUpToDate), "Show up to date content"),
+			(args, b) => args.showUpToDate = b);
 		AddOption(new ConfigurableIntOption("limitDisplay", "Limit content displayed amount"),
 			(args, s) => args.limitDisplay = s);
 	}
 
 	public override async Task Handle(ContentStatusCommandArgs args)
 	{
-		await _contentService.DisplayStatusTable(args.ManifestId,args.skipUpToDate, args.limitDisplay);
+		await _contentService.DisplayStatusTable(args.ManifestId,args.showUpToDate, args.limitDisplay);
 	}
 }
 
 public class ContentStatusCommandArgs : ContentCommandArgs
 {
-	public bool skipUpToDate;
+	public bool showUpToDate;
 	public int limitDisplay;
 }
