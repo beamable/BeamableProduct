@@ -1,11 +1,15 @@
-﻿using System.CommandLine;
+﻿using cli.Services.Content;
+using System.CommandLine;
+using System.Diagnostics;
 
 namespace cli.Content;
 
 public class ContentCommand : AppCommand<ContentCommandArgs>
 {
-	public ContentCommand() : base("content", "content command")
+	private readonly ContentService _contentService;
+	public ContentCommand(ContentService contentService) : base("content", "Open content folder in file explorer")
 	{
+		_contentService = contentService;
 	}
 
 	public override void Configure()
@@ -16,6 +20,13 @@ public class ContentCommand : AppCommand<ContentCommandArgs>
 
 	public override Task Handle(ContentCommandArgs args)
 	{
+		new Process
+		{
+			StartInfo = new ProcessStartInfo(_contentService.ContentLocal.ContentDirPath)
+			{
+				UseShellExecute = true
+			}
+		}.Start();
 		return Task.CompletedTask;
 	}
 }
