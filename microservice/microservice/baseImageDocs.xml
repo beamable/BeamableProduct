@@ -36,9 +36,24 @@
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Connect" -->
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})" -->
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})" -->
-        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.String,System.Int64})" -->
-        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.SendMessage(System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Close" -->
+        <member name="M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.Text.Json.JsonDocument,System.Int64,System.Diagnostics.Stopwatch})">
+            <summary>
+            Set the Action to call when a messages has been received.
+            </summary>
+            <param name="onMessage">The Action to call.</param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.SendMessage(System.String,System.Diagnostics.Stopwatch)" -->
+        <member name="M:Beamable.Server.EasyWebSocket.Close">
+            <summary>
+            Terminate the socket in a friendly way.
+            </summary>
+        </member>
+        <member name="P:Beamable.Server.EnviornmentArgs.RateLimitWebsocket">
+            <summary>
+            By default, rate limiting is on, so if you pass anything to WS_DISABLE_RATE_LIMIT, it'll disable it.
+            </summary>
+        </member>
         <member name="T:Beamable.Server.MicroserviceAuthenticationDaemon">
             <summary>
             This class manages our authentication process between this C#MS and our Beamo service. It provides the following properties:

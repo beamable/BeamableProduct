@@ -6,7 +6,7 @@
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
 
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <AssemblyName>Beamable.Server.Common</AssemblyName>
         <DefineConstants>BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
 

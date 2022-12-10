@@ -8,26 +8,27 @@
         <owners>Beamable</owners>
         <description>This package contains the Beamable Microservice base code.</description>
         <dependencies>
-            <group targetFramework="net6.0" />
+            <group targetFramework="net7.0" />
         </dependencies>
         <dependencies>
             <dependency id="EmbedIO" version="3.4.*" />
             <dependency id="LoxSmoke.DocXml" version="3.4.*" />
-            <dependency id="Microsoft.Extensions.DependencyInjection" version="6.0.0-preview.6.21352.12" />
-            <dependency id="Microsoft.OpenApi" version="1.2.*" />
-            <dependency id="Newtonsoft.Json" version="12.0.*" />
-            <dependency id="Serilog" version="2.10.*" />
+            <dependency id="Microsoft.Extensions.DependencyInjection" version="7.0.0" />
+            <dependency id="Microsoft.OpenApi" version="1.4.*" />
+            <dependency id="Newtonsoft.Json" version="13.0.*" />
+            <dependency id="Serilog" version="2.12.*" />
             <dependency id="Serilog.Formatting.Compact" version="1.1.*" />
-            <dependency id="Serilog.Sinks.Console" version="3.1.*" />
+            <dependency id="Serilog.Sinks.Console" version="4.1.*" />
             <dependency id="System.CommandLine" version="2.0.0-beta3.22114.*" />
             <dependency id="System.ServiceModel.Primitives" version="4.8.*" />
             <dependency id="MongoDB.Driver" version="2.15.*" />
+            <dependency id="System.Threading.RateLimiting" version="7.0.0" />
         </dependencies>
 
     </metadata>
     <files>
-        <file src="bin\Release\net6.0\Beamable.*.dll" target="lib\net6.0" />
-        <file src="bin\Release\net6.0\BeamableMicroserviceBase.dll" target="lib\net6.0" />
-        <file src="bin\Release\net6.0\UnityEngine.dll" target="lib\net6.0" />
+        <file src="bin\Release\net7.0\Beamable.*.dll" target="lib\net7.0" />
+        <file src="bin\Release\net7.0\BeamableMicroserviceBase.dll" target="lib\net7.0" />
+        <file src="bin\Release\net7.0\UnityEngine.dll" target="lib\net7.0" />
     </files>
 </package>

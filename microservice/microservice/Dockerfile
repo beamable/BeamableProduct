@@ -1,5 +1,5 @@
 # BUILD AND REPACKAGE DOTNET SDK.
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
 
 RUN dotnet --version
 # commit the built sdk version to the base image...
@@ -12,5 +12,7 @@ RUN dotnet restore ./microservice.csproj
 COPY . .
 RUN dotnet publish ./microservice.csproj -c release -o /app
 
+# FROM mcr.microsoft.com/dotnet/sdk:7.0
 WORKDIR /app
+# COPY --from=build-env /app .
 ENTRYPOINT ["dotnet", "/app/microservice.dll"]

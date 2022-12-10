@@ -6,7 +6,7 @@
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
 
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <AssemblyName>Beamable.Server</AssemblyName>
         <DefineConstants>
             BEAMABLE_IGNORE_MONGO_MOCKS
@@ -36,7 +36,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="System.CodeDom" Version="6.0.0" />
+      <PackageReference Include="System.CodeDom" Version="7.0.0" />
     </ItemGroup>
 
 </Project>

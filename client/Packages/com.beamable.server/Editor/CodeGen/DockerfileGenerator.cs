@@ -12,8 +12,8 @@ namespace Beamable.Server.Editor.CodeGen
 		public MicroserviceConfigurationEntry Config { get; }
 
 		private bool DebuggingEnabled = true;
-		public const string DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE = "mcr.microsoft.com/dotnet/runtime:6.0";
-		public const string DOTNET_RUNTIME_IMAGE = "mcr.microsoft.com/dotnet/runtime:6.0-alpine";
+		public const string DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE = "mcr.microsoft.com/dotnet/runtime:7.0";
+		public const string DOTNET_RUNTIME_IMAGE = "mcr.microsoft.com/dotnet/runtime:7.0-alpine";
 
 
 #if BEAMABLE_DEVELOPER
