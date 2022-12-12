@@ -264,9 +264,9 @@ namespace Beamable.Server
 				results.Add(t);
 				if (t.IsGenericType)
 				{
-					foreach (var g in t.GenericTypeArguments)
+					for (int i = 0 ; i  < t.GenericTypeArguments.Length; i++)
 					{
-						results.Add(g);
+						results.Add(t.GenericTypeArguments[i]);
 					}
 				}
 			}
@@ -279,9 +279,9 @@ namespace Beamable.Server
 #pragma warning restore CS0618
 			if (agnosticAttribute != null && agnosticAttribute.SupportTypes != null)
 			{
-				foreach (var supportType in agnosticAttribute.SupportTypes)
+				for (int i = 0 ; i  < agnosticAttribute.SupportTypes.Length; i++)
 				{
-					Add(supportType);
+					Add(agnosticAttribute.SupportTypes[i]);
 				}
 			}
 
@@ -438,21 +438,23 @@ namespace Beamable.Server
 
 			var output = new List<MicroserviceFileDependency>();
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-			foreach (var assembly in assemblies)
+			
+			for (int i = 0; i < assemblies.Length; i++)
 			{
-				var isTestAssembly = assembly.FullName.Contains("Test");
-				var isEditorAssembly = assembly.FullName.Contains("Editor");
+				var isTestAssembly = assemblies[i].FullName.Contains("Test");
+				var isEditorAssembly = assemblies[i].FullName.Contains("Editor");
 				if (isTestAssembly || isEditorAssembly) continue;
-				var types = assembly.GetTypes();
-				foreach (var type in types)
+				var types = assemblies[i].GetTypes();
+				
+				for (int k = 0; k < types.Length; k++)
 				{
-					var contentAttr = type.GetCustomAttribute<ContentTypeAttribute>();
+					var contentAttr = types[k].GetCustomAttribute<ContentTypeAttribute>();
 					if (contentAttr == null) continue;
 
 					output.Add(new MicroserviceFileDependency
 					{
 						Agnostic = contentAttr,
-						Type = type
+						Type = types[k]
 					});
 				}
 			}
@@ -518,24 +520,24 @@ namespace Beamable.Server
 				{
 					allRequiredUnityAssemblies.Add(curr);
 
-					foreach (var dllReference in curr.DllReferences)
+					for (int i = 0; i < curr.DllReferences.Length; i++)
 					{
-						totalDllReferences.Add(dllReference);
+						totalDllReferences.Add(curr.DllReferences[i]);
 					}
 
 					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
 					var info = asset.ConvertToInfo();
-
-					foreach (var referenceName in info.References)
+					
+					for (int k = 0; k < info.References.Length; k++)
 					{
 						try
 						{
-							var referencedAssembly = unityAssemblies.Find(referenceName);
+							var referencedAssembly = unityAssemblies.Find(info.References[k]);
 							unityAssembliesToExpand.Enqueue(referencedAssembly);
 						}
-						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, referenceName))
+						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, info.References[k]))
 						{
-							Debug.LogWarning($"Skipping {referenceName} because it is a stubbed package. You should still install the package for general safety.");
+							Debug.LogWarning($"Skipping {info.References[k]} because it is a stubbed package. You should still install the package for general safety.");
 						}
 					}
 				}
@@ -565,10 +567,10 @@ namespace Beamable.Server
 
 			toExpand.Enqueue(descriptor.Type);
 
-			foreach (var contentType in contentTypes)
+			for (int i = 0 ; i < contentTypes.Count; i++)
 			{
-				toExpand.Enqueue(contentType.Type);
-				fileDependencies.Add(contentType);
+				toExpand.Enqueue(contentTypes[i].Type);
+				fileDependencies.Add(contentTypes[i]);
 			}
 
 			seen.Add(descriptor.Type.FullName);
@@ -634,6 +636,7 @@ namespace Beamable.Server
 
 
 				var references = GetReferencedTypes(curr);
+				
 				foreach (var reference in references)
 				{
 					var referenceName = GetTypeName(reference);

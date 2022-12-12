@@ -75,46 +75,68 @@ namespace Beamable.Server.Editor
 			}
 
 			LatestCodeHandles = new List<BeamServiceCodeHandle>(64);
-
+			ServiceToChecksum = new Dictionary<MicroserviceDescriptor, ServiceDependencyChecksum>();
+			
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var msCodeHandles = registry.Descriptors.Select(desc => new BeamServiceCodeHandle()
+			var msCodeHandles = new List<BeamServiceCodeHandle>();
+			var cachedDeps = new List<MicroserviceDependencies>();
+			
+			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
-				ServiceName = desc.Name,
-				CodeClass = BeamCodeClass.Microservice,
-				AsmDefInfo = desc.ConvertToInfo(),
-				CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
-			}).ToList();
-
-			ServiceToChecksum =
-				registry.Descriptors.ToDictionary(desc => desc, desc => new ServiceDependencyChecksum
+				msCodeHandles.Add(new BeamServiceCodeHandle()
 				{
-					ServiceName = desc.Name,
-					Checksum = DependencyResolver.GetDependencies(desc).GetDependencyChecksum()
+					ServiceName = registry.Descriptors[i].Name,
+					CodeClass = BeamCodeClass.Microservice,
+					AsmDefInfo = registry.Descriptors[i].ConvertToInfo(),
+					CodeDirectory = Path.GetDirectoryName(registry.Descriptors[i].ConvertToInfo().Location),
 				});
 
-			var storageCodeHandles = registry.StorageDescriptors.Select(desc => new BeamServiceCodeHandle()
+
+				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i]));
+				ServiceToChecksum.Add
+				(
+					registry.Descriptors[i],
+					new ServiceDependencyChecksum
+					{
+						ServiceName = registry.Descriptors[i].Name,
+						Checksum = cachedDeps[i].GetDependencyChecksum()
+					}
+				);
+			}
+			
+			var storageCodeHandles = new HashSet<BeamServiceCodeHandle>();
+
+			for (int k = 0; k < registry.StorageDescriptors.Count; k++)
 			{
-				ServiceName = desc.Name,
-				CodeClass = BeamCodeClass.StorageObject,
-				AsmDefInfo = desc.ConvertToInfo(),
-				CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
-			}).ToList();
+				storageCodeHandles.Add(new BeamServiceCodeHandle()
+				{
+					ServiceName = registry.StorageDescriptors[k].Name,
+					CodeClass = BeamCodeClass.StorageObject,
+					AsmDefInfo = registry.StorageDescriptors[k].ConvertToInfo(),
+					CodeDirectory = Path.GetDirectoryName(registry.StorageDescriptors[k].ConvertToInfo().Location),
+				});
+			}
 
-			var sharedAssemblyHandles = registry.Descriptors
-												.Select(DependencyResolver.GetDependencies)
-												.SelectMany(deps => deps.Assemblies.ToCopy)
-												.Distinct()
-												.Except(msCodeHandles.Select(h => h.AsmDefInfo))
-												.Except(storageCodeHandles.Select(h => h.AsmDefInfo))
-												.Select(asm => new BeamServiceCodeHandle
-												{
-													ServiceName = asm.Name,
-													CodeDirectory = Path.GetDirectoryName(asm.Location),
-													CodeClass = BeamCodeClass.SharedAssembly,
-													AsmDefInfo = asm,
-												})
-												.ToList();
+			var sharedAssemblyHandles = new HashSet<BeamServiceCodeHandle>();
+			
+			for (int i = 0; i < cachedDeps.Count; i++)
+			{
+				var defs = cachedDeps[i].Assemblies.ToCopy.Distinct().
+				                         Except(msCodeHandles.Select(h => h.AsmDefInfo))
+				                        .Except(storageCodeHandles.Select(h => h.AsmDefInfo)).ToArray();
 
+				for (int k = 0; k < defs.Length; k++)
+				{
+					sharedAssemblyHandles.Add(new BeamServiceCodeHandle
+					{
+						ServiceName = defs[k].Name,
+						CodeDirectory = Path.GetDirectoryName(defs[k].Location),
+						CodeClass = BeamCodeClass.SharedAssembly,
+						AsmDefInfo = defs[k],
+					});
+				}
+			}
+			
 			LatestCodeHandles.Clear();
 			LatestCodeHandles.AddRange(sharedAssemblyHandles);
 			LatestCodeHandles.AddRange(msCodeHandles);
@@ -185,20 +207,39 @@ namespace Beamable.Server.Editor
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 
 			// Find every declared Microservice that has a dependency on a storage object.
-			var storages = LatestCodeHandles.Where(c => c.CodeClass == BeamCodeClass.StorageObject).ToList();
-			var storageAsmNames = storages.Select(sch => sch.AsmDefInfo.Name).ToList();
-			var descToDeps = registry.Descriptors.ToDictionary(d => d, DependencyResolver.GetDependencies);
-			var microservicesThatDependOnStorage = registry.Descriptors.Where(d =>
+
+			HashSet<string> storageAsmNames = new HashSet<string>();
+			
+			for (int i = 0; i < LatestCodeHandles.Count; i++)
 			{
-				var deps = descToDeps[d].Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
-				return deps != null;
-			});
+				if (LatestCodeHandles[i].CodeClass == BeamCodeClass.StorageObject)
+				{
+					storageAsmNames.Add(LatestCodeHandles[i].AsmDefInfo.Name);
+				}
+			}
+			
+			var microservicesThatDependOnStorage = new List<MicroserviceDescriptor>();
+			
+			for (int i = 0; i < registry.Descriptors.Count; i++)
+			{
+				MicroserviceDependencies dep = DependencyResolver.GetDependencies(registry.Descriptors[i]);
+				var tmp = dep.Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
+				
+				if (tmp != null)
+					microservicesThatDependOnStorage.Add(registry.Descriptors[i]);
+			}
 
 			// Find all MSs that are missing the correct Mongo DLLs
-			var missingMongoDepsAsmDefs = microservicesThatDependOnStorage.Select(ms => ms.ConvertToAsset()).Where(asm => !asm.HasMongoLibraries());
-
-			// Add Mongo Libraries to each of the ones that are missing them.
-			foreach (var asset in missingMongoDepsAsmDefs) asset.AddMongoLibraries();
+			
+			for (int i = 0; i < microservicesThatDependOnStorage.Count; i++)
+			{
+				var missingMongoDepsAsmDefs = microservicesThatDependOnStorage[i].ConvertToAsset();
+				if (!missingMongoDepsAsmDefs.HasMongoLibraries())
+				{
+					// Add Mongo Libraries to each of the ones that are missing them.
+					missingMongoDepsAsmDefs.AddMongoLibraries();
+				}
+			}
 		}
 
 		public void CheckForLocalChangesNotYetDeployed()
