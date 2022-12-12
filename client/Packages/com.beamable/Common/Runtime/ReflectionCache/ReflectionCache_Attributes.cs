@@ -125,8 +125,13 @@ namespace Beamable.Common.Reflection
 			
 			for (int i = 0; i < FoundInTypesWithAttributes.Count; i++)
 			{
-				if (type.GetCustomAttribute(FoundInTypesWithAttributes[i]) != null)
-					return true;
+				foreach (var element in type.CustomAttributes)
+				{
+					if (element.AttributeType == FoundInTypesWithAttributes[i])
+					{
+						return true;
+					}
+				}
 			}
 			
 			return false;
@@ -210,12 +215,23 @@ namespace Beamable.Common.Reflection
 														   IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
 														   Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
 		{
+
+			bool HasType(MemberInfo memberInfo, Type type)
+			{
+				foreach (var customAttributeData in memberInfo.CustomAttributes)
+				{
+					if (customAttributeData.AttributeType == type)
+						return true;
+				}
+
+				return false;
+			}
+			
 			// Check for attributes over the type itself.
+			
 			for (int i = 0; i < attributesToSearchFor.Count; i++)
 			{
-				bool isDef = Attribute.IsDefined(member, attributesToSearchFor[i].AttributeType);
-
-				if (isDef)
+				if (HasType(member, attributesToSearchFor[i].AttributeType))
 				{
 					var attributes = member.GetCustomAttributes(attributesToSearchFor[i].AttributeType, false);
 
