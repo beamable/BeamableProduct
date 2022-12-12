@@ -229,6 +229,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
+			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
 			DependencyBuilder.AddScoped<PlayerSocial>();
 

@@ -167,6 +167,11 @@ namespace Beamable
 		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
 
 		/// <summary>
+		/// Access the <see cref="PlayerAccounts"/> for this context.
+		/// </summary>
+		public PlayerAccounts Accounts => _serviceScope.GetService<PlayerAccounts>();
+
+		/// <summary>
 		/// <para>
 		/// Access the player's inventory
 		/// </para>
