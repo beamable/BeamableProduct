@@ -155,54 +155,47 @@ namespace Beamable.Server.Content
          return _waitForManifest;
       }
 
-      public async Promise Init()
+      public async Promise Init(bool preload = false)
       {
 		  if (_hasStartedInit) return;
 	      _hasStartedInit = true;
 	      _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
-         
-	      // cache entire content
-	      Log.Debug($"LOADING MANIFEST");
 
+	      if (!preload) return;
+	      await DownloadAllContent();
+      }
+
+      private async Promise DownloadAllContent()
+      {
+	      // cache entire content
+	      Log.Verbose($"LOADING MANIFEST");
 	      var sw = new Stopwatch();
 	      sw.Start();
 	      var manifest = await GetManifest();
-	      Log.Debug($"MANIFEST CONTAINS {manifest.entries.Count} OBJECTS time=[{sw.ElapsedMilliseconds}]");
-	      
-	      sw.Restart();
+	      Log.Verbose($"MANIFEST CONTAINS {manifest.entries.Count} OBJECTS time=[{sw.ElapsedMilliseconds}]");
 
 	      var processed = 0f;
 	      var granularityForLogs = 100;
 	      var downloads = manifest.entries.Select(e => Task.Run(async () =>
 	      {
-		      await e.Resolve();
-		      processed++;
-		      if (processed % granularityForLogs == 0)
+		      try
 		      {
-			      Log.Debug($"Content Load - [{(processed/manifest.entries.Count)*100:00}%] processed=[{processed}] total-time=[{sw.ElapsedMilliseconds}]");
+			      await e.Resolve();
+			      processed++;
+			      if (processed % granularityForLogs == 0)
+			      {
+				      Log.Verbose(
+					      $"Content Load - [{(processed / manifest.entries.Count) * 100:00}%] processed=[{processed}] total-time=[{sw.ElapsedMilliseconds}]");
+			      }
+		      }
+		      catch (Exception ex)
+		      {
+			      Log.Error($"Failed to load preload content. id=[{e.contentId}] message=[{ex.Message}] type=[{ex.GetType().Name}] stack=[{ex.StackTrace}]");
 		      }
 	      })).ToList();
 	      await Task.WhenAll(downloads);
-	      // while (processed < manifest.entries.Count)
-	      // {
-		     //  if (processed + chunkSize > manifest.entries.Count)
-		     //  {
-			    //   chunkSize = manifest.entries.Count - processed;
-		     //  }
-		     //  
-		     //  var chunk = manifest.entries.GetRange(processed, chunkSize);
-		     //  // await chunk.ResolveAll();
-		     //  var downloads = chunk.Select(reference => Task.Run(async () => await reference.Resolve())).ToList();
-		     //  await Task.WhenAll(downloads);
-		     //  processed += chunkSize;
-		     //  Log.Debug($"PROCESSED {processed} ITEMS time=[{sw.ElapsedMilliseconds}]");
-	      // }
-	      
-	      Log.Debug($"FINISHED LOADING CONTENT time=[{sw.ElapsedMilliseconds}]");
-	      
+	      Log.Debug($"Downloaded Content. items=[{downloads.Count}] time=[{sw.ElapsedMilliseconds}]");
 	      sw.Stop();
-	      // var test = await manifest.ResolveAll();
-	      // Log.Debug($"RESOLVED {test.Count} OBJECTS");
       }
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)

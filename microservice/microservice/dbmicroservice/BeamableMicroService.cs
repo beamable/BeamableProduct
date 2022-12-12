@@ -250,7 +250,11 @@ namespace Beamable.Server
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         await SetupWebsocket(socket, true);
+         await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
+         if (!_serviceAttribute.EnableEagerContentLoading)
+         {
+	         var _ = _contentService.Init();
+         }
       }
 
       private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
@@ -397,7 +401,7 @@ namespace Beamable.Server
 
             if (initContent)
             {
-	            await _contentService.Init();
+	            await _contentService.Init(preload:true);
             }
 
             await ProvideService(QualifiedName);

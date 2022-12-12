@@ -53,6 +53,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
+	                
                 .AddMessageHandler(
                    MessageMatcher
                       .WithReqId(1)

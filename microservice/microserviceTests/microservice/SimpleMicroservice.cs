@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace microserviceTests.microservice
 {
-   [Microservice("simple")]
+   [Microservice("simple", EnableEagerContentLoading = false)]
    public class SimpleMicroserviceNonLegacy : Microservice
    {
       public static MicroserviceFactory<SimpleMicroserviceNonLegacy> Factory => () => new SimpleMicroserviceNonLegacy();
@@ -35,7 +35,7 @@ namespace microserviceTests.microservice
 
    }
 
-   [Microservice("simple_no_updates", DisableAllBeamableEvents = true)]
+   [Microservice("simple_no_updates", DisableAllBeamableEvents = true, EnableEagerContentLoading = false)]
    public class SimpleMicroserviceWithNoEvents : Microservice
    {
 	   public static MicroserviceFactory<SimpleMicroserviceWithNoEvents> Factory => () => new SimpleMicroserviceWithNoEvents();
@@ -70,7 +70,7 @@ namespace microserviceTests.microservice
 	   }
    }
 
-   [Microservice("simple", UseLegacySerialization = true)]
+   [Microservice("simple", UseLegacySerialization = true, EnableEagerContentLoading = false)]
    public class SimpleMicroservice : Microservice
    {
       public static MicroserviceFactory<SimpleMicroservice> Factory => () => new SimpleMicroservice();

@@ -9,7 +9,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	public class StatTests : CommonTest
 	{
 
-		[Microservice("statservice")]
+		[Microservice("statservice", EnableEagerContentLoading = false)]
 		public class StatMicroservice : Microservice
 		{
 			[ClientCallable]
