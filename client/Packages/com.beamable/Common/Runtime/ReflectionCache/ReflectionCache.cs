@@ -395,9 +395,9 @@ namespace Beamable.Common.Reflection
 				perAttributeLists.AttributeTypes.AddRange(attrTypesSplit.Where(group => !group.Key).SelectMany(group => group));
 				perAttributeLists.MemberAttributeTypes.AddRange(attrTypesSplit.Where(group => group.Key).SelectMany(group => group));
 
-				foreach (var attrType in attributesOfInterest)
+				for (int i = 0; i < attributesOfInterest.Count; i++)
 				{
-					perAttributeLists.AttributeMappings.Add(attrType, new List<MemberAttribute>());
+					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
 				}
 			}
 

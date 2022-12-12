@@ -213,12 +213,17 @@ namespace Beamable.Common.Reflection
 			// Check for attributes over the type itself.
 			for (int i = 0; i < attributesToSearchFor.Count; i++)
 			{
-				var attributes = member.GetCustomAttributes(attributesToSearchFor[i].AttributeType, false);
-				
-				for (int j = 0; j < attributes.Length; j++)
+				bool isDef = Attribute.IsDefined(member, attributesToSearchFor[i].AttributeType);
+
+				if (isDef)
 				{
-					var attribute = attributes[j] as Attribute;
-					foundAttributes[attributesToSearchFor[i]].Add(new MemberAttribute(member, attribute));
+					var attributes = member.GetCustomAttributes(attributesToSearchFor[i].AttributeType, false);
+
+					for (int j = 0; j < attributes.Length; j++)
+					{
+						var attribute = attributes[j] as Attribute;
+						foundAttributes[attributesToSearchFor[i]].Add(new MemberAttribute(member, attribute));
+					}
 				}
 			}
 
