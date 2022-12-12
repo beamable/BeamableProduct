@@ -120,6 +120,7 @@ namespace Beamable.Server.Content
       private readonly Cache<ContentCacheKey, IContentObject> _contentCache;
       private readonly object _manifestLock = new object();
       private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
+      private bool _hasStartedInit;
 
       public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
       {
@@ -154,7 +155,8 @@ namespace Beamable.Server.Content
       }
 
       public async Promise Init()
-      {
+      {		  if (_hasStartedInit) return;
+	      _hasStartedInit = true;
 	      _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
          
 	      // cache entire content
