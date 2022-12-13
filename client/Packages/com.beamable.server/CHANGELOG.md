@@ -4,10 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Fixed
-- Timeouts due to large amount of content in microservice should no longer occur due to content caching during start of the microservice.
+## [1.8.0]
+### Added
+- `EnableEagerContentLoading` configuration setting on `MicroserviceAttribute` is enabled by default. 
 
+### Changed
+- Content is downloaded and cached on the Microservice before it is declared healthy and available to accept traffic. 
+
+### Fixed
+- Content downloads no longer cause HTTP timeouts or CPU spikes.
+- Domain Reload times are reduced by roughly 30% when working with Microservices
 
 ## [1.7.0]
 ### Changed
