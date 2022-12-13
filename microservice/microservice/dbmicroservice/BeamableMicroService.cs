@@ -394,16 +394,17 @@ namespace Beamable.Server
                 // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
                 if (!_ranCustomUserInitializationHooks)
                 {
+	                if (initContent)
+	                {
+		                await _contentService.Init(preload:true);
+	                }
+
                     await ResolveCustomInitializationHook();
                     _ranCustomUserInitializationHooks = true;
                 }
             }
 
-            if (initContent)
-            {
-	            await _contentService.Init(preload:!_args.DisableCustomInitializationHooks);
-            }
-
+       
             await ProvideService(QualifiedName);
 
             HasInitialized = true;

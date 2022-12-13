@@ -174,27 +174,44 @@ namespace Beamable.Server.Content
 	      var manifest = await GetManifest();
 	      Log.Verbose($"MANIFEST CONTAINS {manifest.entries.Count} OBJECTS time=[{sw.ElapsedMilliseconds}]");
 
-	      var processed = 0f;
-	      var granularityForLogs = 100;
-	      var downloads = manifest.entries.Select(e => Task.Run(async () =>
+	      var processed = 0;
+	      var granularityForLogs = manifest.entries.Count / 10;
+	      var processedCount = 0f;
+	      
+	      if (!int.TryParse(Environment.GetEnvironmentVariable("CONTENT_PRELOAD_CHUNK_SIZE"), out var chunkSize))
 	      {
-		      try
+		      chunkSize = 50;
+	      }
+
+	      while (processed < manifest.entries.Count)
+	      {
+		      if (processed + chunkSize > manifest.entries.Count)
 		      {
-			      await e.Resolve();
-			      processed++;
-			      if (processed % granularityForLogs == 0)
+			      chunkSize = manifest.entries.Count - processed;
+		      }
+
+		      var chunk = manifest.entries.GetRange(processed, chunkSize);
+		      var downloads = chunk.Select(reference => Task.Run(async () =>
+		      {
+			      try
 			      {
-				      Log.Verbose(
-					      $"Content Load - [{(processed / manifest.entries.Count) * 100:00}%] processed=[{processed}] total-time=[{sw.ElapsedMilliseconds}]");
+			       await reference.Resolve();
+			       processedCount++;
+			       if (processedCount % granularityForLogs == 0)
+			       {
+			        Log.Verbose(
+			         $"Content Load - [{(processedCount / manifest.entries.Count) * 100:00}%] processed=[{processedCount}] total-time=[{sw.ElapsedMilliseconds}]");
+			       }
 			      }
-		      }
-		      catch (Exception ex)
-		      {
-			      Log.Error($"Failed to load preload content. id=[{e.contentId}] message=[{ex.Message}] type=[{ex.GetType().Name}] stack=[{ex.StackTrace}]");
-		      }
-	      })).ToList();
-	      await Task.WhenAll(downloads);
-	      Log.Debug($"Downloaded Content. items=[{downloads.Count}] time=[{sw.ElapsedMilliseconds}]");
+			      catch (Exception ex)
+			      {
+			       Log.Error($"Failed to load preload content. id=[{reference.contentId}] message=[{ex.Message}] type=[{ex.GetType().Name}] stack=[{ex.StackTrace}]");
+			      }
+		      })).ToList();
+		      await Task.WhenAll(downloads);
+		      processed += chunkSize;
+	      }
+	      Log.Verbose($"Content Load - [{(processed / manifest.entries.Count) * 100:00}%] processed=[{processedCount}] total-time=[{sw.ElapsedMilliseconds}]");
 	      sw.Stop();
       }
 
