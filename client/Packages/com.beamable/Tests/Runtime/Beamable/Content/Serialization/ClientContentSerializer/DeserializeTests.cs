@@ -1,5 +1,7 @@
+using Beamable.Common.Announcements;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Serialization;
 using Beamable.Common.Reflection;
 using Beamable.Tests.Content.Serialization.Support;
 using NUnit.Framework;
@@ -1111,6 +1113,15 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.AreEqual(5, o.x);
 			Assert.AreEqual("bogus.nothing", o.Id);
+		}
+
+		[Test]
+		public void TestBeam3283_CorruptAnnouncement()
+		{
+			var json = "{\r\n  \"id\": \"announcements.welcome\",\r\n  \"version\": \"a3cdf85da9ea673d8be5825f1b5e4cd4420dda02\",\r\n  \"properties\": {\r\n    \"body\": {\r\n      \"data\": \"Welcome to Beamable. It is awesome. You are awesome. We're both awesome. High five!!\"\r\n    },\r\n    \"channel\": {\r\n      \"data\": \"main\"\r\n    },\r\n    \"gift\": {\r\n      \"data\": {\r\n        \"callWebhooks\": {\r\n          \"Value\": [],\r\n          \"HasValue\": false\r\n        },\r\n        \"description\": {\r\n          \"Value\": null,\r\n          \"HasValue\": false\r\n        },\r\n        \"changeCurrencies\": {\r\n          \"Value\": [],\r\n          \"HasValue\": false\r\n        },\r\n        \"addItems\": {\r\n          \"Value\": [],\r\n          \"HasValue\": false\r\n        },\r\n        \"applyVipBonus\": {\r\n          \"Value\": false,\r\n          \"HasValue\": false\r\n        }\r\n      }\r\n    },\r\n    \"title\": {\r\n      \"data\": \"Welcome\"\r\n    },\r\n    \"attachments\": {\r\n      \"data\": [\r\n        {\r\n          \"symbol\": \"items.hat\",\r\n          \"count\": 1,\r\n          \"type\": \"items\"\r\n        }\r\n      ]\r\n    },\r\n    \"summary\": {\r\n      \"data\": \"Thanks for using DE!\"\r\n    }\r\n  }\r\n}";
+			var s = new ClientContentSerializer();
+			var o = s.Deserialize<AnnouncementContent>(json);
+
 		}
 
 #pragma warning disable CS0649
