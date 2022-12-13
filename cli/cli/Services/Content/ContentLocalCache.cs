@@ -115,5 +115,11 @@ public class ContentLocalCache
 		_localTags.WriteToFile(BaseDirPath);
 	}
 
+	public void Remove(LocalContent content)
+	{
+		var path = GetContentPath(content.contentId);
+		File.Delete(path);
+	}
+
 	public string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
 }
