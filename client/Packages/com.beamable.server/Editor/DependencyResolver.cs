@@ -273,9 +273,16 @@ namespace Beamable.Server
 
 			// get all methods
 			Add(type.BaseType);
-
+			
 #pragma warning disable CS0618
-			var agnosticAttribute = type.GetCustomAttribute<AgnosticAttribute>();
+
+			AgnosticAttribute agnosticAttribute = null;
+			
+			if (HasAttribute(type, typeof(AgnosticAttribute)))
+			{
+				agnosticAttribute = type.GetCustomAttribute<AgnosticAttribute>();
+			}
+			
 #pragma warning restore CS0618
 			if (agnosticAttribute != null && agnosticAttribute.SupportTypes != null)
 			{
@@ -319,6 +326,19 @@ namespace Beamable.Server
 			var ns = t.Namespace ?? "";
 			var isUnity = ns.StartsWith("UnityEngine") || ns.StartsWith("UnityEditor");
 			return isUnity;
+		}
+		
+		private static bool HasAttribute(MemberInfo memberInfo, Type type)
+		{
+			foreach (var element in memberInfo.CustomAttributes)
+			{
+				if (element.AttributeType == type)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static bool IsSystemType(Type t)
