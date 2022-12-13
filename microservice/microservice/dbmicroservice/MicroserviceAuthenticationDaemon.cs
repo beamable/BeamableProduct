@@ -22,6 +22,11 @@ public class MicroserviceAuthenticationDaemon
 	/// The <see cref="EventWaitHandle"/> we use to wake this thread up from its slumber so we can authenticate the C#MS with the Beamo service.
 	/// </summary>
 	public readonly EventWaitHandle AUTH_THREAD_WAIT_HANDLE = new ManualResetEvent(false);
+	
+	/// <summary>
+	/// The <see cref="EventWaitHandle"/> we use to allow requests to process, while we wait before checking if we should wait for more requests to finish again.
+	/// </summary>
+	public readonly EventWaitHandle AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE = new ManualResetEvent(false);
 
 	/// <summary>
 	/// The total number of outgoing requests that actually go out through <see cref="MicroserviceRequester.Request{T}"/>.
@@ -48,7 +53,11 @@ public class MicroserviceAuthenticationDaemon
 	/// Bumps the <see cref="_OutgoingRequestProcessedCounter"/>. Here mostly so people are reminded of reading the comments on this class 😁
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void BumpRequestProcessedCounter() => Interlocked.Increment(ref _OutgoingRequestProcessedCounter);
+	public void BumpRequestProcessedCounter()
+	{
+		Interlocked.Increment(ref _OutgoingRequestProcessedCounter);
+		AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.Set();
+	}
 
 	/// <summary>
 	/// Increments the given <see cref="authCounter"/> and notifies the <see cref="AUTH_THREAD_WAIT_HANDLE"/> so that this thread wakes up.
@@ -154,9 +163,13 @@ public class MicroserviceAuthenticationDaemon
 			{
 				var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
 				stillProcessingPotentiallyFailedReqs = expectedReqsProcessed > Interlocked.Read(ref _OutgoingRequestProcessedCounter);
-				await Task.Delay(100);
+				
+				//
+				AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.WaitOne();
 			} while (stillProcessingPotentiallyFailedReqs);
 
+			AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.Reset();
+			
 			// This solves an extremely unlikely race condition
 			Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call. At ThreadID = {Environment.CurrentManagedThreadId}");
 			Interlocked.Exchange(ref AuthorizationCounter, 0);

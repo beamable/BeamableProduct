@@ -27,19 +27,16 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
 
 			Exception failure = null;
-
+			var subscription = context.Subscribe<int>(eventName, _ =>
+			{
+				// do nothing...
+			});
 			Task Launch(int threadNumber)
 			{
-
 				var task = Task.Run(() =>
 				{
 					try
 					{
-						var subscription = context.Subscribe<int>(eventName, _ =>
-						{
-							// do nothing...
-						});
-
 						for (var i = 0; i < cycleCount; i++)
 						{
 							var id = (threadNumber * cycleCount) + i;
@@ -51,7 +48,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 					catch (Exception ex)
 					{
 						failure = ex;
-
+						throw;
 					}
 				});
 				return task;
