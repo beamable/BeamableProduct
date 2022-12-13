@@ -27,6 +27,9 @@ namespace Beamable.Player
 		/// </summary>
 		public long gamerTag;
 
+		/// <summary>
+		/// The set of deviceIds that have been associated with the given player.
+		/// </summary>
 		public string[] deviceIds;
 
 		/// <summary>
@@ -34,6 +37,11 @@ namespace Beamable.Player
 		/// </summary>
 		public OptionalString email = new OptionalString();
 
+		/// <summary>
+		/// The set of standard Beamable third parties that have been associated with the given player.
+		/// </summary>
+		public AuthThirdParty[] thirdParties;
+		
 		public bool HasEmail => email.HasValue;
 		
 		public BeamableToken token;
@@ -52,6 +60,8 @@ namespace Beamable.Player
 			this.token = token;
 		}
 
+		public bool HasThirdParty(AuthThirdParty thirdParty) => thirdParties?.Contains(thirdParty) ?? false;
+
 		public async Promise SwitchToAccount()
 		{
 			await _collection.SwitchToAccount(this);
@@ -64,13 +74,18 @@ namespace Beamable.Player
 
 		public async Promise<RegistrationResult> AddEmail(string email, string password)
 		{
-			return await _collection.RegisterEmail(email, password, this);
+			return await _collection.AddEmail(email, password, this);
 		}
 
 		public async Promise<RegistrationResult> AddDeviceId()
 		{
-			return await _collection.RegisterDeviceId(this);
+			return await _collection.AddDeviceId(this);
 		}
+
+		// public async Promise<RegistrationResult> AddThirdParty(AuthThirdParty thirdParty, string token)
+		// {
+		// 	
+		// }
 
 		public async Promise<PasswordResetOperation> ForgotPassword()
 		{
@@ -92,6 +107,14 @@ namespace Beamable.Player
 			}
 
 			deviceIds = user?.deviceIds?.ToArray() ?? new string[]{};
+
+			var thirdPartyStrings = user?.thirdPartyAppAssociations.ToArray();
+			thirdParties = new AuthThirdParty[thirdPartyStrings.Length];
+			for (var i = 0; i < thirdPartyStrings.Length; i++)
+			{
+				thirdParties[i] = AuthThirdPartyMethods.GetAuthThirdParty(thirdPartyStrings[i]);
+			}
+			
 			
 			gamerTag = _user?.id ?? 0;
 		}
@@ -317,7 +340,7 @@ namespace Beamable.Player
 			return res;
 		}
 
-		public async Promise UnregisterDeviceId(PlayerAccount account = null)
+		public async Promise RemoveDeviceId(PlayerAccount account = null)
 		{
 			if (account == null)
 			{
@@ -328,7 +351,7 @@ namespace Beamable.Player
 			await service.RemoveDeviceId();
 		}
 		
-		public async Promise<RegistrationResult> RegisterDeviceId(PlayerAccount account=null)
+		public async Promise<RegistrationResult> AddDeviceId(PlayerAccount account=null)
 		{
 			if (account == null)
 			{
@@ -349,8 +372,32 @@ namespace Beamable.Player
 			await Refresh();
 			return res;
 		}
+
+		public async Promise<RegistrationResult> AddThirdParty(AuthThirdParty thirdParty, string token, PlayerAccount account=null)
+		{
+			if (account == null)
+			{
+				account = Current;
+			}
+			
+			var res = new RegistrationResult {account = account};
+			var service = GetAuthServiceForAccount(account);
+
+			if (account.HasThirdParty(thirdParty))
+			{
+				res.error = PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
+				return res;
+			}
+			
+			var user = await service.RegisterThirdPartyCredentials(thirdParty, token);
+			// TODO: handle the case where someone else this third party...
+			account.Update(user);
+
+			await Refresh();
+			return res;
+		}
 		
-		public async Promise<RegistrationResult> RegisterEmail(string email, string password, PlayerAccount account=null)
+		public async Promise<RegistrationResult> AddEmail(string email, string password, PlayerAccount account=null)
 		{
 			if (account == null)
 			{
