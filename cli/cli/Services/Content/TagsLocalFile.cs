@@ -11,14 +11,14 @@ public class TagsLocalFile
 	public Dictionary<string, string[]> tags = new();
 
 	public TagsLocalFile()
-	{}
+	{ }
 
 	public TagsLocalFile(Dictionary<string, List<string>> dict)
 	{
 		foreach (string key in dict.Keys)
 		{
 			tags[key] = dict[key].ToArray();
-		} 
+		}
 	}
 
 	public string[] TagsForContent(string contentId)
@@ -51,7 +51,7 @@ public class TagsLocalFile
 			return new TagsLocalFile();
 		}
 		var jsonContent = File.ReadAllText(path);
-			
+
 		return JsonConvert.DeserializeObject<TagsLocalFile>(jsonContent);
 	}
 }

@@ -13,7 +13,7 @@ public class LocalContent
 	public string contentId;
 	public ContentStatus status;
 	public string[] tags;
-	
+
 	public string StatusString() =>
 		status switch
 		{

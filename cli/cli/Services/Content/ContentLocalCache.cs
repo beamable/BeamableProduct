@@ -15,7 +15,7 @@ public class ContentLocalCache
 
 	public Dictionary<string, ClientManifest> Manifests => _manifests;
 
-	private readonly Dictionary<string, ClientManifest> _manifests = new ();
+	private readonly Dictionary<string, ClientManifest> _manifests = new();
 
 	public ContentLocalCache(IAppContext context)
 	{
@@ -32,10 +32,10 @@ public class ContentLocalCache
 	public List<LocalContent> GetLocalContentStatus(ClientManifest manifest)
 	{
 		var resultList = new List<LocalContent>();
-		
+
 		foreach (var pair in Assets.Where(pair => manifest.entries.All(info => info.contentId != pair.Key)))
 		{
-			resultList.Add(new LocalContent{contentId = pair.Key, status = ContentStatus.Created, tags = _localTags.TagsForContent(pair.Key)});
+			resultList.Add(new LocalContent { contentId = pair.Key, status = ContentStatus.Created, tags = _localTags.TagsForContent(pair.Key) });
 		}
 		foreach (ClientContentInfo contentManifestEntry in manifest.entries)
 		{
@@ -54,7 +54,7 @@ public class ContentLocalCache
 			var tags = contentExistsLocally
 				? _localTags.TagsForContent(contentManifestEntry.contentId)
 				: contentManifestEntry.tags;
-			resultList.Add(new LocalContent{contentId = contentManifestEntry.contentId, status = localStatus, tags = tags});
+			resultList.Add(new LocalContent { contentId = contentManifestEntry.contentId, status = localStatus, tags = tags });
 		}
 		resultList.Sort((a, b) => a.status.CompareTo(b.status));
 
@@ -77,13 +77,13 @@ public class ContentLocalCache
 		var content = ContentDocument.AtPath(GetContentPath(id));
 		return content;
 	}
-	
-	
+
+
 	public void Init()
 	{
 		if (_localAssets != null)
 			return;
-		
+
 		if (!Directory.Exists(ContentDirPath))
 		{
 			Directory.CreateDirectory(ContentDirPath);
@@ -103,7 +103,7 @@ public class ContentLocalCache
 		var path = Path.Combine(ContentDirPath, $"{result.id}.json");
 		if (result.properties != null)
 		{
-			var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true } );
+			var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true });
 			_localAssets[result.id] = result;
 			await File.WriteAllTextAsync(path, value);
 		}
