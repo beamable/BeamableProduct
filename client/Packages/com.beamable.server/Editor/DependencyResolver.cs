@@ -264,7 +264,7 @@ namespace Beamable.Server
 				results.Add(t);
 				if (t.IsGenericType)
 				{
-					for (int i = 0 ; i  < t.GenericTypeArguments.Length; i++)
+					for (int i = 0; i < t.GenericTypeArguments.Length; i++)
 					{
 						results.Add(t.GenericTypeArguments[i]);
 					}
@@ -273,20 +273,20 @@ namespace Beamable.Server
 
 			// get all methods
 			Add(type.BaseType);
-			
+
 #pragma warning disable CS0618
 
 			AgnosticAttribute agnosticAttribute = null;
-			
+
 			if (HasAttribute(type, typeof(AgnosticAttribute)))
 			{
 				agnosticAttribute = type.GetCustomAttribute<AgnosticAttribute>();
 			}
-			
+
 #pragma warning restore CS0618
 			if (agnosticAttribute != null && agnosticAttribute.SupportTypes != null)
 			{
-				for (int i = 0 ; i  < agnosticAttribute.SupportTypes.Length; i++)
+				for (int i = 0; i < agnosticAttribute.SupportTypes.Length; i++)
 				{
 					Add(agnosticAttribute.SupportTypes[i]);
 				}
@@ -327,7 +327,7 @@ namespace Beamable.Server
 			var isUnity = ns.StartsWith("UnityEngine") || ns.StartsWith("UnityEditor");
 			return isUnity;
 		}
-		
+
 		private static bool HasAttribute(MemberInfo memberInfo, Type type)
 		{
 			foreach (var element in memberInfo.CustomAttributes)
@@ -458,14 +458,14 @@ namespace Beamable.Server
 
 			var output = new List<MicroserviceFileDependency>();
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-			
+
 			for (int i = 0; i < assemblies.Length; i++)
 			{
 				var isTestAssembly = assemblies[i].FullName.Contains("Test");
 				var isEditorAssembly = assemblies[i].FullName.Contains("Editor");
 				if (isTestAssembly || isEditorAssembly) continue;
 				var types = assemblies[i].GetTypes();
-				
+
 				for (int k = 0; k < types.Length; k++)
 				{
 					var contentAttr = types[k].GetCustomAttribute<ContentTypeAttribute>();
@@ -546,7 +546,7 @@ namespace Beamable.Server
 
 					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
 					var info = asset.ConvertToInfo();
-					
+
 					for (int k = 0; k < info.References.Length; k++)
 					{
 						try
@@ -586,7 +586,7 @@ namespace Beamable.Server
 
 			toExpand.Enqueue(descriptor.Type);
 
-			for (int i = 0 ; i < contentTypes.Count; i++)
+			for (int i = 0; i < contentTypes.Count; i++)
 			{
 				toExpand.Enqueue(contentTypes[i].Type);
 				fileDependencies.Add(contentTypes[i]);
@@ -655,7 +655,7 @@ namespace Beamable.Server
 
 
 				var references = GetReferencedTypes(curr);
-				
+
 				foreach (var reference in references)
 				{
 					var referenceName = GetTypeName(reference);
@@ -687,7 +687,7 @@ namespace Beamable.Server
 			{
 				unityAssemblies = ScanAssemblyDefinitions();
 			}
-			
+
 			var assemblyRequirements = GatherAssemblyDependencies(unityAssemblies, descriptor);
 			var dlls = GatherDllDependencies(descriptor, assemblyRequirements);
 			var infos = GatherSingleFileDependencies(descriptor, assemblyRequirements);
