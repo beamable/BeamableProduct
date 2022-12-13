@@ -80,7 +80,8 @@ namespace Beamable.Server.Editor
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var msCodeHandles = new List<BeamServiceCodeHandle>();
 			var cachedDeps = new List<MicroserviceDependencies>();
-			
+			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
+
 			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
 				msCodeHandles.Add(new BeamServiceCodeHandle()
@@ -90,9 +91,8 @@ namespace Beamable.Server.Editor
 					AsmDefInfo = registry.Descriptors[i].ConvertToInfo(),
 					CodeDirectory = Path.GetDirectoryName(registry.Descriptors[i].ConvertToInfo().Location),
 				});
-
-
-				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i]));
+				
+				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies));
 				ServiceToChecksum.Add
 				(
 					registry.Descriptors[i],

@@ -502,14 +502,13 @@ namespace Beamable.Server
 			return dllImporters;
 		}
 
-		public static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(MicroserviceDescriptor descriptor)
+		public static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(AssemblyDefinitionInfoCollection unityAssemblies, MicroserviceDescriptor descriptor)
 		{
 			/*
             * We can crawl the assembly definition itself...
             */
 
 			// reject the assembly that represents this microservice, because that will be recompiled separately.
-			var unityAssemblies = ScanAssemblyDefinitions();
 			var selfUnityAssembly = unityAssemblies.Find(descriptor.Type.Assembly);
 
 			// crawl deps of unity assembly...
@@ -682,9 +681,14 @@ namespace Beamable.Server
 		}
 
 
-		public static MicroserviceDependencies GetDependencies(MicroserviceDescriptor descriptor)
+		public static MicroserviceDependencies GetDependencies(MicroserviceDescriptor descriptor, AssemblyDefinitionInfoCollection unityAssemblies = null)
 		{
-			var assemblyRequirements = GatherAssemblyDependencies(descriptor);
+			if (unityAssemblies == null)
+			{
+				unityAssemblies = ScanAssemblyDefinitions();
+			}
+			
+			var assemblyRequirements = GatherAssemblyDependencies(unityAssemblies, descriptor);
 			var dlls = GatherDllDependencies(descriptor, assemblyRequirements);
 			var infos = GatherSingleFileDependencies(descriptor, assemblyRequirements);
 			return new MicroserviceDependencies
