@@ -99,7 +99,16 @@ namespace Beamable.Common.Reflection
 		/// </summary>
 		public bool TryGetFromMemberInfo(MemberInfo info, out Attribute attribute)
 		{
-			attribute = info.GetCustomAttribute(AttributeType, false);
+			attribute = null;
+			
+			foreach (var customAttributeData in info.CustomAttributes)
+			{
+				if (customAttributeData.AttributeType == AttributeType)
+				{
+					attribute = info.GetCustomAttribute(AttributeType, false);
+					break;
+				}
+			}
 
 			// Assert instead of failing silently. Failing silently here means we could fail due to the member not having the correct flag. This is a case where we should fail loudly, as it's
 			// supposed to be impossible.
