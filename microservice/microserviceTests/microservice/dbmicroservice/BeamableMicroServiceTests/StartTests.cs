@@ -797,6 +797,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
+        [TimeoutWithTeardown(2000)]
         public async Task HandleConnectionClose_Cleanly()
         {
 
@@ -850,6 +851,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
+        [TimeoutWithTeardown(2000)]
         public async Task HandleConnectionDrop()
         {
 
