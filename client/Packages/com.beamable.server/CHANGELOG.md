@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Content downloads no longer cause HTTP timeouts or CPU spikes.
 - Domain Reload times are reduced by roughly 30% when working with Microservices
+- Rare authorization locking bug that could cause extend authorization times.
 
 ## [1.7.0]
 ### Changed
