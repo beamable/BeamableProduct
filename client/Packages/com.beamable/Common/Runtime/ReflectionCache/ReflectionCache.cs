@@ -342,24 +342,24 @@ namespace Beamable.Common.Reflection
 
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
 				
-				for (int i = 0; i < reflectionBasedSystem.BaseTypesOfInterest.Count; i++)
+				for (int index = 0; index < reflectionBasedSystem.BaseTypesOfInterest.Count; index++)
 				{
-					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(reflectionBasedSystem.BaseTypesOfInterest[i], out var mappedSubtypes))
+					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(reflectionBasedSystem.BaseTypesOfInterest[index], out var mappedSubtypes))
 					{
 						// TODO: Add a conditional log line.
 						continue;
 					}
-					reflectionBasedSystem.OnBaseTypeOfInterestFound(reflectionBasedSystem.BaseTypesOfInterest[i], mappedSubtypes);
+					reflectionBasedSystem.OnBaseTypeOfInterestFound(reflectionBasedSystem.BaseTypesOfInterest[index], mappedSubtypes);
 				}
 
-				for (int k = 0; k < reflectionBasedSystem.AttributesOfInterest.Count; k++)
+				for (int index = 0; index < reflectionBasedSystem.AttributesOfInterest.Count; index++)
 				{
-					if (!_perAttributeCache.AttributeMappings.TryGetValue(reflectionBasedSystem.AttributesOfInterest[k], out var mappedAttributes))
+					if (!_perAttributeCache.AttributeMappings.TryGetValue(reflectionBasedSystem.AttributesOfInterest[index], out var mappedAttributes))
 					{
 						// TODO: Add a conditional log line
 						continue;
 					}
-					reflectionBasedSystem.OnAttributeOfInterestFound(reflectionBasedSystem.AttributesOfInterest[k], mappedAttributes);
+					reflectionBasedSystem.OnAttributeOfInterestFound(reflectionBasedSystem.AttributesOfInterest[index], mappedAttributes);
 				}
 			}
 		}

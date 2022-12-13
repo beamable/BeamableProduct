@@ -84,12 +84,14 @@ namespace Beamable.Server.Editor
 
 			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
+				var cachedInfo = registry.Descriptors[i].ConvertToInfo();
+				
 				msCodeHandles.Add(new BeamServiceCodeHandle()
 				{
 					ServiceName = registry.Descriptors[i].Name,
 					CodeClass = BeamCodeClass.Microservice,
-					AsmDefInfo = registry.Descriptors[i].ConvertToInfo(),
-					CodeDirectory = Path.GetDirectoryName(registry.Descriptors[i].ConvertToInfo().Location),
+					AsmDefInfo = cachedInfo,
+					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
 				});
 				
 				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies));
@@ -108,12 +110,13 @@ namespace Beamable.Server.Editor
 
 			for (int k = 0; k < registry.StorageDescriptors.Count; k++)
 			{
+				var cachedInfo = registry.StorageDescriptors[k].ConvertToInfo();
 				storageCodeHandles.Add(new BeamServiceCodeHandle()
 				{
 					ServiceName = registry.StorageDescriptors[k].Name,
 					CodeClass = BeamCodeClass.StorageObject,
-					AsmDefInfo = registry.StorageDescriptors[k].ConvertToInfo(),
-					CodeDirectory = Path.GetDirectoryName(registry.StorageDescriptors[k].ConvertToInfo().Location),
+					AsmDefInfo = cachedInfo,
+					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
 				});
 			}
 
@@ -205,7 +208,8 @@ namespace Beamable.Server.Editor
 
 			// Get the reflection cache
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-
+			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
+			
 			// Find every declared Microservice that has a dependency on a storage object.
 
 			HashSet<string> storageAsmNames = new HashSet<string>();
@@ -222,7 +226,7 @@ namespace Beamable.Server.Editor
 			
 			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
-				MicroserviceDependencies dep = DependencyResolver.GetDependencies(registry.Descriptors[i]);
+				MicroserviceDependencies dep = DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies);
 				var tmp = dep.Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
 				
 				if (tmp != null)
