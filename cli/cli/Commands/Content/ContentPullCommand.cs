@@ -18,7 +18,8 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 		var manifest = await _contentService.GetManifest(args.ManifestId);
 		_contentService.UpdateTags(manifest);
 		var result = await _contentService.PullContent(manifest);
-		if(args.printOutput){
+		if (args.printOutput)
+		{
 			var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
 			BeamableLogger.Log(json);
 		}
