@@ -683,6 +683,12 @@ namespace Beamable.Microservice.Tests.Socket
             if (handler == null)
             {
 	            Log.Verbose("Test socket found no handler for " + message);
+
+	            foreach (var x in _handlers)
+	            {
+		            if (!x.Frequency.CanCall())continue;
+		            Log.Verbose($"  ---- found {x.Description}");
+	            }
                 Fail(new NoHandlerException(message, req));
                 return;
             }
@@ -824,7 +830,8 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithPost()
                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
-                  MessageFrequency.OnlyOnce()
+                  MessageFrequency.OnlyOnce(),
+                  desc:$"basic-provider for id=[{-3-requestIdOffset}]"
                )
                .AddMessageHandler(
                   MessageMatcher
@@ -833,7 +840,8 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithPost()
                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
-                  MessageFrequency.OnlyOnce()
+                  MessageFrequency.OnlyOnce(),
+                  desc:$"event-provider for id=[{-4-requestIdOffset}]"
                );
             if (addShutdownResponder)
             {
