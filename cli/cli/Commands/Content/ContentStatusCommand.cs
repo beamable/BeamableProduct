@@ -1,6 +1,4 @@
-﻿using cli.Services;
-using cli.Services.Content;
-using System.CommandLine;
+﻿using cli.Services.Content;
 
 namespace cli.Content;
 

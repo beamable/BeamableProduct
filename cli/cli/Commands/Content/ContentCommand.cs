@@ -1,5 +1,4 @@
 ﻿using cli.Services.Content;
-using System.CommandLine;
 using System.Diagnostics;
 
 namespace cli.Content;
