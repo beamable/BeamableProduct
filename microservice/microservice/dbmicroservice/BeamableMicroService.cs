@@ -401,7 +401,7 @@ namespace Beamable.Server
 
             if (initContent)
             {
-	            await _contentService.Init(preload:true);
+	            await _contentService.Init(preload:!_args.DisableCustomInitializationHooks);
             }
 
             await ProvideService(QualifiedName);
