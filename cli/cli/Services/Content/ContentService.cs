@@ -207,8 +207,8 @@ public class ContentService
 	{
 		var dict = new Dictionary<string, ManifestReferenceSuperset>();
 		foreach (var doc in
-		         localContents.Where(content => content.status != ContentStatus.Deleted)
-			         .Select(localContent => _contentLocal.GetContent(localContent.contentId)))
+				 localContents.Where(content => content.status != ContentStatus.Deleted)
+					 .Select(localContent => _contentLocal.GetContent(localContent.contentId)))
 		{
 			var definition = PrepareContentForPublish(doc);
 			var matchingContent = currentManifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));
