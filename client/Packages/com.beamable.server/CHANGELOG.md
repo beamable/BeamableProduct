@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Content is downloaded and cached on the Microservice before it is declared healthy and available to accept traffic. 
+- Published Microservices open 10 websocket connections instead of 30.
 
 ### Fixed
 - Content downloads no longer cause HTTP timeouts or CPU spikes.
