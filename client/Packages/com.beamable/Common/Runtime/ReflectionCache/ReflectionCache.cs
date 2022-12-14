@@ -384,19 +384,22 @@ namespace Beamable.Common.Reflection
 
 			// Initialize Per-Attribute Cache
 			{
-				// Split attributes between declared over types and declared over members
-				var attrTypesSplit = attributesOfInterest.GroupBy(attrOfInterest => attrOfInterest.TargetsDeclaredMember).ToList();
-
 				// Clear the existing list
 				perAttributeLists.AttributeTypes.Clear();
 				perAttributeLists.MemberAttributeTypes.Clear();
 
-				// Add the correct subset to each list
-				perAttributeLists.AttributeTypes.AddRange(attrTypesSplit.Where(group => !group.Key).SelectMany(group => group));
-				perAttributeLists.MemberAttributeTypes.AddRange(attrTypesSplit.Where(group => group.Key).SelectMany(group => group));
-
+				// Split attributes between declared over types and declared over members
 				for (int i = 0; i < attributesOfInterest.Count; i++)
 				{
+					if (!attributesOfInterest[i].TargetsDeclaredMember)
+					{
+						perAttributeLists.AttributeTypes.Add(attributesOfInterest[i]);
+					}
+					else
+					{
+						perAttributeLists.MemberAttributeTypes.Add(attributesOfInterest[i]);
+					}
+					
 					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
 				}
 			}

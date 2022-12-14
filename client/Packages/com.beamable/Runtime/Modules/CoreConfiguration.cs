@@ -110,6 +110,7 @@ namespace Beamable
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
 
+		private static Assembly[] playerAssemblies;
 		public void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects
@@ -158,15 +159,36 @@ namespace Beamable
 			BeamableAssistantToolbarButtonsPaths = BeamableAssistantToolbarButtonsPaths.Distinct().ToList();
 			BeamableAssistantHintDetailConfigPaths = BeamableAssistantHintDetailConfigPaths.Distinct().ToList();
 
+			if (playerAssemblies == null) // reset every domain reload but it was triggered twice
+			{
 #if UNITY_EDITOR
-			Assembly[] playerAssemblies = CompilationPipeline.GetAssemblies();
-			AssembliesToSweep.AddRange(playerAssemblies.Select(asm => asm.name).Where(n => !string.IsNullOrEmpty(n)));
-			AssembliesToSweep = AssembliesToSweep.Distinct().ToList();
+				playerAssemblies = CompilationPipeline.GetAssemblies();
+
+				for (int i = 0; i < playerAssemblies.Length; i++)
+				{
+					if (!string.IsNullOrEmpty(playerAssemblies[i].name))
+					{
+						if (!AssembliesToSweep.Contains(playerAssemblies[i].name))
+						{
+							AssembliesToSweep.Add(playerAssemblies[i].name);
+						}
+					}
+				}
+				
 #if BEAMABLE_DEVELOPER
-			AssembliesToSweep = AssembliesToSweep.Where(asm => !asm.Contains("Tests")).ToList();
+				
+				for (int i = 0; i < AssembliesToSweep.Count; i++)
+				{
+					if (AssembliesToSweep[i].Contains("Tests"))
+					{
+						AssembliesToSweep.RemoveAt(i);
+						i--;
+					}
+				}
 #endif
-			AssembliesToSweep.Sort();
+				AssembliesToSweep.Sort();
 #endif
+			}
 		}
 	}
 }
