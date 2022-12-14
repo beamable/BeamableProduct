@@ -201,8 +201,8 @@ namespace Beamable.Common.Content
 				else
 				{
 					bool skip = preParsedValue is ArrayDict dict &&
-					            dict.TryGetValue(nameof(optional.HasValue), out var hasValueObj) && hasValueObj is bool hasValue
-					            && !hasValue;
+								dict.TryGetValue(nameof(optional.HasValue), out var hasValueObj) && hasValueObj is bool hasValue
+								&& !hasValue;
 
 					if (!skip)
 					{

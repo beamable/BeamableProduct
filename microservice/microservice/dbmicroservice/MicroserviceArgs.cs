@@ -207,7 +207,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var limit))
 		      {
-			      limit = 30;
+			      limit = 10;
 		      }
 		      return limit;
 	      }
