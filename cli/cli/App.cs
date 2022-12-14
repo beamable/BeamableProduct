@@ -2,7 +2,9 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using cli.Content;
 using cli.Services;
+using cli.Services.Content;
 using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
@@ -88,6 +90,8 @@ public class App
 		Services.AddSingleton<ConfigService>();
 		Services.AddSingleton<BeamoService>();
 		Services.AddSingleton<BeamoLocalSystem>();
+		Services.AddSingleton<ContentLocalCache>();
+		Services.AddSingleton<ContentService>();
 		Services.AddSingleton<CliEnvironment>();
 		Services.AddSingleton<SwaggerService>();
 		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
@@ -124,6 +128,12 @@ public class App
 		Services.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Services.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 
+		Services.AddRootCommand<ContentCommand, ContentCommandArgs>();
+		Services.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
 		// customize
 		configurator?.Invoke(Services);
 	}

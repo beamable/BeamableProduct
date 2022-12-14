@@ -28,6 +28,13 @@ namespace Beamable.Server
 		/// </summary>
 		public bool DisableAllBeamableEvents { get; set; } = false;
 
+		/// <summary>
+		/// When enabled, the Microservice will download the latest content manifest before declaring itself ready
+		/// to accept traffic. This will add time to your Microservice startup time, but will reduce the time
+		/// it takes for the first request that requires content to complete. It is enabled by default.
+		/// </summary>
+		public bool EnableEagerContentLoading { get; set; } = true;
+
 		public MicroserviceAttribute(string microserviceName, [CallerFilePath] string sourcePath = "")
 		{
 			MicroserviceName = microserviceName;
