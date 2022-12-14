@@ -1,5 +1,6 @@
 ﻿using Beamable.UI.Buss;
 using System.Collections.Generic;
+using UnityEditor;
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -14,6 +15,10 @@ namespace Beamable.Editor.UI.Buss
 		{
 			Filter = new BussCardFilter();
 			SceneStyleSheets.Add(styleSheet);
+			
+			Undo.undoRedoPerformed -= HandleUndo;
+			Undo.undoRedoPerformed += HandleUndo;
 		}
+
 	}
 }

@@ -21,11 +21,35 @@ namespace Beamable.Editor.UI.Buss
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
 
+		private Dictionary<BussElement, bool> _isElementFolded = new Dictionary<BussElement, bool>();
+
+		public void SetElementFold(BussElement element, bool isFolded)
+		{
+			_isElementFolded[element] = isFolded;
+		}
+
+		public void ToggleElementFold(BussElement element)
+		{
+			SetElementFold(element, !GetElementFolded(element));
+		}
+
+		public bool GetElementFolded(BussElement element)
+		{
+			if (_isElementFolded.TryGetValue(element, out var folded))
+			{
+				return folded;
+			}
+
+			return false;
+		}
+
 		protected BussCardFilter Filter;
 
 		public PropertyDisplayFilter DisplayFilter { get; set; }
 
 		public abstract BussElement SelectedElement { get; set; }
+
+		public bool HasElementContext => SelectedElement != null;
 
 		protected abstract List<BussStyleSheet> SceneStyleSheets { get; }
 
@@ -43,6 +67,20 @@ namespace Beamable.Editor.UI.Buss
 		public void NavigationElementClicked(BussElement element)
 		{
 			Selection.activeGameObject = Selection.activeGameObject == element.gameObject ? null : element.gameObject;
+		}
+		
+		protected void HandleUndo()
+		{
+			foreach (var kvp in FoundElements)
+			{
+				kvp.Key.RecalculateStyle();
+			}
+			ForceRefresh();
+		}
+		
+		public void Destroy()
+		{
+			Undo.undoRedoPerformed -= HandleUndo;
 		}
 
 		#region Action bar buttons' actions
