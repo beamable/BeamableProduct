@@ -81,7 +81,10 @@ namespace Beamable.Common.Api.Auth
 		/// testers, developers, or admins.
 		/// </param>
 		/// <returns>A <see cref="Promise{TokenResponse}"/> that results in the <see cref="TokenResponse"/> for the requested <see cref="User"/>'s email/password</returns>
-		Promise<TokenResponse> Login(string username, string password, bool mergeGamerTagToAccount = true, bool customerScoped = false);
+		Promise<TokenResponse> Login(string username,
+		                             string password,
+		                             bool mergeGamerTagToAccount = true,
+		                             bool customerScoped = false);
 
 		/// <summary>
 		/// Use a token issued by a third party to retrieve a <see cref="TokenResponse"/>. The resulting token response
@@ -97,7 +100,9 @@ namespace Beamable.Common.Api.Auth
 		/// then the current player will be merged with the player associated with the given third party credential.
 		/// </param>
 		/// <returns></returns>
-		Promise<TokenResponse> LoginThirdParty(AuthThirdParty thirdParty, string thirdPartyToken, bool includeAuthHeader = true);
+		Promise<TokenResponse> LoginThirdParty(AuthThirdParty thirdParty,
+		                                       string thirdPartyToken,
+		                                       bool includeAuthHeader = true);
 
 		/// <summary>
 		/// A <see cref="User"/> can associate an email and password credential to their account.
@@ -185,7 +190,11 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="customerName"></param>
 		/// <param name="alias"></param>
 		/// <returns></returns>
-		Promise<CustomerRegistrationResponse> RegisterCustomer(string email, string password, string projectName, string customerName, string alias);
+		Promise<CustomerRegistrationResponse> RegisterCustomer(string email,
+		                                                       string password,
+		                                                       string projectName,
+		                                                       string customerName,
+		                                                       string alias);
 
 		/// <summary>
 		/// If a <see cref="User"/> has associated third party credentials to their account by using the <see cref="RegisterThirdPartyCredentials"/> method,
@@ -201,10 +210,58 @@ namespace Beamable.Common.Api.Auth
 		/// </returns>
 		Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token);
 
-
 		/// <summary>
 		/// Based on the logged in user, gets the current CID, PID and project name.
 		/// </summary>
 		Promise<CurrentProjectResponse> GetCurrentProject();
+
+		/// <summary>
+		/// Method for registering external identity.
+		/// </summary>
+		/// <param name="externalToken">Unique token identifying player.</param>
+		/// <param name="providerAddress">Adress identifying microservice providing custom verification logic. It should
+		/// have format of {MicroserviceName}/{MethodName}.</param>
+		/// <param name="challengeSolution"><see cref="ChallengeSolution"/> that contains full challenge token received
+		/// from server and signed/solved solution for that challenge.</param>
+		/// <returns><see cref="AttachExternalIdentityResponse"/></returns>
+		Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
+		                                                       string providerAddress,
+		                                                       ChallengeSolution challengeSolution = null);
+
+		/// <summary>
+		/// Method for unregistering previously registered external identity.
+		/// </summary>
+		/// <param name="providerAddress">Adress identifying microservice providing custom verification logic. It should
+		/// have format of {MicroserviceName}/{MethodName}.</param>
+		/// <param name="userId">Identity we want to unregister for.</param>
+		/// <returns><see cref="DetachExternalIdentityResponse"/></returns>
+		Promise<DetachExternalIdentityResponse> DetachIdentity(string providerAddress, string userId);
+
+		/// <summary>
+		/// Method for authorizing previously attached identity.
+		/// </summary>
+		/// <param name="externalToken">Unique token identifying player.</param>
+		/// <param name="providerAddress">Adress identifying microservice providing custom verification logic. It should
+		/// have format of {MicroserviceName}/{MethodName}.</param>
+		/// <param name="challengeSolution"><see cref="ChallengeSolution"/> that contains full challenge token received
+		/// from server and signed/solved solution for that challenge.</param>
+		/// <returns><see cref="ExternalAuthenticationResponse"/></returns>
+		Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity(
+			string externalToken,
+			string providerAddress,
+			ChallengeSolution challengeSolution = null);
+
+		/// <summary>
+		/// Method to extract specific part of a challenge token received from a server. Challenge token is a three-part,
+		/// dot-separated string and it has following structure:
+		/// {challenge}.{validUntilEpoch}.{signature} where 
+		/// challenge is Base64 encoded challenge to sign/solve and resend back as a part of <see cref="ChallengeSolution"/>,
+		/// validUntilEpoch is Int64 value with time in miliseconds and
+		/// signature - Base64 encoded token signature.
+		/// </summary>
+		/// <param name="token">Challenge token received from a server.</param>
+		/// <param name="part">Index of an element we want to retrieve.</param>
+		/// <returns></returns>
+		string ParseChallengeToken(string token, int part);
 	}
 }
