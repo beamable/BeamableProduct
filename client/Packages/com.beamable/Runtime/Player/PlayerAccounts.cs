@@ -1,6 +1,9 @@
 using Beamable.AccountManagement;
 using Beamable.Api;
 using Beamable.Api.Auth;
+using Beamable.Api.Caches;
+using Beamable.Api.Sessions;
+using Beamable.Api.Stats;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -12,51 +15,105 @@ using Beamable.Stats;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Player
 {
 
+	/// <summary>
+	/// The <see cref="PlayerAccount"/> contains information about a player's
+	/// credentials and basic account details, such as their <see cref="alias"/>,
+	/// <see cref="email"/>, and <see cref="gamerTag"/>
+	/// </summary>
 	[Serializable]
-	public class PlayerAccount : DefaultObservable
+	public class PlayerAccount : DefaultObservable, IUserContext
 	{
 		private readonly PlayerAccounts _collection;
-		private User _user;
+		internal User _user;
+		internal UserExtensions.StatCollection _stats;
 
+		/// <summary>
+		/// The alias of the current account. 
+		/// This can be used as a display name.
+		/// To change the alias, use <see cref="SetAlias"/>
+		/// </summary>
 		public string alias;
+		
+		/// <summary>
+		/// The avatar used for this account.
+		/// See the <see cref="AvatarConfiguration"/> for more details.
+		/// To change the avatar, use <see cref="SetAvatar"/>
+		/// </summary>
 		public string avatar;
-		public string displayName;
+		
+		/// <summary>
+		/// The subtext for the current player can be used to share a small amount
+		/// of account detail, like "level" or "progress".
+		/// To change the subtext, use <see cref="SetSubtext"/>
+		/// </summary>
+		public string subtext;
 		
 		/// <summary>
 		/// The gamerTag for the given player.
 		/// GamerTags are associated with a specific realm.
+		/// This value should not be modified.
 		/// </summary>
 		public long gamerTag;
 
 		/// <summary>
+		/// The player's language preference
+		/// To change the language, use <see cref="SetLanguage"/>
+		/// </summary>
+		public SystemLanguage language;
+		
+		/// <summary>
 		/// The set of deviceIds that have been associated with the given player.
+		/// A player could have more than one deviceId if they played on multiple devices.
+		/// Use the <see cref="HasDeviceId"/> to check if a deviceId is present.
+		/// To add a deviceId, use the <see cref="AddDeviceId"/> method.
+		/// To remove a deviceId, use the <see cref="RemoveDeviceId"/> method, and to remove all, use the <see cref="RemoveAllDeviceIds"/> method.
 		/// </summary>
 		public string[] deviceIds;
 
 		/// <summary>
-		/// The email address associated with this account. 
+		/// The player's permission scopes. For most players, this will always be empty.
+		/// However, for testers, developers, and admins, this will hold the permission.
 		/// </summary>
-		public OptionalString email = new OptionalString();
+		public string[] scopes;
+
+		/// <summary>
+		/// The email address associated with this account.
+		/// Add an email with the <see cref="AddEmail"/> method.
+		/// </summary>
+		public string email;
 
 		/// <summary>
 		/// The set of standard Beamable third parties that have been associated with the given player.
+		/// Add a third party with the <see cref="AddThirdParty"/> method.
 		/// </summary>
 		public AuthThirdParty[] thirdParties;
+
+		/// <summary>
+		/// True when the account has an <see cref="email"/>.
+		/// </summary>
+		public bool HasEmail => !string.IsNullOrEmpty(email);
 		
-		public bool HasEmail => email.HasValue;
-		
+		/// <summary>
+		/// True when the account has the given <see cref="AuthThirdParty"/>
+		/// </summary>
+		/// <param name="thirdParty"></param>
+		/// <returns></returns>
+		public bool HasThirdParty(AuthThirdParty thirdParty) => thirdParties?.Contains(thirdParty) ?? false;
+
+		/// <summary>
+		/// True when there is at least 1 deviceId.
+		/// </summary>
+		public bool HasDeviceId => deviceIds?.Length > 0;
+
+		/// <summary>
+		/// The access token used for this account.
+		/// </summary>
 		public BeamableToken token;
-		
-		// TODO: add scopes
-		// TODO: add email
-		// TODO: add deviceId
-		// TODO: add all third party associations
-		// TODO: switch to this account
-		// TODO: erase account
 
 		public PlayerAccount(PlayerAccounts collection, BeamableToken token, User user, UserExtensions.StatCollection stats)
 		{
@@ -66,69 +123,123 @@ namespace Beamable.Player
 			this.token = token;
 		}
 
-		public bool HasThirdParty(AuthThirdParty thirdParty) => thirdParties?.Contains(thirdParty) ?? false;
-
+		/// <inheritdoc cref="PlayerAccounts.SwitchToAccount"/>
 		public async Promise SwitchToAccount()
 		{
 			await _collection.SwitchToAccount(this);
 		}
 
+		/// <inheritdoc cref="PlayerAccounts.RemoveFromDeviceId"/>
 		public async Promise RemoveFromDevice()
 		{
-			await _collection.RemoveFromDevice(this);
+			await _collection.RemoveFromDeviceId(this);
 		}
 
-		public async Promise<RegistrationResult> AddEmail(string email, string password)
+		/// <inheritdoc cref="PlayerAccounts.SetAlias"/>
+		public Promise<PlayerAccount> SetAlias(string alias)
 		{
-			return await _collection.AddEmail(email, password, this);
-		}
-
-		public async Promise<RegistrationResult> AddDeviceId()
+			return _collection.SetAlias(alias, this);
+		} 
+		
+		/// <inheritdoc cref="PlayerAccounts.SetAvatar"/>
+		public Promise<PlayerAccount> SetAvatar(string avatar)
 		{
-			return await _collection.AddDeviceId(this);
-		}
+			return _collection.SetAvatar(avatar, this);
+		} 
 
-		// public async Promise<RegistrationResult> AddThirdParty(AuthThirdParty thirdParty, string token)
-		// {
-		// 	
-		// }
-
-		public async Promise<PasswordResetOperation> ForgotPassword()
+		/// <inheritdoc cref="PlayerAccounts.SetSubtext"/>
+		public Promise<PlayerAccount> SetSubtext(string subtext)
 		{
-			return await _collection.ForgotPassword(this);
+			return _collection.SetSubtext(subtext, this);
+		} 
+
+		/// <inheritdoc cref="PlayerAccounts.AddEmail"/>
+		public Promise<RegistrationResult> AddEmail(string email, string password)
+		{
+			return _collection.AddEmail(email, password, this);
 		}
 
+		/// <inheritdoc cref="PlayerAccounts.AddDeviceId"/>
+		public Promise<RegistrationResult> AddDeviceId()
+		{
+			return _collection.AddDeviceId(this);
+		}
+		
+		/// <inheritdoc cref="PlayerAccounts.RemoveDeviceId"/>
+		public Promise<PlayerAccount> RemoveDeviceId()
+		{
+			return _collection.RemoveDeviceId(this);
+		}
+
+		/// <inheritdoc cref="PlayerAccounts.RemoveAllDeviceIds"/>
+		public Promise<PlayerAccount> RemoveAllDeviceIds()
+		{
+			return _collection.RemoveAllDeviceIds(this);
+		}
+
+		/// <inheritdoc cref="PlayerAccounts.AddThirdParty"/>
+		public Promise<RegistrationResult> AddThirdParty(AuthThirdParty thirdParty, string token)
+		{
+			return _collection.AddThirdParty(thirdParty, token, this);
+		}
+		
+		/// <inheritdoc cref="PlayerAccounts.RemoveThirdParty"/>
+		public Promise<PlayerAccount> RemoveThirdParty(AuthThirdParty thirdParty, string token)
+		{
+			return _collection.RemoveThirdParty(thirdParty, token, this);
+		}
+
+		/// <inheritdoc cref="PlayerAccounts.ResetPassword"/>
+		public Promise<PasswordResetOperation> ResetPassword()
+		{
+			return _collection.ResetPassword(this);
+		}
+		
+		/// <inheritdoc cref="PlayerAccounts.ConfirmPassword"/>
 		public async Promise<PasswordResetConfirmOperation> ConfirmPassword(string code, string newPassword)
 		{
 			return await _collection.ConfirmPassword(code, newPassword, this);
 		}
 
+		/// <inheritdoc cref="PlayerAccounts.SetLanguage"/>
+		public Promise<PlayerAccount> SetLanguage(SystemLanguage language)
+		{
+			return _collection.SetLanguage(language, this);
+		}
+
+		
+		
 		internal void Update(UserExtensions.StatCollection stats)
 		{
+			_stats = stats;
 			alias = stats.Get(AccountManagementConfiguration.Instance.DisplayNameStat);
 			avatar = stats.Get(AccountManagementConfiguration.Instance.AvatarStat);
-			displayName = stats.Get(AccountManagementConfiguration.Instance.DisplayNameStat);
+			subtext = stats.Get(AccountManagementConfiguration.Instance.SubtextStat);
+		}
+
+		internal void Update(PlayerAccount other)
+		{
+			Update(other._user);
+			Update(other._stats);
+			Update(other.token);
 		}
 		
 		internal void Update(User user)
 		{
 			_user = user;
 
-			if (!string.IsNullOrEmpty(_user?.email))
-			{
-				email.Set(_user.email);
-			}
-
+			email = _user?.email;
 			deviceIds = user?.deviceIds?.ToArray() ?? new string[]{};
 
 			var thirdPartyStrings = user?.thirdPartyAppAssociations.ToArray();
-			thirdParties = new AuthThirdParty[thirdPartyStrings.Length];
-			for (var i = 0; i < thirdPartyStrings.Length; i++)
+			thirdParties = new AuthThirdParty[thirdPartyStrings?.Length ?? 0];
+			for (var i = 0; i < thirdParties.Length; i++)
 			{
 				thirdParties[i] = AuthThirdPartyMethods.GetAuthThirdParty(thirdPartyStrings[i]);
 			}
-			
-			
+
+			language = SessionServiceHelper.GetSystemLanguageFromIso639CountryCode(user?.language);
+			scopes = user?.scopes?.ToArray() ?? new string[]{};
 			gamerTag = _user?.id ?? 0;
 			TriggerUpdate();
 		}
@@ -142,6 +253,9 @@ namespace Beamable.Player
 			TriggerUpdate();
 		}
 
+		public void TryTriggerUpdate() => TriggerUpdate();
+
+		long IUserContext.UserId => gamerTag;
 	}
 
 	[Serializable]
@@ -180,36 +294,163 @@ namespace Beamable.Player
 			};
 	}
 	
+	/// <summary>
+	/// The <see cref="RegistrationResult"/> has information about what happened
+	/// after attempting to add a credential to a <see cref="PlayerAccount"/>.
+	///
+	/// If any error occured, the <see cref="isSuccess"/> field will be false,
+	/// and the <see cref="error"/> value will contain more detail.
+	///
+	/// Otherwise, the <see cref="account"/> field will be accessible.
+	/// </summary>
 	[Serializable]
 	public class RegistrationResult
 	{
+		/// <summary>
+		/// The type of error that occured, if <see cref="isSuccess"/> is false.
+		/// </summary>
 		public PlayerRegistrationError error;
-		public PlayerAccount account;
+		
+		[SerializeField]
+		private PlayerAccount _account;
+
+		/// <summary>
+		/// True if the registration was successful.
+		/// If not, see the <see cref="error"/> field for more detail.
+		/// </summary>
+		public bool isSuccess => error == PlayerRegistrationError.NONE;
+		
+		/// <summary>
+		/// The <see cref="PlayerAccount"/> after the registration
+		/// </summary>
+		/// <exception cref="PlayerRegistrationException">
+		/// This cannot be accessed if <see cref="isSuccess"/> is false.
+		/// If it is, an exception will be thrown.
+		/// </exception>
+		public PlayerAccount account
+		{
+			get
+			{
+				if (error == PlayerRegistrationError.NONE)
+				{
+					return _account;
+				}
+
+				throw new PlayerRegistrationException(error);
+			}
+			set => _account = value;
+		}
 	}
 
+
+	/// <summary>
+	/// The <see cref="PasswordResetOperation"/> contains the result of starting
+	/// a password reset flow.
+	/// </summary>
 	[Serializable]
 	public class PasswordResetOperation
 	{
 		private readonly PlayerAccounts _collection;
+		
+		/// <summary>
+		/// If an error occured while attempting to reset a <see cref="PlayerAccount"/>'s password,
+		/// then this value will be anything other than <see cref="PasswordResetError.NONE"/>.
+		/// If the <see cref="account"/> property is accessed while this value is not none, then it
+		/// will throw an exception. 
+		/// </summary>
 		public PasswordResetError error;
-		public PlayerAccount account;
+		
+		/// <summary>
+		/// True when the <see cref="error"/> is none.
+		/// </summary>
+		public bool isSuccess => error == PasswordResetError.NONE;
 
+		[SerializeField]
+		private PlayerAccount _account;
+
+		/// <summary>
+		/// Access the <see cref="PlayerAccount"/>.
+		/// If there is an <see cref="error"/> value, then this accessor will throw an exception.
+		/// </summary>
+		/// <exception cref="PasswordResetException">Only thrown when the <see cref="error"/> value isn't none.</exception>
+		public PlayerAccount account
+		{
+			get
+			{
+				if (error == PasswordResetError.NONE)
+				{
+					return _account;
+				}
+
+				throw new PasswordResetException(error);
+			}
+			set => _account = value;
+		}
+
+		
 		public PasswordResetOperation(PlayerAccounts collection)
 		{
 			_collection = collection;
 		}
 		
+		/// <summary>
+		/// If the <see cref="isSuccess"/> field is true, then
+		/// this method may be called with the new password and reset code.
+		/// Calling <see cref="PlayerAccounts.ConfirmPassword"/> will have the same outcome.
+		/// </summary>
+		/// <param name="code">
+		/// The code that was sent to the player's email address by
+		/// invoking the <see cref="ResetPassword"/> method.
+		/// </param>
+		/// <param name="newPassword">A new password to assign to the email credential. </param>
+		/// <returns></returns>
 		public async Promise<PasswordResetConfirmOperation> Confirm(string code, string newPassword)
 		{
 			return await _collection.ConfirmPassword(code, newPassword, account);
 		}
 	}
 	
+	/// <summary>
+	/// The <see cref="PasswordResetConfirmOperation"/> contain the results
+	/// or a password confirmation.
+	/// </summary>
 	[Serializable]
 	public class PasswordResetConfirmOperation
 	{
+		/// <summary>
+		/// If an error occured while attempting to confirm a <see cref="PlayerAccount"/>'s password,
+		/// then this value will be anything other than <see cref="PasswordResetConfirmError.NONE"/>.
+		/// If the <see cref="account"/> property is accessed while this value is not none, then it
+		/// will throw an exception. 
+		/// </summary>
 		public PasswordResetConfirmError error;
-		public PlayerAccount account;
+		
+		/// <summary>
+		/// True when the <see cref="error"/> is none.
+		/// </summary>
+		public bool isSuccess => error == PasswordResetConfirmError.NONE;
+
+		[SerializeField]
+		private PlayerAccount _account;
+
+		/// <summary>
+		/// Access the <see cref="PlayerAccount"/>.
+		/// If there is an <see cref="error"/> value, then this accessor will throw an exception.
+		/// </summary>
+		/// <exception cref="PasswordResetConfirmException">Only thrown when the <see cref="error"/> value isn't none.</exception>
+		public PlayerAccount account
+		{
+			get
+			{
+				if (error == PasswordResetConfirmError.NONE)
+				{
+					return _account;
+				}
+
+				throw new PasswordResetConfirmException(error);
+			}
+			set => _account = value;
+		}
 	}
 
 	
@@ -220,32 +461,183 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerRecoveryOperation
 	{
-		public PlayerLoginError error;
+		/// <summary>
+		/// If an error occured while attempting to recovery a <see cref="PlayerAccount"/>,
+		/// then this value will be anything other than <see cref="PlayerRecoveryError.NONE"/>.
+		/// If the <see cref="account"/> property is accessed while this value is not none, then it
+		/// will throw an exception. 
+		/// </summary>
+		public PlayerRecoveryError error;
+		
+		/// <summary>
+		/// True when the <see cref="error"/> is none.
+		/// </summary>
+		public bool isSuccess => error == PlayerRecoveryError.NONE;
+
+		/// <summary>
+		/// If the account already had a gamerTag in the current realm, then this value be true.
+		/// When this value is false, it implies that the account exists in the CID scope, but not
+		/// in the current PID scope. 
+		/// </summary>
 		public bool realmAlreadyHasGamerTag;
-		public PlayerAccount account;
+		
+		[SerializeField]
+		private PlayerAccount _account;
+
+		/// <summary>
+		/// Access the recovered <see cref="PlayerAccount"/>.
+		/// If there is an <see cref="error"/> value, then this accessor will throw an exception.
+		/// </summary>
+		/// <exception cref="PlayerRecoveryException">Only thrown when the <see cref="error"/> value isn't none.</exception>
+		public PlayerAccount account
+		{
+			get
+			{
+				if (error == PlayerRecoveryError.NONE)
+				{
+					return _account;
+				}
+
+				throw new PlayerRecoveryException(error);
+			}
+			set => _account = value;
+		}
+
+		/// <summary>
+		/// Change the current <see cref="BeamContext"/>'s account to the recovered account.
+		/// If the <see cref="error"/> value is anything other than none, this method will
+		/// throw an exception.
+		/// </summary>
+		public async Promise SwitchToAccount()
+		{
+			await account.SwitchToAccount();
+		}
+	}
+	
+	
+	/// <summary>
+	/// An exception that can be thrown if there is an error during an account recovery.
+	/// </summary>
+	public class PlayerRecoveryException : Exception {
+		
+		public PlayerRecoveryError Error { get; }
+
+		public PlayerRecoveryException(PlayerRecoveryError error)
+			: base($"The recovery failed. error=[{error}]")
+		{
+			Error = error;
+		}
+	}
+	
+	/// <summary>
+	/// An exception that can be thrown if there is an error while adding a credential to an account.
+	/// </summary>
+	public class PlayerRegistrationException : Exception {
+		
+		public PlayerRegistrationError Error { get; }
+
+		public PlayerRegistrationException(PlayerRegistrationError error)
+			: base($"The registration failed. error=[{error}]")
+		{
+			Error = error;
+		}
+	}
+	
+	/// <summary>
+	/// An exception that can be thrown if there is an error while starting a password reset flow.
+	/// </summary>
+	public class PasswordResetException : Exception {
+		
+		public PasswordResetError Error { get; }
+
+		public PasswordResetException(PasswordResetError error)
+			: base($"The password reset failed. error=[{error}]")
+		{
+			Error = error;
+		}
+	}
+	
+	/// <summary>
+	/// An exception that can be thrown if there is an error while confirming a password reset flow.
+	/// </summary>
+	public class PasswordResetConfirmException : Exception
+	{
+		public PasswordResetConfirmError Error { get; }
+
+		public PasswordResetConfirmException(PasswordResetConfirmError error)
+			: base($"The password confirm failed. error=[{error}]")
+		{
+			Error = error;
+		}
 	}
 
-	public enum PlayerLoginError
+	/// <summary>
+	/// The <see cref="PlayerRecoveryError"/> lists out the possible errors
+	/// that could occur when trying to recover a <see cref="PlayerAccount"/>
+	/// </summary>
+	public enum PlayerRecoveryError
 	{
+		/// <summary>
+		/// Represents that no error occured
+		/// </summary>
 		NONE,
+		
+		/// <summary>
+		/// Represents that the given credentials weren't valid, or didn't map to an existing <see cref="PlayerAccount"/>
+		/// </summary>
 		UNKNOWN_CREDENTIALS
 	}
 
+	/// <summary>
+	/// The <see cref="PlayerRecoveryError"/> lists out the possible errors that
+	/// could occur when trying to add a credential to a <see cref="PlayerAccount"/>
+	/// </summary>
 	public enum PlayerRegistrationError
 	{
+		/// <summary>
+		/// represents no error occured.
+		/// </summary>
 		NONE,
+		
+		/// <summary>
+		/// represents that the <see cref="PlayerAccount"/> already has a value
+		/// for the credential. For example, a single account cannot have more
+		/// than 1 email address or 1 linked facebook account.
+		/// </summary>
 		ALREADY_HAS_CREDENTIAL,
+		
+		/// <summary>
+		/// represents that the given credential is already in use by a different <see cref="PlayerAccount"/>
+		/// </summary>
 		CREDENTIAL_IS_ALREADY_TAKEN
 	}
 
+	/// <summary>
+	/// The <see cref="PasswordResetError"/> lists the possible errors
+	/// that could occur when starting a password reset flow.
+	/// </summary>
 	public enum PasswordResetError
 	{
+		/// <summary>
+		/// represents that no error occured.
+		/// </summary>
 		NONE,
+		
+		/// <summary>
+		/// represents that the credential was not present on the account.
+		/// </summary>
 		NO_EXISTING_CREDENTIAL
 	}
 	
+	/// <summary>
+	/// the <see cref="PasswordResetConfirmError"/> represents the possible
+	/// errors that could occur while confirming a password reset.
+	/// </summary>
 	public enum PasswordResetConfirmError
 	{
+		/// <summary>
+		/// represents that no error occured.
+		/// </summary>
 		NONE,
 	}
 	
@@ -261,6 +653,15 @@ namespace Beamable.Player
 		private readonly Api.Autogenerated.Stats.IStatsApi _statsApi;
 		private readonly IDependencyProvider _provider;
 
+		
+		/// <summary>
+		/// The currently signed in <see cref="PlayerAccount"/>.
+		/// There is always a current account, but it may be anonymous.
+		/// </summary>
+		public PlayerAccount Current;
+
+		public Promise OnReady;
+		
 		public PlayerAccounts(BeamContext ctx, 
 		                      IAuthService authService, 
 		                      AccessTokenStorage storage, 
@@ -276,17 +677,11 @@ namespace Beamable.Player
 			_stats = stats;
 			_statsApi = statsApi;
 			_provider = provider;
-
-			// TODO: add public promise for OnReady
-			var _ = Refresh();
-			// Current = new PlayerAccount(this, BeamableToken.FromAccessToken(_ctx.AccessToken), _ctx.AuthorizedUser);
+			
+			OnReady = Refresh();
 		}
 
-		/// <summary>
-		/// The currently signed in <see cref="PlayerAccount"/>.
-		/// There is always a current account, but it may be anonymous.
-		/// </summary>
-		public PlayerAccount Current;
+
 
 		/// <summary>
 		/// Change the current <see cref="BeamContext"/>'s current user to the given account.
@@ -299,6 +694,12 @@ namespace Beamable.Player
 			await Refresh();
 		}
 
+		/// <summary>
+		/// Create a new anonymous account.
+		/// The new account will be returned, and will be accessible in the <see cref="PlayerAccounts"/> list
+		/// To switch to this new account, use the <see cref="SwitchToAccount"/> method.
+		/// </summary>
+		/// <returns>The newly created <see cref="PlayerAccount"/></returns>
 		public async Promise<PlayerAccount> CreateNewAccount()
 		{
 			var tokenResponse = await _authService.CreateUser();
@@ -309,13 +710,68 @@ namespace Beamable.Player
 			await Refresh();
 			return this.FirstOrDefault(x => x.gamerTag == user.id);
 		}
+
+		/// <summary>
+		/// Set the given <see cref="PlayerAccount"/>'s subtext value.
+		/// The subtext can be used to show a small amount of account detail.
+		/// </summary>
+		/// <param name="subtext">the new subtext value</param>
+		/// <param name="account">the <see cref="PlayerAccount"/> to use. If null is given, the <see cref="Current"/> account is used.</param>
+		/// <returns>The modified <see cref="PlayerAccount"/></returns>
+		public Promise<PlayerAccount> SetSubtext(string subtext, PlayerAccount account = null) =>
+			SetStatValue(AccountManagementConfiguration.Instance.SubtextStat.StatKey, subtext, account, (a, v) => a.subtext = v);
+
+		/// <summary>
+		/// Set the given <see cref="PlayerAccount"/>'s alias value.
+		/// The alias is used to show a display name for the account.
+		/// </summary>
+		/// <param name="alias">the new alias value</param>
+		/// <param name="account">the <see cref="PlayerAccount"/> to use. If null is given, the <see cref="Current"/> account is used.</param>
+		/// <returns>The modified <see cref="PlayerAccount"/></returns>
+		public Promise<PlayerAccount> SetAlias(string alias, PlayerAccount account = null) =>
+			SetStatValue(AccountManagementConfiguration.Instance.DisplayNameStat.StatKey, alias, account, (a, v) => a.alias = v);
+
+		/// <summary>
+		/// Set the given <see cref="PlayerAccount"/>'s avatar value.
+		/// The avatar can be used to record which avatar entry to use.
+		/// </summary>
+		/// <param name="avatar">the new avatar value</param>
+		/// <param name="account">the <see cref="PlayerAccount"/> to use. If null is given, the <see cref="Current"/> account is used.</param>
+		/// <returns>The modified <see cref="PlayerAccount"/></returns>
+		public Promise<PlayerAccount> SetAvatar(string avatar, PlayerAccount account = null) =>
+			SetStatValue(AccountManagementConfiguration.Instance.AvatarStat.StatKey, avatar, account, (a, v) => a.avatar = v);
+		
+		private async Promise<PlayerAccount> SetStatValue(string key, string value, PlayerAccount account, Action<PlayerAccount, string> setter)
+		{
+			if (account == null)
+			{
+				account = Current;
+			}
+
+			var statsService = GetStatsServiceForAccount(account);
+			await statsService.SetStats("public",
+			                            new Dictionary<string, string>
+			                            {
+				                            [key] = value
+			                            });
+			setter(account, value);
+			account.TryTriggerUpdate();
+			if (account.gamerTag == Current.gamerTag)
+			{
+				Current.Update(account._user);
+				Current.Update(account.token);
+				setter(Current, value);
+			}
+			_stats.ClearCaches();
+			return account;
+		}
 		
 		/// <summary>
 		/// Find an existing account by email and password.
 		///
 		/// Depending on the state of the realm, this method may produce different behaviour.
 		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
-		/// for the given <see cref="email"/> and <see cref="password"/>, or it will have a <see cref="PlayerLoginError"/> value.
+		/// for the given <see cref="email"/> and <see cref="password"/>, or it will have a <see cref="PlayerRecoveryError"/> value.
 		///
 		/// </summary>
 		/// <param name="email">
@@ -325,8 +781,50 @@ namespace Beamable.Player
 		/// <param name="password">
 		/// The password used to add the email address
 		/// </param>
-		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerLoginError"/> value.</returns>
-		public async Promise<PlayerRecoveryOperation> RecoverAccountWithEmail(string email, string password)
+		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithEmail(string email, string password)
+		{
+			return RecoverAccount((auth, merge) => auth.Login(email, password, merge));
+		}
+		
+		/// <summary>
+		/// Find an existing account by the current deviceId
+		///
+		/// Depending on the state of the realm, this method may produce different behaviour.
+		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
+		/// for the current deviceId, or it will have a <see cref="PlayerRecoveryError"/> value.
+		///
+		/// </summary>
+		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithDeviceId()
+		{
+			return RecoverAccount((auth, merge) => auth.LoginDeviceId(merge));
+		}
+
+		/// <summary>
+		/// Find an existing account by a third party link.
+		///
+		/// Depending on the state of the realm, this method may produce different behaviour.
+		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
+		/// for the given <see cref="thirdParty"/> and <see cref="token"/>, or it will have a <see cref="PlayerRecoveryError"/> value.
+		///
+		/// </summary>
+		/// <param name="thirdParty">
+		/// A third party that was previously added to an account with the <see cref="AddThirdParty"/> method.
+		/// </param>
+		/// <param name="token">
+		/// The auth token issued from the third party.
+		/// </param>
+		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithThirdParty(
+			AuthThirdParty thirdParty,
+			string token)
+		{
+			return RecoverAccount((auth, merge) => auth.LoginThirdParty(thirdParty, token, merge));
+		}
+
+		private async Promise<PlayerRecoveryOperation> RecoverAccount(
+			Func<IAuthService, bool, Promise<TokenResponse>> loginFunction)
 		{
 			TokenResponse res;
 			var op = new PlayerRecoveryOperation();
@@ -334,16 +832,17 @@ namespace Beamable.Player
 			{
 				try
 				{
-					res = await _authService.Login(email, password);
+					res = await loginFunction(_authService, true);
 				}
 				catch (PlatformRequesterException ex) when (ex.Error?.error == "UnableToMergeError")
 				{
 					op.realmAlreadyHasGamerTag = true;
-					res = await _authService.Login(email, password, false);
+					res = await loginFunction(_authService, false);
 				}
-			} catch (PlatformRequesterException) //when (error.Error?.error == "InvalidCredentialsError")
+			}
+			catch (PlatformRequesterException) //when (error.Error?.error == "InvalidCredentialsError")
 			{
-				return new PlayerRecoveryOperation {error = PlayerLoginError.UNKNOWN_CREDENTIALS};
+				return new PlayerRecoveryOperation {error = PlayerRecoveryError.UNKNOWN_CREDENTIALS};
 			}
 
 			var user = await _authService.GetUser(res);
@@ -353,7 +852,16 @@ namespace Beamable.Player
 			return op;
 		}
 
-		// TODO: write doc string
+		/// <summary>
+		/// Completes a password reset flow for the given <see cref="PlayerAccount"/>.
+		/// </summary>
+		/// <param name="code">
+		/// The code that was sent to the player's email address by
+		/// invoking the <see cref="ResetPassword"/> method.
+		/// </param>
+		/// <param name="newPassword">A new password to assign to the email credential. </param>
+		/// <param name="account"></param>
+		/// <returns></returns>
 		public async Promise<PasswordResetConfirmOperation> ConfirmPassword(string code, string newPassword, PlayerAccount account = null)
 		{
 			if (account == null)
@@ -369,8 +877,19 @@ namespace Beamable.Player
 			return res;
 		}
 
-		// TODO: write doc string
-		public async Promise<PasswordResetOperation> ForgotPassword(PlayerAccount account=null)
+		/// <summary>
+		/// Initiates a password reset flow for the given <see cref="PlayerAccount"/>.
+		/// If the given account does not have an email credential, the resulting
+		/// <see cref="PasswordResetOperation"/>'s <see cref="PasswordResetOperation.isSuccess"/>
+		/// field will be false.
+		///
+		/// After the password reset flow is started, a code will be sent to the account's
+		/// email address. The code must be provided to the <see cref="ConfirmPassword"/> method,
+		/// or the <see cref="PasswordResetOperation"/>'s <see cref="PasswordResetOperation.Confirm"/> method.
+		/// </summary>
+		/// <param name="account"></param>
+		/// <returns></returns>
+		public async Promise<PasswordResetOperation> ResetPassword(PlayerAccount account=null)
 		{
 			if (account == null)
 			{
@@ -391,8 +910,15 @@ namespace Beamable.Player
 			return res;
 		}
 
-		// TODO: write doc string
-		public async Promise RemoveDeviceId(PlayerAccount account = null)
+		/// <summary>
+		/// Removes all deviceID credentials from the given account.
+		/// An account could have multiple if the player used multiple devices.
+		/// 
+		/// By default, the deviceID is the `SystemInfo.deviceUniqueIdentifier` value.
+		/// However, it can be overriden by registering a custom <see cref="IDeviceIdResolver"/> instance.
+		/// </summary>
+		/// <param name="account"></param>
+		public async Promise<PlayerAccount> RemoveAllDeviceIds(PlayerAccount account = null)
 		{
 			if (account == null)
 			{
@@ -400,10 +926,70 @@ namespace Beamable.Player
 			}
 			
 			var service = GetAuthServiceForAccount(account);
-			await service.RemoveDeviceId();
+			var user = await service.RemoveAllDeviceIds();
+			account.Update(user);
+			return account;
 		}
 		
-		// TODO: write doc string
+		/// <summary>
+		/// Removes the current deviceID credential from the given account.
+		///
+		/// By default, the deviceID is the `SystemInfo.deviceUniqueIdentifier` value.
+		/// However, it can be overriden by registering a custom <see cref="IDeviceIdResolver"/> instance.
+		/// </summary>
+		/// <param name="account"></param>
+		public async Promise<PlayerAccount> RemoveDeviceId(PlayerAccount account = null)
+		{
+			if (account == null)
+			{
+				account = Current;
+			}
+			
+			var service = GetAuthServiceForAccount(account);
+			var user = await service.RemoveDeviceId();
+			account.Update(user);
+			return account;
+		}
+
+		/// <summary>
+		/// Removes the third party credential from the given account.
+		/// </summary>
+		/// <param name="thirdParty">
+		/// Which <see cref="AuthThirdParty"/> is being added to the <see cref="PlayerAccount"/>
+		/// </param>
+		/// <param name="token">
+		/// The special token issued from the third party itself. This token's format and origin differ
+		/// depending on which third party is being used.
+		/// </param>
+		/// <param name="account"></param>
+		public async Promise<PlayerAccount> RemoveThirdParty(AuthThirdParty thirdParty, string token, PlayerAccount account = null)
+		{
+			if (account == null)
+			{
+				account = Current;
+			}
+			
+			var service = GetAuthServiceForAccount(account);
+			
+			var user = await service.RemoveThirdPartyAssociation(thirdParty, token);
+			account.Update(user);
+			return account;
+		}
+		
+		/// <summary>
+		/// Adds the deviceId credential to the given <see cref="PlayerAccount"/>,
+		/// and returns a <see cref="RegistrationResult"/>. If the returned
+		/// <see cref="RegistrationResult.isSuccess"/> is true, then the addition worked.
+		/// Otherwise, check the <see cref="RegistrationResult.error"/> field.
+		///
+		/// If the deviceID has already been added to a different <see cref="PlayerAccount"/>,
+		/// then the the resulting <see cref="RegistrationResult.error"/> field will be <see cref="PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN"/>
+		///
+		/// By default, the deviceID is the `SystemInfo.deviceUniqueIdentifier` value.
+		/// However, it can be overriden by registering a custom <see cref="IDeviceIdResolver"/> instance.
+		/// </summary>
+		/// <param name="account"></param>
+		/// <returns>A <see cref="RegistrationResult"/> representing the result of the deviceId addition. </returns>
 		public async Promise<RegistrationResult> AddDeviceId(PlayerAccount account=null)
 		{
 			if (account == null)
@@ -426,7 +1012,26 @@ namespace Beamable.Player
 			return res;
 		}
 
-		// TODO: write doc string
+		/// <summary>
+		/// Adds the third party credential to the given <see cref="PlayerAccount"/>,
+		/// and returns a <see cref="RegistrationResult"/>. If the returned
+		/// <see cref="RegistrationResult.isSuccess"/> is true, then the addition worked.
+		/// Otherwise, check the <see cref="RegistrationResult.error"/> field.
+		///
+		/// If the third party token has already been added to a different <see cref="PlayerAccount"/>,
+		/// then the the resulting <see cref="RegistrationResult.error"/> field will be <see cref="PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN"/>
+		///
+		/// To get the token, follow the available <a href="https://docs.beamable.com/docs/identity">documentation </a>
+		/// </summary>
+		/// <param name="thirdParty">
+		/// Which <see cref="AuthThirdParty"/> is being added to the <see cref="PlayerAccount"/>
+		/// </param>
+		/// <param name="token">
+		/// The special token issued from the third party itself. This token's format and origin differ
+		/// depending on which third party is being used.
+		/// </param>
+		/// <param name="account"></param>
+		/// <returns>A <see cref="RegistrationResult"/> representing the result of the deviceId addition. </returns>
 		public async Promise<RegistrationResult> AddThirdParty(AuthThirdParty thirdParty, string token, PlayerAccount account=null)
 		{
 			if (account == null)
@@ -442,16 +1047,37 @@ namespace Beamable.Player
 				res.error = PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
 				return res;
 			}
-			
-			var user = await service.RegisterThirdPartyCredentials(thirdParty, token);
-			// TODO: handle the case where someone else this third party...
-			account.Update(user);
 
+			try
+			{
+				var user = await service.RegisterThirdPartyCredentials(thirdParty, token);
+				account.Update(user);
+			}
+			catch (PlatformRequesterException)
+			{
+				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+				return res;
+			}
 			await Refresh();
 			return res;
 		}
 		
-		// TODO: write doc string
+		/// <summary>
+		/// Adds an email credential to the given <see cref="PlayerAccount"/>,
+		/// and returns a <see cref="RegistrationResult"/>. If the returned
+		/// <see cref="RegistrationResult.isSuccess"/> is true, then the addition worked.
+		/// Otherwise, check the <see cref="RegistrationResult.error"/> field.
+		/// </summary>
+		/// <param name="email">
+		/// The email to add to the account.
+		/// This email must be unique for the CID.
+		/// If the email is already taken, the resulting <see cref="RegistrationResult.error"/> field will be <see cref="PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN"/>
+		/// </param>
+		/// <param name="password">
+		/// The password to combine with the email address.
+		/// </param>
+		/// <param name="account"></param>
+		/// <returns>A <see cref="RegistrationResult"/> representing the result of the email addition. </returns>
 		public async Promise<RegistrationResult> AddEmail(string email, string password, PlayerAccount account=null)
 		{
 			if (account == null)
@@ -483,14 +1109,33 @@ namespace Beamable.Player
 			return res;
 		}
 		
-		// TODO: write doc string
-		public async Promise RemoveFromDevice(PlayerAccount account)
+		/// <summary>
+		/// Removes the given <see cref="PlayerAccount"/> from the device's memory.
+		/// After the account is removed, the access token will be lost. The player
+		/// will not be able to switch to this account until they initiate an account
+		/// recovery option.
+		///
+		/// If the given account is the currently active account, then nothing will happen.
+		/// It is impossible to remove the current account.
+		///
+		/// </summary>
+		/// <param name="account"></param>
+		public async Promise RemoveFromDeviceId(PlayerAccount account)
 		{
+			if (account == null || account.gamerTag == Current.gamerTag) return;
+			
 			_storage.RemoveDeviceRefreshToken(_ctx.Cid, _ctx.Pid, account.token);
 			await Refresh();
 		}
 
-		// TODO: write doc string
+		/// <summary>
+		/// Removes all accounts from the device's memory.
+		/// After each account is removed, the access token will be lost. The player
+		/// will not be able to switch to this account until they initiate an account
+		/// recovery option.
+		///
+		/// The currently active account will still be available on the device.
+		/// </summary>
 		public async Promise RemoveAllAccounts()
 		{
 			// this won't clear the current user, just the other stored ones.
@@ -498,16 +1143,58 @@ namespace Beamable.Player
 			await Refresh();
 		}
 
-		private IAuthService GetAuthServiceForAccount(PlayerAccount account)
+		/// <summary>
+		/// Set the given <see cref="PlayerAccount"/>'s language preference.
+		/// </summary>
+		/// <param name="language">A <see cref="SystemLanguage"/></param>
+		/// <param name="account"></param>
+		/// <returns></returns>
+		public async Promise<PlayerAccount> SetLanguage(SystemLanguage language, PlayerAccount account = null)
 		{
-			if (account.gamerTag == Current.gamerTag) return _authService;
+			if (account == null)
+			{
+				account = Current;
+			}
+
+			var service = GetAuthServiceForAccount(account);
+			var user = await service.SetLanguage(language);
+			account.Update(user);
+			return account;
+		}
+
+		private IDependencyProvider GetScopeForAccount(PlayerAccount account)
+		{
+			if (account.gamerTag == Current.gamerTag) return _provider;
 			var requester = _requester.WithAccessToken(account.token);
-			var subScope = _provider.Fork(builder =>
+			return _provider.Fork(builder =>
 			{
 				builder
-					.AddSingleton(requester);
+					.AddScoped(requester)
+					.Remove<StatsService>()
+					// .Remove<IAuthApi>()
+					// .AddScoped<IAuthApi>(provider => new AuthService(requester, provider.GetService<IDeviceIdResolver>(), provider.GetService<IAuthSettings>()))
+					.AddScoped<StatsService>(provider =>
+						                         new StatsService(
+							                         account,
+							                         requester,
+							                         provider,
+							                         UnityUserDataCache<Dictionary<string, string>>
+								                         .CreateInstance,
+							                         provider.GetService<OfflineCache>()));
+					;
 			});
+		}
+		
+		private IAuthService GetAuthServiceForAccount(PlayerAccount account)
+		{
+			var subScope = GetScopeForAccount(account);
 			return subScope.GetService<IAuthService>();
+		}
+		
+		private IStatsApi GetStatsServiceForAccount(PlayerAccount account)
+		{
+			var subScope = GetScopeForAccount(account);
+			return subScope.GetService<IStatsApi>();
 		}
 
 		private Promise<UserExtensions.StatCollection> GetStatsForUser(User user)
@@ -528,16 +1215,9 @@ namespace Beamable.Player
 			{
 				map[account.gamerTag] = account;
 			}
-			
-			// get the current user.
-			var current = await _authService.GetUser();
-	
-			Current.Update(current);
-			Current.Update(BeamableToken.FromAccessToken(_authService.Requester.AccessToken));
-			// next.Add(Current);
-			
-			// _statsApi.GetClientBatch()
-			
+
+			var seen = new HashSet<long>();
+
 			var tokens = _storage.RetrieveDeviceRefreshTokens(_ctx.Cid, _ctx.Pid);
 
 			var userPromises = new Promise<User>[tokens.Length];
@@ -553,20 +1233,39 @@ namespace Beamable.Player
 			for (var i = 0; i < userPromises.Length; i++)
 			{
 				var user = users[i];
-				
-				
+				if (seen.Contains(user.id)) continue;
+				seen.Add(user.id);
+
+				var statValues = stats[i];
+				var token = tokens[i];
+
 				if (map.TryGetValue(user.id, out var existing))
 				{
-					existing.Update(stats[i]);
+					existing.Update(statValues);
 					existing.Update(user);
-					existing.Update(tokens[i]);
+					existing.Update(token);
+					next.Add(existing);
 				}
 				else
 				{
-					next.Add(new PlayerAccount(this, tokens[i], user, stats[i]));
+					var newAccount = new PlayerAccount(this, token, user, statValues);
+					map.Add(user.id, newAccount);
+					next.Add(newAccount);
 				}
 			}
-			
+			//
+			if (map.TryGetValue(_ctx.PlayerId, out var currentAccount))
+			{
+				if (Current == null)
+				{
+					Current = new PlayerAccount(this, currentAccount.token, currentAccount._user, currentAccount._stats);
+				}
+				else
+				{
+					Current.Update(currentAccount);
+				}
+			}
+			//
 			SetData(next);
 		}
 	}

@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Api.Sessions
 {
@@ -11,6 +13,34 @@ namespace Beamable.Api.Sessions
 		public static string GetISO639CountryCodeFromSystemLanguage() =>
 			GetISO639CountryCodeFromSystemLanguage(Application.systemLanguage);
 
+		private static Dictionary<string, SystemLanguage> _codeToLang = new Dictionary<string, SystemLanguage>();
+
+		static SessionServiceHelper()
+		{
+			foreach (var rawValue in Enum.GetValues(typeof(SystemLanguage)))
+			{
+				var enumValue = (SystemLanguage)rawValue;
+				var code = GetISO639CountryCodeFromSystemLanguage(enumValue);
+				_codeToLang[code] = enumValue;
+			}
+		}
+		
+		/// <summary>
+		/// Convert an ISO639-1 code to the SystemLanguage.
+		/// If the given code is invalid, the default system language is returned.
+		/// </summary>
+		/// <param name="code"></param>
+		/// <returns></returns>
+		public static SystemLanguage GetSystemLanguageFromIso639CountryCode(string code)
+		{
+			if (!_codeToLang.TryGetValue(code, out var enumValue))
+			{
+				enumValue = Application.systemLanguage;
+			}
+
+			return enumValue;
+		}
+		
 		/// <summary>
 		/// Return the ISO639-1 language code from a given <see cref="SystemLanguage"/>
 		/// Use the <see cref="GetISO639CountryCodeFromSystemLanguage()"/> to get the language code for the current application

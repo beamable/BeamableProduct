@@ -169,8 +169,19 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="PlayerAccounts"/> for this context.
 		/// </summary>
-		public PlayerAccounts Accounts => _serviceScope.GetService<PlayerAccounts>();
+		public PlayerAccounts Accounts
+		{
+			get
+			{
+				var service = _serviceScope.GetService<PlayerAccounts>();
+				_playerAccounts = service;
+				return service;
+			}
+		}
 
+		private bool HasAccountsService => _playerAccounts != null;
+		[NonSerialized] private PlayerAccounts _playerAccounts;
+		
 		/// <summary>
 		/// <para>
 		/// Access the player's inventory
@@ -307,7 +318,13 @@ namespace Beamable
 			await InitStep_GetUser();
 			await InitStep_StartNewSession();
 			await InitStep_StartPubnub();
-
+			
+			
+			// before we broadcast the event; we'll ask the accounts to update if they exist...
+			if (HasAccountsService)
+			{
+				await _playerAccounts.Refresh();
+			}
 			OnReloadUser?.Invoke();
 
 			return ctx;
