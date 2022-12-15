@@ -33,6 +33,10 @@ namespace Beamable.Api.Sessions
 		/// <returns></returns>
 		public static SystemLanguage GetSystemLanguageFromIso639CountryCode(string code)
 		{
+			if (string.IsNullOrEmpty(code))
+			{
+				return Application.systemLanguage;
+			}
 			if (!_codeToLang.TryGetValue(code, out var enumValue))
 			{
 				enumValue = Application.systemLanguage;
