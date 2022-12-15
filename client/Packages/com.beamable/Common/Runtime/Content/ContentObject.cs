@@ -503,36 +503,52 @@ namespace Beamable.Common.Content
 
 					toExpand.Enqueue(fieldValue);
 
-					foreach (var attribute in field.GetCustomAttributes<ValidationAttribute>())
+					if (HasAnyValidationAttribute(field))
 					{
-						try
+						foreach (var attribute in field.GetCustomAttributes<ValidationAttribute>())
 						{
-							var wrapper = new ValidationFieldWrapper(field, obj);
-
-							if (typeof(IList).IsAssignableFrom(field.FieldType))
+							try
 							{
-								var value = field.GetValue(obj) as IList;
-								if (value != null)
+								var wrapper = new ValidationFieldWrapper(field, obj);
+
+								if (typeof(IList).IsAssignableFrom(field.FieldType))
 								{
-									for (var i = 0; i < value.Count; i++)
+									var value = field.GetValue(obj) as IList;
+									if (value != null)
 									{
-										attribute.Validate(ContentValidationArgs.Create(wrapper, this, ctx, i, true));
+										for (var i = 0; i < value.Count; i++)
+										{
+											attribute.Validate(
+												ContentValidationArgs.Create(wrapper, this, ctx, i, true));
+										}
 									}
 								}
-							}
 
-							attribute.Validate(ContentValidationArgs.Create(wrapper, this, ctx));
-						}
-						catch (ContentValidationException e)
-						{
-							errors.Add(e);
+								attribute.Validate(ContentValidationArgs.Create(wrapper, this, ctx));
+							}
+							catch (ContentValidationException e)
+							{
+								errors.Add(e);
+							}
 						}
 					}
-
 				}
 			}
 
 			return errors;
+		}
+
+		private bool HasAnyValidationAttribute(FieldInfo fieldInfo)
+		{
+			foreach (var attr in fieldInfo.CustomAttributes)
+			{
+				if (attr.AttributeType == typeof(ValidationAttribute))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		/// <summary>
