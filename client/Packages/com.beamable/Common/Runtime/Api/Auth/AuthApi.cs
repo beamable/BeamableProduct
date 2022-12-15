@@ -293,8 +293,7 @@ namespace Beamable.Common.Api.Auth
 		public string ParseChallengeToken(string token, int part)
 		{
 			string[] tokenParts = token.Split('.');
-			part = Mathf.Clamp(part, 0, tokenParts.Length - 1);
-
+			part = (int)Mathf.Clamp(part, 0, tokenParts.Length - 1);
 			return tokenParts[part];
 		}
 	}
