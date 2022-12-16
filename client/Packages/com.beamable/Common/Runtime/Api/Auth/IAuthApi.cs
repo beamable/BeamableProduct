@@ -219,36 +219,36 @@ namespace Beamable.Common.Api.Auth
 		/// Method for registering external identity.
 		/// </summary>
 		/// <param name="externalToken">Unique token identifying player.</param>
-		/// <param name="providerAddress">Adress identifying microservice providing custom verification logic. It should
-		/// have format of {MicroserviceName}/{MethodName}.</param>
+		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
+		/// implement Authenticate(string token, string challenge, string solution) method there</param>
 		/// <param name="challengeSolution"><see cref="ChallengeSolution"/> that contains full challenge token received
 		/// from server and signed/solved solution for that challenge.</param>
 		/// <returns><see cref="AttachExternalIdentityResponse"/></returns>
 		Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
-		                                                       string providerAddress,
+		                                                       string providerService,
 		                                                       ChallengeSolution challengeSolution = null);
 
 		/// <summary>
 		/// Method for unregistering previously registered external identity.
 		/// </summary>
-		/// <param name="providerAddress">Adress identifying microservice providing custom verification logic. It should
-		/// have format of {MicroserviceName}/{MethodName}.</param>
+		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
+		/// implement Authenticate(string token, string challenge, string solution) method there</param>
 		/// <param name="userId">Identity we want to unregister for.</param>
 		/// <returns><see cref="DetachExternalIdentityResponse"/></returns>
-		Promise<DetachExternalIdentityResponse> DetachIdentity(string providerAddress, string userId);
+		Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService, string userId);
 
 		/// <summary>
 		/// Method for authorizing previously attached identity.
 		/// </summary>
 		/// <param name="externalToken">Unique token identifying player.</param>
-		/// <param name="providerAddress">Adress identifying microservice providing custom verification logic. It should
-		/// have format of {MicroserviceName}/{MethodName}.</param>
+		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
+		/// implement Authenticate(string token, string challenge, string solution) method there</param>
 		/// <param name="challengeSolution"><see cref="ChallengeSolution"/> that contains full challenge token received
 		/// from server and signed/solved solution for that challenge.</param>
 		/// <returns><see cref="ExternalAuthenticationResponse"/></returns>
 		Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity(
 			string externalToken,
-			string providerAddress,
+			string providerService,
 			ChallengeSolution challengeSolution = null);
 
 		/// <summary>
@@ -260,8 +260,7 @@ namespace Beamable.Common.Api.Auth
 		/// signature - Base64 encoded token signature.
 		/// </summary>
 		/// <param name="token">Challenge token received from a server.</param>
-		/// <param name="part">Index of an element we want to retrieve.</param>
-		/// <returns></returns>
-		string ParseChallengeToken(string token, int part);
+		/// <returns><see cref="ChallengeToken"/> structure</returns>
+		ChallengeToken ParseChallengeToken(string token);
 	}
 }
