@@ -536,9 +536,9 @@ namespace Beamable.Editor.Content
 				);
 				var typeName = _contentTypeReflectionCache.TypeToName(contentType);
 
-				foreach (var assetGuid in assetGuids)
+				for (int i = 0; i < assetGuids.Length; i++)
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
+					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuids[i]);
 					var rawAsset = AssetDatabase.LoadAssetAtPath(assetPath, typeof(IContentObject));
 					var content = rawAsset as IContentObject;
 
