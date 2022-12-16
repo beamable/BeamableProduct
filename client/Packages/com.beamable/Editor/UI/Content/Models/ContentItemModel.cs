@@ -184,8 +184,7 @@ namespace Beamable.Editor.Content.Models
 
 				if (_localContent != null && _serverData != null)
 				{
-					var distinctTagsExist = ContentIO.AreTagsEqual(_localContent.Tags, _serverData.Tags);
-					return (ContentIO.ComputeChecksum(_localContent).Equals(_serverData.Checksum) && distinctTagsExist)
+					return (ContentIO.ComputeChecksum(_localContent).Equals(_serverData.Checksum) && ContentIO.AreTagsEqual(_localContent.Tags, _serverData.Tags))
 					   ? ContentModificationStatus.NOT_MODIFIED
 					   : ContentModificationStatus.MODIFIED;
 				}

@@ -50,7 +50,7 @@ namespace Beamable.Editor.Content.Extensions
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
 			{
-				return String.Compare(go1.Name, go2.Name);
+				return String.CompareOrdinal(go1.Name, go2.Name);
 			}
 		}
 		
@@ -58,7 +58,7 @@ namespace Beamable.Editor.Content.Extensions
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
 			{
-				return -String.Compare(go1.Name, go2.Name);
+				return -String.CompareOrdinal(go1.Name, go2.Name);
 			}
 		}
 		
@@ -66,7 +66,7 @@ namespace Beamable.Editor.Content.Extensions
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
 			{
-				return String.Compare(go1.ContentType.TypeName, go2.ContentType.TypeName);
+				return String.CompareOrdinal(go1.ContentType.TypeName, go2.ContentType.TypeName);
 			}
 		}
 		
@@ -74,7 +74,7 @@ namespace Beamable.Editor.Content.Extensions
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
 			{
-				return -String.Compare(go1.ContentType.TypeName, go2.ContentType.TypeName);
+				return -String.CompareOrdinal(go1.ContentType.TypeName, go2.ContentType.TypeName);
 			}
 		}
 		
