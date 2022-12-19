@@ -341,7 +341,7 @@ namespace Beamable.Common.Reflection
 				}
 
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
-				
+
 				for (int index = 0; index < reflectionBasedSystem.BaseTypesOfInterest.Count; index++)
 				{
 					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(reflectionBasedSystem.BaseTypesOfInterest[index], out var mappedSubtypes))
@@ -399,7 +399,7 @@ namespace Beamable.Common.Reflection
 					{
 						perAttributeLists.MemberAttributeTypes.Add(attributesOfInterest[i]);
 					}
-					
+
 					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
 				}
 			}
@@ -410,7 +410,7 @@ namespace Beamable.Common.Reflection
 			// Groups by whether or not the assembly is one we care about sweeping.
 
 			var assembliesToSweepStr = "₢" + string.Join("₢", sortedAssembliesToSweep) + "₢";
-			
+
 
 			// Check all that don't have the IgnoreFromBeamableAssemblySweepAttribute and parse them
 			{
@@ -424,9 +424,9 @@ namespace Beamable.Common.Reflection
 						{
 							// Get a list of all attributes of interest that were found on this type.
 							GatherMembersFromAttributesOfInterest(types[k],
-							                                      perAttributeLists.AttributeTypes,
-							                                      perAttributeLists.MemberAttributeTypes,
-							                                      perAttributeLists.AttributeMappings);
+																  perAttributeLists.AttributeTypes,
+																  perAttributeLists.MemberAttributeTypes,
+																  perAttributeLists.AttributeMappings);
 
 							// Check for base types of interest
 							if (TryFindBaseTypesOfInterest(types[k], baseTypesOfInterest, out var foundType))
