@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - Internal container health checks no longer cause fatal exception. 
+- `IContentApi` is accessible via the Microservice dependency injection scope.
 
 ### Added
 - `Context.ThrowIfCancelled()` method to force end a client-callable request if it has timed out.
