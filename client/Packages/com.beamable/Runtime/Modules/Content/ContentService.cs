@@ -282,7 +282,7 @@ namespace Beamable.Content
 			AddSubscriber(CurrentDefaultManifestID);
 		}
 
-		private T DeserializeData<T>(string json) where T : new()
+		public T DeserializeDataCache<T>(string json) where T : new()
 		{
 			try
 			{
@@ -318,7 +318,7 @@ namespace Beamable.Content
 			if (File.Exists(contentPath))
 			{
 				var json = File.ReadAllText(contentPath);
-				ContentDataInfo = DeserializeData<ContentDataInfoWrapper>(json);
+				ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
 			}
 			else
 			{
@@ -333,12 +333,12 @@ namespace Beamable.Content
 				var isValidJson = Json.IsValidJson(json);
 				if (isValidJson)
 				{
-					ContentDataInfo = DeserializeData<ContentDataInfoWrapper>(json);
+					ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
 				}
 				else
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
-					ContentDataInfo = DeserializeData<ContentDataInfoWrapper>(json);
+					ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
 				}
 
 				// save baked data to disk
@@ -367,12 +367,12 @@ namespace Beamable.Content
 			var isValidJson = Json.IsValidJson(json);
 			if (isValidJson)
 			{
-				BakedManifest = DeserializeData<ClientManifest>(json);
+				BakedManifest = DeserializeDataCache<ClientManifest>(json);
 			}
 			else
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
-				BakedManifest = DeserializeData<ClientManifest>(json);
+				BakedManifest = DeserializeDataCache<ClientManifest>(json);
 			}
 		}
 
