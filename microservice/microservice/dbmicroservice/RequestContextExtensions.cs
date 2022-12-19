@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Beamable.Common;
-using System.Threading;
 
 namespace Beamable.Server
 {
