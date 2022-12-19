@@ -207,10 +207,10 @@ namespace Beamable.Server.Editor
 													 .CreateMemberAttributeOwnerLookupTable();
 
 					// Register all configured microservices
-					for (int i = 0; i < uniqueNameValidationResults.PerAttributeNameValidations.Count; i++)
+					for (int k = 0; k < uniqueNameValidationResults.PerAttributeNameValidations.Count; k++)
 					{
-						var serviceAttribute = uniqueNameValidationResults.PerAttributeNameValidations[i].Pair.AttrAs<MicroserviceAttribute>();
-						var type = uniqueNameValidationResults.PerAttributeNameValidations[i].Pair.InfoAs<Type>();
+						var serviceAttribute = uniqueNameValidationResults.PerAttributeNameValidations[k].Pair.AttrAs<MicroserviceAttribute>();
+						var type = uniqueNameValidationResults.PerAttributeNameValidations[k].Pair.InfoAs<Type>();
 
 						// TODO: XXX this is a hacky way to ignore the default microservice...
 						if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx")) continue;
@@ -219,8 +219,8 @@ namespace Beamable.Server.Editor
 							continue;
 
 						// Create descriptor
-						var hasWarning = uniqueNameValidationResults.PerAttributeNameValidations[i].Type == ReflectionCache.ValidationResultType.Warning;
-						var hasError = uniqueNameValidationResults.PerAttributeNameValidations[i].Type == ReflectionCache.ValidationResultType.Error;
+						var hasWarning = uniqueNameValidationResults.PerAttributeNameValidations[k].Type == ReflectionCache.ValidationResultType.Warning;
+						var hasError = uniqueNameValidationResults.PerAttributeNameValidations[k].Type == ReflectionCache.ValidationResultType.Error;
 						var descriptor = new MicroserviceDescriptor
 						{
 							Name = serviceAttribute.MicroserviceName,
