@@ -4,8 +4,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [Unreleased]
+## [1.8.0]
+### Added
+- `EnableEagerContentLoading` configuration setting on `MicroserviceAttribute` is enabled by default. 
 
+### Changed
+- Content is downloaded and cached on the Microservice before it is declared healthy and available to accept traffic. 
+- Published Microservices open 10 websocket connections instead of 30.
+
+### Fixed
+- Content downloads no longer cause HTTP timeouts or CPU spikes.
+- Domain Reload times are reduced by roughly 30% when working with Microservices
+- Rare authorization locking bug that could cause extend authorization times.
+
+## [1.7.0]
+### Changed
+- Exposed methods for access to public player stats:
+  - `GetPublicPlayerStat`
+  - `GetPublicPlayerStats`
+  - `GetAllPublicPlayerStats`
+- Microservice request context body and header properties are lazily deserialized.
+- Deployed Microservices run multiple local instances to improve reliability and performance. 
+- Microservices no longer represent inbound messages with an intermediate `string`. Instead, messages byte arrays are parsed directly to `JsonDocument` 
+
+### Added
+- Microservice message log size limit. 
+- Inbound requests are rate limited to avoid out of memory failures. 
+
+### Removed
+- Microservice log messages no longer include message hash, `"__i"` field.
+- Microservices no longer emit log body and headers on every log statement.
+- Microservices no longer emit log messages for receiving and responding to `[ClientCallable]` methods.
+
+## [1.6.2]
+### Changed
+- The `Publish Window` is now centered on show relative to the editor
+
+### Fixed
+- There can only be one instance of the `Publish Window` in the `Microservice Manager`
+
+
+## [1.6.1]
+- no changes
+
+### [1.6.0]
 ### Added
 - Displaying log pagination if message contains more that 5000 chars
 - Quick action buttons for opening C# code and local documentation for service cards
@@ -27,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `curl error 52` while publishing Microservices and performing health-checks.
 - Task Cancellation exceptions while publishing Microservice.
+- Various `DockerNotInstalledException` events when MicroserviceManager window isn't open, but Docker ins't running.
 
 ### [1.5.1]
 ### Added

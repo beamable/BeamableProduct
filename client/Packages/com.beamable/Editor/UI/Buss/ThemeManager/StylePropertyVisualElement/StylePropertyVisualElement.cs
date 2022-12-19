@@ -61,7 +61,9 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
+			_labelComponent.text = _model.IsVariable
+				? _model.PropertyProvider.Key
+				: ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			_valueParent.Clear();
 
@@ -135,12 +137,9 @@ namespace Beamable.Editor.UI.Components
 
 					if (variableName == String.Empty)
 					{
-						CreateMessageField(PropertyValueState.NoResult);
-					}
-					else
-					{
-						var srcTracker = _model.PropertySourceTracker;
-						if (srcTracker != null)
+						var appliedPropertyProvider = srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
+
+						if (appliedPropertyProvider != null)
 						{
 							var appliedPropertyProvider =
 								srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
@@ -164,6 +163,8 @@ namespace Beamable.Editor.UI.Components
 							{
 								CreateMessageField($"\"{variableName.Substring(2)}\" not found");
 							}
+
+							appliedPropertyProvider.GetProperty().OnValueChanged += UpdateField;
 						}
 					}
 				}
@@ -199,7 +200,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			var element = _propertyVisualElement = property.GetVisualElement();
 
-
 			if (_propertyVisualElement == null)
 			{
 				return null;
@@ -208,14 +208,7 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement.OnValueChanged = _model.OnPropertyChanged;
 			_propertyVisualElement.OnBeforeChange += () =>
 			{
-				if (_model.IsInline)
-				{
-					Undo.RecordObject(_model.AppliedToElement, $"Change {_model.PropertyProvider.Key}");
-				}
-				else
-				{
-					Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
-				}
+				Undo.RecordObject(_model.StyleSheet, $"Change {_model.PropertyProvider.Key}");
 			};
 
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
@@ -260,12 +253,14 @@ namespace Beamable.Editor.UI.Components
 			if (_model.PropertyProvider.IsVariable)
 				return;
 
-			if (_variableConnection == null)
+			if (_variableConnection != null)
 			{
-				_variableConnection = new VariableConnectionVisualElement(_model);
-				_variableConnection.Init();
-				_variableParent.Add(_variableConnection);
+				return;
 			}
+
+			_variableConnection = new VariableConnectionVisualElement(_model);
+			_variableConnection.Init();
+			_variableParent.Add(_variableConnection);
 		}
 	}
 }

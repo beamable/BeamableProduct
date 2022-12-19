@@ -1,24 +1,14 @@
 using Beamable.Common;
 using Beamable.Editor.Environment;
-using Beamable.Editor.Login.UI;
-using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
-
-using Beamable.Common.Dependencies;
-
-using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
+
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Toolbox;
 using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
@@ -292,7 +282,6 @@ namespace Beamable.Editor.Toolbox.UI
 				};
 			}
 			else
-
 				updateAvailableAnnouncement.OnIgnore = () =>
 				{
 					BeamablePackageUpdateMeta.IsInstallationIgnored = true;
@@ -300,15 +289,20 @@ namespace Beamable.Editor.Toolbox.UI
 					_model.RemoveAnnouncement(updateAvailableAnnouncement);
 				};
 
-			updateAvailableAnnouncement.OnInstall = () => BeamablePackages.UpdatePackage().Then(_ =>
+			updateAvailableAnnouncement.OnInstall = () =>
 			{
-				_model.RemoveAnnouncement(updateAvailableAnnouncement);
-				if (!BeamablePackageUpdateMeta.IsBlogVisited &&
-					BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+				BeamableLogger.Log($"Updating the Beamable package to version=[{BeamablePackageUpdateMeta.NewestVersionNumber}]. It may take a while...");
+				BeamablePackages.UpdatePackage().Then(_ =>
 				{
-					ShowWhatsNewAnnouncement();
-				}
-			});
+					BeamableLogger.Log("The Beamable package update process completed successfully!");
+					_model.RemoveAnnouncement(updateAvailableAnnouncement);
+					if (!BeamablePackageUpdateMeta.IsBlogVisited &&
+						BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+					{
+						ShowWhatsNewAnnouncement();
+					}
+				});
+			};
 
 			_model.AddAnnouncement(updateAvailableAnnouncement);
 		}
