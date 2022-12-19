@@ -120,7 +120,8 @@ namespace Beamable.Server
 
 	            if (i == 0)
 	            {
-		            var localDebug = new LocalDebugService(beamableService);
+		            var localDebug = new ContainerDiagnosticService(beamableService);
+		            var runningDebugTask = localDebug.Run();
 	            }
 
 	            if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
