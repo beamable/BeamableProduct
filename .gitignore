@@ -70,6 +70,13 @@ loadtests/
 /cli/*.sln.DotSettings.*
 cli/cli/beamoLocalRuntime.json
 
+
+/beamWasm/bin/
+/beamWasm/obj
+/beamWasm/.idea/
+/beamWasm/nupkg/
+/beamWasm/*.sln.DotSettings.*
+
 # Server generated files.
 /server/tmp/
 /server/coverage/

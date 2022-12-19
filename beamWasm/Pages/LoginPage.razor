@@ -1,0 +1,111 @@
+﻿@page "/LoginPage"
+@using System.ComponentModel.DataAnnotations
+@using Beamable.Common.Api.Auth
+@using beamWasm.BeamBlazor
+@inject ILogger<LoginPage> Logger
+@inject IAuthApi AuthApi
+@inject IAppContext AppContext
+<h3>Login</h3>
+
+@if(!alreadyLoggedIn)
+{
+    <EditForm Model="@_exampleModel" OnSubmit="@HandleSubmit">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+
+        <span>Cid</span>
+        <InputText id="cid" @bind-Value="_exampleModel.Cid"/>
+        <span>Name</span>
+        <InputText id="name" @bind-Value="_exampleModel.Name"/>
+        <span>Password</span>
+        <InputText id="password" @bind-Value="_exampleModel.Password" type="password"/>
+
+        <button type="submit">Submit</button>
+    </EditForm>
+}
+@if (!string.IsNullOrWhiteSpace(result))
+{
+    <span>
+        @result
+    </span>
+}
+
+@code {
+    private readonly ExampleModel _exampleModel = new();
+    bool alreadyLoggedIn = false;
+    string result;
+
+    private class ExampleModel
+    {
+        [Required]
+        public string Name { get; set; }
+        [Required]
+        public string Password { get; set; }
+        [Required]
+        public string Cid { get; set; }
+    }
+
+    private async Task HandleSubmit(EditContext editContext)
+    {
+        bool formIsValid = editContext.Validate();
+        Logger.LogInformation($"HandleValidSubmit called {formIsValid}");
+        if (formIsValid)
+        {
+            try
+            {
+                var token = await AuthApi.Login(_exampleModel.Name, _exampleModel.Password);
+                if(token is not null)
+                {
+                    await UpdateUserInfo(token);
+                }
+                else
+                {
+                    result = $"Cid: {_exampleModel.Cid}, Name: {_exampleModel.Name}, Password: {_exampleModel.Password}, valid: {formIsValid}";
+                }
+            }catch(Exception e)
+            {
+                result = e.ToString();
+                Logger.LogError(e.ToString());
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // check if can already log in
+        Logger.LogInformation("1");
+        await AppContext.Init();
+        Logger.LogInformation("2");
+        var rToken = AppContext?.RefreshToken;
+        Logger.LogInformation("3");
+        if(!string.IsNullOrWhiteSpace(rToken))
+        {
+            try
+            {
+                Logger.LogInformation("4");
+                var token = await AuthApi.LoginRefreshToken(rToken);
+                Logger.LogInformation("5");
+                if (token != null)
+                {
+                    await UpdateUserInfo(token);
+                    Logger.LogInformation("6");
+                }
+            }
+            catch (Exception e)
+            {
+                result = e.ToString();
+                Logger.LogError(e.ToString());
+            }
+        }
+    }
+
+    private async Task UpdateUserInfo(TokenResponse token)
+    {
+        await AppContext.UpdateToken(token);
+        alreadyLoggedIn = true;
+        var user = await AuthApi.GetUser();
+        Logger.LogInformation($"Logged as <b>{user.email}</b> (id: <b>{user.id}</b>). Scope: {string.Join(',',user.scopes)}");
+        result = $"Logged as <b>{user.email}</b> (id: <b>{user.id}</b>). Scope: {string.Join(',',user.scopes)}";
+    }
+
+}
