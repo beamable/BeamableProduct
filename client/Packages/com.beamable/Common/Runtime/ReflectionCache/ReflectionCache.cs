@@ -341,7 +341,7 @@ namespace Beamable.Common.Reflection
 				}
 
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
-				
+
 				for (int index = 0; index < reflectionBasedSystem.BaseTypesOfInterest.Count; index++)
 				{
 					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(reflectionBasedSystem.BaseTypesOfInterest[index], out var mappedSubtypes))
@@ -425,9 +425,9 @@ namespace Beamable.Common.Reflection
 					{
 						// Get a list of all attributes of interest that were found on this type.
 						GatherMembersFromAttributesOfInterest(types[k],
-						                                      perAttributeLists.AttributeTypes,
-						                                      perAttributeLists.MemberAttributeTypes,
-						                                      perAttributeLists.AttributeMappings);
+															  perAttributeLists.AttributeTypes,
+															  perAttributeLists.MemberAttributeTypes,
+															  perAttributeLists.AttributeMappings);
 
 						// Check for base types of interest
 						if (TryFindBaseTypesOfInterest(types[k], baseTypesOfInterest, out var foundType))
