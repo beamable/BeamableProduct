@@ -3,7 +3,7 @@ using Beamable.Server;
 
 namespace microserviceTests.microservice
 {
-   [Microservice("serviceWithDeps", EnableEagerContentLoading = false)]
+   [Microservice("serviceWithDeps")]
    public class ServiceWithDependency : Microservice
    {
       public IBeamableServices Services { get; }

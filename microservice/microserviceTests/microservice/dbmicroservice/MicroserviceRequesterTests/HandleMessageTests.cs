@@ -27,28 +27,31 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
 
 			Exception failure = null;
-			var subscription = context.Subscribe<int>(eventName, _ =>
-			{
-				// do nothing...
-			});
+
 			Task Launch(int threadNumber)
 			{
+
 				var task = Task.Run(() =>
 				{
 					try
 					{
+						var subscription = context.Subscribe<int>(eventName, _ =>
+						{
+							// do nothing...
+						});
+
 						for (var i = 0; i < cycleCount; i++)
 						{
 							var id = (threadNumber * cycleCount) + i;
 							var rc = new RequestContext("cid", "pid", id, 200, 1, eventPath, "get", "1",
 								new HashSet<string>());
-							context.HandleMessage(rc);
+							context.HandleMessage(rc, "");
 						}
 					}
 					catch (Exception ex)
 					{
 						failure = ex;
-						throw;
+
 					}
 				});
 				return task;

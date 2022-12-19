@@ -45,7 +45,7 @@
 
 #contentManagerIcon{
     top: 4px;
-    width: 12px;
+    width: 10px;
     height: 12px;
     align-self: center;
 }
@@ -94,29 +94,23 @@
 }
 
 #categoryIcon{
-    margin-top: 10px;
-    margin-bottom: 10px;
-    flex-grow: 1;
-    width: 15px;
-    height:15px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
     align-self: center;
 }
 
 #typeIcon{
-    margin-top: 10px;
-    margin-bottom: 10px;
-    flex-grow: 1;
-    width: 15px;
-    height:15px;
+    top: 5px;
+    width: 12px;
+    height:12px;
     align-self: center;
 }
 
 #infoIcon{
-    margin-top: 10px;
-    margin-bottom: 10px;
-    flex-grow: 1;
+    top: 8px;
     width: 8px;
-    height:15px;
+    height: 15px;
     align-self: center;
 }
 
@@ -133,10 +127,8 @@ Button {
 }
 
 #accountIcon{
-    margin-top: 10px;
-    margin-bottom: 10px;
-    flex-grow: 1;
+    top: 8px;
     width: 15px;
-    height:15px;
+    height: 15px;
     align-self: center;
 }

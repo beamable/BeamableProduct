@@ -75,71 +75,46 @@ namespace Beamable.Server.Editor
 			}
 
 			LatestCodeHandles = new List<BeamServiceCodeHandle>(64);
-			ServiceToChecksum = new Dictionary<MicroserviceDescriptor, ServiceDependencyChecksum>();
-			
+
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var msCodeHandles = new List<BeamServiceCodeHandle>();
-			var cachedDeps = new List<MicroserviceDependencies>();
-			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
-
-			for (int i = 0; i < registry.Descriptors.Count; i++)
+			var msCodeHandles = registry.Descriptors.Select(desc => new BeamServiceCodeHandle()
 			{
-				var cachedInfo = registry.Descriptors[i].ConvertToInfo();
-				
-				msCodeHandles.Add(new BeamServiceCodeHandle()
+				ServiceName = desc.Name,
+				CodeClass = BeamCodeClass.Microservice,
+				AsmDefInfo = desc.ConvertToInfo(),
+				CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
+			}).ToList();
+
+			ServiceToChecksum =
+				registry.Descriptors.ToDictionary(desc => desc, desc => new ServiceDependencyChecksum
 				{
-					ServiceName = registry.Descriptors[i].Name,
-					CodeClass = BeamCodeClass.Microservice,
-					AsmDefInfo = cachedInfo,
-					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
+					ServiceName = desc.Name,
+					Checksum = DependencyResolver.GetDependencies(desc).GetDependencyChecksum()
 				});
-				
-				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies));
-				ServiceToChecksum.Add
-				(
-					registry.Descriptors[i],
-					new ServiceDependencyChecksum
-					{
-						ServiceName = registry.Descriptors[i].Name,
-						Checksum = cachedDeps[i].GetDependencyChecksum()
-					}
-				);
-			}
-			
-			var storageCodeHandles = new HashSet<BeamServiceCodeHandle>();
 
-			for (int k = 0; k < registry.StorageDescriptors.Count; k++)
+			var storageCodeHandles = registry.StorageDescriptors.Select(desc => new BeamServiceCodeHandle()
 			{
-				var cachedInfo = registry.StorageDescriptors[k].ConvertToInfo();
-				storageCodeHandles.Add(new BeamServiceCodeHandle()
-				{
-					ServiceName = registry.StorageDescriptors[k].Name,
-					CodeClass = BeamCodeClass.StorageObject,
-					AsmDefInfo = cachedInfo,
-					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
-				});
-			}
+				ServiceName = desc.Name,
+				CodeClass = BeamCodeClass.StorageObject,
+				AsmDefInfo = desc.ConvertToInfo(),
+				CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
+			}).ToList();
 
-			var sharedAssemblyHandles = new HashSet<BeamServiceCodeHandle>();
-			
-			for (int i = 0; i < cachedDeps.Count; i++)
-			{
-				var defs = cachedDeps[i].Assemblies.ToCopy.Distinct().
-				                         Except(msCodeHandles.Select(h => h.AsmDefInfo))
-				                        .Except(storageCodeHandles.Select(h => h.AsmDefInfo)).ToArray();
+			var sharedAssemblyHandles = registry.Descriptors
+												.Select(DependencyResolver.GetDependencies)
+												.SelectMany(deps => deps.Assemblies.ToCopy)
+												.Distinct()
+												.Except(msCodeHandles.Select(h => h.AsmDefInfo))
+												.Except(storageCodeHandles.Select(h => h.AsmDefInfo))
+												.Select(asm => new BeamServiceCodeHandle
+												{
+													ServiceName = asm.Name,
+													CodeDirectory = Path.GetDirectoryName(asm.Location),
+													CodeClass = BeamCodeClass.SharedAssembly,
+													AsmDefInfo = asm,
+												})
+												.ToList();
 
-				for (int k = 0; k < defs.Length; k++)
-				{
-					sharedAssemblyHandles.Add(new BeamServiceCodeHandle
-					{
-						ServiceName = defs[k].Name,
-						CodeDirectory = Path.GetDirectoryName(defs[k].Location),
-						CodeClass = BeamCodeClass.SharedAssembly,
-						AsmDefInfo = defs[k],
-					});
-				}
-			}
-			
 			LatestCodeHandles.Clear();
 			LatestCodeHandles.AddRange(sharedAssemblyHandles);
 			LatestCodeHandles.AddRange(msCodeHandles);
@@ -208,42 +183,22 @@ namespace Beamable.Server.Editor
 
 			// Get the reflection cache
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
-			
-			// Find every declared Microservice that has a dependency on a storage object.
 
-			HashSet<string> storageAsmNames = new HashSet<string>();
-			
-			for (int i = 0; i < LatestCodeHandles.Count; i++)
+			// Find every declared Microservice that has a dependency on a storage object.
+			var storages = LatestCodeHandles.Where(c => c.CodeClass == BeamCodeClass.StorageObject).ToList();
+			var storageAsmNames = storages.Select(sch => sch.AsmDefInfo.Name).ToList();
+			var descToDeps = registry.Descriptors.ToDictionary(d => d, DependencyResolver.GetDependencies);
+			var microservicesThatDependOnStorage = registry.Descriptors.Where(d =>
 			{
-				if (LatestCodeHandles[i].CodeClass == BeamCodeClass.StorageObject)
-				{
-					storageAsmNames.Add(LatestCodeHandles[i].AsmDefInfo.Name);
-				}
-			}
-			
-			var microservicesThatDependOnStorage = new List<MicroserviceDescriptor>();
-			
-			for (int i = 0; i < registry.Descriptors.Count; i++)
-			{
-				MicroserviceDependencies dep = DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies);
-				var tmp = dep.Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
-				
-				if (tmp != null)
-					microservicesThatDependOnStorage.Add(registry.Descriptors[i]);
-			}
+				var deps = descToDeps[d].Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
+				return deps != null;
+			});
 
 			// Find all MSs that are missing the correct Mongo DLLs
-			
-			for (int i = 0; i < microservicesThatDependOnStorage.Count; i++)
-			{
-				var missingMongoDepsAsmDefs = microservicesThatDependOnStorage[i].ConvertToAsset();
-				if (!missingMongoDepsAsmDefs.HasMongoLibraries())
-				{
-					// Add Mongo Libraries to each of the ones that are missing them.
-					missingMongoDepsAsmDefs.AddMongoLibraries();
-				}
-			}
+			var missingMongoDepsAsmDefs = microservicesThatDependOnStorage.Select(ms => ms.ConvertToAsset()).Where(asm => !asm.HasMongoLibraries());
+
+			// Add Mongo Libraries to each of the ones that are missing them.
+			foreach (var asset in missingMongoDepsAsmDefs) asset.AddMongoLibraries();
 		}
 
 		public void CheckForLocalChangesNotYetDeployed()

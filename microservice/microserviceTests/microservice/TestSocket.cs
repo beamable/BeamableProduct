@@ -15,9 +15,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Serilog;
-using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Text.Json;
 
 namespace Beamable.Microservice.Tests.Socket
 {
@@ -29,7 +27,7 @@ namespace Beamable.Microservice.Tests.Socket
         {
             _configure = configure;
         }
-        public IConnection Create(string _, IMicroserviceArgs __)
+        public IConnection Create(string _)
         {
             var socket = new TestSocket();
             _configure(socket);
@@ -611,12 +609,12 @@ namespace Beamable.Microservice.Tests.Socket
     public class TestSocket : IConnection
     {
         private event Action<TestSocket> _onConnectionCallbacks;
-        private Action<IConnection, JsonDocument, long, Stopwatch> _onMessageCallbacks = (s, m, id, sw) => { };
+        private Action<IConnection, string, long> _onMessageCallbacks = (s, m, id) => { };
 
         public Action MockConnect;
         public Action<Action<TestSocket>> MockOnConnect;
         public event Action<TestSocket, bool> _onDisconnectionCallbacks;
-        public Action<Action<IConnection, JsonDocument, long, Stopwatch>> MockOnMessage;
+        public Action<Action<IConnection, string, long>> MockOnMessage;
         // public Action<string> MockSendMessage;
 
         /// <summary>
@@ -629,7 +627,6 @@ namespace Beamable.Microservice.Tests.Socket
 
         private long id;
         private List<MockTestRequestHandler> _handlers = new List<MockTestRequestHandler>();
-
 
         public WebSocketState State => WebSocketState.Open;
         private bool _failOnException = true;
@@ -683,12 +680,6 @@ namespace Beamable.Microservice.Tests.Socket
             if (handler == null)
             {
 	            Log.Verbose("Test socket found no handler for " + message);
-
-	            foreach (var x in _handlers)
-	            {
-		            if (!x.Frequency.CanCall())continue;
-		            Log.Verbose($"  ---- found {x.Description}");
-	            }
                 Fail(new NoHandlerException(message, req));
                 return;
             }
@@ -830,8 +821,7 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithPost()
                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "basic"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
-                  MessageFrequency.OnlyOnce(),
-                  desc:$"basic-provider for id=[{-3-requestIdOffset}]"
+                  MessageFrequency.OnlyOnce()
                )
                .AddMessageHandler(
                   MessageMatcher
@@ -840,8 +830,7 @@ namespace Beamable.Microservice.Tests.Socket
                      .WithPost()
                      .WithBody<MicroserviceServiceProviderRequest>(body => body.type == "event"),
                   MessageResponder.Success(new MicroserviceProviderResponse()),
-                  MessageFrequency.OnlyOnce(),
-                  desc:$"event-provider for id=[{-4-requestIdOffset}]"
+                  MessageFrequency.OnlyOnce()
                );
             if (addShutdownResponder)
             {
@@ -895,8 +884,7 @@ namespace Beamable.Microservice.Tests.Socket
         public void SendToClient(string msg)
         {
             var next = Interlocked.Increment(ref id);
-            var doc = JsonDocument.Parse(msg);
-            _onMessageCallbacks(this, doc, next, null);
+            _onMessageCallbacks(this, msg, next);
         }
 
         public void SendToClient<T>(T obj)
@@ -928,7 +916,7 @@ namespace Beamable.Microservice.Tests.Socket
         }
 
         public bool MockIsConnectionOpen = true;
-        public async Task SendMessage(string message, Stopwatch sw=null)
+        public async Task SendMessage(string message)
         {
             if (!MockIsConnectionOpen)
             {
@@ -949,15 +937,11 @@ namespace Beamable.Microservice.Tests.Socket
             return this;
         }
 
-        public IConnection OnMessage(Action<IConnection, JsonDocument, long, Stopwatch> onMessage)
+        public IConnection OnMessage(Action<IConnection, string, long> onMessage)
         {
-	        MockOnMessage?.Invoke(onMessage);
-	        return this;
+            MockOnMessage?.Invoke(onMessage);
+            return this;
         }
-
-        public IConnection OnMessage(Action<IConnection, JsonDocument, long> onMessage) =>
-	        OnMessage((c, msg, id, _) => onMessage(c, msg, id));
-
 
         public bool AllMocksCalled()
         {

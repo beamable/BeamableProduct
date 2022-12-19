@@ -67,7 +67,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// The raw body of this request.
 		/// </summary>
-		public virtual string Body { get; }
+		public string Body { get; }
 
 		/// <summary>
 		/// Permissions associated with the caller of this request.
@@ -77,7 +77,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// HTTP headers associated with this request
 		/// </summary>
-		public virtual RequestHeaders Headers { get; }
+		public RequestHeaders Headers { get; }
 
 		public bool HasScopes(IEnumerable<string> scopes) => HasScopes(scopes.ToArray());
 		public bool HasScopes(params string[] scopes)
@@ -126,10 +126,7 @@ namespace Beamable.Server
 			Body = body;
 			Scopes = scopes ?? new HashSet<string>();
 			Scopes.RemoveWhere(string.IsNullOrEmpty);
-			if (headers != null)
-			{
-				Headers = new RequestHeaders(headers);
-			}
+			Headers = new RequestHeaders(headers);
 		}
 
 		public RequestContext(string cid, string pid)
@@ -143,6 +140,7 @@ namespace Beamable.Server
 			Status = 0;
 			Body = "";
 			Scopes = new HashSet<string>();
+			Headers = new RequestHeaders();
 		}
 
 	}

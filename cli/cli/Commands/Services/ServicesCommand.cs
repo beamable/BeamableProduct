@@ -32,8 +32,8 @@ public class ServicesCommand : AppCommand<ServicesCommandArgs>
 
 	public override void Configure() { }
 
-	public override Task Handle(ServicesCommandArgs args)
+	public override async Task Handle(ServicesCommandArgs args)
 	{
-		return Task.CompletedTask;
+
 	}
 }

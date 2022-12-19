@@ -75,9 +75,9 @@ namespace Beamable.Common.Reflection
 				}
 				else
 				{
-					for (int i = 0; i < attributes.Length; i++)
+					foreach (var attrObj in attributes)
 					{
-						var attribute = (Attribute)attributes[i];
+						var attribute = (Attribute)attrObj;
 						if (attribute != null)
 						{
 							var cast = (IReflectionAttribute)attribute;

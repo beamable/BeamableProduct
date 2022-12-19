@@ -13,17 +13,6 @@ public class ConfigurableOption : Option<String>
 	}
 }
 
-public class ConfigurableIntOption : Option<int>
-{
-	public string OptionName { get; }
-
-	public ConfigurableIntOption(string optionName, string desc)
-		: base($"--{optionName}", desc)
-	{
-		OptionName = optionName;
-	}
-}
-
 public class ConfigurableOptionFlag : Option<bool>
 {
 	public string OptionName { get; }

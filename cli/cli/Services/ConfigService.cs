@@ -1,5 +1,6 @@
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
+using System.Net.Http.Json;
 
 namespace cli;
 

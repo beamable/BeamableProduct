@@ -9,7 +9,6 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Windows;
-using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 #if UNITY_2019_4_OR_NEWER
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
@@ -19,8 +18,6 @@ namespace Beamable.Editor.ToolbarExtender
 {
 	public static class BeamableToolbarExtender
 	{
-		const string GET_ALL_METHOD_NAME = "GetAll";
-
 		private static int _toolCount;
 		private static GUIStyle _commandStyle = null;
 
@@ -37,6 +34,7 @@ namespace Beamable.Editor.ToolbarExtender
 		private static Texture _validationTexture;
 
 #if UNITY_2019_4_OR_NEWER
+		private static ListRequest _packageListRequest;
 		private static bool _hasPreviewPackages = false;
 #endif
 
@@ -127,6 +125,10 @@ namespace Beamable.Editor.ToolbarExtender
 			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
 			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
 			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
+
+#if UNITY_2019_4_OR_NEWER
+			_packageListRequest = Client.List(true);
+#endif
 		}
 
 #if UNITY_2019_3_OR_NEWER
@@ -232,20 +234,13 @@ namespace Beamable.Editor.ToolbarExtender
 
 
 #if UNITY_2019_4_OR_NEWER // Handling of preview packages
-			Type type = typeof(UnityEditor.PackageManager.PackageInfo);
-			MethodInfo methodInfo = type?.GetMethod(GET_ALL_METHOD_NAME, BindingFlags.NonPublic | BindingFlags.Static);
-			var result =  methodInfo?.Invoke(null, null);
-
-			if (result != null)
+			if (_hasPreviewPackages || (_packageListRequest!= null && _packageListRequest.IsCompleted))
 			{
-				var allPackages = ((Array)result).Cast<PackageInfo>().ToArray();
-
 				// Parse package list only if we haven't detected that there are preview packages.
-				var foundPreviewPackages = allPackages.Any(package =>
+				var foundPreviewPackages = _packageListRequest?.Result!=null && _packageListRequest.Result.Any(package =>
 				{
 					// referencing https://docs.unity3d.com/Manual/upm-lifecycle.html
-					if (package.registry == null)
-						return false; // no registry implies a local package, which won't trigger.
+					if (package.registry == null) return false; // no registry implies a local package, which won't trigger.
 					if (!PackageVersion.TryFromSemanticVersionString(package.version, out var version))
 					{
 						return true; // this isn't a valid package version, so we'll assume its a preview.
@@ -262,7 +257,6 @@ namespace Beamable.Editor.ToolbarExtender
 					rightRect.xMax -= space;
 					rightRect.xMax -= previewPackagesWarningWidth;
 				}
-				
 			}
 #endif
 
@@ -375,6 +369,12 @@ namespace Beamable.Editor.ToolbarExtender
 						button.OnButtonClicked(editorAPI);
 					}
 				}
+			}
+
+			if (!_hasPreviewPackages && (_packageListRequest == null || _packageListRequest?.Error != null))
+			{
+				_packageListRequest = Client.List(true);
+				Repaint();
 			}
 		}
 	}

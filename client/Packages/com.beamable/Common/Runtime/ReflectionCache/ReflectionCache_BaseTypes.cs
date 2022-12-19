@@ -70,13 +70,14 @@ namespace Beamable.Common.Reflection
 		/// <param name="baseTypesToSearchIn">The <see cref="BaseTypeOfInterest"/> to check <paramref name="type"/> against.</param>
 		/// <param name="foundType">The first <see cref="BaseTypeOfInterest"/> that matches.</param>
 		/// <returns><see cref="true"/>, if a type was found. <see cref="false"/> otherwise.</returns>
-		public bool TryFindBaseTypesOfInterest(Type type, IReadOnlyList<BaseTypeOfInterest> baseTypesToSearchIn, out BaseTypeOfInterest foundType)
+		public bool TryFindBaseTypesOfInterest(Type type, IEnumerable<BaseTypeOfInterest> baseTypesToSearchIn, out BaseTypeOfInterest foundType)
 		{
-			for (var i = 0; i < baseTypesToSearchIn.Count; i++)
+			var typesToSearchIn = baseTypesToSearchIn.ToList();
+			for (var i = 0; i < typesToSearchIn.Count; i++)
 			{
 				// TODO: Can probably write this in a faster way... but don't really want to think about this right now --- will add profiler markers to system wrapped
 				// TODO: in BEAMABLE_DIAGNOSTICS directives for us to see if we need to do better.
-				var baseType = baseTypesToSearchIn[i];
+				var baseType = typesToSearchIn[i];
 				if (baseType.IncludesItself || baseType.BaseType.IsInterface)
 				{
 					if (baseType.BaseType.IsAssignableFrom(type))

@@ -61,7 +61,6 @@ namespace Beamable.Editor.Content
 			if (ActiveContext == null) return;
 
 			_actionBarVisualElement?.RefreshPublishDropdownVisibility();
-			_statusBarElement?.RefreshStatus();
 		}
 
 

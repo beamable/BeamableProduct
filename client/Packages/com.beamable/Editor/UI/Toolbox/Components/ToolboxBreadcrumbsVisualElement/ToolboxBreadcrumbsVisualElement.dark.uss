@@ -3,10 +3,16 @@
 }
 
 
+.boundedButton {
+    border-color:#8f8f8f;
+}
+
 .unboundedButton {
 
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 
 }
 
-
+#openPortalButton{
+    border-color: #8f8f8f;
+}

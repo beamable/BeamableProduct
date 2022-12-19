@@ -341,25 +341,24 @@ namespace Beamable.Common.Reflection
 				}
 
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
-				
-				for (int index = 0; index < reflectionBasedSystem.BaseTypesOfInterest.Count; index++)
+				foreach (var type in reflectionBasedSystem.BaseTypesOfInterest)
 				{
-					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(reflectionBasedSystem.BaseTypesOfInterest[index], out var mappedSubtypes))
+					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(type, out var mappedSubtypes))
 					{
 						// TODO: Add a conditional log line.
 						continue;
 					}
-					reflectionBasedSystem.OnBaseTypeOfInterestFound(reflectionBasedSystem.BaseTypesOfInterest[index], mappedSubtypes);
+					reflectionBasedSystem.OnBaseTypeOfInterestFound(type, mappedSubtypes);
 				}
 
-				for (int index = 0; index < reflectionBasedSystem.AttributesOfInterest.Count; index++)
+				foreach (var attributeType in reflectionBasedSystem.AttributesOfInterest)
 				{
-					if (!_perAttributeCache.AttributeMappings.TryGetValue(reflectionBasedSystem.AttributesOfInterest[index], out var mappedAttributes))
+					if (!_perAttributeCache.AttributeMappings.TryGetValue(attributeType, out var mappedAttributes))
 					{
 						// TODO: Add a conditional log line
 						continue;
 					}
-					reflectionBasedSystem.OnAttributeOfInterestFound(reflectionBasedSystem.AttributesOfInterest[index], mappedAttributes);
+					reflectionBasedSystem.OnAttributeOfInterestFound(attributeType, mappedAttributes);
 				}
 			}
 		}
@@ -395,9 +394,9 @@ namespace Beamable.Common.Reflection
 				perAttributeLists.AttributeTypes.AddRange(attrTypesSplit.Where(group => !group.Key).SelectMany(group => group));
 				perAttributeLists.MemberAttributeTypes.AddRange(attrTypesSplit.Where(group => group.Key).SelectMany(group => group));
 
-				for (int i = 0; i < attributesOfInterest.Count; i++)
+				foreach (var attrType in attributesOfInterest)
 				{
-					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
+					perAttributeLists.AttributeMappings.Add(attrType, new List<MemberAttribute>());
 				}
 			}
 
@@ -417,23 +416,23 @@ namespace Beamable.Common.Reflection
 									  .SelectMany(group => group.ToList())
 									  .ToList();
 
-				for (int i = 0; i < validAssemblies.Count; i++)
+				foreach (var assembly in validAssemblies)
 				{
-					var types = validAssemblies[i].GetTypes();
+					var types = assembly.GetTypes();
 
-					for (int k = 0; k < types.Length; k++)
+					foreach (var type in types)
 					{
 						// Get a list of all attributes of interest that were found on this type.
-						GatherMembersFromAttributesOfInterest(types[k],
-						                                      perAttributeLists.AttributeTypes,
-						                                      perAttributeLists.MemberAttributeTypes,
-						                                      perAttributeLists.AttributeMappings);
+						GatherMembersFromAttributesOfInterest(type,
+																		   perAttributeLists.AttributeTypes,
+																		   perAttributeLists.MemberAttributeTypes,
+																		   perAttributeLists.AttributeMappings);
 
 						// Check for base types of interest
-						if (TryFindBaseTypesOfInterest(types[k], baseTypesOfInterest, out var foundType))
+						if (TryFindBaseTypesOfInterest(type, baseTypesOfInterest, out var foundType))
 						{
 							if (perBaseTypeLists.MappedSubtypes.TryGetValue(foundType, out var baseTypesList))
-								baseTypesList.Add(types[k]);
+								baseTypesList.Add(type);
 						}
 					}
 				}

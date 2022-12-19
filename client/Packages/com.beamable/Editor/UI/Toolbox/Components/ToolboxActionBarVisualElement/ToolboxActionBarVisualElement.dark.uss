@@ -1,11 +1,13 @@
-
+#mainVisualElement {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
 
 .boundedButton {
-    border-color: #282828;
+    border-color: #383838;
 }
 
 #contentManagerIcon{
-    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_light 1.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_light.png");
 }
 
 #skinningIcon{
@@ -33,7 +35,7 @@
 }
 
 .unboundedButton {
-    border-color: #282828;
+    border-color: #383838;
 }
 
 #accountIcon{

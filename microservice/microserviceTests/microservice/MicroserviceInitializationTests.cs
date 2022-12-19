@@ -17,7 +17,7 @@ using Serilog.Events;
 
 namespace microserviceTests.microservice
 {
-	[Microservice(nameof(SingletonCache_Success), EnableEagerContentLoading = false)]
+	[Microservice(nameof(SingletonCache_Success))]
 	public class SingletonCache_Success : Microservice
 	{
 		public static readonly ServiceCacheData Cache = new ServiceCacheData();
@@ -54,7 +54,7 @@ namespace microserviceTests.microservice
 		}
 	}
 
-	[Microservice(nameof(SingletonCache_CacheGuard), EnableEagerContentLoading = false)]
+	[Microservice(nameof(SingletonCache_CacheGuard))]
 	public class SingletonCache_CacheGuard : Microservice
 	{
 		public static readonly ServiceCacheData Cache = new ServiceCacheData();
@@ -103,7 +103,7 @@ namespace microserviceTests.microservice
 	}
 
 
-	[Microservice(nameof(ExecutionOrder), EnableEagerContentLoading = false)]
+	[Microservice(nameof(ExecutionOrder))]
 	public class ExecutionOrder : Microservice
 	{
 		public static readonly ExecutionCounter CachedCounter = new ExecutionCounter();

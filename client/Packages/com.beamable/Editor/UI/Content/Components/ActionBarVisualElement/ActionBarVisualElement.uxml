@@ -17,12 +17,15 @@
             <beamable:SearchBarVisualElement name="searchBar"/>
           <engine:Button class="unboundedButton" name="tagButton">
               <engine:Image name="tagButtonImg"/>
+              <engine:Label text="Tag" class="unboundedButtonLabel"/>
           </engine:Button>
           <engine:Button class="unboundedButton" name="typeButton">
               <engine:Image name="typeButtonImg"/>
+              <engine:Label text="Type" class="unboundedButtonLabel"/>
           </engine:Button>
           <engine:Button class="unboundedButton" name="statusButton">
               <engine:Image name="statusButtonImg"/>
+              <engine:Label text="Status" class="unboundedButtonLabel"/>
           </engine:Button>
           <engine:Button class="unboundedButton" name="refreshButton">
               <engine:Image name="refreshButtonImg"/>

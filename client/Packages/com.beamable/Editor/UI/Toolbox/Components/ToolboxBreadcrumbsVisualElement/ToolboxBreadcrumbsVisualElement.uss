@@ -15,7 +15,7 @@
     margin-right: 10px;
     margin-top: 0px;
     margin-bottom: 0px;
-    border-radius: 2px;
+    border-radius: 5px;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
@@ -63,11 +63,21 @@
     width: 80px;
     position: relative;
     align-self: flex-end;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     cursor: pan;
     background-image: none;
-    border-radius: 2px;
+    border-radius: 5px;
     right: 10px;
 }
 
+/*#accountIcon{*/
+/*     top: 4px;*/
+/*     width: 15px;*/
+/*     height: 15px;*/
+/*     align-self: center;*/
+/* }*/

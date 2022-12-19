@@ -99,16 +99,7 @@ namespace Beamable.Common.Reflection
 		/// </summary>
 		public bool TryGetFromMemberInfo(MemberInfo info, out Attribute attribute)
 		{
-			attribute = null;
-			
-			foreach (var customAttributeData in info.CustomAttributes)
-			{
-				if (customAttributeData.AttributeType == AttributeType)
-				{
-					attribute = info.GetCustomAttribute(AttributeType, false);
-					break;
-				}
-			}
+			attribute = info.GetCustomAttribute(AttributeType, false);
 
 			// Assert instead of failing silently. Failing silently here means we could fail due to the member not having the correct flag. This is a case where we should fail loudly, as it's
 			// supposed to be impossible.
@@ -126,24 +117,9 @@ namespace Beamable.Common.Reflection
 		/// </summary>
 		public bool CanBeFoundInType(Type type)
 		{
-			for (int i = 0; i < FoundInBaseTypes.Count; i++)
-			{
-				if (FoundInBaseTypes[i].IsAssignableFrom(type))
-					return true;
-			}
-			
-			for (int i = 0; i < FoundInTypesWithAttributes.Count; i++)
-			{
-				foreach (var element in type.CustomAttributes)
-				{
-					if (element.AttributeType == FoundInTypesWithAttributes[i])
-					{
-						return true;
-					}
-				}
-			}
-			
-			return false;
+			var canHaveDeclaredMembers = FoundInBaseTypes.Any(baseType => baseType.IsAssignableFrom(type));
+			canHaveDeclaredMembers |= FoundInTypesWithAttributes.Any(attrType => type.GetCustomAttribute(attrType) != null);
+			return canHaveDeclaredMembers;
 		}
 
 		/// <summary>
@@ -224,31 +200,14 @@ namespace Beamable.Common.Reflection
 														   IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
 														   Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
 		{
-
-			bool HasType(MemberInfo memberInfo, Type type)
-			{
-				foreach (var customAttributeData in memberInfo.CustomAttributes)
-				{
-					if (customAttributeData.AttributeType == type)
-						return true;
-				}
-
-				return false;
-			}
-			
 			// Check for attributes over the type itself.
-			
-			for (int i = 0; i < attributesToSearchFor.Count; i++)
+			foreach (var attributeOfInterest in attributesToSearchFor)
 			{
-				if (HasType(member, attributesToSearchFor[i].AttributeType))
+				var attributes = member.GetCustomAttributes(attributeOfInterest.AttributeType, false);
+				foreach (var attrObj in attributes)
 				{
-					var attributes = member.GetCustomAttributes(attributesToSearchFor[i].AttributeType, false);
-
-					for (int j = 0; j < attributes.Length; j++)
-					{
-						var attribute = attributes[j] as Attribute;
-						foundAttributes[attributesToSearchFor[i]].Add(new MemberAttribute(member, attribute));
-					}
+					var attribute = attrObj as Attribute;
+					foundAttributes[attributeOfInterest].Add(new MemberAttribute(member, attribute));
 				}
 			}
 
@@ -256,24 +215,21 @@ namespace Beamable.Common.Reflection
 			if (member.MemberType == MemberTypes.TypeInfo || member.MemberType == MemberTypes.NestedType)
 			{
 				var type = (Type)member;
-				for (int i = 0; i < declaredMemberAttributesToSearchFor.Count; i++)
+				foreach (var attributeOfInterest in declaredMemberAttributesToSearchFor)
 				{
 					// See if this type that we are checking can actually have an attribute of this type. Skip it if we can't.
-					var canHaveDeclaredMembers = declaredMemberAttributesToSearchFor[i].CanBeFoundInType(type);
+					var canHaveDeclaredMembers = attributeOfInterest.CanBeFoundInType(type);
 					if (!canHaveDeclaredMembers) continue;
 
 					// For each declared member, check if they have the current attribute of interest -- if they do, add them to the found attribute list.
 					// In this step we catch every member with the attribute --- individual systems are welcome to parse and yield errors at a later step.
-					
-					var filteredMembers = type.FindMembers(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES, BindingFlags.Public |
-					                                       BindingFlags.NonPublic |
-					                                       BindingFlags.Instance |
-					                                       BindingFlags.Static, null, null);
-					
-					for (int k = 0; k < filteredMembers.Length; k++) 
+					foreach (var memberInfo in type.FindMembers(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES, BindingFlags.Public |
+																															   BindingFlags.NonPublic |
+																															   BindingFlags.Instance |
+																															   BindingFlags.Static, null, null))
 					{
-						if (declaredMemberAttributesToSearchFor[i].TryGetFromMemberInfo(filteredMembers[k], out var attribute))
-							foundAttributes[declaredMemberAttributesToSearchFor[i]].Add(new MemberAttribute(filteredMembers[k], attribute));
+						if (attributeOfInterest.TryGetFromMemberInfo(memberInfo, out var attribute))
+							foundAttributes[attributeOfInterest].Add(new MemberAttribute(memberInfo, attribute));
 					}
 				}
 			}

@@ -29,7 +29,6 @@ using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Payments;
-using Beamable.Server.Common;
 using Beamable.Server.Content;
 using Core.Server.Common;
 using microservice;
@@ -47,7 +46,6 @@ using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Stats;
 using Beamable.Common.Reflection;
-using Beamable.Experimental.Api.Chat;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Api.Notifications;
 using microservice.Common;
@@ -55,7 +53,6 @@ using Newtonsoft.Json;
 using Serilog;
 
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
@@ -233,7 +230,7 @@ namespace Beamable.Server
          _mongoSerializationService = new MongoSerializationService();
          _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
 
-         _contentService ??= CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
+         _contentService = CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
          ContentApi.Instance.CompleteSuccess(_contentService);
 
          _serviceShutdownTokenSource = new CancellationTokenSource();
@@ -241,20 +238,20 @@ namespace Beamable.Server
 
          InitServices();
 
-		_serviceInitialized.Error(ex =>
+         _serviceInitialized.Then(_ =>
+         {
+            _contentService.Init();
+         }).Error(ex =>
          {
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
+
 
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
-         if (!_serviceAttribute.EnableEagerContentLoading)
-         {
-	         var _ = _contentService.Init();
-         }
+         await SetupWebsocket(socket);
       }
 
       private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
@@ -264,14 +261,15 @@ namespace Beamable.Server
 		      : new ContentService(requester, socket, contentResolver, reflectionCache);
       }
 
-      public async Task RunForever()
+      public void RunForever()
       {
          AppDomain.CurrentDomain.ProcessExit += async (sender, args) =>
          {
             await OnShutdown(sender, args);
          };
 
-         await Task.Delay(-1);
+         CancellationTokenSource cancelSource = new CancellationTokenSource();
+         cancelSource.Token.WaitHandle.WaitOne();
       }
 
       public async Task OnShutdown(object sender, EventArgs args)
@@ -363,28 +361,28 @@ namespace Beamable.Server
          SwaggerGenerator.InvalidateSwagger(this);
       }
 
-      async Task SetupWebsocket(IConnection socket, bool initContent = false)
+      async Task SetupWebsocket(IConnection socket)
       {
          _connection = socket;
 
          socket.OnDisconnect((s, wasClean) => CloseConnection(s, wasClean).Wait());
-
-         socket.OnMessage(async (s, message, messageNumber, sw) =>
+         socket.OnMessage( async (s, message, messageNumber) =>
          {
-	         try
-	         {
-		         await MonitorTask(messageNumber, () => HandleWebsocketMessage(socket, message, sw));
-	         }
-	         catch (Exception ex)
-	         {
-		         BeamableLogger.LogException(ex);
-	         }
+            try
+            {
+               await MonitorTask(messageNumber, () => HandleWebsocketMessage(socket, message));
+            }
+            catch (Exception ex)
+            {
+               BeamableLogger.LogException(ex);
+            }
          });
 
          try
          {
 	         _socketRequesterContext.Daemon.WakeAuthThread();
             await _requester.WaitForAuthorization();
+
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
@@ -394,17 +392,11 @@ namespace Beamable.Server
                 // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
                 if (!_ranCustomUserInitializationHooks)
                 {
-	                if (initContent)
-	                {
-		                await _contentService.Init(preload:true);
-	                }
-
                     await ResolveCustomInitializationHook();
                     _ranCustomUserInitializationHooks = true;
                 }
             }
 
-       
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
@@ -526,7 +518,7 @@ namespace Beamable.Server
          void Attempt()
          {
             Log.Debug($"connecting to ws ({Host}) ... ");
-            var ws = _connectionProvider.Create(Host, _args);
+            var ws = _connectionProvider.Create(Host);
             ws.OnConnect(socket =>
             {
                Log.Debug("connection made.");
@@ -561,10 +553,12 @@ namespace Beamable.Server
 
          try
          {
-	         if (!_runningTaskTable.TryAdd(messageNumber, task))
+
+            if (!_runningTaskTable.TryAdd(messageNumber, task))
             {
                BeamableLogger.LogWarning("Could not monitor task. {id} {status}", messageNumber, task.Status);
             }
+
             // watch the task...
             var _ = task.ContinueWith(finishedTask =>
             {
@@ -572,6 +566,7 @@ namespace Beamable.Server
                {
                   BeamableLogger.LogWarning("Could not discard monitored task {id}", messageNumber);
                }
+
                if (finishedTask.IsFaulted)
                {
                   BeamableLogger.LogException(finishedTask.Exception);
@@ -592,11 +587,11 @@ namespace Beamable.Server
       }
 
 
-      async Task HandlePlatformMessage(RequestContext ctx)
+      async Task HandlePlatformMessage(RequestContext ctx, string msg)
       {
          try
          {
-            _socketRequesterContext.HandleMessage(ctx);
+            _socketRequesterContext.HandleMessage(ctx, msg);
             await _requester.Acknowledge(ctx);
          }
          catch (Exception ex)
@@ -735,7 +730,7 @@ namespace Beamable.Server
          return service;
       }
 
-      async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw)
+      async Task HandleClientMessage(RequestContext ctx, string msg)
       {
          if (RefuseNewClientMessages)
          {
@@ -749,8 +744,8 @@ namespace Beamable.Server
 
             var parameterProvider = new AdaptiveParameterProvider(ctx);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
-            BeamableSerilogProvider.LogContext.Value.Verbose("Responding with " + responseJson);
-            await _socketRequesterContext.SendMessageSafely(responseJson, sw: sw);
+            BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
+            await _socketRequesterContext.SendMessageSafely(responseJson);
             // TODO: Kill Scope
          }
          catch (MicroserviceException ex)
@@ -764,7 +759,7 @@ namespace Beamable.Server
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
             BeamableSerilogProvider.LogContext.Value.Error("Exception {type}: {message} - {source} {json} \n {stack}", ex.GetType().Name, ex.Message,
                ex.Source, failResponseJson, ex.StackTrace);
-            await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
          catch (TargetInvocationException ex)
          {
@@ -803,7 +798,7 @@ namespace Beamable.Server
                   inner.Source, inner.StackTrace);
             }
 
-            await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
          catch (Exception ex) // TODO: Catch a general PlatformException type sort of thing.
          {
@@ -825,38 +820,32 @@ namespace Beamable.Server
                }
             };
             var failResponseJson = JsonConvert.SerializeObject(failResponse);
-            await _socketRequesterContext.SendMessageSafely(failResponseJson, sw: sw);
+            await _socketRequesterContext.SendMessageSafely(failResponseJson);
          }
       }
 
-      async Task HandleWebsocketMessage(IConnection ws, JsonDocument document, Stopwatch sw)
+      async Task HandleWebsocketMessage(IConnection ws, string msg)
       {
-	      if (!document.TryBuildRequestContext(_args, out var ctx))
+         Log.Debug("Handling WS Message. {msg}",msg);
+
+         if (!msg.TryBuildRequestContext(_args, out var ctx))
          {
             Log.Debug("WS Message contains no data. Cannot handle. Skipping message.");
             return;
          }
-         
+
          var reqLog = Log.ForContext("requestContext", ctx, true);
          BeamableSerilogProvider.LogContext.Value = reqLog;
 
-         try
+         if (_socketRequesterContext.IsPlatformMessage(ctx))
          {
-	         if (_socketRequesterContext.IsPlatformMessage(ctx))
-	         {
-		         // the request is a platform request.
-		         await HandlePlatformMessage(ctx);
-	         }
-	         else
-	         {
-		         // this is a client request. Handle the service method.
-		         await HandleClientMessage(ctx, sw);
-	         }
+            // the request is a platform request.
+            await HandlePlatformMessage(ctx, msg);
          }
-         finally
+         else
          {
-	         (BeamableSerilogProvider.LogContext.Value as IDisposable)?.Dispose();
-	         BeamableSerilogProvider.LogContext.Value = null;
+            // this is a client request. Handle the service method.
+            await HandleClientMessage(ctx, msg);
          }
       }
 

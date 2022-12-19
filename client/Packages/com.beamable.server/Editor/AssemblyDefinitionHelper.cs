@@ -280,16 +280,13 @@ namespace Beamable.Server.Editor
 		   => EnumerateAssemblyDefinitionAssets()
 			  .FirstOrDefault(asm => service.IsContainedInAssemblyInfo(asm.ConvertToInfo()));
 
-
-		private static string[] _assemblyDefGuidsCache;
 		public static IEnumerable<AssemblyDefinitionAsset> EnumerateAssemblyDefinitionAssets()
 		{
-			if (_assemblyDefGuidsCache == null)
-				_assemblyDefGuidsCache = AssetDatabase.FindAssets($"t:{nameof(AssemblyDefinitionAsset)}");
-			
-			for (int i = 0; i < _assemblyDefGuidsCache.Length; i++)
+			// TODO: We could add a static cache here, because by definition, a recompile will be executed anytime a new ASMDEF shows up.
+			var assemblyDefGuids = AssetDatabase.FindAssets($"t:{nameof(AssemblyDefinitionAsset)}");
+			foreach (var assemblyDefGuid in assemblyDefGuids)
 			{
-				var assemblyDefPath = AssetDatabase.GUIDToAssetPath(_assemblyDefGuidsCache[i]);
+				var assemblyDefPath = AssetDatabase.GUIDToAssetPath(assemblyDefGuid);
 				var assemblyDef = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assemblyDefPath);
 				if (assemblyDef == null) continue;
 

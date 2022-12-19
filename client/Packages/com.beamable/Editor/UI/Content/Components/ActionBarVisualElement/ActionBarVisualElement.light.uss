@@ -1,4 +1,6 @@
-
+#actionBarVisualElement {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarLight.png");
+}
 .boundedButton {
     border-color: #b4b4b4;
 }
@@ -8,6 +10,7 @@
 #tagButtonImg {
     width: 30px;
     height: 30px;
+    margin-top: -3px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Tag-dark.png")
 }
 
@@ -15,6 +18,7 @@
 #typeButtonImg {
     width: 30px;
     height: 30px;
+    margin-top: -3px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Type-dark.png")
 }
 
@@ -22,6 +26,7 @@
 #statusButtonImg {
     width: 30px;
     height: 30px;
+    margin-top: -3px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Statuses-dark.png")
 }
 

@@ -9,8 +9,6 @@ using Beamable.Common.Content;
 using Beamable.Common.Reflection;
 using Beamable.Server.Api.Content;
 using microservice.Common;
-using Serilog;
-using System.Diagnostics;
 using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Server.Content
@@ -121,7 +119,6 @@ namespace Beamable.Server.Content
       private readonly Cache<ContentCacheKey, IContentObject> _contentCache;
       private readonly object _manifestLock = new object();
       private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
-      private bool _hasStartedInit;
 
       public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
       {
@@ -155,64 +152,9 @@ namespace Beamable.Server.Content
          return _waitForManifest;
       }
 
-      public async Promise Init(bool preload = false)
+      public void Init()
       {
-		  if (_hasStartedInit) return;
-	      _hasStartedInit = true;
-	      _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
-
-	      if (!preload) return;
-	      await DownloadAllContent();
-      }
-
-      private async Promise DownloadAllContent()
-      {
-	      // cache entire content
-	      Log.Verbose($"LOADING MANIFEST");
-	      var sw = new Stopwatch();
-	      sw.Start();
-	      var manifest = await GetManifest();
-	      Log.Verbose($"MANIFEST CONTAINS {manifest.entries.Count} OBJECTS time=[{sw.ElapsedMilliseconds}]");
-
-	      var processed = 0;
-	      var granularityForLogs = manifest.entries.Count / 10;
-	      var processedCount = 0f;
-	      
-	      if (!int.TryParse(Environment.GetEnvironmentVariable("CONTENT_PRELOAD_CHUNK_SIZE"), out var chunkSize))
-	      {
-		      chunkSize = 50;
-	      }
-
-	      while (processed < manifest.entries.Count)
-	      {
-		      if (processed + chunkSize > manifest.entries.Count)
-		      {
-			      chunkSize = manifest.entries.Count - processed;
-		      }
-
-		      var chunk = manifest.entries.GetRange(processed, chunkSize);
-		      var downloads = chunk.Select(reference => Task.Run(async () =>
-		      {
-			      try
-			      {
-			       await reference.Resolve();
-			       processedCount++;
-			       if (processedCount % granularityForLogs == 0)
-			       {
-			        Log.Verbose(
-			         $"Content Load - [{(processedCount / manifest.entries.Count) * 100:00}%] processed=[{processedCount}] total-time=[{sw.ElapsedMilliseconds}]");
-			       }
-			      }
-			      catch (Exception ex)
-			      {
-			       Log.Error($"Failed to load preload content. id=[{reference.contentId}] message=[{ex.Message}] type=[{ex.GetType().Name}] stack=[{ex.StackTrace}]");
-			      }
-		      })).ToList();
-		      await Task.WhenAll(downloads);
-		      processed += chunkSize;
-	      }
-	      Log.Verbose($"Content Load - [{(processed / manifest.entries.Count) * 100:00}%] processed=[{processedCount}] total-time=[{sw.ElapsedMilliseconds}]");
-	      sw.Stop();
+         _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
       }
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)
