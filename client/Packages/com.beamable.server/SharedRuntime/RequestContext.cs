@@ -105,7 +105,7 @@ namespace Beamable.Server
 		{
 			// no-op.
 		}
-		
+
 		/// <summary>
 		/// If the request is cancelled or times out, this will return true.
 		/// </summary>
