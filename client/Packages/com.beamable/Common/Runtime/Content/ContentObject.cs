@@ -351,9 +351,21 @@ namespace Beamable.Common.Content
       public static bool ShowChecksum { get; set; }
       public bool SerializeToConsoleRequested { get; set; }
 
+      [SerializeField]
+      private string _serializedValidationGUID { get; set; }
+      
       private void OnValidate()
       {
-         ValidationGuid = Guid.NewGuid();
+	      if (!string.IsNullOrEmpty(_serializedValidationGUID))
+	      {
+		      ValidationGuid = Guid.Parse(_serializedValidationGUID);
+	      }
+	      else
+	      {
+		      ValidationGuid = Guid.NewGuid();
+		      _serializedValidationGUID = ValidationGuid.ToString();
+	      }
+
          OnEditorValidation?.Invoke();
          // access the edit time validation context?
          var ctx = ValidationContext ?? new ValidationContext();

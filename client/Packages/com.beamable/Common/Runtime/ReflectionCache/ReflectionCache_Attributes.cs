@@ -131,18 +131,21 @@ namespace Beamable.Common.Reflection
 				if (FoundInBaseTypes[i].IsAssignableFrom(type))
 					return true;
 			}
-			
-			for (int i = 0; i < FoundInTypesWithAttributes.Count; i++)
+
+			if (FoundInTypesWithAttributes.Count > 0)
 			{
-				foreach (var element in type.CustomAttributes)
+				foreach (var element in type.CustomAttributes) // get only once because CustomAttributes GET are heavy
 				{
-					if (element.AttributeType == FoundInTypesWithAttributes[i])
+					for (int i = 0; i < FoundInTypesWithAttributes.Count; i++)
 					{
-						return true;
+						if (element.AttributeType == FoundInTypesWithAttributes[i])
+						{
+							return true;
+						}
 					}
 				}
 			}
-			
+
 			return false;
 		}
 
@@ -225,9 +228,11 @@ namespace Beamable.Common.Reflection
 														   Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
 		{
 
-			bool HasType(MemberInfo memberInfo, Type type)
+			var customAttributes = member.CustomAttributes; // moved out of loops because we don't want to use this GET many times (heavy)
+			
+			bool HasType(Type type)
 			{
-				foreach (var customAttributeData in memberInfo.CustomAttributes)
+				foreach (var customAttributeData in customAttributes)
 				{
 					if (customAttributeData.AttributeType == type)
 						return true;
@@ -240,7 +245,7 @@ namespace Beamable.Common.Reflection
 			
 			for (int i = 0; i < attributesToSearchFor.Count; i++)
 			{
-				if (HasType(member, attributesToSearchFor[i].AttributeType))
+				if (HasType(attributesToSearchFor[i].AttributeType))
 				{
 					var attributes = member.GetCustomAttributes(attributesToSearchFor[i].AttributeType, false);
 

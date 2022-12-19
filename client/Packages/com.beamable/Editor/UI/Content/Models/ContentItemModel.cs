@@ -184,8 +184,7 @@ namespace Beamable.Editor.Content.Models
 
 				if (_localContent != null && _serverData != null)
 				{
-					var distinctTagsExist = ContentIO.AreTagsEqual(_localContent.Tags, _serverData.Tags);
-					return (ContentIO.ComputeChecksum(_localContent).Equals(_serverData.Checksum) && distinctTagsExist)
+					return (ContentIO.ComputeChecksum(_localContent).Equals(_serverData.Checksum) && ContentIO.AreTagsEqual(_localContent.Tags, _serverData.Tags))
 					   ? ContentModificationStatus.NOT_MODIFIED
 					   : ContentModificationStatus.MODIFIED;
 				}
@@ -256,7 +255,7 @@ namespace Beamable.Editor.Content.Models
 			_localContent = content;
 			_allTags = CollectAllTags();
 
-			SetupLocalEventListeners();
+			SetupLocalEventListeners(_localContent as ContentObject);
 		}
 
 		public ContentItemDescriptor(LocalContentManifestEntry entry, ContentTypeDescriptor typeDescriptor)
@@ -275,7 +274,7 @@ namespace Beamable.Editor.Content.Models
 			ContentException = entry.ContentException;
 			_allTags = CollectAllTags();
 
-			SetupLocalEventListeners();
+			SetupLocalEventListeners(_localContent as ContentObject);
 		}
 
 		public ContentItemDescriptor(ManifestReferenceSuperset entry, ContentTypeDescriptor typeDescriptor)
@@ -313,7 +312,9 @@ namespace Beamable.Editor.Content.Models
 
 		public void EnrichWithLocalData(IContentObject content, string assetPath)
 		{
-			RemoveLocalEventListeners();
+			ContentObject contentObject = _localContent as ContentObject;
+			
+			RemoveLocalEventListeners(contentObject);
 			_localContent = content;
 			_name = content.Id.Split('.').Last();
 			AssetPath = assetPath;
@@ -324,7 +325,7 @@ namespace Beamable.Editor.Content.Models
 			LastChanged = _serverLastChanged;
 			ContentException = content.ContentException;
 
-			SetupLocalEventListeners();
+			SetupLocalEventListeners(contentObject);
 		}
 
 		public void EnrichWithLocalData(LocalContentManifestEntry entry)
@@ -333,7 +334,7 @@ namespace Beamable.Editor.Content.Models
 			_localData = entry;
 			_name = _localData.Id.Split('.').Last();
 			_localContent = entry.Content;
-			SetupLocalEventListeners();
+			SetupLocalEventListeners(_localContent as ContentObject);
 			LocalTags = new HashSet<string>(entry.Tags);
 			LocalStatus = HostStatus.AVAILABLE;
 			AssetPath = entry.AssetPath;
@@ -368,18 +369,15 @@ namespace Beamable.Editor.Content.Models
 			OnEnriched?.Invoke(this);
 		}
 
-		private void RemoveLocalEventListeners()
+		private void RemoveLocalEventListeners(ContentObject contentObject)
 		{
-			var contentObject = _localContent as ContentObject;
 			if (contentObject == null) return;
 
 			contentObject.OnEditorValidation -= ContentObject_OnEditorValidate;
 			contentObject.OnValidationChanged -= ContentObject_OnValidationChanged;
 		}
-		private void SetupLocalEventListeners()
+		private void SetupLocalEventListeners(ContentObject contentObject)
 		{
-
-			var contentObject = _localContent as ContentObject;
 			if (contentObject == null) return;
 
 			contentObject.OnEditorValidation += ContentObject_OnEditorValidate;
