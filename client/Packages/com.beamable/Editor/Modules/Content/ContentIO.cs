@@ -536,9 +536,9 @@ namespace Beamable.Editor.Content
 				);
 				var typeName = _contentTypeReflectionCache.TypeToName(contentType);
 
-				foreach (var assetGuid in assetGuids)
+				for (int i = 0; i < assetGuids.Length; i++)
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
+					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuids[i]);
 					var rawAsset = AssetDatabase.LoadAssetAtPath(assetPath, typeof(IContentObject));
 					var content = rawAsset as IContentObject;
 
@@ -841,27 +841,26 @@ namespace Beamable.Editor.Content
 		}
 
 
-		struct ValidationChecksum
+		[Serializable]
+		public struct ValidationChecksum
 		{
-			public Guid ValidationId;
+			public string ValidationId;
 			public string Checksum;
 		}
 
 		private static Dictionary<string, ValidationChecksum> _checksumTable =
 			new Dictionary<string, ValidationChecksum>();
 
-		private static Dictionary<Guid, string> _validationIdToChecksumTable = new Dictionary<Guid, string>();
-
 		public static string ComputeChecksum(IContentObject content)
 		{
 			// TODO: Un-confuse this if statement.
 			if (content is ContentObject contentObj && contentObj &&
 				_checksumTable.TryGetValue(contentObj.Id, out var existing) &&
-				existing.ValidationId == contentObj.ValidationGuid)
+				Guid.Parse(existing.ValidationId) == contentObj.ValidationGuid)
 			{
 				return existing.Checksum;
 			}
-
+			
 			using (var md5 = MD5.Create())
 			{
 				var json = ClientContentSerializer.SerializeProperties(content);
@@ -873,12 +872,30 @@ namespace Beamable.Editor.Content
 				{
 					_checksumTable[contentObj2.Id] = new ValidationChecksum
 					{
-						ValidationId = contentObj2.ValidationGuid,
+						ValidationId = contentObj2.ValidationGuid.ToString(),
 						Checksum = checksum
 					};
 				}
 
 				return checksum;
+			}
+		}
+
+		public static Dictionary<string, ValidationChecksum> GetCheckSumTable()
+		{
+			return _checksumTable;
+		}
+		
+		public static void SetCheckSumTable(SerializableDictionary<string, ValidationChecksum> table)
+		{
+			_checksumTable.Clear();
+
+			if (table != null)
+			{
+				foreach (var elem in table)
+				{
+					_checksumTable.Add(elem.Key, elem.Value);
+				}
 			}
 		}
 
