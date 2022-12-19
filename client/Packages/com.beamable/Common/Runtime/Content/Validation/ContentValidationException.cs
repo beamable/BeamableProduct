@@ -93,13 +93,18 @@ namespace Beamable.Common.Content.Validation
 
 		public static bool HasNameValidationErrors(IContentObject content, string contentName, out List<ContentNameValidationException> errors)
 		{
-			errors = new List<ContentNameValidationException>();
+			errors = null;
+			
 			for (var i = 0; i < contentName.Length; i++)
 			{
 				var badCharIndex = Array.IndexOf(INVALID_CHARS, contentName[i]);
 				if (badCharIndex >= 0)
 				{
 					var invalidChar = INVALID_CHARS[badCharIndex];
+					
+					if (errors == null)
+						errors = new List<ContentNameValidationException>();
+					
 					errors.Add(new ContentNameValidationException(content,
 					   invalidChar,
 					   INVALID_CHARACTERS[invalidChar],
@@ -108,7 +113,7 @@ namespace Beamable.Common.Content.Validation
 				}
 			}
 
-			return errors.Count > 0;
+			return errors?.Count > 0;
 		}
 	}
 }
