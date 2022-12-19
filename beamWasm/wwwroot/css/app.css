@@ -99,3 +99,151 @@ a, .btn-link {
     .loading-progress-text:after {
         content: var(--blazor-load-percentage-text, "Loading");
     }
+
+a {
+    color: #826CCF;
+    text-decoration: none;
+}
+
+.btn,
+input[type=submit],
+input[type=file] {
+    -webkit-appearance: none;
+    display: inline-block;
+    padding: 7px 16px;
+    font-family: "DM Mono", monospace;
+    color: #fff;
+    border-radius: 0;
+    border: 2px solid;
+    text-decoration: none;
+    z-index: 1;
+    cursor: pointer;
+    transition: color 0.25s, background-color 0.25s, border-color 0.25s;
+}
+.btn.btn-blue, form input.btn[type=file], form input.btn[type=submit],
+input[type=submit].btn-blue,
+form input[type=submit][type=file],
+form input[type=submit],
+input[type=file].btn-blue,
+form input[type=file],
+form input[type=file][type=submit] {
+    background-color: #04C6F1;
+    border-color: #04C6F1;
+    color: #fff;
+}
+.btn.btn-blue:hover, form input.btn[type=file]:hover, form input.btn[type=submit]:hover,
+input[type=submit].btn-blue:hover,
+form input[type=submit][type=file]:hover,
+form input[type=submit]:hover,
+input[type=file].btn-blue:hover,
+form input[type=file]:hover,
+form input[type=file][type=submit]:hover {
+    border-color: #fff;
+    background-color: #fff;
+    color: #04C6F1;
+}
+.btn.btn-purple,
+input[type=submit].btn-purple,
+input[type=file].btn-purple {
+    background-color: #826CCF;
+    border-color: #826CCF;
+    color: #fff;
+}
+.btn.btn-purple:hover,
+input[type=submit].btn-purple:hover,
+input[type=file].btn-purple:hover {
+    border-color: #fff;
+    background-color: #fff;
+    color: #826CCF;
+}
+.btn.btn-green,
+input[type=submit].btn-green,
+input[type=file].btn-green {
+    background-color: #13D63D;
+    border-color: #13D63D;
+    color: #fff;
+}
+.btn.btn-green:hover,
+input[type=submit].btn-green:hover,
+input[type=file].btn-green:hover {
+    border-color: #fff;
+    background-color: #fff;
+    color: #13D63D;
+}
+.btn.btn-green:hover,
+input[type=submit].btn-green:hover,
+input[type=file].btn-green:hover {
+    border: 2px solid #13D63D;
+}
+.btn.btn-hover-text,
+input[type=submit].btn-hover-text,
+input[type=file].btn-hover-text {
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.25s;
+}
+.btn.btn-hover-text:after,
+input[type=submit].btn-hover-text:after,
+input[type=file].btn-hover-text:after {
+    content: attr(data-text);
+}
+.btn.btn-hover-text:hover:after,
+input[type=submit].btn-hover-text:hover:after,
+input[type=file].btn-hover-text:hover:after {
+    content: attr(data-hover);
+}
+.btn.btn .text-hover,
+input[type=submit].btn .text-hover,
+input[type=file].btn .text-hover {
+    display: none;
+}
+
+form .btn-blue:hover, form input[type=file]:hover, form input[type=submit]:hover {
+    border-color: #04C6F1;
+}
+form .btn-green:hover {
+    border-color: #13D63D;
+}
+
+.prcing-card .btn-green:hover,
+.card .btn-green:hover {
+    border-color: #13D63D;
+}
+
+h1,
+h2,
+h3,
+.home h4,
+h4,
+h5,
+h6 {
+    margin-top: 0;
+    font-family: "Urbanist", sans-serif;
+    font-weight: 900;  
+    color: #292F36;
+    clear: both;
+}
+
+h1 {
+    font-size: 48px;
+    line-height: 56px;
+}
+
+h2 {
+    font-size: 36px;
+    line-height: 42px;
+}
+h2.xlarge {
+    font-size: 45px;
+    line-height: 54px;
+}
+
+h3, .home h4 {
+    font-size: 28px;
+    line-height: 34px;
+}
+
+h4 {
+    font-size: 21px;
+    line-height: 25px;
+}
