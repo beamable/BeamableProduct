@@ -393,14 +393,14 @@ namespace Beamable.Editor.Reflection
 				BeamHintDetailsConfig userOverrideConfig = null;
 				BeamHintDetailsConfig defaultConfig = null;
 				BeamHintTextMap textMap = null;
-				
+
 				for (int configIndex = 0; configIndex < _loadedConfigs.Count; configIndex++)
 				{
 					if (userOverrideConfig == null && userOverrideHintDetailConfigId == _loadedConfigs[configIndex].Id)
 					{
 						userOverrideConfig = _loadedConfigs[configIndex];
 					}
-					
+
 					if (defaultConfig == null && hintDetailConfigId == _loadedConfigs[configIndex].Id)
 					{
 						defaultConfig = _loadedConfigs[configIndex];
@@ -410,7 +410,7 @@ namespace Beamable.Editor.Reflection
 				Regex regexToCheck = new Regex(idRegex);
 				for (int index = 0; index < _loadedTextMaps.Count; index++)
 				{
-					if (_loadedTextMaps[index].HintIdToHintTitle.Keys.Any(k =>regexToCheck.IsMatch(k)))
+					if (_loadedTextMaps[index].HintIdToHintTitle.Keys.Any(k => regexToCheck.IsMatch(k)))
 					{
 						textMap = _loadedTextMaps[index];
 						break;

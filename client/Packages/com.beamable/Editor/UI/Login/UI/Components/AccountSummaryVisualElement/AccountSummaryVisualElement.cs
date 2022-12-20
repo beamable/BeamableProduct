@@ -41,7 +41,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_aliasField.RegisterValueChangedCallback(evt => _aliasField.SetValueWithoutNotify(Model?.Customer?.CidOrAlias));
 
 			_roleField = Root.Q<TextField>("role");
-			_roleField.RegisterValueChangedCallback(evt => _roleField.SetValueWithoutNotify(Model?.CurrentUser?.roleString));
+			_roleField.RegisterValueChangedCallback(evt => _roleField.SetValueWithoutNotify(Model?.CurrentUser?.GetPermissionsForRealm(Model?.CurrentRealm?.Pid)?.Role));
 
 			_gameField = Root.Q<TextField>("game");
 			_gameField.RegisterValueChangedCallback(evt => _gameField.SetValueWithoutNotify(Model?.CurrentGame?.ProjectName));
@@ -73,7 +73,7 @@ namespace Beamable.Editor.Login.UI.Components
 			if (Model.CurrentUser == null) return;
 
 			_emailField.SetValueWithoutNotify(Model.CurrentUser.email);
-			_roleField.SetValueWithoutNotify(Model.CurrentUser.roleString);
+			_roleField.SetValueWithoutNotify(Model.CurrentUser.GetPermissionsForRealm(Model.CurrentRealm.Pid).Role);
 
 		}
 

@@ -134,7 +134,7 @@ namespace Beamable.Editor.Login.UI.Model
 
 			if (b.HasToken && b.HasCustomer)
 			{
-				Customer.Role = b.CurrentUser.roleString;
+				Customer.Role = b.CurrentUser.GetPermissionsForRealm(b.CurrentRealm.Pid).Role;
 				Customer.SetUserInfo(b.CurrentUser.id, b.CurrentUser.email);
 			}
 
@@ -143,7 +143,7 @@ namespace Beamable.Editor.Login.UI.Model
 
 		private void OnUserChanged(EditorUser user)
 		{
-			Customer.Role = user?.roleString;
+			Customer.Role = user?.GetPermissionsForRealm(Customer.Pid).Role;
 			SetUser(user);
 			if (user == null)
 			{

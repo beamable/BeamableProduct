@@ -5,8 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.9.0]
+### Changed
+- Add GPGS MonoBehaviour to AccountsFlow
+
 ### Fixed
 - Domain Reload times are much faster when working with large amounts of content.
+- Realm scoped permissions update in Editor view
+- Corrupt cached content no longer crashes the game. Instead, the cache is invalidated.
 
 ## [1.8.0]
 ### Changed
