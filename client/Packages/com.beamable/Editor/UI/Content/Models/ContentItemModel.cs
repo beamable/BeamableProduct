@@ -313,7 +313,7 @@ namespace Beamable.Editor.Content.Models
 		public void EnrichWithLocalData(IContentObject content, string assetPath)
 		{
 			ContentObject contentObject = _localContent as ContentObject;
-			
+
 			RemoveLocalEventListeners(contentObject);
 			_localContent = content;
 			_name = content.Id.Split('.').Last();

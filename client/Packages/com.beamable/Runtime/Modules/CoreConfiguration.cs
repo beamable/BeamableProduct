@@ -110,9 +110,9 @@ namespace Beamable
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
 
-		#if UNITY_EDITOR
+#if UNITY_EDITOR
 		private Assembly[] playerAssemblies = null;
-		#endif
+#endif
 		public void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects
