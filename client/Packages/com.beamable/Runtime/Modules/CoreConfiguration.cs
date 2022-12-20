@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
 #if UNITY_EDITOR
+using System.Reflection;
 using UnityEditor.Compilation;
 #endif
 using static Beamable.Common.Constants.MenuItems.Assets;
@@ -109,10 +112,7 @@ namespace Beamable
 
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
-
-		#if UNITY_EDITOR
-		private Assembly[] playerAssemblies = null;
-		#endif
+		
 		public void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects
@@ -162,22 +162,44 @@ namespace Beamable
 			BeamableAssistantHintDetailConfigPaths = BeamableAssistantHintDetailConfigPaths.Distinct().ToList();
 
 #if UNITY_EDITOR
-
-			if (playerAssemblies == null) // because it was triggered twice and it's too heavy
+			
+			
+			// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
+			
+			foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
 			{
-				playerAssemblies = CompilationPipeline.GetAssemblies();
-			}
-
-			for (int i = 0; i < playerAssemblies.Length; i++)
-			{
-				if (!string.IsNullOrEmpty(playerAssemblies[i].name))
+				bool isFound = false;
+				
+				foreach (Type t in a.GetTypes())
 				{
-					if (!AssembliesToSweep.Contains(playerAssemblies[i].name))
+					if (t.Name.Contains("ScriptingRuntime"))
 					{
-						AssembliesToSweep.Add(playerAssemblies[i].name);
+						MethodInfo staticMethodInfo = t.GetMethod("GetAllUserAssemblies");
+
+						if (staticMethodInfo != null)
+						{
+							string[] assemblyNames =  (string[])staticMethodInfo.Invoke(null, null);
+							
+							for (int i = 0; i < assemblyNames.Length; i++)
+							{
+								var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
+
+								if (!AssembliesToSweep.Contains(nameWithoutEx) && !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/"))
+								{
+									AssembliesToSweep.Add(nameWithoutEx);
+								}
+							}
+
+							isFound = true;
+							break;
+						}
 					}
 				}
+				
+				if (isFound)
+					break;
 			}
+			
 
 #if BEAMABLE_DEVELOPER
 
