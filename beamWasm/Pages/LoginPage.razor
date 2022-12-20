@@ -1,52 +1,66 @@
 ﻿@page "/LoginPage"
 @using System.ComponentModel.DataAnnotations
 @using Beamable.Common.Api.Auth
+@using Beamable.Common.Api.Realms
 @using beamWasm.BeamBlazor
 @inject ILogger<LoginPage> Logger
 @inject IAuthApi AuthApi
 @inject IAppContext AppContext
+@inject IRealmsApi RealmsApi
 
 
-@if (!alreadyLoggedIn)
-{
-    <section class="login-form">
+<section class="login-form">
+    @if (!initialized)
+    {
+        <div class="text-center mb-3">
+            <h3>Loading...</h3>
+        </div>
+    }
+    else if (loggedUser == null)
+    {
+        <div class="text-center mb-3">
+            <h3>Sign in</h3>
+        </div>
+        <EditForm Model="@_exampleModel" OnSubmit="@HandleSubmit">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
             <div class="text-center mb-3">
-                <h3>Sign in</h3>
-            </div>
-            <EditForm Model="@_exampleModel" OnSubmit="@HandleSubmit">
-                <DataAnnotationsValidator/>
-                <ValidationSummary/>
-                <div class="text-center mb-3">
-                    <div class="form-outline mb-4">
-                        <InputText id="cid" @bind-Value="_exampleModel.Cid" class="form-control"/>
-                        <label class="form-label" for="cid">Cid</label>
-                    </div>
-                    <div class="form-outline mb-4">
-                        <InputText id="name" @bind-Value="_exampleModel.Name" type="email" class="form-control"/>
-                        <label class="form-label" for="name">email</label>
-                    </div>
-                    <div class="form-outline mb-4">
-                        <InputText id="password" @bind-Value="_exampleModel.Password" type="password" class="form-control"/>
-                        <label class="form-label" for="password">password</label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                <div class="form-outline mb-4">
+                    <InputText id="cid" @bind-Value="_exampleModel.Cid" class="form-control"/>
+                    <label class="form-label" for="cid">Cid</label>
                 </div>
-            </EditForm>
-    </section>
-}
-@if (!string.IsNullOrWhiteSpace(result))
-{
-    <span>
-        @result
-    </span>
-    <button class="btn btn-primary" @onclick="Logout">Logout</button>
-}
+                <div class="form-outline mb-4">
+                    <InputText id="name" @bind-Value="_exampleModel.Name" type="email" class="form-control"/>
+                    <label class="form-label" for="name">email</label>
+                </div>
+                <div class="form-outline mb-4">
+                    <InputText id="password" @bind-Value="_exampleModel.Password" type="password" class="form-control"/>
+                    <label class="form-label" for="password">password</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </EditForm>
+    }
+    else
+    {
+        <div class="text-center mb-3">
+            <h3>Signed in</h3>
+        </div>
+        <div class="mb-4">
+            <p>Mail: <b>@loggedUser.email</b></p>
+        </div>
+        <div class="mb-4">
+            <p>User id: <b>@loggedUser.id</b></p>
+        </div>
+        <button class="btn btn-primary logout-button" @onclick="Logout">Logout</button>
+    }
+</section>
 
 @code {
     private readonly ExampleModel _exampleModel = new();
-    bool alreadyLoggedIn = false;
-    string result;
+    User loggedUser;
+    bool initialized = false;
 
     private class ExampleModel
     {
@@ -68,19 +82,17 @@
         {
             try
             {
+                // await AppContext.SetCid(_exampleModel.Cid);
+                // var test = await RealmsApi.GetGames();
+                // Logger.LogInformation(string.Join(',',test));
                 var token = await AuthApi.Login(_exampleModel.Name, _exampleModel.Password);
                 if (token is not null)
                 {
                     await UpdateUserInfo(token);
                 }
-                else
-                {
-                    result = $"Cid: {_exampleModel.Cid}, Name: {_exampleModel.Name}, Password: {_exampleModel.Password}, valid: {formIsValid}";
-                }
             }
             catch (Exception e)
             {
-                result = e.ToString();
                 Logger.LogError(e.ToString());
             }
         }
@@ -109,23 +121,22 @@
             }
             catch (Exception e)
             {
-                result = e.ToString();
                 Logger.LogError(e.ToString());
             }
         }
+        initialized = true;
     }
 
     private async Task UpdateUserInfo(TokenResponse token)
     {
         await AppContext.UpdateToken(token);
-        alreadyLoggedIn = true;
-        var user = await AuthApi.GetUser();
-        result = $"Logged as <b>{user.email}</b> (id: <b>{user.id}</b>). Scope: {string.Join(',', user.scopes)}";
+        loggedUser = await AuthApi.GetUser();
     }
 
     private void Logout()
     {
         AppContext.UpdateToken(null);
+        loggedUser = null;
     }
 
 }

@@ -15,6 +15,7 @@ public interface IAppContext
 	Task Init();
 
 	Task UpdateToken(TokenResponse response);
+	Task SetCid(string exampleModelCid);
 }
 
 public class BlazorAppContext : IAppContext
@@ -53,6 +54,12 @@ public class BlazorAppContext : IAppContext
 	{
 		_token = new AccessToken(response, Cid, Pid);
 		await Save("BlazorToken", _token);
+	}
+
+	public async Task SetCid(string cid)
+	{
+		Cid = cid;
+		await SetKey("BlazorCid", cid);
 	}
 
 	private async Task SetKey(string key, string value)

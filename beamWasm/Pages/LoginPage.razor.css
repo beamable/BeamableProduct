@@ -2,3 +2,7 @@
     width: 26rem;
     margin: auto;
 }
+.logout-button {
+    margin: auto;
+    display: block;
+}
