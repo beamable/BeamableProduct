@@ -1,5 +1,6 @@
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using Beamable.Common.Content;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.Login.UI;
@@ -56,11 +57,15 @@ namespace Beamable.Editor.Content
 		private List<string> _cachedItemsToDownload;
 		private bool _cachedCreateNewManifestFlag;
 
+		private SerializableDictionary<string, ContentIO.ValidationChecksum> _checksums =
+			new SerializableDictionary<string, ContentIO.ValidationChecksum>();
+
 		private void Update()
 		{
 			if (ActiveContext == null) return;
 
 			_actionBarVisualElement?.RefreshPublishDropdownVisibility();
+			_statusBarElement?.RefreshStatus();
 		}
 
 
@@ -226,6 +231,30 @@ namespace Beamable.Editor.Content
 		public void SoftReset()
 		{
 			_contentManager.Model.TriggerSoftReset();
+		}
+
+		public override void OnBeforeSerialize()
+		{
+			var toSerializable = ContentIO.GetCheckSumTable();
+
+			if (toSerializable.Count > 0)
+			{
+				_checksums.Clear();
+
+				foreach (var elem in toSerializable)
+				{
+					_checksums.Add(elem.Key, elem.Value);
+				}
+			}
+			_checksums.OnBeforeSerialize();
+			base.OnBeforeSerialize();
+		}
+
+		public override void OnAfterDeserialize()
+		{
+			_checksums.OnAfterDeserialize();
+			ContentIO.SetCheckSumTable(_checksums);
+			base.OnAfterDeserialize();
 		}
 
 		private void ExplorerElement_OnAddItemButtonClicked()
