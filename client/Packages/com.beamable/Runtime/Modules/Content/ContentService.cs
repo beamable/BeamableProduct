@@ -294,7 +294,7 @@ namespace Beamable.Content
 				return new T();
 			}
 		}
-		
+
 		private void InitializeBakedContent()
 		{
 			// remove content in old format
