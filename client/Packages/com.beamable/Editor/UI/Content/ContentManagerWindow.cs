@@ -249,7 +249,7 @@ namespace Beamable.Editor.Content
 			_checksums.OnBeforeSerialize();
 			base.OnBeforeSerialize();
 		}
-		
+
 		public override void OnAfterDeserialize()
 		{
 			_checksums.OnAfterDeserialize();
