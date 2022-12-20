@@ -632,6 +632,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceStatsApi, MicroserviceStatsApi>()
                .AddTransient<IStatsApi, MicroserviceStatsApi>()
                .AddSingleton<IMicroserviceContentApi>(_contentService)
+               .AddSingleton<IContentApi>(_contentService)
                .AddTransient<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
                .AddTransient<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
                .AddTransient<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
