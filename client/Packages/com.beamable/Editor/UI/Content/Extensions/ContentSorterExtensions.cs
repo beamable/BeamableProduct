@@ -17,7 +17,7 @@ namespace Beamable.Editor.Content.Extensions
 
 			if (contentItems.Count == 0)
 				return contentItems;
-			
+
 			switch (contentSortType)
 			{
 				case ContentSortType.IdAZ:
@@ -42,10 +42,10 @@ namespace Beamable.Editor.Content.Extensions
 					contentItems.Sort(new ContentComparer_Status());
 					break;
 			}
-			
+
 			return contentItems;
 		}
-		
+
 		private class ContentComparer_Alphabetical : IComparer<ContentItemDescriptor>
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
@@ -53,7 +53,7 @@ namespace Beamable.Editor.Content.Extensions
 				return String.CompareOrdinal(go1.Name, go2.Name);
 			}
 		}
-		
+
 		private class ContentComparer_ReverseAlphabetical : IComparer<ContentItemDescriptor>
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
@@ -61,7 +61,7 @@ namespace Beamable.Editor.Content.Extensions
 				return -String.CompareOrdinal(go1.Name, go2.Name);
 			}
 		}
-		
+
 		private class ContentComparer_TypeAlphabetical : IComparer<ContentItemDescriptor>
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
@@ -69,7 +69,7 @@ namespace Beamable.Editor.Content.Extensions
 				return String.CompareOrdinal(go1.ContentType.TypeName, go2.ContentType.TypeName);
 			}
 		}
-		
+
 		private class ContentComparer_ReverseTypeAlphabetical : IComparer<ContentItemDescriptor>
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
@@ -77,7 +77,7 @@ namespace Beamable.Editor.Content.Extensions
 				return -String.CompareOrdinal(go1.ContentType.TypeName, go2.ContentType.TypeName);
 			}
 		}
-		
+
 		private class ContentComparer_RecentlyUpdated : IComparer<ContentItemDescriptor>
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
@@ -85,7 +85,7 @@ namespace Beamable.Editor.Content.Extensions
 				return -go1.LastChanged.CompareTo(go2.LastChanged);
 			}
 		}
-		
+
 		private class ContentComparer_Status : IComparer<ContentItemDescriptor>
 		{
 			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)

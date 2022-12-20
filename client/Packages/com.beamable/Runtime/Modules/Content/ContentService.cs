@@ -282,6 +282,19 @@ namespace Beamable.Content
 			AddSubscriber(CurrentDefaultManifestID);
 		}
 
+		public T DeserializeDataCache<T>(string json) where T : new()
+		{
+			try
+			{
+				return JsonUtility.FromJson<T>(json);
+			}
+			catch (Exception ex)
+			{
+				Debug.LogWarning($"Beamable - the cached disk {typeof(T).Name} was unreadable, so no cache will be used. error=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}] ");
+				return new T();
+			}
+		}
+
 		private void InitializeBakedContent()
 		{
 			// remove content in old format
@@ -300,13 +313,12 @@ namespace Beamable.Content
 					file.Delete();
 				}
 			}
-
 			string contentPath = Path.Combine(contentDirectory, contentFileName);
 
 			if (File.Exists(contentPath))
 			{
 				var json = File.ReadAllText(contentPath);
-				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
 			}
 			else
 			{
@@ -321,12 +333,12 @@ namespace Beamable.Content
 				var isValidJson = Json.IsValidJson(json);
 				if (isValidJson)
 				{
-					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+					ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
 				}
 				else
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
-					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+					ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
 				}
 
 				// save baked data to disk
@@ -355,12 +367,12 @@ namespace Beamable.Content
 			var isValidJson = Json.IsValidJson(json);
 			if (isValidJson)
 			{
-				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+				BakedManifest = DeserializeDataCache<ClientManifest>(json);
 			}
 			else
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
-				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+				BakedManifest = DeserializeDataCache<ClientManifest>(json);
 			}
 		}
 

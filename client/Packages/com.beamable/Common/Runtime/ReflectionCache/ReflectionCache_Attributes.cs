@@ -100,7 +100,7 @@ namespace Beamable.Common.Reflection
 		public bool TryGetFromMemberInfo(MemberInfo info, out Attribute attribute)
 		{
 			attribute = null;
-			
+
 			foreach (var customAttributeData in info.CustomAttributes)
 			{
 				if (customAttributeData.AttributeType == AttributeType)
@@ -231,7 +231,7 @@ namespace Beamable.Common.Reflection
 		{
 
 			var customAttributes = member.CustomAttributes; // moved out of loops because we don't want to use this GET many times (heavy)
-			
+
 			bool HasType(Type type)
 			{
 				foreach (var customAttributeData in customAttributes)
@@ -242,9 +242,9 @@ namespace Beamable.Common.Reflection
 
 				return false;
 			}
-			
+
 			// Check for attributes over the type itself.
-			
+
 			for (int i = 0; i < attributesToSearchFor.Count; i++)
 			{
 				if (HasType(attributesToSearchFor[i].AttributeType))
@@ -271,13 +271,13 @@ namespace Beamable.Common.Reflection
 
 					// For each declared member, check if they have the current attribute of interest -- if they do, add them to the found attribute list.
 					// In this step we catch every member with the attribute --- individual systems are welcome to parse and yield errors at a later step.
-					
+
 					var filteredMembers = type.FindMembers(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES, BindingFlags.Public |
-					                                       BindingFlags.NonPublic |
-					                                       BindingFlags.Instance |
-					                                       BindingFlags.Static, null, null);
-					
-					for (int k = 0; k < filteredMembers.Length; k++) 
+														   BindingFlags.NonPublic |
+														   BindingFlags.Instance |
+														   BindingFlags.Static, null, null);
+
+					for (int k = 0; k < filteredMembers.Length; k++)
 					{
 						if (declaredMemberAttributesToSearchFor[i].TryGetFromMemberInfo(filteredMembers[k], out var attribute))
 							foundAttributes[declaredMemberAttributesToSearchFor[i]].Add(new MemberAttribute(filteredMembers[k], attribute));
