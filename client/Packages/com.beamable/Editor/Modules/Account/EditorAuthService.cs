@@ -57,7 +57,9 @@ namespace Beamable.Editor.Modules.Account
 		/// <summary>
 		/// The role will be either admin, developer or tester. This is the global role for the user for all realms. However, there
 		/// may be realm specific overrides in the <see cref="roles"/> list.
+		/// Use the <see cref="GetPermissionsForRealm"/> method to find the role for the given realm of interest.
 		/// </summary>
+		[Obsolete("Use " + nameof(GetPermissionsForRealm) + " method, or " + nameof(GlobalPermissions) + " property instead.")]
 		public string roleString;
 
 		/// <summary>
@@ -74,7 +76,9 @@ namespace Beamable.Editor.Modules.Account
 		/// <b>The user's roles for the current realm may be different!</b> Please use the <see cref="GetPermissionsForRealm"/> method.
 		/// </summary>
 		public UserPermissions GlobalPermissions =>
+#pragma warning disable CS0618
 			_globalPermissions ?? (_globalPermissions = new UserPermissions(roleString));
+#pragma warning restore CS0618
 
 		[Obsolete("Please use the " + nameof(GetPermissionsForRealm) + " method instead.")]
 		public bool IsAtLeastAdmin => GlobalPermissions.IsAtLeastAdmin;
