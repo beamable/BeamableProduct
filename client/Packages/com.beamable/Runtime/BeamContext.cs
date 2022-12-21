@@ -180,7 +180,7 @@ namespace Beamable
 		}
 
 		private bool HasAccountsService => _playerAccounts != null;
-		[NonSerialized] private PlayerAccounts _playerAccounts;
+		private PlayerAccounts _playerAccounts;
 		
 		/// <summary>
 		/// <para>
@@ -323,7 +323,7 @@ namespace Beamable
 			// before we broadcast the event; we'll ask the accounts to update if they exist...
 			if (HasAccountsService)
 			{
-				await _playerAccounts.Refresh();
+				await Accounts.Refresh();
 			}
 			OnReloadUser?.Invoke();
 
