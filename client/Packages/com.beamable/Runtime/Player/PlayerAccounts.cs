@@ -955,15 +955,6 @@ namespace Beamable.Player
 				                            [key] = value
 			                            });
 			await Refresh();
-			// setter(account, value);
-			// account.TryTriggerUpdate();
-			// if (account.GamerTag == Current.GamerTag)
-			// {
-			// 	Current.Update(account._user);
-			// 	Current.Update(account.token);
-			// 	setter(Current, value);
-			// 	Current.TryTriggerUpdate();
-			// }
 			_stats.ClearCaches();
 			return account;
 		}
@@ -1044,7 +1035,6 @@ namespace Beamable.Player
 			}
 			catch (PlatformRequesterException)
 			{
-				// TODO: could be more errors here that we could show to the user?
 				return new PlayerRecoveryOperation {error = PlayerRecoveryError.UNKNOWN_CREDENTIALS};
 			}
 
