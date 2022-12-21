@@ -3,6 +3,7 @@
 @using Beamable.Common.Api.Auth
 @using Beamable.Common.Api.Realms
 @using beamWasm.BeamBlazor
+@using Newtonsoft.Json
 @inject ILogger<LoginPage> Logger
 @inject IAuthApi AuthApi
 @inject IAppContext AppContext
@@ -82,13 +83,14 @@
         {
             try
             {
-                // await AppContext.SetCid(_exampleModel.Cid);
-                // var test = await RealmsApi.GetGames();
-                // Logger.LogInformation(string.Join(',',test));
-                var token = await AuthApi.Login(_exampleModel.Name, _exampleModel.Password);
+                await AppContext.Set(_exampleModel.Cid, null);
+                var token = await AuthApi.Login(_exampleModel.Name, _exampleModel.Password, true, true);
                 if (token is not null)
                 {
                     await UpdateUserInfo(token);
+                    var test = await RealmsApi.GetGames();
+                    Logger.LogInformation($"There are {test.Count} available realm views");
+                    Logger.LogInformation(string.Join(',',test.Select(JsonConvert.SerializeObject)));
                 }
             }
             catch (Exception e)

@@ -15,7 +15,7 @@ public interface IAppContext
 	Task Init();
 
 	Task UpdateToken(TokenResponse response);
-	Task SetCid(string exampleModelCid);
+	Task Set(string cid, string pid);
 }
 
 public class BlazorAppContext : IAppContext
@@ -39,14 +39,19 @@ public class BlazorAppContext : IAppContext
 	{
 		if (_isInitialized)
 			return;
-		Cid = await GetKeyOr("BlazorCid", "1422202535673860");
-		Pid = await GetKeyOr("BlazorPid","DE_1422202535673861");
+		Cid = await GetKeyOr("BlazorCid", string.Empty);
+		Pid = await GetKeyOr("BlazorPid", string.Empty);
 		Host = await GetKeyOr("BlazorHost", "https://dev.api.beamable.com");
 		string tokenJson = await GetKeyOr("BlazorToken", string.Empty);
 		if (!string.IsNullOrWhiteSpace(tokenJson))
 		{
 			_token = JsonConvert.DeserializeObject<AccessToken>(tokenJson);
 		}
+		else
+		{
+			_token = new AccessToken(null, Cid, Pid);
+		}
+
 		_isInitialized = true;
 	}
 
@@ -56,15 +61,20 @@ public class BlazorAppContext : IAppContext
 		await Save("BlazorToken", _token);
 	}
 
-	public async Task SetCid(string cid)
+	public async Task Set(string cid, string pid)
 	{
-		Cid = cid;
+		Cid = _token.Cid = cid;
+		Pid = _token.Pid = pid;
 		await SetKey("BlazorCid", cid);
+		await SetKey("BlazorPid", pid);
 	}
 
 	private async Task SetKey(string key, string value)
 	{
-		await _localStorageService.SetItemAsStringAsync(key, value);
+		if(!string.IsNullOrEmpty(value))
+		{
+			await _localStorageService.SetItemAsStringAsync(key, value);
+		}
 	}
 
 	private async Task Save<T>(string key, T value)
