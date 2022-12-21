@@ -836,7 +836,7 @@ namespace Beamable.Editor.Content
 		[Serializable]
 		public struct ValidationChecksum
 		{
-			public UnityEditor.GUID ValidationId;
+			public Guid ValidationId;
 			public string Checksum;
 		}
 
