@@ -181,7 +181,7 @@ namespace Beamable
 
 		private bool HasAccountsService => _playerAccounts != null;
 		private PlayerAccounts _playerAccounts;
-		
+
 		/// <summary>
 		/// <para>
 		/// Access the player's inventory
@@ -318,8 +318,8 @@ namespace Beamable
 			await InitStep_GetUser();
 			await InitStep_StartNewSession();
 			await InitStep_StartPubnub();
-			
-			
+
+
 			// before we broadcast the event; we'll ask the accounts to update if they exist...
 			if (HasAccountsService)
 			{
