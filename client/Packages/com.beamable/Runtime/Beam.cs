@@ -230,12 +230,14 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
-			DependencyBuilder.AddScoped<PlayerParty>();			DependencyBuilder.AddScoped<PlayerAccounts>();
+			DependencyBuilder.AddScoped<PlayerParty>();
+			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScopedStorage<PlayerCurrencyGroup, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScoped<PlayerSocial>();
 
+			
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
