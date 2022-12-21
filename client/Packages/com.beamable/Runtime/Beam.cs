@@ -31,6 +31,7 @@ using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
+using Beamable.Common.Api.Stats;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
@@ -141,7 +142,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
-			DependencyBuilder.AddSingleton<IAuthService, AuthService>();
+			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());
 			DependencyBuilder.AddSingleton<IAnnouncementsApi, AnnouncementsService>();
@@ -154,6 +155,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddSingleton<IMailApi, MailService>();
 			DependencyBuilder.AddScoped<InventoryService>();
+			DependencyBuilder.AddScoped<IStatsApi>(p => p.GetService<StatsService>());
 			DependencyBuilder.AddScoped<StatsService>(provider =>
 														  new StatsService(
 															  provider.GetService<IPlatformService>(),
@@ -228,7 +230,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
-			DependencyBuilder.AddScoped<PlayerParty>();
+			DependencyBuilder.AddScoped<PlayerParty>();			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScopedStorage<PlayerCurrencyGroup, OfflineCacheStorageLayer>();
