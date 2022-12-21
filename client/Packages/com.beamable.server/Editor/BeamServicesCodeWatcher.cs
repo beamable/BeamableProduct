@@ -76,7 +76,7 @@ namespace Beamable.Server.Editor
 
 			LatestCodeHandles = new List<BeamServiceCodeHandle>(64);
 			ServiceToChecksum = new Dictionary<MicroserviceDescriptor, ServiceDependencyChecksum>();
-			
+
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var msCodeHandles = new List<BeamServiceCodeHandle>();
 			var cachedDeps = new List<MicroserviceDependencies>();
@@ -85,7 +85,7 @@ namespace Beamable.Server.Editor
 			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
 				var cachedInfo = registry.Descriptors[i].ConvertToInfo();
-				
+
 				msCodeHandles.Add(new BeamServiceCodeHandle()
 				{
 					ServiceName = registry.Descriptors[i].Name,
@@ -93,7 +93,7 @@ namespace Beamable.Server.Editor
 					AsmDefInfo = cachedInfo,
 					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
 				});
-				
+
 				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies));
 				ServiceToChecksum.Add
 				(
@@ -105,7 +105,7 @@ namespace Beamable.Server.Editor
 					}
 				);
 			}
-			
+
 			var storageCodeHandles = new HashSet<BeamServiceCodeHandle>();
 
 			for (int k = 0; k < registry.StorageDescriptors.Count; k++)
@@ -121,12 +121,12 @@ namespace Beamable.Server.Editor
 			}
 
 			var sharedAssemblyHandles = new HashSet<BeamServiceCodeHandle>();
-			
+
 			for (int i = 0; i < cachedDeps.Count; i++)
 			{
 				var defs = cachedDeps[i].Assemblies.ToCopy.Distinct().
-				                         Except(msCodeHandles.Select(h => h.AsmDefInfo))
-				                        .Except(storageCodeHandles.Select(h => h.AsmDefInfo)).ToArray();
+										 Except(msCodeHandles.Select(h => h.AsmDefInfo))
+										.Except(storageCodeHandles.Select(h => h.AsmDefInfo)).ToArray();
 
 				for (int k = 0; k < defs.Length; k++)
 				{
@@ -139,7 +139,7 @@ namespace Beamable.Server.Editor
 					});
 				}
 			}
-			
+
 			LatestCodeHandles.Clear();
 			LatestCodeHandles.AddRange(sharedAssemblyHandles);
 			LatestCodeHandles.AddRange(msCodeHandles);
@@ -209,11 +209,11 @@ namespace Beamable.Server.Editor
 			// Get the reflection cache
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
-			
+
 			// Find every declared Microservice that has a dependency on a storage object.
 
 			HashSet<string> storageAsmNames = new HashSet<string>();
-			
+
 			for (int i = 0; i < LatestCodeHandles.Count; i++)
 			{
 				if (LatestCodeHandles[i].CodeClass == BeamCodeClass.StorageObject)
@@ -221,20 +221,20 @@ namespace Beamable.Server.Editor
 					storageAsmNames.Add(LatestCodeHandles[i].AsmDefInfo.Name);
 				}
 			}
-			
+
 			var microservicesThatDependOnStorage = new List<MicroserviceDescriptor>();
-			
+
 			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
 				MicroserviceDependencies dep = DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies);
 				var tmp = dep.Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
-				
+
 				if (tmp != null)
 					microservicesThatDependOnStorage.Add(registry.Descriptors[i]);
 			}
 
 			// Find all MSs that are missing the correct Mongo DLLs
-			
+
 			for (int i = 0; i < microservicesThatDependOnStorage.Count; i++)
 			{
 				var missingMongoDepsAsmDefs = microservicesThatDependOnStorage[i].ConvertToAsset();

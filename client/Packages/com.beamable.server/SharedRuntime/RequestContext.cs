@@ -93,6 +93,24 @@ namespace Beamable.Server
 				throw new MissingScopesException(Scopes);
 		}
 
+		/// <summary>
+		/// If the request is cancelled or times out, calling this method will trigger an exception.
+		/// If you have a `while` loop in your client-callable, you <b>must</b> include this
+		/// statement in the loop. Otherwise, if your loop never terminates, the service
+		/// instance will suffer severe performance issues.
+		///
+		/// See <see cref="IsCancelled"/> to check if the request has been cancelled.
+		/// </summary>
+		public virtual void ThrowIfCancelled()
+		{
+			// no-op.
+		}
+
+		/// <summary>
+		/// If the request is cancelled or times out, this will return true.
+		/// </summary>
+		public virtual bool IsCancelled { get; }
+
 		private void CheckEmptyUser()
 		{
 			if (IsInvalidUser)

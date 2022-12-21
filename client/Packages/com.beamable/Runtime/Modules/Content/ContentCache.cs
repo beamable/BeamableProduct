@@ -126,7 +126,7 @@ namespace Beamable.Content
 			if (File.Exists(filePath) && _contentService.ContentDataInfo == null)
 			{
 				var fileContent = File.ReadAllText(filePath);
-				_contentService.ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(fileContent);
+				_contentService.ContentDataInfo = _contentService.DeserializeDataCache<ContentDataInfoWrapper>(fileContent);
 			}
 
 			if (_contentService.ContentDataInfo != null)

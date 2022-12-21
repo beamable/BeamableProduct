@@ -632,6 +632,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceStatsApi, MicroserviceStatsApi>()
                .AddTransient<IStatsApi, MicroserviceStatsApi>()
                .AddSingleton<IMicroserviceContentApi>(_contentService)
+               .AddSingleton<IContentApi>(_contentService)
                .AddTransient<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
                .AddTransient<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
                .AddTransient<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
@@ -842,6 +843,9 @@ namespace Beamable.Server
 
          try
          {
+	         using var tokenSource = new CancellationTokenSource();
+	         ctx.CancellationToken = tokenSource.Token;
+	         tokenSource.CancelAfter(TimeSpan.FromSeconds(_args.RequestCancellationTimeoutSeconds));
 	         if (_socketRequesterContext.IsPlatformMessage(ctx))
 	         {
 		         // the request is a platform request.

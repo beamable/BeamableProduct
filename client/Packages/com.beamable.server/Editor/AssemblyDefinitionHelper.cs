@@ -286,7 +286,7 @@ namespace Beamable.Server.Editor
 		{
 			if (_assemblyDefGuidsCache == null)
 				_assemblyDefGuidsCache = AssetDatabase.FindAssets($"t:{nameof(AssemblyDefinitionAsset)}");
-			
+
 			for (int i = 0; i < _assemblyDefGuidsCache.Length; i++)
 			{
 				var assemblyDefPath = AssetDatabase.GUIDToAssetPath(_assemblyDefGuidsCache[i]);

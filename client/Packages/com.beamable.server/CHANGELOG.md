@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0]
+### Added
+- `Context.ThrowIfCancelled()` method to force end a client-callable request if it has timed out.
+
+### Fixed
+- Internal container health checks no longer cause fatal exception.
+- `IContentApi` is accessible via the Microservice dependency injection scope.
+
 ## [1.8.0]
 ### Added
 - `EnableEagerContentLoading` configuration setting on `MicroserviceAttribute` is enabled by default. 
@@ -47,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.1]
 - no changes
 
-### [1.6.0]
+## [1.6.0]
 ### Added
 - Displaying log pagination if message contains more that 5000 chars
 - Quick action buttons for opening C# code and local documentation for service cards
@@ -71,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task Cancellation exceptions while publishing Microservice.
 - Various `DockerNotInstalledException` events when MicroserviceManager window isn't open, but Docker ins't running.
 
-### [1.5.1]
+## [1.5.1]
 ### Added
 - `EnablePrePublishHealthCheck` option in _Project Settings/Beamable/Microservices_ can be used to disable Microservice health checks when publishing. Disabling this is dangerous and may lead to unhealthy servers being deployed to production.
 - `PrePublishHealthCheckTimeout` option in _Project Settings/Beamable/Microservices_ can optionally override the amount of seconds before a health check is considered to timeout. The default value is 10 seconds.
@@ -110,7 +118,7 @@ no changes
 ### Changed
 - Changed service name validation in `Microservice Manager` to keep names unique
 
-### [1.3.2]
+## [1.3.2]
 ### Added
 - Added `Services.Payments` which allows receipt verification.
 - Added `DeleteProtectedPlayerStats` and `DeleteStats` methods to `IMicroserviceStatsApi`.
