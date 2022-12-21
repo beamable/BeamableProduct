@@ -347,7 +347,7 @@ namespace Beamable.Common.Content
       public event Action OnEditorValidation;
       public static IValidationContext ValidationContext { get; set; }
       [IgnoreContentField] private bool _hadValidationErrors;
-      public Guid ValidationGuid { get; set; }
+      public UnityEditor.GUID ValidationGuid { get; set; }
       public static bool ShowChecksum { get; set; }
       public bool SerializeToConsoleRequested { get; set; }
 
@@ -356,13 +356,13 @@ namespace Beamable.Common.Content
       
       private void OnValidate()
       {
-	      if (!string.IsNullOrEmpty(_serializedValidationGUID))
+	      if (!string.IsNullOrEmpty(_serializedValidationGUID) && UnityEditor.GUID.TryParse(_serializedValidationGUID, out var guid))
 	      {
-		      ValidationGuid = Guid.Parse(_serializedValidationGUID);
+		      ValidationGuid = guid;
 	      }
 	      else
 	      {
-		      ValidationGuid = Guid.NewGuid();
+		      ValidationGuid = new UnityEditor.GUID();
 		      _serializedValidationGUID = ValidationGuid.ToString();
 	      }
 
