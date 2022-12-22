@@ -155,6 +155,14 @@ namespace Beamable.Player
 
 		public PlayerItemGroup(ItemRef rootRef, IPlatformService platformService, InventoryService inventoryService, IDependencyProvider provider)
 		{
+			/*
+			 * An issue is that if there are mutliple item groups in a parent/child type of relationship,
+			 * items
+			 * items.barry
+			 *
+			 * and items.barry is updated with new data, the top level "items" group doesn't automatically
+			 * get notified of the change
+			 */
 			_rootRef = rootRef;
 			_platformService = platformService;
 			_inventoryService = inventoryService;
