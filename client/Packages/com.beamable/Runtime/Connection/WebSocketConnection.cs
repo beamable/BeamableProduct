@@ -33,7 +33,8 @@ namespace Connection
 
 		public Promise Connect(string address, AccessToken token)
 		{
-			_webSocket = CreateWebSocket(address, token);
+			string uri = $"{address}/connect";
+			_webSocket = CreateWebSocket(uri, token);
 			SetUpEventCallbacks();
 			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
 			// is closed.
