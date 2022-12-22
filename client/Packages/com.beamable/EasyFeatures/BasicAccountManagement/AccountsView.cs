@@ -18,8 +18,13 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public int EnrichOrder;
 
 		public AccountSlotPresenter AccountPresenter;
+		public GameObject SignInButtonsGroup;
+		public GameObject SwitchButtonsGroup;
 		public Button SignInButton;
 		public Button CreateAccountButton;
+		public Button LoadGameButton;
+		public Button SwitchAccountButton;
+		public SwitchAccountPopup SwitchAccountPopupPrefab;
 
 		protected IDependencies System;
 		
@@ -42,11 +47,18 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 			
+			// TODO enable proper set of buttons
+			SignInButtonsGroup.SetActive(false);
+			SwitchButtonsGroup.SetActive(true);
+			SwitchAccountPopupPrefab.gameObject.SetActive(false);
+			
 			// setup callbacks
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
 			SignInButton.onClick.ReplaceOrAddListener(OnSignIn);
 			CreateAccountButton.onClick.ReplaceOrAddListener(OnCreateAccount);
+			LoadGameButton.onClick.ReplaceOrAddListener(OnLoadGame);
+			SwitchAccountButton.onClick.ReplaceOrAddListener(OnSwitchAccount);
 
 			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData
 			{
@@ -54,6 +66,29 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			};
 			
 			AccountPresenter.Setup(data, OpenAccountInfoView, null);
+		}
+
+		private void OnSwitchAccount()
+		{
+			var popup = FeatureControl.OverlaysController.CustomOverlay.Show(SwitchAccountPopupPrefab);
+			popup.Setup(OpenSignInView, OpenCreateAccountView);
+
+			void OpenSignInView()
+			{
+				FeatureControl.OverlaysController.CustomOverlay.Hide();
+				FeatureControl.OpenSignInView();
+			}
+
+			void OpenCreateAccountView()
+			{
+				FeatureControl.OverlaysController.CustomOverlay.Hide();
+				FeatureControl.OpenCreateAccountView();
+			}
+		}
+
+		private void OnLoadGame()
+		{
+			throw new System.NotImplementedException();
 		}
 
 		private void OpenAccountsView()
