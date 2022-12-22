@@ -517,9 +517,9 @@ namespace Beamable
 			}
 
 			// Load up the current Configuration data
-			ConfigDatabase.TryGetString(Features.Config.ALIAS_KEY, out var alias);
-			ConfigDatabase.TryGetString(Features.Config.CID_KEY, out string cid);
-			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out string pid);
+			ConfigDatabase.TryGetString("alias", out var alias);
+			var cid = ConfigDatabase.GetString("cid");
+			var pid = ConfigDatabase.GetString("pid");
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
@@ -588,7 +588,7 @@ namespace Beamable
 			var cid = res.Cid.GetOrThrow();
 
 			// Gets the stored pid, if its there
-			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out var pid);
+			ConfigDatabase.TryGetString("pid", out var pid);
 
 			// Set the config defaults to reflect the new Customer.
 			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
@@ -646,30 +646,17 @@ namespace Beamable
 			{
 				var games = await realmService.GetGames();
 
-				if (EditorPrefs.HasKey(Features.Config.LAST_PID_KEY))
+				if (string.IsNullOrEmpty(pid))
 				{
-					string lastPid = EditorPrefs.GetString(Features.Config.LAST_PID_KEY);
-					if (!string.IsNullOrEmpty(lastPid))
-					{
-						var realms = await realmService.GetRealms(lastPid);
-						realm = realms.FirstOrDefault(rv => rv.Pid == lastPid);
-					}
+					var realms = await realmService.GetRealms(games.First());
+					realm = realms.First(rv => !rv.Archived);
 				}
-
-				if (realm == null)
+				else
 				{
-					if (string.IsNullOrEmpty(pid))
+					realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
+					if (realm == null)
 					{
-						var realms = await realmService.GetRealms(games.First());
-						realm = realms.First(rv => !rv.Archived);
-					}
-					else
-					{
-						realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
-						if (realm == null)
-						{
-							Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
-						}
+						Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
 					}
 				}
 			}
@@ -841,12 +828,6 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm?.Pid);
 			requester.DeleteToken();
-			if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
-			{
-				EditorPrefs.SetString(Features.Config.LAST_PID_KEY, ConfigDatabase.GetString(Features.Config.PID_KEY));
-				ConfigDatabase.Reset(Features.Config.PID_KEY);
-				SaveConfig(CurrentCustomer?.Alias, "", cid: CurrentCustomer?.Cid);
-			}
 			CurrentUser = null;
 			OnUserChange?.Invoke(null);
 			BeamableEnvironment.ReloadEnvironment();
@@ -930,11 +911,6 @@ namespace Beamable
 			if (string.IsNullOrEmpty(host))
 			{
 				host = BeamableEnvironment.ApiUrl;
-			}
-
-			if (!string.IsNullOrEmpty(pid))
-			{
-				ConfigDatabase.SetString(Features.Config.PID_KEY, pid, createField: true);
 			}
 
 			WriteConfig(alias, pid, host, cid);

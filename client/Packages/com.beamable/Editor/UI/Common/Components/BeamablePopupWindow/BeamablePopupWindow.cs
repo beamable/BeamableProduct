@@ -1,18 +1,16 @@
+using Beamable.Common;
+using System;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 #endif
-using Beamable.Common;
-using Beamable.Editor;
-using System;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
-using UnityEditor;
-using UnityEngine;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.ContentManager;
 
@@ -81,50 +79,6 @@ namespace Beamable.Editor.UI.Components
 
 			var halfSize = size * .5f;
 			return new Rect(pt.x - halfSize.x, pt.y - halfSize.y, size.x, size.y);
-		}
-
-		private static Rect GetEditorMainWindowPos()
-		{
-			var containerWinType = Extensions.GetAllDerivedTypes(AppDomain.CurrentDomain, typeof(ScriptableObject))
-											 .FirstOrDefault(t => t.Name == "ContainerWindow");
-			if (containerWinType == null)
-				throw new MissingMemberException(
-					"Can't find internal type ContainerWindow. Maybe something has changed inside Unity");
-			var showModeField = containerWinType.GetField("m_ShowMode", BindingFlags.NonPublic | BindingFlags.Instance);
-			var positionProperty =
-				containerWinType.GetProperty("position", BindingFlags.Public | BindingFlags.Instance);
-			if (showModeField == null || positionProperty == null)
-				throw new MissingFieldException(
-					"Can't find internal fields 'm_ShowMode' or 'position'. Maybe something has changed inside Unity");
-			var windows = Resources.FindObjectsOfTypeAll(containerWinType);
-			foreach (var win in windows)
-			{
-				var showmode = (int)showModeField.GetValue(win);
-				if (showmode == 4) // main window
-				{
-					var pos = (Rect)positionProperty.GetValue(win, null);
-					return pos;
-				}
-			}
-
-			throw new NotSupportedException(
-				"Can't find internal main window. Maybe something has changed inside Unity");
-		}
-
-		/// <summary>
-		/// Centers the window relative to the editor. It uses <a href="https://answers.unity.com/questions/960413/editor-window-how-to-center-a-window.html">THIS</a> solution.
-		/// </summary>
-		/// <param name="wnd">Editor window</param>
-		/// <returns></returns>
-		public static Rect GetCenterOnMainWin(EditorWindow wnd)
-		{
-			var main = GetEditorMainWindowPos();
-			var pos = wnd.position;
-			float w = (main.width - pos.width) * 0.5f;
-			float h = (main.height - pos.height) * 0.5f;
-			pos.x = main.x + w;
-			pos.y = main.y + h;
-			return pos;
 		}
 
 		/// <summary>

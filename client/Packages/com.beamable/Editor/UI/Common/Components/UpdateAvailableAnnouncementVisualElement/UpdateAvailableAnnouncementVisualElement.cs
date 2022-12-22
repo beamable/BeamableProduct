@@ -48,11 +48,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 			var installButton = Root.Q<Button>("announcement-install");
 			installButton.text = UpdateAvailableAnnouncementModel.InstallButtonText;
-			installButton.clickable.clicked += () =>
-			{
-				installButton.SetEnabled(false);
-				UpdateAvailableAnnouncementModel.OnInstall?.Invoke();
-			};
+			installButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnInstall?.Invoke();
 		}
 	}
 }

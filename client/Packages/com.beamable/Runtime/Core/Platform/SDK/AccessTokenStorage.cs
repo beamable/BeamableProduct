@@ -113,7 +113,7 @@ namespace Beamable.Api
 			return Promise<Unit>.Successful(PromiseBase.Unit);
 		}
 
-		public void StoreDeviceRefreshToken(string cid, string pid, AccessToken token)
+		public void StoreDeviceRefreshToken(string cid, string pid, IAccessToken token)
 		{
 			AliasHelper.ValidateCid(cid);
 			string key = GetDeviceTokenKey(cid, pid);
@@ -121,7 +121,7 @@ namespace Beamable.Api
 			PlayerPrefs.SetString(key, NextCompressedTokens(compressedTokens, token));
 		}
 
-		private string NextCompressedTokens(string compressedTokens, AccessToken token)
+		private string NextCompressedTokens(string compressedTokens, IAccessToken token)
 		{
 			// this should overwrite any existing account that shares the same refresh token, so that the latest access token is kept up to date.
 			var codedToken = Convert(token);
@@ -175,7 +175,7 @@ namespace Beamable.Api
 			return Array.ConvertAll(refreshTokens, Convert);
 		}
 
-		private string Convert(AccessToken token)
+		private string Convert(IAccessToken token)
 		{
 			return $"{token.Token}{DeviceTokenSeparator}{token.RefreshToken}";
 		}
