@@ -177,7 +177,7 @@ namespace Beamable.Common.Content
 		{
 			// Guaranteed to exist due to validation.
 			var typeName = GetContentTypeName(type);
-			var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true);
+			var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true).ToList();
 			foreach (var possibleTypeName in formerlySerializedTypeNames)
 			{
 				if (possibleTypeName == null) continue;
