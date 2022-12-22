@@ -5003,16 +5003,16 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 6752300448129104452}
-  - {fileID: 1488275368817259022}
-  - {fileID: 7235735019774571100}
-  - {fileID: 641592799817038064}
-  - {fileID: 2522049664562069560}
-  - {fileID: 3615290116143217769}
   - {fileID: 8180741317843119882}
+  - {fileID: 7235735019774571100}
+  - {fileID: 6752300448129104452}
   - {fileID: 3841177212819572843}
-  - {fileID: 2816420288824847267}
+  - {fileID: 3615290116143217769}
+  - {fileID: 2522049664562069560}
   - {fileID: 677687600704873732}
+  - {fileID: 641592799817038064}
+  - {fileID: 586030245461912481}
+  - {fileID: 508367519945976199}
   - {fileID: 630896819374098195}
   - {fileID: 2515785191096472536}
   - {fileID: 6300351256642658095}
@@ -6092,8 +6092,7 @@ MonoBehaviour:
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 2351078345586187649}
-  _children:
-  - {fileID: 2232431912498048445}
+  _children: []
 --- !u!1 &3503953061644881930
 GameObject:
   m_ObjectHideFlags: 0
@@ -6935,7 +6934,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5952273712066250037
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8587,7 +8586,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &79240880187015968
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9567,7 +9566,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.3529412, g: 0.7647059, b: 0.9254902, a: 1}
     BottomRightColor: {r: 0.3529412, g: 0.7647059, b: 0.9254902, a: 1}
@@ -9621,7 +9620,8 @@ MonoBehaviour:
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 2351078345586187649}
-  _children: []
+  _children:
+  - {fileID: 3277037802430738087}
 --- !u!1 &6089785653489853270
 GameObject:
   m_ObjectHideFlags: 0
@@ -14416,7 +14416,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
     BottomRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
@@ -14470,7 +14470,8 @@ MonoBehaviour:
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 2351078345586187649}
-  _children: []
+  _children:
+  - {fileID: 3735456386579151000}
 --- !u!1 &8823939482915084185
 GameObject:
   m_ObjectHideFlags: 0
@@ -15012,8 +15013,7 @@ MonoBehaviour:
   _styleSheet: {fileID: 0}
   _assetReferences: []
   _parent: {fileID: 2351078345586187649}
-  _children:
-  - {fileID: 1005514820543661147}
+  _children: []
 --- !u!1 &8871922431165296554
 GameObject:
   m_ObjectHideFlags: 0
@@ -15430,7 +15430,7 @@ MonoBehaviour:
   FeatureControl: {fileID: 2815067138327549882}
   EnrichOrder: 0
   AccountPresenter: {fileID: 8231940341625117213}
-  InfoText: {fileID: 0}
+  InfoText: {fileID: 863342137017226991}
   SignInButtonsGroup: {fileID: 5451686052789029181}
   SwitchButtonsGroup: {fileID: 3072004925182060732}
   NextCancelButtonsGroup: {fileID: 4330912786119630688}
