@@ -849,7 +849,7 @@ namespace Beamable.Editor.Content
 			{
 				return cachedChecksum;
 			}
-			
+
 			using (var md5 = MD5.Create())
 			{
 				var json = ClientContentSerializer.SerializeProperties(content);
@@ -891,7 +891,7 @@ namespace Beamable.Editor.Content
 		{
 			return _checksumTable;
 		}
-		
+
 		public static void SetCheckSumTable(SerializableDictionary<string, ValidationChecksum> table)
 		{
 			_checksumTable.Clear();
