@@ -402,6 +402,18 @@ namespace Beamable
 
 			InitServices(cid, pid);
 			_behaviour.Initialize(this);
+			
+			#if UNITY_EDITOR
+			// TODO: in a runtime game, we should save the state if the game is crashing...
+			UnityEditor.EditorApplication.playModeStateChanged += async (state) =>
+			{
+				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+				{
+					Debug.Log("Stopping the context manually");
+					await Stop();
+				}
+			};
+			#endif
 
 			_initPromise = new Promise();
 			IEnumerator Try()
@@ -854,7 +866,7 @@ namespace Beamable
 		}
 
 		string IDependencyNameProvider.DependencyProviderName => PlayerCode;
-		string IDependencyScopeNameProvider.DependencyScopeName => PlayerCode;
+		string IDependencyScopeNameProvider.DependencyScopeName => PlayerId.ToString();
 	}
 
 	[Serializable]

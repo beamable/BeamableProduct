@@ -217,7 +217,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
-			DependencyBuilder.AddSingleton<ISdkEventService, SdkEventService>();
+			DependencyBuilder.AddScoped<ISdkEventService, SdkEventService>();
 			DependencyBuilder.AddSingleton<PubnubNotificationService>();
 			DependencyBuilder.AddSingleton<IPubnubNotificationService, PubnubNotificationService>();
 			DependencyBuilder.AddSingleton<IPubnubSubscriptionManager>(

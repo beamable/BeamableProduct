@@ -54,6 +54,7 @@ namespace Beamable.Player
 		private InventoryUpdateBuilder _offlineUpdate = new InventoryUpdateBuilder();
 
 		private StorageHandle<PlayerInventory> _saveHandle;
+		private IConnectivityService _connectivityService;
 
 		public PlayerInventory(
 			InventoryService inventoryApi,
@@ -67,6 +68,7 @@ namespace Beamable.Player
 			ISdkEventService sdkEventService,
 			OfflineCache cache)
 		{
+			_connectivityService = connectivityService;
 			_inventoryApi = inventoryApi;
 			_platformService = platformService;
 			_notificationService = notificationService;
@@ -405,6 +407,9 @@ namespace Beamable.Player
 			{
 				item.Value.OnAfterDeserialized(item.Key, _provider);
 			}
+			
+			// now we need to try applying any old state we had
+			var _ = _consumer.RunAfterReconnection(new SdkEvent(nameof(PlayerInventory), "commit"));
 		}
 	}
 }
