@@ -2,7 +2,7 @@
     "environment": "staging",
     "apiUrl": "https://api.beamable.com",
     "portalUrl": "https://portal.beamable.com",
-    "playerSocketUrl": "wss://socket.beamable.com/connect",
+    "playerSocketUrl": "wss://socket.beamable.com",
     "beamMongoExpressUrl": "https://storage.beamable.com",
     "dockerRegistryUrl": "https://microservices.beamable.com/v2/",
     "isUnityVsp": "UNITY__VSP__UID",

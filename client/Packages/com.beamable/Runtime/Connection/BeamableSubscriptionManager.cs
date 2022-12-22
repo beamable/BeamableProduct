@@ -16,12 +16,15 @@ namespace Connection
 
 		private void HandleMessage(string message)
 		{
+			// XXX: This merely mimics what we had in the initial pubnub implementation. Eventually this should be made
+			// a lot smarter and more type safe.
 			var deserialized = (ArrayDict)Json.Deserialize(message);
+			deserialized.TryGetValue("context", out object context);
+			deserialized.TryGetValue("messageFull", out object messageFull);
 
-			_notificationService.Publish(
-				deserialized["context"] as string,
-				deserialized["payload"]
-			);
+			// Invoke notification service
+			object parsedPayload = Json.Deserialize(messageFull as string);
+			_notificationService.Publish(context as string, parsedPayload ?? messageFull);
 		}
 	}
 }
