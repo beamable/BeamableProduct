@@ -299,12 +299,12 @@ namespace Beamable.Editor.Content.Models
 		public void RefreshFilteredContents()
 		{
 			_filteredContent.Clear();
-			foreach (var content in _content)
+			for (int i = 0; i < _content.Count; i++)
 			{
-				if (Filter != null && !Filter.Accepts(content)) continue;
-				if (SystemFilter != null && !SystemFilter.Accepts(content)) continue;
+				if (Filter != null && !Filter.Accepts(_content[i])) continue;
+				if (SystemFilter != null && !SystemFilter.Accepts(_content[i])) continue;
 
-				_filteredContent.Add(content);
+				_filteredContent.Add(_content[i]);
 			}
 
 			_filteredContent.Sort(CurrentSorter);
@@ -683,8 +683,6 @@ namespace Beamable.Editor.Content.Models
 
 		private void ContentItemDescriptor_OnEnriched(ContentItemDescriptor contentItemDescriptor)
 		{
-			EditorApplication.delayCall -= RefreshFilteredContents;
-			EditorApplication.delayCall += RefreshFilteredContents;
 			AccumulateContentTags(contentItemDescriptor);
 			OnItemEnriched?.Invoke(contentItemDescriptor);
 		}
