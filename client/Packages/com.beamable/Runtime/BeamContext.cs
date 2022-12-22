@@ -656,7 +656,7 @@ namespace Beamable
 #endif
 			// string connectionAddress = "ws://localhost:5060/connect";
 			string connectionAddress = BeamableEnvironment.PlayerSocketUrl;
-			await connection.Connect(BeamableEnvironment.PlayerSocketUrl, _beamableApiRequester.Token);
+			await connection.Connect(connectionAddress, _beamableApiRequester.Token);
 		}
 
 		private async Promise InitStep_StartPurchaser()
