@@ -24,7 +24,7 @@ namespace Connection
 		private WebSocket _webSocket;
 		private readonly CoroutineService _coroutineService;
 		private IEnumerator _dispatchMessagesRoutine;
-		private Promise onConnectPromise;
+		private Promise _onConnectPromise;
 
 		public WebSocketConnection(CoroutineService coroutineService)
 		{
@@ -44,7 +44,7 @@ namespace Connection
 			_dispatchMessagesRoutine = DispatchMessages();
 			_coroutineService.StartCoroutine(_dispatchMessagesRoutine);
 #endif
-			return onConnectPromise;
+			return _onConnectPromise;
 		}
 
 		public Promise Disconnect()
@@ -65,9 +65,9 @@ namespace Connection
 
 		private Promise DoConnect()
 		{
-			onConnectPromise = new Promise();
+			_onConnectPromise = new Promise();
 			Task _ = _webSocket.Connect();
-			return onConnectPromise;
+			return _onConnectPromise;
 		}
 
 		private static WebSocket CreateWebSocket(string address, IAccessToken token)
@@ -88,7 +88,7 @@ namespace Connection
 				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnOpen received");
 				try
 				{
-					onConnectPromise.CompleteSuccess();
+					_onConnectPromise.CompleteSuccess();
 					Open?.Invoke();
 				}
 				catch (Exception e)
@@ -114,7 +114,7 @@ namespace Connection
 				PlatformLogger.Log($"<b>[WebSocketConnection]</b> OnError received: {error}");
 				try
 				{
-					onConnectPromise.CompleteError(new WebSocketConnectionException(error));
+					_onConnectPromise.CompleteError(new WebSocketConnectionException(error));
 					Error?.Invoke(error);
 				}
 				catch (Exception e)
@@ -156,6 +156,7 @@ namespace Connection
 				_webSocket.DispatchMessageQueue();
 				yield return wait;
 			}
+			// ReSharper disable once IteratorNeverReturns
 		}
 
 		public async Promise OnDispose()
