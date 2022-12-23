@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Refresh Content Window process is more optimized
+- Content with optional fields of misaligned type use default instance for target type.
 
 ## [1.9.0]
 ### Changed
