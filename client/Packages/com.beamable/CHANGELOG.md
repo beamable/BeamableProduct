@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Content with optional fields of misaligned type use default instance for target type.
 
+### Fixed
+- Refresh Content Window process is more optimized
+
 ## [1.9.0]
 ### Changed
 - Add GPGS MonoBehaviour to AccountsFlow
