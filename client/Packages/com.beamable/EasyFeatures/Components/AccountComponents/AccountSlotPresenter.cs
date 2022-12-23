@@ -11,13 +11,16 @@ namespace Beamable.EasyFeatures.Components
 	{
 		private const string ONLINE_CLASS = "online";
 		private const string OFFLINE_CLASS = "offline";
-		
+		private const string SELECTED_CLASS = "selected";
+
 		public Image AvatarImage;
 		public TextMeshProUGUI UsernameText;
 		public TextMeshProUGUI DescriptionText;
 		public Button ConfirmButton;
 		public TextMeshProUGUI ConfirmButtonText;
 		public Button MainButton;
+		public Toggle MainToggle;
+		public BussElement ToggleBussElement;
 		public GameObject AcceptCancelButtons;
 		public Button AcceptButton;
 		public Button CancelButton;
@@ -46,11 +49,13 @@ namespace Beamable.EasyFeatures.Components
 		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onConfirmPressed, string buttonText = "Confirm")
 		{
 			SetViewData(item.ViewData);
-			
+
 			ConfirmButton.onClick.ReplaceOrAddListener(() => onConfirmPressed?.Invoke(item.ViewData.PlayerId));
 			ConfirmButton.gameObject.SetActive(onConfirmPressed != null);
 			ConfirmButtonText.text = buttonText;
+			MainButton.gameObject.SetActive(true);
 			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
+			MainToggle.gameObject.SetActive(false);
 			AcceptCancelButtons.SetActive(false);
 			
 			SetOnlineState(true);
@@ -61,10 +66,31 @@ namespace Beamable.EasyFeatures.Components
 			SetViewData(item.ViewData);
 			
 			ConfirmButton.gameObject.SetActive(false);
+			MainButton.gameObject.SetActive(true);
 			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
+			MainToggle.gameObject.SetActive(false);
 			AcceptCancelButtons.SetActive(true);
 			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptPressed?.Invoke(item.ViewData.PlayerId));
 			CancelButton.onClick.ReplaceOrAddListener(() => onCancelPressed?.Invoke(item.ViewData.PlayerId));
+			
+			SetOnlineState(true);
+		}
+		
+		public void SetupAsToggle(PoolData item, Action<long> onEntrySelected)
+		{
+			SetViewData(item.ViewData);
+			
+			ConfirmButton.gameObject.SetActive(false);
+			MainButton.gameObject.SetActive(false);
+			MainToggle.gameObject.SetActive(true);
+			MainToggle.onValueChanged.ReplaceOrAddListener(selected =>
+			{
+				ToggleBussElement.SetClass(SELECTED_CLASS, selected);
+				
+				if (selected)
+					onEntrySelected?.Invoke(item.ViewData.PlayerId);
+			});
+			AcceptCancelButtons.SetActive(false);
 			
 			SetOnlineState(true);
 		}
