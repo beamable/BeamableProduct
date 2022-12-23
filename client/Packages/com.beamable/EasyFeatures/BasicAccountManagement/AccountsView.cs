@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.EasyFeatures.Components;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +13,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			BeamContext Context { get; set; }
 
-			Promise<AccountSlotPresenter.ViewData> GetAccountViewData();
+			/// <inheritdoc cref="AccountManagementPlayerSystem.GetAccountViewData"/>
+			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(long playerId = -1);
 		}
 
 		
@@ -24,6 +26,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		public AccountSlotPresenter AccountPresenter;
 		public TextMeshProUGUI InfoText;
+		public AccountsListPresenter OtherAccountsList;
+		public ToggleGroup OtherAccountsToggleGroup;
+		public GameObject OtherAccountsGroup;
 		
 		[Header("Button groups")]
 		public GameObject SignInButtonsGroup;
@@ -43,6 +48,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public Button SwitchAccountButton;
 
 		protected IDependencies System;
+
+		private long _selectedOtherAccountId = -1;
 		
 		public bool IsVisible
 		{
@@ -63,10 +70,13 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 			
+			await System.Context.Accounts.OnReady;
+			
 			// TODO enable proper set of buttons
-			SignInButtonsGroup.SetActive(false);
-			SwitchButtonsGroup.SetActive(true);
+			SignInButtonsGroup.SetActive(System.Context.Accounts.Count == 1);
+			SwitchButtonsGroup.SetActive(System.Context.Accounts.Count > 1);
 			NextCancelButtonsGroup.SetActive(false);
+			LoadGameButton.interactable = _selectedOtherAccountId > 0;
 			
 			SwitchAccountPopupPrefab.gameObject.SetActive(false);
 			EmailInputField.gameObject.SetActive(false);
@@ -83,12 +93,36 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			NextButton.onClick.ReplaceOrAddListener(OnSignIn);
 			CancelButton.onClick.ReplaceOrAddListener(OnCancel);
 
+			// setup current account
 			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData
 			{
 				Height = 150, Index = 0, ViewData = await System.GetAccountViewData()
 			};
 			
 			AccountPresenter.Setup(data, OpenAccountInfoView, null);
+			
+			// setup other accounts
+			bool hasOtherAccounts = System.Context.Accounts.Count > 1;
+			OtherAccountsGroup.SetActive(hasOtherAccounts);
+			if (hasOtherAccounts)
+			{
+				List<AccountSlotPresenter.ViewData> accountsViewData = new List<AccountSlotPresenter.ViewData>();
+				foreach (var account in System.Context.Accounts)
+				{
+					if (account.GamerTag == System.Context.PlayerId)
+						continue;
+
+					accountsViewData.Add(await System.GetAccountViewData(account.GamerTag));
+				}
+				
+				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected);
+			}
+		}
+
+		private void OnOtherAccountSelected(long playerId)
+		{
+			_selectedOtherAccountId = playerId;
+			LoadGameButton.interactable = true;
 		}
 
 		private void OnCancel()
@@ -122,6 +156,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private void OnLoadGame()
 		{
+			// load profile with id == _selectedOtherAccountId
 			throw new System.NotImplementedException();
 		}
 

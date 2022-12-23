@@ -1533,6 +1533,21 @@ MonoBehaviour:
         _json: '{"_valueType":0,"AssetSerializationKey":25}'
     _cachedProperties: []
     _selector: .icon.googlePlay
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: borderColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.8666667342185974,"g":0.8392157554626465,"b":0.9921569228172302,"a":1.0}}'
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.12156863510608673,"g":0.07058823853731156,"b":0.30588236451148989,"a":1.0}}'
+    _cachedProperties: []
+    _selector: .panel.account.selected
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}

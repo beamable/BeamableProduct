@@ -76,13 +76,14 @@ namespace Beamable.EasyFeatures.Components
 			SetOnlineState(true);
 		}
 		
-		public void SetupAsToggle(PoolData item, Action<long> onEntrySelected)
+		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<long> onEntrySelected)
 		{
 			SetViewData(item.ViewData);
 			
 			ConfirmButton.gameObject.SetActive(false);
 			MainButton.gameObject.SetActive(false);
 			MainToggle.gameObject.SetActive(true);
+			MainToggle.group = group;
 			MainToggle.onValueChanged.ReplaceOrAddListener(selected =>
 			{
 				ToggleBussElement.SetClass(SELECTED_CLASS, selected);

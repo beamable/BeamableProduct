@@ -13,9 +13,12 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 	{
 		public BeamContext Context { get; set; }
 
-		public async Promise<AccountSlotPresenter.ViewData> GetAccountViewData()
+		/// <summary>
+		/// Gets account view data for a given player. Default parameter will return current user's view data.
+		/// </summary>
+		public async Promise<AccountSlotPresenter.ViewData> GetAccountViewData(long playerId = -1)
 		{
-			long playerId = Context.PlayerId;
+			playerId = playerId == -1 ? Context.PlayerId : playerId;
 			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
 			if (!stats.TryGetValue("alias", out string playerName))
 			{

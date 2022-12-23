@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.Components
 {
@@ -22,10 +23,13 @@ namespace Beamable.EasyFeatures.Components
 		protected string buttonText;
 
 		private bool isAcceptCancelVariant;
+		private bool isToggleList;
+		private ToggleGroup toggleGroup;
 
 		public void Setup(List<AccountSlotPresenter.ViewData> viewData, Action<long> onButtonPressed = null, string buttonText = "Confirm", Action<long> onEntryPressed = null)
 		{
 			isAcceptCancelVariant = false;
+			isToggleList = false;
 			
 			this.onButtonPressed = onButtonPressed;
 			this.buttonText = buttonText;
@@ -37,10 +41,24 @@ namespace Beamable.EasyFeatures.Components
 		public void Setup(List<AccountSlotPresenter.ViewData> viewData, Action<long> onAcceptPressed, Action<long> onCancelPressed, Action<long> onEntryPressed = null)
 		{
 			isAcceptCancelVariant = true;
+			isToggleList = false;
 
 			this.onAcceptPressed = onAcceptPressed;
 			this.onCancelPressed = onCancelPressed;
 			this.onEntryPressed = onEntryPressed;
+			
+			SetupInternal(viewData);
+		}
+
+		public void SetupToggles(List<AccountSlotPresenter.ViewData> viewData, ToggleGroup group, Action<long> onToggleSelected = null)
+		{
+			isAcceptCancelVariant = false;
+			isToggleList = true;
+			toggleGroup = group;
+
+			onAcceptPressed = null;
+			onCancelPressed = null;
+			onEntryPressed = onToggleSelected;
 			
 			SetupInternal(viewData);
 		}
@@ -90,7 +108,11 @@ namespace Beamable.EasyFeatures.Components
 			var data = item as AccountSlotPresenter.PoolData;
 			Assert.IsTrue(data != null, "All items in this scroll view MUST be FriendSlotPresenter");
 
-			if (isAcceptCancelVariant)
+			if (isToggleList)
+			{
+				spawned.SetupAsToggle(data, toggleGroup, onEntryPressed);
+			}
+			else if (isAcceptCancelVariant)
 			{
 				spawned.Setup(data, onEntryPressed, onCancelPressed, onAcceptPressed);
 			}
