@@ -858,7 +858,7 @@ namespace Beamable.Editor.Content
 				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
 
 				AddChecksumToCache(content, checksum);
-				
+
 				return checksum;
 			}
 		}
@@ -880,7 +880,7 @@ namespace Beamable.Editor.Content
 			s = null;
 			if (!(content is ContentObject contentObj) || !contentObj)
 				return false;
-			
+
 			bool containsChecksum = _checksumTable.TryGetValue(content.Id, out var existing);
 			bool match = containsChecksum && existing.ValidationId.Equals(contentObj.ValidationGuid);
 			s = match ? existing.Checksum : null;
