@@ -366,10 +366,14 @@ namespace Beamable.Common.Content
 		      _serializedValidationGUID = ValidationGuid.ToString();
 	      }
 
+         if (ValidationContext == null)
+         {
+	         // if we have no validation context assigned yet, then we cannot possibly validate.
+	         return;
+         }
          OnEditorValidation?.Invoke();
-         // access the edit time validation context?
-         var ctx = ValidationContext ?? new ValidationContext();
-         if (HasValidationExceptions(ctx, out var exceptions))
+         
+         if (HasValidationExceptions(ValidationContext, out var exceptions))
          {
             _hadValidationErrors = true;
             OnValidationChanged?.Invoke(exceptions);

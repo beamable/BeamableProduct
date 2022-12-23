@@ -9,6 +9,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
@@ -81,7 +82,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
 
 			DependencyBuilder.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
-			DependencyBuilder.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
+			DependencyBuilder.AddSingleton<IContentIO>(provider => provider.GetService<ContentIO>());
+			DependencyBuilder.AddSingleton<ContentIO>();
 			DependencyBuilder.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
 			DependencyBuilder.AddSingleton<AliasService>();
 			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
@@ -99,6 +101,9 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<ServiceStorage>();
 			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<EnvironmentService>();
+
+			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
+			DependencyBuilder.AddSingleton<ValidationContext>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}

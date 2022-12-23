@@ -207,6 +207,10 @@ namespace Beamable.Common.Content
 					if (!skip)
 					{
 						var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
+						if (!optional.GetOptionalType().IsAssignableFrom(value?.GetType()))
+						{
+							value = Activator.CreateInstance(optional.GetOptionalType());
+						}
 						optional.SetValue(value);
 					}
 				}
