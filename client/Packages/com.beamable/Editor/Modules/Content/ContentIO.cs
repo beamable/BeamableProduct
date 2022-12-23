@@ -209,7 +209,7 @@ namespace Beamable.Editor.Content
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 
 		}
-		
+
 		public ContentIO(IBeamableRequester requester) : this(BeamEditorContext.Default.ServiceScope, requester)
 		{
 		}
