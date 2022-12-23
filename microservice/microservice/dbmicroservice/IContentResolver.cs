@@ -20,10 +20,9 @@ namespace Beamable.Server
 		   client = new HttpClient();
 	   }
 
-	   public async Task<string> RequestContent(string uri)
+	   public Task<string> RequestContent(string uri)
 	   {
-		   var result = await client.GetStringAsync(uri);
-		   return result;
+		   return client.GetStringAsync(uri);
 	   }
    }
 }
