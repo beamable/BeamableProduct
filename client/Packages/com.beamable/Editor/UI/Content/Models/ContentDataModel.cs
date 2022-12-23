@@ -718,12 +718,14 @@ namespace Beamable.Editor.Content.Models
 			var synced = 0;
 			foreach (var content in GetAllContents())
 			{
+				var contentStatus = content.Status;
+
 				valid += content.ValidationStatus == ContentValidationStatus.VALID ? 1 : 0;
 				invalid += content.ValidationStatus == ContentValidationStatus.INVALID ? 1 : 0;
-				modified += content.Status == (ContentModificationStatus.MODIFIED & content.Status) ? 1 : 0;
-				created += content.Status == (ContentModificationStatus.LOCAL_ONLY & content.Status) ? 1 : 0;
-				deleted += content.Status == (ContentModificationStatus.SERVER_ONLY & content.Status) ? 1 : 0;
-				synced += content.Status == (ContentModificationStatus.NOT_MODIFIED & content.Status) ? 1 : 0;
+				modified += contentStatus == (ContentModificationStatus.MODIFIED & contentStatus) ? 1 : 0;
+				created += contentStatus == (ContentModificationStatus.LOCAL_ONLY & contentStatus) ? 1 : 0;
+				deleted += contentStatus == (ContentModificationStatus.SERVER_ONLY & contentStatus) ? 1 : 0;
+				synced += contentStatus == (ContentModificationStatus.NOT_MODIFIED & contentStatus) ? 1 : 0;
 			}
 
 			return new ContentCounts

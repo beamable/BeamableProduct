@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Runtime;
 using Beamable.Content;
 using Beamable.Editor.Content.UI;
@@ -14,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -194,17 +196,22 @@ namespace Beamable.Editor.Content
 		public static Action<AvailableManifests> OnManifestsListFetched;
 		public static Action<IEnumerable<AvailableManifestModel>> OnArchivedManifestsFetched;
 
-		private ValidationContext ValidationContext { get; } = new ValidationContext
-		{ AllContent = new Dictionary<string, IContentObject>() };
+		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
 
-		public ContentIO(IBeamableRequester requester)
+		public ContentIO(IDependencyProvider provider, IBeamableRequester requester)
 		{
+			_provider = provider;
 			_requester = requester;
 			Selection.selectionChanged += SelectionChanged;
 
 			OnContentCreated += Internal_HandleContentCreated;
 			OnContentDeleted += Internal_HandleContentDeleted;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+
+		}
+		
+		public ContentIO(IBeamableRequester requester) : this(BeamEditorContext.Default.ServiceScope, requester)
+		{
 		}
 
 		[RuntimeInitializeOnLoadMethod]
@@ -563,6 +570,7 @@ namespace Beamable.Editor.Content
 			}
 
 			ContentObject.ValidationContext = ValidationContext;
+			ValidationContext.Initialized = true;
 			return localManifest;
 		}
 
@@ -825,40 +833,30 @@ namespace Beamable.Editor.Content
 			File.Delete(path);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool AreTagsEqual(string[] firstContentTags, string[] secondContentTags)
 		{
-			var firstContentDistinctTags = firstContentTags.Distinct();
-			var secondContentDistinctTags = secondContentTags.Distinct();
-
-			var firstContentTagCount = firstContentDistinctTags.Count();
-			var secondContentTagCount = secondContentDistinctTags.Count();
-
-			var countOfSharedTags = firstContentDistinctTags.Intersect(secondContentDistinctTags).Count();
-
-			var areTagsEqual = firstContentTagCount == countOfSharedTags && secondContentTagCount == countOfSharedTags;
-
-			return areTagsEqual;
+			return firstContentTags.Length == secondContentTags.Length && firstContentTags.All(secondContentTags.Contains);
 		}
 
 
 		[Serializable]
 		public struct ValidationChecksum
 		{
-			public string ValidationId;
+			public Guid ValidationId;
 			public string Checksum;
 		}
 
 		private static Dictionary<string, ValidationChecksum> _checksumTable =
 			new Dictionary<string, ValidationChecksum>();
 
+		private IDependencyProvider _provider;
+
 		public static string ComputeChecksum(IContentObject content)
 		{
-			// TODO: Un-confuse this if statement.
-			if (content is ContentObject contentObj && contentObj &&
-				_checksumTable.TryGetValue(contentObj.Id, out var existing) &&
-				Guid.Parse(existing.ValidationId) == contentObj.ValidationGuid)
+			if (TryGetChecksumFromCache(content, out string cachedChecksum))
 			{
-				return existing.Checksum;
+				return cachedChecksum;
 			}
 
 			using (var md5 = MD5.Create())
@@ -868,17 +866,34 @@ namespace Beamable.Editor.Content
 				var hash = md5.ComputeHash(bytes);
 				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
 
-				if (content is ContentObject contentObj2 && contentObj2)
-				{
-					_checksumTable[contentObj2.Id] = new ValidationChecksum
-					{
-						ValidationId = contentObj2.ValidationGuid.ToString(),
-						Checksum = checksum
-					};
-				}
-
+				AddChecksumToCache(content, checksum);
+				
 				return checksum;
 			}
+		}
+
+		private static void AddChecksumToCache(IContentObject content, string checksum)
+		{
+			if (content is ContentObject contentObj2 && contentObj2)
+			{
+				_checksumTable[contentObj2.Id] = new ValidationChecksum
+				{
+					ValidationId = contentObj2.ValidationGuid,
+					Checksum = checksum
+				};
+			}
+		}
+
+		private static bool TryGetChecksumFromCache(IContentObject content, out string s)
+		{
+			s = null;
+			if (!(content is ContentObject contentObj) || !contentObj)
+				return false;
+			
+			bool containsChecksum = _checksumTable.TryGetValue(content.Id, out var existing);
+			bool match = containsChecksum && existing.ValidationId.Equals(contentObj.ValidationGuid);
+			s = match ? existing.Checksum : null;
+			return match;
 		}
 
 		public static Dictionary<string, ValidationChecksum> GetCheckSumTable()
