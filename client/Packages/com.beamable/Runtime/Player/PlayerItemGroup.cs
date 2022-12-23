@@ -152,6 +152,16 @@ namespace Beamable.Player
 		private ItemRef _rootRef;
 		private IPlatformService _platformService;
 		private InventoryService _inventoryService;
+		private IDependencyProvider _provider;
+		private PlayerInventory Inventory => _provider.GetService<PlayerInventory>();
+
+		/// <summary>
+		/// The scope defines which items in the inventory this group will be able to view.
+		/// If the scope is "items", then this group will view every item in the player inventory.
+		/// However, if the scope was "items.fish", then the group would only show items that were
+		/// instances of "items.fish" and sub types.
+		/// </summary>
+		public string RootScope => _rootRef.Id;
 
 		public PlayerItemGroup(ItemRef rootRef, IPlatformService platformService, InventoryService inventoryService, IDependencyProvider provider)
 		{
@@ -166,15 +176,17 @@ namespace Beamable.Player
 			_rootRef = rootRef;
 			_platformService = platformService;
 			_inventoryService = inventoryService;
+			_provider = provider;
 			_platformService.OnReady.Then(_ =>
 			{
 				_inventoryService.Subscribe(rootRef, OnItemsUpdated);
 			});
 		}
 
-		internal void OnAfterDeserialized(ItemRef rootRef, IDependencyProvider provider)
+		internal void OnAfterDeserialized(ItemRef rootRef, PlayerInventory inventory, IDependencyProvider provider)
 		{
 			_rootRef = rootRef;
+			_provider = provider;
 			_platformService = provider.GetService<IPlatformService>();
 			_inventoryService = provider.GetService<InventoryService>();
 			_platformService.OnReady.Then(_ =>
@@ -214,7 +226,7 @@ namespace Beamable.Player
 			var hasMore = scope.Length > _rootRef.Id.Length;
 			if (!hasMore) return true; // and if its exactly equal, thats fine
 
-			var nextIsDot = scope[_rootRef.Id.Length + 1] == '.';
+			var nextIsDot = scope[_rootRef.Id.Length] == '.';
 			return nextIsDot; // but if it has more characters, than the next character MUST be a new sub type
 		}
 
@@ -261,6 +273,15 @@ namespace Beamable.Player
 				item.TriggerDeletion();
 			}
 			SetData(next);
+
+			var superSets = Inventory.GetExistingSuperSets(this).ToArray();
+			var superSetPromises = new Promise<Unit>[superSets.Length];
+			for (var i = 0; i < superSets.Length; i++)
+			{
+				superSetPromises[i] = superSets[i].Refresh();
+			}
+
+			await Promise.Sequence(superSetPromises);
 		}
 
 	}

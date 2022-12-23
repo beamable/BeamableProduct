@@ -112,6 +112,23 @@ namespace Beamable.Player
 		}
 
 		/// <summary>
+		/// given an item group, find any other item groups in this inventory that are logical supersets
+		/// </summary>
+		/// <param name="group"></param>
+		/// <returns></returns>
+		public IEnumerable<PlayerItemGroup> GetExistingSuperSets(PlayerItemGroup group)
+		{
+			foreach (var kvp in _items)
+			{
+				if (kvp.Value == group) continue;
+				if (kvp.Value.IsScopePartOfGroup(group.RootScope))
+				{
+					yield return kvp.Value;
+				}
+			}
+		}
+
+		/// <summary>
 		/// <inheritdoc cref="Update(Beamable.Common.Api.Inventory.InventoryUpdateBuilder,string)"/>
 		/// </summary>
 		/// <param name="updateBuilder">An action that gives you a <see cref="InventoryUpdateBuilder"/> to configure with actions to apply to the player's inventory</param>
@@ -405,7 +422,7 @@ namespace Beamable.Player
 			// need to rehydrate the items list :/ 
 			foreach (var item in _items)
 			{
-				item.Value.OnAfterDeserialized(item.Key, _provider);
+				item.Value.OnAfterDeserialized(item.Key,this, _provider);
 			}
 			
 			// now we need to try applying any old state we had
