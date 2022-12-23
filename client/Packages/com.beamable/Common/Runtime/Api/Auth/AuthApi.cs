@@ -477,7 +477,7 @@ namespace Beamable.Common.Api.Auth
 			}
 			return _stringToEnum[data];
 		}
-		
+
 		/// <summary>
 		/// Convert the given <see cref="AuthThirdParty"/> into a string format that can be sent to Beamable servers.
 		/// Also, the Beamable servers treat these strings as special code names for the various third party apps.

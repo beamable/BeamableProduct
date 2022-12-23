@@ -24,7 +24,7 @@ namespace Beamable.Api.Sessions
 				_codeToLang[code] = enumValue;
 			}
 		}
-		
+
 		/// <summary>
 		/// Convert an ISO639-1 code to the SystemLanguage.
 		/// If the given code is invalid, the default system language is returned.
@@ -44,7 +44,7 @@ namespace Beamable.Api.Sessions
 
 			return enumValue;
 		}
-		
+
 		/// <summary>
 		/// Return the ISO639-1 language code from a given <see cref="SystemLanguage"/>
 		/// Use the <see cref="GetISO639CountryCodeFromSystemLanguage()"/> to get the language code for the current application
