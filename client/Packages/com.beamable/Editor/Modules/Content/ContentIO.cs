@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Runtime;
 using Beamable.Content;
 using Beamable.Editor.Content.UI;
@@ -195,17 +196,22 @@ namespace Beamable.Editor.Content
 		public static Action<AvailableManifests> OnManifestsListFetched;
 		public static Action<IEnumerable<AvailableManifestModel>> OnArchivedManifestsFetched;
 
-		private ValidationContext ValidationContext { get; } = new ValidationContext
-		{ AllContent = new Dictionary<string, IContentObject>() };
+		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
 
-		public ContentIO(IBeamableRequester requester)
+		public ContentIO(IDependencyProvider provider, IBeamableRequester requester)
 		{
+			_provider = provider;
 			_requester = requester;
 			Selection.selectionChanged += SelectionChanged;
 
 			OnContentCreated += Internal_HandleContentCreated;
 			OnContentDeleted += Internal_HandleContentDeleted;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+
+		}
+		
+		public ContentIO(IBeamableRequester requester) : this(BeamEditorContext.Default.ServiceScope, requester)
+		{
 		}
 
 		[RuntimeInitializeOnLoadMethod]
@@ -564,6 +570,7 @@ namespace Beamable.Editor.Content
 			}
 
 			ContentObject.ValidationContext = ValidationContext;
+			ValidationContext.Initialized = true;
 			return localManifest;
 		}
 
@@ -842,6 +849,8 @@ namespace Beamable.Editor.Content
 
 		private static Dictionary<string, ValidationChecksum> _checksumTable =
 			new Dictionary<string, ValidationChecksum>();
+
+		private IDependencyProvider _provider;
 
 		public static string ComputeChecksum(IContentObject content)
 		{
