@@ -56,7 +56,7 @@ namespace Beamable.Editor.Content
 
 				_beamable.ContentIO.EnsureDefaultContentByType(referenceType);
 				var allContent =
-				   new HashSet<string>(_beamable.ContentIO.FindAllContentByType(referenceType).Select(x => x.Id));
+				   new HashSet<string>(_beamable.ContentDatabase.GetContent(referenceType).Select(x => x.contentId));
 				_typeToContent[referenceType] = allContent;
 			}
 
@@ -204,7 +204,6 @@ namespace Beamable.Editor.Content
 		private Vector2 _scrollPos;
 		private string _searchString;
 		private bool _initialized;
-		private List<ContentObject> _allContent;
 		private string _typeName;
 		private GUIStyle _normalStyle, _activeStyle;
 		private List<Option> _options;
@@ -224,21 +223,20 @@ namespace Beamable.Editor.Content
 			await de.InitializePromise;
 
 			de.ContentIO.EnsureDefaultContentByType(referenceType);
-			_allContent = de.ContentIO.FindAllContentByType(referenceType).ToList();
-
+			var contentEntries = de.ContentDatabase.GetContent(referenceType);
 			_options = new List<Option>();
 			_idToOption = new Dictionary<string, Option>();
-			foreach (var content in _allContent)
+			foreach (var content in contentEntries)
 			{
-				var displayName = content.Id.Substring(_typeName.Length + 1);
+				var displayName = content.contentId.Substring(_typeName.Length + 1);
 				var option = new Option
 				{
-					Id = content.Id,
+					Id = content.contentId,
 					DisplayName = displayName,
 					DisplayNameLower = displayName.ToLower()
 				};
 				_options.Add(option);
-				_idToOption.Add(content.Id, option);
+				_idToOption.Add(content.contentId, option);
 			}
 
 			var nullOption = new Option
