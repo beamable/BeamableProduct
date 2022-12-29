@@ -48,15 +48,15 @@ namespace Beamable.Editor.Content
 				ContentIO.NotifyDeleted(_deleteEntries);
 				_deleteEntries.Clear();
 			});
-			
+
 			return AssetDeleteResult.DidNotDelete;
 		}
-	
-	
+
+
 		private static string[] OnWillSaveAssets(string[] paths)
 		{
 			if (!BeamEditor.IsInitialized) return paths;
-			
+
 			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
 			if (!db.ContainsAnyContentPaths(paths)) return paths;
 
@@ -68,15 +68,15 @@ namespace Beamable.Editor.Content
 				{
 					continue;
 				}
-	
+
 				var asset = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
 				asset.SetContentName(entry.contentName);
 				listOfContent.Add(asset);
 			}
 			ContentIO.NotifyCreated(listOfContent);
-	
+
 			return paths;
-			
+
 		}
 	}
 
@@ -167,7 +167,7 @@ namespace Beamable.Editor.Content
 			return selfIds.SetEquals(otherIds);
 		}
 	}
-	
+
 	public delegate void IContentEntryDelegate(List<ContentDatabaseEntry> entries);
 
 	/// <summary>
@@ -193,14 +193,14 @@ namespace Beamable.Editor.Content
 #pragma warning disable CS0067
 		[Obsolete("Do not use. Use " + nameof(OnContentsCreated) + " instead.")]
 		public static event IContentDelegate OnContentCreated;
-		
+
 		[Obsolete("Do not use. Use " + nameof(OnContentEntryDeleted) + " instead.")]
 		public static event IContentDelegate OnContentDeleted;
 #pragma warning restore CS0067
 
 		public static event IContentBatchDelegate OnContentsCreated;
 		public static event IContentEntryDelegate OnContentEntryDeleted;
-		
+
 		public static event IContentRenamedDelegate OnContentRenamed;
 		public static Action<string> OnManifestChanged;
 		public static Action<AvailableManifests> OnManifestsListFetched;
@@ -220,7 +220,7 @@ namespace Beamable.Editor.Content
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 
 		}
-		
+
 		public ContentIO(IBeamableRequester requester) : this(BeamEditorContext.Default.ServiceScope, requester)
 		{
 		}
@@ -535,7 +535,7 @@ namespace Beamable.Editor.Content
 			{
 				var content = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
 				content.SetIdAndVersion(entry.contentId, "");
-		
+
 				var manifestEntry = new LocalContentManifestEntry
 				{
 					ContentType = entry.runtimeType,
@@ -548,7 +548,7 @@ namespace Beamable.Editor.Content
 					localManifest.Content.Add(content.Id, manifestEntry);
 				}
 			}
-			
+
 			ContentObject.ValidationContext = ValidationContext;
 			ValidationContext.Initialized = true;
 			return localManifest;
@@ -641,7 +641,7 @@ namespace Beamable.Editor.Content
 
 				foreach (var entry in entries)
 				{
-					
+
 					var rawAsset = AssetDatabase.LoadAssetAtPath(entry.assetPath, typeof(IContentObject));
 					var nextContent = rawAsset as IContentObject;
 
@@ -771,7 +771,7 @@ namespace Beamable.Editor.Content
 
 					if (!content)
 						continue;
-					
+
 					content.name = ""; // force the SO name to be empty. Maintaining two names is too hard.
 					var directory = Path.GetDirectoryName(modifiedAssetPath);
 					Directory.CreateDirectory(directory);
@@ -843,7 +843,7 @@ namespace Beamable.Editor.Content
 			AssetDatabase.DeleteAsset(entry.assetPath);
 			File.Delete(entry.assetPath);
 		}
-		
+
 		public void DeleteBatch(List<IContentObject> contents)
 		{
 			var entries = new List<ContentDatabaseEntry>();
@@ -855,7 +855,7 @@ namespace Beamable.Editor.Content
 				}
 				entries.Add(entry);
 			}
-			
+
 			NotifyDeleted(entries);
 
 			try
@@ -998,7 +998,7 @@ namespace Beamable.Editor.Content
 		internal static void NotifyCreated<TContent>(TContent content)
 			where TContent : ContentObject, new()
 		{
-			OnContentsCreated?.Invoke(new List<IContentObject>{content});
+			OnContentsCreated?.Invoke(new List<IContentObject> { content });
 		}
 		internal static void NotifyCreated(List<IContentObject> content)
 		{
@@ -1008,7 +1008,7 @@ namespace Beamable.Editor.Content
 
 		internal static void NotifyDeleted(ContentDatabaseEntry content)
 		{
-			OnContentEntryDeleted?.Invoke(new List<ContentDatabaseEntry> {content });
+			OnContentEntryDeleted?.Invoke(new List<ContentDatabaseEntry> { content });
 		}
 		internal static void NotifyDeleted(List<ContentDatabaseEntry> content)
 		{
