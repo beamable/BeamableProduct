@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Player Account PSDK layer
 
+### Changed
+- Content Manager uses batch operations for better performance.
+- Content Manager uses custom `ContentDatabase` instead of `AssetDatabase` to resolve assets.
+- Content Ref Property Drawer no longer loads assets.
+
 ### Fixed
 - Refresh Content Window process is more optimized
 - Content with optional fields of misaligned type use default instance for target type.

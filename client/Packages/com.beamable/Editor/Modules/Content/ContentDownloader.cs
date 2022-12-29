@@ -35,10 +35,12 @@ namespace Beamable.Editor.Content
 
 			var completed = 0f;
 
+			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+			bool disableExceptions = ContentConfiguration.Instance.DisableContentDownloadExceptions;
+
 			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
 			{
 				var type = operation.ContentId.Split('.')[0];
-				var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 				if (!contentTypeReflectionCache.HasContentTypeValidClass(type))
 				{
 					Debug.LogWarning($"No C# class found for type=[{type}]. Skipping download process for this type.");
@@ -48,9 +50,6 @@ namespace Beamable.Editor.Content
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
 				{
 					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
-
-					bool disableExceptions = ContentConfiguration.Instance.DisableContentDownloadExceptions;
-
 					var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
 					newAsset.Tags = operation.Tags;
 
@@ -68,20 +67,9 @@ namespace Beamable.Editor.Content
 			downloadPromiseGenerators.RemoveAll(item => item == null);
 
 			var downloadPromises = new Promise<Unit>();
-			Promise.ExecuteInBatchSequence(10, downloadPromiseGenerators).Map(assetsToBeWritten =>
+			Promise.ExecuteInBatchSequence(100, downloadPromiseGenerators).Map(assetsToBeWritten =>
 			{
-				try
-				{
-					AssetDatabase.StartAssetEditing();
-					foreach (var assetToBeWritten in assetsToBeWritten)
-					{
-						_io.Create(assetToBeWritten.Item1, assetToBeWritten.Item2);
-					}
-				}
-				finally
-				{
-					AssetDatabase.StopAssetEditing();
-				}
+				_io.CreateBatch(assetsToBeWritten);
 
 				progressCallback?.Invoke(1, summary.TotalDownloadEntries, summary.TotalDownloadEntries);
 				downloadPromises.CompleteSuccess(PromiseBase.Unit);
