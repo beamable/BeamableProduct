@@ -49,7 +49,6 @@ namespace Beamable.Editor.Content
 
 		private ContentTypeReflectionCache _typeCache;
 		private List<ContentDatabaseEntry> _data;
-		private ContentDatabaseEntry[] _dataArray;
 		private Dictionary<string, ContentDatabaseEntry> _idToContent = new Dictionary<string, ContentDatabaseEntry>();
 
 		private Dictionary<string, List<ContentDatabaseEntry>> _typeToExactContent =
@@ -69,7 +68,7 @@ namespace Beamable.Editor.Content
 		{
 			_typeCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 
-			Index();
+			RecalculateIndex();
 		}
 		
 		/// <summary>
@@ -78,8 +77,10 @@ namespace Beamable.Editor.Content
 		/// This method is called once at startup, but it must be called as the editor lifecycle continues, or the
 		/// data will be stale. However, if this method is called too often, it could lead to performance issues. 
 		/// </summary>
-		public void Index()
+		public void RecalculateIndex()
 		{
+			
+			#region clear old data
 			_typeToExactContent.Clear();
 			_assignableContent.Clear();
 			_assignableContentFlat.Clear();
@@ -87,27 +88,31 @@ namespace Beamable.Editor.Content
 			_assignableContentFlatArray.Clear();
 			_idToContent.Clear();
 			_pathToContent.Clear();
+			#endregion
 			
+			#region initialize variables and setup alg
 			var root = Constants.Directories.DATA_DIR;
-			var toExpand = new Stack<string>();
+			var filePathsToExpand = new Stack<string>();
 			var typeString = new Stack<string>();
 			var typeToContentList = new Stack<List<ContentDatabaseEntry>>();
 			var nodeStack = new Stack<ContentTypeNode>();
-			toExpand.Push(root);
+			filePathsToExpand.Push(root);
 
 			_data = new List<ContentDatabaseEntry>();
 
-			string curr = null;
+			string currentFilePath = null;
 			string currType = null;
 			List<ContentDatabaseEntry> currList = null;
 			ContentTypeNode currNode = null;
 			ContentTypeNode rootNode = new ContentTypeNode();
 
 			nodeStack.Push(rootNode);
+			#endregion
 			
-			while (toExpand.Count > 0)
+			#region DFS over file structure
+			while (filePathsToExpand.Count > 0)
 			{
-				curr = toExpand.Pop();
+				currentFilePath = filePathsToExpand.Pop();
 				
 				var hasCurrType = BeamableStackTryPop(typeString, out currType);
 				var hasContentList = BeamableStackTryPop(typeToContentList, out currList);
@@ -119,13 +124,13 @@ namespace Beamable.Editor.Content
 					_typeCache.TryGetType(currType, out runtimeType);
 				}
 				
-				foreach (var file in Directory.GetFiles(curr, "*.asset"))
+				foreach (var filePath in Directory.GetFiles(currentFilePath, "*.asset"))
 				{
 					var instance = new ContentDatabaseEntry();
-					var name = file.Substring(curr.Length + 1, file.Length - (curr.Length + ".asset".Length + 1));
+					var name = filePath.Substring(currentFilePath.Length + 1, filePath.Length - (currentFilePath.Length + ".asset".Length + 1));
 					
 					instance.contentName = name;
-					instance.assetPath = file;
+					instance.assetPath = filePath;
 					instance.contentType = currType;
 					instance.runtimeType = runtimeType;
 					instance.contentId = currType + "." + name;
@@ -134,15 +139,15 @@ namespace Beamable.Editor.Content
 				}
 	
 				
-				foreach (var path in Directory.GetDirectories(curr))
+				foreach (var path in Directory.GetDirectories(currentFilePath))
 				{
-					var type = path.Substring(curr.Length + 1, path.Length - (curr.Length + 1));
+					var type = path.Substring(currentFilePath.Length + 1, path.Length - (currentFilePath.Length + 1));
 					if (hasCurrType)
 					{
 						type = currType + "." + type;
 					}
 					typeString.Push(type);
-					toExpand.Push(path);
+					filePathsToExpand.Push(path);
 					
 					var nextContentList = new List<ContentDatabaseEntry>();
 					typeToContentList.Push(nextContentList);
@@ -171,7 +176,9 @@ namespace Beamable.Editor.Content
 					}
 				}
 			}
+			#endregion
 
+			#region data formating
 			foreach (var kvp in _assignableContent)
 			{
 				_assignableContentFlat[kvp.Key] = new List<ContentDatabaseEntry>();
@@ -192,7 +199,7 @@ namespace Beamable.Editor.Content
 				_pathToContent[elem.assetPath] = elem;
 			}
 
-			_dataArray = _data.ToArray();
+			#endregion
 
 		}
 
@@ -229,7 +236,7 @@ namespace Beamable.Editor.Content
 
 		/// <summary>
 		/// Given an asset path, try to get the <see cref="ContentDatabaseEntry"/> for the content at the path.
-		/// If assets have been modified, this function may return stale data. Consider running the <see cref="Index"/> method before this.
+		/// If assets have been modified, this function may return stale data. Consider running the <see cref="RecalculateIndex"/> method before this.
 		/// </summary>
 		/// <param name="path">Some path where content may be</param>
 		/// <param name="entry">The output <see cref="ContentDatabaseEntry"/> that describes the asset.</param>
@@ -241,7 +248,7 @@ namespace Beamable.Editor.Content
 		
 		/// <summary>
 		/// Given a content id, try to get the <see cref="ContentDatabaseEntry"/> for the id.
-		/// If assets have been modified, this function may return stale data. Consider running the <see cref="Index"/> method before this.
+		/// If assets have been modified, this function may return stale data. Consider running the <see cref="RecalculateIndex"/> method before this.
 		/// </summary>
 		/// <param name="id">Some content id</param>
 		/// <param name="entry">The output <see cref="ContentDatabaseEntry"/> that describes the asset.</param>
@@ -254,7 +261,7 @@ namespace Beamable.Editor.Content
 		/// <summary>
 		/// Get all <see cref="ContentDatabaseEntry"/>s for the given type, T.
 		/// This method will return entries that are sub types of the content type as well.
-		/// If assets have been modified, this function may return stale data. Consider running the <see cref="Index"/> method before this.
+		/// If assets have been modified, this function may return stale data. Consider running the <see cref="RecalculateIndex"/> method before this.
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns>An array of <see cref="ContentDatabaseEntry"/></returns>
@@ -269,25 +276,9 @@ namespace Beamable.Editor.Content
 
 		/// <summary>
 		/// Get all <see cref="ContentDatabaseEntry"/>s
-		/// If assets have been modified, this function may return stale data. Consider running the <see cref="Index"/> method before this.
+		/// If assets have been modified, this function may return stale data. Consider running the <see cref="RecalculateIndex"/> method before this.
 		/// </summary>
 		/// <returns>An array of <see cref="ContentDatabaseEntry"/></returns>
-		public ContentDatabaseEntry[] GetAllContent() => _dataArray;
-
-		/// <summary>
-		/// Load all the content assets
-		/// If assets have been modified, this function may return stale data. Consider running the <see cref="Index"/> method before this.
-		/// </summary>
-		/// <returns>An array of <see cref="ContentObject"/></returns>
-		public ContentObject[] LoadAllContent()
-		{
-			var assets = new ContentObject[_dataArray.Length];
-			for (var i = 0; i < _dataArray.Length; i++)
-			{
-				assets[i] = AssetDatabase.LoadAssetAtPath<ContentObject>(_dataArray[i].assetPath);
-			}
-
-			return assets;
-		}
+		public List<ContentDatabaseEntry> GetAllContent() => _data;
 	}
 }

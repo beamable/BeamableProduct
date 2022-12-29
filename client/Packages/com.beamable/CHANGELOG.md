@@ -8,12 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Player Account PSDK layer
+- `EditorDownloadBatchSize` setting in Content Configuration controls the batch download size for Content Manager. The default value is 100.
 
 ### Changed
 - Content Manager uses batch operations for better performance.
 - Content Manager uses custom `ContentDatabase` instead of `AssetDatabase` to resolve assets.
 - Content Ref Property Drawer no longer loads assets.
-- Content Manager download batch size changed from 10 to 100.
 
 ## [1.9.1]
 ### Fixed

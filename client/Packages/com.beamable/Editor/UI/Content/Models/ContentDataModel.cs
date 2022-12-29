@@ -660,6 +660,7 @@ namespace Beamable.Editor.Content.Models
 
 		}
 
+		[Obsolete("Do not use.")]
 		public void HandleContentDeleted(ContentDatabaseEntry content)
 		{
 			if (_idToContent.TryGetValue(content.contentId, out var existing))

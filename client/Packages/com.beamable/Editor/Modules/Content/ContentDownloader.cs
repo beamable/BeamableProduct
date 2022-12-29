@@ -67,7 +67,8 @@ namespace Beamable.Editor.Content
 			downloadPromiseGenerators.RemoveAll(item => item == null);
 
 			var downloadPromises = new Promise<Unit>();
-			Promise.ExecuteInBatchSequence(100, downloadPromiseGenerators).Map(assetsToBeWritten =>
+			var batchSize = ContentConfiguration.Instance.EditorDownloadBatchSize.GetOrElse(100);
+			Promise.ExecuteInBatchSequence(batchSize, downloadPromiseGenerators).Map(assetsToBeWritten =>
 			{
 				_io.CreateBatch(assetsToBeWritten);
 

@@ -48,7 +48,6 @@ namespace Beamable.Editor.Content
 			});
 			
 			return AssetDeleteResult.DidNotDelete;
-	
 		}
 	
 	
@@ -57,7 +56,7 @@ namespace Beamable.Editor.Content
 			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
 			if (!db.ContainsAnyContentPaths(paths)) return paths;
 
-			db.Index(); // update, because assets are new!
+			db.RecalculateIndex(); // update, because assets are new!
 			var listOfContent = new List<IContentObject>();
 			for (var i = 0; i < paths.Length; i++)
 			{
@@ -504,8 +503,9 @@ namespace Beamable.Editor.Content
 
 		public IEnumerable<ContentObject> FindAll(ContentQuery query = null)
 		{
-			foreach (var content in ContentDatabase.LoadAllContent())
+			foreach (var entry in ContentDatabase.GetAllContent())
 			{
+				var content = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
 				if (query == null || query.Accept(content))
 				{
 					yield return content;
@@ -517,7 +517,7 @@ namespace Beamable.Editor.Content
 		{
 			var localManifest = new LocalContentManifest();
 			ValidationContext.AllContent.Clear();
-			ContentDatabase.Index();
+			ContentDatabase.RecalculateIndex();
 
 			if (!Directory.Exists(Directories.DATA_DIR))
 			{
@@ -623,7 +623,7 @@ namespace Beamable.Editor.Content
 
 			if (copiedAnydata)
 			{
-				ContentDatabase.Index();
+				ContentDatabase.RecalculateIndex();
 			}
 		}
 
@@ -763,6 +763,9 @@ namespace Beamable.Editor.Content
 						modifiedAssetPath = $"{Directories.DATA_DIR}/{newNameAsPath}.asset";
 					}
 
+					if (!content)
+						continue;
+					
 					content.name = ""; // force the SO name to be empty. Maintaining two names is too hard.
 					var directory = Path.GetDirectoryName(modifiedAssetPath);
 					Directory.CreateDirectory(directory);
@@ -778,7 +781,7 @@ namespace Beamable.Editor.Content
 				AssetDatabase.StopAssetEditing();
 			}
 
-			ContentDatabase.Index(); // update assets!
+			ContentDatabase.RecalculateIndex(); // update assets!
 			NotifyCreated(contentList);
 
 		}
@@ -801,7 +804,7 @@ namespace Beamable.Editor.Content
 
 			var modifiedName = Path.GetFileNameWithoutExtension(modifiedAssetPath);
 			content.SetContentName(modifiedName);
-			ContentDatabase.Index(); // update assets!
+			ContentDatabase.RecalculateIndex(); // update assets!
 			NotifyCreated(content);
 		}
 
