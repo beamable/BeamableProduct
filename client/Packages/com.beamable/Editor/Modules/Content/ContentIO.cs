@@ -512,6 +512,8 @@ namespace Beamable.Editor.Content
 				var content = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
 				if (query == null || query.Accept(content))
 				{
+					var name = Path.GetFileNameWithoutExtension(entry.assetPath);
+					content.SetContentName(name);
 					yield return content;
 				}
 			}
