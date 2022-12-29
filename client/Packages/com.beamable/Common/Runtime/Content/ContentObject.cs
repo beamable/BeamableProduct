@@ -581,6 +581,8 @@ namespace Beamable.Common.Content
 	public delegate void ContentDelegate(ContentObject content);
 
 	public delegate void IContentDelegate(IContentObject content);
+	public delegate void IContentBatchDelegate(List<IContentObject> content);
+
 
 	public delegate void IContentRenamedDelegate(string oldId, IContentObject content, string nextAssetPath);
 }

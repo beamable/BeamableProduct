@@ -104,6 +104,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
+			DependencyBuilder.AddSingleton<ContentDatabase>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
@@ -470,6 +471,7 @@ namespace Beamable
 		public IDependencyProviderScope ServiceScope { get; private set; }
 		public Promise InitializePromise { get; private set; }
 		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
+		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 
