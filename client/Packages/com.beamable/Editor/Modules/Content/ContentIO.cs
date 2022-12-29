@@ -510,6 +510,8 @@ namespace Beamable.Editor.Content
 			foreach (var entry in ContentDatabase.GetAllContent())
 			{
 				var content = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
+				if (!content || content == null) continue;
+				
 				if (query == null || query.Accept(content))
 				{
 					var name = Path.GetFileNameWithoutExtension(entry.assetPath);
