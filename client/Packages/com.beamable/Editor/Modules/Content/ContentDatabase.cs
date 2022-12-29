@@ -123,6 +123,8 @@ namespace Beamable.Editor.Content
 				{
 					_typeCache.TryGetType(currType, out runtimeType);
 				}
+
+				if (!Directory.Exists(currentFilePath)) continue; // if this directory doesn't exist, we can't do anything.
 				
 				foreach (var filePath in Directory.GetFiles(currentFilePath, "*.asset"))
 				{

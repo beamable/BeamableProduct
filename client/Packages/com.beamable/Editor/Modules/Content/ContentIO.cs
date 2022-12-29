@@ -36,6 +36,8 @@ namespace Beamable.Editor.Content
 		private static List<ContentDatabaseEntry> _deleteEntries = new List<ContentDatabaseEntry>();
 		private static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
 		{
+			if (!BeamEditor.IsInitialized) return AssetDeleteResult.DidNotDelete;
+
 			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
 			if (db.TryGetContentByPath(assetPath, out var entry))
 			{
@@ -53,6 +55,8 @@ namespace Beamable.Editor.Content
 	
 		private static string[] OnWillSaveAssets(string[] paths)
 		{
+			if (!BeamEditor.IsInitialized) return paths;
+			
 			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
 			if (!db.ContainsAnyContentPaths(paths)) return paths;
 
