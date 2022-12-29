@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.Content
 {
@@ -107,9 +108,10 @@ namespace Beamable.Editor.Content
 			while (toExpand.Count > 0)
 			{
 				curr = toExpand.Pop();
-				var hasCurrType = typeString.TryPop(out currType);
-				var hasContentList = typeToContentList.TryPop(out currList);
-				var hasParent = nodeStack.TryPop(out currNode);
+				
+				var hasCurrType = BeamableStackTryPop(typeString, out currType);
+				var hasContentList = BeamableStackTryPop(typeToContentList, out currList);
+				var hasParent = BeamableStackTryPop(nodeStack, out currNode);
 
 				Type runtimeType = null;
 				if (hasCurrType)
@@ -192,6 +194,18 @@ namespace Beamable.Editor.Content
 
 			_dataArray = _data.ToArray();
 
+		}
+
+		private static bool BeamableStackTryPop<T>(Stack<T> stack, out T value)
+		{
+			if (stack.Count > 0)
+			{
+				value = stack.Pop();
+				return true;
+			}
+
+			value = default(T);
+			return false;
 		}
 
 		/// <summary>
