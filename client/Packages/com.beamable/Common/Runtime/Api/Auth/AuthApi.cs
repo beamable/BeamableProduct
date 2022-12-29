@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace Beamable.Common.Api.Auth
 {
@@ -457,6 +458,26 @@ namespace Beamable.Common.Api.Auth
 
 	public static class AuthThirdPartyMethods
 	{
+		private static Dictionary<string, AuthThirdParty> _stringToEnum = new Dictionary<string, AuthThirdParty>();
+		static AuthThirdPartyMethods()
+		{
+			foreach (var val in Enum.GetValues(typeof(AuthThirdParty)))
+			{
+				var enumVal = (AuthThirdParty)val;
+				_stringToEnum[GetString(enumVal)] = enumVal;
+			}
+		}
+
+		public static AuthThirdParty GetAuthThirdParty(string data)
+		{
+			if (!_stringToEnum.ContainsKey(data))
+			{
+				throw new InvalidEnumArgumentException(
+					$"The given string is not a valid {nameof(AuthThirdParty)}, str=[{data}]");
+			}
+			return _stringToEnum[data];
+		}
+
 		/// <summary>
 		/// Convert the given <see cref="AuthThirdParty"/> into a string format that can be sent to Beamable servers.
 		/// Also, the Beamable servers treat these strings as special code names for the various third party apps.

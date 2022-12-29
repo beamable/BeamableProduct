@@ -41,6 +41,7 @@ namespace Beamable.Editor.Content
 			}
 			return _io.FetchManifest(manifestId).Map(serverManifest =>
 			{
+				BeamEditorContext.Default.ContentDatabase.RecalculateIndex();
 				var allContent = _io.FindAll();
 				var allContentAsList = allContent.ToList();
 				var allContentLookup = allContentAsList.ToDictionary(content => content.Id);
