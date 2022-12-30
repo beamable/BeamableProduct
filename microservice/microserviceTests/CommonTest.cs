@@ -107,7 +107,7 @@ public class CommonTest
 		localTime.Restart();
 		// set content static variables...
 		ContentApi.Instance = new Promise<IContentApi>();
-		BeamableMicroService._contentService = null;
+		// BeamableMicroService._contentService = null;
 
 		// hacky way to clear the test log context
 		var field = typeof(TestCorrelator).GetField("ContextGuidDecoratedLogEvents", BindingFlags.Static | BindingFlags.NonPublic);

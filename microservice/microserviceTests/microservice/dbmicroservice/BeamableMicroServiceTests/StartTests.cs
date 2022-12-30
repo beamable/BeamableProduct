@@ -29,7 +29,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         {
 
             TestSocket testSocket = null;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers();
@@ -49,7 +49,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         {
 
             TestSocket testSocket = null;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
@@ -79,7 +79,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         public async Task HandleScopedRoute_FailsWithoutPropertyScope()
         {
 	        TestSocket testSocket = null;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
@@ -113,7 +113,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         {
 
             TestSocket testSocket = null;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
@@ -142,7 +142,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         {
 
             TestSocket testSocket = null;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
@@ -176,7 +176,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 return "{\"id\": \"items.test\", \"version\": \"1\", \"properties\": {}}";
             });
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.WithName("Test Socket");
@@ -320,7 +320,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             // Leaderboard content
             var contentResolver = new TestContentResolver(async uri => leaderboardTemplateContent.ToString());
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.WithName("Test Socket");
@@ -387,7 +387,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             TestSocket testSocket = null;
             const int testCount = 3000;
             var contentResolver = new TestContentResolver(async uri => "{}");
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.WithName("Test Socket");
@@ -441,7 +441,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 return "{\"id\": \"content.abc\", \"version\": \"1\", \"properties\": {}}";
             });
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -544,7 +544,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 return "{\"id\": \"content.abc\", \"version\": \"1\", \"properties\": {}}";
             });
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -633,7 +633,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 return "{\"id\": \"content.abc\", \"version\": \"1\", \"properties\": {}}";
             });
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -715,7 +715,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	        {
 		        return "{\"id\": \"content.abc\", \"version\": \"1\", \"properties\": {}}";
 	        });
-	        var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+	        var ms = new TestSetup(new TestSocketProvider(socket =>
 	        {
 		        testSocket = socket;
 		        socket
@@ -768,7 +768,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 return "{\"id\": \"content.abc\", \"version\": \"1\", \"properties\": {}}";
             });
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
@@ -804,7 +804,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var connectionIndex = 0;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 if (connectionIndex == 0)
@@ -858,7 +858,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var connectionIndex = 0;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 if (connectionIndex == 0)
@@ -909,7 +909,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
             var connectionIndex = 0;
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 if (connectionIndex == 0)
@@ -970,7 +970,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var contentResolver = new TestContentResolver();
             var dbid = 123;
             var fakeEmail = "fake@example.com";
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -1014,7 +1014,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             TestSocket testSocket = null;
             var contentResolver = new TestContentResolver();
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -1053,7 +1053,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var contentResolver = new TestContentResolver();
             var eventProvided = false;
             // var promise
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -1140,7 +1140,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var contentResolver = new TestContentResolver();
             var dbid = 123;
             var fakeEmail = "fake@example.com";
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -1188,7 +1188,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var contentResolver = new TestContentResolver();
             var dbid = 123;
             var fakeEmail = "fake@example.com";
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -1238,7 +1238,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var contentResolver = new TestContentResolver();
             var dbid = 123;
             var fakeEmail = "fake@example.com";
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
                 socket
@@ -1300,7 +1300,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             int successCount = 0;
             int authFailCount = 0;
 
-            var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            var ms = new TestSetup(new TestSocketProvider(socket =>
             {
                 testSocket = socket;
 
