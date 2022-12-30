@@ -5,9 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [1.10.0]
 ### Added
-- Player Account PSDK layer
+- Player Account PSDK
+- `EditorDownloadBatchSize` setting in Content Configuration controls the batch download size for Content Manager. The default value is 100.
+
+### Changed
+- Content Manager uses batch operations for better performance.
+- Content Manager uses custom `ContentDatabase` instead of `AssetDatabase` to resolve assets.
+- Content Ref Property Drawer no longer loads assets.
+
+## [1.9.1]
+### Fixed
+- Refresh Content Window process is more optimized
+- Content with optional fields of misaligned type use default instance for target type.
+- Content validation doesn't occur unless `ValidationContext` has been initialized.
 
 ## [1.9.0]
 ### Changed

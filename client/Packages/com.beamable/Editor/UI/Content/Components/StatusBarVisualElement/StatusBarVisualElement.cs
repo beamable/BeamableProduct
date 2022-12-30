@@ -41,12 +41,9 @@ namespace Beamable.Editor.Content.Components
 
 		private string _statusClassName = "modified"; // current, modified
 		private ContentCounts _counts = new ContentCounts();
-		private double _refreshCountAtTime = 0;
-		private const double STATUS_DEBOUNCE_RATE = .25;
 		private const string CSS_HIDE_ELEMENT = "hide";
 
 		public string Text { set; get; }
-		private bool _refreshDebounceLock = false;
 
 		public ContentDataModel Model { get; set; }
 
@@ -89,29 +86,7 @@ namespace Beamable.Editor.Content.Components
 
 		private void Model_OnItemEnriched(ContentItemDescriptor _)
 		{
-			// debounce this event.
-			_refreshCountAtTime = EditorApplication.timeSinceStartup + STATUS_DEBOUNCE_RATE;
-
-			void Check()
-			{
-				var time = EditorApplication.timeSinceStartup;
-				var pastDebounceTime = time < _refreshCountAtTime;
-
-				if (pastDebounceTime)
-				{
-					GetNewCounts();
-					_refreshDebounceLock = false;
-					return;
-				}
-
-				EditorApplication.delayCall += Check;
-			}
-
-			if (!_refreshDebounceLock)
-			{
-				_refreshDebounceLock = true;
-				EditorApplication.delayCall += Check;
-			}
+			EditorDebouncer.Debounce("content-item-enrich", GetNewCounts);
 		}
 
 		private void GetNewCounts()
