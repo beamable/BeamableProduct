@@ -8,7 +8,7 @@ namespace Beamable.UI.Buss
 	public class SingleColorBussProperty : DefaultBussProperty, IColorBussProperty, IVertexColorBussProperty
 	{
 		[SerializeField]
-		private Color _color;
+		private Color _color = Color.black;
 
 		public Color Color
 		{
@@ -49,7 +49,7 @@ namespace Beamable.UI.Buss
 	public class VertexColorBussProperty : DefaultBussProperty, IVertexColorBussProperty
 	{
 		[SerializeField]
-		private ColorRect _colorRect;
+		private ColorRect _colorRect = new ColorRect(Color.black);
 
 		public ColorRect ColorRect
 		{

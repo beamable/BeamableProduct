@@ -1,4 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
@@ -133,8 +133,6 @@ namespace Beamable.Editor.UI.Components
 				}
 				else
 				{
-
-
 					if (variableName == String.Empty)
 					{
 						CreateMessageField(PropertyValueState.NoResult);

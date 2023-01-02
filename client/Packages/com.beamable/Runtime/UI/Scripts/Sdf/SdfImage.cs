@@ -28,7 +28,7 @@ namespace Beamable.UI.Sdf
 		public ImageType imageType;
 		public NineSliceSource nineSliceSource;
 		public SdfMode mode;
-		public ColorRect colorRect = new ColorRect(Color.white);
+		public ColorRect colorRect;
 		public float threshold;
 		public float rounding;
 		public Sprite secondaryTexture;
