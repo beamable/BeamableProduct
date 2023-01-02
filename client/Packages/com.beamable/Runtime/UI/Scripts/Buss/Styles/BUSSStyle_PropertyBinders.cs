@@ -1,4 +1,4 @@
-﻿using Beamable.UI.Tweening;
+using Beamable.UI.Tweening;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -48,9 +48,9 @@ namespace Beamable.UI.Buss
 			new PropertyBinding<NineSliceSourceBussProperty>("nineSliceSource", new NineSliceSourceBussProperty(Sdf.SdfImage.NineSliceSource.SdfFirst));
 
 		// Background
-		public static readonly PropertyBinding<IVertexColorBussProperty> BackgroundColor =
-			new PropertyBinding<IVertexColorBussProperty>("backgroundColor", new SingleColorBussProperty());
-      
+		public static readonly PropertyBinding<IVertexColorBussProperty> BackgroundColor = 
+      new PropertyBinding<IVertexColorBussProperty>("backgroundColor", new SingleColorBussProperty());
+
 		public static readonly PropertyBinding<IFloatFromFloatBussProperty> RoundCorners =
 			new PropertyBinding<IFloatFromFloatBussProperty>("roundCorners", new FloatBussProperty());
 

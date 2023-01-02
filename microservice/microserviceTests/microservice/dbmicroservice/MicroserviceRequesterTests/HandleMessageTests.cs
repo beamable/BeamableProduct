@@ -45,7 +45,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 							var id = (threadNumber * cycleCount) + i;
 							var rc = new RequestContext("cid", "pid", id, 200, 1, eventPath, "get", "1",
 								new HashSet<string>());
-							context.HandleMessage(rc);
+							context.HandleMessage(rc, "");
 						}
 					}
 					catch (Exception ex)

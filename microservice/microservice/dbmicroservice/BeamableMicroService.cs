@@ -241,20 +241,20 @@ namespace Beamable.Server
 
          InitServices();
 
-         _serviceInitialized.Then(_ =>
-         {
-            _contentService.Init();
-         }).Error(ex =>
+		_serviceInitialized.Error(ex =>
          {
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
-
 
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         await SetupWebsocket(socket);
+         await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
+         if (!_serviceAttribute.EnableEagerContentLoading)
+         {
+	         var _ = _contentService.Init();
+         }
       }
 
       private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
@@ -363,7 +363,7 @@ namespace Beamable.Server
          SwaggerGenerator.InvalidateSwagger(this);
       }
 
-      async Task SetupWebsocket(IConnection socket)
+      async Task SetupWebsocket(IConnection socket, bool initContent = false)
       {
          _connection = socket;
 
@@ -394,11 +394,17 @@ namespace Beamable.Server
                 // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
                 if (!_ranCustomUserInitializationHooks)
                 {
+	                if (initContent)
+	                {
+		                await _contentService.Init(preload:true);
+	                }
+
                     await ResolveCustomInitializationHook();
                     _ranCustomUserInitializationHooks = true;
                 }
             }
 
+       
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
@@ -626,6 +632,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceStatsApi, MicroserviceStatsApi>()
                .AddTransient<IStatsApi, MicroserviceStatsApi>()
                .AddSingleton<IMicroserviceContentApi>(_contentService)
+               .AddSingleton<IContentApi>(_contentService)
                .AddTransient<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
                .AddTransient<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
                .AddTransient<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
@@ -836,6 +843,9 @@ namespace Beamable.Server
 
          try
          {
+	         using var tokenSource = new CancellationTokenSource();
+	         ctx.CancellationToken = tokenSource.Token;
+	         tokenSource.CancelAfter(TimeSpan.FromSeconds(_args.RequestCancellationTimeoutSeconds));
 	         if (_socketRequesterContext.IsPlatformMessage(ctx))
 	         {
 		         // the request is a platform request.

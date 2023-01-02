@@ -12,7 +12,6 @@ using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
-using System.Diagnostics;
 
 namespace Beamable.Server
 {
@@ -197,12 +196,12 @@ namespace Beamable.Server
 			      var exitCount = Daemon.AuthorizationCounter;
 			      throw new TimeoutException($"waited for authorization for too long. enter-count=[{enteringCount}] exit-count=[{exitCount}] Waited for [{totalWaitedTime}] started=[{startTime}] message=[{message}]");
 		      }
-		      await Task.Delay(100);
+		      await Task.Delay(1);
 	      }
 	      Log.Verbose($"Leaving wait for send. message=[{message}]");
       }
 
-      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10, Stopwatch sw=null)
+      public async Promise SendMessageSafely(string message, bool awaitAuthorization=true, int retryCount=10)
       {
          var failures = new List<Exception>();
          for (var retry = 0; retry < retryCount; retry++)
@@ -216,7 +215,7 @@ namespace Beamable.Server
 		         }
 
 		         // authorization needs to be complete if this is any message _other_ than auth related
-		         await connection.SendMessage(message, sw);
+		         await connection.SendMessage(message);
 		         return;
 	         }
 	         catch (Exception ex)
@@ -288,7 +287,7 @@ namespace Beamable.Server
          return string.IsNullOrEmpty(ctx.Path) || ctx.Path.StartsWith("event/");
       }
 
-      public void HandleMessage(RequestContext ctx)
+      public void HandleMessage(RequestContext ctx, string msg)
       {
          if (ctx.IsEvent)
          {

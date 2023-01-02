@@ -63,7 +63,7 @@ namespace microserviceTests.microservice.Content
             // don't mock anything...
          });
 
-         var socket = socketProvider.Create("test", args);
+         var socket = socketProvider.Create("test");
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
          (_, socketCtx.Daemon) =
@@ -75,7 +75,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc, data);
          });
 
 
@@ -135,7 +135,7 @@ namespace microserviceTests.microservice.Content
             // don't mock anything...
          });
 
-         var socket = socketProvider.Create("test", args);
+         var socket = socketProvider.Create("test");
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
          (_, socketCtx.Daemon) =
@@ -147,7 +147,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc, data);
          });
 
 
@@ -217,7 +217,7 @@ namespace microserviceTests.microservice.Content
             // don't mock anything...
          });
 
-         var socket = socketProvider.Create("test", args);
+         var socket = socketProvider.Create("test");
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
          (_, socketCtx.Daemon) =
@@ -229,7 +229,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc);
+            socketCtx.HandleMessage(rc, data);
          });
 
 

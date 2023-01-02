@@ -154,7 +154,7 @@ public class MicroserviceAuthenticationDaemon
 			{
 				var expectedReqsProcessed = outgoingReqsProcessedAtStart + (outgoingReqsCountAtEnd - outgoingReqsCountAtStart);
 				stillProcessingPotentiallyFailedReqs = expectedReqsProcessed > Interlocked.Read(ref _OutgoingRequestProcessedCounter);
-				await Task.Delay(100);
+				await Task.Delay(1);
 			} while (stillProcessingPotentiallyFailedReqs);
 
 			// This solves an extremely unlikely race condition

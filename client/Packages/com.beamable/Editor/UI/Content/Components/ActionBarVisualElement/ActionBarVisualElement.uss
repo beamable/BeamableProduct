@@ -46,10 +46,11 @@
     margin-right: 0px;
     margin-top: 0px;
     margin-bottom: 0px;
+    border-color: #383838;
     border-left-width: 1px;
     border-right-width: 0px;
     border-top-width: 0px;
-    border-bottom-width: 0px;
+    border-bottom-width: 1px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 0px;
@@ -59,6 +60,14 @@
     border-radius: 0px;
 }
 
+.unboundedButtonLabel {
+    margin-top: -5px;
+    margin-left: 0px;
+    margin-right: 0px;
+    font-size: 9px;
+    /*color: #FFFFFF;*/
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
 
 #downloadButton {
     border-right-width: 1px;
@@ -70,14 +79,14 @@
     position: relative;
     flex-direction: row-reverse;
     align-items: center;
-    margin-left: 0px;
+    margin-left: -0px;
     margin-right: 0px;
     margin-top: 0px;
     margin-bottom: 0px;
-    border-right-width: 1px;
-    border-left-width: 0px;
+    border-right-width: 0px;
+    border-left-width: 1px;
     border-top-width: 0px;
-    border-bottom-width: 0px;
+    border-bottom-width: 1px;
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     cursor: pan;
@@ -107,17 +116,6 @@
 .createButtonLabel{
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-}
-#tagButtonImg {
-    margin-top: 2px;
-}
-
-#typeButtonImg{
-    margin-top: 2px;
-}
-
-#statusButtonImg {
-    margin-top: 2px;
 }
 
 #docIcon {

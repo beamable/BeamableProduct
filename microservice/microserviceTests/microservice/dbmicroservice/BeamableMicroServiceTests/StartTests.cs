@@ -1099,7 +1099,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var initializationTask = ms.Start<SimpleMicroservice>(new TestArgs());
 
             var tasks = new List<Task>();
-            await Task.Delay(1000);
+            await Task.Delay(10);
             Assert.IsTrue(eventProvided);
             var sends = 0;
             for (var i = 0; i < eventCount; i++)

@@ -7,7 +7,6 @@
         "Beamable.Pooling",
         "Beamable.JsonSerializable",
         "Beamable.SmallerJSON",
-        "Beamable.Coroutines",
         "Unity.Addressables.Editor",
         "Unity.TextMeshPro",
         "Unity.Beamable",

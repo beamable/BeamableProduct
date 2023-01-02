@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading;
 
 namespace Beamable.Server;
 
@@ -14,10 +15,19 @@ public class MicroserviceRequestContext : RequestContext
 	{
 	}
 
+	public CancellationToken CancellationToken { get; set; }
+	
 	public JsonElement BodyElement { get; set; }
 	public JsonElement HeaderElement { get; set; }
 	private string _body;
 	private RequestHeaders _headers;
+
+	public override void ThrowIfCancelled()
+	{
+		CancellationToken.ThrowIfCancellationRequested();
+	}
+
+	public override bool IsCancelled => CancellationToken.IsCancellationRequested;
 
 	public override string Body
 	{

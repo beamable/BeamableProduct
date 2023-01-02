@@ -207,7 +207,6 @@ public struct UnrealApiSubsystemDeclaration
 
 #include ""CoreMinimal.h""
 #include ""BeamBackend/BeamBackend.h""
-#include ""RequestTracker/BeamRequestTracker.h""
 
 ₢{nameof(IncludeStatements)}₢
 
@@ -230,9 +229,6 @@ private:
 
 	UPROPERTY()
 	UBeamBackend* Backend;
-
-	UPROPERTY()
-	UBeamRequestTracker* RequestTracker;
 
 	₢{nameof(EndpointRawFunctionDeclarations)}₢
 
@@ -260,14 +256,11 @@ public:
 
 	public const string U_SUBSYSTEM_CPP = $@"
 #include ""AutoGen/SubSystems/Beam₢{nameof(SubsystemName)}₢Api.h""
-#include ""BeamCoreSettings.h""
-
 
 void UBeam₢{nameof(SubsystemName)}₢Api::Initialize(FSubsystemCollectionBase& Collection)
 {{
 	Super::Initialize(Collection);
 	Backend = Cast<UBeamBackend>(Collection.InitializeDependency(UBeamBackend::StaticClass()));
-	RequestTracker = Cast<UBeamRequestTracker>(Collection.InitializeDependency(UBeamRequestTracker::StaticClass()));
 }}
 
 void UBeam₢{nameof(SubsystemName)}₢Api::Deinitialize()

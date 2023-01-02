@@ -1,4 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
@@ -61,9 +61,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
-			_labelComponent.text = _model.IsVariable
-				? _model.PropertyProvider.Key
-				: ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
+			_labelComponent.text = ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			_valueParent.Clear();
 
@@ -199,6 +197,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			var element = _propertyVisualElement = property.GetVisualElement();
 
+
 			if (_propertyVisualElement == null)
 			{
 				return null;
@@ -259,14 +258,12 @@ namespace Beamable.Editor.UI.Components
 			if (_model.PropertyProvider.IsVariable)
 				return;
 
-			if (_variableConnection != null)
+			if (_variableConnection == null)
 			{
-				return;
+				_variableConnection = new VariableConnectionVisualElement(_model);
+				_variableConnection.Init();
+				_variableParent.Add(_variableConnection);
 			}
-
-			_variableConnection = new VariableConnectionVisualElement(_model);
-			_variableConnection.Init();
-			_variableParent.Add(_variableConnection);
 		}
 	}
 }

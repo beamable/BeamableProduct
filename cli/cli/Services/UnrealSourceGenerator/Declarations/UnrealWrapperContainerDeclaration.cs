@@ -13,7 +13,8 @@ public struct UnrealEnumDeclaration
 	{
 		var enumValues = string.Join(",\n\t", EnumValues.Select(v =>
 		{
-			var enumValue = $@"{v} UMETA(DisplayName=""{v.SpaceOutOnUpperCase()}"")";
+			var serializationName = v;
+			var enumValue = $@"{v.Capitalize()} UMETA(DisplayName=""{v.SpaceOutOnUpperCase()}"", SerializationName=""{serializationName}"")";
 
 			return enumValue;
 		}));
@@ -47,7 +48,7 @@ public:
 	{{
 		const UEnum* Enum = StaticEnum<₢{nameof(UnrealTypeName)}₢>();
 		const int32 NameIndex = Enum->GetIndexByValue(static_cast<int64>(Value));
-		const FString SerializationName = Enum->GetNameStringByValue(NameIndex);		
+		const FString SerializationName = Enum->GetMetaData(TEXT(""SerializationName""), NameIndex);		
 		return SerializationName;
 		
 	}}
@@ -58,7 +59,7 @@ public:
 		const UEnum* Enum = StaticEnum<₢{nameof(UnrealTypeName)}₢>();
 		for (int32 NameIndex = 0; NameIndex < Enum->NumEnums() - 1; ++NameIndex)
 		{{
-			const FString& SerializationName = Enum->GetNameStringByValue(NameIndex);
+			const FString& SerializationName = Enum->GetMetaData(TEXT(""SerializationName""), NameIndex);
 			if(Value == SerializationName)
 				return static_cast<₢{nameof(UnrealTypeName)}₢>(Enum->GetValueByIndex(NameIndex));
 		}}

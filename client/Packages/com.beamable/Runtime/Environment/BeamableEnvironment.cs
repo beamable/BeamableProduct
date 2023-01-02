@@ -123,7 +123,7 @@ namespace Beamable
 		{
 			environment = "dev",
 			apiUrl = "https://dev.api.beamable.com",
-			portalUrl = "https://dev-portal.beamable.com",
+			portalUrl = "https://beta-dev-portal.beamable.com",
 			beamMongoExpressUrl = "https://dev.storage.beamable.com",
 			dockerRegistryUrl = "https://dev-microservices.beamable.com/v2/",
 			isUnityVsp = false,
@@ -133,7 +133,7 @@ namespace Beamable
 		{
 			environment = "staging",
 			apiUrl = "https://staging.api.beamable.com",
-			portalUrl = "https:/staging-portal.beamable.com",
+			portalUrl = "https://beta-staging-portal.beamable.com",
 			beamMongoExpressUrl = "https://staging.storage.beamable.com",
 			dockerRegistryUrl = "https://staging-microservices.beamable.com/v2/",
 			isUnityVsp = false,
@@ -143,7 +143,7 @@ namespace Beamable
 		{
 			environment = "prod",
 			apiUrl = "https://api.beamable.com",
-			portalUrl = "https://portal.beamable.com",
+			portalUrl = "https://beta-portal.beamable.com",
 			beamMongoExpressUrl = "https://storage.beamable.com",
 			dockerRegistryUrl = "https://microservices.beamable.com/v2/",
 			isUnityVsp = false,
