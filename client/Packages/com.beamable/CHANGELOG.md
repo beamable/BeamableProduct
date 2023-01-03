@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [1.10.0]
+### Added
+- Player Account PSDK
+- `EditorDownloadBatchSize` setting in Content Configuration controls the batch download size for Content Manager. The default value is 100.
+
+### Changed
+- Content Manager uses batch operations for better performance.
+- Content Manager uses custom `ContentDatabase` instead of `AssetDatabase` to resolve assets.
+- Content Ref Property Drawer no longer loads assets.
+
+## [1.9.1]
+### Fixed
+- Refresh Content Window process is more optimized
+- Content with optional fields of misaligned type use default instance for target type.
+- Content validation doesn't occur unless `ValidationContext` has been initialized.
+
+## [1.9.0]
+### Changed
+- Add GPGS MonoBehaviour to AccountsFlow
+
+### Fixed
+- Domain Reload times are much faster when working with large amounts of content.
+- Realm scoped permissions update in Editor view
+- Corrupt cached content no longer crashes the game. Instead, the cache is invalidated.
+
 ## [1.8.0]
 ### Changed
 - Default avatars use new style and theme

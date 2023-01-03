@@ -29,6 +29,7 @@ namespace Beamable.Server
       public int ReceiveChunkSize { get; }
       public int SendChunkSize { get; }
       public int BeamInstanceCount { get; }
+      public int RequestCancellationTimeoutSeconds { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -59,7 +60,7 @@ namespace Beamable.Server
 	   public int ReceiveChunkSize { get; set; }
 	   public int SendChunkSize { get; set; }
 	   public int BeamInstanceCount { get; set; }
-
+	   public int RequestCancellationTimeoutSeconds { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -93,7 +94,8 @@ namespace Beamable.Server
             RateLimitCPUMultiplierLow = args.RateLimitCPUMultiplierLow,
             RateLimitCPUMultiplierHigh = args.RateLimitCPUMultiplierHigh,
             RateLimitCPUOffset = args.RateLimitCPUOffset,
-            BeamInstanceCount = args.BeamInstanceCount
+            BeamInstanceCount = args.BeamInstanceCount,
+            RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds
          };
       }
    }
@@ -109,6 +111,16 @@ namespace Beamable.Server
       public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
       public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
 
+      public int RequestCancellationTimeoutSeconds {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("REQUEST_TIMEOUT_SECONDS"), out var val))
+		      {
+			      val = 10;
+		      }
+		      return val;
+	      }
+      }
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
 
       public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
