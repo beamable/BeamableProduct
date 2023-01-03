@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using System;
 
 namespace Beamable.Server
@@ -25,5 +26,10 @@ namespace Beamable.Server
 		/// </summary>
 		TService GetService<TService>()
 			where TService : class;
+		
+		/// <summary>
+		/// Access the <see cref="IDependencyProvider"/> for the root scope of the service.
+		/// </summary>
+		IDependencyProvider Provider { get; }
 	}
 }
