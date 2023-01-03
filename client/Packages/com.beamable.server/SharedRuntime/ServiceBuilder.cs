@@ -10,7 +10,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// Access the <see cref="IDependencyBuilder"/> for the root scope.
 		/// </summary>
-		public IDependencyBuilder Builder { get; }
+		IDependencyBuilder Builder { get; }
 		
 		/// <summary>
 		/// Adds an instance of a service that respects the <typeparamref name="TService"/> contract as a per-request instance.

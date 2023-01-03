@@ -30,6 +30,6 @@ namespace Beamable.Server
 		/// <summary>
 		/// Access the <see cref="IDependencyProvider"/> for the root scope of the service.
 		/// </summary>
-		public IDependencyProvider Provider { get; }
+		IDependencyProvider Provider { get; }
 	}
 }
