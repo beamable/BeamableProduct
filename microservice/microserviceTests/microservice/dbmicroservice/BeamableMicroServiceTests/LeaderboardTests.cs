@@ -27,7 +27,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 				$"{{\"id\":\"{contentId}\",\"version\":\"{version}\",\"properties\":{{\"permissions\":{{\"data\":{{\"write_self\":true}}}}}}}}";
 			var expectedLeaderboardBody = "{\"permissions\": { \"write_self\": true}}";
 			var expectedJObject = JObject.Parse(expectedLeaderboardBody);
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -65,7 +65,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
 			var expectedLeaderboardBody = "{\"permissions\": { \"write_self\": true}}";
 			var expectedJObject = JObject.Parse(expectedLeaderboardBody);
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -99,7 +99,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			TestSocket testSocket = null;
 			var expectedLeaderboardBody = "{\"limit\":50}";
 			var expectedJObject = JObject.Parse(expectedLeaderboardBody);
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -139,7 +139,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			var limit = 42;
 			var expectedLeaderboardBody = "{\"limit\":" + limit + "}";
 			var expectedJObject = JObject.Parse(expectedLeaderboardBody);
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -179,7 +179,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			var skip = 42;
 			var expectedLeaderboardBody = "{\"limit\":50,\"skip\":" + skip + "}";
 			var expectedJObject = JObject.Parse(expectedLeaderboardBody);
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -221,7 +221,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			var limit = 13;
 			var expectedLeaderboardBody = "{\"limit\":" + limit + ",\"skip\":" + skip + "}";
 			var expectedJObject = JObject.Parse(expectedLeaderboardBody);
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -260,7 +260,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
 			TestSocket testSocket = null;
 			var dbid = 43110;
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -302,7 +302,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			var leaderbaordId = "fakeleaderboard";
 			var expectedLeaderboardBody = "{\"id\":" + dbid + "}";
 			var expectedJObject = JObject.Parse(expectedLeaderboardBody);
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()

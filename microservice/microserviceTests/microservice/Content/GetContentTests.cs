@@ -301,7 +301,7 @@ namespace microserviceTests.microservice.Content
 		      socket.SetAuthentication(true);
 	      });
 	      
-	      var ms = new BeamableMicroService(socketProvider, contentResolver);
+	      var ms = new TestSetup(socketProvider, contentResolver);
 
 	      await ms.Start<SimpleMicroservice>(args);
 	      Assert.IsTrue(ms.HasInitialized);

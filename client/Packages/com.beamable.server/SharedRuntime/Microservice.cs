@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using System;
 
 namespace Beamable.Server
@@ -12,6 +13,7 @@ namespace Beamable.Server
 		public RequestContext Context;
 		public IBeamableRequester Requester;
 		public IBeamableServices Services;
+		public IDependencyProvider Provider;
 	}
 
 	/// <summary>
@@ -53,10 +55,32 @@ namespace Beamable.Server
 
 		protected IStorageObjectConnectionProvider Storage;
 
+		/// <summary>
+		/// <para>
+		/// The <see cref="IDependencyProvider"/> gives access to the dependency scope for this request.
+		/// You can configure custom services by using the see <see cref="ConfigureServicesAttribute"/>.
+		/// </para>
+		///
+		/// <para>
+		/// This <see cref="IDependencyProvider"/> references a service scope that is created for every request.
+		/// Anytime a <see cref="ClientCallableAttribute"/> is executed, a new service scope is created to handle
+		/// the request. The scope is forked from a scope per service connection, which itself is forked from 1 root
+		/// scope for the entire service. The <see cref="ConfigureServicesAttribute"/> is used to configure the root
+		/// <see cref="IDependencyBuilder"/>. This provider is forked from that builder. 
+		/// </para>
+		///
+		/// <para>
+		/// The <see cref="InitializeServicesAttribute"/> can be used to run custom logic after the root
+		/// scope is created, and before any traffic is accepted.
+		/// </para>
+		///
+		/// </summary>
+		protected IDependencyProvider Provider => _serviceProvider;
+
 		private RequesterFactory _requesterFactory;
 		private ServicesFactory _servicesFactory;
-		private IServiceProvider _serviceProvider;
-		private Func<RequestContext, IServiceProvider> _scopeGenerator;
+		private IDependencyProviderScope _serviceProvider;
+		private Func<RequestContext, IDependencyProviderScope> _scopeGenerator;
 
 		[Obsolete]
 		public void ProvideContext(RequestContext ctx)
@@ -78,7 +102,7 @@ namespace Beamable.Server
 			Services = _servicesFactory(Requester, Context);
 		}
 
-		public void ProvideDefaultServices(IServiceProvider provider, Func<RequestContext, IServiceProvider> scopeGenerator)
+		public void ProvideDefaultServices(IDependencyProviderScope provider, Func<RequestContext, IDependencyProviderScope> scopeGenerator)
 		{
 			Context = provider.GetService<RequestContext>();
 			Requester = provider.GetService<IBeamableRequester>();
@@ -125,7 +149,8 @@ namespace Beamable.Server
 			{
 				Context = newCtx,
 				Requester = requester,
-				Services = services
+				Services = services,
+				Provider = provider
 			};
 		}
 	}
