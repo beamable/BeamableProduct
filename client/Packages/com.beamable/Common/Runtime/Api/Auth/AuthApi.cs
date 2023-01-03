@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using UnityEngine;
 
 namespace Beamable.Common.Api.Auth
 {
@@ -230,6 +228,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
 		                                                              string providerService,
+		                                                              string providerNamespace = "",
 		                                                              ChallengeSolution challengeSolution = null)
 		{
 			AttachExternalIdentityRequest body;
@@ -238,7 +237,9 @@ namespace Beamable.Common.Api.Auth
 			{
 				body = new AttachExternalIdentityRequest
 				{
-					provider_service = providerService, external_token = externalToken
+					provider_service = providerService,
+					provider_namespace = providerNamespace,
+					external_token = externalToken
 				};
 			}
 			else
@@ -246,8 +247,9 @@ namespace Beamable.Common.Api.Auth
 				body = new ChallengedAttachExternalIdentityRequest
 				{
 					provider_service = providerService,
+					provider_namespace = providerNamespace,
 					external_token = externalToken,
-					challenge_solution = challengeSolution
+					challenge_solution = challengeSolution,
 				};
 			}
 
@@ -255,10 +257,15 @@ namespace Beamable.Common.Api.Auth
 				Method.POST, $"{ACCOUNT_URL}/external_identity", body);
 		}
 
-		public Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService, string userId)
+		public Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService,
+		                                                              string userId,
+		                                                              string providerNamespace = "")
 		{
 			DetachExternalIdentityRequest body =
-				new DetachExternalIdentityRequest {provider_service = providerService, user_id = userId,};
+				new DetachExternalIdentityRequest
+				{
+					provider_service = providerService, provider_namespace = providerNamespace, user_id = userId,
+				};
 
 			return Requester.Request<DetachExternalIdentityResponse>(Method.DELETE, $"{ACCOUNT_URL}/external_identity",
 			                                                         body);
@@ -266,6 +273,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity(string externalToken,
 			string providerService,
+			string providerNamespace = "",
 			ChallengeSolution challengeSolution = null)
 		{
 			ExternalAuthenticationRequest body;
@@ -274,7 +282,10 @@ namespace Beamable.Common.Api.Auth
 			{
 				body = new ExternalAuthenticationRequest
 				{
-					grant_type = "external", external_token = externalToken, provider_service = providerService
+					grant_type = "external",
+					external_token = externalToken,
+					provider_service = providerService,
+					provider_namespace = providerNamespace,
 				};
 			}
 			else
@@ -300,7 +311,7 @@ namespace Beamable.Common.Api.Auth
 				return new ChallengeToken
 				{
 					challenge = tokenParts[0], validUntil = validUntil, signature = tokenParts[2]
-				};	
+				};
 			}
 
 			throw new Exception("Problem with challenge token parsing");
@@ -628,6 +639,7 @@ namespace Beamable.Common.Api.Auth
 	public class AttachExternalIdentityRequest
 	{
 		public string provider_service;
+		public string provider_namespace;
 		public string external_token;
 	}
 
@@ -648,6 +660,7 @@ namespace Beamable.Common.Api.Auth
 	public class DetachExternalIdentityRequest
 	{
 		public string provider_service;
+		public string provider_namespace;
 		public string user_id;
 	}
 
@@ -662,6 +675,7 @@ namespace Beamable.Common.Api.Auth
 	{
 		public string grant_type;
 		public string provider_service;
+		public string provider_namespace;
 		public string external_token;
 	}
 
