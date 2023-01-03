@@ -27,7 +27,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		{
 			TestSocket testSocket = null;
 
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -41,7 +41,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
 			await ms.Start<SimpleMicroservice>(new TestArgs());
 			Assert.IsTrue(ms.HasInitialized);
-			var provider = ms.ServiceCollection.BuildServiceProvider();
+			var provider = ms.Service.Provider;
 			var storageObjectConnectionProvider =
 				IServiceProviderExtensions.GetService<IStorageObjectConnectionProvider>(provider);
 			var simpleStorage = await storageObjectConnectionProvider.GetDatabase<SimpleStorageObject>();
