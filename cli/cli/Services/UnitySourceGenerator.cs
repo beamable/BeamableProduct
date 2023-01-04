@@ -1198,7 +1198,7 @@ public static class UnityHelper
 				// we just cannot support the serialization of unspecified object types, so don't serialize.
 				var isTypeEmptyOrObject = string.IsNullOrEmpty(schema.Type) || schema.Type == "object";
 				var hasReference = schema.Reference != null;
-				
+
 				if (isTypeEmptyOrObject && !hasReference) return false;
 
 				// use the default serialize method.
