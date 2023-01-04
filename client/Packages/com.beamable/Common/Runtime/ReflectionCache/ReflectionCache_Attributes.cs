@@ -178,13 +178,10 @@ namespace Beamable.Common.Reflection
 			FoundInBaseTypes = new List<Type>(foundInBaseTypes ?? new Type[] { });
 			FoundInTypesWithAttributes = new List<Type>(foundInTypesWithAttributes ?? new Type[] { });
 
-			if (TargetsDeclaredMember)
+			if (TargetsDeclaredMember && (foundInTypesWithAttributes != null || foundInBaseTypes != null))
 			{
-				if (foundInTypesWithAttributes != null || foundInBaseTypes != null)
-				{
-					Debug.Assert(true, "Attributes targeting members of classes and structs must specify either a base class/struct or " +
-					                   "an attribute over the classes/structs whose members we must check for the attribute of interest.");
-				}
+				Debug.Assert(true, "Attributes targeting members of classes and structs must specify either a base class/struct or " +
+				                   "an attribute over the classes/structs whose members we must check for the attribute of interest.");
 			}
 		}
 	}
