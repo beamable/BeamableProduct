@@ -39,10 +39,10 @@ namespace Beamable.Editor.Reflection
 				var reimportedReflectionTypes = reimportedReflectionSystemObjects.Select(sysObj => sysObj.SystemType).ToList();
 
 				// we may need to add these new types and objects into the system.
-				foreach (var sysObject in reimportedReflectionSystemObjects)
+				for (int i = 0; i < reimportedReflectionSystemObjects.Count; i++)
 				{
-					BeamEditor.EditorReflectionCache.TryRegisterTypeProvider(sysObject.TypeProvider);
-					BeamEditor.EditorReflectionCache.TryRegisterReflectionSystem(sysObject.System);
+					BeamEditor.EditorReflectionCache.TryRegisterTypeProvider(reimportedReflectionSystemObjects[i].TypeProvider);
+					BeamEditor.EditorReflectionCache.TryRegisterReflectionSystem(reimportedReflectionSystemObjects[i].System);
 				}
 
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);

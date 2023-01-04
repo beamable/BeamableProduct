@@ -109,10 +109,9 @@ namespace Beamable.Server
       private const int ShutdownMinCycleTimeMilliseconds = 100;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
       private IConnection _connection;
-      private readonly IConnectionProvider _connectionProvider;
-      private readonly IContentResolver _contentResolver;
       private Promise<IConnection> _webSocketPromise;
       private MicroserviceRequester _requester;
+      public SocketRequesterContext SocketContext => _socketRequesterContext;
       private SocketRequesterContext _socketRequesterContext;
       public ServiceMethodCollection ServiceMethods { get; private set; }
       public MicroserviceAuthenticationDaemon AuthenticationDaemon => _socketRequesterContext?.Daemon;
@@ -142,20 +141,13 @@ namespace Beamable.Server
          }
       }
 
-      // TODO: XXX This is gross. Eventually, I'd like to have an IContentService get injected into a service provider, that the ContentRef can use
-      public static ContentService _contentService;
-
       public bool HasInitialized { get; private set; }
 
-      public ReflectionCache _reflectionCache;
 
       private IMicroserviceArgs _args;
-      private MongoSerializationService _mongoSerializationService;
-      private StorageObjectConnectionProvider _storageObjectConnectionProviderService;
       private CancellationTokenSource _serviceShutdownTokenSource;
       private Task _socketDaemen;
       private string Host => _args.Host;
-      public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
       {
          5,
@@ -174,21 +166,8 @@ namespace Beamable.Server
       /// </summary>
       private bool _ranCustomUserInitializationHooks = false;
 
-      public BeamableMicroService(IConnectionProvider socketProvider=null, IContentResolver contentResolver=null)
-      {
-         if (socketProvider == null)
-         {
-            socketProvider = new EasyWebSocketProvider();
-         }
-
-         if (contentResolver == null)
-         {
-            contentResolver = new DefaultContentResolver();
-         }
-
-         _connectionProvider = socketProvider;
-         _contentResolver = contentResolver;
-      }
+      public IServiceProvider Provider => _args.ServiceScope;
+      
 
       public async Task Start<TMicroService>(IMicroserviceArgs args)
          where TMicroService : Microservice
@@ -202,66 +181,45 @@ namespace Beamable.Server
             throw new Exception($"Cannot create service. Missing [{typeof(MicroserviceAttribute).Name}].");
          }
 
-         _args = args.Copy();
+         _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
+         _args = args.Copy(conf =>
+         {
+	         conf.ServiceScope = conf.ServiceScope.Fork(builder =>
+	         {
+				// do we need instance specific services? They'd go here.
+				builder.AddScoped(_socketRequesterContext);
+				builder.AddScoped(_socketRequesterContext.Daemon);
+	         });
+         });
          Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
-
-
-
+         
          XmlDocsHelper.ProvideXmlForBaseImage(typeof(AdminRoutes));
          XmlDocsHelper.ProvideXmlForService(MicroserviceType);
 
          RebuildRouteTable();
 
-         _reflectionCache = new ReflectionCache();
-         var contentTypeReflectionCache = new ContentTypeReflectionCache();
-         _reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
-         _reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
-         _reflectionCache.SetStorage(new BeamHintGlobalStorage());
-
-         var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
-                                                                                  !asm.GetName().Name.StartsWith("nunit.") &&
-                                                                                  !asm.GetName().Name.StartsWith("JetBrains.") &&
-                                                                                  !asm.GetName().Name.StartsWith("Microsoft.") &&
-                                                                                  !asm.GetName().Name.StartsWith("Serilog."))
-            .Select(asm => asm.GetName().Name)
-            .ToList();
-         Log.Debug($"Generating Reflection Cache over Assemblies => {string.Join('\n', relevantAssemblyNames)}");
-         _reflectionCache.GenerateReflectionCache(relevantAssemblyNames);
-
-         _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
-         _mongoSerializationService = new MongoSerializationService();
-         _storageObjectConnectionProviderService = new StorageObjectConnectionProvider(_args, _requester);
-
-         _contentService ??= CreateNewContentService(_requester, _socketRequesterContext, _contentResolver, _reflectionCache);
-         ContentApi.Instance.CompleteSuccess(_contentService);
-
          _serviceShutdownTokenSource = new CancellationTokenSource();
          (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
 
-         InitServices();
-
-         _serviceInitialized.Then(_ =>
-         {
-            _contentService.Init();
-         }).Error(ex =>
+         _serviceInitialized.Error(ex =>
          {
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
-
+         
+         // the first time this runs, it'll complete, but due to how promises work, all of the next times, it'll no-op.
+         var contentService = Provider.GetService<ContentService>();
+         ContentApi.Instance.CompleteSuccess(contentService);
 
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
 
-         await SetupWebsocket(socket);
-      }
-
-      private ContentService CreateNewContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
-      {
-	      return _serviceAttribute.DisableAllBeamableEvents
-		      ? new UnreliableContentService(requester, socket, contentResolver, reflectionCache)
-		      : new ContentService(requester, socket, contentResolver, reflectionCache);
+         await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
+         if (!_serviceAttribute.EnableEagerContentLoading)
+         {
+	         var _ = contentService.Init();
+         }
       }
 
       public async Task RunForever()
@@ -363,7 +321,7 @@ namespace Beamable.Server
          SwaggerGenerator.InvalidateSwagger(this);
       }
 
-      async Task SetupWebsocket(IConnection socket)
+      async Task SetupWebsocket(IConnection socket, bool initContent = false)
       {
          _connection = socket;
 
@@ -394,11 +352,17 @@ namespace Beamable.Server
                 // Only gets run once --- if we need to setup the websocket again, we don't run this a second time.
                 if (!_ranCustomUserInitializationHooks)
                 {
+	                if (initContent)
+	                {
+		                await Provider.GetService<ContentService>().Init(preload:true);
+	                }
+
                     await ResolveCustomInitializationHook();
                     _ranCustomUserInitializationHooks = true;
                 }
             }
 
+       
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
@@ -444,7 +408,7 @@ namespace Beamable.Server
          });
 
          // Invokes each Service Initialization Method --- skips any that do not match the void(IServiceInitializer) signature.
-         var serviceInitializers = new DefaultServiceInitializer(ServiceCollection, _args);
+         var serviceInitializers = new DefaultServiceInitializer(_args.ServiceScope.Parent, _args);
          foreach (var (initializationMethod, _) in serviceInitialization)
          {
             // TODO: Add compile-time check for this signature so we can educate our users on this without them having to deep dive into docs
@@ -520,7 +484,7 @@ namespace Beamable.Server
          void Attempt()
          {
             Log.Debug($"connecting to ws ({Host}) ... ");
-            var ws = _connectionProvider.Create(Host, _args);
+            var ws = Provider.GetService<IConnectionProvider>().Create(Host, _args);
             ws.OnConnect(socket =>
             {
                Log.Debug("connection made.");
@@ -605,121 +569,27 @@ namespace Beamable.Server
             });
          }
       }
-
-
-      void InitServices()
-      {
-         Log.Debug(Logs.REGISTERING_STANDARD_SERVICES);
-         try
-         {
-            ServiceCollection = new ServiceCollection();
-            ServiceCollection
-               .AddScoped(MicroserviceType)
-               .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
-               .AddSingleton(_args)
-               .AddSingleton(_socketRequesterContext.Daemon)
-               .AddSingleton<IRealmInfo>(_args)
-               .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
-               .AddTransient<IBeamableRequester, MicroserviceRequester>((provider) => new MicroserviceRequester(_args, provider.GetService<RequestContext>(), _socketRequesterContext, true))
-               .AddTransient<IUserContext>(provider => provider.GetService<RequestContext>())
-               .AddTransient<IMicroserviceAuthApi, ServerAuthApi>()
-               .AddTransient<IMicroserviceStatsApi, MicroserviceStatsApi>()
-               .AddTransient<IStatsApi, MicroserviceStatsApi>()
-               .AddSingleton<IMicroserviceContentApi>(_contentService)
-               .AddTransient<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
-               .AddTransient<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
-               .AddTransient<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
-               .AddTransient<IMicroserviceLeaderboardsApi, MicroserviceLeaderboardApi>()
-               .AddTransient<IMicroserviceAnnouncementsApi, MicroserviceAnnouncementsApi>()
-               .AddTransient<IMicroserviceCalendarsApi, MicroserviceCalendarsApi>()
-               .AddTransient<IMicroserviceEventsApi, MicroserviceEventsApi>()
-               .AddTransient<IMicroserviceMailApi, MicroserviceMailApi>()
-               .AddTransient<IMicroserviceNotificationsApi, MicroserviceNotificationApi>()
-               .AddTransient<IMicroserviceSocialApi, MicroserviceSocialApi>()
-               .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
-               .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
-               .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
-               .AddTransient<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
-               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>(_ => _storageObjectConnectionProviderService)
-               .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
-               .AddSingleton<IMicroserviceChatApi, MicroserviceChatApi>()
-               .AddSingleton<ReflectionCache>(_ => _reflectionCache)
-
-               .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
-               .AddTransient<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
-               .AddScoped<IBeamableServices>(ExtractSdks)
-               ;
-
-            _mongoSerializationService.Init();
-            Log.Debug(Logs.REGISTERING_CUSTOM_SERVICES);
-            var builder = new DefaultServiceBuilder(ServiceCollection);
-
-            // Gets Service Configuration Methods
-            var configurationMethods = MicroserviceType
-               .GetMethods(BindingFlags.Static | BindingFlags.Public)
-               .Where(method => method.GetCustomAttribute<ConfigureServicesAttribute>() != null)
-               .Select(method =>
-               {
-                  var attr = method.GetCustomAttribute<ConfigureServicesAttribute>();
-                  return (method, attr);
-               })
-               .ToList();
-
-            // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
-            configurationMethods.Sort(delegate((MethodInfo method, ConfigureServicesAttribute attr) t1, (MethodInfo method, ConfigureServicesAttribute attr) t2)
-            {
-               var (_, attr1) = t1;
-               var (_, attr2) = t2;
-               return attr1.ExecutionOrder.CompareTo(attr2.ExecutionOrder);
-            });
-
-            // Invokes each Service Configuration Method --- skips any that do not match the void(IServiceBuilder) signature.
-            foreach (var (configurationMethod, _) in configurationMethods)
-            {
-               // TODO: Add compile-time check for this signature
-               var parameters = configurationMethod.GetParameters();
-               if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceBuilder)) continue;
-
-               try
-               {
-                  configurationMethod.Invoke(null, new object?[] {builder});
-               }
-               catch (Exception ex)
-               {
-                  BeamableLogger.LogError("Configuration method failed. " + ex.Message + " {stacktrace}", ex.StackTrace);
-                  BeamableLogger.LogException(ex);
-                  throw;
-               }
-            }
-         }
-         catch (Exception ex)
-         {
-            BeamableLogger.LogError("Registering services failed. " + ex.Message);
-            BeamableLogger.LogException(ex);
-            throw;
-         }
-      }
+      
 
       Microservice BuildServiceInstance(RequestContext ctx)
       {
 
-         IServiceProvider Create(RequestContext requestContext)
-         {
-            var serviceDescriptors = new ServiceDescriptor[ServiceCollection.Count];
-            ServiceCollection.CopyTo(serviceDescriptors, 0);
-            var requestCollection = new ServiceCollection {serviceDescriptors};
-            requestCollection.AddScoped(_ => requestContext);
+	      IDependencyProviderScope Create(RequestContext requestContext)
+	      {
+		      var scope = _args.ServiceScope.Fork(builder =>
+		      {
+			      // each _request_ gets its own service scope, so we fork the provider again and override certain services. 
+			      builder.AddScoped(requestContext);
+			      builder.AddScoped(_args);
+		      });
+		      
+		      return scope;
+	      }
 
-            var provider = requestCollection.BuildServiceProvider();
-            var scope = provider.CreateScope();
-
-            return scope.ServiceProvider;
-         }
-
-         var scope = Create(ctx);
-         var service = scope.GetRequiredService(MicroserviceType) as Microservice;
-         service.ProvideDefaultServices(scope, Create);
-         return service;
+	      var scope = Create(ctx);
+	      var service = scope.GetRequiredService(MicroserviceType) as Microservice;
+	      service.ProvideDefaultServices(scope, Create);
+	      return service;
       }
 
       AdminRoutes BuildAdminInstance(RequestContext ctx)
@@ -836,6 +706,9 @@ namespace Beamable.Server
 
          try
          {
+	         using var tokenSource = new CancellationTokenSource();
+	         ctx.CancellationToken = tokenSource.Token;
+	         tokenSource.CancelAfter(TimeSpan.FromSeconds(_args.RequestCancellationTimeoutSeconds));
 	         if (_socketRequesterContext.IsPlatformMessage(ctx))
 	         {
 		         // the request is a platform request.
@@ -854,79 +727,11 @@ namespace Beamable.Server
          }
       }
 
-      private IBeamableRequester GenerateRequester(RequestContext ctx)
-      {
-         return new MicroserviceRequester(_args, ctx, _socketRequesterContext, true);
-      }
-
-      private IBeamableServices ExtractSdks(IServiceProvider provider)
-      {
-         var services = new BeamableServices
-         {
-            Auth = provider.GetRequiredService<IMicroserviceAuthApi>(),
-            Stats = provider.GetRequiredService<IMicroserviceStatsApi>(),
-            Content = provider.GetRequiredService<IMicroserviceContentApi>(),
-            Inventory = provider.GetRequiredService<IMicroserviceInventoryApi>(),
-            Leaderboards = provider.GetRequiredService<IMicroserviceLeaderboardsApi>(),
-            Announcements = provider.GetRequiredService<IMicroserviceAnnouncementsApi>(),
-            Calendars = provider.GetRequiredService<IMicroserviceCalendarsApi>(),
-            Events = provider.GetRequiredService<IMicroserviceEventsApi>(),
-            Groups = provider.GetRequiredService<IMicroserviceGroupsApi>(),
-            Mail = provider.GetRequiredService<IMicroserviceMailApi>(),
-            Notifications = provider.GetRequiredService<IMicroserviceNotificationsApi>(),
-            Social = provider.GetRequiredService<IMicroserviceSocialApi>(),
-            Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
-            TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
-            RealmConfig= provider.GetRequiredService<IMicroserviceRealmConfigService>(),
-            Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
-            Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
-            Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
-         };
-         return services;
-      }
-
-      private IBeamableServices GenerateSdks(IBeamableRequester requester, RequestContext ctx)
-      {
-         var stats = new MicroserviceStatsApi(requester, ctx, null, StatsCacheFactory);
-         var services = new BeamableServices
-         {
-            Auth = new ServerAuthApi(requester, ctx),
-            Stats = stats,
-            Content = _contentService,
-            Inventory = new MicroserviceInventoryApi(requester, ctx),
-            Leaderboards = new MicroserviceLeaderboardApi(requester, ctx, null, LeaderboardRankEntryFactory),
-            Announcements = new MicroserviceAnnouncementsApi(requester, ctx),
-            Calendars = new MicroserviceCalendarsApi(requester, ctx),
-            Events = new MicroserviceEventsApi(requester, ctx),
-            Groups = new MicroserviceGroupsApi(requester, ctx),
-            Mail = new MicroserviceMailApi(requester, ctx),
-            Notifications = new MicroserviceNotificationApi(requester, ctx),
-            Social = new MicroserviceSocialApi(requester, ctx),
-            Tournament = new MicroserviceTournamentApi(stats, requester, ctx),
-            TrialData = new MicroserviceCloudDataApi(requester, ctx),
-            RealmConfig= new RealmConfigService(requester),
-            Commerce = new MicroserviceCommerceApi(requester),
-            Chat = new MicroserviceChatApi(requester, ctx),
-            Payments = new MicroservicePaymentsApi(requester),
-         };
-
-         return services;
-      }
-
       private UserDataCache<RankEntry> _singleRankyEntryCache;
-      private UserDataCache<RankEntry> LeaderboardRankEntryFactory(string name, long ttlms, UserDataCache<RankEntry>.CacheResolver resolver, IDependencyProvider provider)
-      {
-         return new EphemeralUserDataCache<RankEntry>(name, resolver);
-      }
+      
 
       private UserDataCache<Dictionary<string, string>> _singleStatsCache;
       public Type MicroserviceType { get; private set; }
-
-      private UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms, UserDataCache<Dictionary<string, string>>.CacheResolver resolver, IDependencyProvider provider)
-      {
-         return new EphemeralUserDataCache<Dictionary<string, string>>(name, resolver);
-      }
-
 
 
       private async Task CloseConnection(IConnection ws, bool wasClean)

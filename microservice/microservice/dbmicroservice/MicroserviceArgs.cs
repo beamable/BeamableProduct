@@ -1,3 +1,5 @@
+using Beamable.Common.Dependencies;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 
@@ -5,6 +7,8 @@ namespace Beamable.Server
 {
    public interface IMicroserviceArgs : IRealmInfo
    {
+	   public IDependencyProviderScope ServiceScope { get; }
+	   
       string Host { get; }
       string Secret { get; }
       string NamePrefix { get; }
@@ -29,10 +33,12 @@ namespace Beamable.Server
       public int ReceiveChunkSize { get; }
       public int SendChunkSize { get; }
       public int BeamInstanceCount { get; }
+      public int RequestCancellationTimeoutSeconds { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
    {
+	   public IDependencyProviderScope ServiceScope { get; set; }
 	   public string CustomerID { get; set; }
 	   public string ProjectName { get; set; }
 	   public string Secret { get; set; }
@@ -59,15 +65,16 @@ namespace Beamable.Server
 	   public int ReceiveChunkSize { get; set; }
 	   public int SendChunkSize { get; set; }
 	   public int BeamInstanceCount { get; set; }
-
+	   public int RequestCancellationTimeoutSeconds { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
    {
-      public static IMicroserviceArgs Copy(this IMicroserviceArgs args)
+      public static IMicroserviceArgs Copy(this IMicroserviceArgs args, Action<MicroserviceArgs> configurator=null)
       {
-         return new MicroserviceArgs
+         var next = new MicroserviceArgs
          {
+	         ServiceScope = args.ServiceScope,
             CustomerID = args.CustomerID,
             ProjectName = args.ProjectName,
             Secret = args.Secret,
@@ -93,8 +100,12 @@ namespace Beamable.Server
             RateLimitCPUMultiplierLow = args.RateLimitCPUMultiplierLow,
             RateLimitCPUMultiplierHigh = args.RateLimitCPUMultiplierHigh,
             RateLimitCPUOffset = args.RateLimitCPUOffset,
-            BeamInstanceCount = args.BeamInstanceCount
+            BeamInstanceCount = args.BeamInstanceCount,
+            RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds
          };
+         
+         configurator?.Invoke(next);
+         return next;
       }
    }
 
@@ -102,6 +113,7 @@ namespace Beamable.Server
    {
       public string CustomerID => Environment.GetEnvironmentVariable("CID");
       public string ProjectName => Environment.GetEnvironmentVariable("PID");
+      public IDependencyProviderScope ServiceScope { get; }
       public string Host => Environment.GetEnvironmentVariable("HOST");
       public string Secret => Environment.GetEnvironmentVariable("SECRET");
       public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
@@ -109,6 +121,16 @@ namespace Beamable.Server
       public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
       public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
 
+      public int RequestCancellationTimeoutSeconds {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("REQUEST_TIMEOUT_SECONDS"), out var val))
+		      {
+			      val = 10;
+		      }
+		      return val;
+	      }
+      }
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
 
       public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
@@ -207,7 +229,7 @@ namespace Beamable.Server
 	      {
 		      if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var limit))
 		      {
-			      limit = 30;
+			      limit = 10;
 		      }
 		      return limit;
 	      }

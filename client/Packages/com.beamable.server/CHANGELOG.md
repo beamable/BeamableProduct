@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservices use dotnet7
 - Microservices use Newtonsoft 13.0.2
 
+## [1.10.0]
+### Added
+- `[InitializeService]` exposes `IDependencyProvider` as `Provider`, and `[ConfigureServices]` exposes `IDependencyBuilder` as `Builder`
+
+### Changed
+- Internal dependency-injection system uses `IDependencyBuilder` and `IDependencyProvider`. 
+
+### Fixed
+- Custom `[InitializeService]` and `[ConfigureServices]` callbacks no longer run for each connection.
+- Singletons registered during `[ConfigureServices]` won't be re-instantiated on each request.
+
+## [1.9.1]
+### Changed
+- Downloading content allocates less memory due to avoid async/await `Task` allocation.
+
+## [1.9.0]
+### Added
+- `Context.ThrowIfCancelled()` method to force end a client-callable request if it has timed out.
+
+### Fixed
+- Internal container health checks no longer cause fatal exception.
+- `IContentApi` is accessible via the Microservice dependency injection scope.
+
+## [1.8.0]
+### Added
+- `EnableEagerContentLoading` configuration setting on `MicroserviceAttribute` is enabled by default. 
+
+### Changed
+- Content is downloaded and cached on the Microservice before it is declared healthy and available to accept traffic. 
+- Published Microservices open 10 websocket connections instead of 30.
+
+### Fixed
+- Content downloads no longer cause HTTP timeouts or CPU spikes.
+- Domain Reload times are reduced by roughly 30% when working with Microservices
+- Rare authorization locking bug that could cause extend authorization times.
+
 ## [1.7.0]
 ### Changed
 - Exposed methods for access to public player stats:
@@ -39,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.1]
 - no changes
 
-### [1.6.0]
+## [1.6.0]
 ### Added
 - Displaying log pagination if message contains more that 5000 chars
 - Quick action buttons for opening C# code and local documentation for service cards
@@ -63,7 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task Cancellation exceptions while publishing Microservice.
 - Various `DockerNotInstalledException` events when MicroserviceManager window isn't open, but Docker ins't running.
 
-### [1.5.1]
+## [1.5.1]
 ### Added
 - `EnablePrePublishHealthCheck` option in _Project Settings/Beamable/Microservices_ can be used to disable Microservice health checks when publishing. Disabling this is dangerous and may lead to unhealthy servers being deployed to production.
 - `PrePublishHealthCheckTimeout` option in _Project Settings/Beamable/Microservices_ can optionally override the amount of seconds before a health check is considered to timeout. The default value is 10 seconds.
@@ -102,7 +138,7 @@ no changes
 ### Changed
 - Changed service name validation in `Microservice Manager` to keep names unique
 
-### [1.3.2]
+## [1.3.2]
 ### Added
 - Added `Services.Payments` which allows receipt verification.
 - Added `DeleteProtectedPlayerStats` and `DeleteStats` methods to `IMicroserviceStatsApi`.
