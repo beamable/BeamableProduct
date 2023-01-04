@@ -9,10 +9,10 @@ namespace Beamable.Common.Dependencies
 	{
 		Unknown,
 		Transient,
-		Scoped, 
+		Scoped,
 		Singleton
 	}
-	
+
 	/// <summary>
 	/// The <see cref="IDependencyBuilder"/> is part of the Beamable dependency injection system.
 	/// It is used to describe a set of services that <i>will</i> exist, but the builder never actually creates any service instance.

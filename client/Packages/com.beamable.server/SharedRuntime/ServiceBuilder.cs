@@ -11,7 +11,7 @@ namespace Beamable.Server
 		/// Access the <see cref="IDependencyBuilder"/> for the root scope.
 		/// </summary>
 		IDependencyBuilder Builder { get; }
-		
+
 		/// <summary>
 		/// Adds an instance of a service that respects the <typeparamref name="TService"/> contract as a per-request instance.
 		/// This means that data here is completely isolated and exists per-request. One thing to keep in mind:
