@@ -33,7 +33,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		{
 
 			TestSocket testSocket = null;
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -70,7 +70,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		{
 
 			TestSocket testSocket = null;
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -107,7 +107,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		{
 
 			TestSocket testSocket = null;
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -143,7 +143,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		{
 
 			TestSocket testSocket = null;
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -179,7 +179,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		{
 
 			TestSocket testSocket = null;
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
@@ -215,7 +215,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		{
 
 			TestSocket testSocket = null;
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()

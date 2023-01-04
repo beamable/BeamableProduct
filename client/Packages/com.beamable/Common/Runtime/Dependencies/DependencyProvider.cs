@@ -10,7 +10,7 @@ namespace Beamable.Common.Dependencies
 	/// The <see cref="IDependencyProvider"/> is a collection of services, built from a <see cref="IDependencyBuilder"/>.
 	/// Use the <see cref="GetService{T}"/> method to get services.
 	/// </summary>
-	public interface IDependencyProvider
+	public interface IDependencyProvider : IServiceProvider
 	{
 		/// <summary>
 		/// Returns true if the given service is registered in the provider.
@@ -20,17 +20,6 @@ namespace Beamable.Common.Dependencies
 		/// <param name="t">the type of service to check for</param>
 		/// <returns>True if the service can be got, False otherwise.</returns>
 		bool CanBuildService(Type t);
-
-		/// <summary>
-		/// Finds an instance of a service given the type parameter.
-		/// All services are lazily initialized, so its possible that if is the first time the type of
-		/// service has been requested, this call could allocate a new instance of the service.
-		///
-		/// If the service wasn't registered, you'll get an exception. Use <see cref="CanBuildService{T}"/> to check if the service can be got.
-		/// </summary>
-		/// <param name="t">the type of service to get</param>
-		/// <returns>An instance of the type requested</returns>
-		object GetService(Type t);
 
 		/// <summary>
 		/// Finds an instance of a service given the type parameter.
@@ -70,6 +59,16 @@ namespace Beamable.Common.Dependencies
 	/// </summary>
 	public interface IDependencyProviderScope : IDependencyProvider
 	{
+		
+		/// <summary>
+		/// Give some type, try to find the service <see cref="DependencyLifetime"/> for the type.
+		/// If the service isn't registered, then the method will return false.
+		/// </summary>
+		/// <param name="lifetime"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		bool TryGetServiceLifetime<T>(out DependencyLifetime lifetime);
+
 		/// <summary>
 		/// Disposing a <see cref="IDependencyProviderScope"/> will call <see cref="IBeamableDisposable.OnDispose"/>
 		/// on all inner services that implement <see cref="IBeamableDisposable"/>.
@@ -159,6 +158,37 @@ namespace Beamable.Common.Dependencies
 			Singletons = builder.SingletonServices.ToDictionary(s => s.Interface);
 		}
 
+		
+		public bool TryGetServiceLifetime<T>(out DependencyLifetime lifetime)
+		{
+
+			lifetime = DependencyLifetime.Unknown;
+			if (Transients.TryGetValue(typeof(T), out _))
+			{
+				lifetime = DependencyLifetime.Transient;
+				return true;
+			}
+			if (Scoped.TryGetValue(typeof(T), out _))
+			{
+				lifetime = DependencyLifetime.Scoped;
+				return true;
+			}
+			if (Singletons.TryGetValue(typeof(T), out _))
+			{
+				lifetime = DependencyLifetime.Singleton;
+				return true;
+			}
+
+			if (Parent == null)
+			{
+				return false;
+			}
+			else
+			{
+				return Parent.TryGetServiceLifetime<T>(out lifetime);
+			}
+		}
+		
 		public T GetService<T>()
 		{
 			return (T)GetService(typeof(T));
@@ -228,17 +258,22 @@ namespace Beamable.Common.Dependencies
 			// remove from parent.
 
 			var childRemovalPromises = new List<Promise<Unit>>();
-			foreach (var child in _children)
+			lock (_children)
 			{
-				if (child != null)
+
+				foreach (var child in _children)
 				{
-					var removePromise = child.Dispose();
-					if (removePromise != null)
+					if (child != null)
 					{
-						childRemovalPromises.Add(removePromise);
+						var removePromise = child.Dispose();
+						if (removePromise != null)
+						{
+							childRemovalPromises.Add(removePromise);
+						}
 					}
 				}
 			}
+
 			await Promise.Sequence(childRemovalPromises);
 
 			void DisposeServices(IEnumerable<object> services)
@@ -278,19 +313,22 @@ namespace Beamable.Common.Dependencies
 			SingletonCache.Clear();
 			ScopeCache.Clear();
 
-			var oldChildren = new HashSet<IDependencyProviderScope>(_children);
-			var newChildren = new HashSet<IDependencyProviderScope>();
-			foreach (var child in oldChildren)
+			lock (_children)
 			{
-				var configurator = _childToConfigurator[child];
-				var newChild = Fork(configurator);
-				newChildren.Add(newChild);
-				child.Hydrate(newChild);
-			}
+				var oldChildren = new HashSet<IDependencyProviderScope>(_children);
+				var newChildren = new HashSet<IDependencyProviderScope>();
+				foreach (var child in oldChildren)
+				{
+					var configurator = _childToConfigurator[child];
+					var newChild = Fork(configurator);
+					newChildren.Add(newChild);
+					child.Hydrate(newChild);
+				}
 
-			foreach (var child in newChildren)
-			{
-				_children.Remove(child);
+				foreach (var child in newChildren)
+				{
+					_children.Remove(child);
+				}
 			}
 		}
 
@@ -328,8 +366,11 @@ namespace Beamable.Common.Dependencies
 			configure?.Invoke(builder);
 
 			var provider = new DependencyProvider(builder) { Parent = this };
-			_children.Add(provider);
-			_childToConfigurator[provider] = configure;
+			lock (_children)
+			{
+				_children.Add(provider);
+				_childToConfigurator[provider] = configure;
+			}
 
 			return provider;
 		}

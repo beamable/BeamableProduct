@@ -120,30 +120,31 @@ namespace Beamable.Editor.Content.Models
 			ContentIO.Create(content, null, false, LocalManifest);
 		}
 
+		public void DeleteItems(List<ContentItemDescriptor> descriptors)
+		{
+			foreach (var desc in descriptors)
+			{
+				if (SelectedContents.Contains(desc))
+				{
+					SelectedContents.Remove(desc);
+				}
+			}
+
+			var contents = descriptors.Select(d => d.GetContent()).ToList();
+			ContentIO.DeleteBatch(contents);
+
+		}
+		
+		[Obsolete("Do not use. Use " + nameof(DeleteItems) + " instead.")]
 		public void DeleteItem(ContentItemDescriptor contentItemDescriptor)
 		{
-			UnityEngine.Object unityObject =
-			   AssetDatabase.LoadMainAssetAtPath(contentItemDescriptor.AssetPath);
-
-			IContentObject contentObject = (IContentObject)unityObject;
-
-			if (contentObject == null)
-			{
-				BeamableLogger.LogError(new Exception("DeleteItem() error. contentObject must be not null."));
-				return;
-			}
-
-			if (contentItemDescriptor.Status == ContentModificationStatus.LOCAL_ONLY && SelectedContents.Contains(contentItemDescriptor))
-			{
-				SelectedContents.Remove(contentItemDescriptor);
-			}
-
-			ContentIO.DeleteByType(contentItemDescriptor.ContentType.ContentType, contentObject);
+			DeleteItems(new List<ContentItemDescriptor>(){contentItemDescriptor});
 		}
 
 		public void DeleteLocalOnlyItems()
 		{
-			_content.Where(c => c.Status == ContentModificationStatus.LOCAL_ONLY).ToList().ForEach(DeleteItem);
+			var toDelete = _content.Where(c => c.Status == ContentModificationStatus.LOCAL_ONLY).ToList();//.ForEach(DeleteItem);
+			DeleteItems(toDelete);
 		}
 
 		public void SetLocalContent(LocalContentManifest localManifest)
@@ -619,9 +620,50 @@ namespace Beamable.Editor.Content.Models
 
 		}
 
-		public void HandleContentDeleted(IContentObject content)
+		public void HandleContentsDeleted(List<ContentDatabaseEntry> contents)
 		{
-			if (_idToContent.TryGetValue(content.Id, out var existing))
+			foreach (var entry in contents)
+			{
+				if (!_idToContent.TryGetValue(entry.contentId, out var existing))
+				{
+					continue;
+				}
+				
+				if (existing.ServerStatus == HostStatus.AVAILABLE)
+				{
+					// don't delete the whole record, just remove the local aspect...
+					existing.EnrichWithNoLocalData();
+				}
+				else
+				{
+					_content.Remove(existing);
+					_idToContent.Remove(entry.contentId);
+				}
+			}
+			
+			RebuildTagSet();
+
+			foreach (var entry in contents)
+			{
+				if (!_idToContent.TryGetValue(entry.contentId, out var existing))
+				{
+					continue;
+				}
+
+				if (existing.ServerStatus != HostStatus.AVAILABLE)
+				{
+					OnContentDeleted?.Invoke(existing);
+				}
+			}
+
+			RefreshFilteredContents();
+
+		}
+
+		[Obsolete("Do not use.")]
+		public void HandleContentDeleted(ContentDatabaseEntry content)
+		{
+			if (_idToContent.TryGetValue(content.contentId, out var existing))
 			{
 				/* DELETING MEANS DIFFERENT THINGS BASED ON STATUS.
 					if the content is only local, then we can actually get rid of it.
@@ -637,7 +679,7 @@ namespace Beamable.Editor.Content.Models
 				{
 					// the content wasn't available on the server anyway, so we can completely remove it from this list
 					_content.Remove(existing);
-					_idToContent.Remove(content.Id);
+					_idToContent.Remove(content.contentId);
 					RebuildTagSet();
 					OnContentDeleted?.Invoke(existing);
 				}
@@ -646,38 +688,43 @@ namespace Beamable.Editor.Content.Models
 
 		}
 
-		public void HandleContentAdded(IContentObject content)
+		public void HandleContentAdded(List<IContentObject> contents)
 		{
-			if (_idToContent.TryGetValue(content.Id, out var existing))
+			foreach (var content in contents)
 			{
-				// it already exists, don't do anything?
-			}
-			else
-			{
-				var typeName = ContentTypeReflectionCache.GetTypeNameFromId(content.Id);
-				if (!_nameToType.ContainsKey(typeName))
+				if (_idToContent.TryGetValue(content.Id, out var existing))
 				{
-					var newTypeDesc = new ContentTypeDescriptor();
-					newTypeDesc.SetFromContent(content);
-					_nameToType.Add(typeName, newTypeDesc);
+					// it already exists, don't do anything?
 				}
-
-				ContentTypeDescriptor contentTypeDescriptor = _nameToType[typeName];
-				string assetPath = ContentIO.GetAssetPathByType(contentTypeDescriptor.ContentType, content);
-				var item = new ContentItemDescriptor(content, contentTypeDescriptor, assetPath);
-				AccumulateContentTags(item);
-
-				if (_lastServerManifest != null && _lastServerManifest.TryGetValue(content.Id, out var manifestEntry))
+				else
 				{
-					item.EnrichWithServerData(manifestEntry);
-				}
+					var typeName = ContentTypeReflectionCache.GetTypeNameFromId(content.Id);
+					if (!_nameToType.ContainsKey(typeName))
+					{
+						var newTypeDesc = new ContentTypeDescriptor();
+						newTypeDesc.SetFromContent(content);
+						_nameToType.Add(typeName, newTypeDesc);
+					}
 
-				_idToContent.Add(content.Id, item);
-				_content.Add(item);
-				OnContentAdded?.Invoke(item);
-				item.OnEnriched += ContentItemDescriptor_OnEnriched;
-				item.OnRenamed += ContentItemDescriptor_OnRenamed;
+					ContentTypeDescriptor contentTypeDescriptor = _nameToType[typeName];
+					string assetPath = ContentIO.GetAssetPathByType(contentTypeDescriptor.ContentType, content);
+					var item = new ContentItemDescriptor(content, contentTypeDescriptor, assetPath);
+					AccumulateContentTags(item);
+
+					if (_lastServerManifest != null &&
+					    _lastServerManifest.TryGetValue(content.Id, out var manifestEntry))
+					{
+						item.EnrichWithServerData(manifestEntry);
+					}
+
+					_idToContent.Add(content.Id, item);
+					_content.Add(item);
+					OnContentAdded?.Invoke(item);
+					item.OnEnriched += ContentItemDescriptor_OnEnriched;
+					item.OnRenamed += ContentItemDescriptor_OnRenamed;
+				}
 			}
+
 			RefreshFilteredContents();
 		}
 
@@ -718,12 +765,14 @@ namespace Beamable.Editor.Content.Models
 			var synced = 0;
 			foreach (var content in GetAllContents())
 			{
+				var contentStatus = content.Status;
+
 				valid += content.ValidationStatus == ContentValidationStatus.VALID ? 1 : 0;
 				invalid += content.ValidationStatus == ContentValidationStatus.INVALID ? 1 : 0;
-				modified += content.Status == (ContentModificationStatus.MODIFIED & content.Status) ? 1 : 0;
-				created += content.Status == (ContentModificationStatus.LOCAL_ONLY & content.Status) ? 1 : 0;
-				deleted += content.Status == (ContentModificationStatus.SERVER_ONLY & content.Status) ? 1 : 0;
-				synced += content.Status == (ContentModificationStatus.NOT_MODIFIED & content.Status) ? 1 : 0;
+				modified += contentStatus == (ContentModificationStatus.MODIFIED & contentStatus) ? 1 : 0;
+				created += contentStatus == (ContentModificationStatus.LOCAL_ONLY & contentStatus) ? 1 : 0;
+				deleted += contentStatus == (ContentModificationStatus.SERVER_ONLY & contentStatus) ? 1 : 0;
+				synced += contentStatus == (ContentModificationStatus.NOT_MODIFIED & contentStatus) ? 1 : 0;
 			}
 
 			return new ContentCounts
