@@ -200,8 +200,19 @@ namespace Beamable.Common.Content
 				}
 				else
 				{
-					var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
-					optional.SetValue(value);
+					bool skip = preParsedValue is ArrayDict dict &&
+								dict.TryGetValue(nameof(optional.HasValue), out var hasValueObj) && hasValueObj is bool hasValue
+								&& !hasValue;
+
+					if (!skip)
+					{
+						var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
+						if (!optional.GetOptionalType().IsAssignableFrom(value?.GetType()))
+						{
+							value = Activator.CreateInstance(optional.GetOptionalType());
+						}
+						optional.SetValue(value);
+					}
 				}
 
 				return optional;

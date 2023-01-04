@@ -24,6 +24,7 @@ namespace Beamable.Editor.Content.Components
 		private BreadcrumbsVisualElement _breadcrumbsElement;
 		private ContentTypeViewVisualElement _typeViewElement;
 		private ContentListVisualElement _listElement;
+		private List<ContentItemDescriptor> _itemsToDelete = new List<ContentItemDescriptor>();
 
 		public ExplorerVisualElement() : base(nameof(ExplorerVisualElement)) { }
 
@@ -110,7 +111,13 @@ namespace Beamable.Editor.Content.Components
 
 		private void ContentListVisualElement_OnItemDelete(ContentItemDescriptor contentItemDescriptor)
 		{
-			Model.DeleteItem(contentItemDescriptor);
+			_itemsToDelete.Add(contentItemDescriptor);
+			EditorDebouncer.Debounce("content-deleting-lots-of-items", () =>
+			{
+				// by debouncing the deletes, we can batch many delete calls into one
+				Model.DeleteItems(_itemsToDelete);
+				_itemsToDelete.Clear();
+			});
 		}
 
 		private void ContentTypeViewVisualElement_OnSelectionChanged(IList<TreeViewItem> treeViewItems)

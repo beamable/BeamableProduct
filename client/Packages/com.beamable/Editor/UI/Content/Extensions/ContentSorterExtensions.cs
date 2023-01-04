@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.Content.Helpers;
 using Beamable.Editor.Content.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -17,36 +18,80 @@ namespace Beamable.Editor.Content.Extensions
 			if (contentItems.Count == 0)
 				return contentItems;
 
-			var sortedContentItems = new List<ContentItemDescriptor>();
-
 			switch (contentSortType)
 			{
 				case ContentSortType.IdAZ:
-					sortedContentItems = contentItems.OrderBy(x => x.Name).ToList();
+					contentItems.Sort(new ContentComparer_Alphabetical());
 					break;
 				case ContentSortType.IdZA:
-					sortedContentItems = contentItems.OrderByDescending(x => x.Name).ToList();
+					contentItems.Sort(new ContentComparer_ReverseAlphabetical());
 					break;
 				case ContentSortType.TypeAZ:
-					sortedContentItems = contentItems.OrderBy(x => x.ContentType.TypeName).ToList();
+					contentItems.Sort(new ContentComparer_TypeAlphabetical());
 					break;
 				case ContentSortType.TypeZA:
-					sortedContentItems = contentItems.OrderByDescending(x => x.ContentType.TypeName).ToList();
+					contentItems.Sort(new ContentComparer_ReverseTypeAlphabetical());
 					break;
 				// case ContentSortType.PublishedDate:
 				// 	Debug.LogWarning("NOT IMPLEMENTED");
 				// 	break;
 				case ContentSortType.RecentlyUpdated:
-					sortedContentItems = contentItems.OrderByDescending(x => x.LastChanged).ToList();
+					contentItems.Sort(new ContentComparer_RecentlyUpdated());
 					break;
 				case ContentSortType.Status:
-					sortedContentItems = contentItems.OrderBy(x => x.Status).ToList();
+					contentItems.Sort(new ContentComparer_Status());
 					break;
 			}
 
-			contentItems.Clear();
-			contentItems.AddRange(sortedContentItems);
 			return contentItems;
+		}
+
+		private class ContentComparer_Alphabetical : IComparer<ContentItemDescriptor>
+		{
+			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
+			{
+				return String.CompareOrdinal(go1.Name, go2.Name);
+			}
+		}
+
+		private class ContentComparer_ReverseAlphabetical : IComparer<ContentItemDescriptor>
+		{
+			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
+			{
+				return -String.CompareOrdinal(go1.Name, go2.Name);
+			}
+		}
+
+		private class ContentComparer_TypeAlphabetical : IComparer<ContentItemDescriptor>
+		{
+			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
+			{
+				return String.CompareOrdinal(go1.ContentType.TypeName, go2.ContentType.TypeName);
+			}
+		}
+
+		private class ContentComparer_ReverseTypeAlphabetical : IComparer<ContentItemDescriptor>
+		{
+			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
+			{
+				return -String.CompareOrdinal(go1.ContentType.TypeName, go2.ContentType.TypeName);
+			}
+		}
+
+		private class ContentComparer_RecentlyUpdated : IComparer<ContentItemDescriptor>
+		{
+			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
+			{
+				return -go1.LastChanged.CompareTo(go2.LastChanged);
+			}
+		}
+
+		private class ContentComparer_Status : IComparer<ContentItemDescriptor>
+		{
+			public int Compare(ContentItemDescriptor go1, ContentItemDescriptor go2)
+			{
+				return go1.Status.CompareTo(go2.Status);
+			}
 		}
 	}
 }

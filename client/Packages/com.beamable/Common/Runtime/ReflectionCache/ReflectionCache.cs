@@ -341,24 +341,25 @@ namespace Beamable.Common.Reflection
 				}
 
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
-				foreach (var type in reflectionBasedSystem.BaseTypesOfInterest)
+
+				for (int index = 0; index < reflectionBasedSystem.BaseTypesOfInterest.Count; index++)
 				{
-					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(type, out var mappedSubtypes))
+					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(reflectionBasedSystem.BaseTypesOfInterest[index], out var mappedSubtypes))
 					{
 						// TODO: Add a conditional log line.
 						continue;
 					}
-					reflectionBasedSystem.OnBaseTypeOfInterestFound(type, mappedSubtypes);
+					reflectionBasedSystem.OnBaseTypeOfInterestFound(reflectionBasedSystem.BaseTypesOfInterest[index], mappedSubtypes);
 				}
 
-				foreach (var attributeType in reflectionBasedSystem.AttributesOfInterest)
+				for (int index = 0; index < reflectionBasedSystem.AttributesOfInterest.Count; index++)
 				{
-					if (!_perAttributeCache.AttributeMappings.TryGetValue(attributeType, out var mappedAttributes))
+					if (!_perAttributeCache.AttributeMappings.TryGetValue(reflectionBasedSystem.AttributesOfInterest[index], out var mappedAttributes))
 					{
 						// TODO: Add a conditional log line
 						continue;
 					}
-					reflectionBasedSystem.OnAttributeOfInterestFound(attributeType, mappedAttributes);
+					reflectionBasedSystem.OnAttributeOfInterestFound(reflectionBasedSystem.AttributesOfInterest[index], mappedAttributes);
 				}
 			}
 		}
@@ -383,20 +384,23 @@ namespace Beamable.Common.Reflection
 
 			// Initialize Per-Attribute Cache
 			{
-				// Split attributes between declared over types and declared over members
-				var attrTypesSplit = attributesOfInterest.GroupBy(attrOfInterest => attrOfInterest.TargetsDeclaredMember).ToList();
-
 				// Clear the existing list
 				perAttributeLists.AttributeTypes.Clear();
 				perAttributeLists.MemberAttributeTypes.Clear();
 
-				// Add the correct subset to each list
-				perAttributeLists.AttributeTypes.AddRange(attrTypesSplit.Where(group => !group.Key).SelectMany(group => group));
-				perAttributeLists.MemberAttributeTypes.AddRange(attrTypesSplit.Where(group => group.Key).SelectMany(group => group));
-
-				foreach (var attrType in attributesOfInterest)
+				// Split attributes between declared over types and declared over members
+				for (int i = 0; i < attributesOfInterest.Count; i++)
 				{
-					perAttributeLists.AttributeMappings.Add(attrType, new List<MemberAttribute>());
+					if (!attributesOfInterest[i].TargetsDeclaredMember)
+					{
+						perAttributeLists.AttributeTypes.Add(attributesOfInterest[i]);
+					}
+					else
+					{
+						perAttributeLists.MemberAttributeTypes.Add(attributesOfInterest[i]);
+					}
+
+					perAttributeLists.AttributeMappings.Add(attributesOfInterest[i], new List<MemberAttribute>());
 				}
 			}
 
@@ -404,35 +408,32 @@ namespace Beamable.Common.Reflection
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
 			// Groups by whether or not the assembly is one we care about sweeping.
+
 			var assembliesToSweepStr = "₢" + string.Join("₢", sortedAssembliesToSweep) + "₢";
-			var checkedOrIgnoredAssemblySplit = assemblies
-												.GroupBy(asm => assembliesToSweepStr.Contains("₢" + asm.GetName().Name + "₢"))
-												.ToList();
 
-			// Gets all groups that don't have the IgnoreFromBeamableAssemblySweepAttribute and parse them
+
+			// Check all that don't have the IgnoreFromBeamableAssemblySweepAttribute and parse them
 			{
-				var validAssemblies = checkedOrIgnoredAssemblySplit
-									  .Where(group => group.Key == true)
-									  .SelectMany(group => group.ToList())
-									  .ToList();
-
-				foreach (var assembly in validAssemblies)
+				for (int i = 0; i < assemblies.Length; i++)
 				{
-					var types = assembly.GetTypes();
-
-					foreach (var type in types)
+					if (assembliesToSweepStr.Contains("₢" + assemblies[i].GetName().Name + "₢"))
 					{
-						// Get a list of all attributes of interest that were found on this type.
-						GatherMembersFromAttributesOfInterest(type,
-																		   perAttributeLists.AttributeTypes,
-																		   perAttributeLists.MemberAttributeTypes,
-																		   perAttributeLists.AttributeMappings);
+						var types = assemblies[i].GetTypes();
 
-						// Check for base types of interest
-						if (TryFindBaseTypesOfInterest(type, baseTypesOfInterest, out var foundType))
+						for (int k = 0; k < types.Length; k++)
 						{
-							if (perBaseTypeLists.MappedSubtypes.TryGetValue(foundType, out var baseTypesList))
-								baseTypesList.Add(type);
+							// Get a list of all attributes of interest that were found on this type.
+							GatherMembersFromAttributesOfInterest(types[k],
+																  perAttributeLists.AttributeTypes,
+																  perAttributeLists.MemberAttributeTypes,
+																  perAttributeLists.AttributeMappings);
+
+							// Check for base types of interest
+							if (TryFindBaseTypesOfInterest(types[k], baseTypesOfInterest, out var foundType))
+							{
+								if (perBaseTypeLists.MappedSubtypes.TryGetValue(foundType, out var baseTypesList))
+									baseTypesList.Add(types[k]);
+							}
 						}
 					}
 				}

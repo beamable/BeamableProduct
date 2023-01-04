@@ -67,7 +67,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// The raw body of this request.
 		/// </summary>
-		public string Body { get; }
+		public virtual string Body { get; }
 
 		/// <summary>
 		/// Permissions associated with the caller of this request.
@@ -77,7 +77,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// HTTP headers associated with this request
 		/// </summary>
-		public RequestHeaders Headers { get; }
+		public virtual RequestHeaders Headers { get; }
 
 		public bool HasScopes(IEnumerable<string> scopes) => HasScopes(scopes.ToArray());
 		public bool HasScopes(params string[] scopes)
@@ -92,6 +92,24 @@ namespace Beamable.Server
 			if (!HasScopes("*"))
 				throw new MissingScopesException(Scopes);
 		}
+
+		/// <summary>
+		/// If the request is cancelled or times out, calling this method will trigger an exception.
+		/// If you have a `while` loop in your client-callable, you <b>must</b> include this
+		/// statement in the loop. Otherwise, if your loop never terminates, the service
+		/// instance will suffer severe performance issues.
+		///
+		/// See <see cref="IsCancelled"/> to check if the request has been cancelled.
+		/// </summary>
+		public virtual void ThrowIfCancelled()
+		{
+			// no-op.
+		}
+
+		/// <summary>
+		/// If the request is cancelled or times out, this will return true.
+		/// </summary>
+		public virtual bool IsCancelled { get; }
 
 		private void CheckEmptyUser()
 		{
@@ -126,7 +144,10 @@ namespace Beamable.Server
 			Body = body;
 			Scopes = scopes ?? new HashSet<string>();
 			Scopes.RemoveWhere(string.IsNullOrEmpty);
-			Headers = new RequestHeaders(headers);
+			if (headers != null)
+			{
+				Headers = new RequestHeaders(headers);
+			}
 		}
 
 		public RequestContext(string cid, string pid)
@@ -140,7 +161,6 @@ namespace Beamable.Server
 			Status = 0;
 			Body = "";
 			Scopes = new HashSet<string>();
-			Headers = new RequestHeaders();
 		}
 
 	}
