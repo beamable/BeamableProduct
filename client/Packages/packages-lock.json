@@ -10,7 +10,8 @@
         "com.unity.textmeshpro": "1.4.1",
         "com.unity.editorcoroutines": "1.0.0",
         "com.unity.test-framework": "1.1.19",
-        "com.unity.test-framework.performance": "2.8.1-preview"
+        "com.unity.test-framework.performance": "2.8.1-preview",
+        "com.unity.quicksearch": "2.0.2"
       }
     },
     "com.beamable.server": {
