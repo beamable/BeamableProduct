@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Internal dependency-injection system uses `IDependencyBuilder` and `IDependencyProvider`. 
+- Websocket connection recovery log level changed from Error to Debug.
 
 ### Fixed
 - Custom `[InitializeService]` and `[ConfigureServices]` callbacks no longer run for each connection.
