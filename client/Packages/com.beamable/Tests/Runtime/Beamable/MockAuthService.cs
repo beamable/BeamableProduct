@@ -120,6 +120,32 @@ namespace Beamable.Tests.Runtime.Api
 			throw new NotImplementedException();
 		}
 
+		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
+		                                                              string providerService,
+		                                                              string providerNamespace = "",
+		                                                              ChallengeSolution challengeSolution = null)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService, string userId, string providerNamespace = "")
+		{
+			throw new NotImplementedException();
+		}
+
+		public Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity(string externalToken,
+		                                                                         string providerService,
+		                                                                         string providerNamespace = "",
+		                                                                         ChallengeSolution challengeSolution = null)
+		{
+			throw new NotImplementedException();
+		}
+
+		public ChallengeToken ParseChallengeToken(string token)
+		{
+			throw new NotImplementedException();
+		}
+
 		public Promise<User> SetLanguage(SystemLanguage language)
 		{
 			throw new NotImplementedException();
