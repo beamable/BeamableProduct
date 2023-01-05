@@ -89,6 +89,7 @@ namespace microserviceTests.microservice
       public string CustomerID { get; set; } = "testcid";
       public string ProjectName { get; set; } = "testpid";
       public IDependencyProviderScope ServiceScope { get; set; }
+      public int HealthPort => 6565;
       public string Host { get; set; } = "testhost";
       public string Secret { get; set; } = "testsecret";
       public string NamePrefix { get; set; } = "";

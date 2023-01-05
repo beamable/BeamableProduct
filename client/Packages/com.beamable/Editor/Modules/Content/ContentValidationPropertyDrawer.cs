@@ -92,7 +92,7 @@ namespace Beamable.Editor.Content
 			}
 
 			var ctx = BeamEditorContext.Default.ContentIO.GetValidationContext();
-			
+
 			var parentValue = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
 			var value = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
 			//
@@ -118,10 +118,10 @@ namespace Beamable.Editor.Content
 			//
 			//         }
 
-			
+
 			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>();
 			var contentObj = property.serializedObject.targetObject as ContentObject;
-			
+
 			var isArray = TryGetArrayIndex(property, out var arrayIndex);
 			var exceptions = new List<ContentException>();
 			if (ctx.Initialized)

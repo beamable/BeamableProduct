@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -5,40 +6,41 @@ using System.IO;
 
 namespace Beamable.Server
 {
-   public interface IMicroserviceArgs : IRealmInfo
-   {
-	   public IDependencyProviderScope ServiceScope { get; }
-	   
-      string Host { get; }
-      string Secret { get; }
-      string NamePrefix { get; }
-      string SdkVersionBaseBuild { get; }
-      string SdkVersionExecution { get; }
-      bool WatchToken { get; }
-      public bool DisableCustomInitializationHooks { get; }
-      public string LogLevel { get; }
-      public bool DisableLogTruncate { get; }
-      public int LogTruncateLimit { get; }
-      public int LogMaxCollectionSize { get; }
-      public int LogMaxDepth { get; }
-      public int LogDestructureMaxLength { get; }
-      public bool RateLimitWebsocket { get; }
-      public int RateLimitWebsocketTokens { get; }
-      public int RateLimitWebsocketPeriodSeconds { get; }
-      public int RateLimitWebsocketTokensPerPeriod { get; }
-      public int RateLimitWebsocketMaxQueueSize { get; }
-      public double RateLimitCPUMultiplierLow { get; }
-      public double RateLimitCPUMultiplierHigh { get; }
-      public int RateLimitCPUOffset { get; }
-      public int ReceiveChunkSize { get; }
-      public int SendChunkSize { get; }
-      public int BeamInstanceCount { get; }
-      public int RequestCancellationTimeoutSeconds { get; }
-   }
+	public interface IMicroserviceArgs : IRealmInfo
+	{
+		public IDependencyProviderScope ServiceScope { get; }
+		public int HealthPort { get; }
+		string Host { get; }
+		string Secret { get; }
+		string NamePrefix { get; }
+		string SdkVersionBaseBuild { get; }
+		string SdkVersionExecution { get; }
+		bool WatchToken { get; }
+		public bool DisableCustomInitializationHooks { get; }
+		public string LogLevel { get; }
+		public bool DisableLogTruncate { get; }
+		public int LogTruncateLimit { get; }
+		public int LogMaxCollectionSize { get; }
+		public int LogMaxDepth { get; }
+		public int LogDestructureMaxLength { get; }
+		public bool RateLimitWebsocket { get; }
+		public int RateLimitWebsocketTokens { get; }
+		public int RateLimitWebsocketPeriodSeconds { get; }
+		public int RateLimitWebsocketTokensPerPeriod { get; }
+		public int RateLimitWebsocketMaxQueueSize { get; }
+		public double RateLimitCPUMultiplierLow { get; }
+		public double RateLimitCPUMultiplierHigh { get; }
+		public int RateLimitCPUOffset { get; }
+		public int ReceiveChunkSize { get; }
+		public int SendChunkSize { get; }
+		public int BeamInstanceCount { get; }
+		public int RequestCancellationTimeoutSeconds { get; }
+	}
 
-   public class MicroserviceArgs : IMicroserviceArgs
+	public class MicroserviceArgs : IMicroserviceArgs
    {
 	   public IDependencyProviderScope ServiceScope { get; set; }
+	   public int HealthPort { get; set; }
 	   public string CustomerID { get; set; }
 	   public string ProjectName { get; set; }
 	   public string Secret { get; set; }
@@ -101,7 +103,8 @@ namespace Beamable.Server
             RateLimitCPUMultiplierHigh = args.RateLimitCPUMultiplierHigh,
             RateLimitCPUOffset = args.RateLimitCPUOffset,
             BeamInstanceCount = args.BeamInstanceCount,
-            RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds
+            RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
+            HealthPort = args.HealthPort
          };
          
          configurator?.Invoke(next);
@@ -114,6 +117,16 @@ namespace Beamable.Server
       public string CustomerID => Environment.GetEnvironmentVariable("CID");
       public string ProjectName => Environment.GetEnvironmentVariable("PID");
       public IDependencyProviderScope ServiceScope { get; }
+      public int HealthPort {
+	      get
+	      {
+		      if (!int.TryParse(Environment.GetEnvironmentVariable("HEALTH_PORT"), out var val))
+		      {
+			      val = Constants.Features.Services.HEALTH_PORT;
+		      }
+		      return val;
+	      }
+      }
       public string Host => Environment.GetEnvironmentVariable("HOST");
       public string Secret => Environment.GetEnvironmentVariable("SECRET");
       public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";

@@ -134,11 +134,11 @@ namespace Beamable.Editor.Content.Models
 			ContentIO.DeleteBatch(contents);
 
 		}
-		
+
 		[Obsolete("Do not use. Use " + nameof(DeleteItems) + " instead.")]
 		public void DeleteItem(ContentItemDescriptor contentItemDescriptor)
 		{
-			DeleteItems(new List<ContentItemDescriptor>(){contentItemDescriptor});
+			DeleteItems(new List<ContentItemDescriptor>() { contentItemDescriptor });
 		}
 
 		public void DeleteLocalOnlyItems()
@@ -628,7 +628,7 @@ namespace Beamable.Editor.Content.Models
 				{
 					continue;
 				}
-				
+
 				if (existing.ServerStatus == HostStatus.AVAILABLE)
 				{
 					// don't delete the whole record, just remove the local aspect...
@@ -640,7 +640,7 @@ namespace Beamable.Editor.Content.Models
 					_idToContent.Remove(entry.contentId);
 				}
 			}
-			
+
 			RebuildTagSet();
 
 			foreach (var entry in contents)
@@ -712,7 +712,7 @@ namespace Beamable.Editor.Content.Models
 					AccumulateContentTags(item);
 
 					if (_lastServerManifest != null &&
-					    _lastServerManifest.TryGetValue(content.Id, out var manifestEntry))
+						_lastServerManifest.TryGetValue(content.Id, out var manifestEntry))
 					{
 						item.EnrichWithServerData(manifestEntry);
 					}
