@@ -17,7 +17,7 @@ public class AssumeUserTests : CommonTest
 	{
 
 		TestSocket testSocket = null;
-		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+		var ms = new TestSetup(new TestSocketProvider(socket =>
 		{
 			testSocket = socket;
 			socket.AddStandardMessageHandlers()
@@ -53,7 +53,7 @@ public class AssumeUserTests : CommonTest
 	{
 
 		TestSocket testSocket = null;
-		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+		var ms = new TestSetup(new TestSocketProvider(socket =>
 		{
 			testSocket = socket;
 			socket.AddStandardMessageHandlers()
@@ -88,7 +88,7 @@ public class AssumeUserTests : CommonTest
 	{
 
 		TestSocket testSocket = null;
-		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+		var ms = new TestSetup(new TestSocketProvider(socket =>
 		{
 			testSocket = socket;
 			socket.AddStandardMessageHandlers()

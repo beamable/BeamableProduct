@@ -15,11 +15,11 @@ namespace Beamable.Server {
 		private readonly BeamableMicroService _beamableService;
 		private WebServer _server;
 
-		public ContainerDiagnosticService(BeamableMicroService service)
+		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service)
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
 			_beamableService = service;
-			_server = new WebServer(HEALTH_PORT)
+			_server = new WebServer(args.HealthPort)
 				.WithWebApi("/", m => m.WithController(() => new SampleController(service)));
 		}
 

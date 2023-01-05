@@ -362,7 +362,7 @@ namespace Beamable.Server
 
             catch (Exception ex)
             {
-	            Log.Error($"Websocket error=[{ex.GetType().FullName}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+	            Log.Debug($"Websocket error=[{ex.GetType().FullName}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 	            CallOnDisconnected(false);
 
             }

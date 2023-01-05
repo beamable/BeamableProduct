@@ -28,6 +28,9 @@ namespace Beamable.Content
 #if UNITY_EDITOR
         [HideInInspector]
         public string EditorManifestID = DEFAULT_MANIFEST_ID;
+
+        [Tooltip("In editor, when downloading content, this controls the batch size of the download. By default, it is 100.")]
+        public OptionalInt EditorDownloadBatchSize;
 #endif
 
 		[Tooltip("When enabled, any content requests for the editor manifest will be resolved using your on-disk Scriptable Object content items, and any content from another manifest will be fetched from the remote realm. When disabled, all content is fetched from the remote realm.")]

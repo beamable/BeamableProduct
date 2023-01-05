@@ -173,20 +173,16 @@ namespace microserviceTests.microservice
 		{
 
 			var contentResolver = new TestContentResolver(async uri => "{}");
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				socket.WithName("Test Socket");
 				socket.AddStandardMessageHandlers();
 			}), contentResolver);
 
 			await ms.Start<SingletonCache_Success>(new TestArgs());
-			var registeredService =
-				ms.ServiceCollection.FirstOrDefault(s =>
-					s.ServiceType == typeof(SingletonCache_Success.ServiceCacheData));
 			Assert.IsTrue(ms.HasInitialized);
-			Assert.IsNotNull(registeredService);
 
-			var provider = ms.ServiceCollection.BuildServiceProvider();
+			var provider = ms.Service.Provider;
 			var service =
 				(SingletonCache_Success.ServiceCacheData)provider.GetService(
 					typeof(SingletonCache_Success.ServiceCacheData));
@@ -200,7 +196,7 @@ namespace microserviceTests.microservice
 		public async Task Test_SingletonCache_CacheGuard()
 		{
 			var contentResolver = new TestContentResolver(async uri => { return "{}"; });
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				socket.WithName("Test Socket");
 				socket.AddStandardMessageHandlers();
@@ -228,19 +224,16 @@ namespace microserviceTests.microservice
 		{
 
 			var contentResolver = new TestContentResolver(async uri => { return "{}"; });
-			var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+			var ms = new TestSetup(new TestSocketProvider(socket =>
 			{
 				socket.WithName("Test Socket");
 				socket.AddStandardMessageHandlers();
 			}), contentResolver);
 
 			await ms.Start<ExecutionOrder>(new TestArgs());
-			var registeredService =
-				ms.ServiceCollection.FirstOrDefault(s => s.ServiceType == typeof(ExecutionOrder.ExecutionCounter));
 			Assert.IsTrue(ms.HasInitialized);
-			Assert.IsNotNull(registeredService);
 
-			var provider = ms.ServiceCollection.BuildServiceProvider();
+			var provider = ms.Service.Provider;
 			var service = (ExecutionOrder.ExecutionCounter)provider.GetService(typeof(ExecutionOrder.ExecutionCounter));
 
 
