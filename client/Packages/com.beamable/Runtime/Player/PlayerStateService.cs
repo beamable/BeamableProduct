@@ -10,10 +10,12 @@ namespace Beamable.Player
 	public class OfflineCacheStorageLayer : IStorageLayer
 	{
 		private readonly IBeamableFilesystemAccessor _fileSystem;
+		private readonly IBeamableRequester _requester;
 
-		public OfflineCacheStorageLayer(IBeamableFilesystemAccessor fileSystem)
+		public OfflineCacheStorageLayer(IBeamableFilesystemAccessor fileSystem, IBeamableRequester requester)
 		{
 			_fileSystem = fileSystem;
+			_requester = requester;
 		}
 		
 		public void Save<T>(string key, T content)
@@ -33,7 +35,7 @@ namespace Beamable.Player
 
 		private string GetFileName(string key)
 		{
-			var path = Path.Combine(_fileSystem.GetPersistentDataPathWithoutTrailingSlash(), "beamable", "offlineStorage");
+			var path = Path.Combine(_fileSystem.GetPersistentDataPathWithoutTrailingSlash(), "cid-" + _requester.Cid, "offlineStorage", _requester.Pid);
 			Directory.CreateDirectory(path);
 			var fileName = Path.Combine(path, key) + ".json";
 			return fileName;

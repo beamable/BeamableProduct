@@ -57,7 +57,6 @@ namespace Beamable.Player
 		private IConnectivityService _connectivityService;
 
 		public PlayerInventory(
-			InventoryService inventoryApi,
 			IPlatformService platformService,
 			INotificationService notificationService,
 			CoroutineService coroutineService,
@@ -69,7 +68,7 @@ namespace Beamable.Player
 			OfflineCache cache)
 		{
 			_connectivityService = connectivityService;
-			_inventoryApi = inventoryApi;
+			_inventoryApi = provider.GetService<CachelessInventoryService>();
 			_platformService = platformService;
 			_notificationService = notificationService;
 			_coroutineService = coroutineService;
@@ -82,6 +81,19 @@ namespace Beamable.Player
 
 			// var updateRoutine = _coroutineService.StartNew("playerInvOfflineLoop", Update());
 			_consumer = _sdkEventService.Register(nameof(PlayerInventory), HandleEvent);
+		}
+		
+		
+		public void OnAfterLoadState()
+		{
+			// need to rehydrate the items list :/ 
+			foreach (var item in _items)
+			{
+				item.Value.OnAfterDeserialized(item.Key,_provider);
+			}
+			
+			// now we need to try applying any old state we had
+			var _ = _consumer.RunAfterReconnection(new SdkEvent(nameof(PlayerInventory), "commit"));
 		}
 
 		/// <summary>
@@ -105,7 +117,7 @@ namespace Beamable.Player
 
 			if (_items.TryGetValue(itemRef, out var group)) return group;
 			
-			var itemGroup = new PlayerItemGroup(itemRef, _platformService, _inventoryApi, _provider);
+			var itemGroup = new PlayerItemGroup(itemRef, _platformService, _provider);
 			_items.Add(itemRef, itemGroup);
 			_saveHandle.Save();
 			return itemGroup;
@@ -417,16 +429,5 @@ namespace Beamable.Player
 			
 		}
 
-		public void OnAfterLoadState()
-		{
-			// need to rehydrate the items list :/ 
-			foreach (var item in _items)
-			{
-				item.Value.OnAfterDeserialized(item.Key,this, _provider);
-			}
-			
-			// now we need to try applying any old state we had
-			var _ = _consumer.RunAfterReconnection(new SdkEvent(nameof(PlayerInventory), "commit"));
-		}
 	}
 }

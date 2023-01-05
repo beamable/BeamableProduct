@@ -163,7 +163,16 @@ namespace Beamable.Player
 		/// </summary>
 		public string RootScope => _rootRef.Id;
 
-		public PlayerItemGroup(ItemRef rootRef, IPlatformService platformService, InventoryService inventoryService, IDependencyProvider provider)
+		[Obsolete("The " + nameof(InventoryService) + " parameter is no longer accepted.")]
+		public PlayerItemGroup(ItemRef rootRef,
+		                       IPlatformService platformService,
+		                       InventoryService _,
+		                       IDependencyProvider provider) : this(rootRef, platformService, provider)
+		{
+			// nothing to do... This just exists for backwards compat.
+		}
+		
+		public PlayerItemGroup(ItemRef rootRef, IPlatformService platformService, IDependencyProvider provider)
 		{
 			/*
 			 * An issue is that if there are mutliple item groups in a parent/child type of relationship,
@@ -175,7 +184,7 @@ namespace Beamable.Player
 			 */
 			_rootRef = rootRef;
 			_platformService = platformService;
-			_inventoryService = inventoryService;
+			_inventoryService = provider.GetService<CachelessInventoryService>();
 			_provider = provider;
 			_platformService.OnReady.Then(_ =>
 			{
@@ -183,12 +192,12 @@ namespace Beamable.Player
 			});
 		}
 
-		internal void OnAfterDeserialized(ItemRef rootRef, PlayerInventory inventory, IDependencyProvider provider)
+		internal void OnAfterDeserialized(ItemRef rootRef, IDependencyProvider provider)
 		{
 			_rootRef = rootRef;
 			_provider = provider;
 			_platformService = provider.GetService<IPlatformService>();
-			_inventoryService = provider.GetService<InventoryService>();
+			_inventoryService = provider.GetService<CachelessInventoryService>();
 			_platformService.OnReady.Then(_ =>
 			{
 				_inventoryService.Subscribe(rootRef, OnItemsUpdated);

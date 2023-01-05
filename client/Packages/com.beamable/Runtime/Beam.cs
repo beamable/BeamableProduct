@@ -145,6 +145,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());
+			DependencyBuilder.AddScoped<CachelessInventoryService>();
 			DependencyBuilder.AddSingleton<IAnnouncementsApi, AnnouncementsService>();
 			DependencyBuilder.AddSingleton<ISessionService, SessionService>();
 			DependencyBuilder.AddSingleton<CloudSavingService>();
