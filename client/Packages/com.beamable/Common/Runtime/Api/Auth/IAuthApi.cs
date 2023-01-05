@@ -82,9 +82,9 @@ namespace Beamable.Common.Api.Auth
 		/// </param>
 		/// <returns>A <see cref="Promise{TokenResponse}"/> that results in the <see cref="TokenResponse"/> for the requested <see cref="User"/>'s email/password</returns>
 		Promise<TokenResponse> Login(string username,
-		                             string password,
-		                             bool mergeGamerTagToAccount = true,
-		                             bool customerScoped = false);
+									 string password,
+									 bool mergeGamerTagToAccount = true,
+									 bool customerScoped = false);
 
 		/// <summary>
 		/// Use a token issued by a third party to retrieve a <see cref="TokenResponse"/>. The resulting token response
@@ -101,8 +101,8 @@ namespace Beamable.Common.Api.Auth
 		/// </param>
 		/// <returns></returns>
 		Promise<TokenResponse> LoginThirdParty(AuthThirdParty thirdParty,
-		                                       string thirdPartyToken,
-		                                       bool includeAuthHeader = true);
+											   string thirdPartyToken,
+											   bool includeAuthHeader = true);
 
 		/// <summary>
 		/// A <see cref="User"/> can associate an email and password credential to their account.
@@ -191,10 +191,10 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="alias"></param>
 		/// <returns></returns>
 		Promise<CustomerRegistrationResponse> RegisterCustomer(string email,
-		                                                       string password,
-		                                                       string projectName,
-		                                                       string customerName,
-		                                                       string alias);
+															   string password,
+															   string projectName,
+															   string customerName,
+															   string alias);
 
 		/// <summary>
 		/// If a <see cref="User"/> has associated third party credentials to their account by using the <see cref="RegisterThirdPartyCredentials"/> method,
@@ -228,9 +228,9 @@ namespace Beamable.Common.Api.Auth
 		/// from server and signed/solved solution for that challenge.</param>
 		/// <returns><see cref="AttachExternalIdentityResponse"/></returns>
 		Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
-		                                                       string providerService,
-		                                                       string providerNamespace = "",
-		                                                       ChallengeSolution challengeSolution = null);
+															   string providerService,
+															   string providerNamespace = "",
+															   ChallengeSolution challengeSolution = null);
 
 		/// <summary>
 		/// Method for unregistering previously registered external identity.
@@ -243,8 +243,8 @@ namespace Beamable.Common.Api.Auth
 		/// ClientCallable attribute with pathnameOverrider set to "{providerNamespace}/authenticate"</param>
 		/// <returns><see cref="DetachExternalIdentityResponse"/></returns>
 		Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService,
-		                                                       string userId,
-		                                                       string providerNamespace = "");
+															   string userId,
+															   string providerNamespace = "");
 
 		/// <summary>
 		/// Method for authorizing previously attached identity.
@@ -259,9 +259,9 @@ namespace Beamable.Common.Api.Auth
 		/// from server and signed/solved solution for that challenge.</param>
 		/// <returns><see cref="ExternalAuthenticationResponse"/></returns>
 		Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity(string externalToken,
-		                                                                  string providerService,
-		                                                                  string providerNamespace = "",
-		                                                                  ChallengeSolution challengeSolution = null);
+																		  string providerService,
+																		  string providerNamespace = "",
+																		  ChallengeSolution challengeSolution = null);
 
 		/// <summary>
 		/// Method to extract specific part of a challenge token received from a server. Challenge token is a three-part,

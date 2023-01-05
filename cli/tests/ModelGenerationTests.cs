@@ -145,7 +145,7 @@ namespace Test
 	[Test]
 	public void EnumField()
 	{
-		
+
 		var type = UnityHelper.GenerateModelDecl("Tuna", new OpenApiSchema
 		{
 			Type = "object",
@@ -608,8 +608,8 @@ namespace Test
 }");
 
 	}
-	
-	
+
+
 	[Test]
 	public void WithInternalObject()
 	{

@@ -121,9 +121,9 @@ namespace Beamable.Tests.Runtime.Api
 		}
 
 		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
-		                                                              string providerService,
-		                                                              string providerNamespace = "",
-		                                                              ChallengeSolution challengeSolution = null)
+																	  string providerService,
+																	  string providerNamespace = "",
+																	  ChallengeSolution challengeSolution = null)
 		{
 			throw new NotImplementedException();
 		}
@@ -134,9 +134,9 @@ namespace Beamable.Tests.Runtime.Api
 		}
 
 		public Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity(string externalToken,
-		                                                                         string providerService,
-		                                                                         string providerNamespace = "",
-		                                                                         ChallengeSolution challengeSolution = null)
+																				 string providerService,
+																				 string providerNamespace = "",
+																				 ChallengeSolution challengeSolution = null)
 		{
 			throw new NotImplementedException();
 		}
