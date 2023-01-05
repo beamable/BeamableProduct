@@ -35,11 +35,9 @@
         <beamable:SearchBarVisualElement name="searchBar"/>
         <engine:Button class="unboundedButton" name="typeButton">
             <engine:Image name="typeIcon"/>
-            <engine:Label text="Layout" class="buttonText"/>
         </engine:Button>
         <engine:Button class="unboundedButton" name="CategoryButton">
             <engine:Image name="categoryIcon"/>
-         <engine:Label text="Tag" class="buttonText"/>
         </engine:Button>
         <engine:Button class="unboundedButton" name="accountButton">
             <engine:Image name="accountIcon"/>

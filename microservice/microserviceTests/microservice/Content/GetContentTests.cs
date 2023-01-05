@@ -10,6 +10,7 @@ using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
 using Beamable.Server.Content;
 using NUnit.Framework;
+using System.Diagnostics;
 using System.Threading;
 
 namespace microserviceTests.microservice.Content
@@ -63,7 +64,7 @@ namespace microserviceTests.microservice.Content
             // don't mock anything...
          });
 
-         var socket = socketProvider.Create("test");
+         var socket = socketProvider.Create("test", args);
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
          (_, socketCtx.Daemon) =
@@ -75,7 +76,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc, data);
+            socketCtx.HandleMessage(rc);
          });
 
 
@@ -135,7 +136,7 @@ namespace microserviceTests.microservice.Content
             // don't mock anything...
          });
 
-         var socket = socketProvider.Create("test");
+         var socket = socketProvider.Create("test", args);
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
          (_, socketCtx.Daemon) =
@@ -147,7 +148,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc, data);
+            socketCtx.HandleMessage(rc);
          });
 
 
@@ -217,7 +218,7 @@ namespace microserviceTests.microservice.Content
             // don't mock anything...
          });
 
-         var socket = socketProvider.Create("test");
+         var socket = socketProvider.Create("test", args);
          var socketCtx = new SocketRequesterContext(() => Promise<IConnection>.Successful(socket));
          var requester = new MicroserviceRequester(args, reqCtx, socketCtx, false);
          (_, socketCtx.Daemon) =
@@ -229,7 +230,7 @@ namespace microserviceTests.microservice.Content
          testSocket.OnMessage((_, data, id) =>
          {
             data.TryBuildRequestContext(args, out var rc);
-            socketCtx.HandleMessage(rc, data);
+            socketCtx.HandleMessage(rc);
          });
 
 
@@ -253,6 +254,71 @@ namespace microserviceTests.microservice.Content
          Assert.AreEqual(1, fetchCounter);
 
          Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
+      [Test]
+      public async Task ContentFetchTimeTest()
+      {
+	      Stopwatch watch = Stopwatch.StartNew();
+	      
+	      var args = new TestArgs();
+	      var contentResolver = new TestContentResolver(async (uri) =>
+	      {
+		      var content = new ItemContent();
+		      content.SetContentName(uri);
+
+		      var serializer = new MicroserviceContentSerializer();
+		      var json = serializer.Serialize(content);
+		      return json;
+	      });
+	      
+	      TestSocket testSocket = null;
+	      var socketProvider = new TestSocketProvider(socket =>
+	      {
+		      testSocket = socket;
+
+		      int contentCount = 5000;
+		      ContentReference[] references = new ContentReference[contentCount];
+		      for (int i = 0; i < references.Length; i++)
+		      {
+			      string id = $"items.test{i}";
+			      references[i] = new ContentReference {id = id, version = "123", uri = id, visibility = "public"};
+		      }
+
+		      socket.AddStandardMessageHandlers().AddInitialContentMessageHandler(-5, references).AddMessageHandler(
+			      MessageMatcher
+				      .WithReqId(1)
+				      .WithStatus(200),
+			      MessageResponder.NoResponse(),
+			      MessageFrequency.OnlyOnce()
+		      ).AddMessageHandler(
+			      MessageMatcher
+				      .WithReqId(2)
+				      .WithStatus(200),
+			      MessageResponder.NoResponse(),
+			      MessageFrequency.OnlyOnce()
+		      );
+		      socket.SetAuthentication(true);
+	      });
+	      
+	      var ms = new TestSetup(socketProvider, contentResolver);
+
+	      await ms.Start<SimpleMicroservice>(args);
+	      Assert.IsTrue(ms.HasInitialized);
+	      
+	      watch.Restart();
+	      testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", nameof(SimpleMicroservice.GetContents), 1, 1));
+	      watch.Stop();
+	      Console.WriteLine($"First call executed in {watch.ElapsedMilliseconds}ms");
+	      
+	      watch.Restart();
+	      testSocket.SendToClient(ClientRequest.ClientCallable("micro_simple", nameof(SimpleMicroservice.GetContents), 2, 1));
+	      watch.Stop();
+	      Console.WriteLine($"Second call executed in {watch.ElapsedMilliseconds}ms");
+
+	      await ms.OnShutdown(this, null);
+	      
+	      Assert.IsTrue(testSocket.AllMocksCalled());
       }
    }
 }

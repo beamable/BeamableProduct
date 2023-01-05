@@ -41,18 +41,21 @@ namespace Beamable.Editor.Content
 
 			var newlineCount = 0;
 
-			foreach (var attribute in attributes)
+			if (ctx.Initialized)
 			{
-				try
+				foreach (var attribute in attributes)
 				{
-					var value = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
-					var wrapper = new ValidationFieldWrapper(fieldInfo, value);
-					attribute.Validate(ContentValidationArgs.Create(wrapper, contentObj, ctx, arrayIndex, isArray));
-				}
-				catch (ContentException ex)
-				{
-					newlineCount += 1 + ex.FriendlyMessage.Count(c => c == '\n');
-					exceptions.Add(ex);
+					try
+					{
+						var value = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
+						var wrapper = new ValidationFieldWrapper(fieldInfo, value);
+						attribute.Validate(ContentValidationArgs.Create(wrapper, contentObj, ctx, arrayIndex, isArray));
+					}
+					catch (ContentException ex)
+					{
+						newlineCount += 1 + ex.FriendlyMessage.Count(c => c == '\n');
+						exceptions.Add(ex);
+					}
 				}
 			}
 
@@ -88,6 +91,8 @@ namespace Beamable.Editor.Content
 				return; // don't support multiple edit.
 			}
 
+			var ctx = BeamEditorContext.Default.ContentIO.GetValidationContext();
+
 			var parentValue = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
 			var value = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
 			//
@@ -113,24 +118,25 @@ namespace Beamable.Editor.Content
 			//
 			//         }
 
-			var ctx = BeamEditorContext.Default.ContentIO.GetValidationContext();
 
 			var attributes = fieldInfo.GetCustomAttributes<ValidationAttribute>();
 			var contentObj = property.serializedObject.targetObject as ContentObject;
 
-
 			var isArray = TryGetArrayIndex(property, out var arrayIndex);
 			var exceptions = new List<ContentException>();
-			foreach (var attribute in attributes)
+			if (ctx.Initialized)
 			{
-				try
+				foreach (var attribute in attributes)
 				{
-					var wrapper = new ValidationFieldWrapper(fieldInfo, parentValue);
-					attribute.Validate(ContentValidationArgs.Create(wrapper, contentObj, ctx, arrayIndex, isArray));
-				}
-				catch (ContentException ex)
-				{
-					exceptions.Add(ex);
+					try
+					{
+						var wrapper = new ValidationFieldWrapper(fieldInfo, parentValue);
+						attribute.Validate(ContentValidationArgs.Create(wrapper, contentObj, ctx, arrayIndex, isArray));
+					}
+					catch (ContentException ex)
+					{
+						exceptions.Add(ex);
+					}
 				}
 			}
 

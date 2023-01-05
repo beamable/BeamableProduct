@@ -24,7 +24,7 @@ public class RequestContextTests : CommonTest
 		var engineVersion = "engine";
 		var clientType = "client";
 
-		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+		var ms = new TestSetup(new TestSocketProvider(socket =>
 		{
 			testSocket = socket;
 			socket.AddStandardMessageHandlers()
@@ -61,7 +61,7 @@ public class RequestContextTests : CommonTest
 		var gameVersion = "game";
 		var engineVersion = "engine";
 
-		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+		var ms = new TestSetup(new TestSocketProvider(socket =>
 		{
 			testSocket = socket;
 			socket.AddStandardMessageHandlers()
@@ -94,7 +94,7 @@ public class RequestContextTests : CommonTest
 	public async Task GetNoHeaders()
 	{
 		TestSocket testSocket = null;
-		var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+		var ms = new TestSetup(new TestSocketProvider(socket =>
 		{
 			testSocket = socket;
 			socket.AddStandardMessageHandlers()
