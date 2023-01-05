@@ -52,9 +52,9 @@ namespace Beamable.Common.Content.Validation
 		bool ContentExists(string id);
 
 		IEnumerable<string> ContentIds { get; }
-		
+
 		long Count { get; }
-		
+
 		bool Initialized { get; }
 
 		string GetTypeName(Type type);

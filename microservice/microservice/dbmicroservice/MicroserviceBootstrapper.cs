@@ -353,18 +353,19 @@ namespace Beamable.Server
 	            var isFirstInstance = i == 0;
 	            var beamableService = new BeamableMicroService();
 				Instances.Add(beamableService);
-	            if (i == 0)
+				
+				var instanceArgs = args.Copy(conf =>
+				{
+					// only the first instance needs to run, if anything should run at all.
+					conf.DisableCustomInitializationHooks |= !isFirstInstance;
+				});
+				
+	            if (isFirstInstance)
 	            {
-		            var localDebug = new ContainerDiagnosticService(beamableService);
+		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService);
 		            var runningDebugTask = localDebug.Run();
 	            }
-
-	            var instanceArgs = args.Copy(conf =>
-	            {
-		            // only the first instance needs to run
-		            conf.DisableCustomInitializationHooks = !isFirstInstance;
-	            });
-
+	            
 	            if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
 	            {
 		            Log.Fatal(
