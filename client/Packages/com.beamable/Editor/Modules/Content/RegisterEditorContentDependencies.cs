@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
 using Beamable.Content;
 using Beamable.Coroutines;
@@ -26,6 +27,9 @@ namespace Beamable.Editor.Content
 				builder.ReplaceSingleton<IManifestResolver, LocalManifestResolver>();
 				builder.ReplaceSingleton<IContentCacheFactory, LocalContentCacheFactory>();
 				builder.AddSingleton<DefaultContentCacheFactory>();
+				builder.AddSingleton<IValidationContext>(p => p.GetService<ValidationContext>());
+				builder.AddSingleton<ValidationContext>();
+				builder.AddSingleton<ContentDatabase>();
 
 			}
 		}
