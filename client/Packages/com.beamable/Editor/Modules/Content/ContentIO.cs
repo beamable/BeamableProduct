@@ -536,6 +536,8 @@ namespace Beamable.Editor.Content
 			foreach (var entry in ContentDatabase.GetAllContent())
 			{
 				var content = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
+				if (!content || content == null) continue;
+
 				content.SetIdAndVersion(entry.contentId, "");
 
 				var manifestEntry = new LocalContentManifestEntry
