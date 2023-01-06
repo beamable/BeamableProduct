@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 
@@ -15,7 +16,8 @@ namespace Beamable.Common
 			public List<T> values;
 		}
 		
-		class Node
+		[DebuggerDisplay("{path} (children=[{children.Count}]) (values=[{values.Count}])")]
+		public class Node
 		{
 			public string path;
 			public string part;
@@ -115,8 +117,20 @@ namespace Beamable.Common
 		{
 			_pathCache.Remove(key);
 		}
-		
-		private IEnumerable<Node> Traverse(string key)
+
+		public IEnumerable<Node> TraverseChildren(string key)
+		{
+			if (_pathToNode.TryGetValue(key, out var node))
+			{
+				yield return node;
+				foreach (var subNode in node.TraverseChildren())
+				{
+					yield return subNode;
+				}
+			}
+		}
+
+		public IEnumerable<Node> Traverse(string key)
 		{
 			var parts = key.Split('.');
 			var first = parts[0];

@@ -44,6 +44,7 @@ namespace Beamable.Player
 		private readonly IInventoryApi _openApi;
 		private readonly IContentApi _contentApi;
 		private readonly IUserContext _userContext;
+		private readonly ContentTypeReflectionCache _reflectionCache;
 		private readonly IPlatformService _platformService;
 		private readonly INotificationService _notificationService;
 		private readonly CoroutineService _coroutineService;
@@ -58,6 +59,7 @@ namespace Beamable.Player
 
 		[SerializeField]
 		private PlayerItemTrie _itemTrie;
+		public PlayerItemTrie Trie => _itemTrie;
 		
 		[SerializeField]
 		private SerializedDictionaryStringToPlayerItemGroup _items = new SerializedDictionaryStringToPlayerItemGroup();
@@ -83,11 +85,13 @@ namespace Beamable.Player
 			IInventoryApi openApi,
 			IContentApi contentApi,
 			IUserContext userContext,
+			ContentTypeReflectionCache reflectionCache,
 			OfflineCache cache)
 		{
 			_openApi = openApi;
 			_contentApi = contentApi;
 			_userContext = userContext;
+			_reflectionCache = reflectionCache;
 			_connectivityService = connectivityService;
 			_inventoryApi = provider.GetService<CachelessInventoryService>();
 			_platformService = platformService;
@@ -121,6 +125,21 @@ namespace Beamable.Player
 			var _ = GetLatestInventory(update.scopes);
 		}
 
+		public Promise RefreshScopes(string scope)
+		{
+			// TODO: debounce these
+			
+			// whatever scope is given, we need to expand it to include all sub-scopes.
+			var scopes = new List<string>();
+			foreach (var subNode in _reflectionCache.TypeTrie.TraverseChildren(scope))
+			{
+				scopes.Add(subNode.path);
+			}
+
+			// return null;
+			return GetLatestInventory(scopes.ToArray());
+		}
+
 		private async Promise GetLatestInventory(string[] scopes)
 		{
 			var req = new InventoryQueryRequest();
@@ -135,6 +154,7 @@ namespace Beamable.Player
 				
 				for (var i = 0; i < plrItems.Length; i++)
 				{
+					// TODO: we don't want to actually re-instantiate these every time...
 					var item = plrItems[i] = new PlayerItem
 					{
 						Content = content,
@@ -160,11 +180,11 @@ namespace Beamable.Player
 		public void OnAfterLoadState()
 		{
 			// need to rehydrate the items list :/ 
-			foreach (var item in _items)
-			{
-				item.Value.OnAfterDeserialized(item.Key,_provider);
-			}
-			
+			// foreach (var item in _items)
+			// {
+			// 	item.Value.OnAfterDeserialized(item.Key,_provider);
+			// }
+			//
 			// now we need to try applying any old state we had
 			var _ = _consumer.RunAfterReconnection(new SdkEvent(nameof(PlayerInventory), "commit"));
 		}
@@ -190,7 +210,7 @@ namespace Beamable.Player
 
 			if (_items.TryGetValue(itemRef, out var group)) return group;
 			
-			var itemGroup = new PlayerItemGroup(itemRef, _platformService, _provider);
+			var itemGroup = new PlayerItemGroup(itemRef, this);
 			_items.Add(itemRef, itemGroup);
 			_saveHandle.Save();
 			return itemGroup;

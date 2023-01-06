@@ -152,6 +152,7 @@ namespace Beamable.Player
 	public class PlayerItemGroup : AbsObservableReadonlyList<PlayerItem>
 	{
 		private ItemRef _rootRef;
+		private readonly PlayerInventory _inventory;
 		private IPlatformService _platformService;
 		private InventoryService _inventoryService;
 		private IDependencyProvider _provider;
@@ -165,16 +166,17 @@ namespace Beamable.Player
 		/// </summary>
 		public string RootScope => _rootRef.Id;
 
-		[Obsolete("The " + nameof(InventoryService) + " parameter is no longer accepted.")]
-		public PlayerItemGroup(ItemRef rootRef,
-		                       IPlatformService platformService,
-		                       InventoryService _,
-		                       IDependencyProvider provider) : this(rootRef, platformService, provider)
-		{
-			// nothing to do... This just exists for backwards compat.
-		}
+		// TODO: is it safe to remove this?
+		// [Obsolete("The " + nameof(InventoryService) + " parameter is no longer accepted.")]
+		// public PlayerItemGroup(ItemRef rootRef,
+		//                        IPlatformService platformService,
+		//                        InventoryService _,
+		//                        IDependencyProvider provider) : this(rootRef, platformService, provider)
+		// {
+		// 	// nothing to do... This just exists for backwards compat.
+		// }
 		
-		public PlayerItemGroup(ItemRef rootRef, IPlatformService platformService, IDependencyProvider provider)
+		public PlayerItemGroup(ItemRef rootRef, PlayerInventory inventory)
 		{
 			/*
 			 * An issue is that if there are mutliple item groups in a parent/child type of relationship,
@@ -185,32 +187,33 @@ namespace Beamable.Player
 			 * get notified of the change
 			 */
 			_rootRef = rootRef;
-			_platformService = platformService;
-			_inventoryService = provider.GetService<CachelessInventoryService>();
-			_provider = provider;
-			_platformService.OnReady.Then(_ =>
-			{
-				_inventoryService.Subscribe(rootRef, OnItemsUpdated);
-			});
+			_inventory = inventory;
+			// _platformService = platformService;
+			// _inventoryService = provider.GetService<CachelessInventoryService>();
+			// _provider = provider;
+			// _platformService.OnReady.Then(_ =>
+			// {
+			// 	_inventoryService.Subscribe(rootRef, OnItemsUpdated);
+			// });
 		}
 
-		internal void OnAfterDeserialized(ItemRef rootRef, IDependencyProvider provider)
-		{
-			_rootRef = rootRef;
-			_provider = provider;
-			_platformService = provider.GetService<IPlatformService>();
-			_inventoryService = provider.GetService<CachelessInventoryService>();
-			_platformService.OnReady.Then(_ =>
-			{
-				_inventoryService.Subscribe(rootRef, OnItemsUpdated);
-			});
-		}
+		// internal void OnAfterDeserialized(ItemRef rootRef, IDependencyProvider provider)
+		// {
+		// 	_rootRef = rootRef;
+		// 	_provider = provider;
+		// 	_platformService = provider.GetService<IPlatformService>();
+		// 	_inventoryService = provider.GetService<CachelessInventoryService>();
+		// 	_platformService.OnReady.Then(_ =>
+		// 	{
+		// 		_inventoryService.Subscribe(rootRef, OnItemsUpdated);
+		// 	});
+		// }
 
-		private void OnItemsUpdated(InventoryView view)
-		{
-			// ignore the view, and do a refresh on our own. Yes, this produces more network traffic.
-			var _ = Refresh();
-		}
+		// private void OnItemsUpdated(InventoryView view)
+		// {
+		// 	// ignore the view, and do a refresh on our own. Yes, this produces more network traffic.
+		// 	var _ = Refresh();
+		// }
 
 		/// <summary>
 		/// The inventory group contains some set of items based on the <see cref="ItemRef"/> that was given to the constructor.
@@ -244,56 +247,61 @@ namespace Beamable.Player
 
 		protected override async Promise PerformRefresh()
 		{
-			await _platformService.OnReady;
-			var data = await _inventoryService.GetItems(_rootRef);
-
-			var next = new List<PlayerItem>(data.Count);
-			var seen = new HashSet<PlayerItem>();
-
-			var map = new Dictionary<int, PlayerItem>(data.Count);
-			foreach (var item in this)
-			{
-				map[item.UniqueCode] = item;
-			}
-			foreach (var kvp in data)
-			{
-				if (map.TryGetValue(kvp.UniqueCode, out var existing))
-				{
-					next.Add(existing);
-					existing.TriggerUpdate(kvp);
-					seen.Add(existing);
-				}
-				else
-				{
-					next.Add(new PlayerItem
-					{
-						UniqueCode = kvp.UniqueCode,
-						Content = kvp.ItemContent,
-						ContentId = kvp.ItemContent.Id,
-						CreatedAt = kvp.CreatedAt,
-						UpdatedAt = kvp.UpdatedAt,
-						Properties = new SerializableDictionaryStringToString(kvp.Properties),
-						ItemId = kvp.Id
-					});
-				}
-			}
-
-			var unseen = this.Except(seen);
-			foreach (var item in unseen)
-			{
-				item.TriggerDeletion();
-			}
-			SetData(next);
-
-			var superSets = Inventory.GetExistingSuperSets(this).ToArray();
-			var superSetPromises = new Promise<Unit>[superSets.Length];
-			for (var i = 0; i < superSets.Length; i++)
-			{
-				superSetPromises[i] = superSets[i].Refresh();
-			}
-
-			await Promise.Sequence(superSetPromises);
-		}
+			await _inventory.RefreshScopes(RootScope);
+		} 
+		
+		// protected override async Promise PerformRefresh()
+		// {
+		// 	await _platformService.OnReady;
+		// 	var data = await _inventoryService.GetItems(_rootRef);
+		//
+		// 	var next = new List<PlayerItem>(data.Count);
+		// 	var seen = new HashSet<PlayerItem>();
+		//
+		// 	var map = new Dictionary<int, PlayerItem>(data.Count);
+		// 	foreach (var item in this)
+		// 	{
+		// 		map[item.UniqueCode] = item;
+		// 	}
+		// 	foreach (var kvp in data)
+		// 	{
+		// 		if (map.TryGetValue(kvp.UniqueCode, out var existing))
+		// 		{
+		// 			next.Add(existing);
+		// 			existing.TriggerUpdate(kvp);
+		// 			seen.Add(existing);
+		// 		}
+		// 		else
+		// 		{
+		// 			next.Add(new PlayerItem
+		// 			{
+		// 				UniqueCode = kvp.UniqueCode,
+		// 				Content = kvp.ItemContent,
+		// 				ContentId = kvp.ItemContent.Id,
+		// 				CreatedAt = kvp.CreatedAt,
+		// 				UpdatedAt = kvp.UpdatedAt,
+		// 				Properties = new SerializableDictionaryStringToString(kvp.Properties),
+		// 				ItemId = kvp.Id
+		// 			});
+		// 		}
+		// 	}
+		//
+		// 	var unseen = this.Except(seen);
+		// 	foreach (var item in unseen)
+		// 	{
+		// 		item.TriggerDeletion();
+		// 	}
+		// 	SetData(next);
+		//
+		// 	var superSets = Inventory.GetExistingSuperSets(this).ToArray();
+		// 	var superSetPromises = new Promise<Unit>[superSets.Length];
+		// 	for (var i = 0; i < superSets.Length; i++)
+		// 	{
+		// 		superSetPromises[i] = superSets[i].Refresh();
+		// 	}
+		//
+		// 	await Promise.Sequence(superSetPromises);
+		// }
 
 	}
 }

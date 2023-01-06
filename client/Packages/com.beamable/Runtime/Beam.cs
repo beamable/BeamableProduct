@@ -130,6 +130,7 @@ namespace Beamable
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
+			DependencyBuilder.AddSingleton(contentReflectionCache);
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
