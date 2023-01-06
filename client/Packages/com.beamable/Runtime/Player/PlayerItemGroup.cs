@@ -22,6 +22,7 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerItem : DefaultObservable
 	{
+		#region equality members
 		protected bool Equals(PlayerItem other)
 		{
 			return ContentId == other.ContentId && ItemId == other.ItemId && CreatedAt == other.CreatedAt && UpdatedAt == other.UpdatedAt && Equals(Properties, other.Properties);
@@ -59,6 +60,7 @@ namespace Beamable.Player
 				return hashCode;
 			}
 		}
+		#endregion
 
 		/// <summary>
 		/// The content id of <see cref="ItemContent"/> that this item is an instance of.

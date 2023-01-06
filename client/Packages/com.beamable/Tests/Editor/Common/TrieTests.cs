@@ -1,0 +1,132 @@
+using NUnit.Framework;
+using Beamable.Common;
+using UnityEngine;
+
+namespace Beamable.Editor.Tests.Common
+{
+	public class TrieTests
+	{
+		[TestCase(1, TestName = "simple-1-time")]
+		[TestCase(3, TestName = "simple-many-times")]
+		public void Simple(int getAllCount)
+		{
+			var t = new Trie<int>();
+			
+			t.Insert("a", 1);
+			t.Insert("a", 2);
+			t.Insert("a", 3);
+
+			for (var i = 0; i < getAllCount; i++) // check the output multiple times, because there is a cache involved.
+			{
+				var output = t.GetAll("a");
+				Assert.AreEqual(3, output.Count);
+				Assert.AreEqual(1, output[0]);
+				Assert.AreEqual(2, output[1]);
+				Assert.AreEqual(3, output[2]);
+			}
+		}
+		
+		[Test]
+		public void Serialization()
+		{
+			var t = new Trie<int>();
+			
+			t.Insert("a", 1);
+			t.Insert("a.b", 2);
+			t.Insert("a.c", 3);
+			t.Insert("a.b.d", 4);
+			t.Insert("a", 5);
+			t.Insert("a.b", 6);
+
+			var json = JsonUtility.ToJson(t);
+			var t2 = JsonUtility.FromJson<Trie<int>>(json);
+			var output = t2.GetAll("a");
+			Assert.AreEqual(6, output.Count);
+			Assert.AreEqual(1, output[0]);
+			Assert.AreEqual(5, output[1]);
+			Assert.AreEqual(2, output[2]);
+			Assert.AreEqual(6, output[3]);
+			Assert.AreEqual(3, output[4]);
+			Assert.AreEqual(4, output[5]);
+		
+		}
+		
+		[TestCase(1, TestName = "simple-change-1-time")]
+		[TestCase(3, TestName = "simple-change-many-times")]
+		public void SimpleChange(int getAllCount)
+		{
+			var t = new Trie<int>();
+
+			t.InsertRange("a", new int[] {1, 2, 3});
+			t.InsertRange("a.b", new int[] {4, 5});
+
+			for (var i = 0; i < getAllCount; i++) // check the output multiple times, because there is a cache involved.
+			{
+				var output = t.GetAll("a");
+				Assert.AreEqual(5, output.Count);
+				Assert.AreEqual(1, output[0]);
+				Assert.AreEqual(2, output[1]);
+				Assert.AreEqual(3, output[2]);
+				Assert.AreEqual(4, output[3]);
+				Assert.AreEqual(5, output[4]);
+			}
+			
+			t.InsertRange("a.b.c", new []{6});
+			
+			for (var i = 0; i < getAllCount; i++) // check the output multiple times, because there is a cache involved.
+			{
+				var output = t.GetAll("a");
+				Assert.AreEqual(6, output.Count);
+				Assert.AreEqual(1, output[0]);
+				Assert.AreEqual(2, output[1]);
+				Assert.AreEqual(3, output[2]);
+				Assert.AreEqual(4, output[3]);
+				Assert.AreEqual(5, output[4]);
+				Assert.AreEqual(6, output[5]);
+			}
+
+		}
+		
+		[TestCase(1, TestName = "simple-nested-1-time")]
+		[TestCase(3, TestName = "simple-nested-many-times")]
+		public void SimpleNested(int getAllCount)
+		{
+			var t = new Trie<int>();
+			
+			t.Insert("a", 1);
+			t.Insert("a.b", 2);
+			t.Insert("a.b", 3);
+			t.Insert("a.b.c", 4);
+			t.Insert("a.b", 5);
+			t.Insert("a", 6);
+			t.Insert("d", 7);
+
+			for (var i = 0; i < getAllCount; i++) // check the output multiple times, because there is a cache involved.
+			{
+				var a = t.GetAll("a");
+				Assert.AreEqual(6, a.Count);
+				Assert.AreEqual(1, a[0]);
+				Assert.AreEqual(6, a[1]);
+				Assert.AreEqual(2, a[2]);
+				Assert.AreEqual(3, a[3]);
+				Assert.AreEqual(5, a[4]);
+				Assert.AreEqual(4, a[5]);
+				
+				var b = t.GetAll("a.b");
+				Assert.AreEqual(4, b.Count);
+				Assert.AreEqual(2, b[0]);
+				Assert.AreEqual(3, b[1]);
+				Assert.AreEqual(5, b[2]);
+				Assert.AreEqual(4, b[3]);
+				
+				var c = t.GetAll("a.b.c");
+				Assert.AreEqual(1, c.Count);
+				Assert.AreEqual(4, c[0]);
+				
+				var d = t.GetAll("d");
+				Assert.AreEqual(1, d.Count);
+				Assert.AreEqual(7, d[0]);
+			}
+		}
+	}
+}
