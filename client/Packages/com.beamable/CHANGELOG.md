@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
 - `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
+- Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
 
 ### Fixed
 - `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.

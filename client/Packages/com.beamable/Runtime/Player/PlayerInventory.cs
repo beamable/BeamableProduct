@@ -92,6 +92,7 @@ namespace Beamable.Player
 		private InventoryUpdateBuilder _offlineUpdate = new InventoryUpdateBuilder();
 
 		private StorageHandle<PlayerInventory> _saveHandle;
+		private Promise _pendingUpdate;
 
 		public PlayerInventory(
 			IPlatformService platformService,
@@ -514,10 +515,16 @@ namespace Beamable.Player
 		/// <param name="updateBuilder">A <see cref="InventoryUpdateBuilder"/> containing actions to apply to the player's inventory</param>
 		/// <param name="transaction">An optional transaction id for the operation. </param>
 		/// <returns>A promise representing the success of the operation.</returns>
-		public Promise Update(InventoryUpdateBuilder updateBuilder, string transaction = null)
+		public async Promise Update(InventoryUpdateBuilder updateBuilder, string transaction = null)
 		{
+			if (_pendingUpdate != null)
+			{
+				await _pendingUpdate;
+			}
 			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(updateBuilder, transaction);
-			return _sdkEventService.Add(new SdkEvent(nameof(PlayerInventory), "update", json));
+			var nextUpdatePromise = _sdkEventService.Add(new SdkEvent(nameof(PlayerInventory), "update", json));
+			_pendingUpdate = nextUpdatePromise;
+			await nextUpdatePromise;
 		}
 
 		private async Promise Apply(InventoryUpdateBuilder builder)
