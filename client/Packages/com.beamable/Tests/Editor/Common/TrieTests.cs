@@ -82,6 +82,46 @@ namespace Beamable.Editor.Tests.Common
 		
 		}
 		
+		
+		[Test]
+		public void SerializationOverwrite()
+		{
+			var t = new Trie<int>();
+			
+			t.Insert("a", 1);
+			t.Insert("a.b", 2);
+			t.Insert("a.c", 3);
+			t.Insert("a.b.d", 4);
+			t.Insert("a", 5);
+			t.Insert("a.b", 6);
+
+			var json = JsonUtility.ToJson(t);
+			var t2 = JsonUtility.FromJson<Trie<int>>(json);
+
+			void Check()
+			{
+				var output = t2.GetAll("a");
+				Assert.AreEqual(6, output.Count);
+				Assert.AreEqual(1, output[0]);
+				Assert.AreEqual(5, output[1]);
+				Assert.AreEqual(2, output[2]);
+				Assert.AreEqual(6, output[3]);
+				Assert.AreEqual(3, output[4]);
+				Assert.AreEqual(4, output[5]);
+			}
+
+			Check();
+
+			for (var i = 0; i < 10; i++)
+			{
+				JsonUtility.FromJsonOverwrite(json, t2);
+				Check();
+			}
+
+
+		}
+		
+		
 		[TestCase(1, TestName = "simple-change-1-time")]
 		[TestCase(3, TestName = "simple-change-many-times")]
 		public void SimpleChange(int getAllCount)

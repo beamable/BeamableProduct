@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
+- Local Content Mode won't fail to load content if internet connection is lost mid-game.
 
 ## [1.10.1]
 ### Fixed

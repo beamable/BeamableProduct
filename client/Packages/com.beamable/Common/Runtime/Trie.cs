@@ -6,11 +6,16 @@ using UnityEngine;
 
 namespace Beamable.Common
 {
+	/// <summary>
+	/// A Trie is a tree like data structure that holds information by prefix key.
+	///
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
 	[Serializable]
 	public class Trie<T> : ISerializationCallbackReceiver
 	{
 		[Serializable]
-		class SerializationEntry
+		public class SerializationEntry
 		{
 			public string path;
 			public List<T> values;
@@ -112,7 +117,11 @@ namespace Beamable.Common
 			node.values.AddRange(values);
 		}
 
-		public void Clear(string key)
+		/// <summary>
+		/// Clear the values at the given path. This will not clear sub values.
+		/// </summary>
+		/// <param name="key"></param>
+		public void ClearExact(string key)
 		{
 			var node = Search(key);
 			node.values.Clear();
@@ -174,26 +183,6 @@ namespace Beamable.Common
 		public List<T> GetAll(IEnumerable<string> keys)
 		{
 			return GetAll(keys.ToArray());
-			// if (!_pathCache.TryGetValue(key, out var existing))
-			// {
-			// 	_pathCache[key] = existing = new List<T>();
-			//
-			// 	Node last = null;
-			// 	foreach (var node in Traverse(key))
-			// 	{
-			// 		last = node;
-			// 	}
-			//
-			// 	existing.AddRange(last.values);
-			// 	foreach (var node in last.TraverseChildren())
-			// 	{
-			// 		existing.AddRange(node.values);
-			// 	}
-			// 	
-			// }
-			//
-			// // return a clone of the list, so downstream doesn't mutate it in odd ways.
-			// return existing.ToList();
 		}
 
 		/// <summary>
@@ -243,8 +232,17 @@ namespace Beamable.Common
 			_pathCache.Remove(key);
 		}
 
+		/// <summary>
+		/// Get all current keys for the trie.
+		/// </summary>
+		/// <returns></returns>
 		public IEnumerable<string> GetKeys() => _pathToNode.Keys;
 
+		/// <summary>
+		/// Given a set of keys, filter the ones that are non-empty in the trie
+		/// </summary>
+		/// <param name="keys"></param>
+		/// <returns></returns>
 		public IEnumerable<string> GetNonEmptyKeys(IEnumerable<string> keys)
 		{
 			var set = new HashSet<string>();
@@ -389,6 +387,9 @@ namespace Beamable.Common
 		/// </summary>
 		public void OnAfterDeserialize()
 		{
+			_nodes.Clear();
+			_pathToNode.Clear();
+			_pathCache.Clear();
 			foreach (var entry in data)
 			{
 				InsertRange(entry.path, entry.values);

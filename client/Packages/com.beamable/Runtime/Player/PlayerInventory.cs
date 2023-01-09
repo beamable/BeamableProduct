@@ -57,14 +57,9 @@ namespace Beamable.Player
 	{
 		private readonly InventoryService _inventoryApi;
 		private readonly IInventoryApi _openApi;
-		private readonly IContentApi _contentApi;
 		private readonly IUserContext _userContext;
 		private readonly Debouncer _debouncer;
-		private readonly ContentTypeReflectionCache _reflectionCache;
-		private readonly IPlatformService _platformService;
 		private readonly INotificationService _notificationService;
-		private readonly CoroutineService _coroutineService;
-		private readonly IDependencyProvider _provider;
 		private readonly CoreConfiguration _config;
 		private readonly IContentApi _contentService;
 		private readonly ISdkEventService _sdkEventService;
@@ -97,35 +92,23 @@ namespace Beamable.Player
 		private InventoryUpdateBuilder _offlineUpdate = new InventoryUpdateBuilder();
 
 		private StorageHandle<PlayerInventory> _saveHandle;
-		private IConnectivityService _connectivityService;
 
 		public PlayerInventory(
 			IPlatformService platformService,
 			INotificationService notificationService,
-			CoroutineService coroutineService,
 			IDependencyProvider provider,
 			CoreConfiguration config,
 			IContentApi contentService,
-			IConnectivityService connectivityService,
 			ISdkEventService sdkEventService,
 			IInventoryApi openApi,
-			IContentApi contentApi,
 			IUserContext userContext,
-			Debouncer debouncer,
-			ContentTypeReflectionCache reflectionCache,
-			OfflineCache cache)
+			Debouncer debouncer)
 		{
 			_openApi = openApi;
-			_contentApi = contentApi;
 			_userContext = userContext;
 			_debouncer = debouncer;
-			_reflectionCache = reflectionCache;
-			_connectivityService = connectivityService;
 			_inventoryApi = provider.GetService<CachelessInventoryService>();
-			_platformService = platformService;
 			_notificationService = notificationService;
-			_coroutineService = coroutineService;
-			_provider = provider;
 			_config = config;
 			_contentService = contentService;
 			_sdkEventService = sdkEventService;
@@ -133,11 +116,20 @@ namespace Beamable.Player
 			allCurrencies = new PlayerCurrencyTrie();
 			allItems = new PlayerItemTrie();
 
-			Currencies = GetCurrencies(); // TODO; is this okay? 
-			
-			// TODO: need to unsubscribe from this or make sure it works for user switching...
+			Currencies = GetCurrencies();
 			_notificationService.Subscribe<InventoryScopeNotification>("inventory.refresh", OnInventoryUpdated);
-
+			provider.GetService<BeamContext>().OnUserLoggingOut += (_) =>
+			{
+				// before the context actually changes, save the old data.
+				_saveHandle.Save();
+			};
+			platformService.OnReloadUser += () =>
+			{
+				// Now that the user has changed, load and apply the latest data... 
+				_saveHandle.Load();
+				var _ = Refresh();
+			};
+			
 			_consumer = _sdkEventService.Register(nameof(PlayerInventory), HandleEvent);
 		}
 
@@ -332,7 +324,7 @@ namespace Beamable.Player
 						removedItem.TriggerDeletion();
 					}
 
-					allItems.Clear(deletedScope);
+					allItems.ClearExact(deletedScope);
 					foreach (var node in allItems.Traverse(deletedScope))
 					{
 						if (_items.TryGetValue(node.path, out var existingGroup))
@@ -559,8 +551,6 @@ namespace Beamable.Player
 						}, null, "403 offline");
 
 
-					// var itemGroup = GetItems(newItem.contentId);
-
 					_nextOfflineItemId--;
 					var nextItemId = _nextOfflineItemId;
 					_itemIdToReqId[OfflineIdKey(newItem.contentId, nextItemId)] = newItem.requestId;
@@ -745,7 +735,8 @@ namespace Beamable.Player
 		/// <exception cref="NotImplementedException"></exception>
 		public async Promise Refresh()
 		{
-			await _inventoryApi.Subscribable.Refresh();
+			var scopes = _requestCounter.GetNonEmptyKeys(_requestCounter.GetKeys()).ToArray();
+			await RefreshScopes(scopes);
 			_saveHandle.Save();
 		}
 

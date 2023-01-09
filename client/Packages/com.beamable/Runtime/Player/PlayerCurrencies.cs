@@ -53,8 +53,16 @@ namespace Beamable.Player
 			}
 		}
 
+		/// <summary>
+		/// The reference to the <see cref="CurrencyContent"/> that this <see cref="PlayerCurrency"/> is connected to.
+		/// </summary>
+		[NonSerialized]
 		public CurrencyContent Content;
 		
+		/// <summary>
+		/// Currencies may have a set of properties in dictionary format.
+		/// To edit this value, use the <see cref="PlayerInventory.Update()"/> function
+		/// </summary>
 		public SerializableDictionaryStringToString Properties = new SerializableDictionaryStringToString();
 
 
@@ -102,13 +110,6 @@ namespace Beamable.Player
 	{
 		private readonly CurrencyRef _rootRef;
 		private readonly PlayerInventory _inventory;
-		private readonly IPlatformService _platformService;
-		private readonly InventoryService _inventoryApi;
-		private readonly INotificationService _notificationService;
-		private readonly ISdkEventService _sdkEventService;
-		private readonly IConnectivityService _connectivityService;
-		private readonly IDependencyProvider _provider;
-		private StorageHandle<PlayerCurrencyGroup> _saveHandle;
 		public Promise OnReady;
 		
 		/// <summary>
@@ -124,50 +125,6 @@ namespace Beamable.Player
 			_rootRef = rootRef;
 			_inventory = inventory;
 			OnReady = Refresh(); // automatically refresh..
-		}
-		// TODO: is it safe to remove this?
-		// public PlayerCurrencyGroup(IPlatformService platformService,
-		//                            InventoryService inventoryApi,
-		//                            INotificationService notificationService,
-		//                            ISdkEventService sdkEventService,
-		//                            IConnectivityService connectivityService,
-		//                            IDependencyProvider provider)
-		// {
-		// 	_platformService = platformService;
-		// 	_inventoryApi = inventoryApi;
-		// 	_notificationService = notificationService;
-		// 	_sdkEventService = sdkEventService;
-		// 	_connectivityService = connectivityService;
-		// 	_provider = provider;
-		//
-		// 	var _ = Refresh(); // automatically start.
-		// 	IsInitialized = true;
-		// }
-
-
-		private async Promise HandleEvent(SdkEvent evt)
-		{
-			switch (evt.Event)
-			{
-				case "add":
-
-					// TODO: pull out into separate method
-					var currencyId = evt.Args[0];
-					var amount = long.Parse(evt.Args[1]);
-					var currency = GetCurrency(currencyId);
-					try
-					{
-						await _inventoryApi.AddCurrency(currencyId, amount);
-					}
-					finally
-					{
-						TriggerUpdate();
-					}
-
-					break;
-				default:
-					throw new Exception($"Unhandled event: {evt.Event}");
-			}
 		}
 		
 		public void Notify()

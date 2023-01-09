@@ -71,6 +71,14 @@ namespace Beamable.Common.Dependencies
 		{
 			_wrapper.Storage.Save(_wrapper.Service);
 		}
+
+		/// <summary>
+		/// manually load the previously saved state onto the service. Use this to restore or unload data changes. 
+		/// </summary>
+		public void Load()
+		{
+			_wrapper.Storage.Apply(_wrapper.Service);
+		}
 	}
 	
 	public class StorageWrapper<T> : IBeamableDisposable
