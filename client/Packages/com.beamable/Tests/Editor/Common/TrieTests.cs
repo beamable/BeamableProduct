@@ -1,11 +1,42 @@
 using NUnit.Framework;
 using Beamable.Common;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Editor.Tests.Common
 {
 	public class TrieTests
 	{
+		[TestCase(
+			new object[]{"a.b", "a.c"},
+			new object[]{"a", "a.d"},
+			new object[]{"a"},
+			TestName = "relevant-test1"
+			)]
+		[TestCase(
+			new object[]{"a.b", "a.c"},
+			new object[]{"a", "a.d", "a.b.c", "a.c"},
+			new object[]{"a", "a.c"},
+			TestName = "relevant-test2"
+		)]
+		public void Relevant(object[] scopesObj, object[] requestObj, object[] expectedObj)
+		{
+			var scopes = scopesObj.Cast<string>().ToArray();
+			var request = requestObj.Cast<string>().ToArray();
+			var expected = expectedObj.Cast<string>().ToArray();
+			var t = new Trie<int>();
+			foreach (var scope in scopes)
+			{
+				t.Insert(scope, 1);
+			}
+			var output = t.GetRelevantKeys(request);
+			Assert.AreEqual(expected.Length, output.Count);
+			foreach (var e in expected)
+			{
+				Assert.IsTrue(output.Contains(e));
+			}
+		}
+		
 		[TestCase(1, TestName = "simple-1-time")]
 		[TestCase(3, TestName = "simple-many-times")]
 		public void Simple(int getAllCount)

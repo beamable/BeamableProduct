@@ -108,21 +108,7 @@ namespace Beamable.Player
 		{
 			return (((h1 << 5) + h1) ^ h2);
 		}
-
-		internal void TriggerUpdate(InventoryObject<ItemContent> item)
-		{
-			CreatedAt = item.CreatedAt;
-			UpdatedAt = item.UpdatedAt;
-			UniqueCode = item.UniqueCode;
-			Properties.Clear();
-			foreach (var kvp in item.Properties)
-			{
-				Properties[kvp.Key] = kvp.Value;
-			}
-			Content = item.ItemContent;
-			TriggerUpdate();
-		}
-
+		
 		internal new void TriggerUpdate() => base.TriggerUpdate();
 
 		public override int GetBroadcastChecksum()
@@ -153,18 +139,15 @@ namespace Beamable.Player
 	{
 		private ItemRef _rootRef;
 		private readonly PlayerInventory _inventory;
-		private IPlatformService _platformService;
-		private InventoryService _inventoryService;
-		private IDependencyProvider _provider;
-		private PlayerInventory Inventory => _provider.GetService<PlayerInventory>();
-
+		public Promise OnReady;
+		
 		/// <summary>
 		/// The scope defines which items in the inventory this group will be able to view.
 		/// If the scope is "items", then this group will view every item in the player inventory.
 		/// However, if the scope was "items.fish", then the group would only show items that were
 		/// instances of "items.fish" and sub types.
 		/// </summary>
-		public string RootScope => _rootRef.Id;
+		public string RootScope => _rootRef?.Id ?? "items";
 
 		// TODO: is it safe to remove this?
 		// [Obsolete("The " + nameof(InventoryService) + " parameter is no longer accepted.")]
@@ -178,43 +161,12 @@ namespace Beamable.Player
 		
 		public PlayerItemGroup(ItemRef rootRef, PlayerInventory inventory)
 		{
-			/*
-			 * An issue is that if there are mutliple item groups in a parent/child type of relationship,
-			 * items
-			 * items.barry
-			 *
-			 * and items.barry is updated with new data, the top level "items" group doesn't automatically
-			 * get notified of the change
-			 */
 			_rootRef = rootRef;
 			_inventory = inventory;
-			// _platformService = platformService;
-			// _inventoryService = provider.GetService<CachelessInventoryService>();
-			// _provider = provider;
-			// _platformService.OnReady.Then(_ =>
-			// {
-			// 	_inventoryService.Subscribe(rootRef, OnItemsUpdated);
-			// });
+			OnReady = Refresh(); // automatically refresh..
 		}
 
-		// internal void OnAfterDeserialized(ItemRef rootRef, IDependencyProvider provider)
-		// {
-		// 	_rootRef = rootRef;
-		// 	_provider = provider;
-		// 	_platformService = provider.GetService<IPlatformService>();
-		// 	_inventoryService = provider.GetService<CachelessInventoryService>();
-		// 	_platformService.OnReady.Then(_ =>
-		// 	{
-		// 		_inventoryService.Subscribe(rootRef, OnItemsUpdated);
-		// 	});
-		// }
-
-		// private void OnItemsUpdated(InventoryView view)
-		// {
-		// 	// ignore the view, and do a refresh on our own. Yes, this produces more network traffic.
-		// 	var _ = Refresh();
-		// }
-
+		
 		/// <summary>
 		/// The inventory group contains some set of items based on the <see cref="ItemRef"/> that was given to the constructor.
 		/// Use this method to check if some scope is part of the group. A scope that is more specific than the group scope, belongs
@@ -248,60 +200,13 @@ namespace Beamable.Player
 		protected override async Promise PerformRefresh()
 		{
 			await _inventory.RefreshScopes(RootScope);
-		} 
-		
-		// protected override async Promise PerformRefresh()
-		// {
-		// 	await _platformService.OnReady;
-		// 	var data = await _inventoryService.GetItems(_rootRef);
-		//
-		// 	var next = new List<PlayerItem>(data.Count);
-		// 	var seen = new HashSet<PlayerItem>();
-		//
-		// 	var map = new Dictionary<int, PlayerItem>(data.Count);
-		// 	foreach (var item in this)
-		// 	{
-		// 		map[item.UniqueCode] = item;
-		// 	}
-		// 	foreach (var kvp in data)
-		// 	{
-		// 		if (map.TryGetValue(kvp.UniqueCode, out var existing))
-		// 		{
-		// 			next.Add(existing);
-		// 			existing.TriggerUpdate(kvp);
-		// 			seen.Add(existing);
-		// 		}
-		// 		else
-		// 		{
-		// 			next.Add(new PlayerItem
-		// 			{
-		// 				UniqueCode = kvp.UniqueCode,
-		// 				Content = kvp.ItemContent,
-		// 				ContentId = kvp.ItemContent.Id,
-		// 				CreatedAt = kvp.CreatedAt,
-		// 				UpdatedAt = kvp.UpdatedAt,
-		// 				Properties = new SerializableDictionaryStringToString(kvp.Properties),
-		// 				ItemId = kvp.Id
-		// 			});
-		// 		}
-		// 	}
-		//
-		// 	var unseen = this.Except(seen);
-		// 	foreach (var item in unseen)
-		// 	{
-		// 		item.TriggerDeletion();
-		// 	}
-		// 	SetData(next);
-		//
-		// 	var superSets = Inventory.GetExistingSuperSets(this).ToArray();
-		// 	var superSetPromises = new Promise<Unit>[superSets.Length];
-		// 	for (var i = 0; i < superSets.Length; i++)
-		// 	{
-		// 		superSetPromises[i] = superSets[i].Refresh();
-		// 	}
-		//
-		// 	await Promise.Sequence(superSetPromises);
-		// }
+			Notify();
+		}
 
+		public void Notify()
+		{
+			var data = _inventory.AllItems.GetAll(RootScope);
+			SetData(data);
+		}
 	}
 }

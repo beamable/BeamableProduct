@@ -19,12 +19,36 @@ namespace Beamable.Common
 		[DebuggerDisplay("{path} (children=[{children.Count}]) (values=[{values.Count}])")]
 		public class Node
 		{
+			/// <summary>
+			/// The full path to this node
+			/// </summary>
 			public string path;
+			
+			/// <summary>
+			/// The last part of the path to this node
+			/// </summary>
 			public string part;
+			
+			/// <summary>
+			/// The parent <see cref="Node"/> of the current <see cref="Node"/>, or null if no parent exists.
+			/// </summary>
 			public Node parent;
+			
+			/// <summary>
+			/// A dictionary where the keys are <see cref="part"/> values, and the values are <see cref="Node"/>s
+			/// </summary>
 			public Dictionary<string, Node> children = new Dictionary<string, Node>();
+			
+			/// <summary>
+			/// the values stored at this current <see cref="path"/>
+			/// </summary>
 			public List<T> values = new List<T>();
 
+			/// <summary>
+			/// Iterate through all <see cref="children"/> of the current <see cref="Node"/>, and all the children's children.
+			/// This uses a Breath First Search style.
+			/// </summary>
+			/// <returns></returns>
 			public IEnumerable<Node> TraverseChildren()
 			{
 				var queue = new Queue<Node>();
@@ -54,18 +78,33 @@ namespace Beamable.Common
 		[SerializeField]
 		private List<SerializationEntry> data = new List<SerializationEntry>();
 		
+		/// <summary>
+		/// Add a value to the given key
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="value"></param>
 		public void Insert(string key, T value)
 		{
 			var node = Search(key);
 			node.values.Add(value);
 		}
 		
+		/// <summary>
+		/// Add a series of values to the given key
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="values"></param>
 		public void InsertRange(string key, IEnumerable<T> values)
 		{
 			var node = Search(key);
 			node.values.AddRange(values);
 		}
 
+		/// <summary>
+		/// Set the values at the given key to the given values
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="values"></param>
 		public void SetRange(string key, IEnumerable<T> values)
 		{
 			var node = Search(key);
@@ -73,12 +112,28 @@ namespace Beamable.Common
 			node.values.AddRange(values);
 		}
 
+		public void Clear(string key)
+		{
+			var node = Search(key);
+			node.values.Clear();
+		}
+		
+		/// <summary>
+		/// Remove the given value from the key
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="value"></param>
 		public void Remove(string key, T value)
 		{
 			var node = Search(key);
 			node.values.Remove(value);
 		}
 		
+		/// <summary>
+		/// Remove a set of values at the given key
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="values"></param>
 		public void RemoveRange(string key, IEnumerable<T> values)
 		{
 			var node = Search(key);
@@ -88,29 +143,99 @@ namespace Beamable.Common
 			}
 		}
 
-		public List<T> GetAll(string key)
+		/// <summary>
+		/// Get all the values that exist only at the given key.
+		/// If the key was "a.b.c", this method will only return the values at "a.b.c",
+		/// and it will not return anything at "a.b.c.x". 
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
+		public List<T> GetExact(string key)
 		{
-			
 			if (!_pathCache.TryGetValue(key, out var existing))
 			{
 				_pathCache[key] = existing = new List<T>();
-
-				Node last = null;
-				foreach (var node in Traverse(key))
-				{
-					last = node;
-				}
-
-				existing.AddRange(last.values);
-				foreach (var node in last.TraverseChildren())
+				if (_pathToNode.TryGetValue(key, out var node))
 				{
 					existing.AddRange(node.values);
 				}
-				
 			}
 
-			// return a clone of the list, so downstream doesn't mutate it in odd ways.
-			return existing.ToList();
+			return existing;
+		}
+		
+		/// <summary>
+		/// Get all values under the given key.
+		/// If the given key is "a.b.c", this method will return all values at "a.b.c", and
+		/// all values at "a.b.c.x".
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
+		public List<T> GetAll(IEnumerable<string> keys)
+		{
+			return GetAll(keys.ToArray());
+			// if (!_pathCache.TryGetValue(key, out var existing))
+			// {
+			// 	_pathCache[key] = existing = new List<T>();
+			//
+			// 	Node last = null;
+			// 	foreach (var node in Traverse(key))
+			// 	{
+			// 		last = node;
+			// 	}
+			//
+			// 	existing.AddRange(last.values);
+			// 	foreach (var node in last.TraverseChildren())
+			// 	{
+			// 		existing.AddRange(node.values);
+			// 	}
+			// 	
+			// }
+			//
+			// // return a clone of the list, so downstream doesn't mutate it in odd ways.
+			// return existing.ToList();
+		}
+
+		/// <summary>
+		/// Get all values under the given keys.
+		/// If a value appears under multiple keys (such as 'a.b.x' appearing under 'a' and 'a.b'),
+		/// then the item will only be returned once.
+		/// </summary>
+		/// <param name="keys"></param>
+		/// <returns></returns>
+		public List<T> GetAll(params string[] keys)
+		{
+			var relevantLists = new HashSet<List<T>>();
+			foreach (var key in keys)
+			{
+				if (!_pathCache.TryGetValue(key, out var existing))
+				{
+					_pathCache[key] = existing = new List<T>();
+
+					Node last = null;
+					foreach (var node in Traverse(key))
+					{
+						last = node;
+					}
+
+					existing.AddRange(last.values);
+					foreach (var node in last.TraverseChildren())
+					{
+						existing.AddRange(node.values);
+					}
+
+				}
+
+				relevantLists.Add(existing);
+			}
+
+			var output = new List<T>();
+			foreach (var list in relevantLists)
+			{
+				output.AddRange(list);
+			}
+
+			return output;
 		}
 
 		private void InvalidatePathCache(string key)
@@ -118,6 +243,60 @@ namespace Beamable.Common
 			_pathCache.Remove(key);
 		}
 
+		public IEnumerable<string> GetKeys() => _pathToNode.Keys;
+
+		public IEnumerable<string> GetNonEmptyKeys(IEnumerable<string> keys)
+		{
+			var set = new HashSet<string>();
+			foreach (var key in keys)
+			{
+				if (_pathToNode.TryGetValue(key, out var node) && node.values.Count > 0)
+				{
+					set.Add(key);
+				}
+			}
+			return set;
+		} 
+
+		/// <summary>
+		/// Given a set of key values, this will return the set of keys that would return data in the trie.
+		/// For example, if the trie had data at the following paths,
+		/// - a.b.c,
+		/// - a.b
+		///
+		/// And the following <see cref="keys"/> were passed to this method,
+		/// - a
+		/// - a.c
+		/// - a.b
+		/// - a.b.c.d
+		///
+		/// Then only "a" and "a.b" would be returned from the method.
+		/// "a.c" does not map to any values currently in the trie, and neither does "a.b.c.d"
+		/// </summary>
+		/// <param name="keys"></param>
+		/// <returns></returns>
+		public HashSet<string> GetRelevantKeys(IEnumerable<string> keys)
+		{
+			var set = new HashSet<string>();
+			foreach (var key in keys)
+			{
+				var parts = key.Split(".");
+				var traversalCount = Traverse(key, false).Count();
+				if (parts.Length == traversalCount)
+				{
+					set.Add(key);
+				}
+			}
+
+			return set;
+		}
+
+		/// <summary>
+		/// Iterate through all <see cref="Node"/>s under the given <see cref="key"/>
+		/// If the key was "a.b.c", then this would return every child of "a.b.c". 
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
 		public IEnumerable<Node> TraverseChildren(string key)
 		{
 			if (_pathToNode.TryGetValue(key, out var node))
@@ -130,13 +309,25 @@ namespace Beamable.Common
 			}
 		}
 
-		public IEnumerable<Node> Traverse(string key)
+		/// <summary>
+		/// Iterate through the <see cref="Node"/>s along the given <see cref="key"/>
+		/// If the given <see cref="key"/> was "a.b.c", then the nodes returned would be
+		/// "a", "b", and then "c". 
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="autoCreate">If false, then the iteration stops as soon as no node is found the next part of the key</param>
+		/// <returns></returns>
+		public IEnumerable<Node> Traverse(string key, bool autoCreate=true)
 		{
 			var parts = key.Split('.');
 			var first = parts[0];
 			
 			if (!_nodes.TryGetValue(first, out var node))
 			{
+				if (!autoCreate)
+				{
+					yield break;
+				}
 				_pathToNode[first] = _nodes[first] = node = new Node
 				{
 					part = first,
@@ -152,6 +343,10 @@ namespace Beamable.Common
 				subPath += "." + curr;
 				if (!node.children.TryGetValue(curr, out var nextNode))
 				{
+					if (!autoCreate)
+					{
+						yield break;
+					}
 					_pathToNode[subPath] = node.children[curr] = nextNode = new Node {parent = node, part = curr, path = subPath};
 				}
 
@@ -173,6 +368,9 @@ namespace Beamable.Common
 			return last;
 		}
 
+		/// <summary>
+		/// Before the Trie is serialized, take all of the branches of the tree and collapse them into a single data structure.
+		/// </summary>
 		public void OnBeforeSerialize()
 		{
 			data.Clear();
@@ -186,6 +384,9 @@ namespace Beamable.Common
 			}
 		}
 
+		/// <summary>
+		/// After the Trie is deserialized, restore the values from <see cref="data"/> into the actual tree structure.
+		/// </summary>
 		public void OnAfterDeserialize()
 		{
 			foreach (var entry in data)

@@ -368,6 +368,18 @@ namespace Beamable
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
 		{
+			#if UNITY_EDITOR
+			if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+			{
+				// if the context is inside the editor, and something is trying to 
+				// get the context in a tight loop as the editor exits playmode, then 
+				// the GameObject will get destroyed soon, and services will start throwing
+				// exceptions that the GameObject doesn't exist. Better to curb the init process all
+				// together, since the application is exiting playmode anyway.
+				return;
+			}
+			#endif
+			
 			PlayerCode = playerCode;
 			_isStopped = false;
 
@@ -402,18 +414,6 @@ namespace Beamable
 
 			InitServices(cid, pid);
 			_behaviour.Initialize(this);
-			
-			#if UNITY_EDITOR
-			// TODO: in a runtime game, we should save the state if the game is crashing...
-			UnityEditor.EditorApplication.playModeStateChanged += async (state) =>
-			{
-				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
-				{
-					Debug.Log("Stopping the context manually");
-					await Stop();
-				}
-			};
-			#endif
 
 			_initPromise = new Promise();
 			IEnumerator Try()

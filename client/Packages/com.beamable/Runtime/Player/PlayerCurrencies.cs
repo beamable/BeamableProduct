@@ -5,6 +5,7 @@ using Beamable.Api.Inventory;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Inventory;
 using Beamable.Common.Player;
@@ -52,10 +53,17 @@ namespace Beamable.Player
 			}
 		}
 
+		public CurrencyContent Content;
+		
+		public SerializableDictionaryStringToString Properties = new SerializableDictionaryStringToString();
+
+
 		public PlayerCurrency()
 		{
 			OnUpdated += () => OnAmountUpdated?.Invoke(Amount);
 		}
+
+		public new void TriggerUpdate() => base.TriggerUpdate();
 
 		#region Auto Generated Equality Members
 
@@ -90,8 +98,10 @@ namespace Beamable.Player
 	/// It represents <b>all</b> currencies for a player.
 	/// </summary>
 	[Serializable]
-	public class PlayerCurrencyGroup : AbsObservableReadonlyList<PlayerCurrency>, IStorageHandler<PlayerCurrencyGroup>
+	public class PlayerCurrencyGroup : AbsObservableReadonlyList<PlayerCurrency>
 	{
+		private readonly CurrencyRef _rootRef;
+		private readonly PlayerInventory _inventory;
 		private readonly IPlatformService _platformService;
 		private readonly InventoryService _inventoryApi;
 		private readonly INotificationService _notificationService;
@@ -99,43 +109,40 @@ namespace Beamable.Player
 		private readonly IConnectivityService _connectivityService;
 		private readonly IDependencyProvider _provider;
 		private StorageHandle<PlayerCurrencyGroup> _saveHandle;
+		public Promise OnReady;
+		
+		/// <summary>
+		/// The scope defines which currencies in the inventory this group will be able to view.
+		/// If the scope is "currency", then this group will view every currency in the player inventory.
+		/// However, if the scope was "currency.a", then the group would only show items that were
+		/// instances of "currency.a" and sub types.
+		/// </summary>
+		public string RootScope => _rootRef?.Id ?? "currency";
 
-		public PlayerCurrencyGroup(IPlatformService platformService,
-		                           InventoryService inventoryApi,
-		                           INotificationService notificationService,
-		                           ISdkEventService sdkEventService,
-		                           IConnectivityService connectivityService,
-		                           IDependencyProvider provider)
+		public PlayerCurrencyGroup(CurrencyRef rootRef, PlayerInventory inventory)
 		{
-			_platformService = platformService;
-			_inventoryApi = inventoryApi;
-			_notificationService = notificationService;
-			_sdkEventService = sdkEventService;
-			_connectivityService = connectivityService;
-			_provider = provider;
-
-			platformService.OnReady.Then(__ =>
-			{
-				// if (!_connectivityService.HasConnectivity)
-				// {
-				// 	var token = _provider.GetService<IBeamableRequester>().AccessToken;
-				// 	cache.Get<PlayerCurrencyGroup>("player-currency-group", token, false);
-				// }
-				
-				_inventoryApi.Subscribe("currency", HandleSubscriptionUpdate);
-			});
-			_connectivityService.OnConnectivityChanged += connection =>
-			{
-				if (connection)
-				{
-					inventoryApi.Subscribable.Refresh();
-					Refresh();
-				}
-			};
-
-			var _ = Refresh(); // automatically start.
-			IsInitialized = true;
+			_rootRef = rootRef;
+			_inventory = inventory;
+			OnReady = Refresh(); // automatically refresh..
 		}
+		// TODO: is it safe to remove this?
+		// public PlayerCurrencyGroup(IPlatformService platformService,
+		//                            InventoryService inventoryApi,
+		//                            INotificationService notificationService,
+		//                            ISdkEventService sdkEventService,
+		//                            IConnectivityService connectivityService,
+		//                            IDependencyProvider provider)
+		// {
+		// 	_platformService = platformService;
+		// 	_inventoryApi = inventoryApi;
+		// 	_notificationService = notificationService;
+		// 	_sdkEventService = sdkEventService;
+		// 	_connectivityService = connectivityService;
+		// 	_provider = provider;
+		//
+		// 	var _ = Refresh(); // automatically start.
+		// 	IsInitialized = true;
+		// }
 
 
 		private async Promise HandleEvent(SdkEvent evt)
@@ -148,8 +155,6 @@ namespace Beamable.Player
 					var currencyId = evt.Args[0];
 					var amount = long.Parse(evt.Args[1]);
 					var currency = GetCurrency(currencyId);
-					// currency.Amount += amount;
-					// TriggerUpdate();
 					try
 					{
 						await _inventoryApi.AddCurrency(currencyId, amount);
@@ -164,51 +169,17 @@ namespace Beamable.Player
 					throw new Exception($"Unhandled event: {evt.Event}");
 			}
 		}
-
-		private void HandleSubscriptionUpdate(object raw)
+		
+		public void Notify()
 		{
-			var _ = Refresh(); // fire-and-forget.
+			var data = _inventory.AllCurrencies.GetAll(RootScope);
+			SetData(data);
 		}
-
+		
 		protected override async Promise PerformRefresh()
 		{
-			await _platformService.OnReady;
-
-			try
-			{
-				var data = await _inventoryApi.GetCurrencies(new string[] { });
-
-				var next = new List<PlayerCurrency>();
-				var seen = new HashSet<PlayerCurrency>();
-				foreach (var kvp in data)
-				{
-					var existing = this.FirstOrDefault(c => c.CurrencyId == kvp.Key);
-					if (existing != null)
-					{
-						next.Add(existing);
-						existing.Amount = kvp.Value;
-						seen.Add(existing);
-					}
-					else
-					{
-						next.Add(new PlayerCurrency { CurrencyId = kvp.Key, Amount = kvp.Value });
-					}
-				}
-
-				var unseen = this.Except(seen);
-				foreach (var currency in unseen)
-				{
-					currency.Amount = 0; // deleted.
-					next.Add(currency);
-				}
-
-				SetData(next);
-				_saveHandle.Save();
-			}
-			catch (NoConnectivityException)
-			{
-				// oh well, not much to do.
-			}
+			await _inventory.RefreshScopes(RootScope);
+			Notify();
 		}
 
 		/// <summary>
@@ -219,18 +190,7 @@ namespace Beamable.Player
 		/// <returns></returns>
 		public PlayerCurrency GetCurrency(CurrencyRef id)
 		{
-			var existing = this.FirstOrDefault(a => string.Equals(a.CurrencyId, id));
-			if (existing == null)
-			{
-				var currency = new PlayerCurrency { CurrencyId = id, Amount = 0 }; // TODO: should this be the starting amount?
-																				   // commit this to memory.
-
-				var next = this.ToList();
-				next.Add(currency);
-				SetData(next);
-				existing = currency;
-			}
-			return existing;
+			return _inventory.GetCurrency(id);
 		}
 
 		/// <summary>
@@ -242,14 +202,8 @@ namespace Beamable.Player
 		/// <returns>A promise representing when the add operation has completed</returns>
 		public Promise Add(CurrencyRef currency, long amount)
 		{
-			// any writes should go through the inventory service itself to optimize performance and code-single-use.
-			// we can't pre-fetch the PlayerInventory service because it would cause a cyclic reference in the dependency graph.
-			return _provider.GetService<PlayerInventory>().Update(b => b.CurrencyChange(currency, amount));
+			return _inventory.Update(b => b.CurrencyChange(currency, amount));
 		}
 
-		public void ReceiveStorageHandle(StorageHandle<PlayerCurrencyGroup> handle)
-		{
-			_saveHandle = handle;
-		}
 	}
 }
