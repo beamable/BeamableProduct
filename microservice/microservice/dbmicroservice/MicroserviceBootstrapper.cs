@@ -356,8 +356,8 @@ namespace Beamable.Server
 				
 				var instanceArgs = args.Copy(conf =>
 				{
-					// only the first instance needs to run, if anything should run at all.
-					conf.DisableCustomInitializationHooks |= !isFirstInstance;
+					// only the first instance needs to run
+					conf.DisableCustomInitializationHooks = !isFirstInstance;
 				});
 				
 	            if (isFirstInstance)
