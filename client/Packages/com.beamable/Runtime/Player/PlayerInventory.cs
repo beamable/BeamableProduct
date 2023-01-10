@@ -499,6 +499,36 @@ namespace Beamable.Player
 			return Update(builder, transaction);
 		}
 
+		private InventoryUpdateBuilder _delayedBuilder = new InventoryUpdateBuilder();
+		private Promise _delayedUpdatePromise;
+		
+		public Promise UpdateDelayed(InventoryUpdateBuilder updateBuilder, CustomYieldInstruction delay=null)
+		{
+			_delayedBuilder = _delayedBuilder.Concat(updateBuilder);
+			return _delayedUpdatePromise = _debouncer.SetTimeout(CommitDelayed, delay);
+		}
+		
+		public Promise UpdateDelayed(Action<InventoryUpdateBuilder> updateBuilder, CustomYieldInstruction delay=null)
+		{
+			updateBuilder?.Invoke(_delayedBuilder);
+			return _delayedUpdatePromise = _debouncer.SetTimeout(CommitDelayed, delay);
+		}
+
+		public async Promise WaitForDelayedUpdate()
+		{
+			if (_delayedUpdatePromise != null)
+			{
+				await _delayedUpdatePromise;
+			}
+		}
+
+		private Promise CommitDelayed()
+		{
+			var builder = new InventoryUpdateBuilder(_delayedBuilder);
+			_delayedBuilder = new InventoryUpdateBuilder();
+			return Update(builder);
+		}
+
 		/// <summary>
 		/// Make an atomic update to the player's inventory state.
 		/// If you are offline, then this function changes based on your <see cref="CoreConfiguration.InventoryOfflineMode"/> setting.
@@ -629,16 +659,25 @@ namespace Beamable.Player
 
 		private void UpdateOfflineBuilder(InventoryUpdateBuilder builder)
 		{
-			// TODO: merge currencies and vip_bonus and such.
-
-			foreach (var curr in builder.currencies)
-			{
-				_offlineUpdate.CurrencyChange(curr.Key, curr.Value);
-			}
-
-			_offlineUpdate.newItems.AddRange(builder.newItems);
-			_offlineUpdate.updateItems.AddRange(builder.updateItems);
-			_offlineUpdate.deleteItems.AddRange(builder.deleteItems);
+			// if (builder.applyVipBonus.HasValue)
+			// {
+			// 	_offlineUpdate.applyVipBonus = builder.applyVipBonus;
+			// }
+			//
+			// foreach (var kvp in builder.currencyProperties)
+			// {
+			// 	_offlineUpdate.currencyProperties[kvp.Key] = kvp.Value;
+			// }
+			//
+			// foreach (var curr in builder.currencies)
+			// {
+			// 	_offlineUpdate.CurrencyChange(curr.Key, curr.Value);
+			// }
+			//
+			// _offlineUpdate.newItems.AddRange(builder.newItems);
+			// _offlineUpdate.updateItems.AddRange(builder.updateItems);
+			// _offlineUpdate.deleteItems.AddRange(builder.deleteItems);
+			_offlineUpdate = _offlineUpdate.Concat(builder);
 
 			// if we delete an item that we had only ever added offline, then we don't ever send it. So we remove it from the newItems
 			foreach (var delete in builder.deleteItems)
@@ -678,7 +717,7 @@ namespace Beamable.Player
 			var transaction = data.Item2;
 			try
 			{
-				
+				Debug.Log("SENDING INVENTORY UPDATE!!!!");
 				await _inventoryApi.Update(builder, transaction);
 			}
 			catch (NoConnectivityException)
