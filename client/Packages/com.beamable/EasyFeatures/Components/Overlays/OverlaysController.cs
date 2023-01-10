@@ -1,12 +1,13 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.Components
 {
 	public class OverlaysController : MonoBehaviour
 	{
 		[Header("Components")]
-		public GameObject Mask;
+		public Button Mask;
 
 		[Header("Generic elements")]
 		public OverlayedLabel Label;
@@ -14,7 +15,7 @@ namespace Beamable.EasyFeatures.Components
 		public OverlayedModalWindow ModalWindow;
 		public OverlayedLabelWithButton LabelWithButton;
 		public OverlayedToastPopup ToastPopup;
-		public CustomOverlay CustomOverlay;
+		public RectTransform CustomOverlayRoot;
 
 		private IOverlayComponent _currentObject;
 
@@ -28,10 +29,10 @@ namespace Beamable.EasyFeatures.Components
 			Show(LabelWithButton, () =>
 			{
 				LabelWithButton.Show(label, buttonLabel, () =>
-{
-	HideOverlay();
-	onClick?.Invoke();
-});
+				{
+					HideOverlay();
+					onClick?.Invoke();
+				});
 			});
 		}
 
@@ -66,15 +67,18 @@ namespace Beamable.EasyFeatures.Components
 
 		public void HideOverlay()
 		{
-			Mask.SetActive(false);
+			Mask.gameObject.SetActive(false);
 			_currentObject?.Hide();
 			_currentObject = null;
 		}
 
-		protected void Show(IOverlayComponent activeComponent, Action action)
+		protected void Show(IOverlayComponent activeComponent, Action action, Action onBackgroundAction = null)
 		{
 			_currentObject?.Hide();
-			Mask.SetActive(true);
+			Mask.gameObject.SetActive(true);
+			Mask.interactable = onBackgroundAction != null;
+			Mask.onClick.RemoveAllListeners();
+			Mask.onClick.AddListener(() => onBackgroundAction?.Invoke());
 			action?.Invoke();
 			_currentObject = activeComponent;
 		}
@@ -84,9 +88,11 @@ namespace Beamable.EasyFeatures.Components
 			ToastPopup.Show(message, duration);
 		}
 
-		public T ShowCustomOverlay<T>(T overlayObject) where T : MonoBehaviour
+		public T ShowCustomOverlay<T>(T overlayObject) where T : CustomOverlay
 		{
-			return CustomOverlay.Show(overlayObject);
+			T instance = Instantiate(overlayObject, CustomOverlayRoot, true);
+			Show(instance, () => instance.Show(), HideOverlay);
+			return instance;
 		}
 	}
 }

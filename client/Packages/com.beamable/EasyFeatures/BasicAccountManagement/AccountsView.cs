@@ -135,12 +135,12 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private void OnSwitchAccount()
 		{
-			var popup = FeatureControl.OverlaysController.CustomOverlay.Show(SwitchAccountPopupPrefab);
-			popup.Setup(StartSignIn, OpenCreateAccountView);
+			var popup = FeatureControl.OverlaysController.ShowCustomOverlay(SwitchAccountPopupPrefab);
+			popup.Setup(StartSignIn, OpenCreateAccountView, FeatureControl.OverlaysController);
 
 			void StartSignIn()
 			{
-				FeatureControl.OverlaysController.CustomOverlay.Hide();
+				FeatureControl.OverlaysController.HideOverlay();
 				SwitchButtonsGroup.SetActive(false);
 				NextCancelButtonsGroup.SetActive(true);
 				EmailInputField.gameObject.SetActive(true);
@@ -149,7 +149,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 			void OpenCreateAccountView()
 			{
-				FeatureControl.OverlaysController.CustomOverlay.Hide();
+				FeatureControl.OverlaysController.HideOverlay();
 				FeatureControl.OpenCreateAccountView();
 			}
 		}

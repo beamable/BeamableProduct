@@ -1548,6 +1548,21 @@ MonoBehaviour:
         _json: '{"_valueType":0,"_color":{"r":0.12156863510608673,"g":0.07058823853731156,"b":0.30588236451148989,"a":1.0}}'
     _cachedProperties: []
     _selector: .panel.account.selected
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.6627451181411743,"g":0.6039215922355652,"b":0.917647123336792,"a":1.0}}'
+    - _key: roundCorners
+      _property:
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_floatValue":8.0}'
+    _cachedProperties: []
+    _selector: .dragHandle
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}

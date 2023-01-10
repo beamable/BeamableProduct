@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicSocial
 {
-	public class PlayerInviteUI : MonoBehaviour
+	public class PlayerInviteUI : CustomOverlay
 	{
 		public TMP_InputField PlayerIdInputField;
 		public GameObject FoundPlayerObject;
