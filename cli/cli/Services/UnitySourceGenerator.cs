@@ -1004,7 +1004,7 @@ public static class UnityHelper
 		field.Attributes = MemberAttributes.Public;
 
 		// the init expression is only required when its an object of some sort...
-		if (!isRequired || schema.Type == "object")
+		if (!isRequired || schema.Type == "object" || schema.Reference != null)
 		{
 			field.InitExpression = new CodeObjectCreateExpression(field.Type);
 		}
@@ -1196,8 +1196,10 @@ public static class UnityHelper
 				return true;
 			default:
 				// we just cannot support the serialization of unspecified object types, so don't serialize.
-				if (string.IsNullOrEmpty(schema.Type) || schema.Type == "object") return false;
+				var isTypeEmptyOrObject = string.IsNullOrEmpty(schema.Type) || schema.Type == "object";
+				var hasReference = schema.Reference != null;
 
+				if (isTypeEmptyOrObject && !hasReference) return false;
 
 				// use the default serialize method.
 				methodExpr = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),

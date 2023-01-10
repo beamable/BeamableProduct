@@ -1,6 +1,8 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using Beamable.Common;
+using System;
+using System.Net;
 
 namespace Beamable.Server
 {
@@ -11,11 +13,16 @@ namespace Beamable.Server
 
    public class DefaultContentResolver : IContentResolver
    {
-      public async Task<string> RequestContent(string uri)
-      {
-         using var client = new HttpClient();
-         var result = await client.GetStringAsync(uri);
-         return result;
-      }
+	   private HttpClient client;
+
+	   public DefaultContentResolver()
+	   {
+		   client = new HttpClient();
+	   }
+
+	   public Task<string> RequestContent(string uri)
+	   {
+		   return client.GetStringAsync(uri);
+	   }
    }
 }
