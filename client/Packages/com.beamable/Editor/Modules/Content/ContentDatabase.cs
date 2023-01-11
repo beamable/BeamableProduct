@@ -137,7 +137,10 @@ namespace Beamable.Editor.Content
 					instance.runtimeType = runtimeType;
 					instance.contentId = currType + "." + name;
 					_data.Add(instance);
-					currList.Add(instance);
+					if (hasContentList)
+					{
+						currList.Add(instance);
+					}
 				}
 
 
