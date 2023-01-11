@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using Beamable.Avatars;
+using Beamable.EasyFeatures.Components;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
@@ -15,6 +17,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		public Button ConfirmButton;
 		public Button CancelButton;
+		public ToggleGroup AvatarsGroup;
+		public AvatarToggle AvatarTogglePrefab;
 
 		protected IDependencies System;
 
@@ -36,11 +40,32 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return;
 			}
+
+			foreach (Transform child in AvatarsGroup.transform)
+			{
+				Destroy(child.gameObject);
+			}
+
+			foreach (var avatar in AvatarConfiguration.Instance.Avatars)
+			{
+				// instantiate toggle for each avatar
+				var avatarToggle = Instantiate(AvatarTogglePrefab, AvatarsGroup.transform);
+				avatarToggle.Setup(avatar, AvatarsGroup, OnAvatarSelectionChanged);
+			}
 			
 			FeatureControl.SetBackAction(OpenAccountsView);
 			FeatureControl.SetHomeAction(OpenAccountsView);
 			ConfirmButton.onClick.ReplaceOrAddListener(OnConfirmPressed);
 			CancelButton.onClick.ReplaceOrAddListener(OpenAccountsView);
+		}
+
+		private void OnAvatarSelectionChanged(bool isSelected, AccountAvatar avatar)
+		{
+			if (!isSelected)
+				return;
+			
+			// set avatar
+			Debug.LogWarning($"CHOSEN AVATAR: {avatar.Name}");
 		}
 
 		private void OnConfirmPressed()
