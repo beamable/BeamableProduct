@@ -123,8 +123,11 @@ namespace Beamable.Server.Content
       private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
       private bool _hasStartedInit;
 
+      public Promise initializedPromise;
+
       public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
       {
+	      initializedPromise = new Promise();
          _contentCache = new Cache<ContentCacheKey, IContentObject>(CacheResolver);
          _requester = requester;
          _socket = socket;
@@ -159,10 +162,18 @@ namespace Beamable.Server.Content
       {
 		  if (_hasStartedInit) return;
 	      _hasStartedInit = true;
-	      _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT, HandleContentPublish);
+	      try
+	      {
+		      _socket.Subscribe<ContentManifestEvent>(Constants.Features.Services.CONTENT_UPDATE_EVENT,
+			      HandleContentPublish);
 
-	      if (!preload) return;
-	      await DownloadAllContent();
+		      if (!preload) return;
+		      await DownloadAllContent();
+	      }
+	      finally
+	      {
+		      initializedPromise.CompleteSuccess();
+	      }
       }
 
       private async Promise DownloadAllContent()
@@ -172,6 +183,12 @@ namespace Beamable.Server.Content
 	      var sw = new Stopwatch();
 	      sw.Start();
 	      var manifest = await GetManifest();
+	      if ((manifest?.entries?.Count ?? 0) == 0)
+	      {
+		      sw.Stop();
+		      Log.Verbose($"Content Load - [100%] processed=[0] total-time=[{sw.ElapsedMilliseconds}] (empty manifest)");
+		      return;
+	      }
 	      Log.Verbose($"MANIFEST CONTAINS {manifest.entries.Count} OBJECTS time=[{sw.ElapsedMilliseconds}]");
 
 	      var processed = 0;
@@ -228,7 +245,11 @@ namespace Beamable.Server.Content
             var oldPromise = _waitForManifest;
             // reset the manifest promise, so that if a content request comes while a manifest is being retrieved, we wait for the updated content to be served
             _waitForManifest = _requester.Request<ContentManifest>(Method.GET, "/basic/content/manifest")
-               .Map(manifest =>
+	            .RecoverFrom404(ex => new ContentManifest
+	            {
+		            id = "global", created = 0, references = new List<ContentReference>()
+	            })
+	            .Map(manifest =>
                {
                   _idToContentReference.Clear();
 
