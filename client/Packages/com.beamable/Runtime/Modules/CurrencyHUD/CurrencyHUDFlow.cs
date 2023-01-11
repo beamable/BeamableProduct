@@ -36,7 +36,22 @@ namespace Beamable.CurrencyHUD
 
 			var currency = await content.Resolve();
 			var currencyAddress = currency.icon;
-			img.texture = await currencyAddress.LoadTexture();
+			var isValid = currencyAddress.IsValid();
+			if(isValid)
+			{
+				img.texture = await currencyAddress.LoadTexture();
+			}
+			else
+			{
+				img.texture = null;
+#if UNITY_EDITOR
+				if (!isValid && currencyAddress.editorAsset != null)
+				{
+					var path = UnityEditor.AssetDatabase.GetAssetPath(currencyAddress.editorAsset);
+					Debug.LogError($"Currency icon is not an Addressable asset, check asset at path: <b>{path}</b>. Setting sprite image to <b>null</b> for now.", this);
+				}
+#endif
+			}
 			displayModule.SetVisible();
 		}
 
