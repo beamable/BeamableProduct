@@ -94,15 +94,15 @@ namespace Beamable.Tests.Runtime
 
 			yield return new WaitForSecondsRealtime(1);
 			
+			Promise Work()
+			{
+				workCount++;
+				var p = new Promise().WaitForSeconds(.2f).ToPromise();
+				return p;
+			}
+			
 			Assert.AreEqual(1,workCount);
 		}
-
 		
-		public Promise Work()
-		{
-			workCount++;
-			var p = new Promise().WaitForSeconds(.2f).ToPromise();
-			return p;
-		}
 	}
 }

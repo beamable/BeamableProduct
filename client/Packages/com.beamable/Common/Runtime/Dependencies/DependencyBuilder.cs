@@ -561,6 +561,7 @@ namespace Beamable.Common.Dependencies
 			return this;
 		}
 
+		/// <inheritdoc cref="Instantiate"/>
 		public static TImpl Instantiate<TImpl>(IDependencyProvider provider)
 		{
 			return (TImpl)Instantiate(typeof(TImpl), provider);

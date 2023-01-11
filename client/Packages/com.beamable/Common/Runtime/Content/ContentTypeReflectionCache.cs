@@ -52,7 +52,6 @@ namespace Beamable.Common.Content
 
 		private Dictionary<string, Type> _contentTypeToClass = new Dictionary<string, Type>();
 		private Dictionary<Type, string> _classToContentType = new Dictionary<Type, string>();
-		public Trie<Type> TypeTrie = new Trie<Type>();
 
 		private IBeamHintGlobalStorage _hintStorage;
 
@@ -168,11 +167,7 @@ namespace Beamable.Common.Content
 
 				_contentTypeToClass = contentTypeToClassDict;
 				_classToContentType = classToContentTypeDict;
-
-				foreach (var kvp in _contentTypeToClass)
-				{
-					TypeTrie.Insert(kvp.Key, kvp.Value);
-				}
+				
 			}
 
 			Instance = this;

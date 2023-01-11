@@ -58,6 +58,54 @@ namespace Beamable.Editor.Tests.Common
 		}
 		
 		[Test]
+		public void Simple_MultiPath()
+		{
+			var t = new Trie<int>();
+			
+			t.Insert("a", 1);
+			t.Insert("a.a", 2);
+			t.Insert("a.a.a", 3);
+
+			var output = t.GetAll("a");
+			Assert.AreEqual(3, output.Count);
+			Assert.AreEqual(1, output[0]);
+			Assert.AreEqual(2, output[1]);
+			Assert.AreEqual(3, output[2]);
+		
+			output = t.GetAll("a.a");
+			Assert.AreEqual(2, output.Count);
+			Assert.AreEqual(2, output[0]);
+			Assert.AreEqual(3, output[1]);
+			
+			output = t.GetAll("a.a.a");
+			Assert.AreEqual(1, output.Count);
+			Assert.AreEqual(3, output[0]);
+		}
+
+		
+		[Test]
+		public void Simple_GetExactVsAll()
+		{
+			var t = new Trie<int>();
+			
+			t.Insert("a", 1);
+			t.Insert("a.b", 2);
+			t.Insert("a.b.c", 3);
+
+			
+			var output = t.GetAll("a.b");
+			Assert.AreEqual(2, output.Count);
+			Assert.AreEqual(2, output[0]);
+			Assert.AreEqual(3, output[1]);
+			
+			output = t.GetExact("a.b");
+			Assert.AreEqual(1, output.Count);
+			Assert.AreEqual(2, output[0]);
+		
+		}
+
+		
+		[Test]
 		public void Serialization()
 		{
 			var t = new Trie<int>();

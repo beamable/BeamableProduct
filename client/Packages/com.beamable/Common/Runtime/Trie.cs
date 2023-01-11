@@ -76,13 +76,31 @@ namespace Beamable.Common
 			}
 		}
 
-		private Dictionary<string, Node> _nodes = new Dictionary<string, Node>();
+		// "a" -> node,
+		// doesn't include entires for "a.b"
+		private Dictionary<string, Node> _firstPartToNode = new Dictionary<string, Node>();
+		
+		// "a.b.c" -> Node
 		private Dictionary<string, Node> _pathToNode = new Dictionary<string, Trie<T>.Node>();
-		private Dictionary<string, List<T>> _pathCache = new Dictionary<string, List<T>>();
+		private Dictionary<string, List<T>> _pathAllCache = new Dictionary<string, List<T>>();
+		private Dictionary<string, List<T>> _pathExactCache = new Dictionary<string, List<T>>();
 
 		[SerializeField]
-		private List<SerializationEntry> data = new List<SerializationEntry>();
+		private char _splitter;
 		
+		[SerializeField]
+		private List<SerializationEntry> data = new List<SerializationEntry>();
+
+		public Trie() : this('.')
+		{
+			
+		}
+
+		public Trie(char splitter)
+		{
+			_splitter = splitter;
+		}
+
 		/// <summary>
 		/// Add a value to the given key
 		/// </summary>
@@ -155,28 +173,26 @@ namespace Beamable.Common
 		/// <summary>
 		/// Get all the values that exist only at the given key.
 		/// If the key was "a.b.c", this method will only return the values at "a.b.c",
-		/// and it will not return anything at "a.b.c.x". 
+		/// and it will not return anything at "a.b.c.x".
+		/// <para name="x">The returned <see cref="List{T}"/> should not be modified. No modifications will persist in the trie. Instead, use the <see cref="Insert"/>, <see cref="Remove"/>, or <see cref="SetRange"/> methods</para>
 		/// </summary>
 		/// <param name="key"></param>
 		/// <returns></returns>
 		public List<T> GetExact(string key)
 		{
-			if (!_pathCache.TryGetValue(key, out var existing))
+			var returnData = new List<T>();
+			if (_pathToNode.TryGetValue(key, out var existing))
 			{
-				_pathCache[key] = existing = new List<T>();
-				if (_pathToNode.TryGetValue(key, out var node))
-				{
-					existing.AddRange(node.values);
-				}
+				returnData.AddRange(existing.values);
 			}
-
-			return existing;
+			return returnData;
 		}
 		
 		/// <summary>
 		/// Get all values under the given key.
 		/// If the given key is "a.b.c", this method will return all values at "a.b.c", and
 		/// all values at "a.b.c.x".
+		/// <para name="x">The returned <see cref="List{T}"/> should not be modified. No modifications will persist in the trie. Instead, use the <see cref="Insert"/>, <see cref="Remove"/>, or <see cref="SetRange"/> methods</para>
 		/// </summary>
 		/// <param name="key"></param>
 		/// <returns></returns>
@@ -189,6 +205,7 @@ namespace Beamable.Common
 		/// Get all values under the given keys.
 		/// If a value appears under multiple keys (such as 'a.b.x' appearing under 'a' and 'a.b'),
 		/// then the item will only be returned once.
+		/// <para name="x">The returned <see cref="List{T}"/> should not be modified. No modifications will persist in the trie. Instead, use the <see cref="Insert"/>, <see cref="Remove"/>, or <see cref="SetRange"/> methods</para>
 		/// </summary>
 		/// <param name="keys"></param>
 		/// <returns></returns>
@@ -197,9 +214,9 @@ namespace Beamable.Common
 			var relevantLists = new HashSet<List<T>>();
 			foreach (var key in keys)
 			{
-				if (!_pathCache.TryGetValue(key, out var existing))
+				if (!_pathAllCache.TryGetValue(key, out var existing))
 				{
-					_pathCache[key] = existing = new List<T>();
+					_pathAllCache[key] = existing = new List<T>();
 
 					Node last = null;
 					foreach (var node in Traverse(key))
@@ -229,7 +246,7 @@ namespace Beamable.Common
 
 		private void InvalidatePathCache(string key)
 		{
-			_pathCache.Remove(key);
+			_pathAllCache.Remove(key);
 		}
 
 		/// <summary>
@@ -278,7 +295,7 @@ namespace Beamable.Common
 			var set = new HashSet<string>();
 			foreach (var key in keys)
 			{
-				var parts = key.Split(".");
+				var parts = key.Split(_splitter);
 				var traversalCount = Traverse(key, false).Count();
 				if (parts.Length == traversalCount)
 				{
@@ -317,16 +334,16 @@ namespace Beamable.Common
 		/// <returns></returns>
 		public IEnumerable<Node> Traverse(string key, bool autoCreate=true)
 		{
-			var parts = key.Split('.');
+			var parts = key.Split(_splitter);
 			var first = parts[0];
 			
-			if (!_nodes.TryGetValue(first, out var node))
+			if (!_firstPartToNode.TryGetValue(first, out var node))
 			{
 				if (!autoCreate)
 				{
 					yield break;
 				}
-				_pathToNode[first] = _nodes[first] = node = new Node
+				_pathToNode[first] = _firstPartToNode[first] = node = new Node
 				{
 					part = first,
 					path = first
@@ -338,14 +355,19 @@ namespace Beamable.Common
 			for (var i = 1; i < parts.Length; i++)
 			{
 				var curr = parts[i];
-				subPath += "." + curr;
+				subPath += _splitter + curr;
 				if (!node.children.TryGetValue(curr, out var nextNode))
 				{
 					if (!autoCreate)
 					{
 						yield break;
 					}
-					_pathToNode[subPath] = node.children[curr] = nextNode = new Node {parent = node, part = curr, path = subPath};
+					_pathToNode[subPath] = node.children[curr] = nextNode = new Node
+					{
+						parent = node, 
+						part = curr, 
+						path = subPath
+					};
 				}
 
 				node = nextNode;
@@ -354,7 +376,7 @@ namespace Beamable.Common
 
 		}
 
-		private Node Search(string key, bool invalidate=true)
+		private Node Search(string key)
 		{
 			Node last = null;
 			foreach (var node in Traverse(key))
@@ -387,9 +409,9 @@ namespace Beamable.Common
 		/// </summary>
 		public void OnAfterDeserialize()
 		{
-			_nodes.Clear();
+			_firstPartToNode.Clear();
 			_pathToNode.Clear();
-			_pathCache.Clear();
+			_pathAllCache.Clear();
 			foreach (var entry in data)
 			{
 				InsertRange(entry.path, entry.values);

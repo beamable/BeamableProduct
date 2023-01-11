@@ -67,22 +67,36 @@ namespace Beamable.Player
 		private HashSet<string> nextScopes = new HashSet<string>();
 
 		public PlayerCurrencyGroup Currencies { get; }
-
-		[SerializeField]
-		private PlayerItemTrie allItems;
-
-		[SerializeField]
-		private PlayerCurrencyTrie allCurrencies;
 		
-		public PlayerItemTrie AllItems => allItems;
-		public PlayerCurrencyTrie AllCurrencies => allCurrencies;
+		/// <summary>
+		/// The local items represent the current items that the SDK has subscribed to.
+		/// This structure is not observable. Consider using the <see cref="GetItems"/> function to get an observable, serializable <see cref="PlayerItemGroup"/>.
+		/// Modifications to this structure will not update the player's inventory.
+		/// To update the items, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		public PlayerItemTrie LocalItems => localItems;
+		
+		/// <summary>
+		/// The local currencies represent the current currencies that the SDK has subscribed to.
+		/// This structure is not observable. Consider using the <see cref="GetCurrencies"/> function to get an observable, serializable <see cref="PlayerCurrencyGroup"/>.
+		/// Modifications to this structure will not update the player's inventory.
+		/// To update the currencies, use the <see cref="Update(System.Action{Beamable.Common.Api.Inventory.InventoryUpdateBuilder},string)"/> method.
+		/// </summary>
+		public PlayerCurrencyTrie LocalCurrencies => localCurrencies;
 
+		[SerializeField]
+		private PlayerItemTrie localItems;
+
+		[SerializeField]
+		private PlayerCurrencyTrie localCurrencies;
+		
 		private Trie<int> _requestCounter = new Trie<int>();
-
-
+		
 		private SerializedDictionaryStringToPlayerItemGroup _items = new SerializedDictionaryStringToPlayerItemGroup();
 		private SerializedDictionaryStringToPlayerCurrencyGroup _currs = new SerializedDictionaryStringToPlayerCurrencyGroup();
-		
+		private InventoryUpdateBuilder _delayedBuilder = new InventoryUpdateBuilder();
+		private Promise _delayedUpdatePromise;
+
 		
 		[SerializeField]
 		private SerializableDictionaryStringToString _itemIdToReqId = new SerializableDictionaryStringToString();
@@ -114,8 +128,8 @@ namespace Beamable.Player
 			_contentService = contentService;
 			_sdkEventService = sdkEventService;
 
-			allCurrencies = new PlayerCurrencyTrie();
-			allItems = new PlayerItemTrie();
+			localCurrencies = new PlayerCurrencyTrie();
+			localItems = new PlayerItemTrie();
 
 			Currencies = GetCurrencies();
 			_notificationService.Subscribe<InventoryScopeNotification>("inventory.refresh", OnInventoryUpdated);
@@ -140,12 +154,13 @@ namespace Beamable.Player
 			public string[] scopes;
 		}
 
-		private void OnInventoryUpdated(InventoryScopeNotification update)
-		{
-			var _ = RefreshScopes(update.scopes);
-		}
-		
-		public async Promise RefreshScopes(params string[] scopes)
+		/// <summary>
+		/// Refresh the current items and currencies based on the given <see cref="scopes"/>.
+		/// If no calls to <see cref="GetItems"/> or <see cref="GetCurrencies"/> have been made,
+		/// then no scopes have been subscribed and therefor, no scopes will actually be updated.
+		/// </summary>
+		/// <param name="scopes"></param>
+		public async Promise Refresh(params string[] scopes)
 		{
 			foreach (var scope in scopes)
 			{
@@ -154,6 +169,10 @@ namespace Beamable.Player
 			await _debouncer.SetTimeout(GetLatestInventory);
 		}
 
+		private void OnInventoryUpdated(InventoryScopeNotification update)
+		{
+			var _ = Refresh(update.scopes);
+		}
 
 		private async Promise<InventoryView> DownloadInventoryData(string[] scopes)
 		{
@@ -179,7 +198,7 @@ namespace Beamable.Player
 				var currencyScopes = scopeTrie.GetAll("currency");
 
 
-				var allCurrencies = this.allCurrencies.GetAll(currencyScopes);
+				var allCurrencies = this.localCurrencies.GetAll(currencyScopes);
 				// just read the data directly from the trie...
 				var view = new InventoryView
 				{
@@ -207,7 +226,7 @@ namespace Beamable.Player
 				for (var i = 0; i < itemScopes.Count; i++)
 				{
 					// TODO: this allocation is really wasteful, we could probably cache this and invalidate on internet writes...
-					var items = allItems.GetExact(itemScopes[i]);
+					var items = localItems.GetExact(itemScopes[i]);
 					view.items[i] = new ItemGroup
 					{
 						id = itemScopes[i],
@@ -256,7 +275,7 @@ namespace Beamable.Player
 					var content = await contentRef.Resolve(); // TODO: pull this out into a separate process...
 					var seen = new HashSet<PlayerItem>();
 
-					var existingItems = allItems.GetExact(group.id);
+					var existingItems = localItems.GetExact(group.id);
 					var idToExistingItem = new Dictionary<int, PlayerItem>();
 					foreach (var item in existingItems)
 					{
@@ -311,7 +330,7 @@ namespace Beamable.Player
 					}
 
 
-					allItems.SetRange(group.id, plrItems);
+					localItems.SetRange(group.id, plrItems);
 				}
 
 
@@ -319,14 +338,14 @@ namespace Beamable.Player
 				var currGroupsToUpdate = new HashSet<PlayerCurrencyGroup>();
 				foreach (var deletedScope in deletedScopes)
 				{
-					var removed = allItems.GetExact(deletedScope);
+					var removed = localItems.GetExact(deletedScope);
 					foreach (var removedItem in removed)
 					{
 						removedItem.TriggerDeletion();
 					}
 
-					allItems.ClearExact(deletedScope);
-					foreach (var node in allItems.Traverse(deletedScope))
+					localItems.ClearExact(deletedScope);
+					foreach (var node in localItems.Traverse(deletedScope))
 					{
 						if (_items.TryGetValue(node.path, out var existingGroup))
 						{
@@ -335,7 +354,7 @@ namespace Beamable.Player
 					}
 				}
 
-				var existingCurrs = allCurrencies.GetAll("currency");
+				var existingCurrs = localCurrencies.GetAll("currency");
 				var idToExistingCurr = new Dictionary<string, PlayerCurrency>();
 				foreach (var item in existingCurrs)
 				{
@@ -368,7 +387,7 @@ namespace Beamable.Player
 						}
 
 						idToExistingCurr[currency.id] = existing;
-						allCurrencies.Insert(currency.id, existing);
+						localCurrencies.Insert(currency.id, existing);
 					}
 
 				}
@@ -377,7 +396,7 @@ namespace Beamable.Player
 				// now that the trie has been updated, notify all itemGroups that their data needs to update
 				foreach (var group in res.items)
 				{
-					foreach (var node in allItems.Traverse(group.id))
+					foreach (var node in localItems.Traverse(group.id))
 					{
 						if (_items.TryGetValue(node.path, out var existingGroup))
 						{
@@ -388,7 +407,7 @@ namespace Beamable.Player
 
 				foreach (var group in res.currencies)
 				{
-					foreach (var node in allCurrencies.Traverse(group.id))
+					foreach (var node in localCurrencies.Traverse(group.id))
 					{
 						if (_currs.TryGetValue(node.path, out var existingGroup))
 						{
@@ -415,10 +434,12 @@ namespace Beamable.Player
 		}
 		
 
+		/// <summary>
+		/// When the player inventory is initialized, shortly afterwards, this function will be called
+		/// to re-load the previous state.
+		/// </summary>
 		public void OnAfterLoadState()
 		{
-			// TODO: need to reconstruct the content field on each PlayerItem?
-			
 			// now we need to try applying any old state we had
 			var _ = _consumer.RunAfterReconnection(new SdkEvent(nameof(PlayerInventory), "commit"));
 		}
@@ -434,7 +455,7 @@ namespace Beamable.Player
 			if (group.Count == 0)
 			{
 				// need to create...
-				allCurrencies.Insert(currencyRef, new PlayerCurrency
+				localCurrencies.Insert(currencyRef, new PlayerCurrency
 				{
 					CurrencyId = currencyRef.Id,
 					Properties = new SerializableDictionaryStringToString(),
@@ -470,6 +491,14 @@ namespace Beamable.Player
 			return itemGroup;
 		}
 
+		/// <summary>
+		/// Get a category of <see cref="PlayerCurrency"/> for a given type.
+		/// If you have subtypes of <see cref="CurrencyRef"/>,
+		/// and you get an item group for a basetype of <see cref="CurrencyRef"/>,
+		/// the resultant <see cref="PlayerCurrencyGroup"/> will have all instances from all subclasses of the given type.
+		/// </summary>
+		/// <param name="currencyRef">An <see cref="CurrencyRef"/> for the type of a currency to get. </param>
+		/// <returns>a <see cref="PlayerCurrencyGroup"/> object for the given currencyRef</returns>
 		public PlayerCurrencyGroup GetCurrencies(CurrencyRef currencyRef = null)
 		{
 			currencyRef = currencyRef ?? "currency";
@@ -499,15 +528,6 @@ namespace Beamable.Player
 			return Update(builder, transaction);
 		}
 
-		private InventoryUpdateBuilder _delayedBuilder = new InventoryUpdateBuilder();
-		private Promise _delayedUpdatePromise;
-		
-		public Promise UpdateDelayed(InventoryUpdateBuilder updateBuilder, CustomYieldInstruction delay=null)
-		{
-			_delayedBuilder = _delayedBuilder.Concat(updateBuilder);
-			return _delayedUpdatePromise = _debouncer.SetTimeout(CommitDelayed, delay);
-		}
-		
 		public Promise UpdateDelayed(Action<InventoryUpdateBuilder> updateBuilder, CustomYieldInstruction delay=null)
 		{
 			updateBuilder?.Invoke(_delayedBuilder);
@@ -565,12 +585,6 @@ namespace Beamable.Player
 				throw new NotImplementedException("Cannot perform vipBonus in offline mode");
 			}
 
-			// TODO: apply currency properties.
-			if (builder.currencyProperties.Count > 0)
-			{
-				throw new NotImplementedException("Cannot perform currency properties in offline mode");
-			}
-
 			if (builder.newItems.Count > 0)
 			{
 				// get the fake item group.
@@ -592,7 +606,7 @@ namespace Beamable.Player
 					var nextItemId = _nextOfflineItemId;
 					_itemIdToReqId[OfflineIdKey(newItem.contentId, nextItemId)] = newItem.requestId;
 
-					allItems.Insert(newItem.contentId, new PlayerItem
+					localItems.Insert(newItem.contentId, new PlayerItem
 					{
 						ContentId = newItem.contentId,
 						ItemId = nextItemId,
@@ -601,7 +615,7 @@ namespace Beamable.Player
 						UpdatedAt = 0,
 						Content = content
 					});
-					await RefreshScopes(newItem.contentId);
+					await Refresh(newItem.contentId);
 				}
 			}
 
@@ -609,7 +623,7 @@ namespace Beamable.Player
 			{
 				foreach (var updateItem in builder.updateItems)
 				{
-					var existingItems = allItems.GetAll(updateItem.contentId);
+					var existingItems = localItems.GetAll(updateItem.contentId);
 					var existingItem = existingItems.FirstOrDefault(x => x.ItemId == updateItem.itemId);
 					if (existingItem == null)
 						throw new InvalidOperationException($"Cannot update non existent item while in offline mode. contentid=[{updateItem.contentId}] itemid=[{updateItem.itemId}]");
@@ -617,7 +631,7 @@ namespace Beamable.Player
 					existingItem.Properties = updateItem.properties;
 					existingItem.UpdatedAt = 0; // TODO how to get server time in offline way?
 
-					await RefreshScopes(updateItem.contentId);
+					await Refresh(updateItem.contentId);
 				}
 			}
 
@@ -632,14 +646,29 @@ namespace Beamable.Player
 				}
 				foreach (var deleteItem in builder.deleteItems)
 				{
-					var existingItems = allItems.GetAll(deleteItem.contentId);
+					var existingItems = localItems.GetAll(deleteItem.contentId);
 					var existingItem = existingItems.FirstOrDefault(x => x.ItemId == deleteItem.itemId);
 					if (existingItem == null)
 						throw new InvalidOperationException($"Cannot delete non existent item while in offline mode. contentid=[{deleteItem.contentId}] itemid=[{deleteItem.itemId}]");
 
-					allItems.Remove(deleteItem.contentId, existingItem);
-					await RefreshScopes(deleteItem.contentId);
+					localItems.Remove(deleteItem.contentId, existingItem);
+					await Refresh(deleteItem.contentId);
 				}
+			}
+
+			
+			if (builder.currencyProperties.Count > 0)
+			{
+				foreach (var currProps in builder.currencyProperties)
+				{
+					var curr = GetCurrency(currProps.Key);
+					foreach (var prop in currProps.Value.Properties)
+					{
+						curr.Properties[prop.name] = prop.value;
+					}
+				}
+
+				await Currencies.Refresh();
 			}
 
 			foreach (var kvp in builder.currencies)
@@ -659,25 +688,24 @@ namespace Beamable.Player
 
 		private void UpdateOfflineBuilder(InventoryUpdateBuilder builder)
 		{
-			// if (builder.applyVipBonus.HasValue)
-			// {
-			// 	_offlineUpdate.applyVipBonus = builder.applyVipBonus;
-			// }
-			//
-			// foreach (var kvp in builder.currencyProperties)
-			// {
-			// 	_offlineUpdate.currencyProperties[kvp.Key] = kvp.Value;
-			// }
-			//
-			// foreach (var curr in builder.currencies)
-			// {
-			// 	_offlineUpdate.CurrencyChange(curr.Key, curr.Value);
-			// }
-			//
-			// _offlineUpdate.newItems.AddRange(builder.newItems);
-			// _offlineUpdate.updateItems.AddRange(builder.updateItems);
-			// _offlineUpdate.deleteItems.AddRange(builder.deleteItems);
-			_offlineUpdate = _offlineUpdate.Concat(builder);
+			if (builder.applyVipBonus.HasValue)
+			{
+				_offlineUpdate.applyVipBonus = builder.applyVipBonus;
+			}
+			
+			foreach (var kvp in builder.currencyProperties)
+			{
+				_offlineUpdate.currencyProperties[kvp.Key] = kvp.Value;
+			}
+			
+			foreach (var curr in builder.currencies)
+			{
+				_offlineUpdate.CurrencyChange(curr.Key, curr.Value);
+			}
+			
+			_offlineUpdate.newItems.AddRange(builder.newItems);
+			_offlineUpdate.updateItems.AddRange(builder.updateItems);
+			_offlineUpdate.deleteItems.AddRange(builder.deleteItems);
 
 			// if we delete an item that we had only ever added offline, then we don't ever send it. So we remove it from the newItems
 			foreach (var delete in builder.deleteItems)
@@ -776,13 +804,14 @@ namespace Beamable.Player
 
 		/// <summary>
 		/// Refreshes all <see cref="PlayerItemGroup"/>s that have been established using <see cref="GetItems"/>,
-		/// and refreshes currencies <see cref="Currencies"/>
+		/// and refreshes currencies <see cref="Currencies"/>.
+		///
+		/// In order to refresh a specific set of scopes, use the <see cref="Refresh(string[])"/> method.
 		/// </summary>
-		/// <exception cref="NotImplementedException"></exception>
 		public async Promise Refresh()
 		{
 			var scopes = _requestCounter.GetNonEmptyKeys(_requestCounter.GetKeys()).ToArray();
-			await RefreshScopes(scopes);
+			await Refresh(scopes);
 			_saveHandle.Save();
 		}
 

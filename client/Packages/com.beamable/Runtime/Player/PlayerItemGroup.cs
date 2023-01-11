@@ -199,13 +199,13 @@ namespace Beamable.Player
 
 		protected override async Promise PerformRefresh()
 		{
-			await _inventory.RefreshScopes(RootScope);
+			await _inventory.Refresh(RootScope);
 			Notify();
 		}
 
 		public void Notify()
 		{
-			var data = _inventory.AllItems.GetAll(RootScope);
+			var data = _inventory.LocalItems.GetAll(RootScope);
 			SetData(data);
 		}
 	}

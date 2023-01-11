@@ -31,7 +31,8 @@ namespace Beamable.Common.Dependencies
 				provider =>
 				{
 					var instance = DependencyBuilder.Instantiate<T>(provider);
-					var wrapper = new StorageWrapper<T>(provider.GetService<ScopedServiceStorage<TStorageLayer>>(), instance);
+					var storage = provider.GetService<ScopedServiceStorage<TStorageLayer>>();
+					var wrapper = new StorageWrapper<T>(storage, instance);
 					if (instance is IStorageHandler<T> handler)
 					{
 						var handle = new StorageHandle<T>(wrapper);

@@ -129,13 +129,13 @@ namespace Beamable.Player
 		
 		public void Notify()
 		{
-			var data = _inventory.AllCurrencies.GetAll(RootScope);
+			var data = _inventory.LocalCurrencies.GetAll(RootScope);
 			SetData(data);
 		}
 		
 		protected override async Promise PerformRefresh()
 		{
-			await _inventory.RefreshScopes(RootScope);
+			await _inventory.Refresh(RootScope);
 			Notify();
 		}
 
