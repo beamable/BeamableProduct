@@ -54,7 +54,7 @@ namespace Beamable.Coroutines
 		{
 			if (bouncer == null)
 			{
-				bouncer = new WaitForSecondsRealtime(.3f);
+				bouncer = new WaitForSecondsRealtime(.3f); // TODO: is this the right default?
 			}
 
 			if (!_actionToYielder.TryGetValue(action, out var instruction))
@@ -88,7 +88,7 @@ namespace Beamable.Coroutines
 		/// <param name="action">The same action instance given to <see cref="SetTimeout"/></param>
 		/// <returns>true if the action was cancelled, or false if it was not cancelled. It may have failed to cancel
 		/// if the action didn't exist, or if the action was already cancelled. </returns>
-		public bool ClearTimeout(T action)
+		public bool ClearTimeout(T action) // TODO: maybe remove this since it isn't used?
 		{
 			if (_actionToYielder.TryGetValue(action, out var yielder) && !yielder.IsCancelled)
 			{
