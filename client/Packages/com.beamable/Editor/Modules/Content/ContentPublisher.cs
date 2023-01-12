@@ -33,7 +33,7 @@ namespace Beamable.Editor.Content
 			OnContentPublished = null;
 		}
 
-		public Promise<ContentPublishSet> CreatePublishSet(string manifestId = null)
+		public Promise<ContentPublishSet> CreatePublishSet(string manifestId = null, bool forcePublish = false)
 		{
 			if (string.IsNullOrEmpty(manifestId))
 			{
@@ -57,7 +57,7 @@ namespace Beamable.Editor.Content
 				}).ToList();
 
 				var localManifest = new Manifest(allReferences);
-				var diffSet = Manifest.FindDifferences(localManifest, serverManifest);
+				var diffSet = Manifest.FindDifferences(localManifest, serverManifest, forcePublish);
 
 				return new ContentPublishSet
 				{

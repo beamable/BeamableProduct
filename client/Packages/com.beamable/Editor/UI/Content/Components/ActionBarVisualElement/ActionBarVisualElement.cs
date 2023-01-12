@@ -44,7 +44,7 @@ namespace Beamable.Editor.Content.Components
 
 		public event Action<ContentTypeDescriptor> OnAddItemButtonClicked;
 		public event Action OnValidateButtonClicked;
-		public event Action<bool> OnPublishButtonClicked;
+		public event Action<PublishWindowVersion> OnPublishButtonClicked;
 		public event Action OnDownloadButtonClicked;
 		public event Action OnRefreshButtonClicked;
 		public event Action OnDocsButtonClicked;
@@ -76,7 +76,7 @@ namespace Beamable.Editor.Content.Components
 
 			_publishButton = Root.Q<DropdownButton>("publishButton");
 			_publishButton.SetEnabled(Model.UserCanPublish);
-			_publishButton.OnBaseClick += () => OnPublishButtonClicked?.Invoke(false);
+			_publishButton.OnBaseClick += () => OnPublishButtonClicked?.Invoke(PublishWindowVersion.Default);
 			_publishButton.OnDropdownClick += HandlePublishDropdown;
 
 			Model.OnUserCanPublishChanged += _publishButton.SetEnabled;
@@ -177,9 +177,10 @@ namespace Beamable.Editor.Content.Components
 
 		private void HandlePublishDropdown(ContextualMenuPopulateEvent evt)
 		{
-			evt.menu.BeamableAppendAction("Publish new Content namespace", pos => { OnPublishButtonClicked(true); });
+			evt.menu.BeamableAppendAction("Publish new Content namespace", pos => { OnPublishButtonClicked(PublishWindowVersion.CreateNewManifest); });
 			evt.menu.BeamableAppendAction("Archive namespaces", pos => ArchiveManifestsVisualElement.OpenAsUtilityWindow());
-			evt.menu.BeamableAppendAction("Publish (default)", pos => { OnPublishButtonClicked(false); });
+			evt.menu.BeamableAppendAction("Publish (default)", pos => { OnPublishButtonClicked(PublishWindowVersion.Default); });
+			evt.menu.BeamableAppendAction("Force publish", pos => { OnPublishButtonClicked(PublishWindowVersion.ForcePublish); });
 		}
 
 		private void HandleDownloadDropdown(ContextualMenuPopulateEvent evt)

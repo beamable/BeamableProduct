@@ -55,7 +55,7 @@ namespace Beamable.Editor.Content
 		private BeamablePopupWindow _currentWindow;
 
 		private List<string> _cachedItemsToDownload;
-		private bool _cachedCreateNewManifestFlag;
+		private PublishWindowVersion _cachedPublishWindowVersion;
 
 		private SerializableDictionary<string, ContentIO.ValidationChecksum> _checksums =
 			new SerializableDictionary<string, ContentIO.ValidationChecksum>();
@@ -140,7 +140,7 @@ namespace Beamable.Editor.Content
 				_currentWindow.minSize = WindowSizeMinimum;
 			};
 
-			_actionBarVisualElement.OnPublishButtonClicked += (createNew) =>
+			_actionBarVisualElement.OnPublishButtonClicked += (version) =>
 			{
 				if (_currentWindow != null)
 				{
@@ -149,7 +149,7 @@ namespace Beamable.Editor.Content
 
 				// validate and create publish set.
 
-				_cachedCreateNewManifestFlag = createNew;
+				_cachedPublishWindowVersion = version;
 
 				_currentWindow = BeamablePopupWindow.ShowUtility(ActionNames.VALIDATE_CONTENT, GetValidateContentVisualElementWithPublish(), this,
 																 WindowSizeMinimum, async (window) =>
@@ -159,12 +159,9 @@ namespace Beamable.Editor.Content
 																	 window?.SwapContent(contentManagerWindow.GetValidateContentVisualElementWithPublish());
 																 });
 
-				_currentWindow.minSize = WindowSizeMinimum;
-
-				if (_cachedCreateNewManifestFlag)
-				{
-					_currentWindow.minSize = new Vector2(_currentWindow.minSize.x, _currentWindow.minSize.y + 100);
-				}
+				_currentWindow.minSize = version == PublishWindowVersion.CreateNewManifest
+					? new Vector2(_currentWindow.minSize.x, _currentWindow.minSize.y + 100)
+					: WindowSizeMinimum;
 			};
 
 			_actionBarVisualElement.OnDownloadButtonClicked += () =>
@@ -447,9 +444,9 @@ namespace Beamable.Editor.Content
 		PublishContentVisualElement GetPublishContentVisualElement()
 		{
 			var publishPopup = new PublishContentVisualElement();
-			publishPopup.CreateNewManifest = _cachedCreateNewManifestFlag;
+			publishPopup.WindowVersion = _cachedPublishWindowVersion;
 			publishPopup.DataModel = _contentManager.Model;
-			publishPopup.PublishSet = _contentManager.CreatePublishSet(_cachedCreateNewManifestFlag);
+			publishPopup.PublishSet = _contentManager.CreatePublishSet(_cachedPublishWindowVersion == PublishWindowVersion.CreateNewManifest, _cachedPublishWindowVersion == PublishWindowVersion.ForcePublish);
 
 			publishPopup.OnCancelled += () =>
 			{
@@ -463,7 +460,7 @@ namespace Beamable.Editor.Content
 				_currentWindow = null;
 			};
 
-			bool createNewManifest = _cachedCreateNewManifestFlag;
+			var createNewManifest = _cachedPublishWindowVersion == PublishWindowVersion.CreateNewManifest;
 
 			publishPopup.OnPublishRequested += (set, prog, finished) =>
 			{

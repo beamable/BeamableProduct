@@ -65,7 +65,7 @@ namespace Beamable.Editor.Content
 			return result;
 		}
 
-		public static ManifestDifference FindDifferences(Manifest current, Manifest next)
+		public static ManifestDifference FindDifferences(Manifest current, Manifest next, bool forcePublish = false)
 		{
 			// a change set between manifests includes MODIFICATIONS, ADDITIONS, and DELETIONS
 
@@ -91,14 +91,16 @@ namespace Beamable.Editor.Content
 					additions.Add(currentContent);
 					continue;
 				}
-				var distinctTagsExist = ContentIO.AreTagsEqual(nextContent.tags, currentContent.tags);
-				if (!nextContent.checksum.Equals(currentContent.checksum) || !distinctTagsExist)
+				var tagsEqual = ContentIO.AreTagsEqual(nextContent.tags, currentContent.tags);
+				bool addToModified = !nextContent.checksum.Equals(currentContent.checksum) || !tagsEqual ||
+				                     forcePublish;
+				if (addToModified)
 				{
 					modifications.Add(currentContent);
 				}
 			}
 
-			var deletions = unseenIds.Select(id => next.Get(id)).ToList();
+			var deletions = unseenIds.Select(next.Get).ToList();
 
 			return new ManifestDifference()
 			{

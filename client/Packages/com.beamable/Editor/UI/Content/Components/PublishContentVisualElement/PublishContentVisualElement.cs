@@ -22,6 +22,14 @@ using static Beamable.Common.Constants.Features.ContentManager.Publish;
 
 namespace Beamable.Editor.Content.Components
 {
+
+	public enum PublishWindowVersion
+	{
+		Default,
+		CreateNewManifest,
+		ForcePublish
+	}
+	
 	public class PublishContentVisualElement : ContentManagerComponent
 	{
 		private LoadingBarElement _loadingBar;
@@ -31,27 +39,30 @@ namespace Beamable.Editor.Content.Components
 		public event Action<ContentPublishSet, HandleContentProgress, HandleDownloadFinished> OnPublishRequested;
 		public ContentDataModel DataModel { get; set; }
 		public Promise<ContentPublishSet> PublishSet { get; set; }
+		public PublishWindowVersion WindowVersion
+		{
+			get => _windowVersion;
+			set
+			{
+				_windowVersion = value;
+				if (_manifestNameContainer != null)
+				{
+					_manifestNameContainer.visible = CreateNewManifest;
+				}
+			}
+		}
+		public string ManifestName => _manifestNameField.value;
+		bool CreateNewManifest => WindowVersion == PublishWindowVersion.CreateNewManifest;
+
 		private PrimaryButtonVisualElement _publishBtn;
 		private bool _completed;
-
 		private VisualElement _manifestNameContainer;
 		private TextField _manifestNameField;
-		private bool _createNewManifest;
 		private ManifestModel _manifestModel;
 		private FormConstraint _isManifestNameValid;
 		private Label _manifestArchivedMessage;
 		private List<ContentPopupLinkVisualElement> _contentElements = new List<ContentPopupLinkVisualElement>();
-
-		public bool CreateNewManifest
-		{
-			get => _createNewManifest;
-			set
-			{
-				_createNewManifest = value;
-				if (_manifestNameContainer != null) _manifestNameContainer.visible = value;
-			}
-		}
-		public string ManifestName => _manifestNameField.value;
+		private PublishWindowVersion _windowVersion;
 
 		public PublishContentVisualElement() : base(nameof(PublishContentVisualElement))
 		{
@@ -296,7 +307,7 @@ namespace Beamable.Editor.Content.Components
 		private async Task HandlePublish()
 		{
 			_manifestNameField.SetEnabled(false);
-			if (_createNewManifest && _manifestModel.ArchivedManifestModels.Any(m => m.id == ManifestName))
+			if (CreateNewManifest && _manifestModel.ArchivedManifestModels.Any(m => m.id == ManifestName))
 			{
 				var api = BeamEditorContext.Default;
 				await api.InitializePromise;

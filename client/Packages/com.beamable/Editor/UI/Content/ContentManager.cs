@@ -197,14 +197,14 @@ namespace Beamable.Editor.Content
 			Model.UserCanPublish = BeamEditorContext.Default.Permissions.CanPushContent;
 		}
 
-		public Promise<ContentPublishSet> CreatePublishSet(bool newNamespace = false)
+		public Promise<ContentPublishSet> CreatePublishSet(bool newNamespace = false, bool forcePublish = false)
 		{
 			var manifestId = newNamespace
 				? Guid.NewGuid().ToString()
 				: null;
 
 			var de = BeamEditorContext.Default;
-			return de.ServiceScope.GetService<ContentPublisher>().CreatePublishSet(manifestId);
+			return de.ServiceScope.GetService<ContentPublisher>().CreatePublishSet(manifestId, forcePublish);
 		}
 	}
 }
