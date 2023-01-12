@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Game Maker can force publish content even if Content window doesn't detect changes.
 
+### Fixed
+- Skipping content assets check for current directory in case if `currList` is not initialized
+
 ## [1.10.1]
 ### Fixed
 - possible `NullReferenceException` during Content Manager initialization
