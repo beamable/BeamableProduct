@@ -126,20 +126,22 @@ namespace Beamable.Editor.Content
 
 				if (!Directory.Exists(currentFilePath)) continue; // if this directory doesn't exist, we can't do anything.
 
-				foreach (var filePath in Directory.GetFiles(currentFilePath, "*.asset"))
+				if (hasContentList)
 				{
-					var instance = new ContentDatabaseEntry();
-					var name = filePath.Substring(currentFilePath.Length + 1, filePath.Length - (currentFilePath.Length + ".asset".Length + 1));
+					foreach (var filePath in Directory.GetFiles(currentFilePath, "*.asset"))
+					{
+						var instance = new ContentDatabaseEntry();
+						var name = filePath.Substring(currentFilePath.Length + 1, filePath.Length - (currentFilePath.Length + ".asset".Length + 1));
 
-					instance.contentName = name;
-					instance.assetPath = filePath;
-					instance.contentType = currType;
-					instance.runtimeType = runtimeType;
-					instance.contentId = currType + "." + name;
-					_data.Add(instance);
-					currList.Add(instance);
+						instance.contentName = name;
+						instance.assetPath = filePath;
+						instance.contentType = currType;
+						instance.runtimeType = runtimeType;
+						instance.contentId = currType + "." + name;
+						_data.Add(instance);
+						currList.Add(instance);
+					}
 				}
-
 
 				foreach (var path in Directory.GetDirectories(currentFilePath))
 				{
