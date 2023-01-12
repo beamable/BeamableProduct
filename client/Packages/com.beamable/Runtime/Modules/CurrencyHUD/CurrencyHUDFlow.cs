@@ -1,4 +1,4 @@
-﻿using Beamable.Common.Inventory;
+using Beamable.Common.Inventory;
 using Beamable.UI.Scripts;
 using System.Collections;
 using TMPro;
@@ -36,7 +36,6 @@ namespace Beamable.CurrencyHUD
 
 			var currency = await content.Resolve();
 			var currencyAddress = currency.icon;
-			var isValid = currencyAddress.IsValid();
 			img.texture = await currencyAddress.LoadTexture();
 			displayModule.SetVisible();
 		}
