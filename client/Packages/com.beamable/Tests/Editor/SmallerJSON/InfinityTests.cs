@@ -14,23 +14,23 @@ namespace Beamable.Editor.Tests.SmallerJson
 		{
 			void Method()
 			{
-				var dict = new ArrayDict {["x"] = val};
+				var dict = new ArrayDict { ["x"] = val };
 				try
 				{
 					Json.Serialize(dict, new StringBuilder());
-				} 
+				}
 				catch
 				{
 					// it might fail, who cares?
 				}
 			}
-			
+
 			Measure.Method(Method)
-			       .WarmupCount(10)
-			       .MeasurementCount(100)
-			       .IterationsPerMeasurement(50) // boost this number to really give it a crank...
-			       .GC()
-			       .Run();
+				   .WarmupCount(10)
+				   .MeasurementCount(100)
+				   .IterationsPerMeasurement(50) // boost this number to really give it a crank...
+				   .GC()
+				   .Run();
 		}
 
 		[TestCase(double.PositiveInfinity, TestName = "infinity-throws")]
@@ -40,11 +40,11 @@ namespace Beamable.Editor.Tests.SmallerJson
 		{
 			Assert.Throws<CannotSerializeException>(() =>
 			{
-				var dict = new ArrayDict {["x"] = val};
+				var dict = new ArrayDict { ["x"] = val };
 				Json.Serialize(dict, new StringBuilder());
 			}, "Should be an exception");
 		}
-		
+
 		[TestCase(double.MinValue, TestName = "min-is-fine")]
 		[TestCase(double.MaxValue, TestName = "min-is-fine")]
 		[TestCase(0, TestName = "zero-is-fine")]
@@ -52,10 +52,10 @@ namespace Beamable.Editor.Tests.SmallerJson
 		[TestCase(32, TestName = "positives-are-fine")]
 		public void DoesntThrowException(double val)
 		{
-			var dict = new ArrayDict {["x"] = val};
+			var dict = new ArrayDict { ["x"] = val };
 			Json.Serialize(dict, new StringBuilder());
 		}
-		
+
 	}
 
 }
