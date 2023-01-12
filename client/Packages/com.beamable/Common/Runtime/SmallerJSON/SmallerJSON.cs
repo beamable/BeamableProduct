@@ -32,6 +32,17 @@ using UnityEngine;
 
 namespace Beamable.Serialization.SmallerJSON
 {
+	/// <summary>
+	/// An exception that is thrown an object cannot be serialized for some reason.
+	/// </summary>
+	public class CannotSerializeException : Exception
+	{
+		public CannotSerializeException(string message) : base(message)
+		{
+			
+		}
+	}
+	
 	public static class Json
 	{
 		/// <summary>
@@ -942,8 +953,17 @@ namespace Beamable.Serialization.SmallerJSON
 				else if (value is double
 						 || value is decimal)
 				{
+#if BEAMABLE_JSON_ALLOW_NAN
 					builder.Append(Convert.ToDouble(value)
-										  .ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+					                      .ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+#else
+					var dbl = Convert.ToDouble(value);
+					if (double.IsNaN(dbl) || double.IsInfinity(dbl))
+					{
+						throw new CannotSerializeException("Beamable cannot serialize values that are NaN.");
+					}
+					builder.Append(dbl.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+#endif
 				}
 				else if (value is IRawJsonProvider provider)
 				{
