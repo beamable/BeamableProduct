@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Validation
 			var attr = attribute as TimeSpanDisplayAttribute;
 			if (attr == null) return;
 
-			var parts = property.propertyPath.Split(".");
+			var parts = property.propertyPath.Split('.');
 			var newParts = new string[parts.Length];
 			for (var i = 0; i < parts.Length - 1; i++)
 			{
@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Validation
 				var indentedRect = EditorGUI.IndentedRect(labelRect);
 				indentedRect.width = indentedRect.width - EditorGUIUtility.labelWidth;
 				indentedRect.x += EditorGUIUtility.labelWidth + 1;
-				if (EditorGUI.LinkButton(indentedRect, "Enter a valid ISO 8601 Period Code"))
+				if (GUI.Button(indentedRect, "Enter a valid ISO 8601 Period Code"))
 				{
 					Application.OpenURL("https://en.wikipedia.org/wiki/ISO_8601#Durations");
 				}
