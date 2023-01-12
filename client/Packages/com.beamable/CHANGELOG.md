@@ -4,13 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [Unreleased]
+### Changed
+- non finite numbers such as `NaN` or `Infinity` will throw a `CannotSerializeException` exception if serialized by the `SmallerJson` utility.
+
 ### Fixed
 - `RecoverFrom404` and `RecoverFromStatus` method respects HTTP status codes
 - Skipping content assets check for current directory in case if `currList` is not initialized
 - Corrected URL format for staging-portal in environment picker 
-
 
 ## [1.10.1]
 ### Fixed
