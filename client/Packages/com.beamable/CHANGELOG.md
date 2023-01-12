@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - non finite numbers such as `NaN` or `Infinity` will throw a `CannotSerializeException` exception if serialized by the `SmallerJson` utility.
 
+### Fixed
+- Skipping content assets check for current directory in case if `currList` is not initialized
+
+
 ## [1.10.1]
 ### Fixed
 - possible `NullReferenceException` during Content Manager initialization
