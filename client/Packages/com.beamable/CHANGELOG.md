@@ -4,12 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 [Unreleased]
-### Fixed
-- Tournament content can be scheduled for any ISO 8601 Period
+### Changed
+- non finite numbers such as `NaN` or `Infinity` will throw a `CannotSerializeException` exception if serialized by the `SmallerJson` utility.
 
 ### Fixed
 - Skipping content assets check for current directory in case if `currList` is not initialized
+- Corrected URL format for staging-portal in environment picker 
+- Tournament content can be scheduled for any ISO 8601 Period
 
 ## [1.10.1]
 ### Fixed
