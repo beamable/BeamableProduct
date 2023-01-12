@@ -1,4 +1,4 @@
-﻿using Beamable.Common.Inventory;
+using Beamable.Common.Inventory;
 using Beamable.UI.Scripts;
 using System.Collections;
 using TMPro;
