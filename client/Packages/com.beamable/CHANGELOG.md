@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [NOT RELEASED]
 ### Fixed
 - Skipping content assets check for current directory in case if `currList` is not initialized
+- Corrected URL format for staging-portal in environment picker 
 
 ## [1.10.1]
 ### Fixed

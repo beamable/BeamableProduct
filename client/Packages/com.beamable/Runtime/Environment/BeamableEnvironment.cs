@@ -133,7 +133,7 @@ namespace Beamable
 		{
 			environment = "staging",
 			apiUrl = "https://staging.api.beamable.com",
-			portalUrl = "https:/staging-portal.beamable.com",
+			portalUrl = "https://staging-portal.beamable.com",
 			beamMongoExpressUrl = "https://staging.storage.beamable.com",
 			dockerRegistryUrl = "https://staging-microservices.beamable.com/v2/",
 			isUnityVsp = false,
