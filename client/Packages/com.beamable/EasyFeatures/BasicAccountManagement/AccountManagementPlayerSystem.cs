@@ -2,7 +2,6 @@
 using Beamable.Common;
 using Beamable.EasyFeatures.Components;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
@@ -12,6 +11,20 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 	                                             AccountInfoView.IDependencies
 	{
 		public BeamContext Context { get; set; }
+		
+		public async Promise<string> GetCurrentAvatarName(long playerId)
+		{
+			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
+			stats.TryGetValue("avatar", out string avatarName);
+			return avatarName;
+		}
+
+		public async Promise SetAvatar(long playerId, string avatarName)
+		{
+			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
+			stats["avatar"] = avatarName;
+			await Context.Api.StatsService.SetStats("public", stats);
+		}
 
 		/// <summary>
 		/// Gets account view data for a given player. Default parameter will return current user's view data.
@@ -26,13 +39,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			}
 
 			Sprite avatar = null;
-			if (stats.TryGetValue("avatar", out string avatarName))
+			string avatarName = await GetCurrentAvatarName(playerId);
+			var accountAvatar = AvatarConfiguration.Instance.Avatars.Find(av => av.Name == avatarName);
+			if (accountAvatar != null)
 			{
-				var accountAvatar = AvatarConfiguration.Instance.Avatars.Find(av => av.Name == avatarName);
-				if (accountAvatar != null)
-				{
-					avatar = accountAvatar.Sprite;
-				}
+				avatar = accountAvatar.Sprite;
 			}
 
 			var data = new AccountSlotPresenter.ViewData

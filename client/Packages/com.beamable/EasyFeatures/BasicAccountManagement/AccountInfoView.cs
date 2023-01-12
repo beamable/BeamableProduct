@@ -1,15 +1,18 @@
 ﻿using Beamable.Avatars;
+using Beamable.Common;
 using Beamable.EasyFeatures.Components;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
 {
-	public class AccountInfoView : MonoBehaviour, ISyncBeamableView
+	public class AccountInfoView : MonoBehaviour, IAsyncBeamableView
 	{
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
+			Promise<string> GetCurrentAvatarName(long playerId);
+			Promise SetAvatar(long playerId, string avatarName);
 		}
 
 		public AccountManagementFeatureControl FeatureControl;
@@ -30,7 +33,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		public int GetEnrichOrder() => EnrichOrder;
 
-		public void EnrichWithContext(BeamContextGroup managedPlayers)
+		public async Promise EnrichWithContext(BeamContextGroup managedPlayers)
 		{
 			var context = managedPlayers.GetSinglePlayerContext();
 			System = context.ServiceProvider.GetService<IDependencies>();
@@ -41,16 +44,18 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
+			string currentAvatarName = await System.GetCurrentAvatarName(System.Context.PlayerId);
+			
 			foreach (Transform child in AvatarsGroup.transform)
 			{
 				Destroy(child.gameObject);
 			}
-
+			
 			foreach (var avatar in AvatarConfiguration.Instance.Avatars)
 			{
 				// instantiate toggle for each avatar
 				var avatarToggle = Instantiate(AvatarTogglePrefab, AvatarsGroup.transform);
-				avatarToggle.Setup(avatar, AvatarsGroup, OnAvatarSelectionChanged);
+				avatarToggle.Setup(avatar, AvatarsGroup, avatar.Name == currentAvatarName, OnAvatarSelectionChanged);
 			}
 			
 			FeatureControl.SetBackAction(OpenAccountsView);
@@ -59,13 +64,17 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			CancelButton.onClick.ReplaceOrAddListener(OpenAccountsView);
 		}
 
-		private void OnAvatarSelectionChanged(bool isSelected, AccountAvatar avatar)
+		private void OnDisable()
 		{
-			if (!isSelected)
-				return;
-			
-			// set avatar
-			Debug.LogWarning($"CHOSEN AVATAR: {avatar.Name}");
+			foreach (Transform child in AvatarsGroup.transform)
+			{
+				Destroy(child.gameObject);
+			}
+		}
+
+		private void OnAvatarSelectionChanged(AccountAvatar avatar)
+		{
+			System.SetAvatar(System.Context.PlayerId, avatar.Name);
 		}
 
 		private void OnConfirmPressed()
