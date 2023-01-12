@@ -537,7 +537,6 @@ namespace Beamable.Player
 		/// <returns>A promise that returns when the inventory update call has actually be sent and confirmed.</returns>
 		public Promise UpdateDelayed(Action<InventoryUpdateBuilder> updateBuilder, CustomYieldInstruction delay=null)
 		{
-			// TODO: write docs example for this
 			updateBuilder?.Invoke(_delayedBuilder);
 			return _delayedUpdatePromise = _debouncer.SetTimeout(CommitDelayed, delay);
 		}

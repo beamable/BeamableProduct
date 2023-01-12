@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `PlayerInventory` supports storing player's inventory in offline mode
+- `PlayerInventory` supports `UpdateDelayed` method
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
