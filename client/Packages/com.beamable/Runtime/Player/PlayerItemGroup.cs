@@ -1,14 +1,8 @@
-using Beamable.Api;
-using Beamable.Api.Inventory;
 using Beamable.Common;
-using Beamable.Common.Api.Inventory;
 using Beamable.Common.Content;
-using Beamable.Common.Dependencies;
 using Beamable.Common.Inventory;
 using Beamable.Common.Player;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Beamable.Player
@@ -149,23 +143,12 @@ namespace Beamable.Player
 		/// </summary>
 		public string RootScope => _rootRef?.Id ?? "items";
 
-		// TODO: is it safe to remove this?
-		// [Obsolete("The " + nameof(InventoryService) + " parameter is no longer accepted.")]
-		// public PlayerItemGroup(ItemRef rootRef,
-		//                        IPlatformService platformService,
-		//                        InventoryService _,
-		//                        IDependencyProvider provider) : this(rootRef, platformService, provider)
-		// {
-		// 	// nothing to do... This just exists for backwards compat.
-		// }
-		
 		public PlayerItemGroup(ItemRef rootRef, PlayerInventory inventory)
 		{
 			_rootRef = rootRef;
 			_inventory = inventory;
 			OnReady = Refresh(); // automatically refresh..
 		}
-
 		
 		/// <summary>
 		/// The inventory group contains some set of items based on the <see cref="ItemRef"/> that was given to the constructor.

@@ -1,17 +1,8 @@
-using Beamable.Api;
-using Beamable.Api.Caches;
-using Beamable.Api.Connectivity;
-using Beamable.Api.Inventory;
 using Beamable.Common;
-using Beamable.Common.Api;
-using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
-using Beamable.Common.Dependencies;
 using Beamable.Common.Inventory;
 using Beamable.Common.Player;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Player
