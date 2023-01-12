@@ -93,14 +93,6 @@ namespace Beamable.UI.Scripts
 		/// <returns>The 2D texture of that sprite.</returns>
 		public static Promise<Texture2D> LoadTexture(this AssetReferenceSprite reference)
 		{
-#if BEAMABLE_LOAD_SPRITE_CHECK && UNITY_EDITOR
-			if (!reference.IsValid() && reference.editorAsset != null)
-			{
-				var path = UnityEditor.AssetDatabase.GetAssetPath(reference.editorAsset);
-				Debug.LogError($"<b>AssetReferenceSprite</b> is not an Addressable asset, check asset at path: <b>{path}</b> and make sure that it is a Addressable. Setting sprite image to <b>null</b> for now.");
-				return Promise<Texture2D>.Successful(null);
-			}
-#endif
 			if (!reference.RuntimeKeyIsValid())
 				return Promise<Texture2D>.Successful(null);
 
