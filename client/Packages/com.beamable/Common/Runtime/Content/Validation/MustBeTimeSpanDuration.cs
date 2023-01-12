@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Xml;
 
 namespace Beamable.Common.Content.Validation
 {
@@ -50,10 +53,52 @@ namespace Beamable.Common.Content.Validation
 				throw new ContentValidationException(obj, validationField, "duration cannot be an empty string.");
 			}
 
-			if (!TimeSpan.TryParseExact(strValue, @"\P%d\D", CultureInfo.InvariantCulture, TimeSpanStyles.None, out _))
+			if (!TryParseTimeSpan(strValue, out _, out _))
 			{
-				throw new ContentValidationException(obj, validationField, "duration must be expressed in days. e.g. P30D");
+				throw new ContentValidationException(obj, validationField, "duration must be a valid ISO 8601 period code.");
 			}
+		}
+
+		public static bool TryParseTimeSpan(string str, out TimeSpan span, out string humanReadable)
+		{
+			try
+			{
+				span = XmlConvert.ToTimeSpan(str);
+				humanReadable = FormatTimeSpan(span);
+				return true;
+			}
+			catch (FormatException)
+			{
+				span = default;
+				humanReadable = "invalid";
+				return false;
+			}
+		}
+		
+		// source: https://stackoverflow.com/questions/16689468/how-to-produce-human-readable-strings-to-represent-a-timespan
+		private static string FormatTimeSpan(TimeSpan timeSpan)
+		{
+			Func<Tuple<int,string>, string> tupleFormatter = t => $"{t.Item1} {t.Item2}{(t.Item1 == 1 ? string.Empty : "s")}";
+			var components = new List<Tuple<int, string>>
+			{
+				Tuple.Create((int) timeSpan.TotalDays, "day"),
+				Tuple.Create(timeSpan.Hours, "hour"),
+				Tuple.Create(timeSpan.Minutes, "minute"),
+				Tuple.Create(timeSpan.Seconds, "second"),
+			};
+
+			components.RemoveAll(i => i.Item1 == 0);
+
+			string extra = "";
+
+			if (components.Count > 1)
+			{
+				var finalComponent = components[components.Count - 1];
+				components.RemoveAt(components.Count - 1);
+				extra = $" and {tupleFormatter(finalComponent)}";
+			}
+
+			return $"{string.Join(", ", components.Select(tupleFormatter))}{extra}";
 		}
 	}
 }
