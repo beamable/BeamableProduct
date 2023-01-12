@@ -39,10 +39,10 @@ namespace Beamable.Serialization.SmallerJSON
 	{
 		public CannotSerializeException(string message) : base(message)
 		{
-			
+
 		}
 	}
-	
+
 	public static class Json
 	{
 		/// <summary>
