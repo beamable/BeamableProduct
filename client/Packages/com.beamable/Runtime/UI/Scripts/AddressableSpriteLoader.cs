@@ -93,7 +93,7 @@ namespace Beamable.UI.Scripts
 		/// <returns>The 2D texture of that sprite.</returns>
 		public static Promise<Texture2D> LoadTexture(this AssetReferenceSprite reference)
 		{
-#if UNITY_EDITOR
+#if BEAMABLE_LOAD_SPRITE_CHECK && UNITY_EDITOR
 			if (!reference.IsValid() && reference.editorAsset != null)
 			{
 				var path = UnityEditor.AssetDatabase.GetAssetPath(reference.editorAsset);
