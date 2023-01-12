@@ -958,7 +958,7 @@ namespace Beamable.Serialization.SmallerJSON
 					                      .ToString("R", System.Globalization.CultureInfo.InvariantCulture));
 #else
 					var dbl = Convert.ToDouble(value);
-					if (!double.IsFinite(dbl))
+					if (double.IsNaN(dbl) || double.IsInfinity(dbl))
 					{
 						throw new CannotSerializeException("Beamable cannot serialize values that are NaN.");
 					}
