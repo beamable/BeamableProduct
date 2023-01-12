@@ -421,7 +421,7 @@ namespace Beamable.Common.Api
 		/// </returns>
 		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long status, System.Func<RequesterException, T> recovery)
 		{
-			return RecoverFromStatus(self, new long[status], recovery);
+			return RecoverFromStatus(self, new long[]{status}, recovery);
 		}
 	}
 }

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 no changes
 
+## [1.10.2]
+### Fixed
+- Microservices can now deploy in realms with no deployed Content manifest.
+
 ## [1.10.1]
 no changes
 
