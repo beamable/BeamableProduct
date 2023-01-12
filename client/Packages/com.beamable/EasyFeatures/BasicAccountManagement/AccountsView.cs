@@ -142,6 +142,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				FeatureControl.OverlaysController.HideOverlay();
 				SwitchButtonsGroup.SetActive(false);
+				OtherAccountsGroup.SetActive(false);
 				NextCancelButtonsGroup.SetActive(true);
 				EmailInputField.gameObject.SetActive(true);
 				InfoText.text = ENTER_EMAIL_TEXT;

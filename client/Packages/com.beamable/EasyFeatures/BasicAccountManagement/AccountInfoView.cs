@@ -64,14 +64,6 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			CancelButton.onClick.ReplaceOrAddListener(OpenAccountsView);
 		}
 
-		private void OnDisable()
-		{
-			foreach (Transform child in AvatarsGroup.transform)
-			{
-				Destroy(child.gameObject);
-			}
-		}
-
 		private void OnAvatarSelectionChanged(AccountAvatar avatar)
 		{
 			System.SetAvatar(System.Context.PlayerId, avatar.Name);
