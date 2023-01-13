@@ -276,40 +276,51 @@ namespace Beamable.Api
 			byte[] body,
 			SDKRequesterOptions<T> opts)
 		{
-			internetConnectivity = !opts.useConnectivityPreCheck || (_connectivityService?.HasConnectivity ?? true);
+			internetConnectivity = !opts.useConnectivityPreCheck || ((_connectivityService?.HasConnectivity ?? true) && !(_connectivityService?.Disabled ?? false));
 
 			if (internetConnectivity)
 			{
 				return MakeRequest<T>(contentType, body, opts)
-				   .RecoverWith(error =>
-				   {
-					   var httpNoInternet = error is NoConnectivityException ||
-									   error is PlatformRequesterException noInternet && noInternet.Status == 0;
+				       .FlatMap(res =>
+				       {
+					       if (_connectivityService == null) return Promise<T>.Successful(res);
+					       return _connectivityService?.SetHasInternet(true)
+					                                  .Recover(_ => PromiseBase.Unit)
+					                                  .Map(_ => res);
+				       })
+				       .RecoverWith(error =>
+				       {
+					       var httpNoInternet = error is NoConnectivityException ||
+					                            error is PlatformRequesterException noInternet &&
+					                            noInternet.Status == 0;
 
-					   if (httpNoInternet)
-					   {
-						   _connectivityService?.ReportInternetLoss();
-					   }
+					       if (httpNoInternet)
+					       {
+						       _connectivityService?.ReportInternetLoss();
+					       }
 
-					   if (opts.useCache && httpNoInternet && Application.isPlaying && _offlineCache.UseOfflineCache)
-					   {
-						   return _offlineCache.Get<T>(opts.uri, Token, opts.includeAuthHeader);
-					   } else if (httpNoInternet)
-					   {
-						   return Promise<T>.Failed(new NoConnectivityException(opts.uri + " should not be cached and requires internet connectivity. Internet connection lost."));
-					   }
+					       if (opts.useCache && httpNoInternet && Application.isPlaying &&
+					           _offlineCache.UseOfflineCache)
+					       {
+						       return _offlineCache.Get<T>(opts.uri, Token, opts.includeAuthHeader);
+					       }
+					       else if (httpNoInternet)
+					       {
+						       return Promise<T>.Failed(new NoConnectivityException(
+							                                opts.uri +
+							                                " should not be cached and requires internet connectivity. Internet connection lost."));
+					       }
 
-					   return HandleError<T>(error, contentType, body, opts);
-					   
-					   
-					   //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
-				   }).Then(_response =>
-				   {
-					   if (opts.useCache && Token != null && Application.isPlaying && _offlineCache.UseOfflineCache)
-					   {
-						   _offlineCache.Set<T>(opts.uri, _response, Token, opts.includeAuthHeader);
-					   }
-				   });
+					       return HandleError<T>(error, contentType, body, opts);
+
+				       }).Then(_response =>
+				       {
+
+					       if (opts.useCache && Token != null && Application.isPlaying && _offlineCache.UseOfflineCache)
+					       {
+						       _offlineCache.Set<T>(opts.uri, _response, Token, opts.includeAuthHeader);
+					       }
+				       });
 			}
 			else if (!internetConnectivity && opts.useCache && Application.isPlaying && _offlineCache.UseOfflineCache)
 			{
