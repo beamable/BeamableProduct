@@ -379,5 +379,10 @@ namespace Beamable.Platform.Tests
 		{
 			return UnityWebRequest.EscapeURL(url);
 		}
+
+		public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

@@ -119,6 +119,9 @@ namespace Beamable.Api.Connectivity
 		public static void SetGlobalEnabled(this IConnectivityService _, bool forceDisabled) =>
 			GlobalForceDisabled = forceDisabled;
 
+		public static void ToggleGlobalEnabled(this IConnectivityService _) =>
+			GlobalForceDisabled = !GlobalForceDisabled;
+
 		public static bool GetGlobalEnabled(this IConnectivityService _) => _globalForceDisabled;
 	}
 

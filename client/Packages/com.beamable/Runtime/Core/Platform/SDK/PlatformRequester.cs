@@ -16,19 +16,6 @@ using UnityEngine.Networking;
 namespace Beamable.Api
 {
 
-	public interface IPlatformRequester : IBeamableRequester
-	{
-		AccessToken Token { get; set; }
-		string TimeOverride { get; set; }
-		new string Cid { get; set; }
-		new string Pid { get; set; }
-
-		[Obsolete("This field has been removed. Please use the IAuthApi.SetLanguage function instead.")]
-		string Language { get; set; }
-
-		IAuthApi AuthService { set; }
-		void DeleteToken();
-	}
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -40,11 +27,12 @@ namespace Beamable.Api
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class PlatformRequester : IPlatformRequester, IHttpRequester
+	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester
 	{
 		private const string ACCEPT_HEADER = "application/json";
+
 		private readonly PackageVersion _beamableVersion;
-		private AccessTokenStorage _accessTokenStorage;
+		protected AccessTokenStorage accessTokenStorage;
 		private IConnectivityService _connectivityService;
 		private bool _disposed;
 		private bool internetConnectivity;
@@ -78,23 +66,21 @@ namespace Beamable.Api
 				}
 			}
 		}
-
-
-
+		
 		private readonly OfflineCache _offlineCache;
 
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
 			_beamableVersion = beamableVersion;
-			_accessTokenStorage = accessTokenStorage;
+			this.accessTokenStorage = accessTokenStorage;
 			_connectivityService = connectivityService;
 			_offlineCache = offlineCache;
 		}
-
+		
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = new PlatformRequester(Host, _beamableVersion, _accessTokenStorage, _connectivityService, _offlineCache)
+			var requester = new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService, _offlineCache)
 			{
 				Cid = Cid,
 				Pid = Pid,
@@ -102,7 +88,7 @@ namespace Beamable.Api
 				Language = Language,
 				TimeOverride = TimeOverride,
 				AuthService = AuthService,
-				Token = new AccessToken(_accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
+				Token = new AccessToken(accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
 				  token.expires_in)
 			};
 			return requester;
@@ -176,9 +162,9 @@ namespace Beamable.Api
 			_disposed = true;
 		}
 
-		public UnityWebRequest BuildWebRequest(Method method, string uri, string contentType, byte[] body)
+		public UnityWebRequest BuildWebRequest(string contentType, byte[] body, ISDKRequesterOptionData opts)
 		{
-			var address = uri.Contains("://") ? uri : $"{Host}{uri}";
+			var address = opts.Uri.Contains("://") ? opts.Uri : $"{Host}{opts.Uri}";
 
 			var enableCompression = body?.Length > Gzip.MINIMUM_BYTES_FOR_COMPRESSION;
 
@@ -186,7 +172,7 @@ namespace Beamable.Api
 			var request = new UnityWebRequest(address)
 			{
 				downloadHandler = new DownloadHandlerBuffer(),
-				method = method.ToString()
+				method = opts.Method.ToString()
 			};
 
 			if (enableCompression)
@@ -205,31 +191,69 @@ namespace Beamable.Api
 			return request;
 		}
 
+		public UnityWebRequest BuildWebRequest(Method method, string uri, string contentType, byte[] body)
+		{
+			return BuildWebRequest(contentType, body, new SDKRequesterOptionData
+			{
+				Method = method,
+				Uri = uri
+			});
+		}
+
+		[Obsolete]
 		public Promise<T> RequestForm<T>(string uri, WWWForm form, bool includeAuthHeader = true)
 		{
 			return RequestForm<T>(uri, form, Method.POST, includeAuthHeader);
 		}
 
+		[Obsolete]
 		public Promise<T> RequestForm<T>(string uri, WWWForm form, Method method, bool includeAuthHeader = true)
 		{
-			return MakeRequestWithTokenRefresh<T>(method, uri, "application/x-www-form-urlencoded", form.data,
-			   includeAuthHeader);
+			var opts = new SDKRequesterOptions<T>
+			{
+				uri = uri,
+				method = method,
+				includeAuthHeader = includeAuthHeader
+			};
+			return MakeRequestWithTokenRefresh("application/x-www-form-urlencoded", form.data,
+			   opts);
 		}
 
-		public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null, bool useCache = false)
+		public Promise<T> Request<T>(Method method,
+		                             string uri,
+		                             object body = null,
+		                             bool includeAuthHeader = true,
+		                             Func<string, T> parser = null,
+		                             bool useCache = false)
+		{
+			return BeamableRequest(new SDKRequesterOptions<T>
+			{
+				method = method,
+				body = body,
+				includeAuthHeader = includeAuthHeader, 
+				uri = uri,
+				parser = parser, 
+				useCache = useCache,
+				useConnectivityPreCheck = true
+			});
+		}
+		
+		public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
 		{
 			string contentType = null;
 			byte[] bodyBytes = null;
 
-			if (body != null)
+			if (req.body != null)
 			{
-				bodyBytes = body is string json ? Encoding.UTF8.GetBytes(json) : Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));
+				bodyBytes = req.body is string json ? Encoding.UTF8.GetBytes(json) : Encoding.UTF8.GetBytes(JsonUtility.ToJson(req.body));
 				contentType = "application/json";
 			}
 
-			return MakeRequestWithTokenRefresh<T>(method, uri, contentType, bodyBytes, includeAuthHeader, parser, useCache);
+			var safetyClone = new SDKRequesterOptions<T>(req); // TODO: since its a struct, do we need to do this? 
+			return MakeRequestWithTokenRefresh<T>(contentType, bodyBytes, safetyClone);
 		}
 
+		[Obsolete]
 		public Promise<T> RequestJson<T>(Method method, string uri, JsonSerializable.ISerializable body,
 		   bool includeAuthHeader = true)
 		{
@@ -240,24 +264,23 @@ namespace Beamable.Api
 			{
 				var json = Serialization.SmallerJSON.Json.Serialize(jsonFields, pooledBuilder.Builder);
 				var bodyBytes = Encoding.UTF8.GetBytes(json);
-				return MakeRequestWithTokenRefresh<T>(method, uri, contentType, bodyBytes, includeAuthHeader);
+				return MakeRequestWithTokenRefresh<T>( contentType, bodyBytes, new SDKRequesterOptions<T>
+				{
+					uri = uri, method = method, includeAuthHeader = includeAuthHeader
+				});
 			}
 		}
 
 		private Promise<T> MakeRequestWithTokenRefresh<T>(
-		   Method method,
-		   string uri,
-		   string contentType,
-		   byte[] body,
-		   bool includeAuthHeader,
-		   Func<string, T> parser = null,
-		   bool useCache = false)
+			string contentType,
+			byte[] body,
+			SDKRequesterOptions<T> opts)
 		{
-			internetConnectivity = _connectivityService?.HasConnectivity ?? true;
+			internetConnectivity = !opts.useConnectivityPreCheck || (_connectivityService?.HasConnectivity ?? true);
 
 			if (internetConnectivity)
 			{
-				return MakeRequest<T>(method, uri, contentType, body, includeAuthHeader, parser)
+				return MakeRequest<T>(contentType, body, opts)
 				   .RecoverWith(error =>
 				   {
 					   var httpNoInternet = error is NoConnectivityException ||
@@ -268,79 +291,88 @@ namespace Beamable.Api
 						   _connectivityService?.ReportInternetLoss();
 					   }
 
-					   if (useCache && httpNoInternet && Application.isPlaying && _offlineCache.UseOfflineCache)
+					   if (opts.useCache && httpNoInternet && Application.isPlaying && _offlineCache.UseOfflineCache)
 					   {
-						   return _offlineCache.Get<T>(uri, Token, includeAuthHeader);
+						   return _offlineCache.Get<T>(opts.uri, Token, opts.includeAuthHeader);
+					   } else if (httpNoInternet)
+					   {
+						   return Promise<T>.Failed(new NoConnectivityException(opts.uri + " should not be cached and requires internet connectivity. Internet connection lost."));
 					   }
 
-					   switch (error)
-					   {
-						   case Exception _ when httpNoInternet:
-							   return Promise<T>.Failed(new NoConnectivityException(uri + " should not be cached and requires internet connectivity. Internet connection lost."));
-
-						   // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
-						   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError" || code?.Error.error == "TokenValidationError":
-							   Debug.LogError("Invalid token, trying again");
-							   return AuthService.LoginRefreshToken(Token.RefreshToken)
-							 .Map(rsp =>
-							 {
-								 Token = new AccessToken(_accessTokenStorage, Cid, Pid, rsp.access_token, rsp.refresh_token,
-							   rsp.expires_in);
-								 Token.Save();
-								 return PromiseBase.Unit;
-							 })
-							 .Error(err =>
-							   {
-								   Debug.LogError($"Failed to refresh account for {Token.RefreshToken} for uri=[{uri}] method=[{method}] includeAuth=[{includeAuthHeader}]");
-								   Debug.LogException(err);
-							   })
-							 .FlatMap(_ => MakeRequest(method, uri, contentType, body, includeAuthHeader, parser));
-
-					   }
-
-					   return Promise<T>.Failed(error);
+					   return HandleError<T>(error, contentType, body, opts);
+					   
+					   
 					   //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
 				   }).Then(_response =>
 				   {
-					   if (useCache && Token != null && Application.isPlaying && _offlineCache.UseOfflineCache)
+					   if (opts.useCache && Token != null && Application.isPlaying && _offlineCache.UseOfflineCache)
 					   {
-						   _offlineCache.Set<T>(uri, _response, Token, includeAuthHeader);
+						   _offlineCache.Set<T>(opts.uri, _response, Token, opts.includeAuthHeader);
 					   }
 				   });
 			}
-			else if (!internetConnectivity && useCache && Application.isPlaying && _offlineCache.UseOfflineCache)
+			else if (!internetConnectivity && opts.useCache && Application.isPlaying && _offlineCache.UseOfflineCache)
 			{
-				return _offlineCache.Get<T>(uri, Token, includeAuthHeader);
+				return _offlineCache.Get<T>(opts.uri, Token, opts.includeAuthHeader);
 			}
 			else
 			{
-				return Promise<T>.Failed(new NoConnectivityException(uri + " should not be cached and requires internet connectivity."));
+				return Promise<T>.Failed(new NoConnectivityException(opts.uri + " should not be cached and requires internet connectivity."));
 			}
 		}
 
-		private Promise<T> MakeRequest<T>(
-		   Method method,
-		   string uri,
-		   string contentType,
-		   byte[] body,
-		   bool includeAuthHeader,
-		   Func<string, T> parser = null)
+		protected virtual async Promise<T> HandleError<T>(Exception error, 
+		                                            string contentType,
+		                                            byte[] body, 
+		                                            SDKRequesterOptions<T> opts)
 		{
-			var result = new Promise<T>();
-			var request = BuildWebRequest(method, uri, contentType, body, includeAuthHeader);
-			var op = request.SendWebRequest();
-			op.completed += _ => HandleResponse<T>(result, request, parser);
-			return result;
+			if (error is PlatformRequesterException code && (code?.Error?.error == "InvalidTokenError" ||
+			                                                 code?.Error?.error == "ExpiredTokenError" || code?.Error.error == "TokenValidationError"))
+			{
+				try
+				{
+					var nextToken = await AuthService.LoginRefreshToken(Token.RefreshToken);
+					Token = new AccessToken(accessTokenStorage, Cid, Pid, nextToken.access_token,
+					                        nextToken.refresh_token, nextToken.expires_in);
+					await Token.Save();
+				}
+				catch (Exception err)
+				{
+					Debug.LogError($"Failed to refresh account for {Token.RefreshToken} for uri=[{opts.uri}] method=[{opts.method}] includeAuth=[{opts.includeAuthHeader}]");
+					Debug.LogException(err);
+				}
+
+				return await MakeRequest(contentType, body, opts);
+			}
+
+			throw error;
 		}
 
-		private UnityWebRequest BuildWebRequest(Method method, string uri, string contentType, byte[] body,
-		   bool includeAuthHeader)
+		protected Promise<T> MakeRequest<T>(
+			string contentType,
+		   byte[] body,
+		   SDKRequesterOptions<T> opts)
 		{
-			PlatformLogger.Log($"<b>[PlatformRequester][{method.ToString()}]</b> {Host}{uri}");
+			var result = new Promise<T>();
+			var request = PrepareWebRequester(contentType, body, opts);
+			var op = request.SendWebRequest();
+			op.completed += _ => HandleResponse<T>(result, request, opts);
+			return result;
+		}
+		
+		
+		protected void AddVersionHeaders(UnityWebRequest request)
+		{
+#if !BEAMABLE_DISABLE_VERSION_HEADERS
+			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, _beamableVersion.ToString());
+			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
+			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
+			request.SetRequestHeader(Constants.Requester.HEADER_ENGINE_TYPE, $"Unity-{Application.platform}");
+#endif
+		}
 
-			// Prepare the request
-			UnityWebRequest request = BuildWebRequest(method, uri, contentType, body);
-			request.SetRequestHeader("Accept", ACCEPT_HEADER);
+		protected virtual void AddCidPidHeaders(UnityWebRequest request)
+		{
 			if (!string.IsNullOrEmpty(Cid))
 			{
 				request.SetRequestHeader(Constants.Requester.HEADER_CID, Cid);
@@ -350,15 +382,11 @@ namespace Beamable.Api
 			{
 				request.SetRequestHeader(Constants.Requester.HEADER_PID, Pid);
 			}
+		}
 
-#if !BEAMABLE_DISABLE_VERSION_HEADERS
-			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, _beamableVersion.ToString());
-			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
-			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
-			request.SetRequestHeader(Constants.Requester.HEADER_ENGINE_TYPE, $"Unity-{Application.platform}");
-#endif
-
-			if (includeAuthHeader)
+		protected void AddAuthHeader<T>(UnityWebRequest request, SDKRequesterOptions<T> opts)
+		{
+			if (opts.includeAuthHeader)
 			{
 				var authHeader = GenerateAuthorizationHeader();
 				if (authHeader != null)
@@ -366,28 +394,54 @@ namespace Beamable.Api
 					request.SetRequestHeader(Constants.Requester.HEADER_AUTH, authHeader);
 				}
 			}
+		}
 
+		protected virtual void AddShardHeader(UnityWebRequest request)
+		{
 			if (Shard != null)
 			{
 				request.SetRequestHeader(Constants.Requester.HEADER_SHARD, Shard);
 			}
+		}
 
+		protected void AddTimeOverrideHeader(UnityWebRequest request)
+		{
 			if (TimeOverride != null)
 			{
 				request.SetRequestHeader(Constants.Requester.HEADER_TIME_OVERRIDE, TimeOverride);
 			}
+		}
 
+		protected void AddRequestTimeoutHeader(UnityWebRequest request)
+		{
 			if (RequestTimeoutMs != null)
 			{
 				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
 			}
+		}
 
+		protected virtual string GetAcceptHeader() => ACCEPT_HEADER;
+		private UnityWebRequest PrepareWebRequester<T>(string contentType, byte[] body, SDKRequesterOptions<T> opts) 
+		{
+			PlatformLogger.Log($"<b>[PlatformRequester][{opts.method.ToString()}]</b> {Host}{opts.uri}");
+
+			// Prepare the request
+			UnityWebRequest request = BuildWebRequest(contentType, body, opts);
+			request.SetRequestHeader("Accept", GetAcceptHeader());
+			
+			AddCidPidHeaders(request);
+			AddVersionHeaders(request);
+			AddAuthHeader(request, opts);
+			AddShardHeader(request);
+			AddTimeOverrideHeader(request);
+			AddRequestTimeoutHeader(request);
+			
 			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
 
 			return request;
 		}
 
-		private void HandleResponse<T>(Promise<T> promise, UnityWebRequest request, Func<string, T> parser = null)
+		private void HandleResponse<T>(Promise<T> promise, UnityWebRequest request, SDKRequesterOptions<T> opts)
 		{
 			// swallow any responses if already disposed
 			if (_disposed)
@@ -437,7 +491,7 @@ namespace Beamable.Api
 
 					try
 					{
-						T result = parser == null ? JsonUtility.FromJson<T>(responsePayload) : parser(responsePayload);
+						T result = opts.parser == null ? JsonUtility.FromJson<T>(responsePayload) : opts.parser(responsePayload);
 						promise.CompleteSuccess(result);
 					}
 					catch (Exception ex)
@@ -452,46 +506,10 @@ namespace Beamable.Api
 			}
 		}
 
-		private string GenerateAuthorizationHeader()
+		protected virtual string GenerateAuthorizationHeader()
 		{
 			return Token != null ? $"Bearer {Token.Token}" : null;
 		}
 	}
 
-	[Serializable]
-	public class PlatformError
-	{
-		public long status;
-		public string service;
-		public string error;
-		public string message;
-	}
-
-	public class PlatformRequesterException : RequesterException
-	{
-		public PlatformError Error { get; }
-		public UnityWebRequest Request { get; }
-		public PlatformRequesterException(PlatformError error, UnityWebRequest request, string responsePayload)
-		: base(Constants.Requester.ERROR_PREFIX_UNITY_SDK, request.method, request.url, request.responseCode, responsePayload)
-		{
-			Error = error;
-			Request = request;
-		}
-	}
-
-
-	public static class ConnectivityExceptionExtensions
-	{
-		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<T> recovery) =>
-			self.RecoverFromNoConnectivity(_ => recovery());
-
-		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<NoConnectivityException, T> recovery)
-		{
-			return self.Recover(ex =>
-			{
-				if (ex is NoConnectivityException err) return recovery(err);
-				throw ex;
-			});
-		}
-	}
 }
