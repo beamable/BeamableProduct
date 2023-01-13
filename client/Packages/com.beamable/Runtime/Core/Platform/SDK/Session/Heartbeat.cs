@@ -112,7 +112,7 @@ namespace Beamable.Api.Sessions
 						// let it go!
 					});
 				}
-				catch (Exception ex)
+				catch (Exception)
 				{
 					// Let it Gooo!
 					// because we want the heartbeat to go forever...
