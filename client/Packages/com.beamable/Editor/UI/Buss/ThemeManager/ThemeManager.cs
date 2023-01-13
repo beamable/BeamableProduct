@@ -1,6 +1,4 @@
-using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
-using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
@@ -10,17 +8,13 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class ThemeManager : BeamEditorWindow<ThemeManager>
 	{
-		private BeamablePopupWindow _confirmationPopup;
-		private LabeledCheckboxVisualElement _filterToggle;
-		private LabeledCheckboxVisualElement _hideOverridenToggle;
-		private bool _inStyleSheetChangedLoop;
-		private NavigationVisualElement _navigationWindow;
 		private ThemeManagerBreadcrumbsVisualElement _breadcrumbs;
+		private ThemeManagerModel _model;
+		private NavigationVisualElement _navigationWindow;
 		private ScrollView _scrollView;
 		private SelectedElementVisualElement _selectedElement;
 		private BussStyleListVisualElement _stylesGroup;
 		private VisualElement _windowRoot;
-		private ThemeManagerModel _model;
 
 		static ThemeManager()
 		{
@@ -40,13 +34,6 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow?.Destroy();
 			_selectedElement?.Destroy();
 			_model?.Clear();
-
-			UndoSystem<BussStyleRule>.DeleteAllRecords();
-		}
-
-		private void OnFocus()
-		{
-			_model?.OnFocus();
 		}
 
 		[MenuItem(
@@ -54,19 +41,24 @@ namespace Beamable.Editor.UI.Buss
 			Commons.OPEN + " " +
 			MenuItems.Windows.Names.THEME_MANAGER,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
-		public static async void Init() => await GetFullyInitializedWindow();
+		public static void Init()
+		{
+			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+			GetWindow<ThemeManager>(MenuItems.Windows.Names.THEME_MANAGER, true, inspector);
+		}
 
 		protected override void Build()
 		{
 			_model = new ThemeManagerModel();
 
-			minSize = THEME_MANAGER_WINDOW_SIZE;
+			minSize = ThemeManagerWindowSize;
 
 			VisualElement root = this.GetRootVisualContainer();
 			root.Clear();
 
 			VisualTreeAsset uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uxml");
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+					$"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uxml");
 			_windowRoot = uiAsset.CloneTree();
 			_windowRoot.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			_windowRoot.name = nameof(_windowRoot);
@@ -77,10 +69,10 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.AddStyleSheet($"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManager)}.uss");
 			mainVisualElement.TryAddScrollViewAsMainElement();
 
-			BussThemeManagerActionBarVisualElement actionBar =
-				new BussThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
-														   _model.ForceRefresh, _model.OnDocsButtonClicked,
-														   _model.OnSearch)
+			ThemeManagerActionBarVisualElement actionBar =
+				new ThemeManagerActionBarVisualElement(_model.OnAddStyleButtonClicked, _model.OnCopyButtonClicked,
+													   _model.ForceRefresh, _model.OnDocsButtonClicked,
+													   _model.OnSearch)
 				{ name = "actionBar" };
 
 			actionBar.Init();
@@ -111,6 +103,16 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.Add(inlineStyle);
 			mainVisualElement.Add(_scrollView);
 			root.Add(_windowRoot);
+
+			Undo.undoRedoPerformed -= HandleUndo;
+			Undo.undoRedoPerformed += HandleUndo;
+
+			_model.ForceRefresh();
+		}
+
+		void HandleUndo()
+		{
+			_model.ForceRefresh();
 		}
 	}
 }

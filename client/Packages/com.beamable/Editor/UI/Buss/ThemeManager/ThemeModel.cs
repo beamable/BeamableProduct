@@ -11,13 +11,13 @@ namespace Beamable.Editor.UI.Buss
 {
 	public abstract class ThemeModel
 	{
+		public event Action Change;
+
 		public enum PropertyDisplayFilter
 		{
 			All,
 			IgnoreOverridden
 		}
-
-		public event Action Change;
 
 		public readonly Dictionary<BussElement, int> FoundElements = new Dictionary<BussElement, int>();
 
@@ -27,23 +27,12 @@ namespace Beamable.Editor.UI.Buss
 
 		public abstract BussElement SelectedElement { get; set; }
 
-		protected abstract List<BussStyleSheet> StyleSheets { get; }
+		protected abstract List<BussStyleSheet> SceneStyleSheets { get; }
 
 		public abstract Dictionary<BussStyleRule, BussStyleSheet> FilteredRules { get; }
 
-		public IEnumerable<BussStyleSheet> WritableStyleSheets
-		{
-			get
-			{
-#if BEAMABLE_DEVELOPER
-				return StyleSheets ?? Enumerable.Empty<BussStyleSheet>();
-#else
-				return StyleSheets?.Where(s => !s.IsReadOnly) ?? Enumerable.Empty<BussStyleSheet>();
-#endif
-			}
-		}
+		public abstract List<BussStyleSheet> WritableStyleSheets { get; }
 
-		public VariableDatabase VariablesDatabase => BussConfiguration.OptionalInstance.Value.VariableDatabase;
 		public PropertySourceDatabase PropertyDatabase { get; } = new PropertySourceDatabase();
 
 		public void ForceRefresh()
@@ -54,11 +43,6 @@ namespace Beamable.Editor.UI.Buss
 		public void NavigationElementClicked(BussElement element)
 		{
 			Selection.activeGameObject = Selection.activeGameObject == element.gameObject ? null : element.gameObject;
-		}
-
-		public void OnFocus()
-		{
-			Change?.Invoke();
 		}
 
 		#region Action bar buttons' actions
@@ -100,43 +84,20 @@ namespace Beamable.Editor.UI.Buss
 
 		private void CreateEmptyStyle(BussStyleSheet selectedStyleSheet, string selectorName = "*")
 		{
+			Undo.RecordObject(selectedStyleSheet, "Add style rule");
+
 			if (SelectedElement != null)
 			{
 				selectorName = BussNameUtility.GetLabel(SelectedElement);
 			}
 
 			BussStyleRule selector = BussStyleRule.Create(selectorName, new List<BussPropertyProvider>());
+			selector.SetForcedVisualPriority();
 			selectedStyleSheet.Styles.Add(selector);
 			selectedStyleSheet.TriggerChange();
 			AssetDatabase.SaveAssets();
-
+			selector.SetForcedVisualPriority();
 			Change?.Invoke();
-		}
-
-		public void OnCopyButtonClicked()
-		{
-			List<BussStyleSheet> readonlyStyles = StyleSheets.Where(styleSheet => styleSheet.IsReadOnly).ToList();
-			OpenCopyMenu(readonlyStyles);
-		}
-
-		private void OpenCopyMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
-		{
-			GenericMenu context = new GenericMenu();
-			context.AddItem(new GUIContent(DUPLICATE_STYLESHEET_OPTIONS_HEADER), false, () => { });
-			context.AddSeparator(string.Empty);
-			foreach (BussStyleSheet styleSheet in bussStyleSheets)
-			{
-				context.AddItem(new GUIContent(styleSheet.name), false, () =>
-				{
-					NewStyleSheetWindow window = NewStyleSheetWindow.ShowWindow();
-					if (window != null)
-					{
-						window.Init(styleSheet.Styles);
-					}
-				});
-			}
-
-			context.ShowAsContext();
 		}
 
 		public void OnDocsButtonClicked()

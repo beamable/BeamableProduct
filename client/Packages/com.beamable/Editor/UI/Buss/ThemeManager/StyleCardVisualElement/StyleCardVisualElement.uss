@@ -1,17 +1,13 @@
 #cardContainer {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    margin-bottom: 10px;
 }
 
 #cardHeader {
     -unity-font-style: bold;
-    color: rgba(256, 256, 256, 1);
-    height: 36px;
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;
-    background-color: rgba(49, 49, 49, 1);
 }
 
 #selectorLabelParent {
@@ -19,41 +15,27 @@
     justify-content: center;
 }
 
-#colorBlock {
-    margin-top: 5px;
-    margin-bottom: 5px;
+#foldIconParent {
+    justify-content: center;
     margin-left:10px;
-    width: 5px;
-    background-color: rgb(144, 144, 144);
 }
 
-#colorBlock.active {
-     background-color: rgb(0,145,255);
- }
+#foldIcon {
+    height: 10px;
+    width: 10px;
+}
 
 #sectionHeader {
-    color: rgb(255,255,255);
     height: 30px;
-    background-color: rgb(89,89,89);
     flex-direction: row;
 }
 
 #sectionLabel {
-    padding-left: 20px;
-    color: rgb(255,255,255);
-}
-
-#properties {
-    background-color: rgb(77,77,77);
+    padding-left: 30px;
 }
 
 #divider {
     flex-grow: 1;
-}
-
-#variables {
-    min-height: 60px;
-    background-color: rgb(77,77,77);
 }
 
 .button {
@@ -61,13 +43,8 @@
     align-self: center;
     margin-left: 3px;
     height: 30px;
-    background-color: rgb(100,100,100);
     flex-shrink: 0;
     justify-content: center;
-}
-
-.button:hover {
-    background-color: rgb(120,120,120); 
 }
 
 .smallButton {
@@ -75,19 +52,11 @@
 }
 
 .mediumButton {
-    width: 70px;
+    min-width: 70px;
 }
 
 .largeButton {
     width: 90px;
-}
-
-.headerButton {
-    background-color: rgb(142,142,142);
-}
-
-.headerButton:hover {
-    background-color: rgb(162,162,162); 
 }
 
 .remove {
@@ -97,12 +66,10 @@
 
 .add {
     margin-left: 0;
-    background-color: rgb(89,89,89);
 }
 
 .hidden {
-    visibility: hidden;
-    height: 0;
+    display: none;
 }
 
 #removeButtonContainer {
@@ -131,4 +98,4 @@ BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.does
 .hidden .showAllProperties BussStylePropertyVisualElement.doesntExists, .hidden BussStylePropertyVisualElement.exists {
      display: none;
      visibility: hidden;
- }
+}

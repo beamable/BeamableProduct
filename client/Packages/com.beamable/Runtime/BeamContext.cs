@@ -11,6 +11,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Social;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -140,9 +141,6 @@ namespace Beamable
 
 		[SerializeField] private PlayerLobby _playerLobby;
 
-		[SerializeField]
-		private PlayerParty _playerParty;
-
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -166,7 +164,23 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="PlayerParty"/> for this context.
 		/// </summary>
-		public PlayerParty Party => _playerParty = _playerParty ?? _serviceScope.GetService<PlayerParty>();
+		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
+
+		/// <summary>
+		/// Access the <see cref="PlayerAccounts"/> for this context.
+		/// </summary>
+		public PlayerAccounts Accounts
+		{
+			get
+			{
+				var service = _serviceScope.GetService<PlayerAccounts>();
+				_playerAccounts = service;
+				return service;
+			}
+		}
+
+		private bool HasAccountsService => _playerAccounts != null;
+		private PlayerAccounts _playerAccounts;
 
 		/// <summary>
 		/// <para>
@@ -249,6 +263,40 @@ namespace Beamable
 		}
 
 		/// <summary>
+		/// A <see cref="BeamContext"/> is configured for one authorized user.
+		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
+		///
+		/// This method will <i>create</i> new <see cref="BeamContext"/> instance using <see cref="TokenResponse"/> values
+		/// </summary>
+		/// <param name="playerCode">id for the <see cref="BeamContext"/></param>
+		/// <param name="token">Authorization token</param>
+		/// <returns>New instance of the <see cref="BeamContext"/></returns>
+		public static BeamContext CreateAuthorizedContext(string playerCode, TokenResponse token)
+		{
+			bool isDefault = string.IsNullOrWhiteSpace(playerCode);
+			if (isDefault || _playerCodeToContext.ContainsKey(playerCode))
+			{
+#if UNITY_EDITOR
+				const string log =
+					@"<b>BeamContext</b> with id <b>{0}</b> already exists. " +
+					"In order to update existing BeamContext it is recommended to use <b>" +
+					nameof(ChangeAuthorizedPlayer) + "</b> method instead.";
+				Debug.LogError(string.Format(log, isDefault ? "Default" : playerCode));
+#endif
+				throw new BeamContextInitException(_playerCodeToContext[playerCode],
+												   new[] { new Exception($"BeamContext with \"{playerCode}\" prefix already exist.") });
+			}
+			string cid = ConfigDatabase.GetString("cid");
+			string pid = ConfigDatabase.GetString("pid");
+
+			var accessToken = new AccessToken(new AccessTokenStorage(playerCode), cid, pid, token.access_token,
+											  token.refresh_token, token.expires_in);
+			accessToken.Save();
+			return ForPlayer(playerCode);
+		}
+
+
+		/// <summary>
 		/// A <see cref="BeamContext"/> is configured for one authorized user. If you wish to change the user, you need to give it a new token.
 		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
 		///
@@ -263,14 +311,20 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
-			await ClearPlayerAndStop();
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
 
 			// await InitStep_SaveToken();
 			await InitStep_GetUser();
 			await InitStep_StartNewSession();
+			await InitStep_StartPubnub();
 
+
+			// before we broadcast the event; we'll ask the accounts to update if they exist...
+			if (HasAccountsService)
+			{
+				await Accounts.Refresh();
+			}
 			OnReloadUser?.Invoke();
 
 			return ctx;
@@ -611,7 +665,10 @@ namespace Beamable
 			var pubnub = InitStep_StartPubnub();
 			// Start Session
 			var session = InitStep_StartNewSession();
-			_heartbeatService.Start();
+			if (CoreConfiguration.Instance.SendHeartbeat)
+			{
+				_heartbeatService.Start();
+			}
 
 			// Check if we should initialize the purchaser
 			var purchase = InitStep_StartPurchaser();
@@ -619,10 +676,7 @@ namespace Beamable
 
 			OnReloadUser?.Invoke();
 
-			if (IsDefault)
-			{
-				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
-			}
+			ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
 		}
 
 

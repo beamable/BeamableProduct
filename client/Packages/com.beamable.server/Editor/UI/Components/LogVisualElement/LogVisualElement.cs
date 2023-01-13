@@ -1,9 +1,13 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor;
+using UnityEngine;
+using Beamable.Editor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements;
@@ -49,6 +53,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private ScrollView _scrollView;
 		private VisualElement _detailView;
+		private VisualElement _detailWindowBottomBar;
 		private VisualElement _logWindowBody;
 		private TextField _detailLabel;
 		private int _scrollBlocker;
@@ -63,10 +68,21 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _warningViewBtn;
 		private Button _errorViewBtn;
 		private Button _buildDropDown;
-		private Button _advanceDropDown;
 		private VisualElement _logListRoot;
 		private ListView _listView;
 		private string _statusClassName;
+		private VisualElement _pagination;
+		private VisualElement _copyTextBtn;
+		private Label _paginationRange;
+
+		private List<string> _messageParts;
+		private List<string> _parameterParts;
+		private List<string> _allTextToDisplay;
+
+		private int _chunkSize = 5000;
+		private int _paginationIndex = 0;
+		private VisualElement _leftArrow;
+		private VisualElement _rightArrow;
 
 		protected override void OnDestroy()
 		{
@@ -83,15 +99,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var clearButton = Root.Q<Button>("clear");
 			clearButton.clickable.clicked += HandleClearButtonClicked;
+			clearButton.tooltip = "Clear logs";
 
-			_advanceDropDown = Root.Q<Button>("advanceBtn");
-			_advanceDropDown.tooltip = "More...";
 			if (!NoModel)
 			{
 				var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 				manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-				_advanceDropDown.clickable.activators.Clear();
-				_advanceDropDown.AddManipulator(manipulator);
 			}
 
 			_popupBtn = Root.Q<Button>("popupBtn");
@@ -138,6 +151,29 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_detailLabel.multiline = true;
 			_detailLabel.AddTextWrapStyle();
 
+			_detailWindowBottomBar = Root.Q<VisualElement>("detailWindowBottomBar");
+			_pagination = Root.Q<VisualElement>("pagination");
+			_pagination.AddToClassList("hide");
+			_paginationRange = Root.Q<Label>("paginationRange");
+			_copyTextBtn = Root.Q<VisualElement>("copyTextBtn");
+			_copyTextBtn.AddManipulator(new Clickable(_ =>
+			{
+				if (_allTextToDisplay.Count != 0)
+				{
+					var builder = new StringBuilder();
+					_allTextToDisplay.ForEach(text => builder.Append(text));
+					EditorGUIUtility.systemCopyBuffer = builder.ToString();
+					BeamableLogger.Log("Copied full log message to the system copy buffer");
+				}
+			}));
+			_copyTextBtn.tooltip = "Copy full log";
+			_copyTextBtn.SetEnabled(Model.Logs.Selected != null);
+
+			_leftArrow = Root.Q<VisualElement>("leftArrow");
+			_leftArrow.AddManipulator(new Clickable(_ => PreviousMessagePart()));
+			_rightArrow = Root.Q<VisualElement>("rightArrow");
+			_rightArrow.AddManipulator(new Clickable(_ => NextMessagePart()));
+
 #if UNITY_2019_1_OR_NEWER
             _detailLabel.isReadOnly = true;
 #elif UNITY_2018
@@ -176,11 +212,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (!EnableDetatchButton)
 			{
 				_popupBtn.RemoveFromHierarchy();
-			}
-
-			if (!EnableMoreButton)
-			{
-				_advanceDropDown.RemoveFromHierarchy();
 			}
 
 			_listView.RefreshPolyfill();
@@ -226,15 +257,67 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void UpdateSelectedMessageText()
 		{
-			var detailText = Model.Logs.Selected == null
-				? string.Empty
-				: $"{Model.Logs.Selected.Message}\n{Model.Logs.Selected.ParameterText}";
+			var detailText = string.Empty;
+			_paginationIndex = 0;
+			_pagination.EnableInClassList("hide", true);
+
+			if (Model.Logs.Selected != null)
+			{
+				_messageParts = Model.Logs.Selected.Message.SplitStringIntoParts(_chunkSize);
+				_parameterParts = Model.Logs.Selected.ParameterText.SplitStringIntoParts(_chunkSize);
+				_allTextToDisplay = _messageParts.Concat(_parameterParts).ToList();
+
+				if (_allTextToDisplay.Count == 1)
+				{
+					detailText = $"{_allTextToDisplay[0]}";
+				}
+				else if (_allTextToDisplay.Count > 1)
+				{
+					if (_allTextToDisplay.Sum(x => x.Length) <= _chunkSize)
+					{
+						foreach (var text in _allTextToDisplay)
+							detailText += $"{text}\n";
+					}
+					else
+					{
+						_pagination.EnableInClassList("hide", false);
+						_paginationRange.text = $"1/{_allTextToDisplay.Count}";
+						detailText = $"{_allTextToDisplay[0]}";
+					}
+				}
+			}
+			_detailLabel.SetValueWithoutNotify(detailText);
+			_copyTextBtn.SetEnabled(true);
+		}
+
+		private void NextMessagePart()
+		{
+			if (_paginationIndex + 1 == _allTextToDisplay.Count)
+				return;
+			_paginationIndex++;
+			SetMessagePart();
+		}
+		private void PreviousMessagePart()
+		{
+			if (_paginationIndex - 1 < 0)
+				return;
+			_paginationIndex--;
+			SetMessagePart();
+		}
+
+		private void SetMessagePart()
+		{
+			var detailText = $"{_allTextToDisplay[_paginationIndex]}";
+			_paginationRange.text = $"{_paginationIndex + 1}/{_allTextToDisplay.Count}";
 			_detailLabel.SetValueWithoutNotify(detailText);
 		}
 
 		private void HandleClearButtonClicked()
 		{
 			Model.Logs.Clear();
+			_copyTextBtn.SetEnabled(false);
+			_pagination.EnableInClassList("hide", true);
+			_paginationIndex = 0;
 
 			EditorApplication.delayCall += () =>
 			{
@@ -319,7 +402,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		ConsoleLogVisualElement CreateListViewElement()
 		{
 			ConsoleLogVisualElement contentVisualElement = new ConsoleLogVisualElement();
-
 			return contentVisualElement;
 		}
 
@@ -332,6 +414,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			consoleLogVisualElement.Refresh();
 			consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
 			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
+			consoleLogVisualElement.RemoveFromClassList("unity-list-view__item");
+			consoleLogVisualElement.RemoveFromClassList("unity-listview_item");
+			consoleLogVisualElement.RemoveFromClassList("unity-collection-view__item");
 			consoleLogVisualElement.MarkDirtyRepaint();
 		}
 

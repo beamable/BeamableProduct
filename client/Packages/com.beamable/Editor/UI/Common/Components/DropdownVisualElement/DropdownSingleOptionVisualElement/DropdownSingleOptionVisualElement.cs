@@ -17,8 +17,10 @@ namespace Beamable.Editor.UI.Components
 		private float _width;
 		private float _height;
 		private Action<string> _onClick;
+		private bool _lineBelow;
 
 		public float Height => _height;
+		public bool LineBelow => _lineBelow;
 
 		public new class UxmlFactory : UxmlFactory<DropdownSingleOptionVisualElement, UxmlTraits>
 		{
@@ -47,8 +49,9 @@ namespace Beamable.Editor.UI.Components
 			_onClick?.Invoke(_labelText);
 		}
 
-		public DropdownSingleOptionVisualElement Setup(string label, Action<string> onClick, float width, float height)
+		public DropdownSingleOptionVisualElement Setup(string label, Action<string> onClick, float width, float height, bool lineBelow = false)
 		{
+			_lineBelow = lineBelow;
 			_labelText = label;
 			_height = height;
 			_width = width;

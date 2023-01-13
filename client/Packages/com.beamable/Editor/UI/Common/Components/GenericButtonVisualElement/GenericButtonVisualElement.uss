@@ -13,7 +13,8 @@
     background-color: rgba(0,0,0,0);
     align-self: flex-end;
     background-image: none;
-    max-height: 16px;
+    height: 15px;
+    border-radius: 0px;
     border-bottom-width: 1px;
     border-right-width: 0px;
     border-left-width: 0px;

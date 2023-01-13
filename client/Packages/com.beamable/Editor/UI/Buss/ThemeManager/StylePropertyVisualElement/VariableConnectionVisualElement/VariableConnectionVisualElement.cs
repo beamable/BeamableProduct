@@ -1,5 +1,7 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using UnityEngine;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -7,7 +9,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public class VariableConnectionVisualElement : BeamableBasicVisualElement
 	{
-		private Button _button;
+		private VisualElement _button;
 		private IBussProperty _cachedProperty;
 		private DropdownVisualElement _dropdown;
 		private VisualElement _mainElement;
@@ -29,8 +31,8 @@ namespace Beamable.Editor.UI.Components
 			_mainElement.style.SetFlexDirection(FlexDirection.Row);
 			Root.Add(_mainElement);
 
-			_button = new Button { name = "button" };
-			_button.clickable.clicked += _model.OnButtonClick;
+			_button = new VisualElement { name = "button" };
+			_button.RegisterCallback<MouseDownEvent>(_model.OnButtonClick);
 			_mainElement.Add(_button);
 
 			_dropdown = new DropdownVisualElement { name = "dropdown" };
@@ -43,15 +45,26 @@ namespace Beamable.Editor.UI.Components
 
 		protected override void OnDestroy()
 		{
-			_button.clickable.clicked -= _model.OnButtonClick;
+			_button.UnregisterCallback<MouseDownEvent>(_model.OnButtonClick);
 		}
 
 		public override void Refresh()
 		{
-			_button.EnableInClassList("whenConnected", _model.HasVariableConnected);
-			_dropdown.visible = _model.HasVariableConnected;
+			_button.EnableInClassList("whenConnected", _model.HasNonValueConnection);
+			_dropdown.visible = _model.HasNonValueConnection;
+			_button.tooltip = Constants.Features.Buss.MenuItems.CONNECT_VARIABLE_TEXT;
+			if (_model.HasNonValueConnection)
+			{
+				_button.tooltip = Constants.Features.Buss.MenuItems.REMOVE_VARIABLE_CONNECT;
+			}
+
 			_dropdown.Setup(_model.DropdownOptions, _model.OnVariableSelected, _model.VariableDropdownOptionIndex,
 							false);
+
+			if (!_model.IsInherited && !_model.IsInitial && _model.IsVariableConnectionEmpty)
+			{
+				_dropdown.SetValueWithoutVerification(Constants.Features.Buss.MenuItems.NONE);
+			}
 		}
 	}
 }

@@ -25,7 +25,7 @@ namespace Beamable.Common.Content
 		/// A set of <see cref="ClientContentInfo"/> that exist in this <see cref="ClientManifest"/>.
 		/// Each <see cref="ClientContentInfo"/> describes one piece of content.
 		/// </summary>
-		public List<ClientContentInfo> entries;
+		public List<ClientContentInfo> entries = new List<ClientContentInfo>();
 
 		/// <summary>
 		/// Use a <see cref="ContentQuery"/> to filter the <see cref="entries"/> and get a new <see cref="ClientManifest"/>.

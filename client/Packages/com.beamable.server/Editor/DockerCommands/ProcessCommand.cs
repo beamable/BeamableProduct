@@ -21,6 +21,7 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		const int PROCESS_NOT_FOUND_EXIT_CODE = 127; // TODO: Check this for windows?
 
+		protected virtual bool CaptureStandardBuffers => true;
 		public static bool DockerNotInstalled
 		{
 			get => EditorPrefs.GetBool("DockerNotInstalled", true);
@@ -52,6 +53,8 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		public virtual bool DockerRequired => true;
+
+		protected bool _skipDockerCheck = false;
 
 		private Process _process;
 		private TaskCompletionSource<int> _status, _standardOutComplete;
@@ -141,7 +144,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public virtual void Start()
 		{
-			if (DockerRequired && DockerNotInstalled)
+			if (!_skipDockerCheck && DockerRequired && DockerNotInstalled)
 			{
 				throw new DockerNotInstalledException();
 			}
@@ -228,8 +231,8 @@ namespace Beamable.Server.Editor.DockerCommands
 					_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 					_process.EnableRaisingEvents = true;
 					_process.StartInfo.RedirectStandardInput = true;
-					_process.StartInfo.RedirectStandardOutput = true;
-					_process.StartInfo.RedirectStandardError = true;
+					_process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
+					_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
 					ModifyStartInfo(_process.StartInfo);
@@ -376,43 +379,49 @@ namespace Beamable.Server.Editor.DockerCommands
 			});
 		}
 
-		private static Task DockerCheckTask;
-		public static void CheckDockerAppRunning()
+		private static Promise<bool> DockerCheckTask;
+		public static Promise<bool> CheckDockerAppRunning()
 		{
-			if (DockerCheckTask == null || DockerCheckTask.IsCompleted)
+			if (DockerCheckTask != null && !DockerCheckTask.IsCompleted)
 			{
-				bool dockerNotRunning = DockerNotRunning;
-				DockerCheckTask = new Task(() =>
+				return DockerCheckTask;
+			}
+
+			bool dockerNotRunning = DockerNotRunning;
+			var task = new Task<bool>(() =>
+			{
+				var procList = Process.GetProcesses();
+				for (int i = 0; i < procList.Length; i++)
 				{
-					var procList = Process.GetProcesses();
-					for (int i = 0; i < procList.Length; i++)
+					try
 					{
-						try
-						{
 #if UNITY_EDITOR_WIN
-							const string procName = "docker desktop";
+						const string procName = "docker desktop";
 #else
-							const string procName = "docker";
+						const string procName = "docker";
 #endif
-							if (procList[i].ProcessName.ToLower().Contains(procName))
-							{
-								dockerNotRunning = false;
-								return;
-							}
-						}
-						catch
+						if (procList[i].ProcessName.ToLower().Contains(procName))
 						{
+							dockerNotRunning = false;
+							return false;
 						}
 					}
+					catch
+					{
+					}
+				}
 
-					dockerNotRunning = true;
-				});
-				DockerCheckTask.Start();
-				DockerCheckTask.ToPromise().Then(_ =>
-				{
-					DockerNotRunning = dockerNotRunning;
-				});
-			}
+				dockerNotRunning = true;
+				return true;
+			});
+			task.Start();
+			DockerCheckTask = task.ToPromise();
+			DockerCheckTask.Then(_ =>
+			{
+				DockerNotRunning = dockerNotRunning;
+			});
+
+			return DockerCheckTask;
 		}
 
 		public static bool RunDockerProcess()

@@ -31,6 +31,7 @@ using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
+using Beamable.Common.Api.Stats;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
@@ -136,21 +137,25 @@ namespace Beamable
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
+			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
-			DependencyBuilder.AddSingleton<IAuthService, AuthService>();
+			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());
 			DependencyBuilder.AddSingleton<IAnnouncementsApi, AnnouncementsService>();
 			DependencyBuilder.AddSingleton<ISessionService, SessionService>();
 			DependencyBuilder.AddSingleton<CloudSavingService>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
+			DependencyBuilder.AddSingleton<IManifestResolver, DefaultManifestResolver>();
+			DependencyBuilder.AddSingleton<IContentCacheFactory, DefaultContentCacheFactory>();
 			DependencyBuilder.AddSingleton<ContentService>();
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddSingleton<IMailApi, MailService>();
 			DependencyBuilder.AddScoped<InventoryService>();
+			DependencyBuilder.AddScoped<IStatsApi>(p => p.GetService<StatsService>());
 			DependencyBuilder.AddScoped<StatsService>(provider =>
 														  new StatsService(
 															  provider.GetService<IPlatformService>(),
@@ -198,6 +203,7 @@ namespace Beamable
 																	   UnityUserDataCache<RankEntry>.CreateInstance
 																   ));
 			DependencyBuilder.AddSingleton<GameRelayService>();
+			DependencyBuilder.AddTransient<ISimFaultHandler, DefaultSimFaultHandler>();
 			DependencyBuilder.AddSingleton<MatchmakingService>(provider => new MatchmakingService(
 																   provider.GetService<IPlatformService>(),
 																   // the matchmaking service needs a special instance of the beamable api requester
@@ -225,6 +231,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
+			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
 			DependencyBuilder.AddScoped<PlayerSocial>();
 
@@ -232,6 +239,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
+			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));

@@ -105,6 +105,7 @@ namespace Beamable.UI.Buss
 				BeamableLogger.LogWarning("Style to copy can't be null");
 				return;
 			}
+			BeamableUndoUtility.Undo(targetStyleSheet, "Copy Style");
 
 			BussStyleRule rule = BussStyleRule.Create(style.SelectorString, new List<BussPropertyProvider>());
 
@@ -115,6 +116,7 @@ namespace Beamable.UI.Buss
 
 			targetStyleSheet.Styles.Add(rule);
 #if UNITY_EDITOR
+			EditorUtility.SetDirty(targetStyleSheet);
 			AssetDatabase.SaveAssets();
 #endif
 			targetStyleSheet.TriggerChange();
@@ -124,6 +126,7 @@ namespace Beamable.UI.Buss
 		{
 			targetStyleSheet.RemoveStyle(style);
 #if UNITY_EDITOR
+			EditorUtility.SetDirty(targetStyleSheet);
 			AssetDatabase.SaveAssets();
 #endif
 			targetStyleSheet.TriggerChange();
@@ -137,8 +140,6 @@ namespace Beamable.UI.Buss
 			{
 				CopySingleStyle(newStyleSheet, styleRule);
 			}
-
-			BussConfiguration.OptionalInstance.Value.AddGlobalStyleSheet(newStyleSheet);
 
 #if UNITY_EDITOR
 			AssetDatabase.CreateAsset(newStyleSheet, $"Assets/Resources/{fileName}.asset");

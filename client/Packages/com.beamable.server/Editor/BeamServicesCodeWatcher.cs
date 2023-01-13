@@ -55,6 +55,8 @@ namespace Beamable.Server.Editor
 	// ReSharper disable once ClassNeverInstantiated.Global
 	public class BeamServicesCodeWatcher : IBeamHintSystem
 	{
+		private const int CLEANUP_CONTAINERS_TIMEOUT = 3;
+
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
 
@@ -73,45 +75,70 @@ namespace Beamable.Server.Editor
 			}
 
 			LatestCodeHandles = new List<BeamServiceCodeHandle>(64);
+			ServiceToChecksum = new Dictionary<MicroserviceDescriptor, ServiceDependencyChecksum>();
 
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var msCodeHandles = registry.Descriptors.Select(desc => new BeamServiceCodeHandle()
-			{
-				ServiceName = desc.Name,
-				CodeClass = BeamCodeClass.Microservice,
-				AsmDefInfo = desc.ConvertToInfo(),
-				CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
-			}).ToList();
+			var msCodeHandles = new List<BeamServiceCodeHandle>();
+			var cachedDeps = new List<MicroserviceDependencies>();
+			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
 
-			ServiceToChecksum =
-				registry.Descriptors.ToDictionary(desc => desc, desc => new ServiceDependencyChecksum
+			for (int i = 0; i < registry.Descriptors.Count; i++)
+			{
+				var cachedInfo = registry.Descriptors[i].ConvertToInfo();
+
+				msCodeHandles.Add(new BeamServiceCodeHandle()
 				{
-					ServiceName = desc.Name,
-					Checksum = DependencyResolver.GetDependencies(desc).GetDependencyChecksum()
+					ServiceName = registry.Descriptors[i].Name,
+					CodeClass = BeamCodeClass.Microservice,
+					AsmDefInfo = cachedInfo,
+					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
 				});
 
-			var storageCodeHandles = registry.StorageDescriptors.Select(desc => new BeamServiceCodeHandle()
-			{
-				ServiceName = desc.Name,
-				CodeClass = BeamCodeClass.StorageObject,
-				AsmDefInfo = desc.ConvertToInfo(),
-				CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
-			}).ToList();
+				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies));
+				ServiceToChecksum.Add
+				(
+					registry.Descriptors[i],
+					new ServiceDependencyChecksum
+					{
+						ServiceName = registry.Descriptors[i].Name,
+						Checksum = cachedDeps[i].GetDependencyChecksum()
+					}
+				);
+			}
 
-			var sharedAssemblyHandles = registry.Descriptors
-												.Select(DependencyResolver.GetDependencies)
-												.SelectMany(deps => deps.Assemblies.ToCopy)
-												.Distinct()
-												.Except(msCodeHandles.Select(h => h.AsmDefInfo))
-												.Except(storageCodeHandles.Select(h => h.AsmDefInfo))
-												.Select(asm => new BeamServiceCodeHandle
-												{
-													ServiceName = asm.Name,
-													CodeDirectory = Path.GetDirectoryName(asm.Location),
-													CodeClass = BeamCodeClass.SharedAssembly,
-													AsmDefInfo = asm,
-												})
-												.ToList();
+			var storageCodeHandles = new HashSet<BeamServiceCodeHandle>();
+
+			for (int k = 0; k < registry.StorageDescriptors.Count; k++)
+			{
+				var cachedInfo = registry.StorageDescriptors[k].ConvertToInfo();
+				storageCodeHandles.Add(new BeamServiceCodeHandle()
+				{
+					ServiceName = registry.StorageDescriptors[k].Name,
+					CodeClass = BeamCodeClass.StorageObject,
+					AsmDefInfo = cachedInfo,
+					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
+				});
+			}
+
+			var sharedAssemblyHandles = new HashSet<BeamServiceCodeHandle>();
+
+			for (int i = 0; i < cachedDeps.Count; i++)
+			{
+				var defs = cachedDeps[i].Assemblies.ToCopy.Distinct().
+										 Except(msCodeHandles.Select(h => h.AsmDefInfo))
+										.Except(storageCodeHandles.Select(h => h.AsmDefInfo)).ToArray();
+
+				for (int k = 0; k < defs.Length; k++)
+				{
+					sharedAssemblyHandles.Add(new BeamServiceCodeHandle
+					{
+						ServiceName = defs[k].Name,
+						CodeDirectory = Path.GetDirectoryName(defs[k].Location),
+						CodeClass = BeamCodeClass.SharedAssembly,
+						AsmDefInfo = defs[k],
+					});
+				}
+			}
 
 			LatestCodeHandles.Clear();
 			LatestCodeHandles.AddRange(sharedAssemblyHandles);
@@ -146,22 +173,30 @@ namespace Beamable.Server.Editor
 			var config = MicroserviceConfiguration.Instance;
 			var currCodeHandles = config.ServiceCodeHandlesOnLastDomainReload;
 
-			if (currCodeHandles != null && currCodeHandles.Count > 0)
+			if (currCodeHandles == null || currCodeHandles.Count <= 0)
 			{
-				var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
-
-				var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
-													  .Select(asmName => currCodeHandles.FirstOrDefault(
-																  c => c.AsmDefInfo.Name == asmName))
-													  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
-													  .ToList();
-
-				config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
-				config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
-
-				config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
-				config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+				// there are no current code handles, so there is nothing to check.
+				return;
 			}
+
+			var serviceToUpdate = currCodeHandles.FirstOrDefault(h => h.ServiceName == serviceName);
+			if (string.IsNullOrEmpty(serviceToUpdate.ServiceName))
+			{
+				// none of the existing code handles reference this service yet, so there is nothing to do.
+				return;
+			}
+
+			var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
+												  .Select(asmName => currCodeHandles.FirstOrDefault(
+															  c => c.AsmDefInfo.Name == asmName))
+												  .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
+												  .ToList();
+
+			config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+
+			config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
 		}
 
 		public void CheckForMissingMongoDependenciesOnMicroservices()
@@ -173,22 +208,42 @@ namespace Beamable.Server.Editor
 
 			// Get the reflection cache
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
 
 			// Find every declared Microservice that has a dependency on a storage object.
-			var storages = LatestCodeHandles.Where(c => c.CodeClass == BeamCodeClass.StorageObject).ToList();
-			var storageAsmNames = storages.Select(sch => sch.AsmDefInfo.Name).ToList();
-			var descToDeps = registry.Descriptors.ToDictionary(d => d, DependencyResolver.GetDependencies);
-			var microservicesThatDependOnStorage = registry.Descriptors.Where(d =>
+
+			HashSet<string> storageAsmNames = new HashSet<string>();
+
+			for (int i = 0; i < LatestCodeHandles.Count; i++)
 			{
-				var deps = descToDeps[d].Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
-				return deps != null;
-			});
+				if (LatestCodeHandles[i].CodeClass == BeamCodeClass.StorageObject)
+				{
+					storageAsmNames.Add(LatestCodeHandles[i].AsmDefInfo.Name);
+				}
+			}
+
+			var microservicesThatDependOnStorage = new List<MicroserviceDescriptor>();
+
+			for (int i = 0; i < registry.Descriptors.Count; i++)
+			{
+				MicroserviceDependencies dep = DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies);
+				var tmp = dep.Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
+
+				if (tmp != null)
+					microservicesThatDependOnStorage.Add(registry.Descriptors[i]);
+			}
 
 			// Find all MSs that are missing the correct Mongo DLLs
-			var missingMongoDepsAsmDefs = microservicesThatDependOnStorage.Select(ms => ms.ConvertToAsset()).Where(asm => !asm.HasMongoLibraries());
 
-			// Add Mongo Libraries to each of the ones that are missing them.
-			foreach (var asset in missingMongoDepsAsmDefs) asset.AddMongoLibraries();
+			for (int i = 0; i < microservicesThatDependOnStorage.Count; i++)
+			{
+				var missingMongoDepsAsmDefs = microservicesThatDependOnStorage[i].ConvertToAsset();
+				if (!missingMongoDepsAsmDefs.HasMongoLibraries())
+				{
+					// Add Mongo Libraries to each of the ones that are missing them.
+					missingMongoDepsAsmDefs.AddMongoLibraries();
+				}
+			}
 		}
 
 		public void CheckForLocalChangesNotYetDeployed()
@@ -254,13 +309,13 @@ namespace Beamable.Server.Editor
 						return true;
 					}
 
-					var existingChecksum = microserviceConfiguration.ServiceDependencyChecksums.FirstOrDefault(
+					var existingChecksum = MicroservicesDataModel.Instance.ServiceDependencyChecksums.FirstOrDefault(
 						service => service.ServiceName == desc.Name);
 
 					return !string.Equals(existingChecksum.Checksum, currentDependency.Checksum);
 				}).ToList();
 
-				microserviceConfiguration.ServiceDependencyChecksums =
+				MicroservicesDataModel.Instance.ServiceDependencyChecksums =
 					ServiceToChecksum.Select(kvp => kvp.Value).ToList();
 
 				foreach (var service in dirtyServices)
@@ -295,6 +350,9 @@ namespace Beamable.Server.Editor
 		[DidReloadScripts]
 		private static void WatchMicroserviceFiles()
 		{
+			EditorApplication.wantsToQuit -= WantsToQuit;
+			EditorApplication.wantsToQuit += WantsToQuit;
+
 			// If we are not initialized, delay the call until we are.
 			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 			{
@@ -311,8 +369,6 @@ namespace Beamable.Server.Editor
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
 			}
-
-			EditorApplication.quitting += CleanupRunningContainers;
 
 			// Check for the hint regarding local changes that are not deployed to your local docker environment
 			codeWatcher.CheckForLocalChangesNotYetDeployed();
@@ -385,34 +441,58 @@ namespace Beamable.Server.Editor
 			return (!alreadyExisted || checksumDiffers);
 		}
 
-		public static void CleanupRunningContainers()
+		private static bool WantsToQuit()
 		{
 			try
 			{
-				// this method should exist in some sort of Docker system. But until we have that...
 				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				foreach (var service in registry.Descriptors)
-				{
-					var generatorDesc = GetGeneratorDescriptor(service);
 
-					var kill = new StopImageCommand(service);
-					var killGenerator = new StopImageCommand(generatorDesc);
-					kill.StartAsync();
-					killGenerator.StartAsync();
-				}
-
-				foreach (var storage in registry.StorageDescriptors)
+				int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
+				if (allDesc > 0)
 				{
-					var kill = new StopImageCommand(storage);
-					var killTool = new StopImageCommand(storage.LocalToolContainerName);
-					kill.StartAsync();
-					killTool.StartAsync();
+					Task task = Task.Run(async () => { await CleanupRunningContainers(); });
+					TimeSpan timeout = TimeSpan.FromSeconds(CLEANUP_CONTAINERS_TIMEOUT);
+					task.Wait(timeout);
 				}
 			}
 			catch
 			{
 				Debug.LogError("Failed to clean up running docker containers");
 			}
+
+			return true;
+		}
+
+		private static Task CleanupRunningContainers()
+		{
+			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+			int allDesc = registry.Descriptors.Count + registry.StorageDescriptors.Count;
+
+			if (allDesc > 0)
+			{
+				foreach (var service in registry.Descriptors)
+				{
+					var generatorDesc = GetGeneratorDescriptor(service);
+
+					var kill = new StopImageCommand(service, true);
+					var killGenerator = new StopImageCommand(generatorDesc, true);
+
+					kill.Start();
+					killGenerator.Start();
+				}
+
+				foreach (var storage in registry.StorageDescriptors)
+				{
+					var kill = new StopImageCommand(storage, true);
+					var killTool = new StopImageCommand(storage.LocalToolContainerName, true);
+
+					kill.Start();
+					killTool.Start();
+				}
+			}
+
+			return Task.CompletedTask;
 		}
 
 		public static MicroserviceDescriptor GetGeneratorDescriptor(IDescriptor service)

@@ -390,10 +390,32 @@ namespace Beamable.Editor.Reflection
 			private ConverterData<T> BuildConverterData<T>(BeamHintType type, string domain, string idRegex, string userOverrideHintDetailConfigId, string hintDetailConfigId, T cachedDelegate)
 				where T : Delegate
 			{
-				var userOverrideConfig = _loadedConfigs.FirstOrDefault(cfg => userOverrideHintDetailConfigId == cfg.Id);
-				var defaultConfig = _loadedConfigs.FirstOrDefault(cfg => hintDetailConfigId == cfg.Id);
+				BeamHintDetailsConfig userOverrideConfig = null;
+				BeamHintDetailsConfig defaultConfig = null;
+				BeamHintTextMap textMap = null;
 
-				var textMap = _loadedTextMaps.FirstOrDefault(txt => txt.HintIdToHintTitle.Keys.Any(k => new Regex(idRegex).IsMatch(k)));
+				for (int configIndex = 0; configIndex < _loadedConfigs.Count; configIndex++)
+				{
+					if (userOverrideConfig == null && userOverrideHintDetailConfigId == _loadedConfigs[configIndex].Id)
+					{
+						userOverrideConfig = _loadedConfigs[configIndex];
+					}
+
+					if (defaultConfig == null && hintDetailConfigId == _loadedConfigs[configIndex].Id)
+					{
+						defaultConfig = _loadedConfigs[configIndex];
+					}
+				}
+
+				Regex regexToCheck = new Regex(idRegex);
+				for (int index = 0; index < _loadedTextMaps.Count; index++)
+				{
+					if (_loadedTextMaps[index].HintIdToHintTitle.Keys.Any(k => regexToCheck.IsMatch(k)))
+					{
+						textMap = _loadedTextMaps[index];
+						break;
+					}
+				}
 
 				return new ConverterData<T>
 				{

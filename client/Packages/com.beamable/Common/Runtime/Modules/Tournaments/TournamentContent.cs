@@ -1,9 +1,11 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Inventory;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Tournaments
 {
@@ -15,7 +17,7 @@ namespace Beamable.Common.Tournaments
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -31,7 +33,7 @@ namespace Beamable.Common.Tournaments
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
 	/// - See Beamable.Common.Content.ContentObject script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -152,7 +154,7 @@ namespace Beamable.Common.Tournaments
 	/// #### Related Links
 	/// - See Beamable.Common.Content.ContentObject script reference
 	/// - See Beamable.Api.Tournaments.TournamentService script reference
-	/// 
+	///
 	/// ![img beamable-logo]
 	///
 	/// </summary>
@@ -180,6 +182,11 @@ namespace Beamable.Common.Tournaments
 		[MustBeDateString]
 		public string anchorTimeUTC = "2020-01-01T12:00:00Z";
 
+		[IgnoreContentField]
+		[SerializeField]
+		[TimeSpanDisplay(nameof(cycleDuration))]
+		private int cycleText;
+		
 		[Tooltip("ISO duration string. How long does each tournament cycle last? Default is 1 Day.")]
 		[MustBeTimeSpanDuration]
 		public string cycleDuration = "P1D";

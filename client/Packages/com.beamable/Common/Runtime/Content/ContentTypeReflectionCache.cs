@@ -177,7 +177,7 @@ namespace Beamable.Common.Content
 		{
 			// Guaranteed to exist due to validation.
 			var typeName = GetContentTypeName(type);
-			var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true).ToList();
+			var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true);
 			foreach (var possibleTypeName in formerlySerializedTypeNames)
 			{
 				if (possibleTypeName == null) continue;
@@ -293,7 +293,7 @@ namespace Beamable.Common.Content
 
 		public Type NameToType(string name) => ContentTypeToClass.TryGetValue(name, out var type) ? type : typeof(ContentObject);
 
-		public string TypeToName(Type type) => ClassToContentType.TryGetValue(type, out var name) ? name : throw new Exception($"No content name found for type=[{type.Name}]");
+		public string TypeToName(Type type) => ClassToContentType.TryGetValue(type, out var name) ? name : throw new ContentNotFoundException(type);
 		public bool HasContentTypeValidClass(string contentId) => ContentTypeToClass.ContainsKey(contentId);
 
 		public Type GetTypeFromId(string id)

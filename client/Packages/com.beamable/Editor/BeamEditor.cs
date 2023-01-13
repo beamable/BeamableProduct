@@ -9,6 +9,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
@@ -21,6 +22,7 @@ using Beamable.Editor.Content;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
+using Beamable.Editor.Modules.Hubspot;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.Toolbox.Models;
@@ -80,13 +82,17 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
 
 			DependencyBuilder.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
-			DependencyBuilder.AddSingleton(provider => new ContentIO(provider.GetService<IPlatformRequester>()));
+			DependencyBuilder.AddSingleton<IContentIO>(provider => provider.GetService<ContentIO>());
+			DependencyBuilder.AddSingleton<ContentIO>();
 			DependencyBuilder.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
 			DependencyBuilder.AddSingleton<AliasService>();
 			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
 			DependencyBuilder.AddSingleton<BeamableVsp>();
+			DependencyBuilder.AddSingleton<HubspotService>();
 			DependencyBuilder.AddSingleton<BeamableDispatcher>();
+
+			DependencyBuilder.AddSingleton<IEditorHttpRequester>(provider => new BeamableEditorWebRequester());
 
 			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
@@ -95,6 +101,10 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<ServiceStorage>();
 			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<EnvironmentService>();
+
+			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
+			DependencyBuilder.AddSingleton<ValidationContext>();
+			DependencyBuilder.AddSingleton<ContentDatabase>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
@@ -461,6 +471,7 @@ namespace Beamable
 		public IDependencyProviderScope ServiceScope { get; private set; }
 		public Promise InitializePromise { get; private set; }
 		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
+		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 
@@ -513,9 +524,9 @@ namespace Beamable
 			}
 
 			// Load up the current Configuration data
-			ConfigDatabase.TryGetString("alias", out var alias);
-			var cid = ConfigDatabase.GetString("cid");
-			var pid = ConfigDatabase.GetString("pid");
+			ConfigDatabase.TryGetString(Features.Config.ALIAS_KEY, out var alias);
+			ConfigDatabase.TryGetString(Features.Config.CID_KEY, out string cid);
+			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out string pid);
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
@@ -584,7 +595,7 @@ namespace Beamable
 			var cid = res.Cid.GetOrThrow();
 
 			// Gets the stored pid, if its there
-			ConfigDatabase.TryGetString("pid", out var pid);
+			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out var pid);
 
 			// Set the config defaults to reflect the new Customer.
 			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
@@ -642,17 +653,30 @@ namespace Beamable
 			{
 				var games = await realmService.GetGames();
 
-				if (string.IsNullOrEmpty(pid))
+				if (EditorPrefs.HasKey(Features.Config.LAST_PID_KEY))
 				{
-					var realms = await realmService.GetRealms(games.First());
-					realm = realms.First(rv => !rv.Archived);
-				}
-				else
-				{
-					realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
-					if (realm == null)
+					string lastPid = EditorPrefs.GetString(Features.Config.LAST_PID_KEY);
+					if (!string.IsNullOrEmpty(lastPid))
 					{
-						Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+						var realms = await realmService.GetRealms(lastPid);
+						realm = realms.FirstOrDefault(rv => rv.Pid == lastPid);
+					}
+				}
+
+				if (realm == null)
+				{
+					if (string.IsNullOrEmpty(pid))
+					{
+						var realms = await realmService.GetRealms(games.First());
+						realm = realms.First(rv => !rv.Archived);
+					}
+					else
+					{
+						realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
+						if (realm == null)
+						{
+							Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+						}
 					}
 				}
 			}
@@ -824,6 +848,12 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm?.Pid);
 			requester.DeleteToken();
+			if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
+			{
+				EditorPrefs.SetString(Features.Config.LAST_PID_KEY, ConfigDatabase.GetString(Features.Config.PID_KEY));
+				ConfigDatabase.Reset(Features.Config.PID_KEY);
+				SaveConfig(CurrentCustomer?.Alias, "", cid: CurrentCustomer?.Cid);
+			}
 			CurrentUser = null;
 			OnUserChange?.Invoke(null);
 			BeamableEnvironment.ReloadEnvironment();
@@ -909,6 +939,11 @@ namespace Beamable
 				host = BeamableEnvironment.ApiUrl;
 			}
 
+			if (!string.IsNullOrEmpty(pid))
+			{
+				ConfigDatabase.SetString(Features.Config.PID_KEY, pid, createField: true);
+			}
+
 			WriteConfig(alias, pid, host, cid);
 			// Initialize the requester configuration data so we can attempt a login.
 			var requester = ServiceScope.GetService<PlatformRequester>();
@@ -956,6 +991,16 @@ namespace Beamable
 				var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
 											tokenResponse.refresh_token, tokenResponse.expires_in);
 				CurrentRealm = null; // erase the current realm; if there is one..
+				try
+				{
+					await ServiceScope.GetService<HubspotService>()
+									  .SubmitRegistrationEvent(email, alias);
+				}
+				catch (Exception hubspotError)
+				{
+					Debug.LogWarning($"Hubspot registration event failed. type=[{hubspotError?.GetType()}] message=[{hubspotError?.Message}]");
+				}
+
 				await Login(token, pid);
 				await DoSilentContentPublish(true);
 			}

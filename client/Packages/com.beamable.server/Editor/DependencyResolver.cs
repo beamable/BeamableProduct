@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -98,6 +99,7 @@ namespace Beamable.Server
 		{
 			_assemblies = assemblies.ToDictionary(a => a.Name);
 		}
+
 
 		public AssemblyDefinitionInfo Find(string assemblyName)
 		{
@@ -262,9 +264,9 @@ namespace Beamable.Server
 				results.Add(t);
 				if (t.IsGenericType)
 				{
-					foreach (var g in t.GenericTypeArguments)
+					for (int i = 0; i < t.GenericTypeArguments.Length; i++)
 					{
-						results.Add(g);
+						results.Add(t.GenericTypeArguments[i]);
 					}
 				}
 			}
@@ -272,12 +274,21 @@ namespace Beamable.Server
 			// get all methods
 			Add(type.BaseType);
 
-			var agnosticAttribute = type.GetCustomAttribute<AgnosticAttribute>();
+#pragma warning disable CS0618
+
+			AgnosticAttribute agnosticAttribute = null;
+
+			if (HasAttribute(type, typeof(AgnosticAttribute)))
+			{
+				agnosticAttribute = type.GetCustomAttribute<AgnosticAttribute>();
+			}
+
+#pragma warning restore CS0618
 			if (agnosticAttribute != null && agnosticAttribute.SupportTypes != null)
 			{
-				foreach (var supportType in agnosticAttribute.SupportTypes)
+				for (int i = 0; i < agnosticAttribute.SupportTypes.Length; i++)
 				{
-					Add(supportType);
+					Add(agnosticAttribute.SupportTypes[i]);
 				}
 			}
 
@@ -315,6 +326,19 @@ namespace Beamable.Server
 			var ns = t.Namespace ?? "";
 			var isUnity = ns.StartsWith("UnityEngine") || ns.StartsWith("UnityEditor");
 			return isUnity;
+		}
+
+		private static bool HasAttribute(MemberInfo memberInfo, Type type)
+		{
+			foreach (var element in memberInfo.CustomAttributes)
+			{
+				if (element.AttributeType == type)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static bool IsSystemType(Type t)
@@ -363,7 +387,9 @@ namespace Beamable.Server
 
 		private static bool IsSourceCodeType(Type t, out IHasSourcePath attribute)
 		{
+#pragma warning disable CS0618
 			attribute = t.GetCustomAttribute<AgnosticAttribute>(false);
+#pragma warning restore CS0618
 			if (attribute == null)
 			{
 				attribute = t.GetCustomAttribute<ContentTypeAttribute>(false);
@@ -432,21 +458,23 @@ namespace Beamable.Server
 
 			var output = new List<MicroserviceFileDependency>();
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-			foreach (var assembly in assemblies)
+
+			for (int i = 0; i < assemblies.Length; i++)
 			{
-				var isTestAssembly = assembly.FullName.Contains("Test");
-				var isEditorAssembly = assembly.FullName.Contains("Editor");
+				var isTestAssembly = assemblies[i].FullName.Contains("Test");
+				var isEditorAssembly = assemblies[i].FullName.Contains("Editor");
 				if (isTestAssembly || isEditorAssembly) continue;
-				var types = assembly.GetTypes();
-				foreach (var type in types)
+				var types = assemblies[i].GetTypes();
+
+				for (int k = 0; k < types.Length; k++)
 				{
-					var contentAttr = type.GetCustomAttribute<ContentTypeAttribute>();
+					var contentAttr = types[k].GetCustomAttribute<ContentTypeAttribute>();
 					if (contentAttr == null) continue;
 
 					output.Add(new MicroserviceFileDependency
 					{
 						Agnostic = contentAttr,
-						Type = type
+						Type = types[k]
 					});
 				}
 			}
@@ -474,14 +502,13 @@ namespace Beamable.Server
 			return dllImporters;
 		}
 
-		public static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(MicroserviceDescriptor descriptor)
+		public static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(AssemblyDefinitionInfoCollection unityAssemblies, MicroserviceDescriptor descriptor)
 		{
 			/*
             * We can crawl the assembly definition itself...
             */
 
 			// reject the assembly that represents this microservice, because that will be recompiled separately.
-			var unityAssemblies = ScanAssemblyDefinitions();
 			var selfUnityAssembly = unityAssemblies.Find(descriptor.Type.Assembly);
 
 			// crawl deps of unity assembly...
@@ -512,21 +539,24 @@ namespace Beamable.Server
 				{
 					allRequiredUnityAssemblies.Add(curr);
 
-					foreach (var dllReference in curr.DllReferences)
+					for (int i = 0; i < curr.DllReferences.Length; i++)
 					{
-						totalDllReferences.Add(dllReference);
+						totalDllReferences.Add(curr.DllReferences[i]);
 					}
 
-					foreach (var referenceName in curr.References)
+					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(curr.Location);
+					var info = asset.ConvertToInfo();
+
+					for (int k = 0; k < info.References.Length; k++)
 					{
 						try
 						{
-							var referencedAssembly = unityAssemblies.Find(referenceName);
+							var referencedAssembly = unityAssemblies.Find(info.References[k]);
 							unityAssembliesToExpand.Enqueue(referencedAssembly);
 						}
-						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, referenceName))
+						catch (AssemblyDefinitionNotFoundException) when (IsStubbed(unityAssemblies, info.References[k]))
 						{
-							Debug.LogWarning($"Skipping {referenceName} because it is a stubbed package. You should still install the package for general safety.");
+							Debug.LogWarning($"Skipping {info.References[k]} because it is a stubbed package. You should still install the package for general safety.");
 						}
 					}
 				}
@@ -556,10 +586,10 @@ namespace Beamable.Server
 
 			toExpand.Enqueue(descriptor.Type);
 
-			foreach (var contentType in contentTypes)
+			for (int i = 0; i < contentTypes.Count; i++)
 			{
-				toExpand.Enqueue(contentType.Type);
-				fileDependencies.Add(contentType);
+				toExpand.Enqueue(contentTypes[i].Type);
+				fileDependencies.Add(contentTypes[i]);
 			}
 
 			seen.Add(descriptor.Type.FullName);
@@ -625,6 +655,7 @@ namespace Beamable.Server
 
 
 				var references = GetReferencedTypes(curr);
+
 				foreach (var reference in references)
 				{
 					var referenceName = GetTypeName(reference);
@@ -650,9 +681,14 @@ namespace Beamable.Server
 		}
 
 
-		public static MicroserviceDependencies GetDependencies(MicroserviceDescriptor descriptor)
+		public static MicroserviceDependencies GetDependencies(MicroserviceDescriptor descriptor, AssemblyDefinitionInfoCollection unityAssemblies = null)
 		{
-			var assemblyRequirements = GatherAssemblyDependencies(descriptor);
+			if (unityAssemblies == null)
+			{
+				unityAssemblies = ScanAssemblyDefinitions();
+			}
+
+			var assemblyRequirements = GatherAssemblyDependencies(unityAssemblies, descriptor);
 			var dlls = GatherDllDependencies(descriptor, assemblyRequirements);
 			var infos = GatherSingleFileDependencies(descriptor, assemblyRequirements);
 			return new MicroserviceDependencies

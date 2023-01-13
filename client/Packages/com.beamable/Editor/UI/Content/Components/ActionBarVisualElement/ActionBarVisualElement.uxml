@@ -8,32 +8,21 @@
 
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="leftContentVisualElement">
-            <engine:Button class="boundedButton" name="createNewButton">
-            <engine:Image name="dropDownImg"/>
-            <engine:Label text="Create" class="createButtonLabel"/>
-            </engine:Button>>
+            <beamable:DropdownButton name="createNewButton" text="Create" forceDropdown="true" tooltip="Create new Content"/>
             <engine:Button text="Validate" class="boundedButton" name="validateButton"/>
-            <engine:Button class="boundedButton" name="publishButton">
-                <engine:Image name="dropDownImg" class="--image-scale-to-fit">
-                    <engine:Button name="publishDropdownButton" class="--noBorder"/>
-                </engine:Image>
-                <engine:Label text="Publish" class="createButtonLabel" name="publicButtonLabel"/>
-            </engine:Button>
-            <engine:Button text="Download" class="boundedButton" name="downloadButton"/>
+            <beamable:DropdownButton name="publishButton" text="Publish"/>
+            <beamable:DropdownButton name="downloadButton" text="Download"/>
         </engine:VisualElement>
         <engine:VisualElement name="rightContentVisualElement">
             <beamable:SearchBarVisualElement name="searchBar"/>
           <engine:Button class="unboundedButton" name="tagButton">
               <engine:Image name="tagButtonImg"/>
-              <engine:Label text="Tag" class="unboundedButtonLabel"/>
           </engine:Button>
           <engine:Button class="unboundedButton" name="typeButton">
               <engine:Image name="typeButtonImg"/>
-              <engine:Label text="Type" class="unboundedButtonLabel"/>
           </engine:Button>
           <engine:Button class="unboundedButton" name="statusButton">
               <engine:Image name="statusButtonImg"/>
-              <engine:Label text="Status" class="unboundedButtonLabel"/>
           </engine:Button>
           <engine:Button class="unboundedButton" name="refreshButton">
               <engine:Image name="refreshButtonImg"/>

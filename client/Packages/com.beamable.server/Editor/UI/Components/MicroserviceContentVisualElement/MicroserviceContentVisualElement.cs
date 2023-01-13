@@ -96,9 +96,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void SetView(bool isInit = true) // we don't want to destroy & recreate whole view every time docker is disabled
 		{
-			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
-				DockerCommand.CheckDockerAppRunning();
-
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_scrollView = Root.Q<ScrollView>();
 			_servicesListElement = Root.Q<VisualElement>("listRoot");
@@ -258,9 +255,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_actionPrompt.SetVisible(PROMPT_STOPPED_FAILURE, true, false);
 		}
 
-		public void DisplayCreatingNewService(ServiceType serviceType)
+		public void DisplayCreatingNewService(ServiceType serviceType, Action onClose)
 		{
-			_servicesCreateElements[serviceType].Refresh();
+			if (_servicesCreateElements.Values.Any(x => x.hierarchy.childCount != 0))
+				return;
+
+			_servicesCreateElements[serviceType].Refresh(() => onClose?.Invoke());
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
 

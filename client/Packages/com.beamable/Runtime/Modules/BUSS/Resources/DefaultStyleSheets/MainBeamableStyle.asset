@@ -13,45 +13,50 @@ MonoBehaviour:
   m_Name: MainBeamableStyle
   m_EditorClassIdentifier: 
   _styles:
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: backgroundColor
       _property:
-        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+        _json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    _cachedProperties: []
     _selector: .panel
-  - _properties:
+  - _folded: 0
+    _properties:
     - _key: fontSize
       _property:
-        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":100.0}'
+        _json: '{"_floatValue":100.0}'
     - _key: textAlignment
       _property:
-        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+        _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
           Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-        json: '{"Enum":514}'
+        _json: '{"Enum":514}'
     - _key: font
       _property:
-        type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
+        _type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"AssetSerializationKey":0}'
+        _json: '{"AssetSerializationKey":0}'
     - _key: borderColor
       _property:
-        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":1.0,"g":0.0,"b":0.0,"a":1.0}}'
+        _json: '{"_color":{"r":1.0,"g":0.0,"b":0.0,"a":1.0}}'
     - _key: borderWidth
       _property:
-        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+        _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":0.10000000149011612}'
+        _json: '{"_floatValue":0.10000000149011612}'
     - _key: fontColor
       _property:
-        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+        _json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    _cachedProperties: []
     _selector: .text
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   _isReadOnly: 1
+  _sortingOrder: 0

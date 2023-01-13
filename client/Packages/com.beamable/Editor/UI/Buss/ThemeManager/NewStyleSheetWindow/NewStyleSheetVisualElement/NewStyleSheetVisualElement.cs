@@ -41,6 +41,13 @@ namespace Beamable.Editor.UI.Buss
 			_styleSheetName.Refresh();
 			_styleSheetName.OverrideLabelWidth(LABEL_WIDTH);
 
+			_styleSheetName.AddErrorLabel(null, _ =>
+			{
+
+				IsNameValid(out var msg);
+				return msg;
+			});
+
 			_confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmButton");
 			_confirmButton.Button.clickable.clicked += HandleConfirmButton;
 
@@ -69,13 +76,13 @@ namespace Beamable.Editor.UI.Buss
 
 			if (string.IsNullOrWhiteSpace(variableName))
 			{
-				message = "Variable name can't be empty";
+				message = "Style sheet name can't be empty";
 				return false;
 			}
 
 			if (!Regex.IsMatch(variableName, VARIABLE_NAME_REGEX))
 			{
-				message = "Variable name can contain only letters";
+				message = "Style sheet name can contain only letters";
 				return false;
 			}
 
@@ -91,7 +98,7 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			BussStyleSheetUtility.CreateNewStyleSheetWithInitialRules(_styleSheetName.Value, _initialRule);
-
+			BussConfiguration.OptionalInstance.Value.ForceRefresh();
 			NewStyleSheetWindow.CloseWindow();
 		}
 

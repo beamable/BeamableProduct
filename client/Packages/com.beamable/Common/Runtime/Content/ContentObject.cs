@@ -351,13 +351,47 @@ namespace Beamable.Common.Content
       public static bool ShowChecksum { get; set; }
       public bool SerializeToConsoleRequested { get; set; }
 
+      [SerializeField]
+      private string _serializedValidationGUID { get; set; }
+      
+      private static readonly int[] _guidByteOrder =
+	      new[] { 15, 14, 13, 12, 11, 10, 9, 8, 6, 7, 4, 5, 0, 1, 2, 3 };
+      private static Guid Increment(Guid guid)
+      {
+	      var bytes = guid.ToByteArray();
+	      bool carry = true;
+	      for (int i = 0; i < _guidByteOrder.Length && carry; i++)
+	      {
+		      int index = _guidByteOrder[i];
+		      byte oldValue = bytes[index]++;
+		      carry = oldValue > bytes[index];
+	      }
+	      return new Guid(bytes);
+      }
+
       private void OnValidate()
       {
-         ValidationGuid = Guid.NewGuid();
+	      if (!string.IsNullOrEmpty(_serializedValidationGUID) && Guid.TryParse(_serializedValidationGUID, out var guid))
+	      {
+		      ValidationGuid = guid;
+	      }
+	      else
+	      {
+		      ValidationGuid = Guid.Empty;
+		      _serializedValidationGUID = ValidationGuid.ToString();
+	      }
+
+	      ValidationGuid = Increment(ValidationGuid);
+	      _serializedValidationGUID = ValidationGuid.ToString();
+	      
+         if (ValidationContext == null)
+         {
+	         // if we have no validation context assigned yet, then we cannot possibly validate.
+	         return;
+         }
          OnEditorValidation?.Invoke();
-         // access the edit time validation context?
-         var ctx = ValidationContext ?? new ValidationContext();
-         if (HasValidationExceptions(ctx, out var exceptions))
+         
+         if (HasValidationExceptions(ValidationContext, out var exceptions))
          {
             _hadValidationErrors = true;
             OnValidationChanged?.Invoke(exceptions);
@@ -547,6 +581,8 @@ namespace Beamable.Common.Content
 	public delegate void ContentDelegate(ContentObject content);
 
 	public delegate void IContentDelegate(IContentObject content);
+	public delegate void IContentBatchDelegate(List<IContentObject> content);
+
 
 	public delegate void IContentRenamedDelegate(string oldId, IContentObject content, string nextAssetPath);
 }

@@ -2,6 +2,10 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using cli.Content;
+using cli.Services;
+using cli.Services.Content;
+using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -56,6 +60,9 @@ public class App
 		Services.AddSingleton<CidOption>();
 		Services.AddSingleton<PidOption>();
 		Services.AddSingleton<PlatformOption>();
+		Services.AddSingleton<LimitOption>();
+		Services.AddSingleton<SkipOption>();
+		Services.AddSingleton<DeployFilePathOption>();
 		Services.AddSingleton<AccessTokenOption>();
 		Services.AddSingleton<RefreshTokenOption>();
 		Services.AddSingleton<LogOption>();
@@ -81,10 +88,15 @@ public class App
 		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		Services.AddSingleton<IAuthApi, AuthApi>();
 		Services.AddSingleton<ConfigService>();
+		Services.AddSingleton<BeamoService>();
+		Services.AddSingleton<BeamoLocalSystem>();
+		Services.AddSingleton<ContentLocalCache>();
+		Services.AddSingleton<ContentService>();
 		Services.AddSingleton<CliEnvironment>();
 		Services.AddSingleton<SwaggerService>();
 		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
 		Services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
+		Services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>();
 
 		// add commands
 		Services.AddRootCommand<InitCommand, InitCommandArgs>();
@@ -101,6 +113,27 @@ public class App
 		Services.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
 
 
+		Services.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
+		Services.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
+		Services.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
+		Services.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
+
+		Services.AddRootCommand<ContentCommand, ContentCommandArgs>();
+		Services.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
+		Services.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
 		// customize
 		configurator?.Invoke(Services);
 	}
@@ -116,7 +149,6 @@ public class App
 		// automatically create all commands
 		Provider.GetServices<ICommandFactory>();
 	}
-
 
 
 	protected virtual Parser GetProgram()
