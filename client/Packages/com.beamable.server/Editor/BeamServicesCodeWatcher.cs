@@ -56,6 +56,18 @@ namespace Beamable.Server.Editor
 	public class BeamServicesCodeWatcher : IBeamHintSystem
 	{
 		private const int CLEANUP_CONTAINERS_TIMEOUT = 3;
+		public static BeamServicesCodeWatcher Default
+		{
+			get
+			{
+				var codeWatcher = default(BeamServicesCodeWatcher);
+				BeamEditor.GetBeamHintSystem(ref codeWatcher);
+				return codeWatcher;
+			}
+		}
+
+		public AssemblyDefinitionInfoCollection CachedUnityAssemblies { get; private set; }
+		HashSet<string> CachedStorageAsmNames { get; set; }
 
 		private IBeamHintPreferencesManager PreferencesManager;
 		private IBeamHintGlobalStorage GlobalStorage;
@@ -80,8 +92,8 @@ namespace Beamable.Server.Editor
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var msCodeHandles = new List<BeamServiceCodeHandle>();
 			var cachedDeps = new List<MicroserviceDependencies>();
-			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
-
+			CachedUnityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
+			CachedStorageAsmNames = GetStorageAsmNames();
 			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
 				var cachedInfo = registry.Descriptors[i].ConvertToInfo();
@@ -94,7 +106,7 @@ namespace Beamable.Server.Editor
 					CodeDirectory = Path.GetDirectoryName(cachedInfo.Location),
 				});
 
-				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies));
+				cachedDeps.Add(DependencyResolver.GetDependencies(registry.Descriptors[i], CachedUnityAssemblies));
 				ServiceToChecksum.Add
 				(
 					registry.Descriptors[i],
@@ -199,19 +211,29 @@ namespace Beamable.Server.Editor
 			config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
 		}
 
-		public void CheckForMissingMongoDependenciesOnMicroservices()
+		public bool IsServiceDependedOnStorage(MicroserviceDescriptor serviceDescriptor)
 		{
-			// Make sure this feature is not disabled.
-			var config = MicroserviceConfiguration.Instance;
-			if (!config.EnsureMongoAssemblyDependencies)
+			MicroserviceDependencies dep = DependencyResolver.GetDependencies(serviceDescriptor, CachedUnityAssemblies);
+			return dep.Assemblies.ToCopy.Any(asm => LatestCodeHandles.Any(
+				                                 handle => handle.CodeClass == BeamCodeClass.StorageObject &&
+				                                           handle.AsmDefInfo.Name.Contains(asm.Name)));
+		}
+
+		public void AddMissingMongoDependencies(MicroserviceDescriptor microserviceDescriptor)
+		{
+			var missingMongoDepsAsmDefs = microserviceDescriptor.ConvertToAsset();
+			if (missingMongoDepsAsmDefs.HasMongoLibraries())
+			{
 				return;
+			}
+			
+			// Add Mongo Libraries to each of the ones that are missing them.
+			missingMongoDepsAsmDefs.AddMongoLibraries();
+		}
 
-			// Get the reflection cache
-			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var unityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
-
-			// Find every declared Microservice that has a dependency on a storage object.
-
+		// Find every declared Microservice that has a dependency on a storage object.
+		private HashSet<string> GetStorageAsmNames()
+		{
 			HashSet<string> storageAsmNames = new HashSet<string>();
 
 			for (int i = 0; i < LatestCodeHandles.Count; i++)
@@ -222,28 +244,7 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-			var microservicesThatDependOnStorage = new List<MicroserviceDescriptor>();
-
-			for (int i = 0; i < registry.Descriptors.Count; i++)
-			{
-				MicroserviceDependencies dep = DependencyResolver.GetDependencies(registry.Descriptors[i], unityAssemblies);
-				var tmp = dep.Assemblies.ToCopy.FirstOrDefault(asm => storageAsmNames.Contains(asm.Name));
-
-				if (tmp != null)
-					microservicesThatDependOnStorage.Add(registry.Descriptors[i]);
-			}
-
-			// Find all MSs that are missing the correct Mongo DLLs
-
-			for (int i = 0; i < microservicesThatDependOnStorage.Count; i++)
-			{
-				var missingMongoDepsAsmDefs = microservicesThatDependOnStorage[i].ConvertToAsset();
-				if (!missingMongoDepsAsmDefs.HasMongoLibraries())
-				{
-					// Add Mongo Libraries to each of the ones that are missing them.
-					missingMongoDepsAsmDefs.AddMongoLibraries();
-				}
-			}
+			return storageAsmNames;
 		}
 
 		public void CheckForLocalChangesNotYetDeployed()
@@ -360,8 +361,7 @@ namespace Beamable.Server.Editor
 				return;
 			}
 
-			var codeWatcher = default(BeamServicesCodeWatcher);
-			BeamEditor.GetBeamHintSystem(ref codeWatcher);
+			var codeWatcher = Default;
 
 			// If we are not initialized, delay the call until we are.
 			if (codeWatcher == null || codeWatcher.CheckSumCalculation == null || !codeWatcher.CheckSumCalculation.IsCompleted)
@@ -372,7 +372,6 @@ namespace Beamable.Server.Editor
 
 			// Check for the hint regarding local changes that are not deployed to your local docker environment
 			codeWatcher.CheckForLocalChangesNotYetDeployed();
-			codeWatcher.CheckForMissingMongoDependenciesOnMicroservices();
 
 			// Handle the client code generation for C#MSs.
 			try
