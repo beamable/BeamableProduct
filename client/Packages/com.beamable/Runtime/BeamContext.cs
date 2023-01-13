@@ -632,7 +632,7 @@ namespace Beamable
 			{
 				// Let's make sure that we get a fresh new JWT before attempting to connect.
 				await _beamableApiRequester.RefreshToken();
-				await InitStep_StartWebsocket();
+				await InitStep_StartWebsocket(config.websocketConfig.uri);
 			}
 			else
 			{
@@ -654,7 +654,7 @@ namespace Beamable
 			}
 		}
 
-		private async Promise InitStep_StartWebsocket()
+		private async Promise InitStep_StartWebsocket(string socketUri)
 		{
 			// Need to get this in order to subscribe the message callbacks.
 			var _ = _serviceScope.GetService<BeamableSubscriptionManager>();
@@ -669,8 +669,7 @@ namespace Beamable
 				}
 			};
 #endif
-			string connectionAddress = BeamableEnvironment.PlayerSocketUrl;
-			await connection.Connect(connectionAddress, _beamableApiRequester.Token);
+			await connection.Connect(socketUri, _beamableApiRequester.Token);
 		}
 
 		private async Promise InitStep_StartPurchaser()

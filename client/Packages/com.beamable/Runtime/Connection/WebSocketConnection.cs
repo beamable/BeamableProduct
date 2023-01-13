@@ -147,6 +147,7 @@ namespace Connection
 			};
 		}
 
+#if !UNITY_WEBGL || UNITY_EDITOR
 		private IEnumerator DispatchMessages()
 		{
 			const float dispatchIntervalMs = 50.0f;
@@ -158,6 +159,7 @@ namespace Connection
 			}
 			// ReSharper disable once IteratorNeverReturns
 		}
+#endif
 
 		public async Promise OnDispose()
 		{
