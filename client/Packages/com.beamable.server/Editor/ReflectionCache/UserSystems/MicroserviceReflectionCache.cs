@@ -326,22 +326,12 @@ namespace Beamable.Server.Editor
 				try
 				{
 					AssetDatabase.StartAssetEditing();
-					CheckBeforeDeploy();
 					await DeployInternal(model, token, onServiceDeployed, logger);
 				}
 				finally
 				{
 					AssetDatabase.StopAssetEditing();
 				}
-			}
-
-			private static void CheckBeforeDeploy()
-			{
-				var codeWatcher = default(BeamServicesCodeWatcher);
-				BeamEditor.GetBeamHintSystem(ref codeWatcher);
-				// This should have been caught by the pre-publish-health check, or even by booting up the service locally…
-				// However, locally, the service works fine, so we must be injecting those dlls only under certain circumstances.
-				codeWatcher.CheckForMissingMongoDependenciesOnMicroservices();
 			}
 
 			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
