@@ -28,10 +28,10 @@ namespace Beamable.Editor
 			var fullName = t.FullName;
 			var shortName = t.Name;
 			
+			
 			var searchContext = SearchService.CreateContext(SearchService.Providers.Where(n => !string.Equals(n.name.id, "scene")), $"t:{shortName}");
 
 			var result1 = new List<SearchItem>();
-			
 			{
 				// Set up a callback that will be used gather additional asynchronous results.
 				searchContext.asyncItemReceived += (context, incomingItems) => result1.AddRange(incomingItems);
@@ -39,28 +39,35 @@ namespace Beamable.Editor
 				// Initiate the query and get the first results.
 				result1.AddRange(SearchService.GetItems(searchContext, SearchFlags.WantsMore | SearchFlags.Synchronous));
 			}
-			
-			var result2 = AssetDatabase.FindAssets($"t:{fullName}", searchInFolders);
 
-			List<string> result2_paths = new List<string>();
-			for (int i = 0; i < result2.Length; i++)
+			var result_path = new List<string>();
+
+			if (searchInFolders != null)
 			{
-				string path = AssetDatabase.GUIDToAssetPath(result2[i]);
-				result2_paths.Add(path);
+				for (int i = 0; i < result1.Count; i++)
+				{
+					foreach (var t1 in searchInFolders)
+					{
+						if (result1[i].id.Contains(t1))
+						{
+							result_path.Add(AssetDatabase.AssetPathToGUID(result1[i].id));
+						}
+					}
+				}
 				
-			}
-			
-
-			if (result1.Count != result2.Length)
-			{
-				Debug.LogError("DIFFERENT FOR: " + shortName + " | quickAmmount : " + result1.Count + " , legacyAmount : " + result2.Length);
+				result_path = result_path.Distinct().ToList();
 			}
 			else
 			{
-				Debug.LogError("EXISTS FOR: " + shortName + " | quickAmmount : " + result1.Count + " , legacyAmount : " + result2.Length);
+				result_path = result1.Select(p => AssetDatabase.AssetPathToGUID(p.id)).Distinct().ToList();
 			}
 			
-			return result2;
+			if (result_path.Count == 0) // FALLBACK CODE
+			{
+				return AssetDatabase.FindAssets($"t:{fullName}", searchInFolders);
+			}
+
+			return result_path.ToArray();
 		}
 
 		/// <inheritdoc cref="FindAssets"/>
