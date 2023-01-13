@@ -11,7 +11,7 @@
         "com.unity.editorcoroutines": "1.0.0",
         "com.unity.test-framework": "1.1.19",
         "com.unity.test-framework.performance": "2.8.1-preview",
-        "com.unity.quicksearch": "2.0.2"
+        "com.unity.quicksearch": "1.6.0-preview.9"
       }
     },
     "com.beamable.server": {
@@ -128,7 +128,7 @@
       "url": "https://packages.unity.com"
     },
 	"com.unity.quicksearch": {
-      "version": "2.0.2",
+      "version": "1.6.0-preview.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
