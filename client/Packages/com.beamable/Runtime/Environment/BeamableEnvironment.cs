@@ -40,9 +40,6 @@ namespace Beamable
 		/// <inheritdoc cref="EnvironmentData.PortalUrl"/>
 		public static string PortalUrl => Data.PortalUrl;
 
-		/// <inheritdoc cref="EnvironmentData.PlayerSocketUrl"/>
-		public static string PlayerSocketUrl => Data.PlayerSocketUrl;
-
 		/// <inheritdoc cref="EnvironmentData.BeamMongoExpressUrl"/>
 		public static string BeamMongoExpressUrl => Data.BeamMongoExpressUrl;
 
@@ -127,7 +124,6 @@ namespace Beamable
 			environment = "dev",
 			apiUrl = "https://dev.api.beamable.com",
 			portalUrl = "https://dev-portal.beamable.com",
-			playerSocketUrl = "wss://dev.socket.beamable.com",
 			beamMongoExpressUrl = "https://dev.storage.beamable.com",
 			dockerRegistryUrl = "https://dev-microservices.beamable.com/v2/",
 			isUnityVsp = false,
@@ -148,7 +144,6 @@ namespace Beamable
 			environment = "prod",
 			apiUrl = "https://api.beamable.com",
 			portalUrl = "https://portal.beamable.com",
-            playerSocketUrl = "wss://socket.beamable.com",
 			beamMongoExpressUrl = "https://storage.beamable.com",
 			dockerRegistryUrl = "https://microservices.beamable.com/v2/",
 			isUnityVsp = false,
@@ -158,7 +153,6 @@ namespace Beamable
 		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
-		[SerializeField] private string playerSocketUrl;
 		[SerializeField] private string beamMongoExpressUrl;
 		[SerializeField] private string sdkVersion;
 		[SerializeField] private string dockerRegistryUrl;
@@ -181,11 +175,6 @@ namespace Beamable
 		/// The Beamable Portal url
 		/// </summary>
 		public string PortalUrl => portalUrl;
-
-		/// <summary>
-		/// The Beamable Player Socket url
-		/// </summary>
-		public string PlayerSocketUrl => playerSocketUrl;
 
 		/// <summary>
 		/// The Beamable Mongo Express url
@@ -213,7 +202,6 @@ namespace Beamable
 		/// <param name="environment">a name for this environment. </param>
 		/// <param name="apiUrl">where to find beamable</param>
 		/// <param name="portalUrl">where to find the portal</param>
-		/// <param name="playerSocketUrl">where to find the websocket</param>
 		/// <param name="beamMongoExpressUrl">where to find the mongo express page</param>
 		/// <param name="dockerRegistryUrl">where to find the beamable docker registry</param>
 		/// <param name="isUnityVsp">is this package from Unity VSP?</param>
@@ -221,7 +209,6 @@ namespace Beamable
 		public EnvironmentData(string environment,
 							   string apiUrl,
 							   string portalUrl,
-							   string playerSocketUrl,
 							   string beamMongoExpressUrl,
 							   string dockerRegistryUrl,
 							   bool isUnityVsp,
@@ -230,7 +217,6 @@ namespace Beamable
 			this.environment = environment;
 			this.apiUrl = apiUrl;
 			this.portalUrl = portalUrl;
-			this.playerSocketUrl = playerSocketUrl;
 			this.beamMongoExpressUrl = beamMongoExpressUrl;
 			this.dockerRegistryUrl = dockerRegistryUrl;
 			this.isUnityVsp = isUnityVsp;
@@ -250,7 +236,6 @@ namespace Beamable
 			s.Serialize("environment", ref environment);
 			s.Serialize("apiUrl", ref apiUrl);
 			s.Serialize("portalUrl", ref portalUrl);
-			s.Serialize("playerSocketUrl", ref playerSocketUrl);
 			s.Serialize("sdkVersion", ref sdkVersion);
 			s.Serialize("beamMongoExpressUrl", ref beamMongoExpressUrl);
 			s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
