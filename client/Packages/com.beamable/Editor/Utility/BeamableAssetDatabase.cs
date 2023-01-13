@@ -1,6 +1,8 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Unity.QuickSearch;
 using UnityEditor;
 using UnityEngine;
@@ -24,51 +26,41 @@ namespace Beamable.Editor
 			Assert.IsFalse(t.FullName != null && t.FullName.Contains(nameof(UnityEditorInternal)),
 						   $"Type {t.FullName} is part of `UnityEditorInternal`- these assets should be found using just nameof, not full type name");
 			var fullName = t.FullName;
+			var shortName = t.Name;
 			
-			var searchContext = SearchService.CreateContext(new string[] {"asset", "object", "res"}, $"t:{fullName}");
+			var searchContext = SearchService.CreateContext(SearchService.Providers.Where(n => !string.Equals(n.name.id, "scene")), $"t:{shortName}");
 
-			SearchProvider beamableProvider = new SearchProvider("beam", "beamableProvider");
+			var result1 = new List<SearchItem>();
+			
+			{
+				// Set up a callback that will be used gather additional asynchronous results.
+				searchContext.asyncItemReceived += (context, incomingItems) => result1.AddRange(incomingItems);
 
-			var result1 = SearchService.GetItems(searchContext, SearchFlags.WantsMore)
-			                           .Select(x => AssetDatabase.AssetPathToGUID(x.id)).ToArray();
+				// Initiate the query and get the first results.
+				result1.AddRange(SearchService.GetItems(searchContext, SearchFlags.WantsMore | SearchFlags.Synchronous));
+			}
 			
-			//var results = new List<SearchItem>();
-			//results.AddRange(SearchService.GetItems(searchContext, SearchFlags.WantsMore));
-			//SearchService.Request(searchContext, SearchFlags.WantsMore | SearchFlags.Debug);
-		
-			
-			//while (searchContext.searchInProgress);
-			
-			//var rr = results .Select(x => AssetDatabase.AssetPathToGUID(x.id)).ToArray();
-			
-				var result2 = AssetDatabase.FindAssets($"t:{fullName}", searchInFolders);
+			var result2 = AssetDatabase.FindAssets($"t:{fullName}", searchInFolders);
 
-				if (result1.Length != result2.Length)
-				{
-
-					for (int i = 0; i < result2.Length; i++)
-					{
-						if (!result1.Contains(result2[i]))
-						{
-							string path = AssetDatabase.GUIDToAssetPath(result2[i]);
-							Debug.LogError("DIFFERENT FOR: " + path);
-						}
-					}
-				}
-				else
-				{
-					for (int i = 0; i < result2.Length; i++)
-					{
-						string path = AssetDatabase.GUIDToAssetPath(result2[i]);
-						Debug.LogError("WORKS FOR: " + path);
-					}
-				}
+			List<string> result2_paths = new List<string>();
+			for (int i = 0; i < result2.Length; i++)
+			{
+				string path = AssetDatabase.GUIDToAssetPath(result2[i]);
+				result2_paths.Add(path);
 				
+			}
+			
+
+			if (result1.Count != result2.Length)
+			{
+				Debug.LogError("DIFFERENT FOR: " + shortName + " | quickAmmount : " + result1.Count + " , legacyAmount : " + result2.Length);
+			}
+			else
+			{
+				Debug.LogError("EXISTS FOR: " + shortName + " | quickAmmount : " + result1.Count + " , legacyAmount : " + result2.Length);
+			}
+			
 			return result2;
-
-			//	Debug.LogError("DIFFERENT");
-
-			//return resitem.ToArray();
 		}
 
 		/// <inheritdoc cref="FindAssets"/>
