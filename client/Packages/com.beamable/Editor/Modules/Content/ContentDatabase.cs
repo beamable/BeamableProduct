@@ -14,30 +14,30 @@ namespace Beamable.Editor.Content
 		/// Where is the asset for this content?
 		/// </summary>
 		public string assetPath;
-		
+
 		/// <summary>
 		/// The content id, where the id is a `.` deliminated string.
 		/// The final clause is the <see cref="contentName"/> , and everything else makes up the <see cref="contentType"/>
 		/// </summary>
 		public string contentId;
-		
+
 		/// <summary>
 		/// The name of the content, which is the final right-most clause in the <see cref="contentId"/>
 		/// </summary>
 		public string contentName;
-		
+
 		/// <summary>
 		/// the type of the content, which is everything in the <see cref="contentId"/> except for the right-most clause.
 		/// </summary>
 		public string contentType;
-		
+
 		/// <summary>
 		/// the Type of this content
 		/// </summary>
 		public Type runtimeType;
 	}
 
-	
+
 	public class ContentDatabase
 	{
 		private class ContentTypeNode
@@ -54,8 +54,8 @@ namespace Beamable.Editor.Content
 		private Dictionary<string, List<ContentDatabaseEntry>> _typeToExactContent =
 			new Dictionary<string, List<ContentDatabaseEntry>>();
 
-		private Dictionary<string, List< List<ContentDatabaseEntry>>> _assignableContent = new Dictionary<string, List< List<ContentDatabaseEntry> >>();
-		private Dictionary<string, List< ContentDatabaseEntry>> _assignableContentFlat = new Dictionary<string, List< ContentDatabaseEntry>>();
+		private Dictionary<string, List<List<ContentDatabaseEntry>>> _assignableContent = new Dictionary<string, List<List<ContentDatabaseEntry>>>();
+		private Dictionary<string, List<ContentDatabaseEntry>> _assignableContentFlat = new Dictionary<string, List<ContentDatabaseEntry>>();
 		private Dictionary<string, ContentTypeNode> _typeToNode = new Dictionary<string, ContentTypeNode>();
 		private Dictionary<string, ContentDatabaseEntry[]> _assignableContentFlatArray =
 			new Dictionary<string, ContentDatabaseEntry[]>();
@@ -70,7 +70,7 @@ namespace Beamable.Editor.Content
 
 			RecalculateIndex();
 		}
-		
+
 		/// <summary>
 		/// Updates the database so that any future calls will return accurate data.
 		/// This method scans the entire content directory and builds up metadata about all of the content.
@@ -79,7 +79,7 @@ namespace Beamable.Editor.Content
 		/// </summary>
 		public void RecalculateIndex()
 		{
-			
+
 			#region clear old data
 			_typeToExactContent.Clear();
 			_assignableContent.Clear();
@@ -89,7 +89,7 @@ namespace Beamable.Editor.Content
 			_idToContent.Clear();
 			_pathToContent.Clear();
 			#endregion
-			
+
 			#region initialize variables and setup alg
 			var root = Constants.Directories.DATA_DIR;
 			var filePathsToExpand = new Stack<string>();
@@ -108,12 +108,12 @@ namespace Beamable.Editor.Content
 
 			nodeStack.Push(rootNode);
 			#endregion
-			
+
 			#region DFS over file structure
 			while (filePathsToExpand.Count > 0)
 			{
 				currentFilePath = filePathsToExpand.Pop();
-				
+
 				var hasCurrType = BeamableStackTryPop(typeString, out currType);
 				var hasContentList = BeamableStackTryPop(typeToContentList, out currList);
 				var hasParent = BeamableStackTryPop(nodeStack, out currNode);
@@ -125,22 +125,24 @@ namespace Beamable.Editor.Content
 				}
 
 				if (!Directory.Exists(currentFilePath)) continue; // if this directory doesn't exist, we can't do anything.
-				
-				foreach (var filePath in Directory.GetFiles(currentFilePath, "*.asset"))
+
+				if (hasContentList)
 				{
-					var instance = new ContentDatabaseEntry();
-					var name = filePath.Substring(currentFilePath.Length + 1, filePath.Length - (currentFilePath.Length + ".asset".Length + 1));
-					
-					instance.contentName = name;
-					instance.assetPath = filePath;
-					instance.contentType = currType;
-					instance.runtimeType = runtimeType;
-					instance.contentId = currType + "." + name;
-					_data.Add(instance);
-					currList.Add(instance);
+					foreach (var filePath in Directory.GetFiles(currentFilePath, "*.asset"))
+					{
+						var instance = new ContentDatabaseEntry();
+						var name = filePath.Substring(currentFilePath.Length + 1, filePath.Length - (currentFilePath.Length + ".asset".Length + 1));
+
+						instance.contentName = name;
+						instance.assetPath = filePath;
+						instance.contentType = currType;
+						instance.runtimeType = runtimeType;
+						instance.contentId = currType + "." + name;
+						_data.Add(instance);
+						currList.Add(instance);
+					}
 				}
-	
-				
+
 				foreach (var path in Directory.GetDirectories(currentFilePath))
 				{
 					var type = path.Substring(currentFilePath.Length + 1, path.Length - (currentFilePath.Length + 1));
@@ -150,11 +152,11 @@ namespace Beamable.Editor.Content
 					}
 					typeString.Push(type);
 					filePathsToExpand.Push(path);
-					
+
 					var nextContentList = new List<ContentDatabaseEntry>();
 					typeToContentList.Push(nextContentList);
 					_typeToExactContent[type] = nextContentList;
-					
+
 					var nextNode = new ContentTypeNode();
 					nextNode.parent = currNode;
 					currNode.children.Add(nextNode);
@@ -247,7 +249,7 @@ namespace Beamable.Editor.Content
 		{
 			return _pathToContent.TryGetValue(path, out entry);
 		}
-		
+
 		/// <summary>
 		/// Given a content id, try to get the <see cref="ContentDatabaseEntry"/> for the id.
 		/// If assets have been modified, this function may return stale data. Consider running the <see cref="RecalculateIndex"/> method before this.
@@ -259,7 +261,7 @@ namespace Beamable.Editor.Content
 		{
 			return _idToContent.TryGetValue(id, out entry);
 		}
-		
+
 		/// <summary>
 		/// Get all <see cref="ContentDatabaseEntry"/>s for the given type, T.
 		/// This method will return entries that are sub types of the content type as well.

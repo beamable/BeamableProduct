@@ -347,24 +347,25 @@ namespace Beamable.Server
 		        conf.ServiceScope = rootServiceScope;
 	        });
 
-
-            for (var i = 0; i < args.BeamInstanceCount; i++)
+	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
+	        for (var i = 0; i < args.BeamInstanceCount; i++)
             {
 	            var isFirstInstance = i == 0;
 	            var beamableService = new BeamableMicroService();
 				Instances.Add(beamableService);
-	            if (i == 0)
+				
+				var instanceArgs = args.Copy(conf =>
+				{
+					// only the first instance needs to run, if anything should run at all.
+					conf.DisableCustomInitializationHooks |= !isFirstInstance;
+				});
+				
+	            if (isFirstInstance)
 	            {
-		            var localDebug = new ContainerDiagnosticService(beamableService);
+		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService);
 		            var runningDebugTask = localDebug.Run();
 	            }
-
-	            var instanceArgs = args.Copy(conf =>
-	            {
-		            // only the first instance needs to run
-		            conf.DisableCustomInitializationHooks = !isFirstInstance;
-	            });
-
+	            
 	            if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
 	            {
 		            Log.Fatal(
@@ -377,6 +378,10 @@ namespace Beamable.Server
 	            try
 	            {
 		            await beamableService.Start<TMicroService>(instanceArgs);
+		            if (isFirstInstance && (attribute?.EnableEagerContentLoading ?? false))
+		            {
+			            await rootServiceScope.GetService<ContentService>().initializedPromise;
+		            }
 	            }
 	            catch (Exception ex)
 	            {
