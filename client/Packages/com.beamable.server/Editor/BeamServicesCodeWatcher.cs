@@ -93,7 +93,6 @@ namespace Beamable.Server.Editor
 			var msCodeHandles = new List<BeamServiceCodeHandle>();
 			var cachedDeps = new List<MicroserviceDependencies>();
 			CachedUnityAssemblies = new AssemblyDefinitionInfoCollection(AssemblyDefinitionHelper.EnumerateAssemblyDefinitionInfos());
-			CachedStorageAsmNames = GetStorageAsmNames();
 			for (int i = 0; i < registry.Descriptors.Count; i++)
 			{
 				var cachedInfo = registry.Descriptors[i].ConvertToInfo();
@@ -175,6 +174,7 @@ namespace Beamable.Server.Editor
 				LatestCodeHandles[index] = beamServiceCodeHandle;
 			})));
 			CheckSumCalculation = Task.WhenAll(tasks);
+			CachedStorageAsmNames = GetStorageAsmNames();
 		}
 
 		public void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager) => PreferencesManager = preferencesManager;
@@ -214,9 +214,8 @@ namespace Beamable.Server.Editor
 		public bool IsServiceDependedOnStorage(MicroserviceDescriptor serviceDescriptor)
 		{
 			MicroserviceDependencies dep = DependencyResolver.GetDependencies(serviceDescriptor, CachedUnityAssemblies);
-			return dep.Assemblies.ToCopy.Any(asm => LatestCodeHandles.Any(
-				                                 handle => handle.CodeClass == BeamCodeClass.StorageObject &&
-				                                           handle.AsmDefInfo.Name.Contains(asm.Name)));
+			var isDependent = dep.Assemblies.ToCopy.Any(asm => CachedStorageAsmNames.Contains(asm.Name));
+			return isDependent;
 		}
 
 		public void AddMissingMongoDependencies(MicroserviceDescriptor microserviceDescriptor)
@@ -228,13 +227,15 @@ namespace Beamable.Server.Editor
 			}
 			
 			// Add Mongo Libraries to each of the ones that are missing them.
+			AssetDatabase.StartAssetEditing();
 			missingMongoDepsAsmDefs.AddMongoLibraries();
+			AssetDatabase.StopAssetEditing();
 		}
 
 		// Find every declared Microservice that has a dependency on a storage object.
 		private HashSet<string> GetStorageAsmNames()
 		{
-			HashSet<string> storageAsmNames = new HashSet<string>();
+			var storageAsmNames = new HashSet<string>();
 
 			for (int i = 0; i < LatestCodeHandles.Count; i++)
 			{
