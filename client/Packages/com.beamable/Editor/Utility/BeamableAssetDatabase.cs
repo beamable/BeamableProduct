@@ -12,6 +12,7 @@ namespace Beamable.Editor
 {
 	public static class BeamableAssetDatabase
 	{
+		private static SearchContext searchContext = null;
 		/// <summary>
 		/// A sugar on top of <see cref="AssetDatabase.FindAssets"/> that uses the type's full name,
 		/// so that we don't collide with client namespaces or common types.
@@ -29,18 +30,20 @@ namespace Beamable.Editor
 			var shortName = t.Name;
 			
 			
-			var searchContext = SearchService.CreateContext(SearchService.Providers.Where(n => !string.Equals(n.name.id, "scene")), $"t:{shortName}");
+			if (searchContext == null)
+				searchContext = SearchService.CreateContext(SearchService.Providers.Where(n => !string.Equals(n.name.id, "scene")), $"t:{shortName}");
 
 			var result1 = new List<SearchItem>();
-			{
-				// Set up a callback that will be used gather additional asynchronous results.
-				searchContext.asyncItemReceived += (context, incomingItems) => result1.AddRange(incomingItems);
 
-				// Initiate the query and get the first results.
-				result1.AddRange(SearchService.GetItems(searchContext, SearchFlags.WantsMore | SearchFlags.Synchronous));
-			}
+			// Set up a callback that will be used gather additional asynchronous results.
+			searchContext.asyncItemReceived += (context, incomingItems) => result1.AddRange(incomingItems);
+
+			// Initiate the query and get the first results.
+			result1.AddRange(SearchService.GetItems(searchContext, SearchFlags.WantsMore));
+
 
 			var result_path = new List<string>();
+			string[] result = null;
 
 			if (searchInFolders != null)
 			{
@@ -54,12 +57,12 @@ namespace Beamable.Editor
 						}
 					}
 				}
-				
-				result_path = result_path.Distinct().ToList();
+
+				result = result_path.Distinct().ToArray();
 			}
 			else
 			{
-				result_path = result1.Select(p => AssetDatabase.AssetPathToGUID(p.id)).Distinct().ToList();
+				result = result1.Select(p => AssetDatabase.AssetPathToGUID(p.id)).Distinct().ToArray();
 			}
 			
 			if (result_path.Count == 0) // FALLBACK CODE
@@ -67,7 +70,7 @@ namespace Beamable.Editor
 				return AssetDatabase.FindAssets($"t:{fullName}", searchInFolders);
 			}
 
-			return result_path.ToArray();
+			return result;
 		}
 
 		/// <inheritdoc cref="FindAssets"/>
