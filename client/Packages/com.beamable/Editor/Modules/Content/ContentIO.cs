@@ -713,6 +713,10 @@ namespace Beamable.Editor.Content
 				);
 			}
 
+			AssetDatabase.Refresh();
+			AssetDatabase.SaveAssets();
+			AssetDatabase.Refresh();
+			
 			foreach (var file in filesToMarkAddressable)
 			{
 				var guid = AssetDatabase.AssetPathToGUID(file);
