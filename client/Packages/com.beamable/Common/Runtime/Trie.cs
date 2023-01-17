@@ -6,15 +6,18 @@ using UnityEngine;
 
 namespace Beamable.Common
 {
-	public class IntTrie : Trie<int> {}
+	public class IntTrie : Trie<int, IntTrieEntry> {}
 	
+	public class IntTrieEntry : TrieSerializationEntry<int> {}
+
 	/// <summary>
 	/// A Trie is a tree like data structure that holds information by prefix key.
 	///
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	[Serializable]
-	public class Trie<T> : ISerializationCallbackReceiver
+	public class Trie<T, TEntry> : ISerializationCallbackReceiver
+		where TEntry : TrieSerializationEntry<T>, new()
 	{
 		[DebuggerDisplay("{path} (children=[{children.Count}]) (values=[{values.Count}])")]
 		public class Node
@@ -71,17 +74,12 @@ namespace Beamable.Common
 			}
 		}
 
-		[Serializable]
-		public class SerializationEntry : TrieSerializationEntry<T>
-		{
-			
-		}
 		// "a" -> node,
 		// doesn't include entires for "a.b"
 		private Dictionary<string, Node> _firstPartToNode = new Dictionary<string, Node>();
 		
 		// "a.b.c" -> Node
-		private Dictionary<string, Node> _pathToNode = new Dictionary<string, Trie<T>.Node>();
+		private Dictionary<string, Node> _pathToNode = new Dictionary<string, Node>();
 		private Dictionary<string, List<T>> _pathAllCache = new Dictionary<string, List<T>>();
 		private Dictionary<string, List<T>> _pathExactCache = new Dictionary<string, List<T>>();
 
@@ -89,7 +87,7 @@ namespace Beamable.Common
 		private char _splitter = '.';
 		
 		[SerializeField]
-		private List<SerializationEntry> data = new List<SerializationEntry>();
+		private List<TEntry> data = new List<TEntry>();
 
 		public Trie() : this('.')
 		{
@@ -396,7 +394,7 @@ namespace Beamable.Common
 			data.Clear();
 			foreach (var kvp in _pathToNode)
 			{
-				data.Add(new SerializationEntry
+				data.Add(new TEntry
 				{
 					path = kvp.Key,
 					values = kvp.Value.values

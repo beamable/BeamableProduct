@@ -34,15 +34,18 @@ namespace Beamable.Player
 	{
 
 	}
-	
+	public class PlayerItemTrieEntry : TrieSerializationEntry<PlayerItem> {}
+
+	public class PlayerCurrencyTrieEntry : TrieSerializationEntry<PlayerCurrency> {}
+
 	[Serializable]
-	public class PlayerItemTrie : Trie<PlayerItem>
+	public class PlayerItemTrie : Trie<PlayerItem, PlayerItemTrieEntry>
 	{
 		
 	}
 
 	[Serializable]
-	public class PlayerCurrencyTrie : Trie<PlayerCurrency>
+	public class PlayerCurrencyTrie : Trie<PlayerCurrency, PlayerCurrencyTrieEntry>
 	{
 		
 	}
