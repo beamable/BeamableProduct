@@ -8,6 +8,7 @@ namespace Beamable.Common
 {
 	public class IntTrie : Trie<int, IntTrieEntry> {}
 	
+	[SerializeField]
 	public class IntTrieEntry : TrieSerializationEntry<int> {}
 
 	/// <summary>
