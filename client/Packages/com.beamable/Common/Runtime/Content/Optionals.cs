@@ -163,7 +163,7 @@ namespace Beamable.Common.Content
 	{
 		public OptionalLong()
 		{
-			
+
 		}
 
 		public OptionalLong(long value)
