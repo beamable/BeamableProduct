@@ -86,7 +86,7 @@ namespace Beamable.Common
 		private Dictionary<string, List<T>> _pathExactCache = new Dictionary<string, List<T>>();
 
 		[SerializeField]
-		private char _splitter;
+		private char _splitter = '.';
 		
 		[SerializeField]
 		private List<SerializationEntry> data = new List<SerializationEntry>();
