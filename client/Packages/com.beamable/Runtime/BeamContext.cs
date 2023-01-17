@@ -19,13 +19,12 @@ using Beamable.Config;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
-using Connection;
+using Beamable.Connection;
 using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using EmptyResponse = Beamable.Common.Api.EmptyResponse;
@@ -661,9 +660,9 @@ namespace Beamable
 			var connection = _serviceScope.GetService<IBeamableConnection>();
 			
 #if UNITY_EDITOR
-			EditorApplication.playModeStateChanged += state =>
+			UnityEditor.EditorApplication.playModeStateChanged += state =>
 			{
-				if (state == PlayModeStateChange.ExitingPlayMode)
+				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
 				{
 					connection.Disconnect();
 				}

@@ -3,7 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Dependencies;
 using System;
 
-namespace Connection
+namespace Beamable.Connection
 {
 	public interface IBeamableConnection : IBeamableDisposable
 	{

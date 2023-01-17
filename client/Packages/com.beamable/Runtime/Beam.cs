@@ -50,7 +50,7 @@ using Beamable.Experimental.Api.Social;
 using Beamable.Player;
 using Beamable.Reflection;
 using Beamable.Sessions;
-using Connection;
+using Beamable.Connection;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;

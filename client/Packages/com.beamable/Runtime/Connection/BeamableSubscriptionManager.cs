@@ -1,7 +1,8 @@
 using Beamable.Common.Api.Notifications;
 using Beamable.Serialization.SmallerJSON;
+using UnityEngine;
 
-namespace Connection
+namespace Beamable.Connection
 {
 	public class BeamableSubscriptionManager
 	{
@@ -19,8 +20,15 @@ namespace Connection
 			// XXX: This merely mimics what we had in the initial pubnub implementation. Eventually this should be made
 			// a lot smarter and more type safe.
 			var deserialized = (ArrayDict)Json.Deserialize(message);
-			deserialized.TryGetValue("context", out object context);
-			deserialized.TryGetValue("messageFull", out object messageFull);
+			bool hasContext = deserialized.TryGetValue("context", out object context);
+			bool hasMessage = deserialized.TryGetValue("messageFull", out object messageFull);
+
+			bool isValidMessage = hasContext && hasMessage;
+			if (!isValidMessage)
+			{
+				Debug.LogWarning("Unable to handle incoming notification");
+				return;
+			}
 
 			// Invoke notification service
 			object parsedPayload = Json.Deserialize(messageFull as string);

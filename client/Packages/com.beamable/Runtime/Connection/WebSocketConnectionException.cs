@@ -1,6 +1,6 @@
 using System;
 
-namespace Connection
+namespace Beamable.Connection
 {
 	public class WebSocketConnectionException : Exception
 	{

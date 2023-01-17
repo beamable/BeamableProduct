@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Connection
+namespace Beamable.Connection
 {
 	public class WebSocketConnection : IBeamableConnection
 	{
@@ -59,7 +59,17 @@ namespace Connection
 			var p = new Promise();
 			_webSocket
 				.Close()
-				.ContinueWith(_ => p.CompleteSuccess());
+				.ContinueWith(result =>
+				{
+					if (result.IsFaulted)
+					{
+						p.CompleteError(result.Exception);
+					}
+					else
+					{
+						p.CompleteSuccess();
+					}
+				});
 			return p;
 		}
 
