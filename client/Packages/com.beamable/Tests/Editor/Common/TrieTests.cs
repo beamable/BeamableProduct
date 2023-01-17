@@ -120,7 +120,7 @@ namespace Beamable.Editor.Tests.Common
 			t.Insert("a.b", 6);
 
 			var json = JsonUtility.ToJson(t);
-			var t2 = JsonUtility.FromJson<Trie<int>>(json);
+			var t2 = JsonUtility.FromJson<IntTrie>(json);
 			var output = t2.GetAll("a");
 			Assert.AreEqual(6, output.Count);
 			Assert.AreEqual(1, output[0]);
@@ -146,7 +146,7 @@ namespace Beamable.Editor.Tests.Common
 			t.Insert("a.b", 6);
 
 			var json = JsonUtility.ToJson(t);
-			var t2 = JsonUtility.FromJson<Trie<int>>(json);
+			var t2 = JsonUtility.FromJson<IntTrie>(json);
 
 			void Check()
 			{
