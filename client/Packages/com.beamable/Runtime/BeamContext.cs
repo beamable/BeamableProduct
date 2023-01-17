@@ -658,16 +658,6 @@ namespace Beamable
 			// Need to get this in order to subscribe the message callbacks.
 			var _ = _serviceScope.GetService<BeamableSubscriptionManager>();
 			var connection = _serviceScope.GetService<IBeamableConnection>();
-			
-#if UNITY_EDITOR
-			UnityEditor.EditorApplication.playModeStateChanged += state =>
-			{
-				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
-				{
-					connection.Disconnect();
-				}
-			};
-#endif
 			await connection.Connect(socketUri, _beamableApiRequester.Token);
 		}
 

@@ -92,6 +92,15 @@ namespace Beamable.Connection
 
 		private void SetUpEventCallbacks()
 		{
+#if UNITY_EDITOR
+			UnityEditor.EditorApplication.playModeStateChanged += state =>
+			{
+				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+				{
+					Disconnect();
+				}
+			};
+#endif
 			_webSocket.OnOpen += () =>
 			{
 				_disconnecting = false;
