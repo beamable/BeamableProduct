@@ -14,12 +14,14 @@ namespace Beamable.Editor.Content
 		private readonly Type _contentType;
 		private readonly CoroutineService _coroutineService;
 		private readonly ContentConfiguration _config;
+		private readonly ContentDatabase _contentDatabase;
 
-		public LocalContentCache(Type contentType, CoroutineService coroutineService, ContentConfiguration config)
+		public LocalContentCache(Type contentType, CoroutineService coroutineService, ContentConfiguration config, ContentDatabase contentDatabase)
 		{
 			_contentType = contentType;
 			_coroutineService = coroutineService;
 			_config = config;
+			_contentDatabase = contentDatabase;
 		}
 
 		/// <summary>
@@ -30,8 +32,12 @@ namespace Beamable.Editor.Content
 		/// </summary>
 		public override Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
 		{
-			var content = (ContentObject)AssetDatabase.LoadAssetAtPath(requestedInfo.uri, _contentType);
-
+			if (!_contentDatabase.TryGetContentById(requestedInfo.contentId, out var entry))
+			{
+				return null;
+			}
+			
+			var content = (ContentObject)AssetDatabase.LoadAssetAtPath(entry.assetPath, _contentType);
 			var delayPromise = new Promise();
 			IEnumerator Delay()
 			{
