@@ -11,7 +11,8 @@
     flex-direction: row;
 }
 
-#serviceEntry > VisualElement > VisualElement {
+
+#nameCBody, #knowLocationEntry, #dependenciesWrapper, #commentsCBody {
     flex-direction: row;
     flex-grow: 1;
     padding-left: 5px;
@@ -114,6 +115,18 @@
 
 #statusC {
     align-items: center;
+}
+
+#statusCBody {
+    flex-direction: column;
+    flex-grow: 1;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+LoadingBarElement {
+    flex-grow: 1;
+    max-height: 5px;
 }
 
 #enableState {

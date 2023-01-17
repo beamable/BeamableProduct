@@ -15,7 +15,7 @@
             </engine:VisualElement>
             <engine:VisualElement name="nameC" class="column">
                 <engine:Image class="HeaderSeparatorImage"/>
-                <engine:VisualElement>
+                <engine:VisualElement name="nameCBody">
                     <engine:Image name="serviceIcon"/>
                     <engine:Label name="serviceName"/>
                 </engine:VisualElement>
@@ -38,14 +38,15 @@
 <!--            </engine:VisualElement>-->
             <engine:VisualElement name="commentsC" class="column">
                 <engine:Image class="HeaderSeparatorImage"/>
-                <engine:VisualElement>
+                <engine:VisualElement name="commentsCBody">
                     <engine:TextField name="comment"/>
                 </engine:VisualElement>
             </engine:VisualElement>
             <engine:VisualElement name="statusC" class="column">
                 <engine:Image class="HeaderSeparatorImage"/>
-                <engine:VisualElement>
+                <engine:VisualElement name="statusCBody">
                     <engine:Label name="status" text="status"/>
+                    <beamable:LoadingBarElement/>
                 </engine:VisualElement>
             </engine:VisualElement>
             

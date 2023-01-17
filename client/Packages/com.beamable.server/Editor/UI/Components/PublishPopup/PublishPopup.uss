@@ -5,29 +5,60 @@
 }
 
 #infoContainer {
-    flex-grow: 1;
+    height: 220px;
     align-items: center;
 }
 
 #infoTitle {
     padding-top: 10px;
-    font-size: 14px;
+    font-size: 16px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-}
-
-/* 300 offset */
-#infoCards {
-    padding-top: 15px;
-    padding-bottom: 30px;
-    left: 450px;
     flex-direction: row;
 }
 
+#infoCardsContainer {
+    height: 150px;
+    flex-direction: row;
+    flex-grow: 1;
+    align-items: center;
+}
+
+#infoCardsBody {
+    width: 250px;
+    height: 150px;
+}
+
+#infoCards {
+    right: 25px;
+    flex-direction: row;
+    flex-grow: 1;
+    width: 2000px;
+    align-items: center;
+}
+
+.infoCardsGradient {
+    width: 100px;
+    height: 150px;
+    background-color: #3c3c3c;
+}
+
+.infoCardsBorder {
+    flex-grow: 1;
+    height: 150px;
+    background-color: #3c3c3c;
+}
+
 #infoDetails {
-    font-size: 14px;
+    font-size: 15px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+}
+
+#infoDescription {
+    height: 20px;
+    max-height: 20px;
+    max-width: 800px;
 }
 
 #infoCardStep1 {
@@ -47,7 +78,6 @@
 }
 
 #servicesContainer {
-    flex-grow: 1;
     padding-top: 30px;
     padding-bottom: 10px;
 }
@@ -87,6 +117,10 @@
     flex-grow: 3;
 }
 
+#dependenciesList > TemplateContainer > #mainVisualElement {
+    justify-content: center;
+}
+
 #sizeC {
     flex-grow: 2;
 }
@@ -100,7 +134,7 @@
 }
 
 #logContainer {
-    height: 160px;
+    height: 200px;
     padding-left: 30px;
     padding-right: 30px;
     padding-bottom: 10px;
@@ -168,4 +202,14 @@
     height: 20px;
     width: 2px;
     background-color: #a5a6a6;
+}
+
+.error {
+    color: #d93737;
+}
+
+.hidden {
+    height: 0px;
+    min-height: 0px;
+    max-height: 0px;
 }
