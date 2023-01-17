@@ -22,6 +22,7 @@ namespace Beamable.Tests.Runtime
 	public class DebouncerTests
 	{
 		private Debouncer _debouncer;
+		private CoroutineService _coroutine;
 		private int workCount;
 
 		[SetUp]
@@ -35,6 +36,7 @@ namespace Beamable.Tests.Runtime
 
 			var provider = builder.Build();
 			_debouncer = provider.GetService<Debouncer>();
+			_coroutine = provider.GetService<CoroutineService>();
 
 		}
 		[UnityTest]
@@ -97,7 +99,7 @@ namespace Beamable.Tests.Runtime
 			Promise Work()
 			{
 				workCount++;
-				var p = new Promise().WaitForSeconds(.2f).ToPromise();
+				var p = new Promise().WaitForSeconds(.2f, _coroutine).ToPromise();
 				return p;
 			}
 			
