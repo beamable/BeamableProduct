@@ -1,14 +1,8 @@
-using Beamable.Api;
-using Beamable.Api.Inventory;
 using Beamable.Common;
-using Beamable.Common.Api.Inventory;
 using Beamable.Common.Content;
-using Beamable.Common.Dependencies;
 using Beamable.Common.Inventory;
 using Beamable.Common.Player;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Beamable.Player
@@ -22,6 +16,7 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerItem : DefaultObservable
 	{
+		#region equality members
 		protected bool Equals(PlayerItem other)
 		{
 			return ContentId == other.ContentId && ItemId == other.ItemId && CreatedAt == other.CreatedAt && UpdatedAt == other.UpdatedAt && Equals(Properties, other.Properties);
@@ -59,6 +54,7 @@ namespace Beamable.Player
 				return hashCode;
 			}
 		}
+		#endregion
 
 		/// <summary>
 		/// The content id of <see cref="ItemContent"/> that this item is an instance of.
@@ -106,21 +102,7 @@ namespace Beamable.Player
 		{
 			return (((h1 << 5) + h1) ^ h2);
 		}
-
-		internal void TriggerUpdate(InventoryObject<ItemContent> item)
-		{
-			CreatedAt = item.CreatedAt;
-			UpdatedAt = item.UpdatedAt;
-			UniqueCode = item.UniqueCode;
-			Properties.Clear();
-			foreach (var kvp in item.Properties)
-			{
-				Properties[kvp.Key] = kvp.Value;
-			}
-			Content = item.ItemContent;
-			TriggerUpdate();
-		}
-
+		
 		internal new void TriggerUpdate() => base.TriggerUpdate();
 
 		public override int GetBroadcastChecksum()
@@ -149,27 +131,25 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerItemGroup : AbsObservableReadonlyList<PlayerItem>
 	{
-		private readonly ItemRef _rootRef;
-		private readonly IPlatformService _platformService;
-		private readonly InventoryService _inventoryService;
+		private ItemRef _rootRef;
+		private readonly PlayerInventory _inventory;
+		public Promise OnReady;
+		
+		/// <summary>
+		/// The scope defines which items in the inventory this group will be able to view.
+		/// If the scope is "items", then this group will view every item in the player inventory.
+		/// However, if the scope was "items.fish", then the group would only show items that were
+		/// instances of "items.fish" and sub types.
+		/// </summary>
+		public string RootScope => _rootRef?.Id ?? "items";
 
-		public PlayerItemGroup(ItemRef rootRef, IPlatformService platformService, InventoryService inventoryService, IDependencyProvider provider)
+		public PlayerItemGroup(ItemRef rootRef, PlayerInventory inventory)
 		{
 			_rootRef = rootRef;
-			_platformService = platformService;
-			_inventoryService = inventoryService;
-			_platformService.OnReady.Then(_ =>
-			{
-				_inventoryService.Subscribe(rootRef, OnItemsUpdated);
-			});
+			_inventory = inventory;
+			OnReady = Refresh(); // automatically refresh..
 		}
-
-		private void OnItemsUpdated(InventoryView view)
-		{
-			// ignore the view, and do a refresh on our own. Yes, this produces more network traffic.
-			var _ = Refresh();
-		}
-
+		
 		/// <summary>
 		/// The inventory group contains some set of items based on the <see cref="ItemRef"/> that was given to the constructor.
 		/// Use this method to check if some scope is part of the group. A scope that is more specific than the group scope, belongs
@@ -195,54 +175,21 @@ namespace Beamable.Player
 			var hasMore = scope.Length > _rootRef.Id.Length;
 			if (!hasMore) return true; // and if its exactly equal, thats fine
 
-			var nextIsDot = scope[_rootRef.Id.Length + 1] == '.';
+			var nextIsDot = scope[_rootRef.Id.Length] == '.';
 			return nextIsDot; // but if it has more characters, than the next character MUST be a new sub type
 		}
 
 
 		protected override async Promise PerformRefresh()
 		{
-			await _platformService.OnReady;
-			var data = await _inventoryService.GetItems(_rootRef);
-
-			var next = new List<PlayerItem>(data.Count);
-			var seen = new HashSet<PlayerItem>();
-
-			var map = new Dictionary<int, PlayerItem>(data.Count);
-			foreach (var item in this)
-			{
-				map[item.UniqueCode] = item;
-			}
-			foreach (var kvp in data)
-			{
-				if (map.TryGetValue(kvp.UniqueCode, out var existing))
-				{
-					next.Add(existing);
-					existing.TriggerUpdate(kvp);
-					seen.Add(existing);
-				}
-				else
-				{
-					next.Add(new PlayerItem
-					{
-						UniqueCode = kvp.UniqueCode,
-						Content = kvp.ItemContent,
-						ContentId = kvp.ItemContent.Id,
-						CreatedAt = kvp.CreatedAt,
-						UpdatedAt = kvp.UpdatedAt,
-						Properties = new SerializableDictionaryStringToString(kvp.Properties),
-						ItemId = kvp.Id
-					});
-				}
-			}
-
-			var unseen = this.Except(seen);
-			foreach (var item in unseen)
-			{
-				item.TriggerDeletion();
-			}
-			SetData(next);
+			await _inventory.Refresh(RootScope);
+			Notify();
 		}
 
+		public void Notify()
+		{
+			var data = _inventory.LocalItems.GetAll(RootScope);
+			SetData(data);
+		}
 	}
 }

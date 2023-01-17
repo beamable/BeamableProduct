@@ -37,11 +37,13 @@ namespace Beamable.Editor.Content
 
 	public class LocalContentCacheFactory : IContentCacheFactory
 	{
+		private readonly IDependencyProvider _provider;
 		private readonly CoroutineService _coroutineService;
 		private readonly ContentConfiguration _config;
 		private readonly IContentCacheFactory _defaultFactory;
 		public LocalContentCacheFactory(IDependencyProvider provider, CoroutineService coroutineService, ContentConfiguration config)
 		{
+			_provider = provider;
 			_coroutineService = coroutineService;
 			_config = config;
 			_defaultFactory = provider.GetService<DefaultContentCacheFactory>();
@@ -57,7 +59,7 @@ namespace Beamable.Editor.Content
 			{
 				return _defaultFactory.CreateCache(service, manifestId, contentType);
 			}
-			return new LocalContentCache(contentType, _coroutineService, _config);
+			return new LocalContentCache(contentType, _coroutineService, _config, _provider.GetService<ContentDatabase>());
 		}
 	}
 

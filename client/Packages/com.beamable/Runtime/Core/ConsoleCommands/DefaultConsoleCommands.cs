@@ -1,3 +1,4 @@
+using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using UnityEngine.Scripting;
 
@@ -13,6 +14,13 @@ namespace Beamable.ConsoleCommands
 		public DefaultConsoleCommands(IDependencyProvider provider)
 		{
 			_provider = provider;
+		}
+
+		[BeamableConsoleCommand("DataPath", "Print the data path for where Beamable caches data", "DataPath")]
+		public string PrintDataPath(params string[] args)
+		{
+			var fs = _provider.GetService<IBeamableFilesystemAccessor>();
+			return fs.GetPersistentDataPathWithoutTrailingSlash();
 		}
 
 
