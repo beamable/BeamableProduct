@@ -6,6 +6,8 @@ using UnityEngine;
 
 namespace Beamable.Common
 {
+	public class IntTrie : Trie<int> {}
+	
 	/// <summary>
 	/// A Trie is a tree like data structure that holds information by prefix key.
 	///

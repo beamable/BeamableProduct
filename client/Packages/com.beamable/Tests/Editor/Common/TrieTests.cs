@@ -7,6 +7,8 @@ namespace Beamable.Editor.Tests.Common
 {
 	public class TrieTests
 	{
+		
+	
 		[TestCase(
 			new object[]{"a.b", "a.c"},
 			new object[]{"a", "a.d"},
@@ -24,7 +26,7 @@ namespace Beamable.Editor.Tests.Common
 			var scopes = scopesObj.Cast<string>().ToArray();
 			var request = requestObj.Cast<string>().ToArray();
 			var expected = expectedObj.Cast<string>().ToArray();
-			var t = new Trie<int>();
+			var t = new IntTrie();
 			foreach (var scope in scopes)
 			{
 				t.Insert(scope, 1);
@@ -41,7 +43,7 @@ namespace Beamable.Editor.Tests.Common
 		[TestCase(3, TestName = "simple-many-times")]
 		public void Simple(int getAllCount)
 		{
-			var t = new Trie<int>();
+			var t = new IntTrie();
 			
 			t.Insert("a", 1);
 			t.Insert("a", 2);
@@ -60,7 +62,7 @@ namespace Beamable.Editor.Tests.Common
 		[Test]
 		public void Simple_MultiPath()
 		{
-			var t = new Trie<int>();
+			var t = new IntTrie();
 			
 			t.Insert("a", 1);
 			t.Insert("a.a", 2);
@@ -86,7 +88,7 @@ namespace Beamable.Editor.Tests.Common
 		[Test]
 		public void Simple_GetExactVsAll()
 		{
-			var t = new Trie<int>();
+			var t = new IntTrie();
 			
 			t.Insert("a", 1);
 			t.Insert("a.b", 2);
@@ -108,7 +110,7 @@ namespace Beamable.Editor.Tests.Common
 		[Test]
 		public void Serialization()
 		{
-			var t = new Trie<int>();
+			var t = new IntTrie();
 			
 			t.Insert("a", 1);
 			t.Insert("a.b", 2);
@@ -134,7 +136,7 @@ namespace Beamable.Editor.Tests.Common
 		[Test]
 		public void SerializationOverwrite()
 		{
-			var t = new Trie<int>();
+			var t = new IntTrie();
 			
 			t.Insert("a", 1);
 			t.Insert("a.b", 2);
@@ -174,7 +176,7 @@ namespace Beamable.Editor.Tests.Common
 		[TestCase(3, TestName = "simple-change-many-times")]
 		public void SimpleChange(int getAllCount)
 		{
-			var t = new Trie<int>();
+			var t = new IntTrie();
 
 			t.InsertRange("a", new int[] {1, 2, 3});
 			t.InsertRange("a.b", new int[] {4, 5});
@@ -210,7 +212,7 @@ namespace Beamable.Editor.Tests.Common
 		[TestCase(3, TestName = "simple-nested-many-times")]
 		public void SimpleNested(int getAllCount)
 		{
-			var t = new Trie<int>();
+			var t = new IntTrie();
 			
 			t.Insert("a", 1);
 			t.Insert("a.b", 2);

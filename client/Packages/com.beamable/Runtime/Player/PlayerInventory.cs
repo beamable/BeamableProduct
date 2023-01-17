@@ -90,7 +90,7 @@ namespace Beamable.Player
 		[SerializeField]
 		private PlayerCurrencyTrie localCurrencies;
 		
-		private Trie<int> _requestCounter = new Trie<int>();
+		private IntTrie _requestCounter = new IntTrie();
 		
 		private SerializedDictionaryStringToPlayerItemGroup _scopeToItemGroup = new SerializedDictionaryStringToPlayerItemGroup();
 		private SerializedDictionaryStringToPlayerCurrencyGroup _scopeToCurrencyGroup = new SerializedDictionaryStringToPlayerCurrencyGroup();
