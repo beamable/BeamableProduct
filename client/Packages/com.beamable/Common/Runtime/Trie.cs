@@ -6,9 +6,10 @@ using UnityEngine;
 
 namespace Beamable.Common
 {
+	[Serializable]
 	public class IntTrie : Trie<int, IntTrieEntry> {}
 	
-	[SerializeField]
+	[Serializable]
 	public class IntTrieEntry : TrieSerializationEntry<int> {}
 
 	/// <summary>

@@ -34,10 +34,10 @@ namespace Beamable.Player
 	{
 
 	}
-	[SerializeField]
+	[Serializable]
 	public class PlayerItemTrieEntry : TrieSerializationEntry<PlayerItem> {}
 
-	[SerializeField]
+	[Serializable]
 	public class PlayerCurrencyTrieEntry : TrieSerializationEntry<PlayerCurrency> {}
 
 	[Serializable]
