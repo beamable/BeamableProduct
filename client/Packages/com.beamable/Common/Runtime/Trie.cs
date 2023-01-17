@@ -16,13 +16,6 @@ namespace Beamable.Common
 	[Serializable]
 	public class Trie<T> : ISerializationCallbackReceiver
 	{
-		[Serializable]
-		public class SerializationEntry
-		{
-			public string path;
-			public List<T> values;
-		}
-		
 		[DebuggerDisplay("{path} (children=[{children.Count}]) (values=[{values.Count}])")]
 		public class Node
 		{
@@ -78,6 +71,11 @@ namespace Beamable.Common
 			}
 		}
 
+		[Serializable]
+		public class SerializationEntry : TrieSerializationEntry<T>
+		{
+			
+		}
 		// "a" -> node,
 		// doesn't include entires for "a.b"
 		private Dictionary<string, Node> _firstPartToNode = new Dictionary<string, Node>();
@@ -421,4 +419,10 @@ namespace Beamable.Common
 		}
 	}
 
+	[Serializable]
+	public class TrieSerializationEntry<T>
+	{
+		public string path;
+		public List<T> values;
+	}
 }
