@@ -317,6 +317,7 @@ namespace Beamable.Server.Editor
 			public event Action<ManifestModel, string> OnDeployFailed;
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
+			public event Action<string, bool> OnProgressInfoUpdated;
 
 			public async Task Deploy(ManifestModel model,
 									 CancellationToken token,
@@ -351,6 +352,8 @@ namespace Beamable.Server.Editor
 				OnDeployFailed -= HandleDeployFailed;
 				OnDeployFailed += HandleDeployFailed;
 
+				OnProgressInfoUpdated?.Invoke("Preparing publish process", false);
+				
 				// TODO perform sort of diff, and only do what is required. Because this is a lot of work.
 				var de = BeamEditorContext.Default;
 				await de.InitializePromise;
@@ -385,6 +388,7 @@ namespace Beamable.Server.Editor
 							Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 							Message = msg
 						});
+						OnProgressInfoUpdated?.Invoke(msg, true);
 						OnDeployFailed?.Invoke(model, msg);
 						return;
 					}
@@ -435,6 +439,7 @@ namespace Beamable.Server.Editor
 					await forceStop.StartAsync(); // force the image to stop.
 					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
 
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Building image", false);
 					// Build the image
 					try
 					{
@@ -449,6 +454,7 @@ namespace Beamable.Server.Editor
 					}
 					catch (Exception e)
 					{
+						OnProgressInfoUpdated?.Invoke($"Deploy failed due to {descriptor.Name} failing to build", true);
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to {descriptor.Name} failing to build: {e}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
@@ -456,6 +462,7 @@ namespace Beamable.Server.Editor
 					}
 
 					// Try to start the image and talk to it's healthcheck endpoint.
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Verifying healthcheck", false);
 					try
 					{
 
@@ -519,6 +526,7 @@ namespace Beamable.Server.Editor
 
 							if (!isHealthy)
 							{
+								OnProgressInfoUpdated?.Invoke($"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.", true);
 								OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
 								UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
@@ -534,6 +542,7 @@ namespace Beamable.Server.Editor
 					}
 					catch (Exception e)
 					{
+						OnProgressInfoUpdated?.Invoke($"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.", true);
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
@@ -544,11 +553,13 @@ namespace Beamable.Server.Editor
 
 					if (token.IsCancellationRequested)
 					{
+						OnProgressInfoUpdated?.Invoke($"Cancellation requested after build of {descriptor.Name}", true);
 						OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 						return;
 					}
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Preparing image", false);
 					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
@@ -565,6 +576,7 @@ namespace Beamable.Server.Editor
 					var imageId = imageDetails.imageId;
 					if (string.IsNullOrEmpty(imageId))
 					{
+						OnProgressInfoUpdated?.Invoke($"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}", true);
 						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
@@ -572,6 +584,7 @@ namespace Beamable.Server.Editor
 					// the architecture needs to be one of the supported beamable architectures...
 					if (!CPU_SUPPORTED.Any(imageDetails.Platform.Contains))
 					{
+						OnProgressInfoUpdated?.Invoke($"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}", true);
 						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
@@ -621,6 +634,7 @@ namespace Beamable.Server.Editor
 						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 						Message = $"Uploading container service=[{descriptor.Name}]"
 					});
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Uploading image", false);
 					await uploader.UploadContainer(descriptor, token, () =>
 												   {
 													   Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
@@ -632,6 +646,7 @@ namespace Beamable.Server.Editor
 													   Debug.LogError(string.Format(CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
 													   if (token.IsCancellationRequested)
 													   {
+														   OnProgressInfoUpdated?.Invoke($"Cancellation requested during upload of {descriptor.Name}", true);
 														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
 														   UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 													   }
@@ -726,6 +741,7 @@ namespace Beamable.Server.Editor
 				}).ToList();
 
 				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storageManifest });
+				OnProgressInfoUpdated?.Invoke($"Services deploy process completed!", false);
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
 
 				logger(new LogMessage

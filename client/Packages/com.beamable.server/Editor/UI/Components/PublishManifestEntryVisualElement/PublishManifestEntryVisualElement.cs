@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
-using Random = UnityEngine.Random;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -93,10 +92,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.Refresh();
 
-			// _loadingBar = Root.Q<LoadingBarElement>();
-			// _loadingBar.SmallBar = true;
-			// _loadingBar.Hidden = true;
-			// _loadingBar.Refresh();
+			_loadingBar = Root.Q<LoadingBarElement>();
+			_loadingBar.SmallBar = true;
+			_loadingBar.Hidden = true;
+			_loadingBar.Refresh();
 
 			_enableState = Root.Q<BeamableCheckboxVisualElement>("enableState");
 			_enableState.Refresh();
@@ -187,6 +186,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				case ServicePublishState.Failed:
 					_loadingBar.UpdateProgress(0, failed: true);
+					_stateLabel.AddToClassList("error");
 					_stateLabel.text = "FAILED";
 					return;
 				case ServicePublishState.Published:
@@ -220,7 +220,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			return GetPublishStateOrder(PublishState).CompareTo(GetPublishStateOrder(other.PublishState));
 		}
-		private static int GetPublishStateOrder(ServicePublishState state)
+		public int GetPublishStateOrder(ServicePublishState state)
 		{
 			switch (state)
 			{
