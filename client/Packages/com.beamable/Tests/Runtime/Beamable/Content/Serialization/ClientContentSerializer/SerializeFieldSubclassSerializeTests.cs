@@ -23,6 +23,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
  ""Icon"": {
          ""data"": null
       },
+""external"": { 
+	""data"": null
+},
       ""clientPermission"": {
          ""data"": {
             ""write_self"": false
