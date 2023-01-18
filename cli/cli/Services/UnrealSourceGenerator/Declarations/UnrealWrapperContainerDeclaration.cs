@@ -184,17 +184,17 @@ struct ₢{nameof(UnrealTypeName)}₢ : public FBeamMap
 ₢{nameof(UnrealTypeName)}₢::₢{nameof(UnrealTypeName)}₢(const TMap<FString, ₢{nameof(ValueUnrealTypeName)}₢>& Val): Values(Val)
 {{}}
 
-void FMapOfString::BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const
+void ₢{nameof(UnrealTypeName)}₢::BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const
 {{
 	UBeamJsonUtils::SerializeMap<₢{nameof(ValueUnrealTypeName)}₢>(Values, Serializer);
 }}
 
-void FMapOfString::BeamSerializeProperties(TUnrealPrettyJsonSerializer& Serializer) const
+void ₢{nameof(UnrealTypeName)}₢::BeamSerializeProperties(TUnrealPrettyJsonSerializer& Serializer) const
 {{
 	UBeamJsonUtils::SerializeMap<₢{nameof(ValueUnrealTypeName)}₢>(Values, Serializer);
 }}
 
-void FMapOfString::BeamDeserializeElements(const TSharedPtr<FJsonObject>& Elements)
+void ₢{nameof(UnrealTypeName)}₢::BeamDeserializeElements(const TSharedPtr<FJsonObject>& Elements)
 {{
 	UBeamJsonUtils::DeserializeMap<₢{nameof(ValueUnrealTypeName)}₢>(Elements, Values);
 }}";

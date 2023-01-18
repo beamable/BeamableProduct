@@ -45,7 +45,7 @@ public struct UnrealEndpointDeclaration
 			.Union(new[] { ResponseBodyUnrealType }.Where(t => t != null)).ToList();
 	}
 
-	public void IntoProcessMap(Dictionary<string, string> helperDict, List<UnrealSerializableTypeDeclaration> serializableTypes = null)
+	public void IntoProcessMap(Dictionary<string, string> helperDict, List<UnrealJsonSerializableTypeDeclaration> serializableTypes = null)
 	{
 		var pathParameters = string.Join("\n\t", RequestPathParameters.Select(p =>
 		{
