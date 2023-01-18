@@ -17,6 +17,14 @@ namespace Beamable.Editor.UI.Buss
 			var srvc = BeamEditorContext.Default.ServiceScope.GetService<BussPrefabSceneManager>();
 			srvc.OpenPrefabScene();
 		}
+		
+		[MenuItem("BEAM_TEST/TOGGLE")]
+		public static void Toggle()
+		{
+			var srvc = BeamEditorContext.Default.ServiceScope.GetService<BussPrefabSceneManager>();
+			srvc.TogglePrefabScene();
+			
+		}
 	}
 	
 	[InitializeOnLoad]
@@ -302,6 +310,24 @@ namespace Beamable.Editor.UI.Buss
 			// TODO: in 2019, this won't work, so we'll need to find another way to open the stage. 
 			// https://docs.unity3d.com/2019.4/Documentation/ScriptReference/AssetDatabase.OpenAsset.html
 			StageUtility.GoToStage(_stage, true);
+		}
+
+		public void TogglePrefabScene()
+		{
+			if (IsPrefabSceneOpen())
+			{
+				StageUtility.GoBackToPreviousStage();
+			}
+			else
+			{
+				OpenPrefabScene();
+			}
+		}
+
+		public bool IsPrefabSceneOpen()
+		{
+			var currentStage = StageUtility.GetCurrentStage();
+			return currentStage is BussStage;
 		}
 
 		public bool TryGetPrefabScene(out Scene scene)

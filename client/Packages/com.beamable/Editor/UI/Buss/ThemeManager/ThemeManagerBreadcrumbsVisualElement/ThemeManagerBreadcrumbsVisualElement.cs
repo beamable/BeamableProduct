@@ -37,7 +37,24 @@ namespace Beamable.Editor.UI.Components
 			_propertiesFilter.clickable.clicked += HandlePropertiesFilterButton;
 
 			_sceneViewToggle = Root.Q<Button>("sceneViewToggle");
+			_sceneViewToggle.tooltip = "Toggle the Prefab Scene";
+			UpdatePrefabButtonClasses();
+			_sceneViewToggle.clickable.clicked -= HandlePrefabButtonClicked;
+			_sceneViewToggle.clickable.clicked += HandlePrefabButtonClicked;
 			UpdateServicesFilterText(Model.DisplayFilter);
+		}
+
+		private void HandlePrefabButtonClicked()
+		{
+			var srvc = Context.ServiceScope.GetService<BussPrefabSceneManager>();
+			srvc.TogglePrefabScene();
+			UpdatePrefabButtonClasses();
+		}
+
+		private void UpdatePrefabButtonClasses()
+		{
+			var srvc = Context.ServiceScope.GetService<BussPrefabSceneManager>();
+			_sceneViewToggle.EnableInClassList("active", srvc.IsPrefabSceneOpen());
 		}
 
 		private void UpdateServicesFilterText(ThemeModel.PropertyDisplayFilter filter)

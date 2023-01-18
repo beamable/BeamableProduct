@@ -7,13 +7,12 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-        <engine:Button name="sceneViewToggle">
-            <engine:Image name="sceneViewIcon"/>
-        </engine:Button>
-        
         <engine:Button name="propertiesFilter" class="boundedButton">
             <engine:Image name="dropDownIcon"/>
             <engine:Label text="Filter" class="buttonText"/>
+        </engine:Button>
+        <engine:Button name="sceneViewToggle">
+            <engine:Image name="sceneViewIcon"/>
         </engine:Button>
     </engine:VisualElement>
 
