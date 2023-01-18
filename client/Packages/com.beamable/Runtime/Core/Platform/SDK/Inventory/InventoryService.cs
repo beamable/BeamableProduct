@@ -32,7 +32,7 @@ namespace Beamable.Api.Inventory
 		{
 			UsesHierarchyScopes = true;
 		}
-		
+
 		public InventorySubscription(IDependencyProvider provider, bool useCache)
 			: base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(useCache, OfflineResponse))
 		{

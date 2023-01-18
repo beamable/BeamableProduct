@@ -102,7 +102,7 @@ namespace Beamable.Player
 		{
 			return (((h1 << 5) + h1) ^ h2);
 		}
-		
+
 		internal new void TriggerUpdate() => base.TriggerUpdate();
 
 		public override int GetBroadcastChecksum()
@@ -134,7 +134,7 @@ namespace Beamable.Player
 		private ItemRef _rootRef;
 		private readonly PlayerInventory _inventory;
 		public Promise OnReady;
-		
+
 		/// <summary>
 		/// The scope defines which items in the inventory this group will be able to view.
 		/// If the scope is "items", then this group will view every item in the player inventory.
@@ -149,7 +149,7 @@ namespace Beamable.Player
 			_inventory = inventory;
 			OnReady = Refresh(); // automatically refresh..
 		}
-		
+
 		/// <summary>
 		/// The inventory group contains some set of items based on the <see cref="ItemRef"/> that was given to the constructor.
 		/// Use this method to check if some scope is part of the group. A scope that is more specific than the group scope, belongs
