@@ -59,10 +59,10 @@ namespace Beamable.Common.Api.Presence
 		public bool online;
 		public string lastOnline;
 		public long playerId;
-		public int status;
+		public string status;
 		public string description;
 
-		public PresenceStatus Status => (PresenceStatus)status;
+		public PresenceStatus Status => (PresenceStatus)Enum.Parse(typeof(PresenceStatus), status);
 		public DateTime LastOnline => DateTime.Parse(lastOnline);
 	}
 
@@ -89,7 +89,7 @@ namespace Beamable.Common.Api.Presence
 	{
 		Online = 0,
 		Invisible = 1,
-		DoNotDisturb = 2,
+		Dnd = 2,
 		Away = 3,
 	}
 
