@@ -7,10 +7,10 @@ using System.Runtime.Serialization;
 using UnityEditor;
 using UnityEngine;
 
-namespace Beamable.Common.Inventory
+namespace Beamable.Editor.Content
 {
 	[CustomPropertyDrawer(typeof(ExternalIdentity))]
-	public class SelectedIdentityPropertyDrawer : PropertyDrawer
+	public class ExternalIdentityPropertyDrawer : PropertyDrawer
 	{
 		private const int PADDING = 2;
 
