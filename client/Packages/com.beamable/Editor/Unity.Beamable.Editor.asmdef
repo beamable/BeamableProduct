@@ -13,9 +13,9 @@
         "Unity.Beamable.Runtime.Common",
         "Unity.EditorCoroutines.Editor",
         "Beamable.UnityUIExtensions",
-        "Beamable.ConsoleCommands"
+        "Beamable.ConsoleCommands",
+        "Beamable.Coroutines"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -24,5 +24,7 @@
     "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

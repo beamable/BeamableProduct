@@ -13,6 +13,8 @@ public struct UnrealSerializableTypeDeclaration
 
 	private string _includeResponseBodyInterface;
 	private string _inheritResponseBodyInterface;
+	private string _declareResponseBodyInterface;
+	private string _defineResponseBodyInterface;
 
 	private List<UnrealPropertyDeclaration> _uPropertySerialize;
 	private List<UnrealPropertyDeclaration> _uPropertyDeserialize;
@@ -75,7 +77,7 @@ public struct UnrealSerializableTypeDeclaration
 		{
 			ud.IntoProcessMap(processDictionary);
 
-			var decl = UnrealPropertyDeclaration.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+			var decl = ud.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 			return decl;
 		}));
@@ -84,7 +86,7 @@ public struct UnrealSerializableTypeDeclaration
 		{
 			ud.IntoProcessMap(processDictionary);
 
-			var decl = UnrealPropertyDeclaration.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+			var decl = ud.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 			return decl;
 		}));
@@ -120,6 +122,15 @@ public struct UnrealSerializableTypeDeclaration
 
 		_includeResponseBodyInterface = IsSomeRequestsResponseBody ? @"#include ""BeamBackend/BeamBaseResponseBodyInterface.h""" : "";
 		_inheritResponseBodyInterface = IsSomeRequestsResponseBody ? ", public IBeamBaseResponseBodyInterface" : "";
+		_declareResponseBodyInterface = IsSomeRequestsResponseBody ? "virtual void DeserializeRequestResponse(UObject* RequestData, FString ResponseContent) override;" : "";
+		_defineResponseBodyInterface = IsSomeRequestsResponseBody
+			? @$"
+void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FString ResponseContent)
+{{
+	OuterOwner = RequestData;
+	BeamDeserialize(ResponseContent);	
+}}"
+			: "";
 
 		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		processDictionary.Add(nameof(UPropertyDeclarations), propertyDeclarations);
@@ -130,6 +141,9 @@ public struct UnrealSerializableTypeDeclaration
 
 		processDictionary.Add(nameof(_includeResponseBodyInterface), _includeResponseBodyInterface);
 		processDictionary.Add(nameof(_inheritResponseBodyInterface), _inheritResponseBodyInterface);
+		processDictionary.Add(nameof(_declareResponseBodyInterface), _declareResponseBodyInterface);
+		processDictionary.Add(nameof(_defineResponseBodyInterface), _defineResponseBodyInterface);
+		
 
 		processDictionary.Add(nameof(_uPropertySerialize), propertySerialization);
 		processDictionary.Add(nameof(_uPropertyDeserialize), propertyDeserialization);
@@ -163,6 +177,8 @@ class BEAMABLECORE_API U₢{nameof(NamespacedTypeName)}₢ : public UObject, pub
 public:
 	₢{nameof(UPropertyDeclarations)}₢
 
+	₢{nameof(_declareResponseBodyInterface)}₢
+
 	virtual void BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const override;
 	virtual void BeamSerializeProperties(TUnrealPrettyJsonSerializer& Serializer) const override;
 	virtual void BeamDeserializeProperties(const TSharedPtr<FJsonObject>& Bag) override;
@@ -173,6 +189,8 @@ public:
 #include ""AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
 ₢{nameof(JsonUtilsInclude)}₢
 ₢{nameof(DefaultValueHelpersInclude)}₢
+
+₢{nameof(_defineResponseBodyInterface)}₢
 
 void U₢{nameof(NamespacedTypeName)}₢ ::BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const
 {{
@@ -248,6 +266,7 @@ U₢{nameof(NamespacedTypeName)}₢* U₢{nameof(NamespacedTypeName)}₢Library:
 ₢{nameof(BREAK_UTILITY_DEFINITION)}₢
 
 ";
+
 	public const string BREAK_UTILITY_DECLARATION = $@"UFUNCTION(BlueprintPure, Category=""Beam|Backend"", DisplayName=""Beam - Break ₢{nameof(NamespacedTypeName)}₢"", meta=(NativeBreakFunc))
 	static void Break(const U₢{nameof(NamespacedTypeName)}₢* Serializable₢{nameof(_breakParams)}₢);";
 

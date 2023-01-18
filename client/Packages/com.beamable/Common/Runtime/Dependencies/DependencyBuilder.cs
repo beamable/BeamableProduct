@@ -4,6 +4,15 @@ using System.Linq;
 
 namespace Beamable.Common.Dependencies
 {
+
+	public enum DependencyLifetime
+	{
+		Unknown,
+		Transient,
+		Scoped,
+		Singleton
+	}
+
 	/// <summary>
 	/// The <see cref="IDependencyBuilder"/> is part of the Beamable dependency injection system.
 	/// It is used to describe a set of services that <i>will</i> exist, but the builder never actually creates any service instance.
@@ -15,6 +24,7 @@ namespace Beamable.Common.Dependencies
 	/// </summary>
 	public interface IDependencyBuilder
 	{
+
 		/// <summary>
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// A transient service will be re-instantiated everytime it is requested from <see cref="IDependencyProvider.GetService"/>.
@@ -416,6 +426,7 @@ namespace Beamable.Common.Dependencies
 		public List<ServiceDescriptor> SingletonServices { get; protected set; } = new List<ServiceDescriptor>();
 
 
+
 		public IDependencyBuilder AddTransient<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
 			TransientServices.Add(new ServiceDescriptor
@@ -550,12 +561,21 @@ namespace Beamable.Common.Dependencies
 			return this;
 		}
 
-		private TImpl Instantiate<TImpl>(IDependencyProvider provider)
+		/// <inheritdoc cref="Instantiate"/>
+		public static TImpl Instantiate<TImpl>(IDependencyProvider provider)
 		{
 			return (TImpl)Instantiate(typeof(TImpl), provider);
 		}
 
-		private object Instantiate(Type type, IDependencyProvider provider)
+		/// <summary>
+		/// Create an instance of the given type by using the dependencies available in the given <see cref="IDependencyProvider"/>
+		/// </summary>
+		/// <param name="type"></param>
+		/// <param name="provider"></param>
+		/// <returns>
+		/// </returns>
+		/// <exception cref="Exception"></exception>
+		public static object Instantiate(Type type, IDependencyProvider provider)
 		{
 			// Gets all constructors
 			var constructors = type.GetConstructors();

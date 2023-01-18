@@ -46,8 +46,8 @@ namespace Beamable.Editor.Content
 
 			ValidateContent(null, null); // start a validation in the background.
 
-			ContentIO.OnContentCreated += ContentIO_OnContentCreated;
-			ContentIO.OnContentDeleted += ContentIO_OnContentDeleted;
+			ContentIO.OnContentsCreated += ContentIO_OnContentCreated;
+			ContentIO.OnContentEntryDeleted += ContentIO_OnContentDeleted;
 			ContentIO.OnContentRenamed += ContentIO_OnContentRenamed;
 		}
 
@@ -146,12 +146,12 @@ namespace Beamable.Editor.Content
 			Application.OpenURL(URLs.Documentations.URL_DOC_WINDOW_CONTENT_MANAGER);
 		}
 
-		private void ContentIO_OnContentDeleted(IContentObject content)
+		private void ContentIO_OnContentDeleted(List<ContentDatabaseEntry> content)
 		{
-			Model.HandleContentDeleted(content);
+			Model.HandleContentsDeleted(content);
 		}
 
-		private void ContentIO_OnContentCreated(IContentObject content)
+		private void ContentIO_OnContentCreated(List<IContentObject> content)
 		{
 			Model.HandleContentAdded(content);
 		}
@@ -187,8 +187,8 @@ namespace Beamable.Editor.Content
 		{
 			var b = BeamEditorContext.Default;
 			b.OnUserChange -= HandleOnUserChanged;
-			ContentIO.OnContentCreated -= ContentIO_OnContentCreated;
-			ContentIO.OnContentDeleted -= ContentIO_OnContentDeleted;
+			ContentIO.OnContentsCreated -= ContentIO_OnContentCreated;
+			ContentIO.OnContentEntryDeleted -= ContentIO_OnContentDeleted;
 			ContentIO.OnContentRenamed -= ContentIO_OnContentRenamed;
 		}
 

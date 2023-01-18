@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+no changes
+
+## [1.10.2]
+### Fixed
+- Microservices can now deploy in realms with no deployed Content manifest.
+
+## [1.10.1]
+no changes
+
+## [1.10.0]
+### Added
+- `[InitializeService]` exposes `IDependencyProvider` as `Provider`, and `[ConfigureServices]` exposes `IDependencyBuilder` as `Builder`
+
+### Changed
+- Internal dependency-injection system uses `IDependencyBuilder` and `IDependencyProvider`. 
+- Websocket connection recovery log level changed from Error to Debug.
+- Microservices can override their health check port with the `HEALTH_PORT` env variable.
+
+### Fixed
+- Custom `[InitializeService]` and `[ConfigureServices]` callbacks no longer run for each connection.
+- Singletons registered during `[ConfigureServices]` won't be re-instantiated on each request.
+
+## [1.9.1]
+### Changed
+- Downloading content allocates less memory due to avoid async/await `Task` allocation.
+
 ## [1.9.0]
 ### Added
 - `Context.ThrowIfCancelled()` method to force end a client-callable request if it has timed out.
