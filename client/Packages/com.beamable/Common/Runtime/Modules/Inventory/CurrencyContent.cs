@@ -44,7 +44,7 @@ namespace Beamable.Common.Inventory
 
 		[ContentField("external")]
 		[Tooltip(TooltipExternalIdentity)]
-		public OptionalExternalIdentity externalIdentity;
+		public ExternalIdentity externalIdentity;
 	}
 
 	[System.Serializable]
