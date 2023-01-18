@@ -44,16 +44,7 @@ namespace Beamable.Common.Inventory
 
 		[ContentField("external")]
 		[Tooltip(TooltipExternalIdentity)]
-		public SelectedIdentity _selectedIdentity;
-	}
-
-	[System.Serializable]
-	public class SelectedIdentity
-	{
-		[ContentField("service")]
-		public string Service;
-		[ContentField("namespace")]
-		public string Namespace;
+		public OptionalExternalIdentity externalIdentity;
 	}
 
 	[System.Serializable]

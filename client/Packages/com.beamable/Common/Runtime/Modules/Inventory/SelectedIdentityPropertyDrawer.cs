@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Api.Auth;
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using UnityEngine;
 
 namespace Beamable.Common.Inventory
 {
-	[CustomPropertyDrawer(typeof(SelectedIdentity))]
+	[CustomPropertyDrawer(typeof(ExternalIdentity))]
 	public class SelectedIdentityPropertyDrawer : PropertyDrawer
 	{
 		private const int PADDING = 2;
@@ -22,10 +23,10 @@ namespace Beamable.Common.Inventory
 		{
 			List<string> identities = GetIdentitiesOptions();
 
-			SerializedProperty serviceProperty = property.FindPropertyRelative(nameof(SelectedIdentity.Service));
+			SerializedProperty serviceProperty = property.FindPropertyRelative(nameof(ExternalIdentity.Service));
 			serviceProperty.stringValue = "BlockchainFederationService";
 
-			SerializedProperty identityProperty = property.FindPropertyRelative(nameof(SelectedIdentity.Namespace));
+			SerializedProperty identityProperty = property.FindPropertyRelative(nameof(ExternalIdentity.Namespace));
 
 			Rect nextRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + PADDING,
 			                         position.width, EditorGUIUtility.singleLineHeight);
