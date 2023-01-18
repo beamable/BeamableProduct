@@ -17,7 +17,7 @@
         "VirtualList",
         "Beamable.UnityUIExtensions",
         "Unity.Beamable.Purchasing",
-        "endel.nativewebsocket"
+        "Beamable.Endel.NativeWebsocket"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],
