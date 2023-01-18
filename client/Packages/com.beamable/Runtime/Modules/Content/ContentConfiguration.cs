@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 using static Beamable.Common.Constants.Features.ContentManager;
 using static Beamable.Common.Constants.MenuItems.Assets;
 
@@ -27,7 +28,19 @@ namespace Beamable.Content
 #if UNITY_EDITOR
         [HideInInspector]
         public string EditorManifestID = DEFAULT_MANIFEST_ID;
+
+        [Tooltip("In editor, when downloading content, this controls the batch size of the download. By default, it is 100.")]
+        public OptionalInt EditorDownloadBatchSize;
 #endif
+
+		[Tooltip("When enabled, any content requests for the editor manifest will be resolved using your on-disk Scriptable Object content items, and any content from another manifest will be fetched from the remote realm. When disabled, all content is fetched from the remote realm.")]
+		public bool EnableLocalContentInEditor = false;
+
+		[Tooltip("When using Local Content Mode In Editor, simulate how long each content reference will take to fetch.")]
+		public OptionalFloat LocalContentReferenceDelaySeconds;
+
+		[Tooltip("When using Local Content Mode In Editor, simulate how long the manifest will take to fetch.")]
+		public OptionalFloat LocalContentManifestDelaySeconds;
 
 		[Tooltip("This is the starting manifest ID that will be used when the game starts up. If you change it here, the Beamable API will initialize with content from this namespace. You can also update the setting at runtime.")]
 		[SerializeField, ReadonlyIf(nameof(EnableMultipleContentNamespaces), negate = true, specialDrawer = ReadonlyIfAttribute.SpecialDrawer.DelayedString)]
@@ -57,9 +70,11 @@ namespace Beamable.Content
 				{
 					Debug.LogWarning($"Beamable API is using manifest with id '{manifestID}' while manifest namespaces feature is disabled!");
 				}
+
 				return new ContentParameterProvider()
 				{
-					manifestID = manifestID
+					manifestID = manifestID,
+					EnableLocalContentInEditor = EnableLocalContentInEditor
 				};
 			}
 		}

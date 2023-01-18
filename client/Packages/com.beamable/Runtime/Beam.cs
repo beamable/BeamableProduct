@@ -31,6 +31,7 @@ using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
+using Beamable.Common.Api.Stats;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
@@ -129,6 +130,7 @@ namespace Beamable
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
+			DependencyBuilder.AddSingleton(contentReflectionCache);
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
@@ -136,21 +138,26 @@ namespace Beamable
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
+			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
-			DependencyBuilder.AddSingleton<IAuthService, AuthService>();
+			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());
+			DependencyBuilder.AddScoped<CachelessInventoryService>();
 			DependencyBuilder.AddSingleton<IAnnouncementsApi, AnnouncementsService>();
 			DependencyBuilder.AddSingleton<ISessionService, SessionService>();
 			DependencyBuilder.AddSingleton<CloudSavingService>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
+			DependencyBuilder.AddSingleton<IManifestResolver, DefaultManifestResolver>();
+			DependencyBuilder.AddSingleton<IContentCacheFactory, DefaultContentCacheFactory>();
 			DependencyBuilder.AddSingleton<ContentService>();
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddSingleton<IMailApi, MailService>();
 			DependencyBuilder.AddScoped<InventoryService>();
+			DependencyBuilder.AddScoped<IStatsApi>(p => p.GetService<StatsService>());
 			DependencyBuilder.AddScoped<StatsService>(provider =>
 														  new StatsService(
 															  provider.GetService<IPlatformService>(),
@@ -212,7 +219,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
-			DependencyBuilder.AddSingleton<ISdkEventService, SdkEventService>();
+			DependencyBuilder.AddScoped<ISdkEventService, SdkEventService>();
 			DependencyBuilder.AddSingleton<PubnubNotificationService>();
 			DependencyBuilder.AddSingleton<IPubnubNotificationService, PubnubNotificationService>();
 			DependencyBuilder.AddSingleton<IPubnubSubscriptionManager>(
@@ -226,13 +233,18 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
-			DependencyBuilder.AddScoped<PlayerInventory>();
+			DependencyBuilder.AddScoped<PlayerAccounts>();
+			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
+			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
+			DependencyBuilder.AddScoped<PlayerCurrencyGroup>(p => p.GetService<PlayerInventory>().Currencies);
 			DependencyBuilder.AddScoped<PlayerSocial>();
-
+			DependencyBuilder.AddSingleton<Debouncer>();
+			
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
+			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
@@ -240,6 +252,20 @@ namespace Beamable
 
 
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder, RegistrationOrigin.RUNTIME);
+			
+			
+#if UNITY_EDITOR
+			// TODO: in a runtime game, we should save the state if the game is crashing...
+			UnityEditor.EditorApplication.playModeStateChanged += async (state) =>
+			{
+				
+				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+				{
+					Debug.Log("Stopping all contexts manually");
+					await StopAllContexts();
+				}
+			};
+#endif
 		}
 
 		/// <summary>

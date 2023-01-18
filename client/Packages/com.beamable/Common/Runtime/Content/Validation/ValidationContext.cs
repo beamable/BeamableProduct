@@ -53,6 +53,10 @@ namespace Beamable.Common.Content.Validation
 
 		IEnumerable<string> ContentIds { get; }
 
+		long Count { get; }
+
+		bool Initialized { get; }
+
 		string GetTypeName(Type type);
 
 		bool TryGetContent(string id, out IContentObject content);
@@ -78,6 +82,9 @@ namespace Beamable.Common.Content.Validation
 
 		public IEnumerable<string> ContentIds => AllContent.Keys;
 
+		public long Count => AllContent.Count;
+
+		public bool Initialized { get; set; }
 
 		public string GetTypeName(Type type)
 		{

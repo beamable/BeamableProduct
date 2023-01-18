@@ -64,7 +64,7 @@ namespace Beamable
 	/// </para>
 	/// </summary>
 	[Serializable]
-	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposable
+	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposable, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
 
 		#region Internal State
@@ -77,7 +77,10 @@ namespace Beamable
 		/// <summary>
 		/// The User that this context is authenticated with. Any web-calls that are made from this <see cref="BeamContext"/> are made by this User
 		/// </summary>
-		public ObservableUser AuthorizedUser = new ObservableUser();
+		public ObservableUser AuthorizedUser = new ObservableUser
+		{
+			Value = new User()
+		};
 
 		/// <summary>
 		/// The <see cref="IDependencyProvider"/> is a collection of all services required to provide a Beamable SDK full funcitonality
@@ -165,6 +168,22 @@ namespace Beamable
 		/// Access the <see cref="PlayerParty"/> for this context.
 		/// </summary>
 		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
+
+		/// <summary>
+		/// Access the <see cref="PlayerAccounts"/> for this context.
+		/// </summary>
+		public PlayerAccounts Accounts
+		{
+			get
+			{
+				var service = _serviceScope.GetService<PlayerAccounts>();
+				_playerAccounts = service;
+				return service;
+			}
+		}
+
+		private bool HasAccountsService => _playerAccounts != null;
+		private PlayerAccounts _playerAccounts;
 
 		/// <summary>
 		/// <para>
@@ -303,6 +322,12 @@ namespace Beamable
 			await InitStep_StartNewSession();
 			await InitStep_StartPubnub();
 
+
+			// before we broadcast the event; we'll ask the accounts to update if they exist...
+			if (HasAccountsService)
+			{
+				await Accounts.Refresh();
+			}
 			OnReloadUser?.Invoke();
 
 			return ctx;
@@ -343,6 +368,18 @@ namespace Beamable
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
 		{
+			#if UNITY_EDITOR
+			if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+			{
+				// if the context is inside the editor, and something is trying to 
+				// get the context in a tight loop as the editor exits playmode, then 
+				// the GameObject will get destroyed soon, and services will start throwing
+				// exceptions that the GameObject doesn't exist. Better to curb the init process all
+				// together, since the application is exiting playmode anyway.
+				return;
+			}
+			#endif
+			
 			PlayerCode = playerCode;
 			_isStopped = false;
 
@@ -443,6 +480,8 @@ namespace Beamable
 			builder.AddSingleton<BeamContext>(this);
 			builder.AddSingleton<IPlatformService>(this);
 			builder.AddSingleton<IGameObjectContext>(this);
+			builder.AddScoped<IDependencyScopeNameProvider>(this);
+			builder.AddSingleton<IDependencyNameProvider>(this);
 			builder.AddSingleton(new AccessTokenStorage(PlayerCode));
 		}
 
@@ -593,6 +632,8 @@ namespace Beamable
 				// Debug.Log("Will get user when reconnect...");
 				// _connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
 			}
+			
+			
 			AuthorizedUser.Value = user;
 		}
 
@@ -792,6 +833,19 @@ namespace Beamable
 
 		User IPlatformService.User => AuthorizedUser.Value;
 		public Promise<Unit> OnReady => _initPromise;
+
+		/// <summary>
+		/// A <see cref="Promise{T}"/> that is completed when the <see cref="BeamContext"/> is ready to be used.
+		/// This promise happens immediately after the <see cref="OnReady"/> promise, but returns the current instance
+		/// of the context.
+		///
+		/// Suggested usage.
+		/// <code>
+		/// var ctx = await BeamContext.Default.Instance;
+		/// </code>
+		/// </summary>
+		public Promise<BeamContext> Instance => OnReady?.Map(_ => this);
+		
 		INotificationService IPlatformService.Notification => _notification;
 		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
 		IConnectivityService IPlatformService.ConnectivityService => _connectivityService;
@@ -810,6 +864,9 @@ namespace Beamable
 
 			return Promise.Success;
 		}
+
+		string IDependencyNameProvider.DependencyProviderName => PlayerCode;
+		string IDependencyScopeNameProvider.DependencyScopeName => PlayerId.ToString();
 	}
 
 	[Serializable]

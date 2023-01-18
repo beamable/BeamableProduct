@@ -167,6 +167,7 @@ namespace Beamable.Common.Content
 
 				_contentTypeToClass = contentTypeToClassDict;
 				_classToContentType = classToContentTypeDict;
+				
 			}
 
 			Instance = this;
@@ -177,7 +178,7 @@ namespace Beamable.Common.Content
 		{
 			// Guaranteed to exist due to validation.
 			var typeName = GetContentTypeName(type);
-			var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true).ToList();
+			var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true);
 			foreach (var possibleTypeName in formerlySerializedTypeNames)
 			{
 				if (possibleTypeName == null) continue;

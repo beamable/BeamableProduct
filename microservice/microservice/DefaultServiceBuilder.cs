@@ -1,43 +1,40 @@
+using Beamable.Common.Dependencies;
 using Beamable.Server;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace microservice
 {
    public class DefaultServiceBuilder : IServiceBuilder
    {
-      private ServiceCollection Collection { get; }
+      public IDependencyBuilder Builder { get; }
 
-      public DefaultServiceBuilder(ServiceCollection collection)
+      public DefaultServiceBuilder(IDependencyBuilder builder)
       {
-         Collection = collection ?? new ServiceCollection();
+         Builder = builder ?? new DependencyBuilder();
       }
 
-      public void AddTransient<T>(ServiceFactory<T> factory) =>
-         Collection.AddTransient(typeof(T), provider => factory(provider));
+      public void AddTransient<T>(ServiceFactory<T> factory) => Builder.AddTransient(provider => factory(provider));
 
-      public void AddSingleton<T>(ServiceFactory<T> factory) =>
-         Collection.AddSingleton(typeof(T), provider => factory(provider));
+      public void AddSingleton<T>(ServiceFactory<T> factory) => Builder.AddSingleton(provider => factory(provider));
 
-      public void AddScoped<T>(ServiceFactory<T> factory) =>
-         Collection.AddScoped(typeof(T), provider => factory(provider));
+      public void AddScoped<T>(ServiceFactory<T> factory) => Builder.AddScoped(provider => factory(provider));
 
-      public void AddTransient<T>() => Collection.AddTransient(typeof(T));
+      public void AddTransient<T>() => Builder.AddTransient<T>();
 
-      public void AddSingleton<T>() => Collection.AddSingleton(typeof(T));
+      public void AddSingleton<T>() => Builder.AddSingleton<T>();
 
-      public void AddScoped<T>() => Collection.AddScoped(typeof(T));
+      public void AddScoped<T>() => Builder.AddScoped<T>();
 
       public void AddTransient<TService, TImplementation>()
          where TService : class
-         where TImplementation : class, TService => Collection.AddTransient<TService, TImplementation>();
+         where TImplementation : class, TService => Builder.AddTransient<TService, TImplementation>();
 
       public void AddSingleton<TService, TImplementation>()
          where TService : class
-         where TImplementation : class, TService => Collection.AddSingleton<TService, TImplementation>();
+         where TImplementation : class, TService => Builder.AddSingleton<TService, TImplementation>();
 
       public void AddScoped<TService, TImplementation>()
          where TService : class
-         where TImplementation : class, TService => Collection.AddScoped<TService, TImplementation>();
+         where TImplementation : class, TService => Builder.AddScoped<TService, TImplementation>();
 
    }
 }
