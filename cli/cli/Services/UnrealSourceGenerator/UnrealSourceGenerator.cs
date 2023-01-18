@@ -1,5 +1,8 @@
-﻿using Microsoft.OpenApi.Any;
+﻿using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Writers;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -38,17 +41,68 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public const string UNREAL_U_OBJECT_PREFIX = "U";
 	public const string UNREAL_U_STRUCT_PREFIX = "F";
 
+	// Start of Semantic Types
+	public const string UNREAL_U_SEMTYPE_CID = "FBeamCid";
+	public const string UNREAL_U_SEMTYPE_PID = "FBeamPid";
+	public const string UNREAL_U_SEMTYPE_ACCOUNTID = "FBeamAccountId";
+	public const string UNREAL_U_SEMTYPE_GAMERTAG = "FBeamGamerTag";
+	public const string UNREAL_U_SEMTYPE_CONTENTMANIFESTID = "FBeamContentManifestId";
+	public const string UNREAL_U_SEMTYPE_CONTENTID = "FBeamContentId";
+	public const string UNREAL_U_SEMTYPE_STATSTYPE = "FBeamStatsType";
+
+	public const string UNREAL_OPTIONAL_U_SEMTYPE_CID = $"{UNREAL_OPTIONAL}BeamCid";
+	public const string UNREAL_OPTIONAL_U_SEMTYPE_PID = $"{UNREAL_OPTIONAL}BeamPid";
+	public const string UNREAL_OPTIONAL_U_SEMTYPE_ACCOUNTID = $"{UNREAL_OPTIONAL}BeamAccountId";
+	public const string UNREAL_OPTIONAL_U_SEMTYPE_GAMERTAG = $"{UNREAL_OPTIONAL}BeamGamerTag";
+	public const string UNREAL_OPTIONAL_U_SEMTYPE_CONTENTMANIFESTID = $"{UNREAL_OPTIONAL}BeamContentManifestId";
+	public const string UNREAL_OPTIONAL_U_SEMTYPE_CONTENTID = $"{UNREAL_OPTIONAL}BeamContentId";
+	public const string UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE = $"{UNREAL_OPTIONAL}BeamStatsType";
+
+	public static readonly List<string> UNREAL_ALL_SEMTYPES = new()
+	{
+		UNREAL_U_SEMTYPE_CID,
+		UNREAL_U_SEMTYPE_PID,
+		UNREAL_U_SEMTYPE_ACCOUNTID,
+		UNREAL_U_SEMTYPE_GAMERTAG,
+		UNREAL_U_SEMTYPE_CONTENTMANIFESTID,
+		UNREAL_U_SEMTYPE_CONTENTID,
+		UNREAL_U_SEMTYPE_STATSTYPE,
+	};
+
+	public static readonly List<string> UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES = new()
+	{
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_CID),
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_PID),
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_ACCOUNTID),
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_GAMERTAG),
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_CONTENTMANIFESTID),
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_CONTENTID),
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_STATSTYPE),
+	};
+	// End of Semantic Types
+
+	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
+	private const string EXTENSION_BEAMABLE_SEMANTIC_TYPE = "x-beamable-semantic-type";
+
 	/// <summary>
 	/// Exists so we don't keep reallocating while building the field names.
 	/// </summary>
 	private static readonly StringBuilder kSchemaGenerationBuilder = new(2048);
+	
+	/// <summary>
+	/// Exists so we don't keep reallocating while building the field names.
+	/// </summary>
+	private static readonly StringBuilder kSemTypeDeclarationPointsLog = new(4096);
 
-	public static readonly Dictionary<string, string> UNREAL_TYPES_OVERRIDES = new() { { "UPlayer*", "UPlayerId*" }, { "UDeleteRole*", "UDeleteRoleRequestBody*" } };
+	public static readonly Dictionary<string, string> NAMESPACED_TYPES_OVERRIDES = new() { { "Player", "PlayerId" }, { "DeleteRole", "DeleteRoleRequestBody" } };
 	public static readonly Dictionary<string, string> NAMESPACED_ENDPOINT_OVERRIDES = new() { { "PostToken", "Authenticate" } };
 
 	public List<GeneratedFileDescriptor> Generate(IGenerationContext context)
 	{
 		var outputFiles = new List<GeneratedFileDescriptor>(16);
+
+		kSemTypeDeclarationPointsLog.Clear();
+		kSemTypeDeclarationPointsLog.AppendLine("Handle,UProperty,SerializationType");
 
 		// Build a list of dictionaries of schemas whose names appear in the list more than once.
 		IReadOnlyList<NamedOpenApiSchema> namedOpenApiSchemata = context.OrderedSchemas;
@@ -60,17 +114,21 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		// Go through all properties of all schemas and see if they are required or not
 		var fieldSchemaRequiredMap = new Dictionary<string, bool>(namedOpenApiSchemata.Count);
-		BuildRequiredFieldMaps(namedOpenApiSchemata, context.Documents, schemaNameOverlaps, fieldSchemaRequiredMap, globalEndpointNameCollisions);
+		var fieldSemanticTypesUnderlyingTypeMap = new Dictionary<string, string>(namedOpenApiSchemata.Count);
+		BuildRequiredFieldMaps(namedOpenApiSchemata, context.Documents, schemaNameOverlaps, globalEndpointNameCollisions, fieldSchemaRequiredMap);
+		BuildSemanticTypesUnderlyingTypeMaps(namedOpenApiSchemata, context.Documents, schemaNameOverlaps, globalEndpointNameCollisions, fieldSemanticTypesUnderlyingTypeMap);
+
 
 		// Build the data required to generate all subsystems and their respective endpoints
 		var subsystemDeclarations = new List<UnrealApiSubsystemDeclaration>(context.Documents.Count);
 		var unrealTypesUsedAsResponses = new HashSet<string>();
-		BuildSubsystemDeclarations(context.Documents, globalEndpointNameCollisions, perSubsystemCollisions, schemaNameOverlaps, fieldSchemaRequiredMap, subsystemDeclarations,
+		BuildSubsystemDeclarations(context.Documents, globalEndpointNameCollisions, perSubsystemCollisions, schemaNameOverlaps, fieldSchemaRequiredMap, fieldSemanticTypesUnderlyingTypeMap,
+			subsystemDeclarations,
 			unrealTypesUsedAsResponses);
 
 		// Build the data required to generate all serializable types, enums, optionals, array and map wrapper types.
 		// Array and Map Wrapper types are required due to UE's TMap and TArray not supporting nested data structures. As in, TArray<TArray<int>> doesn't work --- but TArray<FArrayOfInt> does. 
-		BuildSerializableTypeDeclarations(namedOpenApiSchemata, schemaNameOverlaps, fieldSchemaRequiredMap, unrealTypesUsedAsResponses,
+		BuildSerializableTypeDeclarations(namedOpenApiSchemata, schemaNameOverlaps, fieldSchemaRequiredMap, fieldSemanticTypesUnderlyingTypeMap, unrealTypesUsedAsResponses,
 			out var serializableTypes,
 			out var enumTypes,
 			out var optionalTypes,
@@ -272,11 +330,15 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		}
 
 		outputFiles.Add(new GeneratedFileDescriptor() { FileName = "BeamableCore/Private/AutoGen/Special/TemplateSpecializations.cpp", Content = templateSpecializationsCode.ToString() });
+		
+		// Prints out all the identified semtype declarations
+		Console.WriteLine(kSemTypeDeclarationPointsLog.ToString());
 		return outputFiles;
 	}
 
 	private static void BuildSerializableTypeDeclarations(IReadOnlyList<NamedOpenApiSchema> namedOpenApiSchemata, Dictionary<string, List<NamedOpenApiSchema>> schemaNameOverlaps,
-		Dictionary<string, bool> fieldSchemaRequiredMap, HashSet<string> unrealTypesUsedAsResponses, out List<UnrealSerializableTypeDeclaration> serializableTypes,
+		Dictionary<string, bool> fieldSchemaRequiredMap, Dictionary<string, string> fieldSemanticTypesUnderlyingTypeMap, HashSet<string> unrealTypesUsedAsResponses,
+		out List<UnrealSerializableTypeDeclaration> serializableTypes,
 		out List<UnrealEnumDeclaration> enumTypes, out List<UnrealOptionalDeclaration> optionalTypes, out List<UnrealWrapperContainerDeclaration> arrayWrapperTypes,
 		out List<UnrealWrapperContainerDeclaration> mapWrapperTypes)
 	{
@@ -291,7 +353,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		foreach (var namedOpenApiSchema in namedOpenApiSchemata)
 		{
 			// We need to decide on whether we'll name the type simply or if we'll use their service title to augment the name.
-			string schemaUnrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, namedOpenApiSchema.Document, "", namedOpenApiSchema.Schema);
+			string schemaUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, namedOpenApiSchema.Document, namedOpenApiSchema.Schema);
 			string schemaNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType);
 			// Make sure we don't declare two types with the same name
 			if (listOfDeclaredTypes.Contains(schemaNamespacedType)) continue;
@@ -303,9 +365,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				var enumDecl = new UnrealEnumDeclaration
 				{
-					UnrealTypeName = schemaUnrealType,
-					NamespacedTypeName = schemaNamespacedType,
-					EnumValues = namedOpenApiSchema.Schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
+					UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = namedOpenApiSchema.Schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
 				};
 
 				enumTypes.Add(enumDecl);
@@ -319,12 +379,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					PropertyIncludes = new List<string>(8),
 					UPropertyDeclarations = new List<UnrealPropertyDeclaration>(8),
 					JsonUtilsInclude = "",
-					IsSomeRequestsResponseBody = unrealTypesUsedAsResponses.Contains(schemaUnrealType)
+					IsSomeRequestsResponseBody = unrealTypesUsedAsResponses.Contains(schemaUnrealType),
 				};
 
 				foreach ((string fieldName, OpenApiSchema fieldSchema) in namedOpenApiSchema.Schema.Properties)
 				{
-					var handle = GetRequiredSchemaHandle(schemaNamespacedType, fieldName);
+					var handle = GetFieldDeclarationHandle(schemaNamespacedType, fieldName);
 					// see schema type and format
 					var unrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, namedOpenApiSchema.Document, handle, fieldSchema);
 					if (string.IsNullOrEmpty(unrealType))
@@ -343,9 +403,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						PropertyName = propertyName,
 						PropertyDisplayName = propertyDisplayName.SpaceOutOnUpperCase(),
 						RawFieldName = fieldName,
-						FirstTemplateParameter = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(unrealType),
 						NonOptionalTypeName = nonOptionalUnrealType,
 					};
+
+					if (fieldSemanticTypesUnderlyingTypeMap.TryGetValue(handle, out uPropertyDeclarationData.SemTypeSerializationType))
+						kSemTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.SemTypeSerializationType}");
 
 					if (unrealType.StartsWith(UNREAL_OPTIONAL))
 					{
@@ -365,7 +427,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					if (nonOptionalUnrealType.StartsWith(UNREAL_ARRAY))
 						uPropertyDeclarationData.NonOptionalTypeNameRelevantTemplateParam = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(nonOptionalUnrealType);
 
-					if (unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) || unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX))
+					if (unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) || unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
+					    UNREAL_ALL_SEMTYPES.Contains(unrealType))
 					{
 						// We only need this include if we have any array, wrapper or optional types --- since this is a template it's worth not including it to keep compile times as small as we can have them.
 						serializableTypeDeclaration.JsonUtilsInclude = string.IsNullOrEmpty(serializableTypeDeclaration.JsonUtilsInclude)
@@ -375,7 +438,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 					// Decide if we need to add the default value helper in order to parse primitive numeric types
 					if (unrealType.StartsWith(UNREAL_BYTE) || unrealType.StartsWith(UNREAL_SHORT) || unrealType.StartsWith(UNREAL_INT) || unrealType.StartsWith(UNREAL_LONG) ||
-						unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE))
+					    unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE))
 					{
 						serializableTypeDeclaration.DefaultValueHelpersInclude = string.IsNullOrEmpty(serializableTypeDeclaration.DefaultValueHelpersInclude)
 							? "#include \"Misc/DefaultValueHelper.h\""
@@ -468,7 +531,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <paramref name="globalEndpointNameCollisions"/> answers the question: "Does this endpoint name collides with any other endpoint from any other service?"
 	/// <paramref name="perSubsystemCollisions"/> answers the question: "Does this endpoint name collide with any other endpoint from within the subsystem it'll exist inside of?"
 	///
-	/// The reason we have the first one is that UE does not support namespaces yet (TODO: Revisit this if we decide to target 5.1 instead of 5.0 for the first release). 
+	/// The reason we have the first one is that UE does not support namespaces yet. 
 	/// </summary>
 	private static void BuildEndpointNameCollidedMaps(IReadOnlyList<NamedOpenApiSchema> namedOpenApiSchemata, IReadOnlyList<OpenApiDocument> openApiDocuments,
 		out Dictionary<string, bool> globalEndpointNameCollisions,
@@ -521,15 +584,15 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// This flag uses <see cref="GetNamespacedSerializableTypeFromSchema"/> and <see cref="GetEndpointFieldOwner"/> in order to keep track which fields of which types are tied to each flag.
 	/// </summary>
 	private static void BuildRequiredFieldMaps(IReadOnlyList<NamedOpenApiSchema> namedOpenApiSchemata, IReadOnlyList<OpenApiDocument> openApiDocuments,
-		Dictionary<string, List<NamedOpenApiSchema>> schemaNameOverlaps, Dictionary<string, bool> fieldSchemaRequiredMap, Dictionary<string, bool> globalEndpointNameCollisions)
+		Dictionary<string, List<NamedOpenApiSchema>> schemaNameOverlaps, Dictionary<string, bool> globalEndpointNameCollisions, Dictionary<string, bool> outFieldSchemaRequiredMap)
 	{
 		foreach (var ns in namedOpenApiSchemata)
 		{
 			var properties = ns.Schema.Properties;
 			foreach ((string fieldName, OpenApiSchema _) in properties)
 			{
-				var handle = GetRequiredSchemaHandle(GetNamespacedSerializableTypeFromSchema(schemaNameOverlaps, ns.Document, ns.Name, false), fieldName);
-				fieldSchemaRequiredMap.TryAdd(handle, ns.Schema.Required.Contains(fieldName));
+				var handle = GetFieldDeclarationHandle(GetNamespacedSerializableTypeFromSchema(schemaNameOverlaps, ns.Document, ns.Name, false), fieldName);
+				outFieldSchemaRequiredMap.TryAdd(handle, ns.Schema.Required.Contains(fieldName));
 			}
 
 			foreach (var openApiDocument in openApiDocuments)
@@ -544,8 +607,111 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						foreach (var param in value.Parameters)
 						{
 							var paramOwnerId = GetEndpointFieldOwner(globalEndpointNameCollisions, serviceName, isObjectService, operationType, endpointPath);
-							var handle = GetRequiredSchemaHandle(paramOwnerId, $"{param.Name}");
-							fieldSchemaRequiredMap.TryAdd(handle, param.Required);
+							var handle = GetFieldDeclarationHandle(paramOwnerId, $"{param.Name}");
+							outFieldSchemaRequiredMap.TryAdd(handle, param.Required);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Goes through the <paramref name="namedOpenApiSchemata"/> and <paramref name="openApiDocuments"/> and, for each field of all relevant types in them, saves a flag that answers:
+	/// "Is this type's field required?"
+	///
+	/// This flag uses <see cref="GetNamespacedSerializableTypeFromSchema"/> and <see cref="GetEndpointFieldOwner"/> in order to keep track which fields of which types are tied to each flag.
+	/// </summary>
+	private static void BuildSemanticTypesUnderlyingTypeMaps(IReadOnlyList<NamedOpenApiSchema> namedOpenApiSchemata, IReadOnlyList<OpenApiDocument> openApiDocuments,
+		Dictionary<string, List<NamedOpenApiSchema>> schemaNameOverlaps, Dictionary<string, bool> globalEndpointNameCollisions, Dictionary<string, string> outFieldSemTypeUnderlyingTypeMap)
+	{
+		foreach (var ns in namedOpenApiSchemata)
+		{
+			var properties = ns.Schema.Properties;
+			foreach ((string fieldName, OpenApiSchema fieldSchema) in properties)
+			{
+				var handle = GetFieldDeclarationHandle(GetNamespacedSerializableTypeFromSchema(schemaNameOverlaps, ns.Document, ns.Name, false), fieldName);
+
+				// Array fields
+				if (fieldSchema.Type == "array")
+				{
+					var isReference = fieldSchema.Items.Reference != null;
+					var arrayTypeSchema = isReference ? fieldSchema.Items.GetEffective(ns.Document) : fieldSchema.Items;
+					if (arrayTypeSchema.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var e) && e is OpenApiString)
+					{
+						var arraySerializationUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, ns.Document, arrayTypeSchema, UnrealTypeGetFlags.NeverSemanticType);
+						outFieldSemTypeUnderlyingTypeMap.TryAdd(handle, arraySerializationUnrealType);
+						continue;
+					}
+				}
+
+				// Map case
+				if (fieldSchema.Type == "object" && fieldSchema.Reference == null && fieldSchema.AdditionalPropertiesAllowed)
+				{
+					if (fieldSchema.AdditionalProperties.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var e) && e is OpenApiString)
+					{
+						var mapSerializationUnrealType =
+							GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, ns.Document, fieldSchema.AdditionalProperties, UnrealTypeGetFlags.NeverSemanticType);
+						outFieldSemTypeUnderlyingTypeMap.TryAdd(handle, mapSerializationUnrealType);
+						continue;
+					}
+				}
+
+				// Raw Semantic Type case
+				if (fieldSchema.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var extension) && extension is OpenApiString)
+				{
+					var serializationUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, ns.Document, fieldSchema, UnrealTypeGetFlags.NeverSemanticType);
+					outFieldSemTypeUnderlyingTypeMap.TryAdd(handle, serializationUnrealType);
+				}
+			}
+
+			foreach (var openApiDocument in openApiDocuments)
+			{
+				GetNamespacedServiceNameFromApiDoc(openApiDocument.Info, out var serviceTitle, out var serviceName);
+				foreach ((string endpointPath, OpenApiPathItem endpoint) in openApiDocument.Paths)
+				{
+					foreach ((OperationType operationType, OpenApiOperation value) in endpoint.Operations)
+					{
+						var isObjectService = serviceTitle.Contains("object", StringComparison.OrdinalIgnoreCase);
+
+						foreach (var param in value.Parameters)
+						{
+							var paramOwnerId = GetEndpointFieldOwner(globalEndpointNameCollisions, serviceName, isObjectService, operationType, endpointPath);
+							var handle = GetFieldDeclarationHandle(paramOwnerId, $"{param.Name}");
+
+							var fieldSchema = param.Schema;
+
+							// Array fields
+							if (fieldSchema is { Type: "array" })
+							{
+								var isReference = fieldSchema.Items.Reference != null;
+								var arrayTypeSchema = isReference ? fieldSchema.Items.GetEffective(openApiDocument) : fieldSchema.Items;
+								if (arrayTypeSchema.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var e) && e is OpenApiString)
+								{
+									var arraySerializationUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, ns.Document, arrayTypeSchema, UnrealTypeGetFlags.NeverSemanticType);
+									outFieldSemTypeUnderlyingTypeMap.TryAdd(handle, arraySerializationUnrealType);
+									continue;
+								}
+							}
+
+							// Map case
+							if (fieldSchema is { Type: "object", Reference: null, AdditionalPropertiesAllowed: true })
+							{
+								if (fieldSchema.AdditionalProperties.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var e) && e is OpenApiString)
+								{
+									var mapSerializationUnrealType =
+										GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, ns.Document, fieldSchema.AdditionalProperties, UnrealTypeGetFlags.NeverSemanticType);
+									outFieldSemTypeUnderlyingTypeMap.TryAdd(handle, mapSerializationUnrealType);
+									continue;
+								}
+							}
+
+							// Raw Semantic Type case
+							if (fieldSchema != null && fieldSchema.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var extension) && extension is OpenApiString)
+							{
+								var serializationUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, ns.Document, fieldSchema, UnrealTypeGetFlags.NeverSemanticType);
+								outFieldSemTypeUnderlyingTypeMap.TryAdd(handle, serializationUnrealType);
+							}
 						}
 					}
 				}
@@ -559,7 +725,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	private static void BuildSubsystemDeclarations(IReadOnlyList<OpenApiDocument> openApiDocuments, Dictionary<string, bool> globalEndpointNameCollisions,
 		Dictionary<string, Dictionary<string, bool>> perSubsystemCollisions, Dictionary<string, List<NamedOpenApiSchema>> schemaNameOverlaps,
-		Dictionary<string, bool> fieldSchemaRequiredMap, List<UnrealApiSubsystemDeclaration> outSubsystemDeclarations, HashSet<string> outUnrealTypesUsedAsResponses)
+		Dictionary<string, bool> fieldSchemaRequiredMap, Dictionary<string, string> fieldSemanticTypesUnderlyingTypeMap, List<UnrealApiSubsystemDeclaration> outSubsystemDeclarations,
+		HashSet<string> outUnrealTypesUsedAsResponses)
 	{
 		foreach (var openApiDocument in openApiDocuments)
 		{
@@ -614,9 +781,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealEndpoint.RequestPathParameters = new List<UnrealPropertyDeclaration>(4);
 					foreach (var param in endpointData.Parameters)
 					{
-						var paramSchema = param.Schema.GetEffective(openApiDocument);
+						var paramSchema = param.Schema.Reference != null ? param.Schema.GetEffective(openApiDocument) : param.Schema;
 						var paramOwnerId = $"{serviceName}_{GetSubsystemNamespacedEndpointName(serviceName, isObjectService, operationType, endpointPath, globalEndpointNameCollisions)}";
-						var paramSchemaHandle = GetRequiredSchemaHandle(paramOwnerId, param.Name);
+						var paramFieldHandle = GetFieldDeclarationHandle(paramOwnerId, param.Name);
 
 						// Handle Object Ids so that we can generate the correct type.
 						if (param.Name == "objectId")
@@ -625,7 +792,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							{
 								if (obj.TryGetValue("type", out var customType) && customType is OpenApiString typeStr)
 								{
-									var customSchema = new OpenApiSchema { Type = typeStr.Value };
+									var customSchema = new OpenApiSchema { Type = typeStr.Value, Extensions = param.Schema.Extensions };
 									if (obj.TryGetValue("format", out var customFormat) && customFormat is OpenApiString formatStr)
 									{
 										customSchema.Format = formatStr.Value;
@@ -637,13 +804,20 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						}
 
 						var unrealProperty = new UnrealPropertyDeclaration();
-						unrealProperty.PropertyUnrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, openApiDocument, paramSchemaHandle, paramSchema);
+						unrealProperty.PropertyUnrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, openApiDocument, paramFieldHandle, paramSchema);
 						unrealProperty.PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealProperty.PropertyUnrealType);
 						unrealProperty.PropertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, param.Name, kSchemaGenerationBuilder);
 						unrealProperty.RawFieldName = param.Name;
 						unrealProperty.PropertyDisplayName = unrealProperty.PropertyName.SpaceOutOnUpperCase();
 						unrealProperty.NonOptionalTypeName = GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, openApiDocument, paramSchema);
 						unrealProperty.BriefCommentString = $"{param.Description}";
+
+						// Semantic type serialization for Query and Path Parameters is always FString
+						if (fieldSemanticTypesUnderlyingTypeMap.TryGetValue(paramFieldHandle, out unrealProperty.SemTypeSerializationType))
+						{
+							kSemTypeDeclarationPointsLog.AppendLine($"{paramFieldHandle},{unrealProperty.PropertyUnrealType},{unrealProperty.SemTypeSerializationType}");
+							unrealProperty.SemTypeSerializationType = UNREAL_STRING;
+						}
 
 						switch (param.In)
 						{
@@ -659,13 +833,14 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						}
 					}
 
+					// Find and declare all request body properties
 					unrealEndpoint.RequestBodyParameters = new List<UnrealPropertyDeclaration>(1);
 					if (endpointData.RequestBody?.Content?.TryGetValue("application/json", out var requestMediaType) ?? false)
 					{
 						var bodySchema = requestMediaType.Schema.GetEffective(openApiDocument);
 
 						var unrealProperty = new UnrealPropertyDeclaration();
-						unrealProperty.PropertyUnrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, openApiDocument, "", bodySchema);
+						unrealProperty.PropertyUnrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, openApiDocument, "", bodySchema, UnrealTypeGetFlags.NeverOptional);
 						unrealProperty.PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealProperty.PropertyUnrealType);
 						unrealProperty.PropertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, "Body", kSchemaGenerationBuilder);
 						unrealProperty.BriefCommentString = $"The \"{unrealProperty.PropertyUnrealType}\" instance to use for the request.";
@@ -674,25 +849,41 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					}
 
 
-					if (endpointData.Responses.TryGetValue("200", out var response) &&
-						response.Content.TryGetValue("application/json", out var jsonResponse))
+					if (endpointData.Responses.TryGetValue("200", out var response))
 					{
-						var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
-						var ueType = unrealEndpoint.ResponseBodyUnrealType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldSchemaRequiredMap, openApiDocument, "", bodySchema);
-						unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);
-						unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(ueType);
+						if (response.Content.TryGetValue("application/json", out var jsonResponse))
+						{
+							var bodySchema = jsonResponse.Schema.GetEffective(openApiDocument);
+							var ueType = unrealEndpoint.ResponseBodyUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(schemaNameOverlaps, openApiDocument, bodySchema);
+							unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);
+							unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(ueType);
 
-						// Add the response type to a list of serializable types that we'll need to declare with an additional specific interface.
-						outUnrealTypesUsedAsResponses.Add(ueType);
+							// Add the response type to a list of serializable types that we'll need to declare with an additional specific interface.
+							outUnrealTypesUsedAsResponses.Add(ueType);
+
+							using var sw = new StringWriter();
+							var writer = new OpenApiJsonWriter(sw);
+							bodySchema.SerializeAsV3WithoutReference(writer);
+							Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
+							                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+							                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+							                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+							                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+							                  $"\n{sw.ToString()}");
+						}
+						else if (response.Content.TryGetValue("text/plain", out jsonResponse))
+						{
+							var ueType = unrealEndpoint.ResponseBodyUnrealType = UnrealSourceGenerator.UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE;
+							unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);
+							unrealEndpoint.ResponseBodyNonPtrUnrealType = RemovePtrFromUnrealTypeIfAny(ueType);
+
+							// Add the response type to a list of serializable types that we'll need to declare with an additional specific interface.
+							outUnrealTypesUsedAsResponses.Add(ueType);
+						}
 					}
 
-					unrealEndpoint.IncludeStatementsUnrealTypes = string.Join("\n", unrealEndpoint.GetAllUnrealTypes().Select(GetIncludeStatementForUnrealType));
 
-					Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-									  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-									  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-									  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-									  $"\n{unrealEndpoint.ResponseBodyUnrealType}");
+					unrealEndpoint.IncludeStatementsUnrealTypes = string.Join("\n", unrealEndpoint.GetAllUnrealTypes().Select(GetIncludeStatementForUnrealType));
 
 					if (unrealEndpoint.IsAuth)
 					{
@@ -730,14 +921,17 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	 */
 
 	/// <summary>
-	/// Makes a handle for indexing into a map of Handle=>IsRequired ---- we use this map in order to decide if a specific property declaration (serializable field or request/response type is optional or not).
-	/// <see cref="GetUnrealTypeFromSchema"/> expects to receive a field handle when generating the Unreal Type declaration for a field or parameter.
-	/// Passing a non-existent field handle will result in the type being non-optional.
+	/// Makes a declaration handle string. This string represents a unique declaration (member field) in the space of all declarations in the code. 
+	/// We use this for building helper maps that we use during the generation:
+	///  - Whether or not a field is required at that specific declaration point; 
+	///  - Type for the serialization of a Semantic Type field.
+	///  
+	/// <see cref="GetUnrealTypeFromSchema"/> expects to receive a FieldDeclaration handle when generating the Unreal Type declaration for a field or parameter. Passing a non-existent field handle will result in the type being non-optional.
 	/// </summary>
-	public static string GetRequiredSchemaHandle(string owner, string fieldOrParamName) => $"{owner}.{fieldOrParamName}";
+	public static string GetFieldDeclarationHandle(string owner, string fieldOrParamName) => $"{owner}.{fieldOrParamName}";
 
 	/// <summary>
-	/// Basically generates the <see cref="GetRequiredSchemaHandle"/>'s 'Owner' parameter for endpoint fields.
+	/// Basically generates the <see cref="GetFieldDeclarationHandle"/>'s 'Owner' parameter for endpoint fields.
 	/// </summary>
 	private static string GetEndpointFieldOwner(Dictionary<string, bool> globalEndpointNameCollisions, string serviceName, bool isObjectService, OperationType operationType, string endpointPath)
 	{
@@ -792,6 +986,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		if (schemaName.EndsWith("Request"))
 			schemaName += "Body";
+
+		if (NAMESPACED_TYPES_OVERRIDES.TryGetValue(schemaName, out var overridenName))
+			schemaName = overridenName;
 
 		return isOptional ? $"Optional{schemaName}" : schemaName;
 	}
@@ -865,6 +1062,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	 * each point using UE's own prefixes and code patterns. This is a good thing since we need to enforce this standard anyway to remain 100% BP compatible.
 	 */
 
+	[System.Flags]
+	public enum UnrealTypeGetFlags { None, NeverOptional, NeverSemanticType }
 
 	/// <summary>
 	/// Gets the Unreal type name for a given field declared in a <see cref="OpenApiSchema.Properties"/> dictionary.
@@ -872,20 +1071,25 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <param name="schemaNameOverlaps">A schema name overlap dictionary built from the generation context's <see cref="NamedOpenApiSchema"/>.</param>
 	/// <param name="fieldRequireMaps">A field require dictionary built from all the declared <see cref="OpenApiSchema.Properties"/> of the generation context's <see cref="NamedOpenApiSchema"/>.</param>
 	/// <param name="parentDoc">The <see cref="OpenApiDocument"/> containing the schema that owns the given field.</param>
-	/// <param name="requiredSchemaHandle">When null, the returned unreal type will never be an optional type.</param>
+	/// <param name="fieldDeclarationHandle">A string created by <see cref="GetFieldDeclarationHandle"/>. Should null or empty, if generating the type name instead of a field/parameter's declaration.</param>
 	/// <param name="schema">The field schema (value of <see cref="OpenApiSchema.Properties"/>).</param>
 	/// <returns>The correct Unreal-land type as a string.</returns>
 	public static string GetUnrealTypeFromSchema([NotNull] IReadOnlyDictionary<string, List<NamedOpenApiSchema>> schemaNameOverlaps, [NotNull] IReadOnlyDictionary<string, bool> fieldRequireMaps,
-		[NotNull] OpenApiDocument parentDoc, [NotNull] string requiredSchemaHandle, [NotNull] OpenApiSchema schema)
+		[NotNull] OpenApiDocument parentDoc, [NotNull] string fieldDeclarationHandle, [NotNull] OpenApiSchema schema, UnrealTypeGetFlags Flags = UnrealTypeGetFlags.None)
 	{
 		// The field is considered an optional type ONLY if it is in the dictionary AND it's value in the dictionary is false.
 		// This dictionary must be built from all NamedSchemas's properties (fields) and contain true/false for whether or not that field of that type is required.
-		var isOptional = fieldRequireMaps.TryGetValue(requiredSchemaHandle, out var isRequired) && !isRequired;
+		var isOptional = !Flags.HasFlag(UnrealTypeGetFlags.NeverOptional) && fieldRequireMaps.TryGetValue(fieldDeclarationHandle, out var isRequired) && !isRequired;
 		var isEnum = schema.GetEffective(parentDoc).Enum.Count > 0;
-		switch (schema.Type, schema.Format, schema.Reference?.Id)
+
+		var semType = "";
+		if (!Flags.HasFlag(UnrealTypeGetFlags.NeverSemanticType) && schema.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var ext) && ext is OpenApiString s)
+			semType = s.Value;
+
+		switch (schema.Type, schema.Format, schema.Reference?.Id, semType)
 		{
 			// Handles any field of any existing Schema Types
-			case var (_, _, referenceId) when !string.IsNullOrEmpty(referenceId):
+			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId):
 			{
 				referenceId = GetNamespacedSerializableTypeFromSchema(schemaNameOverlaps, parentDoc, referenceId, isOptional);
 				string unrealType;
@@ -906,12 +1110,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				}
 
 
-				if (UNREAL_TYPES_OVERRIDES.TryGetValue(unrealType, out var overwrittenUnrealType))
-					return overwrittenUnrealType;
+				// if (UNREAL_TYPES_OVERRIDES.TryGetValue(unrealType, out var overwrittenUnrealType))
+				// 	return overwrittenUnrealType;
 				return unrealType;
 			}
 			// Handles any dictionary/map fields
-			case ("object", _, _) when schema.Reference == null && schema.AdditionalPropertiesAllowed:
+			case ("object", _, _, _) when schema.Reference == null && schema.AdditionalPropertiesAllowed:
 			{
 				if (schema.AdditionalProperties == null)
 					return UNREAL_MAP + $"<{UNREAL_STRING}, {UNREAL_STRING}>";
@@ -942,9 +1146,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					? UNREAL_OPTIONAL_MAP + $"{GetNamespacedTypeNameFromUnrealType(dataType)}" // Remove the "F" from the Unreal type when declaring an optional map
 					: UNREAL_MAP + $"<{UNREAL_STRING}, {dataType}>";
 			}
-			case ("object", _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
+			case ("object", _, _, _) when schema.Reference == null && !schema.AdditionalPropertiesAllowed:
 				throw new Exception("Object fields must either reference some other schema or must be a map/dictionary!");
-			case ("array", _, _):
+			case ("array", _, _, _):
 			{
 				var isReference = schema.Items.Reference != null;
 				var arrayTypeSchema = isReference ? schema.Items.GetEffective(parentDoc) : schema.Items;
@@ -960,54 +1164,70 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				}
 				else
 				{
-					var dataType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldRequireMaps, parentDoc, requiredSchemaHandle, arrayTypeSchema);
+					var dataType = GetUnrealTypeFromSchema(schemaNameOverlaps, fieldRequireMaps, parentDoc, fieldDeclarationHandle, arrayTypeSchema);
 					return UNREAL_ARRAY + $"<{dataType}>";
 				}
 			}
+			// Handle semantic types
+			case (_, _, _, "Cid"):
+				return isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CID : UNREAL_U_SEMTYPE_CID;
+			case (_, _, _, "Pid"):
+				return isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_PID : UNREAL_U_SEMTYPE_PID;
+			case (_, _, _, "AccountId"):
+				return isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_ACCOUNTID : UNREAL_U_SEMTYPE_ACCOUNTID;
+			case (_, _, _, "Gamertag"):
+				return isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_GAMERTAG : UNREAL_U_SEMTYPE_GAMERTAG;
+			case (_, _, _, "ContentManifestId"):
+				return isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CONTENTMANIFESTID : UNREAL_U_SEMTYPE_CONTENTMANIFESTID;
+			case (_, _, _, "ContentId"):
+				return isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CONTENTID : UNREAL_U_SEMTYPE_CONTENTID;
+			case (_, _, _, "StatsType"):
+				return isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_STATSTYPE;
 
-			case ("number", "float", _):
+			// Handle Primitive Types 
+			case ("number", "float", _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_FLOAT : UNREAL_FLOAT;
 			}
-			case ("number", "double", _):
-			case ("number", _, _):
+			case ("number", "double", _, _):
+			case ("number", _, _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_DOUBLE : UNREAL_DOUBLE;
 			}
-			case ("boolean", _, _):
+			case ("boolean", _, _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_BOOL : UNREAL_BOOL;
 			}
-			case ("string", "uuid", _):
+			case ("string", "uuid", _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_GUID : UNREAL_GUID;
 			}
-			case ("string", "byte", _):
+			case ("string", "byte", _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_BYTE : UNREAL_BYTE;
 			}
-			case ("string", _, _) when (schema?.Extensions.TryGetValue("x-beamable-object-id", out var ext) ?? false):
+			case ("string", _, _, _) when (schema?.Extensions.TryGetValue("x-beamable-object-id", out _) ?? false):
 			{
 				return isOptional ? UNREAL_OPTIONAL_STRING : UNREAL_STRING;
 			}
-			case ("System.String", _, _):
-			case ("string", _, _):
+			case ("System.String", _, _, _):
+			case ("string", _, _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_STRING : UNREAL_STRING;
 			}
-			case ("integer", "int16", _):
+			case ("integer", "int16", _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_SHORT : UNREAL_SHORT;
 			}
-			case ("integer", "int32", _):
+			case ("integer", "int32", _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_INT : UNREAL_INT;
 			}
-			case ("integer", "int64", _):
+			case ("integer", "int64", _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_LONG : UNREAL_LONG;
 			}
-			case ("integer", _, _):
+			case ("integer", _, _, _):
 			{
 				return isOptional ? UNREAL_OPTIONAL_INT : UNREAL_INT;
 			}
@@ -1021,52 +1241,83 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	public static string GetIncludeStatementForUnrealType(string unrealType)
 	{
-		if (unrealType.StartsWith(UNREAL_U_ENUM_PREFIX))
+		// First go over all non-generated first-class types
 		{
-			var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-			return $"#include \"AutoGen/Enums/{header}\"";
+			if (unrealType.StartsWith(UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE))
+				return $@"#include ""Serialization/BeamPlainTextResponseBody.h""";
+
+			// TODO: Add sem type includes here... 
+			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_CID))
+				return $@"#include ""BeamBackend/SemanticTypes/BeamCid.h""";
+
+			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_PID))
+				return $@"#include ""BeamBackend/SemanticTypes/BeamPid.h""";
+
+			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_ACCOUNTID))
+				return $@"#include ""BeamBackend/SemanticTypes/BeamAccountId.h""";
+
+			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_GAMERTAG))
+				return $@"#include ""BeamBackend/SemanticTypes/BeamGamerTag.h""";
+
+			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_CONTENTID))
+				return $@"#include ""BeamBackend/SemanticTypes/BeamContentId.h""";
+
+			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_CONTENTMANIFESTID))
+				return $@"#include ""BeamBackend/SemanticTypes/BeamContentManifestId.h""";
+
+			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_STATSTYPE))
+				return $@"#include ""BeamBackend/SemanticTypes/BeamStatsType.h""";
 		}
 
-		if (unrealType.StartsWith(UNREAL_OPTIONAL))
+		// Then, go over all generated types
 		{
-			var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-			return $"#include \"AutoGen/Optionals/{header}\"";
-		}
-
-		if (unrealType.StartsWith(UNREAL_WRAPPER_ARRAY))
-		{
-			var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-			return $"#include \"AutoGen/Arrays/{header}\"";
-		}
-
-		if (unrealType.StartsWith(UNREAL_WRAPPER_MAP))
-		{
-			var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-			return $"#include \"AutoGen/Maps/{header}\"";
-		}
-
-		if (unrealType.StartsWith(UNREAL_ARRAY))
-		{
-			var firstTemplate = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(unrealType);
-			if (MustInclude(firstTemplate))
+			if (unrealType.StartsWith(UNREAL_U_ENUM_PREFIX))
 			{
-				return GetIncludeStatementForUnrealType(firstTemplate);
+				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
+				return $"#include \"AutoGen/Enums/{header}\"";
 			}
-		}
 
-		if (unrealType.StartsWith(UNREAL_MAP))
-		{
-			var secondTemplate = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(unrealType);
-			if (MustInclude(secondTemplate))
+			if (unrealType.StartsWith(UNREAL_OPTIONAL))
 			{
-				return GetIncludeStatementForUnrealType(secondTemplate);
+				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
+				return $"#include \"AutoGen/Optionals/{header}\"";
 			}
-		}
 
-		if (MustInclude(unrealType))
-		{
-			var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-			return $"#include \"AutoGen/{header}\"";
+			if (unrealType.StartsWith(UNREAL_WRAPPER_ARRAY))
+			{
+				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
+				return $"#include \"AutoGen/Arrays/{header}\"";
+			}
+
+			if (unrealType.StartsWith(UNREAL_WRAPPER_MAP))
+			{
+				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
+				return $"#include \"AutoGen/Maps/{header}\"";
+			}
+
+			if (unrealType.StartsWith(UNREAL_ARRAY))
+			{
+				var firstTemplate = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(unrealType);
+				if (MustInclude(firstTemplate))
+				{
+					return GetIncludeStatementForUnrealType(firstTemplate);
+				}
+			}
+
+			if (unrealType.StartsWith(UNREAL_MAP))
+			{
+				var secondTemplate = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(unrealType);
+				if (MustInclude(secondTemplate))
+				{
+					return GetIncludeStatementForUnrealType(secondTemplate);
+				}
+			}
+
+			if (MustInclude(unrealType))
+			{
+				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
+				return $"#include \"AutoGen/{header}\"";
+			}
 		}
 
 		return "";
@@ -1082,10 +1333,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// We use this in order to get the correct type to pass into the serialization/deserialization templated functions that work with FBeamOptionals in Unreal-land.
 	/// </summary>
 	public static string GetNonOptionalUnrealTypeFromFieldSchema([NotNull] IReadOnlyDictionary<string, List<NamedOpenApiSchema>> schemaNameOverlaps, [NotNull] OpenApiDocument parentDoc,
-		[NotNull] OpenApiSchema fieldSchema)
+		[NotNull] OpenApiSchema fieldSchema, UnrealTypeGetFlags flags = UnrealTypeGetFlags.NeverOptional)
 	{
 		// This passes in a blank field map which means it's not possible for it to found in the fieldRequiredMaps. This means we will get the Required Version of it. 
-		return GetUnrealTypeFromSchema(schemaNameOverlaps, new Dictionary<string, bool>(), parentDoc, "", fieldSchema);
+		return GetUnrealTypeFromSchema(schemaNameOverlaps, new Dictionary<string, bool>(), parentDoc, "", fieldSchema, UnrealTypeGetFlags.NeverOptional | flags);
 	}
 
 
