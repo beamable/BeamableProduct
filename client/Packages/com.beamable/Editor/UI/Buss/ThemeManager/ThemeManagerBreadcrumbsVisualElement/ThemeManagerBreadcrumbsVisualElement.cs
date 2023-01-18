@@ -19,6 +19,8 @@ namespace Beamable.Editor.UI.Components
 				{ThemeModel.PropertyDisplayFilter.IgnoreOverridden, "Ignore Overriden"}
 			};
 
+		private Button _sceneViewToggle;
+
 		public ThemeManagerBreadcrumbsVisualElement(ThemeManagerModel model) : base(nameof(ThemeManagerBreadcrumbsVisualElement))
 		{
 			Model = model;
@@ -33,6 +35,8 @@ namespace Beamable.Editor.UI.Components
 			_propertiesFilterLabel = _propertiesFilter.Q<Label>();
 			_propertiesFilter.clickable.clicked -= HandlePropertiesFilterButton;
 			_propertiesFilter.clickable.clicked += HandlePropertiesFilterButton;
+
+			_sceneViewToggle = Root.Q<Button>("sceneViewToggle");
 			UpdateServicesFilterText(Model.DisplayFilter);
 		}
 

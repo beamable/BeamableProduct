@@ -10,6 +10,7 @@ using UnityEditor.SceneManagement;
 using UnityEditor.Experimental.SceneManagement;
 #endif
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 using Object = UnityEngine.Object;
 
@@ -17,6 +18,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class ThemeManagerModel : ThemeModel
 	{
+		private readonly BussPrefabSceneManager _sceneManager;
 		public override BussElement SelectedElement { get; set; }
 
 		public string SelectedElementId =>
@@ -69,8 +71,9 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
-		public ThemeManagerModel()
+		public ThemeManagerModel(BussPrefabSceneManager sceneManager)
 		{
+			_sceneManager = sceneManager;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Selection.selectionChanged += OnSelectionChanged;
 			
@@ -248,11 +251,23 @@ namespace Beamable.Editor.UI.Buss
 		private void OnHierarchyChanged()
 		{
 			FoundElements.Clear();
-
 			var currentPrefab = PrefabStageUtility.GetCurrentPrefabStage();
 
-			if (currentPrefab == null)
+			
+			if (_sceneManager.TryGetPrefabScene(out var scene))
 			{
+				var roots = scene.GetRootGameObjects();
+				foreach (var root in roots)
+				{
+					Traverse(root, 0);
+				}
+			} else if (currentPrefab == null)
+			{
+				// var roots = SceneManager.GetActiveScene().GetRootGameObjects();
+				// foreach (var root in roots)
+				// {
+				// 	Traverse(root, 0);
+				// }
 				foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
 				{
 					GameObject gameObject = (GameObject)foundObject;

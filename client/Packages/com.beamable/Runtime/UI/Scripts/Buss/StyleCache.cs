@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
@@ -23,6 +24,13 @@ namespace Beamable.UI.Buss
 		{
 			// private constructor
 		}
+
+		public void Erase()
+		{
+			_ruleToElements = new Dictionary<BussStyleRule, HashSet<BussElement>>();
+			_ruleToKeyToElements = new Dictionary<BussStyleRule, Dictionary<string, HashSet<BussElement>>>();
+			_elementToRules = new Dictionary<BussElement, HashSet<BussStyleRule>>();
+		}
 		
 		public IEnumerable<BussElement> GetElementsReferencingRule(BussStyleRule rule, string key)
 		{
@@ -38,6 +46,10 @@ namespace Beamable.UI.Buss
 
 			foreach (var elem in elements.ToList())
 			{
+				if (!elem)
+				{
+					
+				}
 				yield return elem;
 			}
 		}
@@ -104,6 +116,12 @@ namespace Beamable.UI.Buss
 				if (Cache._ruleToElements.TryGetValue(Rule, out var elements))
 				{
 					elements.Remove(Element);
+				}
+
+				if (Cache._elementToRules.TryGetValue(Element, out var rules))
+				{
+					rules.Clear();
+					Cache._elementToRules.Remove(Element);
 				}
 
 				if (Cache._ruleToKeyToElements.TryGetValue(Rule, out var keyedElements))
