@@ -11,7 +11,7 @@ namespace Beamable.Common.Content
 		[ContentField("namespace")]
 		public string Namespace;
 	}
-	
+
 	[System.Serializable]
 	[Agnostic]
 	public class OptionalExternalIdentity : Optional<ExternalIdentity> { }

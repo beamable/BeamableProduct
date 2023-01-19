@@ -368,7 +368,7 @@ namespace Beamable
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
 		{
-			#if UNITY_EDITOR
+#if UNITY_EDITOR
 			if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
 			{
 				// if the context is inside the editor, and something is trying to 
@@ -378,8 +378,8 @@ namespace Beamable
 				// together, since the application is exiting playmode anyway.
 				return;
 			}
-			#endif
-			
+#endif
+
 			PlayerCode = playerCode;
 			_isStopped = false;
 
@@ -632,8 +632,8 @@ namespace Beamable
 				// Debug.Log("Will get user when reconnect...");
 				// _connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
 			}
-			
-			
+
+
 			AuthorizedUser.Value = user;
 		}
 
@@ -845,7 +845,7 @@ namespace Beamable
 		/// </code>
 		/// </summary>
 		public Promise<BeamContext> Instance => OnReady?.Map(_ => this);
-		
+
 		INotificationService IPlatformService.Notification => _notification;
 		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
 		IConnectivityService IPlatformService.ConnectivityService => _connectivityService;

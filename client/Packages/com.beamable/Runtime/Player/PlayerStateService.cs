@@ -17,7 +17,7 @@ namespace Beamable.Player
 			_fileSystem = fileSystem;
 			_requester = requester;
 		}
-		
+
 		public void Save<T>(string key, T content)
 		{
 			var json = JsonUtility.ToJson(content);

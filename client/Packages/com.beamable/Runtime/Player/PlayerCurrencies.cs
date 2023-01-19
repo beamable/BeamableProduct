@@ -49,7 +49,7 @@ namespace Beamable.Player
 		/// </summary>
 		[NonSerialized]
 		public CurrencyContent Content;
-		
+
 		/// <summary>
 		/// Currencies may have a set of properties in dictionary format.
 		/// To edit this value, use the <see cref="PlayerInventory.Update()"/> function
@@ -102,7 +102,7 @@ namespace Beamable.Player
 		private readonly CurrencyRef _rootRef;
 		private readonly PlayerInventory _inventory;
 		public Promise OnReady;
-		
+
 		/// <summary>
 		/// The scope defines which currencies in the inventory this group will be able to view.
 		/// If the scope is "currency", then this group will view every currency in the player inventory.
@@ -117,13 +117,13 @@ namespace Beamable.Player
 			_inventory = inventory;
 			OnReady = Refresh(); // automatically refresh..
 		}
-		
+
 		public void Notify()
 		{
 			var data = _inventory.LocalCurrencies.GetAll(RootScope);
 			SetData(data);
 		}
-		
+
 		protected override async Promise PerformRefresh()
 		{
 			await _inventory.Refresh(RootScope);

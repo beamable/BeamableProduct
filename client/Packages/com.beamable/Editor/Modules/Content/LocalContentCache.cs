@@ -36,7 +36,7 @@ namespace Beamable.Editor.Content
 			{
 				return null;
 			}
-			
+
 			var content = (ContentObject)AssetDatabase.LoadAssetAtPath(entry.assetPath, _contentType);
 			var delayPromise = new Promise();
 			IEnumerator Delay()

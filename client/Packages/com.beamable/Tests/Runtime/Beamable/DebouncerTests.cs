@@ -18,7 +18,7 @@ namespace Beamable.Tests.Runtime
 			GameObject = new GameObject("mock-gob");
 		}
 	}
-	
+
 	public class DebouncerTests
 	{
 		private Debouncer _debouncer;
@@ -46,24 +46,24 @@ namespace Beamable.Tests.Runtime
 			var y = 0;
 			for (var i = 0; i < 10; i++)
 			{
-				_debouncer.SetTimeout(() => { x++;}).Then(_ =>
-				{
-					Assert.AreEqual(1, x);
-					y++;
-				});
+				_debouncer.SetTimeout(() => { x++; }).Then(_ =>
+				 {
+					 Assert.AreEqual(1, x);
+					 y++;
+				 });
 			}
 			yield return new WaitForSecondsRealtime(.5f);
 			Assert.AreEqual(1, x);
 			Assert.AreEqual(10, y);
 
-			_debouncer.SetTimeout(() => { x++;}).Then(_ => y++);
+			_debouncer.SetTimeout(() => { x++; }).Then(_ => y++);
 			yield return new WaitForSecondsRealtime(.5f);
 
 			Assert.AreEqual(2, x);
 			Assert.AreEqual(11, y);
 
 		}
-		
+
 		[UnityTest]
 		public IEnumerator DebounceTest2()
 		{
@@ -81,11 +81,11 @@ namespace Beamable.Tests.Runtime
 				});
 			}
 			yield return new WaitForSecondsRealtime(.5f);
-			
+
 			Assert.AreEqual(1, callCount);
 			Assert.AreEqual(10, x);
 		}
-		
+
 		[UnityTest]
 		public IEnumerator DebounceTest_AsyncStuff()
 		{
@@ -95,16 +95,16 @@ namespace Beamable.Tests.Runtime
 			}
 
 			yield return new WaitForSecondsRealtime(1);
-			
+
 			Promise Work()
 			{
 				workCount++;
 				var p = new Promise().WaitForSeconds(.2f, _coroutine).ToPromise();
 				return p;
 			}
-			
-			Assert.AreEqual(1,workCount);
+
+			Assert.AreEqual(1, workCount);
 		}
-		
+
 	}
 }

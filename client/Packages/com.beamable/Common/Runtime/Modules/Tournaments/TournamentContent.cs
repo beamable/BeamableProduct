@@ -186,7 +186,7 @@ namespace Beamable.Common.Tournaments
 		[SerializeField]
 		[TimeSpanDisplay(nameof(cycleDuration))]
 		private int cycleText;
-		
+
 		[Tooltip("ISO duration string. How long does each tournament cycle last? Default is 1 Day.")]
 		[MustBeTimeSpanDuration]
 		public string cycleDuration = "P1D";

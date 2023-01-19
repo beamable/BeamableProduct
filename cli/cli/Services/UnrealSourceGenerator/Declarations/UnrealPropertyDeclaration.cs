@@ -79,7 +79,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string ARRAY_U_PROPERTY_DESERIALIZE =
 		$@"UBeamJsonUtils::DeserializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(Bag->GetArrayField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
-	
+
 	public const string ARRAY_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeArray<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -91,7 +91,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string MAP_U_PROPERTY_DESERIALIZE =
 		$@"UBeamJsonUtils::DeserializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(Bag->GetObjectField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
-	
+
 	public const string MAP_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeMap<₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -103,13 +103,13 @@ public struct UnrealPropertyDeclaration
 
 	public const string SEMTYPE_U_PROPERTY_DESERIALIZE =
 		$@"UBeamJsonUtils::DeserializeSemanticType<₢{nameof(SemTypeSerializationType)}₢>(Bag->TryGetField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢, OuterOwner);";
-	
+
 	public const string OPTIONAL_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeOptional<₢{nameof(NonOptionalTypeName)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), &₢{nameof(PropertyName)}₢, Serializer);";
 
 	public const string OPTIONAL_U_PROPERTY_DESERIALIZE =
 		$@"UBeamJsonUtils::DeserializeOptional<₢{nameof(NonOptionalTypeName)}₢>(""₢{nameof(RawFieldName)}₢"", Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
-	
+
 	public const string OPTIONAL_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeOptional<₢{nameof(NonOptionalTypeName)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), &₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -121,7 +121,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string OPTIONAL_WRAPPER_U_PROPERTY_DESERIALIZE =
 		$@"UBeamJsonUtils::DeserializeOptional<₢{nameof(NonOptionalTypeName)}₢, ₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢>(""₢{nameof(RawFieldName)}₢"", Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
-	
+
 	public const string OPTIONAL_WRAPPER_SEMTYPE_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeOptional<₢{nameof(NonOptionalTypeName)}₢, ₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(TEXT(""₢{nameof(RawFieldName)}₢""), &₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -188,7 +188,7 @@ public struct UnrealPropertyDeclaration
 		// Semantic types serialization
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_SERIALIZE;
-		
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_SERIALIZE;
 
@@ -255,7 +255,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_GUID))
 			return GUID_U_PROPERTY_DESERIALIZE;
-		
+
 		// Semantic types serialization
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_DESERIALIZE;

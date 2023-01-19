@@ -46,7 +46,7 @@ namespace Beamable.Common.Dependencies
 			{
 				builder.AddScoped<ScopedServiceStorage<TStorageLayer>>();
 			}
-			
+
 			return builder;
 		}
 	}
@@ -55,7 +55,7 @@ namespace Beamable.Common.Dependencies
 	{
 		void ReceiveStorageHandle(StorageHandle<T> handle);
 	}
-	
+
 	public class StorageHandle<T>
 	{
 		private readonly StorageWrapper<T> _wrapper;
@@ -64,7 +64,7 @@ namespace Beamable.Common.Dependencies
 		{
 			_wrapper = wrapper;
 		}
-		
+
 		/// <summary>
 		/// manually save the content so that when this service is reloaded next time, it will have the latest data.
 		/// </summary>
@@ -81,7 +81,7 @@ namespace Beamable.Common.Dependencies
 			_wrapper.Storage.Apply(_wrapper.Service);
 		}
 	}
-	
+
 	public class StorageWrapper<T> : IBeamableDisposable
 	{
 		public IServiceStorage Storage { get; }
@@ -160,13 +160,13 @@ namespace Beamable.Common.Dependencies
 	{
 		private readonly TStorageLayer _storageLayer;
 
-		protected ServiceStorage( TStorageLayer storageLayer)
+		protected ServiceStorage(TStorageLayer storageLayer)
 		{
 			_storageLayer = storageLayer;
 		}
 
 		protected abstract string GetKey<T>();
-		
+
 		public void Save<T>(T service)
 		{
 			if (service is IServiceStorable storable)
