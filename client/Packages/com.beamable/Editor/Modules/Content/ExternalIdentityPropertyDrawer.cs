@@ -1,4 +1,4 @@
-﻿using Beamable.Common.Api.Auth;
+﻿using Beamable.Common;
 using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;

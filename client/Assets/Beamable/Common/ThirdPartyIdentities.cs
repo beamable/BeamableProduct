@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Api.Auth;
+﻿using Beamable.Common;
+using Beamable.Common.Api.Auth;
 
 // TODO: this one should not be a part of final push/merge, this is the client/customer side implementation
 namespace Beamable.EasyFeature.GameSpecificPlayerSystemArchitecture
