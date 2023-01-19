@@ -35,6 +35,10 @@ namespace Beamable.Common.Inventory
 
 		[Tooltip(ContentObject.TooltipClientPermission1)]
 		public ClientPermissions clientPermission;
+		
+		[ContentField("external")]
+		[Tooltip(TooltipFederation)]
+		public OptionalFederation federation;
 	}
 
 	[Serializable]
