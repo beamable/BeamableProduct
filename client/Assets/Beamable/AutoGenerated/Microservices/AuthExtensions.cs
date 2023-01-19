@@ -15,7 +15,6 @@ namespace Beamable.Server.Clients
 {
 	public static class AuthExtensions
 	{
-
 		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution=null)
 			where T : IThirdPartyCloudIdentity
 		{
@@ -24,7 +23,6 @@ namespace Beamable.Server.Clients
 			return ctx.Api.AuthService.AttachIdentity(token, client.ServiceName, identity.UniqueName, solution);
 		}
 
-		
 		public static Promise<DetachExternalIdentityResponse> DetachIdentity<T>(this ISupportsFederatedLogin<T> client, string userId)
 			where T : IThirdPartyCloudIdentity
 		{
