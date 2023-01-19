@@ -15,9 +15,9 @@ namespace Beamable.Editor.Tests.Content
 			var valid = MustBeTimeSpanDuration.TryParseTimeSpan(period, out _, out _);
 			Assert.IsTrue(valid);
 		}
-		
+
 		[TestCase("tuna")]
-		[TestCase("P72H")] 
+		[TestCase("P72H")]
 		public void InValidPeriods(string period)
 		{
 			var valid = MustBeTimeSpanDuration.TryParseTimeSpan(period, out _, out _);

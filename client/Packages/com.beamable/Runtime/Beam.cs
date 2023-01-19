@@ -50,6 +50,7 @@ using Beamable.Experimental.Api.Social;
 using Beamable.Player;
 using Beamable.Reflection;
 using Beamable.Sessions;
+using Beamable.Connection;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
@@ -226,6 +227,10 @@ namespace Beamable
 				provider => provider.GetService<PubnubSubscriptionManager>());
 			DependencyBuilder.AddSingleton<INotificationService>(
 				provider => provider.GetService<NotificationService>());
+
+			DependencyBuilder.AddSingleton<IBeamableConnection, WebSocketConnection>();
+			DependencyBuilder.AddSingleton<BeamableSubscriptionManager>();
+
 			DependencyBuilder.AddSingleton<ApiServices>();
 
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
@@ -239,7 +244,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerCurrencyGroup>(p => p.GetService<PlayerInventory>().Currencies);
 			DependencyBuilder.AddScoped<PlayerSocial>();
 			DependencyBuilder.AddSingleton<Debouncer>();
-			
+
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
@@ -252,8 +257,8 @@ namespace Beamable
 
 
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder, RegistrationOrigin.RUNTIME);
-			
-			
+
+
 #if UNITY_EDITOR
 			// TODO: in a runtime game, we should save the state if the game is crashing...
 			UnityEditor.EditorApplication.playModeStateChanged += async (state) =>
