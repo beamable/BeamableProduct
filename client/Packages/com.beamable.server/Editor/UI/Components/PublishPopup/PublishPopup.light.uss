@@ -3,10 +3,14 @@
 }
 
 #logContainer > LogVisualElement {
-    background-color: #d9d9d9;
+    background-color: #C8C8C8;
 }
 
 #userDescription > TextInput {
+    background-color: #d9d9d9;
+}
+
+#separator {
     background-color: #d9d9d9;
 }
 
@@ -14,4 +18,24 @@
     background-color: rgba(0,0,0,0);
     border-color: #000000;
     color: #000000;
+}
+
+.HeaderSeparatorImage {
+    background-color: #a5a6a6;
+}
+
+#infoCardGradientLeft {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/left-to-right-gradient.light.png");
+}
+
+#infoCardGradientRight {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/right-to-left-gradient.light.png");
+}
+
+.infoCardsBorder {
+    background-color: #cbcbcb;
+}
+
+#clear {
+    background-color: #d9d9d9;
 }

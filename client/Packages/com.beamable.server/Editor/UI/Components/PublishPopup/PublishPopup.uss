@@ -25,28 +25,31 @@
 }
 
 #infoCardsBody {
-    width: 250px;
+    flex-grow: 1;
     height: 150px;
+    position: absolute;
 }
 
 #infoCards {
-    right: 25px;
     flex-direction: row;
     flex-grow: 1;
-    width: 2000px;
     align-items: center;
+    left: 300px;
+}
+
+#infoCardShowArea {
+    width: 400px;
+    height: 150px;
 }
 
 .infoCardsGradient {
-    width: 100px;
+    width: 140px;
     height: 150px;
-    background-color: #3c3c3c;
 }
 
 .infoCardsBorder {
     flex-grow: 1;
     height: 150px;
-    background-color: #3c3c3c;
 }
 
 #infoDetails {
@@ -97,7 +100,6 @@
     margin-top: 10px;
     margin-bottom: 5px;
     height: 10px;
-    background-color: #d9d9d9;
 }
 
 #enableC {
@@ -135,21 +137,20 @@
 
 #logContainer {
     height: 200px;
-    padding-left: 30px;
-    padding-right: 30px;
+    padding-left: 20px;
+    padding-right: 20px;
     padding-bottom: 10px;
 }
 
 #logContainer > LogVisualElement {
     flex-grow: 1;
-    background-color: #515253;
 }
 
 #bottomBarContainer {
     padding-top: 10px;
     padding-bottom: 10px;
-    padding-left: 28px;
-    padding-right: 28px;
+    padding-left: 17px;
+    padding-right: 17px;
     flex-direction: row;
     height: 50px;
 }
@@ -166,29 +167,12 @@
     height: 30px;
 }
 
-#userDescription > TextInput {
-    background-color: #515253;
-    border-left-color: #9a9b9b;
-    border-right-color: #9a9b9b;
-    border-top-color: #9a9b9b;
-    border-bottom-color: #9a9b9b;
-}
-
-#cancelBtn > TemplateContainer > Button {
-    background-color: rgba(0,0,0,0);
-    border-left-color: #c0c0c0;
-    border-right-color: #c0c0c0;
-    border-top-color: #c0c0c0;
-    border-bottom-color: #c0c0c0;
-}
-
 .card {
     height: 120px;
     width: 220px;
     margin-left: 40px;
     margin-right: 40px;
     border-radius: 2px;
-    background-color: #565858;
 }
 
 .column {
@@ -201,15 +185,19 @@
 .HeaderSeparatorImage {
     height: 20px;
     width: 2px;
-    background-color: #a5a6a6;
 }
 
 .error {
     color: #d93737;
 }
 
-.hidden {
+LoadingBarElement.hidden {
     height: 0px;
     min-height: 0px;
     max-height: 0px;
+}
+
+#infoCardStep4.error {
+    border-width: 2;
+    border-color: #d93737;
 }

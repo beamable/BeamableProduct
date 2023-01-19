@@ -6,7 +6,6 @@ using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Contexts;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -20,6 +19,36 @@ using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
+	internal class ServicePublishStateAnimator
+	{
+		private readonly VisualElement _animatedElement;
+		private readonly int _offset = -300;
+
+		public ServicePublishStateAnimator(VisualElement animatedElement)
+		{
+			_animatedElement = animatedElement;
+		}
+
+		public void Animate(ServicePublishState state, int duration = 500)
+		{
+			var endValue = Vector3.zero;
+			switch (state)
+			{
+				case ServicePublishState.InProgress:
+					endValue = new Vector3(_offset*1, 0, 0);
+					break;
+				case ServicePublishState.Verifying:
+					endValue = new Vector3(_offset*2, 0, 0);
+					break;
+				case ServicePublishState.Failed:
+				case ServicePublishState.Published:
+					endValue = new Vector3(_offset*3, 0, 0);
+					break;
+			}
+			_animatedElement.experimental.animation.Position(endValue, duration);
+		}
+	}
+	
 	public class PublishPopup : MicroserviceComponent
 	{
 		public new class UxmlFactory : UxmlFactory<PublishPopup, UxmlTraits> { }
@@ -69,6 +98,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		
 		private List<IEntryModel> _allUnarchivedServices;
 
+		private readonly Color _infoColor = new Color(0f, 146f / 255, 255f / 255);
+		private readonly Color _errorColor = new Color(217f / 255, 55f / 255, 55f / 255);
+		private ServicePublishStateAnimator _serviceServicePublishStateAnimator;
+
 		public PublishPopup() : base(nameof(PublishPopup)) { }
 		public override void Refresh()
 		{
@@ -87,6 +120,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 
+			_serviceServicePublishStateAnimator = new ServicePublishStateAnimator(Root.Q("infoCards"));
+
 			serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
 			serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
@@ -97,7 +132,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
 			serviceRegistry.OnProgressInfoUpdated -= HandleProgressInfoUpdated;
 			serviceRegistry.OnProgressInfoUpdated += HandleProgressInfoUpdated;
-			
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -117,11 +151,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_infoTitle = Root.Q<Label>("infoTitle");
 			_infoTitle.Add(new Label("Publish services to "));
-			_infoTitle.Add(new Label($"{Context.CurrentRealm.DisplayName} ") {style = {color = new StyleColor(new Color(66f/255, 200f/255, 220f/255))}});
+			_infoTitle.Add(new Label($"{Context.CurrentRealm.DisplayName} ") {style = {color = new StyleColor(_infoColor)}});
 			_infoTitle.Add(new Label("realm"));
 
 			_infoDescription = Root.Q<Label>("infoDescription");
-			_infoDescription.style.color = new StyleColor(new Color(66f / 255, 200f / 255, 220f / 255));
+			_infoDescription.style.color = new StyleColor(_infoColor);
 			_infoDescription.text = "Select services to publish";
 			
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(_allUnarchivedServices.Count);
@@ -217,12 +251,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_logger.Refresh();
 		} 
 		private float CalculateProgress() => _servicesToPublish.Count == 0 ? 0f : _servicesToPublish.Average(x => x.LoadingBar.Progress);
+		
 		private static string GetPublishedKey(string serviceName) => string.Format(MicroserviceReflectionCache.Registry.SERVICE_PUBLISHED_KEY, serviceName);
 
 		private void HandleProgressInfoUpdated(string message, bool isError)
 		{
 			if (isError)
-				_infoDescription.style.color = new StyleColor(new Color(217f / 255, 55f / 255, 55f / 255));
+				_infoDescription.style.color = new StyleColor(_errorColor);
 			_infoDescription.text = message;
 		}
 		private void HandlePrimaryButtonClicked()
@@ -240,9 +275,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 
 			element?.UpdateStatus(state);
+			_serviceServicePublishStateAnimator.Animate(state);
+			
 			switch (state)
 			{
 				case ServicePublishState.Failed:
+					Root.Q<Image>("infoCardStep4").AddToClassList("error");
 					_primarySubmitButton.Enable();
 					_mainLoadingBar.UpdateProgress(0, failed: true);
 					foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
@@ -264,6 +302,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandleDeploySuccess(ManifestModel _, int __) => HandleDeployEnded(true);
 		private void HandleDeployEnded(bool success)
 		{
+			_serviceServicePublishStateAnimator.Animate(success ? ServicePublishState.Published : ServicePublishState.Failed);
 			_primarySubmitButton.SetText("Close");
 			_primarySubmitButton.Enable();
 			_primarySubmitButton.SetAsFailure(!success);
