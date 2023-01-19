@@ -609,7 +609,27 @@ namespace Beamable
 			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 			var requester = ServiceScope.GetService<PlatformRequester>();
-			var tokenRes = await authService.Login(email, password, customerScoped: true);
+
+			TokenResponse tokenRes = null;
+			try
+			{
+				tokenRes = await authService.Login(email, password, customerScoped: true);
+			}
+			catch (RequesterException e)
+			{
+				if (e.Status == 400) // project is archived
+				{
+					// reset pids and try again
+					requester.Pid = null;
+					if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
+						ConfigDatabase.Reset(Features.Config.PID_KEY);
+					EditorPrefs.DeleteKey(Features.Config.LAST_PID_KEY);
+					
+					await Login(email, password);
+					return;
+				}
+			}
+			
 			var token = new AccessToken(accessTokenStorage, requester.Cid, pid, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
 			await Login(token, pid);
@@ -660,6 +680,10 @@ namespace Beamable
 					{
 						var realms = await realmService.GetRealms(lastPid);
 						realm = realms.FirstOrDefault(rv => rv.Pid == lastPid);
+						if (realm != null && realm.Archived)
+						{
+							realm = null;
+						}
 					}
 				}
 
