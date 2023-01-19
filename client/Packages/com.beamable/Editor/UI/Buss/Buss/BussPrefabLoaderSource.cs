@@ -1,3 +1,5 @@
+using Beamable.Common.Content;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -10,6 +12,8 @@ namespace Beamable.Editor.UI.Buss
 	public class BussPrefabLoaderSource : ScriptableObject
 	{
 		public List<BussPrefabLoaderElement> easyFeatures;
+		public List<BussComponentCategoryLoaderElement> categories;
+
 	}
 
 	public class BussPrefabLoaderSourceProvider
@@ -24,6 +28,31 @@ namespace Beamable.Editor.UI.Buss
 	public class BussPrefabLoaderElement
 	{
 		public string label;
-		public GameObject prefab;
+		public GameObject prefab; // TODO: could this be a specific type of a parent easy-feature?
+	}
+
+	[Serializable]
+	public class BussComponentCategoryLoaderElement
+	{
+		public string category;
+		public OptionalInt minComponentSpaceWidth;
+		public List<BussComponentLoaderElement> components;
+	}
+	
+	[Serializable]
+	public class BussComponentLoaderElement
+	{
+		public string label;
+		public BussElement prefab;
+		public OptionalInt forcedWidth;
+		public OptionalInt forcedHeight;
+		public BussComponentLoaderElementVariant[] extraVariants;
+	}
+
+	[Serializable]
+	public class BussComponentLoaderElementVariant
+	{
+		public string[] classesToAdd;
+		public string[] classesToRemove;
 	}
 }

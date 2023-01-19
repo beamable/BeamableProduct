@@ -147,7 +147,7 @@ namespace Beamable.Server.Editor
 			LatestCodeHandles.Sort((h1, h2) => string.Compare(h1.ServiceName, h2.ServiceName, StringComparison.Ordinal));
 
 			var tasks = new List<Task>(LatestCodeHandles.Count);
-			tasks.AddRange(LatestCodeHandles.Select((beamServiceCodeHandle, index) => Task.Factory.StartNew(() =>
+			tasks.AddRange(LatestCodeHandles.ToList().Select((beamServiceCodeHandle, index) => Task.Factory.StartNew(() =>
 			{
 				var path = beamServiceCodeHandle.CodeDirectory;
 				var files = Directory.GetFiles(path)
