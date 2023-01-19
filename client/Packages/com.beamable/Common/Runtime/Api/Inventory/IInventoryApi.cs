@@ -661,6 +661,14 @@ namespace Beamable.Common.Api.Inventory
 	{
 		public SerializedDictionaryStringToCurrencyPropertyList() { }
 
+		public SerializedDictionaryStringToCurrencyPropertyList(SerializedDictionaryStringToCurrencyPropertyList other)
+		{
+			foreach (var val in other)
+			{
+				Add(val.Key, new CurrencyPropertyList(val.Value.Properties));
+			}
+		}
+
 		public SerializedDictionaryStringToCurrencyPropertyList(IDictionary<string, List<CurrencyProperty>> existing)
 		{
 			foreach (var kvp in existing)

@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
 using Beamable.Content;
 using Beamable.Coroutines;
@@ -26,6 +27,9 @@ namespace Beamable.Editor.Content
 				builder.ReplaceSingleton<IManifestResolver, LocalManifestResolver>();
 				builder.ReplaceSingleton<IContentCacheFactory, LocalContentCacheFactory>();
 				builder.AddSingleton<DefaultContentCacheFactory>();
+				builder.AddSingleton<IValidationContext>(p => p.GetService<ValidationContext>());
+				builder.AddSingleton<ValidationContext>();
+				builder.AddSingleton<ContentDatabase>();
 
 			}
 		}
@@ -33,11 +37,13 @@ namespace Beamable.Editor.Content
 
 	public class LocalContentCacheFactory : IContentCacheFactory
 	{
+		private readonly IDependencyProvider _provider;
 		private readonly CoroutineService _coroutineService;
 		private readonly ContentConfiguration _config;
 		private readonly IContentCacheFactory _defaultFactory;
 		public LocalContentCacheFactory(IDependencyProvider provider, CoroutineService coroutineService, ContentConfiguration config)
 		{
+			_provider = provider;
 			_coroutineService = coroutineService;
 			_config = config;
 			_defaultFactory = provider.GetService<DefaultContentCacheFactory>();
@@ -53,7 +59,7 @@ namespace Beamable.Editor.Content
 			{
 				return _defaultFactory.CreateCache(service, manifestId, contentType);
 			}
-			return new LocalContentCache(contentType, _coroutineService, _config);
+			return new LocalContentCache(contentType, _coroutineService, _config, _provider.GetService<ContentDatabase>());
 		}
 	}
 

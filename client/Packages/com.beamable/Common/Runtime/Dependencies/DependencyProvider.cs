@@ -59,7 +59,7 @@ namespace Beamable.Common.Dependencies
 	/// </summary>
 	public interface IDependencyProviderScope : IDependencyProvider
 	{
-		
+
 		/// <summary>
 		/// Give some type, try to find the service <see cref="DependencyLifetime"/> for the type.
 		/// If the service isn't registered, then the method will return false.
@@ -158,7 +158,7 @@ namespace Beamable.Common.Dependencies
 			Singletons = builder.SingletonServices.ToDictionary(s => s.Interface);
 		}
 
-		
+
 		public bool TryGetServiceLifetime<T>(out DependencyLifetime lifetime)
 		{
 
@@ -188,7 +188,7 @@ namespace Beamable.Common.Dependencies
 				return Parent.TryGetServiceLifetime<T>(out lifetime);
 			}
 		}
-		
+
 		public T GetService<T>()
 		{
 			return (T)GetService(typeof(T));
@@ -293,8 +293,8 @@ namespace Beamable.Common.Dependencies
 				}
 			}
 
-			DisposeServices(SingletonCache.Values);
-			DisposeServices(ScopeCache.Values);
+			DisposeServices(SingletonCache.Values.Distinct());
+			DisposeServices(ScopeCache.Values.Distinct());
 
 			await Promise.Sequence(disposalPromises);
 

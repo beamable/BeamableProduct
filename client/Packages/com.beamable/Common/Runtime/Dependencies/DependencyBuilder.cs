@@ -9,10 +9,10 @@ namespace Beamable.Common.Dependencies
 	{
 		Unknown,
 		Transient,
-		Scoped, 
+		Scoped,
 		Singleton
 	}
-	
+
 	/// <summary>
 	/// The <see cref="IDependencyBuilder"/> is part of the Beamable dependency injection system.
 	/// It is used to describe a set of services that <i>will</i> exist, but the builder never actually creates any service instance.
@@ -561,12 +561,21 @@ namespace Beamable.Common.Dependencies
 			return this;
 		}
 
-		private TImpl Instantiate<TImpl>(IDependencyProvider provider)
+		/// <inheritdoc cref="Instantiate"/>
+		public static TImpl Instantiate<TImpl>(IDependencyProvider provider)
 		{
 			return (TImpl)Instantiate(typeof(TImpl), provider);
 		}
 
-		private object Instantiate(Type type, IDependencyProvider provider)
+		/// <summary>
+		/// Create an instance of the given type by using the dependencies available in the given <see cref="IDependencyProvider"/>
+		/// </summary>
+		/// <param name="type"></param>
+		/// <param name="provider"></param>
+		/// <returns>
+		/// </returns>
+		/// <exception cref="Exception"></exception>
+		public static object Instantiate(Type type, IDependencyProvider provider)
 		{
 			// Gets all constructors
 			var constructors = type.GetConstructors();
