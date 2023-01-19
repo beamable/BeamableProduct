@@ -19,7 +19,10 @@ namespace Beamable.UI.Buss
 				_hasImage = true;
 			}
 
-			_image.Style = Style.GetCombinedStyle();
+			var combined = Style.GetCombinedStyle();
+			base.ApplyRectStyle(combined);
+			
+			_image.Style = combined;
 		}
 	}
 }

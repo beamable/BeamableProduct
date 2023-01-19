@@ -22,6 +22,8 @@ namespace Beamable.UI.Buss
 
 			if (Style == null) return;
 
+			base.ApplyRectStyle(Style);
+			
 			// BASE
 			_text.font = BussStyle.Font.Get(Style).FontAsset;
 			_text.fontSize = BussStyle.FontSize.Get(Style).FloatValue;

@@ -20,6 +20,8 @@ namespace Beamable.UI.Buss
 					return new Vector2BussPropertyVisualElement(vector2BussProperty);
 				case SingleColorBussProperty colorProperty:
 					return new ColorBussPropertyVisualElement(colorProperty);
+				case RectTransformProperty rectProperty:
+					return new RectTransformBussPropertyVisualElement(rectProperty);
 				case VertexColorBussProperty vertexColorProperty:
 					return new VertexColorBussPropertyVisualElement(vertexColorProperty);
 				case TextAlignmentOptionsBussProperty textAlignmentProperty:
