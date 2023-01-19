@@ -46,10 +46,6 @@ namespace Beamable.UI.Buss
 
 			foreach (var elem in elements.ToList())
 			{
-				if (!elem)
-				{
-					
-				}
 				yield return elem;
 			}
 		}

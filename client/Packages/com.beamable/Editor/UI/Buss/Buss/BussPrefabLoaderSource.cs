@@ -28,7 +28,7 @@ namespace Beamable.Editor.UI.Buss
 	public class BussPrefabLoaderElement
 	{
 		public string label;
-		public GameObject prefab; // TODO: could this be a specific type of a parent easy-feature?
+		public GameObject prefab; 
 	}
 
 	[Serializable]
@@ -46,13 +46,6 @@ namespace Beamable.Editor.UI.Buss
 		public BussElement prefab;
 		public OptionalInt forcedWidth;
 		public OptionalInt forcedHeight;
-		public BussComponentLoaderElementVariant[] extraVariants;
 	}
 
-	[Serializable]
-	public class BussComponentLoaderElementVariant
-	{
-		public string[] classesToAdd;
-		public string[] classesToRemove;
-	}
 }

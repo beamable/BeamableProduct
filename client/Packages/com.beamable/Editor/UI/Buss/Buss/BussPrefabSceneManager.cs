@@ -6,42 +6,11 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Tilemaps;
-using UnityEngine.U2D;
 using UnityEngine.UI;
 
 namespace Beamable.Editor.UI.Buss
 {
-	public class BussHelper
-	{
-		[MenuItem("BEAM_TEST/OPEN")]
-		public static void OpenScene()
-		{
-			var srvc = BeamEditorContext.Default.ServiceScope.GetService<BussPrefabSceneManager>();
-			srvc.OpenPrefabScene();
-		}
-		
-		[MenuItem("BEAM_TEST/TOGGLE")]
-		public static void Toggle()
-		{
-			var srvc = BeamEditorContext.Default.ServiceScope.GetService<BussPrefabSceneManager>();
-			srvc.TogglePrefabScene();
-			
-		}
-	}
 	
-	[InitializeOnLoad]
-	public class PointLabelHandlersEditor : UnityEditor.Editor
-	{
-		private static bool _someToggle;
- 
-		static PointLabelHandlersEditor()
-		{
-		}
- 
-
-	}
-
 	public class BussStage : PreviewSceneStage
 	{
 		public BussPrefabLoaderSource source;
@@ -116,8 +85,6 @@ namespace Beamable.Editor.UI.Buss
 			MeshFilter component2;
 			if (gameObject.TryGetComponent<MeshFilter>(out component2) && (UnityEngine.Object) component2.sharedMesh != (UnityEngine.Object) null)
 				return component2.sharedMesh.bounds;
-			// if (gameObject.TryGetComponent<Canvas>(out var canvas))
-				// return new Bounds(canvasRect.position, new Vector3(canvasRect.rect.width, canvasRect.rect.height, 0));
 			return new Bounds(Vector3.zero, Vector3.zero);
 		}
 		
@@ -138,25 +105,24 @@ namespace Beamable.Editor.UI.Buss
 			yPosition = 0;
 			xPosition = 0;
 			var featureObjects = new List<GameObject>();
+			
+			#region generate prefabs
 			foreach (var element in source.easyFeatures)
 			{
 				var parent = new GameObject(element.label + " Flows");
 				parent.transform.localPosition = new Vector3(0, yPosition, 0);
 				featureObjects.Add(parent);
 				parent.name = element.label;
-				
 
 				xPosition = 0f;
 				var xPadding = 40;
 				var yPadding = 500;
 				yPosition += _prefabHeight + yPadding;
-				// var first = true;
 				for (var i = 0; i < element.prefab.transform.childCount; i++)
 				{
 					var childGob = element.prefab.transform.GetChild(i).gameObject;
 					var view = childGob.GetComponent<ISyncBeamableView>();
 					if (view == null) continue;
-					
 					
 					var instance = PrefabUtility.InstantiatePrefab(element.prefab, parent.transform) as GameObject;
 					instance.name = childGob.name;
@@ -164,10 +130,8 @@ namespace Beamable.Editor.UI.Buss
 					var canvasRect = instance.transform as RectTransform;
 					canvasRect.pivot = new Vector2(0, 0);
 					
-					// labelEntry.bounds = canvas.
 					canvas.renderMode = RenderMode.WorldSpace;
 
-					// TODO: put in some sort of forced aspect ratio option?
 					canvas.transform.localScale = Vector3.one;
 
 					canvasRect.sizeDelta = new Vector2(_prefabWidth, _prefabHeight);
@@ -191,7 +155,8 @@ namespace Beamable.Editor.UI.Buss
 				EditorSceneManager.MoveGameObjectToScene(parent, scene);
 			}
 
-
+			#endregion
+			#region generate bounds
 			foreach (var featureObject in featureObjects)
 			{
 				Bounds featureBounds = default;
@@ -201,18 +166,13 @@ namespace Beamable.Editor.UI.Buss
 					var flowObject = featureObject.transform.GetChild(i).gameObject;
 					var instanceEntry = new BussPrefabSceneGroupLabel
 					{
-						gob = flowObject,
 						label = flowObject.name, 
 						bounds = GetLocalBounds(flowObject),//new Bounds(canvasRect.position, new Vector3(canvasRect.rect.width, canvasRect.rect.height, 0)),
 						lineOffset = new Vector3(0, 3, 0),
 						textOffset = new Vector3(0, 80, 0),
 						textHeight = 40,
-						textStyle = new GUIStyle(EditorStyles.label)
-						{
-						},
-						lineWidth = 2
+						textStyle = new GUIStyle(EditorStyles.label) {normal = {textColor = Color.white}}
 					};
-					instanceEntry.textStyle.normal.textColor = Color.white;
 					labels.Add(instanceEntry);
 					if (i == 0)
 					{
@@ -227,11 +187,8 @@ namespace Beamable.Editor.UI.Buss
 				
 				var buttonEntry = new BussPrefabGroupButton {label = featureObject.name, gob = featureObject, bounds = featureBounds};
 				buttons.Add(buttonEntry);
-
-			
 				var labelEntry = new BussPrefabSceneGroupLabel
 				{
-					gob = featureObject,
 					label = featureObject.name, 
 					bounds = featureBounds,
 					lineOffset = new Vector3(0, 50, 0),
@@ -239,32 +196,30 @@ namespace Beamable.Editor.UI.Buss
 					textHeight = 70,
 					textStyle = new GUIStyle(EditorStyles.label)
 					{
-						fontStyle = FontStyle.Bold
+						fontStyle = FontStyle.Bold,
+						normal = {textColor = Color.white}
 					},
-					lineWidth = 2
 				};
-				labelEntry.textStyle.normal.textColor = Color.white;
 				labels.Add(labelEntry);
 			}
+			#endregion
 		}
 
 		private void PopulateComponents(float xPos, float yPos)
 		{
 			var root = new GameObject("Components");
-			
 			var canvas = root.AddComponent<Canvas>();
 			var canvasRect = canvas.transform as RectTransform;
 			canvasRect.pivot = new Vector2(0, 0);
 			root.AddComponent<CanvasScaler>();
 			root.AddComponent<GraphicRaycaster>();
 
-			// temp...
 			root.transform.localPosition += new Vector3(0, yPos, 0);
 
-			// var categoryBoundsToCompute = new List<Tuple<GameObject, Action>>();
 			var categoryObjects = new List<GameObject>();
 
 			var first = 0f;
+			#region generate components
 			for (var i = 0 ; i < source.categories.Count; i ++)
 			{
 				var category = source.categories[i];
@@ -329,7 +284,9 @@ namespace Beamable.Editor.UI.Buss
 				}
 				gob.transform.localPosition = new Vector3(0, yPos, 0);
 			}
-
+			EditorSceneManager.MoveGameObjectToScene(root, scene);
+			#endregion
+			#region generate bounds
 			Bounds allBounds = default;
 			for (var i = 0; i < categoryObjects.Count; i ++ )
 			{
@@ -345,18 +302,13 @@ namespace Beamable.Editor.UI.Buss
 
 					var instanceEntry = new BussPrefabSceneGroupLabel
 					{
-						gob = componentObject,
 						label = componentObject.name, 
 						bounds = bounds,
 						lineOffset = new Vector3(0, 3, 0),
 						textOffset = new Vector3(0, 80, 0),
 						textHeight = 40,
-						textStyle = new GUIStyle(EditorStyles.label)
-						{
-						},
-						lineWidth = 2
+						textStyle = new GUIStyle(EditorStyles.label) {normal = {textColor = Color.white}},
 					};
-					instanceEntry.textStyle.normal.textColor = Color.white;
 					labels.Add(instanceEntry);
 					if (j == 0)
 					{
@@ -379,7 +331,6 @@ namespace Beamable.Editor.UI.Buss
 				
 				var categoryEntry = new BussPrefabSceneGroupLabel
 				{
-					gob = categoryObject,
 					label = categoryObject.name, 
 					bounds = categoryBounds,
 					lineOffset = new Vector3(0, 50, 0),
@@ -387,11 +338,10 @@ namespace Beamable.Editor.UI.Buss
 					textHeight = 70,
 					textStyle = new GUIStyle(EditorStyles.label)
 					{
-						fontStyle = FontStyle.Bold
+						fontStyle = FontStyle.Bold,
+						normal = {textColor = Color.white}
 					},
-					lineWidth = 2
 				};
-				categoryEntry.textStyle.normal.textColor = Color.white;
 				labels.Add(categoryEntry);
 
 			}
@@ -402,8 +352,8 @@ namespace Beamable.Editor.UI.Buss
 				gob = root,
 				label = "Components"
 			});
+			#endregion
 			
-			EditorSceneManager.MoveGameObjectToScene(root, scene);
 		}
 		
 		protected override bool OnOpenStage()
@@ -446,10 +396,8 @@ namespace Beamable.Editor.UI.Buss
 	public class BussPrefabSceneGroupLabel
 	{
 		public string label;
-		public GameObject gob;
 		public Bounds bounds;
 		public Vector3 lineOffset;
-		public int lineWidth;
 		public Vector3 textOffset;
 		public float textHeight;
 		public GUIStyle textStyle;
