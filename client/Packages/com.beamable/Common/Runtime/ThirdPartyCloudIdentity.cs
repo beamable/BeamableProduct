@@ -18,7 +18,7 @@ namespace Beamable.Common
 		string UniqueName { get; }
 	}
 
-	public interface IFederatedLogin<in T> where T : IThirdPartyCloudIdentity
+	public interface IFederatedLogin<in T> where T : IThirdPartyCloudIdentity, new()
 	{
 		FederatedAuthenticationResponse Authenticate(string token, string challenge, string solution);
 	}
@@ -33,7 +33,7 @@ namespace Beamable.Common
 		string ServiceName { get; }
 	}
 
-	public interface ISupportsFederatedLogin<T> : IHaveServiceName where T : IThirdPartyCloudIdentity
+	public interface ISupportsFederatedLogin<T> : IHaveServiceName where T : IThirdPartyCloudIdentity, new()
 	{
 		IDependencyProvider Provider { get; }
 	}
