@@ -6,11 +6,10 @@ namespace cli.Content;
 
 public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 {
-	private readonly ContentService _contentService;
+	private ContentService _contentService;
 
-	public ContentOpenCommand(ContentService contentService) : base("open", "Open content file in default editor")
+	public ContentOpenCommand() : base("open", "Open content file in default editor")
 	{
-		_contentService = contentService;
 	}
 
 	public override void Configure()
@@ -21,6 +20,8 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 
 	public override Task Handle(ContentOpenCommandArgs args)
 	{
+		_contentService = args.ContentService;
+
 		var path = string.IsNullOrWhiteSpace(args.contentId)
 			? _contentService.ContentLocal.ContentDirPath
 			: _contentService.ContentLocal.GetContentPath(args.contentId);

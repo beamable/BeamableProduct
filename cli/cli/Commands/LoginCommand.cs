@@ -17,15 +17,13 @@ public class LoginCommandArgs : CommandArgs
 
 public class LoginCommand : AppCommand<LoginCommandArgs>
 {
-	private readonly IAppContext _ctx;
-	private readonly ConfigService _configService;
-	private readonly IAuthApi _authApi;
+	private IAppContext _ctx;
+	private ConfigService _configService;
+	private IAuthApi _authApi;
 
-	public LoginCommand(IAppContext ctx, ConfigService configService, IAuthApi authApi) : base("login", "save credentials to file")
+	public LoginCommand() : base("login", "save credentials to file")
 	{
-		_ctx = ctx;
-		_configService = configService;
-		_authApi = authApi;
+		
 	}
 
 	public override void Configure()
@@ -39,6 +37,9 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 
 	public override async Task Handle(LoginCommandArgs args)
 	{
+		_ctx = args.AppContext;
+		_configService = args.ConfigService;
+		_authApi = args.AuthApi;
 		var username = GetUserName(args);
 		var password = GetPassword(args);
 		var response = await _authApi.Login(username, password, false, args.customerScoped).ShowLoading("Authorizing...");

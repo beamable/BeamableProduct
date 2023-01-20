@@ -83,14 +83,13 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		"Any number of arguments in the format 'NAME=VALUE' representing environment variables Beam-O should set on the container it runs in AWS.");
 
 
-	private readonly BeamoLocalSystem _localBeamo;
+	private BeamoLocalSystem _localBeamo;
 
 
-	public ServicesRegisterCommand(BeamoLocalSystem localBeamo) :
+	public ServicesRegisterCommand() :
 		base("register",
 			"Registers a new service into the local manifest.")
 	{
-		_localBeamo = localBeamo;
 	}
 
 	static ServicesRegisterCommand()
@@ -138,6 +137,8 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 
 	public override async Task Handle(ServicesRegisterCommandArgs args)
 	{
+		_localBeamo = args.BeamoLocalSystem;
+
 		// Handle Beamo Id Option 
 		var existingBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToList();
 		{
