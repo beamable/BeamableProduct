@@ -509,17 +509,18 @@ namespace Beamable.Common.Content
 		/// <returns></returns>
 		public string SerializeProperties<TContent>(TContent content)
 		   where TContent : IContentObject
-
 		{
 			var fields = GetFieldInfos(content.GetType())
 			   .ToDictionary(f => f.SerializedName);
-			var propertyDict = new ArrayDict();
+			var keysSorted = new List<string>(fields.Keys);
+			keysSorted.Sort((t, o) => string.Compare(t, o, StringComparison.InvariantCulture));
+			var propertyDict = new ArrayDict(keysSorted.Count);
 
-			foreach (var kvp in fields)
+			foreach (var key in keysSorted)
 			{
-				var fieldName = kvp.Key;
-				var fieldInfo = kvp.Value;
-				var fieldType = kvp.Value.RawField.FieldType;
+				var fieldName = key;
+				var fieldInfo = fields[key];
+				var fieldType = fieldInfo.RawField.FieldType;
 				var fieldValue = fieldInfo.RawField.GetValue(content);
 				var fieldDict = new ArrayDict();
 
@@ -537,13 +538,13 @@ namespace Beamable.Common.Content
 							var link = (IContentLink)list[i];
 							linkSet[i] = link.GetId();
 						}
-						fieldDict.Add("$links", linkSet);
-						propertyDict.Add(fieldName, fieldDict);
+						fieldDict.AddUnchecked("$links", linkSet);
+						propertyDict.AddUnchecked(fieldName, fieldDict);
 						break;
 
 					case IContentLink link:
-						fieldDict.Add("$link", link.GetId());
-						propertyDict.Add(fieldName, fieldDict);
+						fieldDict.AddUnchecked("$link", link.GetId());
+						propertyDict.AddUnchecked(fieldName, fieldDict);
 						break;
 					default: // data block.
 						if (fieldValue is Optional optional)
@@ -565,8 +566,8 @@ namespace Beamable.Common.Content
 							continue;
 						}
 						var jsonValue = SerializeArgument(fieldValue, fieldType);
-						fieldDict.Add("data", new PropertyValue { rawJson = jsonValue });
-						propertyDict.Add(fieldName, fieldDict);
+						fieldDict.AddUnchecked("data", new PropertyValue { rawJson = jsonValue });
+						propertyDict.AddUnchecked(fieldName, fieldDict);
 						break;
 				}
 			}

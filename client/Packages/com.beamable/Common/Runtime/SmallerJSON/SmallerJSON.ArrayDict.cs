@@ -34,10 +34,12 @@ namespace Beamable.Serialization.SmallerJSON
 
 		const int DefaultCapacity = 4;
 
-		public ArrayDict()
+		public ArrayDict() : this(DefaultCapacity) {}
+
+		public ArrayDict(int capacity)
 		{
-			_keys = new TKey[DefaultCapacity];
-			_values = new TValue[DefaultCapacity];
+			_keys = new TKey[capacity];
+			_values = new TValue[capacity];
 		}
 
 		/// <summary>
