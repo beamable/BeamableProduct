@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `PlayerInventory` supports storing player's inventory in offline mode
 - `PlayerInventory` supports `UpdateDelayed` method
+- `IFederatedLogin<T>` interface type available for Microservices
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
@@ -38,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Player Account PSDK
 - `EditorDownloadBatchSize` setting in Content Configuration controls the batch download size for Content Manager. The default value is 100.
+- Added SDK support for a direct Websocket connection to Beamable services toggleable via realm configuration.
 
 ### Changed
 - Content Manager uses batch operations for better performance.

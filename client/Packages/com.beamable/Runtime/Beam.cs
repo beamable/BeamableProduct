@@ -50,6 +50,7 @@ using Beamable.Experimental.Api.Social;
 using Beamable.Player;
 using Beamable.Reflection;
 using Beamable.Sessions;
+using Beamable.Connection;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
@@ -226,6 +227,10 @@ namespace Beamable
 				provider => provider.GetService<PubnubSubscriptionManager>());
 			DependencyBuilder.AddSingleton<INotificationService>(
 				provider => provider.GetService<NotificationService>());
+
+			DependencyBuilder.AddSingleton<IBeamableConnection, WebSocketConnection>();
+			DependencyBuilder.AddSingleton<BeamableSubscriptionManager>();
+
 			DependencyBuilder.AddSingleton<ApiServices>();
 
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
