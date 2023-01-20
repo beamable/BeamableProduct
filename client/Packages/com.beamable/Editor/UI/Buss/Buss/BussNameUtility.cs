@@ -1,4 +1,5 @@
-﻿using Beamable.UI.Buss;
+﻿using Beamable.Common.Pooling;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,33 +9,34 @@ namespace Beamable.Editor.UI.Buss
 {
 	public static class BussNameUtility
 	{
-		private static Regex _cleanRegex = new Regex("\\w+");
+		private static readonly Regex _cleanRegex = new Regex("\\w+");
 
 		public static string CleanString(string input)
 		{
-			return _cleanRegex?.Match(input)?.Value ?? "";
+			return _cleanRegex?.Match(input)?.Value ?? string.Empty;
 		}
 
 		public static string AsIdSelector(string input)
 		{
-			if (string.IsNullOrWhiteSpace(input)) return "";
+			if (string.IsNullOrWhiteSpace(input)) return string.Empty;
 			return "#" + CleanString(input);
 		}
 
 		public static string AsClassSelector(string input)
 		{
-			if (string.IsNullOrWhiteSpace(input)) return "";
+			if (string.IsNullOrWhiteSpace(input)) return string.Empty;
 			return "." + CleanString(input);
 		}
 
 		public static string AsVariableName(string input)
 		{
-			if (string.IsNullOrWhiteSpace(input)) return "";
+			if (string.IsNullOrWhiteSpace(input)) return string.Empty;
 			return "--" + CleanString(input);
 		}
 
 		public static List<string> AsClassesList(List<string> classesList)
 		{
+			if (classesList == null) return new List<string>();
 			List<string> finalList = new List<string>();
 			finalList.AddRange(classesList.Select(AsClassSelector));
 			return finalList;
@@ -49,23 +51,26 @@ namespace Beamable.Editor.UI.Buss
 
 		public static string GetFormattedLabel(BussElement element)
 		{
-			return GetLabel(element).Replace(" ", "");
+			return GetLabel(element).Replace(" ", string.Empty);
 		}
 
 		public static string GetLabel(BussElement element)
 		{
-			if (!element) return String.Empty;
+			if (!element) return string.Empty;
 
-			string label = string.IsNullOrWhiteSpace(element.Id)
-				? element.name
-				: AsIdSelector(element.Id);
-
-			foreach (string className in element.Classes)
+			using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
 			{
-				label += " " + AsClassSelector(className);
-			}
+				pooledBuilder.Builder.Append(string.IsNullOrWhiteSpace(element.Id)
+												 ? element.TypeName
+												 : AsIdSelector(element.Id));
 
-			return label;
+				foreach (string className in element.Classes)
+				{
+					pooledBuilder.Builder.Append(AsClassSelector(className));
+				}
+
+				return pooledBuilder.Builder.ToString();
+			}
 		}
 	}
 }

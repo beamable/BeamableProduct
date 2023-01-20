@@ -1,4 +1,5 @@
 using cli;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using NUnit.Framework;
 using System.CodeDom;
@@ -129,7 +130,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public long foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -140,6 +141,52 @@ namespace Test
 }
 ");
 	}
+
+	[Test]
+	public void EnumField()
+	{
+
+		var type = UnityHelper.GenerateModelDecl("Tuna", new OpenApiSchema
+		{
+			Type = "object",
+			Properties = new Dictionary<string, OpenApiSchema>
+			{
+				["foo"] = new OpenApiSchema
+				{
+					Type = "string",
+					Enum = new List<IOpenApiAny> { new OpenApiString("incoming"), new OpenApiString("outgoing") },
+					Reference = new OpenApiReference
+					{
+						Type = ReferenceType.Schema,
+						Id = "InvitationDirection"
+					}
+				}
+			},
+			Required = new HashSet<string> { "foo" }
+		});
+
+		Assert.IsNotNull(type);
+		var unit = new CodeCompileUnit();
+		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
+		var src = UnityHelper.GenerateCsharp(unit);
+
+		src.AssertSrc(@"
+namespace Test
+{
+    
+	[System.SerializableAttribute()]
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	{
+		public InvitationDirection foo = new InvitationDirection();
+        public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
+        {
+			s.SerializeEnum(""foo"", ref foo, InvitationDirectionExtensions.ToEnumString, InvitationDirectionExtensions.FromEnumString);
+		}
+	}
+}
+");
+	}
+
 
 	[Test]
 	public void StringField()
@@ -167,7 +214,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public string foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -214,7 +261,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public string FIELD;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -257,7 +304,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public long[] foo;
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -302,7 +349,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public MapOfLong foo = new MapOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -341,7 +388,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalLong foo = new OptionalLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -390,7 +437,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalLongArray foo = new OptionalLongArray();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -441,7 +488,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalMapOfLong foo = new OptionalMapOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -496,7 +543,7 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public OptionalMapOfLongArray foo = new OptionalMapOfLongArray();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
@@ -550,12 +597,54 @@ namespace Test
 {
     
 	[System.SerializableAttribute()]
-	public class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
 		public MapOfLongArray foo = new MapOfLongArray();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
 			s.SerializeDictionary<MapOfLongArray, long[]>(""foo"", ref foo);
+		}
+	}
+}");
+
+	}
+
+
+	[Test]
+	public void WithInternalObject()
+	{
+		var type = UnityHelper.GenerateModelDecl("Tuna", new OpenApiSchema
+		{
+			Type = "object",
+			Properties = new Dictionary<string, OpenApiSchema>
+			{
+				["foo"] = new()
+				{
+					Reference = new OpenApiReference
+					{
+						Id = "Fish"
+					}
+				}
+			},
+			Required = new HashSet<string> { "foo" }
+		});
+
+		Assert.IsNotNull(type);
+		var unit = new CodeCompileUnit();
+		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
+		var src = UnityHelper.GenerateCsharp(unit);
+
+		src.AssertSrc(@"
+namespace Test
+{
+    
+	[System.SerializableAttribute()]
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	{
+		public Fish foo = new Fish();
+        public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
+        {
+			s.Serialize(""foo"", ref foo);
 		}
 	}
 }");

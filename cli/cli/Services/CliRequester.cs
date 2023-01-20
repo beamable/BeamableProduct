@@ -1,6 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Serialization;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 using System.Text;
@@ -17,6 +19,15 @@ public class CliRequester : IBeamableRequester
 	public CliRequester(IAppContext ctx)
 	{
 		_ctx = ctx;
+	}
+
+	public async Promise<T> RequestJson<T>(Method method, string uri, JsonSerializable.ISerializable body,
+		bool includeAuthHeader = true)
+	{
+		var jsonFields = JsonSerializable.Serialize(body);
+		var json = Json.Serialize(jsonFields, new StringBuilder());
+
+		return await CustomRequest<T>(method, uri, json, includeAuthHeader);
 	}
 
 	public async Promise<T> CustomRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
@@ -91,10 +102,9 @@ public class CliRequester : IBeamableRequester
 		{
 			switch (error)
 			{
-					// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
-				case RequesterException e when e.RequestError.error == "InvalidTokenError" || e.RequestError.error == "ExpiredTokenError":
-
-					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because "+ e.RequestError.error);
+				// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
+				case RequesterException e when e.RequestError.error == "InvalidTokenError" || e.RequestError.error == "ExpiredTokenError" || e.Status == 403:
+					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
 						{
@@ -106,12 +116,13 @@ public class CliRequester : IBeamableRequester
 			}
 
 			return Promise<T>.Failed(error);
-		});;
+		}); ;
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string? basePath, string uri, object body = null)
 	{
-		var request = new HttpRequestMessage(FromMethod(method), basePath + uri);
+		var address = uri.Contains("://") ? uri : $"{basePath}{uri}";
+		var request = new HttpRequestMessage(FromMethod(method), address);
 
 		if (body == null)
 		{

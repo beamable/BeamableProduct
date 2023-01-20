@@ -90,10 +90,7 @@ namespace Beamable.Editor.UI.Model
 			OnLogsAttachmentChanged?.Invoke(true);
 		}
 
-		// TODO - When MongoStorageModel will be ready feel free to implement these methods
-		// TODO === BEGIN
 		public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
-		// TODO === END
 		public abstract void Refresh(IDescriptor descriptor);
 		public abstract Task Start();
 		public abstract Task Stop();
@@ -113,20 +110,24 @@ namespace Beamable.Editor.UI.Model
 				IsArchived = true;
 			}
 
+			MicroserviceConfiguration.Instance.Save();
 			BeamEditorContext.Default.OnServiceArchived?.Invoke();
 		}
-
 		public void Unarchive()
 		{
 			IsArchived = false;
+			MicroserviceConfiguration.Instance.Save();
 			BeamEditorContext.Default.OnServiceUnarchived?.Invoke();
 		}
-		protected void OpenCode()
+
+		public void OpenCode()
 		{
 			var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
 			var fileName = $@"{path}/{Descriptor.Name}.cs";
 			var asset = AssetDatabase.LoadMainAssetAtPath(fileName);
 			AssetDatabase.OpenAsset(asset);
 		}
+
+		public abstract void OpenDocs();
 	}
 }

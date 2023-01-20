@@ -4,8 +4,10 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Runtime;
 using Beamable.Content;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.Content.UI;
 using Beamable.Serialization;
 using Core.Platform.SDK;
@@ -14,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,27 +33,21 @@ namespace Beamable.Editor.Content
 {
 	public class ContentIOAssetProcessor : UnityEditor.AssetModificationProcessor
 	{
+		private static List<ContentDatabaseEntry> _deleteEntries = new List<ContentDatabaseEntry>();
 		private static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
 		{
-			if (AssetDatabase.IsValidFolder(assetPath))
+			if (!BeamEditor.IsInitialized) return AssetDeleteResult.DidNotDelete;
+
+			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
+			if (db.TryGetContentByPath(assetPath, out var entry))
 			{
-				var subAssets = AssetDatabase.FindAssets("", new string[] { assetPath });
-				foreach (var sub in subAssets)
-				{
-					var subPath = AssetDatabase.GUIDToAssetPath(sub);
-					OnWillDeleteAsset(subPath, options);
-				}
-
-				return AssetDeleteResult.DidNotDelete;
+				_deleteEntries.Add(entry);
 			}
-
-			var asset = AssetDatabase.LoadAssetAtPath<ContentObject>(assetPath);
-			if (asset == null) return AssetDeleteResult.DidNotDelete;
-
-			var method = typeof(ContentIO).GetMethod(nameof(ContentIO.NotifyDeleted),
-				BindingFlags.NonPublic | BindingFlags.Static);
-			var genMethod = method.MakeGenericMethod(asset.GetType());
-			genMethod.Invoke(null, new object[] { asset });
+			EditorDebouncer.Debounce("content-delete", () =>
+			{
+				ContentIO.NotifyDeleted(_deleteEntries);
+				_deleteEntries.Clear();
+			});
 
 			return AssetDeleteResult.DidNotDelete;
 		}
@@ -58,25 +55,28 @@ namespace Beamable.Editor.Content
 
 		private static string[] OnWillSaveAssets(string[] paths)
 		{
-			foreach (var path in paths)
+			if (!BeamEditor.IsInitialized) return paths;
+
+			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
+			if (!db.ContainsAnyContentPaths(paths)) return paths;
+
+			db.RecalculateIndex(); // update, because assets are new!
+			var listOfContent = new List<IContentObject>();
+			for (var i = 0; i < paths.Length; i++)
 			{
-				var asset = AssetDatabase.LoadAssetAtPath<ContentObject>(path);
-				if (asset == null) continue;
+				if (!db.TryGetContentByPath(paths[i], out var entry))
+				{
+					continue;
+				}
 
-				var method = typeof(ContentIO).GetMethod(nameof(ContentIO.NotifyCreated),
-					BindingFlags.NonPublic | BindingFlags.Static);
-				var genMethod = method.MakeGenericMethod(asset.GetType());
-
-				var rootPath = $"{Directories.DATA_DIR}/{asset.ContentType}/";
-				var subPath = path.Substring(rootPath.Length);
-				var qualifiedName = Path.GetFileNameWithoutExtension(subPath.Replace(Path.DirectorySeparatorChar, '.'));
-
-				asset.SetContentName(qualifiedName);
-
-				genMethod.Invoke(null, new object[] { asset });
+				var asset = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
+				asset.SetContentName(entry.contentName);
+				listOfContent.Add(asset);
 			}
+			ContentIO.NotifyCreated(listOfContent);
 
 			return paths;
+
 		}
 	}
 
@@ -86,6 +86,7 @@ namespace Beamable.Editor.Content
 		Promise<Manifest> FetchManifest(string id);
 		IEnumerable<ContentObject> FindAll(ContentQuery query = null);
 		string Checksum(IContentObject content);
+		LocalContentManifest BuildLocalManifest();
 	}
 
 	[System.Serializable]
@@ -167,6 +168,8 @@ namespace Beamable.Editor.Content
 		}
 	}
 
+	public delegate void IContentEntryDelegate(List<ContentDatabaseEntry> entries);
+
 	/// <summary>
 	/// The purpose of this class is to
 	/// 1. scrape local editor directory for content assets
@@ -187,41 +190,63 @@ namespace Beamable.Editor.Content
 
 		public event ContentDelegate OnSelectionChanged;
 
-		public static event IContentDelegate OnContentCreated, OnContentDeleted;
+#pragma warning disable CS0067
+		[Obsolete("Do not use. Use " + nameof(OnContentsCreated) + " instead.")]
+		public static event IContentDelegate OnContentCreated;
+
+		[Obsolete("Do not use. Use " + nameof(OnContentEntryDeleted) + " instead.")]
+		public static event IContentDelegate OnContentDeleted;
+#pragma warning restore CS0067
+
+		public static event IContentBatchDelegate OnContentsCreated;
+		public static event IContentEntryDelegate OnContentEntryDeleted;
+
 		public static event IContentRenamedDelegate OnContentRenamed;
 		public static Action<string> OnManifestChanged;
 		public static Action<AvailableManifests> OnManifestsListFetched;
 		public static Action<IEnumerable<AvailableManifestModel>> OnArchivedManifestsFetched;
 
-		private ValidationContext ValidationContext { get; } = new ValidationContext
-		{ AllContent = new Dictionary<string, IContentObject>() };
+		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
+		private ContentDatabase ContentDatabase => _provider.GetService<ContentDatabase>();
 
-		public ContentIO(IBeamableRequester requester)
+		public ContentIO(IDependencyProvider provider, IBeamableRequester requester)
 		{
+			_provider = provider;
 			_requester = requester;
 			Selection.selectionChanged += SelectionChanged;
 
-			OnContentCreated += Internal_HandleContentCreated;
-			OnContentDeleted += Internal_HandleContentDeleted;
+			OnContentsCreated += Internal_HandleContentCreated;
+			OnContentEntryDeleted += Internal_HandleContentDeleted;
 			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
+
+		}
+
+		public ContentIO(IBeamableRequester requester) : this(BeamEditorContext.Default.ServiceScope, requester)
+		{
 		}
 
 		[RuntimeInitializeOnLoadMethod]
 		private static void Init()
 		{
-			OnContentCreated = null;
-			OnContentDeleted = null;
+			OnContentsCreated = null;
+			OnContentEntryDeleted = null;
 			OnContentRenamed = null;
 		}
 
-		private void Internal_HandleContentCreated(IContentObject content)
+		private void Internal_HandleContentCreated(List<IContentObject> contents)
 		{
-			ValidationContext.AllContent[content.Id] = content;
+			foreach (var content in contents)
+			{
+				ValidationContext.AllContent[content.Id] = content;
+			}
 		}
 
-		private void Internal_HandleContentDeleted(IContentObject content)
+		private void Internal_HandleContentDeleted(List<ContentDatabaseEntry> contents)
 		{
-			ValidationContext.AllContent.Remove(content.Id);
+			foreach (var content in contents)
+			{
+				ValidationContext.AllContent.Remove(content.contentId);
+			}
 		}
 
 
@@ -434,40 +459,23 @@ namespace Beamable.Editor.Content
 
 		private ContentObject Find(ContentObject content)
 		{
-			var assetGuids = BeamableAssetDatabase.FindAssets(
-				content.GetType(),
-				new[] { Directories.DATA_DIR }
-			);
-			foreach (var guid in assetGuids)
+			if (ContentDatabase.TryGetContentById(content.Id, out var entry))
 			{
-				var assetPath = AssetDatabase.GUIDToAssetPath(guid);
-				ContentObject asset = (ContentObject)AssetDatabase.LoadAssetAtPath(assetPath, content.GetType());
-				if (asset.Id == content.Id)
-					return asset;
+				return AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
 			}
 
-			throw new Exception("No matching content.");
+			return null;
 		}
 
 		public IEnumerable<TContent> FindAllContent<TContent>(ContentQuery query = null, bool inherit = true)
 			where TContent : ContentObject, new()
 		{
 			if (query == null) query = ContentQuery.Unit;
-			if (!AssetDatabase.IsValidFolder(Directories.DATA_DIR))
-			{
-				Directory.CreateDirectory(Directories.DATA_DIR);
-				yield break; // there is no folder, therefore, no content. Nothing to search for.
-			}
-
-			var assetGuids = BeamableAssetDatabase.FindAssets<TContent>(
-				new[] { Directories.DATA_DIR }
-			);
 			var contentType = _contentTypeReflectionCache.TypeToName(typeof(TContent));
-
-			foreach (var guid in assetGuids)
+			var entries = ContentDatabase.GetContent<TContent>();
+			foreach (var entry in entries)
 			{
-				var path = AssetDatabase.GUIDToAssetPath(guid);
-				var asset = AssetDatabase.LoadAssetAtPath<TContent>(path);
+				var asset = AssetDatabase.LoadAssetAtPath<TContent>(entry.assetPath);
 
 				if (asset == null || !query.Accept(asset))
 					continue;
@@ -475,7 +483,7 @@ namespace Beamable.Editor.Content
 					continue;
 
 
-				var name = Path.GetFileNameWithoutExtension(path);
+				var name = Path.GetFileNameWithoutExtension(entry.assetPath);
 				asset.SetContentName(name);
 				yield return asset;
 			}
@@ -499,27 +507,25 @@ namespace Beamable.Editor.Content
 
 		public IEnumerable<ContentObject> FindAll(ContentQuery query = null)
 		{
-			var contentArray = new List<ContentObject>();
-			var contentIdHashSet = new HashSet<string>();
-			foreach (var contentType in GetContentTypes())
+			foreach (var entry in ContentDatabase.GetAllContent())
 			{
-				foreach (var content in FindAllContentByType(contentType, query))
+				var content = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
+				if (!content || content == null) continue;
+
+				if (query == null || query.Accept(content))
 				{
-					if (!contentIdHashSet.Contains(content.Id))
-					{
-						contentIdHashSet.Add(content.Id);
-						contentArray.Add(content);
-					}
+					var name = Path.GetFileNameWithoutExtension(entry.assetPath);
+					content.SetContentName(name);
+					yield return content;
 				}
 			}
-
-			return contentArray;
 		}
 
 		public LocalContentManifest BuildLocalManifest()
 		{
 			var localManifest = new LocalContentManifest();
 			ValidationContext.AllContent.Clear();
+			ContentDatabase.RecalculateIndex();
 
 			if (!Directory.Exists(Directories.DATA_DIR))
 			{
@@ -527,41 +533,28 @@ namespace Beamable.Editor.Content
 				return localManifest;
 			}
 
-			foreach (var contentType in _contentTypeReflectionCache.GetContentTypes()) // TODO check hierarchy types.
+			foreach (var entry in ContentDatabase.GetAllContent())
 			{
-				var assetGuids = BeamableAssetDatabase.FindAssets(
-					contentType,
-					new[] { Directories.DATA_DIR }
-				);
-				var typeName = _contentTypeReflectionCache.TypeToName(contentType);
+				var content = AssetDatabase.LoadAssetAtPath<ContentObject>(entry.assetPath);
+				if (!content || content == null) continue;
 
-				foreach (var assetGuid in assetGuids)
+				content.SetIdAndVersion(entry.contentId, "");
+
+				var manifestEntry = new LocalContentManifestEntry
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
-					var rawAsset = AssetDatabase.LoadAssetAtPath(assetPath, typeof(IContentObject));
-					var content = rawAsset as IContentObject;
-
-					var fileName = Path.GetFileNameWithoutExtension(assetPath);
-
-					if (content == null || rawAsset.GetType() != contentType) continue;
-					var contentId = $"{typeName}.{fileName}";
-					content.SetIdAndVersion(contentId, "");
-
-					var entry = new LocalContentManifestEntry
-					{
-						ContentType = contentType,
-						Content = content,
-						AssetPath = assetPath
-					};
-					ValidationContext.AllContent[content.Id] = content;
-					if (!localManifest.Content.ContainsKey(content.Id))
-					{
-						localManifest.Content.Add(content.Id, entry);
-					}
+					ContentType = entry.runtimeType,
+					Content = content,
+					AssetPath = entry.assetPath
+				};
+				ValidationContext.AllContent[content.Id] = content;
+				if (!localManifest.Content.ContainsKey(content.Id))
+				{
+					localManifest.Content.Add(content.Id, manifestEntry);
 				}
 			}
 
 			ContentObject.ValidationContext = ValidationContext;
+			ValidationContext.Initialized = true;
 			return localManifest;
 		}
 
@@ -615,6 +608,7 @@ namespace Beamable.Editor.Content
 			string typeName = ContentObject.GetContentType<TContent>();
 			var dir = $"{Directories.DATA_DIR}/{typeName}";
 			EnsureDefaultAssets<TContent>();
+			var copiedAnydata = false;
 			if (!Directory.Exists(dir))
 			{
 				Directory.CreateDirectory(dir);
@@ -630,10 +624,16 @@ namespace Beamable.Editor.Content
 						var filename = Path.GetFileName(src);
 						var dest = Path.Combine(dir, filename);
 						File.Copy(src, dest, true);
+						copiedAnydata = true;
 					}
 
 					AssetDatabase.ImportAsset(dir, ImportAssetOptions.ImportRecursive);
 				}
+			}
+
+			if (copiedAnydata)
+			{
+				ContentDatabase.RecalculateIndex();
 			}
 		}
 
@@ -641,15 +641,12 @@ namespace Beamable.Editor.Content
 		{
 			foreach (var nextContentType in _contentTypeReflectionCache.GetContentTypes()) // TODO check heirarchy types.
 			{
-				var assetGuids = BeamableAssetDatabase.FindAssets(
-					nextContentType,
-					new[] { Directories.DATA_DIR }
-				);
+				var entries = ContentDatabase.GetContent(contentType);
 
-				foreach (var assetGuid in assetGuids)
+				foreach (var entry in entries)
 				{
-					var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
-					var rawAsset = AssetDatabase.LoadAssetAtPath(assetPath, typeof(IContentObject));
+
+					var rawAsset = AssetDatabase.LoadAssetAtPath(entry.assetPath, typeof(IContentObject));
 					var nextContent = rawAsset as IContentObject;
 
 					if (nextContent == null || rawAsset.GetType() != nextContentType) continue;
@@ -657,7 +654,7 @@ namespace Beamable.Editor.Content
 					if (nextContentType == contentType &&
 						nextContent == content)
 					{
-						return assetPath;
+						return entry.assetPath;
 					}
 				}
 			}
@@ -692,8 +689,6 @@ namespace Beamable.Editor.Content
 				throw new Exception("Addressables was not configured");
 			}
 
-			AssetDatabase.Refresh();
-
 			var filesToMarkAddressable = new List<string>();
 
 			foreach (var src in files)
@@ -708,9 +703,6 @@ namespace Beamable.Editor.Content
 				filesToMarkAddressable.Add(dest);
 			}
 
-			// mark all files as addressable after copy completes...
-			CommitAssetDatabase();
-
 			var addressablesGroup = addressableAssetSettings.FindGroup(BEAMABLE_ASSET_GROUP);
 			if (addressablesGroup == null)
 			{
@@ -724,6 +716,10 @@ namespace Beamable.Editor.Content
 				);
 			}
 
+			AssetDatabase.Refresh();
+			AssetDatabase.SaveAssets();
+			AssetDatabase.Refresh();
+
 			foreach (var file in filesToMarkAddressable)
 			{
 				var guid = AssetDatabase.AssetPathToGUID(file);
@@ -733,7 +729,6 @@ namespace Beamable.Editor.Content
 
 			addressableAssetSettings.SetDirty(AddressableAssetSettings.ModificationEvent.EntryMoved, addedEntries,
 				true);
-			CommitAssetDatabase();
 		}
 
 		public string GetAvailableFileName(string assetPath, string id, LocalContentManifest localContentManifest)
@@ -767,6 +762,44 @@ namespace Beamable.Editor.Content
 			}
 		}
 
+		public void CreateBatch(IList<Tuple<ContentObject, string>> pathToContent)
+		{
+			var contentList = new List<IContentObject>();
+			try
+			{
+				AssetDatabase.StartAssetEditing();
+				foreach (var (content, assetPath) in pathToContent)
+				{
+					var modifiedAssetPath = assetPath;
+					if (string.IsNullOrEmpty(assetPath))
+					{
+						var newNameAsPath = content.Id.Replace('.', Path.DirectorySeparatorChar);
+						modifiedAssetPath = $"{Directories.DATA_DIR}/{newNameAsPath}.asset";
+					}
+
+					if (!content)
+						continue;
+
+					content.name = ""; // force the SO name to be empty. Maintaining two names is too hard.
+					var directory = Path.GetDirectoryName(modifiedAssetPath);
+					Directory.CreateDirectory(directory);
+					AssetDatabase.CreateAsset(content, modifiedAssetPath);
+
+					var modifiedName = Path.GetFileNameWithoutExtension(modifiedAssetPath);
+					content.SetContentName(modifiedName);
+					contentList.Add(content);
+				}
+			}
+			finally
+			{
+				AssetDatabase.StopAssetEditing();
+			}
+
+			ContentDatabase.RecalculateIndex(); // update assets!
+			NotifyCreated(contentList);
+
+		}
+
 		public void Create<TContent>(TContent content, string assetPath = null, bool replace = true, LocalContentManifest localContentManifest = null)
 			where TContent : ContentObject, new()
 		{
@@ -785,6 +818,7 @@ namespace Beamable.Editor.Content
 
 			var modifiedName = Path.GetFileNameWithoutExtension(modifiedAssetPath);
 			content.SetContentName(modifiedName);
+			ContentDatabase.RecalculateIndex(); // update assets!
 			NotifyCreated(content);
 		}
 
@@ -808,39 +842,54 @@ namespace Beamable.Editor.Content
 		public void Delete<TContent>(TContent content)
 			where TContent : ContentObject, new()
 		{
-			var contentName = content.ContentName;
-			var contentSystemType = content.GetType();
-
-			var path = AssetDatabase.GetAssetPath(content);
-			if (string.IsNullOrEmpty(path))
+			if (!ContentDatabase.TryGetContentById(content.Id, out var entry))
 			{
-				var newNameAsPath = contentName.Replace('.', Path.DirectorySeparatorChar);
-				path = $"{Directories.DATA_DIR}/{content.ContentType}/{newNameAsPath}.asset";
+				return;
+			}
+			NotifyDeleted(entry);
+
+			AssetDatabase.DeleteAsset(entry.assetPath);
+			File.Delete(entry.assetPath);
+		}
+
+		public void DeleteBatch(List<IContentObject> contents)
+		{
+			var entries = new List<ContentDatabaseEntry>();
+			foreach (var content in contents)
+			{
+				if (!ContentDatabase.TryGetContentById(content.Id, out var entry))
+				{
+					continue;
+				}
+				entries.Add(entry);
 			}
 
-			NotifyDeleted(content);
+			NotifyDeleted(entries);
 
-			AssetDatabase.DeleteAsset(path);
-			File.Delete(path);
+			try
+			{
+				AssetDatabase.StartAssetEditing();
+				foreach (var entry in entries)
+				{
+					AssetDatabase.DeleteAsset(entry.assetPath);
+					File.Delete(entry.assetPath);
+				}
+			}
+			finally
+			{
+				AssetDatabase.StopAssetEditing();
+			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool AreTagsEqual(string[] firstContentTags, string[] secondContentTags)
 		{
-			var firstContentDistinctTags = firstContentTags.Distinct();
-			var secondContentDistinctTags = secondContentTags.Distinct();
-
-			var firstContentTagCount = firstContentDistinctTags.Count();
-			var secondContentTagCount = secondContentDistinctTags.Count();
-
-			var countOfSharedTags = firstContentDistinctTags.Intersect(secondContentDistinctTags).Count();
-
-			var areTagsEqual = firstContentTagCount == countOfSharedTags && secondContentTagCount == countOfSharedTags;
-
-			return areTagsEqual;
+			return firstContentTags.Length == secondContentTags.Length && firstContentTags.All(secondContentTags.Contains);
 		}
 
 
-		struct ValidationChecksum
+		[Serializable]
+		public struct ValidationChecksum
 		{
 			public Guid ValidationId;
 			public string Checksum;
@@ -849,16 +898,13 @@ namespace Beamable.Editor.Content
 		private static Dictionary<string, ValidationChecksum> _checksumTable =
 			new Dictionary<string, ValidationChecksum>();
 
-		private static Dictionary<Guid, string> _validationIdToChecksumTable = new Dictionary<Guid, string>();
+		private IDependencyProvider _provider;
 
 		public static string ComputeChecksum(IContentObject content)
 		{
-			// TODO: Un-confuse this if statement.
-			if (content is ContentObject contentObj && contentObj &&
-				_checksumTable.TryGetValue(contentObj.Id, out var existing) &&
-				existing.ValidationId == contentObj.ValidationGuid)
+			if (TryGetChecksumFromCache(content, out string cachedChecksum))
 			{
-				return existing.Checksum;
+				return cachedChecksum;
 			}
 
 			using (var md5 = MD5.Create())
@@ -868,16 +914,51 @@ namespace Beamable.Editor.Content
 				var hash = md5.ComputeHash(bytes);
 				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
 
-				if (content is ContentObject contentObj2 && contentObj2)
-				{
-					_checksumTable[contentObj2.Id] = new ValidationChecksum
-					{
-						ValidationId = contentObj2.ValidationGuid,
-						Checksum = checksum
-					};
-				}
+				AddChecksumToCache(content, checksum);
 
 				return checksum;
+			}
+		}
+
+		private static void AddChecksumToCache(IContentObject content, string checksum)
+		{
+			if (content is ContentObject contentObj2 && contentObj2)
+			{
+				_checksumTable[contentObj2.Id] = new ValidationChecksum
+				{
+					ValidationId = contentObj2.ValidationGuid,
+					Checksum = checksum
+				};
+			}
+		}
+
+		private static bool TryGetChecksumFromCache(IContentObject content, out string s)
+		{
+			s = null;
+			if (!(content is ContentObject contentObj) || !contentObj)
+				return false;
+
+			bool containsChecksum = _checksumTable.TryGetValue(content.Id, out var existing);
+			bool match = containsChecksum && existing.ValidationId.Equals(contentObj.ValidationGuid);
+			s = match ? existing.Checksum : null;
+			return match;
+		}
+
+		public static Dictionary<string, ValidationChecksum> GetCheckSumTable()
+		{
+			return _checksumTable;
+		}
+
+		public static void SetCheckSumTable(SerializableDictionary<string, ValidationChecksum> table)
+		{
+			_checksumTable.Clear();
+
+			if (table != null)
+			{
+				foreach (var elem in table)
+				{
+					_checksumTable.Add(elem.Key, elem.Value);
+				}
 			}
 		}
 
@@ -915,13 +996,6 @@ namespace Beamable.Editor.Content
 				ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
 		}
 
-		private void CommitAssetDatabase()
-		{
-			// TODO: Revisit this code. It was written this way, because that was the way I could make sure the assets always received the changes
-			AssetDatabase.Refresh();
-			AssetDatabase.SaveAssets();
-			AssetDatabase.Refresh();
-		}
 
 		internal static void NotifyRenamed<TContent>(string oldId, TContent content, string nextAssetPath)
 			where TContent : ContentObject, new()
@@ -932,13 +1006,21 @@ namespace Beamable.Editor.Content
 		internal static void NotifyCreated<TContent>(TContent content)
 			where TContent : ContentObject, new()
 		{
-			OnContentCreated?.Invoke(content);
+			OnContentsCreated?.Invoke(new List<IContentObject> { content });
+		}
+		internal static void NotifyCreated(List<IContentObject> content)
+		{
+			OnContentsCreated?.Invoke(content);
 		}
 
-		internal static void NotifyDeleted<TContent>(TContent content)
-			where TContent : ContentObject, new()
+
+		internal static void NotifyDeleted(ContentDatabaseEntry content)
 		{
-			OnContentDeleted?.Invoke(content);
+			OnContentEntryDeleted?.Invoke(new List<ContentDatabaseEntry> { content });
+		}
+		internal static void NotifyDeleted(List<ContentDatabaseEntry> content)
+		{
+			OnContentEntryDeleted?.Invoke(content);
 		}
 
 		private static Promise<ClientManifest> RequestClientManifest(IBeamableRequester requester)

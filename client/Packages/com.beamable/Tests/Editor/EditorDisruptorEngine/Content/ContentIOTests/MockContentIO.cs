@@ -33,5 +33,10 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentIOTests
 		{
 			return ChecksumResult(content);
 		}
+
+		public LocalContentManifest BuildLocalManifest()
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

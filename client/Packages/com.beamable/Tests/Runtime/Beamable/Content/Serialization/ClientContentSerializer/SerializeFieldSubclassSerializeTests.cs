@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Reflection;
 using UnityEngine;
+#pragma warning disable CS0618
 
 namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 {
@@ -91,6 +92,12 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          }
       },
 ""startingAmount"": {""data"": 0},
+""external"": {
+	""data"": {
+		""service"": null,
+		""namespace"": null
+	}
+},
     ""spriteAssetName"": {
          ""data"": ""spendable_tokens""
       },
@@ -109,7 +116,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          ""data"": ""tuna""
       }
    }
-}".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
+}".Replace("\r\n", "").Replace("\n", "").Replace(" ", "").Replace("\t", "");
 
 			var s = new TestSerializer();
 			var json = s.Serialize(c);

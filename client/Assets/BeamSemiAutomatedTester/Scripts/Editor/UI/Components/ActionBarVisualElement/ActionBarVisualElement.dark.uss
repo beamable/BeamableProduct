@@ -30,3 +30,10 @@
 #openMainMenuSceneIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_light.png");
 }
+
+#setupBuildSettingIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Module_light.png");
+}
+
+
+

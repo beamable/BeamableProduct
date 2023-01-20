@@ -30,9 +30,9 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 			(args, i) => args.BeamoIdsToReset = i.Length == 0 ? null : i);
 
 		AddArgument(new Argument<string>("target", $"Either image|container|protocols." +
-		                                           $"'image' will cleanup all your locally built images for the selected Beamo Services.\n" +
-		                                           $"'container' will stop all your locally running containers for the selected Beamo Services.\n" +
-		                                           $"'protocols' will reset all the protocol data for the selected Beamo Services back to default parameters."), (args, i) => args.Target = i);
+												   $"'image' will cleanup all your locally built images for the selected Beamo Services.\n" +
+												   $"'container' will stop all your locally running containers for the selected Beamo Services.\n" +
+												   $"'protocols' will reset all the protocol data for the selected Beamo Services back to default parameters."), (args, i) => args.Target = i);
 	}
 
 	public override async Task Handle(ServicesResetCommandArgs args)
@@ -81,9 +81,9 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 
 					await Task.WhenAll(actualTasks);
 				});
-			
+
 		}
-		
+
 		else if (args.Target == "container")
 		{
 			await AnsiConsole
@@ -100,7 +100,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 					await Task.WhenAll(actualTasks);
 				});
 		}
-		
+
 		else if (args.Target == "protocols")
 		{
 			await AnsiConsole

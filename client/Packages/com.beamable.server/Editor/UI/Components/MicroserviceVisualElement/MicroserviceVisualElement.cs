@@ -24,13 +24,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
 		{ }
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
+		protected override bool IsRemoteEnabled => _microserviceModel.RemoteReference?.enabled ?? false;
 
 		private MicroserviceModel _microserviceModel;
-
-		public override void Refresh()
-		{
-			base.Refresh();
-		}
 
 		protected override void OnDestroy()
 		{
@@ -54,7 +50,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
-			Root.Q("leftArea")?.RemoveFromHierarchy();
 			_startButton.clickable.clicked -= HandleStartButtonClicked;
 			_startButton.clickable.clicked += HandleStartButtonClicked;
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
@@ -89,14 +84,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			UpdateRemoteStatusIcon();
 		}
-		protected override void UpdateRemoteStatusIcon()
-		{
-			_remoteStatusIcon.ClearClassList();
-			bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
-			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			_remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
-			_remoteStatusIcon.AddToClassList(statusClassName);
-		}
 		protected override void UpdateLocalStatus()
 		{
 			base.UpdateLocalStatus();
@@ -104,18 +91,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void SetupProgressBarForBuildAndStart(Task task)
 		{
-			var _ = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
-				new StepLogParser(new VirtualLoadingBar(), Model, null),
-				new RunImageLogParser(new VirtualLoadingBar(), Model)
-			);
+			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
+															 new StepLogParser(new VirtualLoadingBar(), Model, null),
+															 new RunImageLogParser(new VirtualLoadingBar(), Model));
+
+			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
 		private void SetupProgressBarForBuildAndRestart(Task task)
 		{
-			var _ = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
-				new StepLogParser(new VirtualLoadingBar(), Model, null),
-				new RunImageLogParser(new VirtualLoadingBar(), Model),
-				new StopImageLogParser(new VirtualLoadingBar(), Model)
-			);
+			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
+															 new StepLogParser(new VirtualLoadingBar(), Model, null),
+															 new RunImageLogParser(new VirtualLoadingBar(), Model),
+															 new StopImageLogParser(new VirtualLoadingBar(), Model));
+
+			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
 		private void SetupProgressBarForBuild(Task task)
 		{

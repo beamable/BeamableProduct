@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+#pragma warning disable CS0618
 
 namespace Beamable.Common.Content
 {
@@ -158,7 +159,19 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLong : OptionalValue<long> { }
+	public class OptionalLong : OptionalValue<long>
+	{
+		public OptionalLong()
+		{
+
+		}
+
+		public OptionalLong(long value)
+		{
+			Set(value);
+		}
+		public static implicit operator OptionalLong(long d) => new OptionalLong(d);
+	}
 
 	[System.Serializable]
 	[Agnostic]

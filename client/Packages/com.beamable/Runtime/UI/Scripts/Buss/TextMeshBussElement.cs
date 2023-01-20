@@ -10,6 +10,8 @@ namespace Beamable.UI.Buss
 		private bool _hasText;
 		private bool _hasTMPEssentials;
 
+		public override string TypeName => "text";
+
 		public override void ApplyStyle()
 		{
 			if (!_hasText)

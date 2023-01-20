@@ -1,36 +1,30 @@
 .header {
     padding-left: 10px;
-    padding-right: 20px;
+    padding-right: 30px;
     height: 30px;
     align-items: center;
     justify-content: flex-start;
     flex-direction: row;
-    background-color: rgba(49, 49, 49, 1);
 }
 
 .headerLabel {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     font-size: 12px;
-    color: rgba(255, 255, 255, 1);
     padding-left: 10px;
 }
 
 .subheader{
     height: 30px;
     flex-direction: row;
-    color: rgb(255,255,255);
-    background-color: rgb(89,89,89);
 }
 
 .subheaderLabel{
-    padding-left: 20px;
-    color: rgb(255,255,255);
+    padding-left: 30px;
     align-self: center;
 }
 
 .propertyContainer{
-    background-color: rgb(77,77,77);
     min-height: 0;
 }
 
@@ -45,8 +39,6 @@
 .addButton{
     width: 30px;
     height: 30px;
-    background-color: rgb(89,89,89);
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
 }
 
 .addButton:hover {

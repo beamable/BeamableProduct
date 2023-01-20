@@ -19,8 +19,8 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _selectorLabelParent;
 		private VisualElement _showAllButton;
 		private TextElement _showAllButtonText;
-		private VisualElement _sortButton;
-		private VisualElement _undoButton;
+		// TODO: restore while doing BEAM-3122
+		// private VisualElement _undoButton;
 		private VisualElement _variablesParent;
 		private Image _foldIcon;
 
@@ -45,8 +45,9 @@ namespace Beamable.Editor.UI.Components
 			_optionsButton = Root.Q<VisualElement>("optionsButton");
 			_optionsButton.tooltip = Tooltips.Buss.OPTIONS;
 
-			_undoButton = Root.Q<VisualElement>("undoButton");
-			_undoButton.tooltip = Tooltips.Buss.UNDO;
+			// TODO: restore while doing BEAM-3122
+			// _undoButton = Root.Q<VisualElement>("undoButton");
+			// _undoButton.tooltip = Tooltips.Buss.UNDO;
 
 			_cleanAllButton = Root.Q<VisualElement>("cleanAllButton");
 			_cleanAllButton.tooltip = Tooltips.Buss.ERASE_ALL_STYLE;
@@ -54,8 +55,6 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");
-			_sortButton = Root.Q<VisualElement>("sortButton");
-
 			_showAllButtonText = Root.Q<TextElement>("showAllButtonText");
 
 			RegisterButtonActions();
@@ -67,8 +66,26 @@ namespace Beamable.Editor.UI.Components
 
 			_colorBlock.EnableInClassList("active", _model.IsSelected);
 			_model.Change += OnChange;
-
 			_colorBlock.RegisterCallback<MouseDownEvent>(_model.FoldButtonClicked);
+		}
+
+
+		public void RepaintProperties()
+		{
+			SetSelectorStatus();
+			foreach (var property in Root.Query<StylePropertyVisualElement>().ToList())
+			{
+				property.Refresh();
+			}
+		}
+
+		private void SetSelectorStatus()
+		{
+			var appliedStatus = _model.RuleAppliedStatus;
+			_selectorLabelComponent.EnableInClassList("is-exact", appliedStatus == RuleAppliedStatus.Exact);
+			_selectorLabelComponent.EnableInClassList("is-inherited", appliedStatus == RuleAppliedStatus.Inherited);
+			_selectorLabelComponent.EnableInClassList("is-not-applied", appliedStatus == RuleAppliedStatus.NotApplied);
+
 		}
 
 		private void SetFold()
@@ -92,12 +109,12 @@ namespace Beamable.Editor.UI.Components
 
 		private void ClearButtonActions()
 		{
-			_undoButton?.UnregisterCallback<MouseDownEvent>(_model.UndoButtonClicked);
+			// TODO: restore while doing BEAM-3122
+			// _undoButton?.UnregisterCallback<MouseDownEvent>(_model.UndoButtonClicked);
 			_cleanAllButton?.UnregisterCallback<MouseDownEvent>(_model.ClearAllButtonClicked);
 			_addVariableButton?.UnregisterCallback<MouseDownEvent>(_model.AddVariableButtonClicked);
 			_addRuleButton?.UnregisterCallback<MouseDownEvent>(_model.AddRuleButtonClicked);
 			_showAllButton?.UnregisterCallback<MouseDownEvent>(_model.ShowAllButtonClicked);
-			_sortButton?.UnregisterCallback<MouseDownEvent>(_model.SortButtonClicked);
 			_optionsButton?.UnregisterCallback<MouseDownEvent>(_model.OptionsButtonClicked);
 		}
 
@@ -123,8 +140,9 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.PrepareCommands);
+			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.OnSelectorChanged, _model.PrepareCommands);
 			_selectorLabelParent.Add(_selectorLabelComponent);
+			SetSelectorStatus();
 		}
 
 		private void OnChange()
@@ -136,12 +154,12 @@ namespace Beamable.Editor.UI.Components
 
 		private void RefreshButtons()
 		{
-			_undoButton.SetEnabled(_model.IsWritable);
+			// TODO: restore while doing BEAM-3122
+			// _undoButton.SetEnabled(_model.IsWritable);
 			_cleanAllButton.SetEnabled(_model.IsWritable);
 			_addVariableButton.SetEnabled(_model.IsWritable);
 			_addRuleButton.SetEnabled(_model.IsWritable);
 			_showAllButton.SetEnabled(_model.IsWritable);
-			_sortButton.SetEnabled(_model.IsWritable);
 			_optionsButton.SetEnabled(true);
 		}
 
@@ -151,7 +169,7 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (StylePropertyModel model in _model.GetProperties())
 			{
-				if (!_model.ShowAll && (_model.ShowAll || !model.IsInStyle))
+				if (!_model.ShowAll && !model.IsInStyle)
 				{
 					continue;
 				}
@@ -164,19 +182,20 @@ namespace Beamable.Editor.UI.Components
 
 		private void RegisterButtonActions()
 		{
-			_undoButton?.RegisterCallback<MouseDownEvent>(_model.UndoButtonClicked);
+			// TODO: restore while doing BEAM-3122
+			// _undoButton?.RegisterCallback<MouseDownEvent>(_model.UndoButtonClicked);
 			_cleanAllButton?.RegisterCallback<MouseDownEvent>(_model.ClearAllButtonClicked);
 			_addVariableButton?.RegisterCallback<MouseDownEvent>(_model.AddVariableButtonClicked);
 			_addRuleButton?.RegisterCallback<MouseDownEvent>(_model.AddRuleButtonClicked);
 			_showAllButton?.RegisterCallback<MouseDownEvent>(_model.ShowAllButtonClicked);
-			_sortButton?.RegisterCallback<MouseDownEvent>(_model.SortButtonClicked);
 			_optionsButton?.RegisterCallback<MouseDownEvent>(_model.OptionsButtonClicked);
 		}
 
 		private void UpdateShowAllStatus()
 		{
 			EnableInClassList("showAllProperties", _model.ShowAll);
-			_showAllButtonText.text = _model.ShowAll ? "Hide All" : "Show All";
+			_showAllButtonText.text = _model.ShowAll ? TOGGLE_HIDE_ALL : TOGGLE_SHOW_ALL;
+			_showAllButton.EnableInClassList("clicked", _model.ShowAll);
 		}
 	}
 }

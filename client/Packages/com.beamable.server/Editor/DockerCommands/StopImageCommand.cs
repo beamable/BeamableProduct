@@ -6,18 +6,19 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		public string ContainerName { get; set; }
 
-		public StopImageReturnableCommand(IDescriptor descriptor) : this(
-			descriptor.ContainerName)
+		public StopImageReturnableCommand(IDescriptor descriptor, bool skipDockerCheck = false) : this(
+			descriptor.ContainerName, skipDockerCheck)
 		{
 
 		}
 
-		public StopImageReturnableCommand(string containerName)
+		public StopImageReturnableCommand(string containerName, bool skipDockerCheck = false)
 		{
 			ContainerName = containerName;
 			UnityLogLabel = "STOP";
 			WriteCommandToUnity = false;
 			WriteLogToUnity = false;
+			_skipDockerCheck = skipDockerCheck;
 		}
 
 		public override string GetCommandString()
@@ -33,10 +34,10 @@ namespace Beamable.Server.Editor.DockerCommands
 	}
 	public class StopImageCommand : StopImageReturnableCommand
 	{
-		public StopImageCommand(IDescriptor descriptor) : base(descriptor)
+		public StopImageCommand(IDescriptor descriptor, bool skipDockerCheck = false) : base(descriptor, skipDockerCheck)
 		{
 		}
-		public StopImageCommand(string containerName) : base(containerName)
+		public StopImageCommand(string containerName, bool skipDockerCheck = false) : base(containerName, skipDockerCheck)
 		{
 		}
 
