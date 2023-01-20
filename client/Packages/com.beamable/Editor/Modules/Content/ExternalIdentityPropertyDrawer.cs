@@ -1,4 +1,4 @@
-﻿using Beamable.Common.Api.Auth;
+﻿using Beamable.Common;
 using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace Beamable.Editor.Content
 			SerializedProperty identityProperty = property.FindPropertyRelative(nameof(ExternalIdentity.Namespace));
 
 			Rect nextRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + PADDING,
-									 position.width, EditorGUIUtility.singleLineHeight);
+			                         position.width, EditorGUIUtility.singleLineHeight);
 
 			var identitiesGuiContents = identities.Select(d => new GUIContent(d)).ToList();
 
@@ -45,7 +45,7 @@ namespace Beamable.Editor.Content
 
 			EditorGUI.BeginChangeCheck();
 			var nextServiceIndex = EditorGUI.Popup(nextRect, new GUIContent("External identity"), selectedIndex,
-												   identitiesGuiContents.ToArray(), EditorStyles.popup);
+			                                       identitiesGuiContents.ToArray(), EditorStyles.popup);
 
 			if (EditorGUI.EndChangeCheck())
 			{
@@ -59,9 +59,9 @@ namespace Beamable.Editor.Content
 			Type assignableType = typeof(IThirdPartyCloudIdentity);
 
 			List<Type> types = AppDomain.CurrentDomain.GetAssemblies().ToList().SelectMany(x => x.GetTypes())
-										.Where(t => assignableType.IsAssignableFrom(t) && t.IsClass).ToList();
+			                            .Where(t => assignableType.IsAssignableFrom(t) && t.IsClass).ToList();
 
-			List<string> list = new List<string> { "None" };
+			List<string> list = new List<string> {"None"};
 
 			foreach (Type type in types)
 			{
