@@ -1,9 +1,11 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
@@ -17,9 +19,9 @@ namespace Beamable.Editor.UI.Common.Models
 		public event Action<List<ISearchableElement>> OnAvailableElementsChanged;
 		public event Action<ISearchableElement> OnElementChanged;
 
-		public void Initialize()
+		public async void Initialize()
 		{
-			RefreshAvailable();
+			await RefreshAvailable();
 
 			var api = BeamEditorContext.Default;
 			api.OnRealmChange -= HandleRealmChanged;
@@ -28,18 +30,36 @@ namespace Beamable.Editor.UI.Common.Models
 			OnElementChanged?.Invoke(Current);
 		}
 
-		public Promise<List<ISearchableElement>> RefreshAvailable()
+		public async Promise<List<ISearchableElement>> RefreshAvailable()
 		{
 			var api = BeamEditorContext.Default;
 			Current = api.CurrentRealm;
 
-			return api.ServiceScope.GetService<RealmsService>().GetRealms()
-					  .Map(realms => realms.ToList<ISearchableElement>())
-					  .Then(realms =>
-					  {
-						  Elements = realms.ToList<ISearchableElement>();
-						  OnAvailableElementsChanged?.Invoke(Elements);
-					  });
+			try
+			{
+				 return await api.ServiceScope.GetService<RealmsService>().GetRealms()
+				         .Map(realms => realms.ToList<ISearchableElement>())
+				         .Then(realms =>
+				         {
+					         Elements = realms.ToList<ISearchableElement>();
+					         OnAvailableElementsChanged?.Invoke(Elements);
+				         });
+			}
+			catch (RequesterException ex)
+			{
+				if (ex.Status == 400) // realm is archived
+				{
+					await api.Relogin();
+					var realms = await RefreshAvailable();
+					// await api.SwitchRealm((RealmView)Current);
+					var curr = api.CurrentRealm;
+					OnElementChanged?.Invoke(Current);
+					OnElementChanged?.Invoke(Current);
+					return realms;
+				}
+
+				throw;
+			}
 		}
 
 		private void HandleRealmChanged(RealmView realm)

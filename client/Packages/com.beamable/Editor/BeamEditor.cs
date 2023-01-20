@@ -628,11 +628,23 @@ namespace Beamable
 					await Login(email, password);
 					return;
 				}
+
+				throw;
 			}
 			
 			var token = new AccessToken(accessTokenStorage, requester.Cid, pid, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
 			await Login(token, pid);
+		}
+
+		public async Promise Relogin()
+		{
+			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
+			var currentToken = Requester.Token;
+			var expiresIn = (long)(currentToken.ExpiresAt - DateTime.UtcNow).TotalMilliseconds;
+			var newToken = new AccessToken(accessTokenStorage, Requester.Cid, null, currentToken.Token,
+			                               currentToken.RefreshToken, expiresIn);
+			await Login(newToken);
 		}
 
 		public async Promise Login(AccessToken token, string pid = null)
