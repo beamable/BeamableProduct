@@ -1,9 +1,6 @@
-﻿using Beamable.Common.Api.Auth;
-using Beamable.Common.Content;
-using System;
-using System.Collections.Generic;
+﻿using Beamable.Common.Content;
+using Beamable.Reflection;
 using System.Linq;
-using System.Runtime.Serialization;
 using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Content;
@@ -78,20 +75,30 @@ namespace Beamable.Server.Editor
 				                              ?.Name;
 			}
 
-			List<string> identities = GetIdentitiesOptions();
+			var cache = BeamEditor.GetReflectionSystem<ThirdPartyIdentityReflectionCache.Registry>();
 
 			SerializedProperty namespaceProperty = property.FindPropertyRelative(nameof(Federation.Namespace));
 			nextRect = new Rect(position.x, position.y + 2 * EditorGUIUtility.singleLineHeight + PADDING,
 			                    position.width, EditorGUIUtility.singleLineHeight);
 
-			var identitiesGuiContents = identities.Select(d => new GUIContent(d)).ToList();
-			var selectedNamespaceIndex = identities.FindIndex(d => d.Equals(namespaceProperty.stringValue));
+			var identitiesGuiContents = cache.ThirdPartiesOptions.Select(d => new GUIContent(d)).ToList();
+			var selectedNamespaceIndex = cache.ThirdPartiesOptions.FindIndex(d => d.Equals(namespaceProperty.stringValue));
 
 			if (selectedNamespaceIndex == -1)
 			{
 				if (string.IsNullOrEmpty(namespaceProperty.stringValue))
 				{
+					identitiesGuiContents.Insert(0, new GUIContent("<none>"));
 					selectedNamespaceIndex = 0;
+				}
+				else
+				{
+					identitiesGuiContents.Insert(0, new GUIContent(namespaceProperty.stringValue));
+					selectedNamespaceIndex = 0;
+					if (!namespaceProperty.stringValue.EndsWith(MISSING_SUFFIX))
+					{
+						namespaceProperty.stringValue += MISSING_SUFFIX;
+					}
 				}
 			}
 
@@ -103,28 +110,8 @@ namespace Beamable.Server.Editor
 			if (EditorGUI.EndChangeCheck())
 			{
 				namespaceProperty.stringValue =
-					identities.FirstOrDefault(i => i.Equals(identitiesGuiContents[nextNamespaceIndex].text));
+					cache.ThirdPartiesOptions.FirstOrDefault(i => i.Equals(identitiesGuiContents[nextNamespaceIndex].text));
 			}
-		}
-
-		private List<string> GetIdentitiesOptions()
-		{
-			Type assignableType = typeof(IThirdPartyCloudIdentity);
-
-			List<Type> types = AppDomain.CurrentDomain.GetAssemblies().ToList().SelectMany(x => x.GetTypes())
-			                            .Where(t => assignableType.IsAssignableFrom(t) && t.IsClass).ToList();
-
-			List<string> list = new List<string>();
-
-			foreach (Type type in types)
-			{
-				if (FormatterServices.GetUninitializedObject(type) is IThirdPartyCloudIdentity identity)
-				{
-					list.Add(identity.UniqueName);
-				}
-			}
-
-			return list;
 		}
 	}
 }
