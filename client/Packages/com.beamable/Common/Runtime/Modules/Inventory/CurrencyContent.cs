@@ -43,8 +43,8 @@ namespace Beamable.Common.Inventory
 		public long startingAmount;
 
 		[ContentField("external")]
-		[Tooltip(TooltipExternalIdentity)]
-		public ExternalIdentity externalIdentity;
+		[Tooltip(TooltipFederation)]
+		public OptionalFederation federation;
 	}
 
 	[System.Serializable]

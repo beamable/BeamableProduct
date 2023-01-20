@@ -94,8 +94,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 ""startingAmount"": {""data"": 0},
 ""external"": {
 	""data"": {
-		""service"": null,
-		""namespace"": null
+		""Value"": {
+			""service"": null,
+			""namespace"": null
+		},
+		""HasValue"": false
 	}
 },
     ""spriteAssetName"": {
