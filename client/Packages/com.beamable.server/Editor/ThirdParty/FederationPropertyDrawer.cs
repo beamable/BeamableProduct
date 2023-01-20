@@ -26,21 +26,21 @@ namespace Beamable.Server.Editor
 			{
 				position = EditorGUI.PrefixLabel(position, label);
 				EditorGUI.SelectableLabel(position, "You must create a Microservice to configure a Federation",
-				                          EditorStyles.wordWrappedLabel);
+										  EditorStyles.wordWrappedLabel);
 				return;
 			}
 
 			var routeInfoPosition = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
 			EditorGUI.LabelField(routeInfoPosition, "Federation",
-			                     new GUIStyle(EditorStyles.label) {font = EditorStyles.boldFont});
+								 new GUIStyle(EditorStyles.label) { font = EditorStyles.boldFont });
 			EditorGUI.indentLevel += 1;
 
 			var servicesGuiContents = descriptors
-			                          .Select(d => new GUIContent(d.Name))
-			                          .ToList();
+									  .Select(d => new GUIContent(d.Name))
+									  .ToList();
 
 			var nextRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + PADDING,
-			                        position.width, EditorGUIUtility.singleLineHeight);
+									position.width, EditorGUIUtility.singleLineHeight);
 
 			SerializedProperty serviceProperty = property.FindPropertyRelative(nameof(Federation.Service));
 			var originalServiceIndex = descriptors.FindIndex(d => d.Name.Equals(serviceProperty.stringValue));
@@ -65,21 +65,21 @@ namespace Beamable.Server.Editor
 
 			EditorGUI.BeginChangeCheck();
 			var nextServiceIndex = EditorGUI.Popup(nextRect, new GUIContent("Microservice"), originalServiceIndex,
-			                                       servicesGuiContents.ToArray(), EditorStyles.popup);
+												   servicesGuiContents.ToArray(), EditorStyles.popup);
 			if (EditorGUI.EndChangeCheck())
 			{
 				serviceProperty.stringValue = descriptors
-				                              .FirstOrDefault(descriptor =>
-					                                              descriptor.Name.Equals(
-						                                              servicesGuiContents[nextServiceIndex].text))
-				                              ?.Name;
+											  .FirstOrDefault(descriptor =>
+																  descriptor.Name.Equals(
+																	  servicesGuiContents[nextServiceIndex].text))
+											  ?.Name;
 			}
 
 			var cache = BeamEditor.GetReflectionSystem<ThirdPartyIdentityReflectionCache.Registry>();
 
 			SerializedProperty namespaceProperty = property.FindPropertyRelative(nameof(Federation.Namespace));
 			nextRect = new Rect(position.x, position.y + 2 * EditorGUIUtility.singleLineHeight + PADDING,
-			                    position.width, EditorGUIUtility.singleLineHeight);
+								position.width, EditorGUIUtility.singleLineHeight);
 
 			var identitiesGuiContents = cache.ThirdPartiesOptions.Select(d => new GUIContent(d)).ToList();
 			var selectedNamespaceIndex = cache.ThirdPartiesOptions.FindIndex(d => d.Equals(namespaceProperty.stringValue));
@@ -104,8 +104,8 @@ namespace Beamable.Server.Editor
 
 			EditorGUI.BeginChangeCheck();
 			var nextNamespaceIndex = EditorGUI.Popup(nextRect, new GUIContent("Namespace"),
-			                                         selectedNamespaceIndex,
-			                                         identitiesGuiContents.ToArray(), EditorStyles.popup);
+													 selectedNamespaceIndex,
+													 identitiesGuiContents.ToArray(), EditorStyles.popup);
 
 			if (EditorGUI.EndChangeCheck())
 			{

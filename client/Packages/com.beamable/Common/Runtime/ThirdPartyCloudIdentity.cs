@@ -4,14 +4,14 @@ using BeamableReflection;
 
 namespace Beamable.Common
 {
-	#if BEAMABLE_DEVELOPER || DB_MICROSERVICE
+#if BEAMABLE_DEVELOPER || DB_MICROSERVICE
 	public class ExampleCloudIdentity : IThirdPartyCloudIdentity
 	{
 		public string UniqueName => "Example";
 	}
-	#endif
-	
-	
+#endif
+
+
 	[Preserve]
 	public interface IThirdPartyCloudIdentity
 	{
