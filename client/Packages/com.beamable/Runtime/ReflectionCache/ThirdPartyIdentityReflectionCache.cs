@@ -38,7 +38,7 @@ namespace Beamable.Reflection
 			public List<string> ThirdPartiesOptions { get; private set; } = new List<string>();
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest =>
-				new List<BaseTypeOfInterest> {I_THIRD_PARTY_CLOUD_IDENTITY_INTERFACE};
+				new List<BaseTypeOfInterest> { I_THIRD_PARTY_CLOUD_IDENTITY_INTERFACE };
 
 			public List<AttributeOfInterest> AttributesOfInterest => new List<AttributeOfInterest>();
 
@@ -54,7 +54,7 @@ namespace Beamable.Reflection
 				foreach (MemberInfo info in cachedSubTypes)
 				{
 					if (info is Type type &&
-					    FormatterServices.GetUninitializedObject(type) is IThirdPartyCloudIdentity identity)
+						FormatterServices.GetUninitializedObject(type) is IThirdPartyCloudIdentity identity)
 					{
 						list.Add(identity.UniqueName);
 					}
@@ -65,10 +65,12 @@ namespace Beamable.Reflection
 			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintGlobalStorage = hintGlobalStorage;
 			public void ClearCachedReflectionData() { }
 			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType,
-			                                       IReadOnlyList<MemberAttribute> cachedMemberAttributes) { }
+												   IReadOnlyList<MemberAttribute> cachedMemberAttributes)
+			{ }
 			public void OnSetupForCacheGeneration() { }
 			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
-			                                   PerAttributeCache perAttributeCache) { }
+											   PerAttributeCache perAttributeCache)
+			{ }
 		}
 	}
 }

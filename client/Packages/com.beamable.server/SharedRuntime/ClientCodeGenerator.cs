@@ -88,8 +88,8 @@ namespace Beamable.Server.Generator
 				Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference("BeamContext"), "context = null") },
 				BaseConstructorArgs = { new CodeArgumentReferenceExpression("context") }
 			});
-			
-			
+
+
 
 			parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
 			parameterClass.IsClass = true;
@@ -108,7 +108,7 @@ namespace Beamable.Server.Generator
 
 			AddServiceNameInterface();
 			AddFederatedLoginInterfaces();
-			
+
 			var registrationMethod = new CodeMemberMethod
 			{
 				Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
@@ -195,7 +195,7 @@ namespace Beamable.Server.Generator
 				}
 			}
 		}
-		
+
 		void AddServiceNameInterface()
 		{
 			targetClass.BaseTypes.Add(new CodeTypeReference(typeof(IHaveServiceName)));
