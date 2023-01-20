@@ -41,7 +41,7 @@ namespace Core.Platform.SDK
 		private readonly AccessTokenStorage _accessTokenStorage;
 
 		public BeamableApiRequester(string host,
-		                            AccessTokenStorage accessTokenStorage,
+									AccessTokenStorage accessTokenStorage,
 		  IConnectivityService connectivityService)
 		{
 			Host = host;
@@ -58,13 +58,15 @@ namespace Core.Platform.SDK
 		{
 			var authBody = new BeamableApiTokenRequest
 			{
-				refreshToken = Token.RefreshToken, customerId = Token.Cid, realmId = Token.Pid
+				refreshToken = Token.RefreshToken,
+				customerId = Token.Cid,
+				realmId = Token.Pid
 			};
 			return Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody, false)
 				.Map(rsp =>
 				{
 					Token = new AccessToken(_accessTokenStorage, Token.Cid, Token.Pid, rsp.accessToken,
-					                        rsp.refreshToken, long.MaxValue - 1);
+											rsp.refreshToken, long.MaxValue - 1);
 					return PromiseBase.Unit;
 				});
 		}
@@ -89,9 +91,9 @@ namespace Core.Platform.SDK
 		}
 
 		private Promise<T> MakeRequestWithTokenRefresh<T>(Method method,
-		                                                  string uri,
-		                                                  byte[] body,
-		                                                  bool includeAuthHeader)
+														  string uri,
+														  byte[] body,
+														  bool includeAuthHeader)
 		{
 			return MakeRequest<T>(method, uri, body, includeAuthHeader).RecoverWith(error =>
 			{
@@ -131,7 +133,7 @@ namespace Core.Platform.SDK
 				if (request.IsNetworkError())
 				{
 					promise.CompleteError(new NoConnectivityException(
-						                      $"Unity webRequest failed with a network error. apirequester. status=[{request.responseCode}] error=[{request.error}]"));
+											  $"Unity webRequest failed with a network error. apirequester. status=[{request.responseCode}] error=[{request.error}]"));
 				}
 				else if (request.responseCode >= 300)
 				{
@@ -192,13 +194,14 @@ namespace Core.Platform.SDK
 			// Prepare the request
 			var request = new UnityWebRequest(address)
 			{
-				downloadHandler = new DownloadHandlerBuffer(), method = method.ToString()
+				downloadHandler = new DownloadHandlerBuffer(),
+				method = method.ToString()
 			};
 
 			// Set the body
 			if (body != null)
 			{
-				var upload = new UploadHandlerRaw(body) {contentType = "application/json"};
+				var upload = new UploadHandlerRaw(body) { contentType = "application/json" };
 				request.uploadHandler = upload;
 			}
 
