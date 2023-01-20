@@ -20,7 +20,7 @@ namespace Beamable.Common
 
 	public interface IFederatedLogin<in T> where T : IThirdPartyCloudIdentity, new()
 	{
-		FederatedAuthenticationResponse Authenticate(string token, string challenge, string solution);
+		Promise<FederatedAuthenticationResponse> Authenticate(string token, string challenge, string solution);
 	}
 
 	public class FederatedAuthenticationResponse : ExternalAuthenticationResponse
