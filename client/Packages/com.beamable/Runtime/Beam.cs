@@ -38,7 +38,6 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
-using Beamable.Connection;
 using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
@@ -131,7 +130,6 @@ namespace Beamable
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
-			DependencyBuilder.AddSingleton(contentReflectionCache);
 			DependencyBuilder.AddComponentSingleton<CoroutineService>();
 			DependencyBuilder.AddComponentSingleton<NotificationService>();
 			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
@@ -146,7 +144,6 @@ namespace Beamable
 			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());
-			DependencyBuilder.AddScoped<CachelessInventoryService>();
 			DependencyBuilder.AddSingleton<IAnnouncementsApi, AnnouncementsService>();
 			DependencyBuilder.AddSingleton<ISessionService, SessionService>();
 			DependencyBuilder.AddSingleton<CloudSavingService>();
@@ -217,17 +214,13 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<CalendarsService>();
 			DependencyBuilder.AddSingleton<AnnouncementsService>();
 			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
-			DependencyBuilder.AddScoped<ISdkEventService, SdkEventService>();
+			DependencyBuilder.AddSingleton<ISdkEventService, SdkEventService>();
 			DependencyBuilder.AddSingleton<PubnubNotificationService>();
 			DependencyBuilder.AddSingleton<IPubnubNotificationService, PubnubNotificationService>();
 			DependencyBuilder.AddSingleton<IPubnubSubscriptionManager>(
 				provider => provider.GetService<PubnubSubscriptionManager>());
 			DependencyBuilder.AddSingleton<INotificationService>(
 				provider => provider.GetService<NotificationService>());
-
-			DependencyBuilder.AddSingleton<IBeamableConnection, WebSocketConnection>();
-			DependencyBuilder.AddSingleton<BeamableSubscriptionManager>();
-
 			DependencyBuilder.AddSingleton<ApiServices>();
 
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
@@ -236,11 +229,8 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
 			DependencyBuilder.AddScoped<PlayerAccounts>();
-			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
-			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
-			DependencyBuilder.AddScoped<PlayerCurrencyGroup>(p => p.GetService<PlayerInventory>().Currencies);
+			DependencyBuilder.AddScoped<PlayerInventory>();
 			DependencyBuilder.AddScoped<PlayerSocial>();
-			DependencyBuilder.AddSingleton<Debouncer>();
 
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
@@ -253,20 +243,6 @@ namespace Beamable
 
 
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder, RegistrationOrigin.RUNTIME);
-
-
-#if UNITY_EDITOR
-			// TODO: in a runtime game, we should save the state if the game is crashing...
-			UnityEditor.EditorApplication.playModeStateChanged += async (state) =>
-			{
-				
-				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
-				{
-					Debug.Log("Stopping all contexts manually");
-					await StopAllContexts();
-				}
-			};
-#endif
 		}
 
 		/// <summary>

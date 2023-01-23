@@ -92,15 +92,6 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          }
       },
 ""startingAmount"": {""data"": 0},
-""external"": {
-	""data"": {
-		""Value"": {
-			""service"": null,
-			""namespace"": null
-		},
-		""HasValue"": false
-	}
-},
     ""spriteAssetName"": {
          ""data"": ""spendable_tokens""
       },
@@ -119,7 +110,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          ""data"": ""tuna""
       }
    }
-}".Replace("\r\n", "").Replace("\n", "").Replace(" ", "").Replace("\t", "");
+}".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
 
 			var s = new TestSerializer();
 			var json = s.Serialize(c);

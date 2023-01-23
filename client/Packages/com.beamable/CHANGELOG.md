@@ -4,21 +4,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Added
-- `PlayerInventory` supports storing player's inventory in offline mode
-- `PlayerInventory` supports `UpdateDelayed` method
-- `IFederatedLogin<T>` interface type available for Microservices
-
-### Changed
-- `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
-- `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
-- Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
-
-### Fixed
-- `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
-- Local Content Mode won't fail to load content if internet connection is lost mid-game.
-
 ## [1.10.2]
 ### Changed
 - non finite numbers such as `NaN` or `Infinity` will throw a `CannotSerializeException` exception if serialized by the `SmallerJson` utility.
@@ -30,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tournament content can be scheduled for any ISO 8601 Period
 - Detect using invalid AA assets inside `LoadTexture` helper method for `AssetReferenceSprite`
 
-
 ## [1.10.1]
 ### Fixed
 - possible `NullReferenceException` during Content Manager initialization
@@ -39,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Player Account PSDK
 - `EditorDownloadBatchSize` setting in Content Configuration controls the batch download size for Content Manager. The default value is 100.
-- Added SDK support for a direct Websocket connection to Beamable services toggleable via realm configuration.
 
 ### Changed
 - Content Manager uses batch operations for better performance.

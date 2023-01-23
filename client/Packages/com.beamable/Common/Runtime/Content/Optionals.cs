@@ -159,19 +159,7 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLong : OptionalValue<long>
-	{
-		public OptionalLong()
-		{
-
-		}
-
-		public OptionalLong(long value)
-		{
-			Set(value);
-		}
-		public static implicit operator OptionalLong(long d) => new OptionalLong(d);
-	}
+	public class OptionalLong : OptionalValue<long> { }
 
 	[System.Serializable]
 	[Agnostic]

@@ -293,8 +293,8 @@ namespace Beamable.Common.Dependencies
 				}
 			}
 
-			DisposeServices(SingletonCache.Values.Distinct());
-			DisposeServices(ScopeCache.Values.Distinct());
+			DisposeServices(SingletonCache.Values);
+			DisposeServices(ScopeCache.Values);
 
 			await Promise.Sequence(disposalPromises);
 

@@ -23,8 +23,6 @@ public struct UnrealEndpointDeclaration
 	public string ResponseBodyNonPtrUnrealType;
 
 
-	private string _responseBodyIncludeStatement;
-
 	private string _capitalizedEndpointVerb;
 	private string _buildBodyImpl;
 	private string _buildRouteImpl;
@@ -42,7 +40,7 @@ public struct UnrealEndpointDeclaration
 			.Union(RequestBodyParameters)
 			.DistinctBy(p => p.PropertyUnrealType)
 			.Select(p => p.PropertyUnrealType)
-			.Union(new[] { ResponseBodyUnrealType }.Where(t => t != null)).ToList();
+			.Union(new[] { ResponseBodyUnrealType }).ToList();
 	}
 
 	public void IntoProcessMap(Dictionary<string, string> helperDict, List<UnrealSerializableTypeDeclaration> serializableTypes = null)
@@ -70,9 +68,6 @@ public struct UnrealEndpointDeclaration
 			helperDict.Clear();
 			return propertyDeclaration;
 		}));
-
-		// Handle getting the include statement for the response body
-		_responseBodyIncludeStatement = UnrealSourceGenerator.GetIncludeStatementForUnrealType(ResponseBodyUnrealType);
 
 		// Handle Capitalizing the Verb so it matches UE's expected value
 		_capitalizedEndpointVerb = EndpointVerb.ToUpper();
@@ -221,8 +216,6 @@ public struct UnrealEndpointDeclaration
 		helperDict.Add(nameof(GlobalNamespacedEndpointName), GlobalNamespacedEndpointName);
 		helperDict.Add(nameof(SubsystemNamespacedEndpointName), SubsystemNamespacedEndpointName);
 
-		helperDict.Add(nameof(_responseBodyIncludeStatement), _responseBodyIncludeStatement);
-
 		helperDict.Add(nameof(NamespacedOwnerServiceName), NamespacedOwnerServiceName);
 		helperDict.Add(nameof(EndpointVerb), EndpointVerb);
 		helperDict.Add(nameof(EndpointPath), EndpointPath);
@@ -254,20 +247,13 @@ public struct UnrealEndpointDeclaration
 				return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *{routeParameterDeclaration.PropertyName});";
 			case UnrealSourceGenerator.UNREAL_BYTE or UnrealSourceGenerator.UNREAL_SHORT or UnrealSourceGenerator.UNREAL_INT or UnrealSourceGenerator.UNREAL_LONG:
 				return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *FString::FromInt({routeParameterDeclaration.PropertyName}));";
-
 			default:
 			{
 				// We handle the enum case that we can't pattern match here
 				if (routeParameterDeclaration.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
-				{
 					return
 						$"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), " +
 						$"*U{routeParameterDeclaration.PropertyNamespacedType}Library::{routeParameterDeclaration.PropertyNamespacedType}ToSerializableName({routeParameterDeclaration.PropertyName}));";
-				}
-				else if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(routeParameterDeclaration.PropertyUnrealType))
-				{
-					return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *static_cast<FString>({routeParameterDeclaration.PropertyName}));";
-				}
 
 				// We fail the gen loudly if we ever see a type that doesn't match this. It should be impossible.
 				throw new NotImplementedException("No definition for how to embed a path parameter of this type into the route string. Please add a conditional to handle this case.");
@@ -295,22 +281,22 @@ public struct UnrealEndpointDeclaration
 		switch (q.NonOptionalTypeName)
 		{
 			case UnrealSourceGenerator.UNREAL_STRING when isOptional:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName}.Val);\n\t");
+				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), *{q.PropertyName}.Val);\n\t");
 				break;
 			case UnrealSourceGenerator.UNREAL_STRING:
-				queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName});\n\t");
+				queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), *{q.PropertyName});\n\t");
 				break;
 			case UnrealSourceGenerator.UNREAL_BYTE or UnrealSourceGenerator.UNREAL_SHORT or UnrealSourceGenerator.UNREAL_INT or UnrealSourceGenerator.UNREAL_LONG when isOptional:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}.Val));\n\t");
+				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}.Val));\n\t");
 				break;
 			case UnrealSourceGenerator.UNREAL_BYTE or UnrealSourceGenerator.UNREAL_SHORT or UnrealSourceGenerator.UNREAL_INT or UnrealSourceGenerator.UNREAL_LONG:
-				queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}));\n\t");
+				queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}));\n\t");
 				break;
 			case UnrealSourceGenerator.UNREAL_BOOL when isOptional:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), {q.PropertyName}.Val ? TEXT(\"true\") : TEXT(\"false\"));\n\t");
+				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), {q.PropertyName}.Val ? *TEXT(\"true\") : *TEXT(\"false\"));\n\t");
 				break;
 			case UnrealSourceGenerator.UNREAL_BOOL:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), {q.PropertyName} ? TEXT(\"true\") : TEXT(\"false\"));\n\t");
+				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), {q.PropertyName} ? *TEXT(\"true\") : *TEXT(\"false\"));\n\t");
 				break;
 			default:
 			{
@@ -319,17 +305,10 @@ public struct UnrealEndpointDeclaration
 				{
 					if (isOptional)
 						queryAppend.Append(
-							$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}.Val));\n\t");
+							$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}.Val));\n\t");
 					else
 						queryAppend.Append(
-							$"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}));\n\t");
-				}
-				else if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(q.NonOptionalTypeName))
-				{
-					if (isOptional)
-						queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}.Val));\n\t");
-					else
-						queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}));\n\t");
+							$"QueryParams.Appendf(TEXT(\"%s=%s\"), *TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}));\n\t");
 				}
 				// https://disruptorbeam.atlassian.net/browse/PLAT-4672
 				// TODO This is a known issue --- so we are ignoring this case for now. Once this gets fixed, remove this thing.
@@ -363,14 +342,14 @@ template TUnrealRequestPtr UBeamBackend::CreateRequest(int64&, const FBeamRealmH
 template TUnrealRequestPtr UBeamBackend::CreateAuthenticatedRequest(int64&, const FBeamRealmHandle&, const FBeamRetryConfig&, const FBeamAuthToken&, const U₢{nameof(GlobalNamespacedEndpointName)}₢Request*);
 
 template FBeamRequestProcessor UBeamBackend::MakeBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>(
-	const int64&, U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete, const UObject*);
+	const int64&, U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete);
 
 template FBeamRequestProcessor UBeamBackend::MakeAuthenticatedBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>(
-	const int64&, const FBeamRealmHandle&, const FBeamAuthToken&, U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete, const UObject*);
+	const int64&, const FBeamRealmHandle&, const FBeamAuthToken&, U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete);
 
-template FBeamRequestProcessor UBeamBackend::MakeCodeRequestProcessor(const int64&, U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, TBeamFullResponseHandler<U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, ₢{nameof(ResponseBodyUnrealType)}₢>, const UObject*);
+template FBeamRequestProcessor UBeamBackend::MakeCodeRequestProcessor(const int64&, U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, TBeamFullResponseHandler<U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, ₢{nameof(ResponseBodyUnrealType)}₢>);
 template FBeamRequestProcessor UBeamBackend::MakeAuthenticatedCodeRequestProcessor(const int64&, const FBeamRealmHandle&, const FBeamAuthToken&, U₢{nameof(GlobalNamespacedEndpointName)}₢Request*,
-                                                                                   TBeamFullResponseHandler<U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, ₢{nameof(ResponseBodyUnrealType)}₢>, const UObject*);
+                                                                                   TBeamFullResponseHandler<U₢{nameof(GlobalNamespacedEndpointName)}₢Request*, ₢{nameof(ResponseBodyUnrealType)}₢>);
 
 ";
 
@@ -410,8 +389,8 @@ public:
 	virtual void BuildRoute(FString& RouteString) const override;
 	virtual void BuildBody(FString& BodyString) const override;
 
-	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", DisplayName=""Beam - Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""RequestOwner"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢RequestOwner""))
-	static U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner);
+	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", DisplayName=""Beam - Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""Outer"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢Outer""))
+	static U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Make(₢{nameof(_makeParameterDeclaration)}₢UObject* Outer);
 }};
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -445,9 +424,9 @@ void U₢{nameof(GlobalNamespacedEndpointName)}₢Request::BuildBody(FString& Bo
 	₢{nameof(_buildBodyImpl)}₢
 }}
 
-U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespacedEndpointName)}₢Request::Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner)
+U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespacedEndpointName)}₢Request::Make(₢{nameof(_makeParameterDeclaration)}₢UObject* Outer)
 {{
-	U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Req = NewObject<U₢{nameof(GlobalNamespacedEndpointName)}₢Request>(RequestOwner);
+	U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Req = NewObject<U₢{nameof(GlobalNamespacedEndpointName)}₢Request>(Outer);
 
 	// Pass in Path and Query Parameters (Blank if no path parameters exist)
 	₢{nameof(_makeNonBodyImpl)}₢
@@ -466,36 +445,23 @@ U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespac
 	 */
 	void BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
 	                                const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete,
-	                                int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;";
+	                                int64& OutRequestId) const;";
 
 	public const string RAW_BP_DEFINITION = $@"
 void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
                                                   const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete,
-                                                  int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
+                                                  int64& OutRequestId) const
 {{
 	// AUTO-GENERATED...	
 	const auto Request = Backend->CreateRequest(OutRequestId, TargetRealm, RetryConfig, RequestData);
 
-	// If we are making this request as part of an operation, we add it to it.
-	if(OpHandle.OperationId >= 0)
-		RequestTracker->AddRequestToOperation(OpHandle, OutRequestId);
+	// Binds the handler to the static response handler (pre-generated)
+	const auto BeamRequestProcessor = Backend->MakeBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
+		(OutRequestId, RequestData, OnSuccess, OnError, OnComplete);
+	Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
 
-	// If cached...
-	if(FString CachedResponse; ResponseCache->TryHitResponseCache(RequestData, Request, CallingContext,  CachedResponse))
-	{{
-		UE_LOG(LogBeamBackend, Verbose, TEXT(""Found data in cache.REQUEST_TYPE=%s\\n%s""), *RequestData->GetRequestType().Name, *CachedResponse);
-		Backend->RunBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
-			(200, CachedResponse, EHttpRequestStatus::Succeeded, OutRequestId, RequestData, OnSuccess, OnError, OnComplete);		
-	}}
-	// If not cached...
-	else
-	{{			
-		// Binds the handler to the static response handler (pre-generated)
-		const auto BeamRequestProcessor = Backend->MakeBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
-			(OutRequestId, RequestData, OnSuccess, OnError, OnComplete);
-		Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);		
-	}}	
+	// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.
+	Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);
 }}
 ";
 
@@ -505,40 +471,23 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 	 * @brief Private implementation for requests that require authentication that all overloaded BP UFunctions call.	  
 	 */
 	void BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
-	                  const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, 
-					  int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;";
+	                  const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, int64& OutRequestId) const;";
 
 
 	public const string RAW_AUTH_BP_DEFINITION = $@"
 void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus,
-                                U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, 
-								int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
+                                U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, int64& OutRequestId) const
 {{
 	// AUTO-GENERATED...	
 	const auto Request = Backend->CreateAuthenticatedRequest(OutRequestId, TargetRealm, RetryConfig, AuthToken, RequestData);
 
-	// If we are making this request as part of an operation, we add it to it.
-	if(OpHandle.OperationId >= 0)
-		RequestTracker->AddRequestToOperation(OpHandle, OutRequestId);
+	// Binds the handler to the static response handler (pre-generated)
+	const auto BeamRequestProcessor = Backend->MakeAuthenticatedBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
+		(OutRequestId, TargetRealm, AuthToken, RequestData, OnSuccess, OnError, OnComplete);
+	Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
 
-	// If cached...
-	if(FString CachedResponse; ResponseCache->TryHitResponseCache(RequestData, Request, CallingContext,  CachedResponse))
-	{{
-		UE_LOG(LogBeamBackend, Verbose, TEXT(""Found data in cache.REQUEST_TYPE=%s\\n%s""), *RequestData->GetRequestType().Name, *CachedResponse);
-		Backend->RunAuthenticatedBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
-			(200, CachedResponse, EHttpRequestStatus::Succeeded, OutRequestId, TargetRealm, AuthToken, RequestData, OnSuccess, OnError, OnComplete);		
-	}}
-	// If not cached...
-	else
-	{{
-		// Binds the handler to the static response handler (pre-generated)
-		const auto BeamRequestProcessor = Backend->MakeAuthenticatedBlueprintRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error, FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete>
-			(OutRequestId, TargetRealm, AuthToken, RequestData, OnSuccess, OnError, OnComplete);
-		Request->OnProcessRequestComplete().BindLambda(BeamRequestProcessor);
-	    
-		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);	
-	}}
+	// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
+	Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);
 }}
 ";
 
@@ -548,38 +497,23 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::BP_₢{nameof(Subsystem
 	 * @brief Overload version for binding lambdas when in C++ land. Prefer the BP version whenever possible, this is here mostly for quick experimentation purposes.	 
 	 */
 	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
-	                                 const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;
+	                                 const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const;
 ";
 
 	public const string RAW_CPP_DEFINITION = $@"
 void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, FBeamConnectivity& ConnectivityStatus,
-                                               U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
+                                               U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const
 {{
-	// AUTO-GENERATED...	
+	// AUTO-GENERATED...
+	int64 OutRequestId;
 	const auto Request = Backend->CreateRequest(OutRequestId, TargetRealm, RetryConfig, RequestData);
 
-	// If we are making this request as part of an operation, we add it to it.
-	if(OpHandle.OperationId >= 0)
-		RequestTracker->AddRequestToOperation(OpHandle, OutRequestId);
+	// Binds the handler to the static response handler (pre-generated)	
+	auto ResponseProcessor = Backend->MakeCodeRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>(OutRequestId, RequestData, Handler);
+	Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
 
-	// If cached...
-	if(FString CachedResponse; ResponseCache->TryHitResponseCache(RequestData, Request, CallingContext,  CachedResponse))
-	{{
-		UE_LOG(LogBeamBackend, Verbose, TEXT(""Found data in cache.REQUEST_TYPE=%s\\n%s""), *RequestData->GetRequestType().Name, *CachedResponse);
-		Backend->RunCodeRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>
-			(200, CachedResponse, EHttpRequestStatus::Succeeded, OutRequestId, RequestData, Handler);			
-	}}
-	// If not cached...
-	else
-	{{
-		// Binds the handler to the static response handler (pre-generated)	
-		auto ResponseProcessor = Backend->MakeCodeRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>
-			(OutRequestId, RequestData, Handler);
-		Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
-
-		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);	
-	}}	
+	// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
+	Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);
 }}
 ";
 
@@ -589,38 +523,23 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	 * @brief Overload version for binding lambdas when in C++ land. Prefer the BP version whenever possible, this is here mostly for quick experimentation purposes.	 
 	 */
 	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData,
-	                   const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;";
+	                   const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const;";
 
 
 	public const string RAW_AUTH_CPP_DEFINITION = $@"
 void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(const FBeamRealmHandle& TargetRealm, const FBeamRetryConfig& RetryConfig, const FBeamAuthToken& AuthToken, FBeamConnectivity& ConnectivityStatus,
-                              U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, int64& OutRequestId, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
+                              U₢{nameof(GlobalNamespacedEndpointName)}₢Request* RequestData, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const
 {{
 	// AUTO-GENERATED...
+	int64 OutRequestId;
 	const auto Request = Backend->CreateAuthenticatedRequest(OutRequestId, TargetRealm, RetryConfig, AuthToken, RequestData);
-	
-	// If we are making this request as part of an operation, we add it to it.
-	if(OpHandle.OperationId >= 0)
-		RequestTracker->AddRequestToOperation(OpHandle, OutRequestId);
 
-	// If cached...
-	if(FString CachedResponse; ResponseCache->TryHitResponseCache(RequestData, Request, CallingContext,  CachedResponse))
-	{{
-		UE_LOG(LogBeamBackend, Verbose, TEXT(""Found data in cache.REQUEST_TYPE=%s\\n%s""), *RequestData->GetRequestType().Name, *CachedResponse);
-		Backend->RunAuthenticatedCodeRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>
-			(200, CachedResponse, EHttpRequestStatus::Succeeded, OutRequestId, TargetRealm, AuthToken, RequestData, Handler);		
-	}}
-	// If not cached...
-	else
-	{{
-		// Binds the handler to the static response handler (pre-generated)	
-		auto ResponseProcessor = Backend->MakeAuthenticatedCodeRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>
-			(OutRequestId, TargetRealm, AuthToken, RequestData, Handler);
-		Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
+	// Binds the handler to the static response handler (pre-generated)	
+	auto ResponseProcessor = Backend->MakeAuthenticatedCodeRequestProcessor<U₢{nameof(GlobalNamespacedEndpointName)}₢Request, ₢{nameof(ResponseBodyNonPtrUnrealType)}₢>(OutRequestId, TargetRealm, AuthToken, RequestData, Handler);
+	Request->OnProcessRequestComplete().BindLambda(ResponseProcessor);
 
-		// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
-		Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);	
-	}}
+	// Logic that actually talks to the backend --- if you pass in some other delegate, that means you can avoid making the actual back-end call.	
+	Backend->ExecuteRequestDelegate.ExecuteIfBound(OutRequestId, ConnectivityStatus);
 }}
 ";
 
@@ -633,23 +552,17 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	 * (Dynamic delegates do not allow for that so... we autogen this one to make experimenting in CPP a bit faster and for whenever you need to capture variables).
 	 * 
 	 * @param Request The Request UObject. All (de)serialized data the request data creates is tied to the lifecycle of this object.
-	 * @param Handler A callback that defines how to handle success, error and completion.
-     * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight.
-	 * @param OpHandle When made as part of an Operation, you can pass this in and it'll register the request with the operation automatically.
-	 * @param CallingContext A UObject managed by the UWorld that's making the request. Used to support multiple PIEs (see UBeamUserSlot::GetNamespacedSlotId) and read-only RequestCaches. 
+	 * @param Handler A callback that defines how to handle success, error and completion. 
 	 */
-	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;
+	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const;
 ";
 
 	public const string LAMBDA_BINDABLE_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const
 {{
 	FBeamRetryConfig RetryConfig;
 	Backend->GetRetryConfigForRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), RetryConfig);
-	
-    int64 OutRequestId;
-	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), None}};
+	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(Backend->UnauthenticatedRequestsTargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, Handler);
 }}
 ";
 
@@ -663,27 +576,22 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	 * 
 	 * @param UserSlot The Authenticated User Slot that is making this request.
 	 * @param Request The Request UObject. All (de)serialized data the request data creates is tied to the lifecycle of this object.
-	 * @param Handler A callback that defines how to handle success, error and completion.
-     * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight.
-	 * @param OpHandle When made as part of an Operation, you can pass this in and it'll register the request with the operation automatically.
-	 * @param CallingContext A UObject managed by the UWorld that's making the request. Used to support multiple PIEs (see UBeamUserSlot::GetNamespacedSlotId) and read-only RequestCaches. 
+	 * @param Handler A callback that defines how to handle success, error and completion. 
 	 */
-	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(const FUserSlot& UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr) const;
+	void CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(const FUserSlot& UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const;
 ";
 
 	public const string LAMBDA_BINDABLE_AUTH_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(const FUserSlot& UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle, const UObject* CallingContext) const
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢(const FUserSlot& UserSlotId, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullResponse& Handler) const
 {{
 	// AUTO-GENERATED...
 	FBeamRealmUser AuthenticatedUser;
-	Backend->BeamUserSlots->GetUserDataAtSlot(UserSlot, AuthenticatedUser, CallingContext);
+	Backend->BeamUserSlots->GetUserDataAtSlot(UserSlotId, AuthenticatedUser);
 
 	FBeamRetryConfig RetryConfig;
-	Backend->GetRetryConfigForUserSlotAndRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), UserSlot, RetryConfig);
+	Backend->GetRetryConfigForUserSlotAndRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), UserSlotId, RetryConfig);
 
-    int64 OutRequestId;
-	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, None}};
+	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, Handler);
 }}
 ";
 
@@ -696,23 +604,22 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	 * @param OnSuccess What to do if the requests receives a successful response.
 	 * @param OnError What to do if the request receives an error response.
 	 * @param OnComplete What to after either OnSuccess or OnError have finished executing.
-	 * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight.
-	 * @param CallingContext A UObject managed by the UWorld that's making the request. Used to support multiple PIEs (see UBeamUserSlot::GetNamespacedSlotId) and read-only RequestCaches. 
+	 * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight. 
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(DefaultToSelf=""CallingContext"", AdvancedDisplay=""OpHandle,CallingContext"", AutoCreateRefTerm=""OnSuccess,OnError,OnComplete,OpHandle"", BeamFlowFunction))
-	void ₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr);
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(AutoCreateRefTerm=""OnSuccess,OnError,OnComplete"", BeamFlowStart))
+	void ₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext);
 ";
 
 	public const string U_FUNCTION_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle, const UObject* CallingContext)
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNamespacedEndpointName)}₢(U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext)
 {{
 	// AUTO-GENERATED...	
 	FBeamRetryConfig RetryConfig;
 	Backend->GetRetryConfigForRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), RetryConfig);	
 	
 	int64 OutRequestId = 0;
-	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), None}};
+	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(Backend->UnauthenticatedRequestsTargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId);
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, Backend->UnauthenticatedRequestsTargetRealm, -1, FUserSlot(), None}};
 }}
 ";
 
@@ -726,28 +633,79 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 	 * @param OnSuccess What to do if the requests receives a successful response.
 	 * @param OnError What to do if the request receives an error response.
 	 * @param OnComplete What to after either OnSuccess or OnError have finished executing.
-	 * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight.
-	 * @param CallingContext A UObject managed by the UWorld that's making the request. Used to support multiple PIEs (see UBeamUserSlot::GetNamespacedSlotId) and read-only RequestCaches.
+	 * @param OutRequestContext The Request Context associated with this request -- used to query information about the request or to cancel it while it's in flight. 
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(DefaultToSelf=""CallingContext"", AdvancedDisplay=""OpHandle,CallingContext"",AutoCreateRefTerm=""UserSlot,OnSuccess,OnError,OnComplete,OpHandle"", BeamFlowFunction))
-	void ₢{nameof(SubsystemNamespacedEndpointName)}₢(FUserSlot UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle = FBeamOperationHandle(), const UObject* CallingContext = nullptr);
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(AutoCreateRefTerm=""UserSlot,OnSuccess,OnError,OnComplete"", BeamFlowStart))
+	void ₢{nameof(SubsystemNamespacedEndpointName)}₢(FUserSlot UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext);
 ";
 
 	public const string U_FUNCTION_AUTH_DEFINITION = $@"
-void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNamespacedEndpointName)}₢(FUserSlot UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete,  FBeamRequestContext& OutRequestContext, FBeamOperationHandle OpHandle, const UObject* CallingContext)
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNamespacedEndpointName)}₢(FUserSlot UserSlot, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete,  FBeamRequestContext& OutRequestContext)
 {{
 	// AUTO-GENERATED...
 	FBeamRealmUser AuthenticatedUser;
-	Backend->BeamUserSlots->GetUserDataAtSlot(UserSlot, AuthenticatedUser, CallingContext);
+	Backend->BeamUserSlots->GetUserDataAtSlot(UserSlot, AuthenticatedUser);
 
 	FBeamRetryConfig RetryConfig;
 	Backend->GetRetryConfigForUserSlotAndRequestType(U₢{nameof(GlobalNamespacedEndpointName)}₢Request::StaticClass()->GetName(), UserSlot, RetryConfig);
 
 	int64 OutRequestId;
-	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);	
+	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId);	
 	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, None}};
 }}
 ";
+
+	public const string U_FUNCTION_WITH_RETRY_DECLARATION = $@"
+	/**
+	 * @brief Makes a request to the ₢{nameof(EndpointVerb)}₢ ₢{nameof(EndpointPath)}₢ endpoint of the ₢{nameof(NamespacedOwnerServiceName)}₢ Service.
+	 *	 
+	 * @param RetryConfig The retry config for this specific request. 
+	 * @param Request The Request UObject. All (de)serialized data the request data creates is tied to the lifecycle of this object.
+	 * @param OnSuccess What to do if the requests receives a successful response.
+	 * @param OnError What to do if the request receives an error response.
+	 * @param OnComplete What to after either OnSuccess or OnError have finished executing.
+	 * @param OutRequestContext The Request Context -- used to query information about the request or to cancel it while it's in flight. 
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(AutoCreateRefTerm=""OnSuccess,OnError,OnComplete"", BeamFlowStart))
+	void ₢{nameof(SubsystemNamespacedEndpointName)}₢WithRetry(const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext);";
+
+	public const string U_FUNCTION_WITH_RETRY_DEFINITION = $@"
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNamespacedEndpointName)}₢WithRetry(const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext)
+{{
+	int64 OutRequestId = 0;
+	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(Backend->UnauthenticatedRequestsTargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId);
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, Backend->UnauthenticatedRequestsTargetRealm, -1, FUserSlot(), None}}; 
+}}
+";
+
+	public const string U_FUNCTION_WITH_RETRY_AUTH_DECLARATION = $@"
+	/**
+	 * @brief Makes an authenticated request to the ₢{nameof(EndpointVerb)}₢ ₢{nameof(EndpointPath)}₢ endpoint of the ₢{nameof(NamespacedOwnerServiceName)}₢ Service.
+	 *
+	 * @param UserSlot The authenticated UserSlot with the user making the request.
+	 * @param RetryConfig The retry config for this specific request. 
+	 * @param Request The Request UObject. All (de)serialized data the request data creates is tied to the lifecycle of this object.
+	 * @param OnSuccess What to do if the requests receives a successful response.
+	 * @param OnError What to do if the request receives an error response.
+	 * @param OnComplete What to after either OnSuccess or OnError have finished executing.
+	 * @param OutRequestContext The Request Context -- used to query information about the request or to cancel it while it's in flight. 
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", meta=(AutoCreateRefTerm=""UserSlot,OnSuccess,OnError,OnComplete"", BeamFlowStart))
+	void ₢{nameof(SubsystemNamespacedEndpointName)}₢WithRetry(FUserSlot UserSlot, const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext);";
+
+	public const string U_FUNCTION_WITH_RETRY_AUTH_DEFINITION = $@"
+void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNamespacedEndpointName)}₢WithRetry(FUserSlot UserSlot, const FBeamRetryConfig& RetryConfig, U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Request, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Success& OnSuccess, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Error& OnError, const FOn₢{nameof(GlobalNamespacedEndpointName)}₢Complete& OnComplete, FBeamRequestContext& OutRequestContext)
+{{
+	// AUTO-GENERATED...
+	FBeamRealmUser AuthenticatedUser;
+	Backend->BeamUserSlots->GetUserDataAtSlot(UserSlot, AuthenticatedUser);	
+
+	int64 OutRequestId;
+	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId);	
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, None}}; 
+}}
+";
+
 	private const string BUILD_BODY_IMPLEMENTATION = @"ensureAlways(Body);
 
 	TUnrealJsonSerializer JsonSerializer = TJsonStringWriter<TCondensedJsonPrintPolicy<wchar_t>>::Create(&BodyString);
@@ -800,7 +758,7 @@ public:
 
 #include ""AutoGen/SubSystems/Beam₢{nameof(NamespacedOwnerServiceName)}₢Api.h""
 #include ""AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
-₢{nameof(_responseBodyIncludeStatement)}₢
+#include ""AutoGen/₢{nameof(ResponseBodyNamespacedType)}₢.h""
 
 #define LOCTEXT_NAMESPACE ""K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢""
 

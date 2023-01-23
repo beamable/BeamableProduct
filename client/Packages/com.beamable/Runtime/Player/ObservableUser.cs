@@ -8,20 +8,5 @@ namespace Beamable.Player
 	{
 		public static implicit operator ObservableUser(User data) => new ObservableUser { Value = data };
 
-		public override User Value
-		{
-			get => base.Value;
-			set
-			{
-				if (base.Value == null) base.Value = value;
-				base.Value.email = value.email;
-				base.Value.language = value.email;
-				base.Value.id = value.id;
-				base.Value.scopes = value.scopes;
-				base.Value.deviceIds = value.deviceIds;
-				base.Value.thirdPartyAppAssociations = value.thirdPartyAppAssociations;
-				TriggerUpdate();
-			}
-		}
 	}
 }

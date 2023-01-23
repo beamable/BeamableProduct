@@ -145,16 +145,6 @@ namespace Beamable.Common.Api.Inventory
 			this.updateItems = updateItems;
 		}
 
-		public InventoryUpdateBuilder(InventoryUpdateBuilder clone)
-		{
-			this.currencies = new SerializableDictionaryStringToLong(clone.currencies);
-			this.currencyProperties = new SerializedDictionaryStringToCurrencyPropertyList(clone.currencyProperties);
-			this.newItems = new List<ItemCreateRequest>(clone.newItems);
-			this.deleteItems = new List<ItemDeleteRequest>(clone.deleteItems);
-			this.updateItems = new List<ItemUpdateRequest>(clone.updateItems);
-			this.applyVipBonus = clone.applyVipBonus;
-		}
-
 		/// <summary>
 		/// Mutate the <see cref="InventoryUpdateBuilder"/>'s <see cref="applyVipBonus"/> field.
 		/// When the vip bonus is enabled, any currencies configured with the <see cref="CurrencyChange"/> method
@@ -355,30 +345,6 @@ namespace Beamable.Common.Api.Inventory
 				scopes.Add(curr.Key);
 			}
 			return scopes;
-		}
-
-		public InventoryUpdateBuilder Concat(InventoryUpdateBuilder builder)
-		{
-			var next = new InventoryUpdateBuilder(this);
-			if (builder.applyVipBonus.HasValue)
-			{
-				next.applyVipBonus = builder.applyVipBonus;
-			}
-
-			foreach (var kvp in builder.currencyProperties)
-			{
-				next.currencyProperties[kvp.Key] = kvp.Value;
-			}
-
-			foreach (var curr in builder.currencies)
-			{
-				next.CurrencyChange(curr.Key, curr.Value);
-			}
-
-			next.newItems.AddRange(builder.newItems);
-			next.updateItems.AddRange(builder.updateItems);
-			next.deleteItems.AddRange(builder.deleteItems);
-			return next;
 		}
 
 		void ISerializationCallbackReceiver.OnBeforeSerialize()
