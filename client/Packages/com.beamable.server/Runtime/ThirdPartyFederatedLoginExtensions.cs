@@ -5,8 +5,9 @@ namespace Beamable.Server
 {
 	public static class ThirdPartyFederatedLoginExtensions
 	{
-		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution = null)
-			where T : IThirdPartyCloudIdentity
+
+		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution=null)
+			where T : IThirdPartyCloudIdentity, new()
 		{
 			var identity = client.Provider.GetService<T>();
 			var api = client.Provider.GetService<IAuthApi>();
@@ -14,15 +15,15 @@ namespace Beamable.Server
 		}
 
 		public static Promise<DetachExternalIdentityResponse> DetachIdentity<T>(this ISupportsFederatedLogin<T> client, string userId)
-			where T : IThirdPartyCloudIdentity
+			where T : IThirdPartyCloudIdentity, new()
 		{
 			var identity = client.Provider.GetService<T>();
 			var api = client.Provider.GetService<IAuthApi>();
 			return api.DetachIdentity(client.ServiceName, userId, identity.UniqueName);
 		}
 
-		public static Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution = null)
-			where T : IThirdPartyCloudIdentity
+		public static Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution=null)
+			where T : IThirdPartyCloudIdentity, new()
 		{
 			var identity = client.Provider.GetService<T>();
 			var api = client.Provider.GetService<IAuthApi>();

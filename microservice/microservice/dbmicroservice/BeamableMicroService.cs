@@ -306,18 +306,19 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-         ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute, new ServiceMethodProvider
-            {
-               instanceType = typeof(AdminRoutes),
-               factory = BuildAdminInstance,
-               pathPrefix = "admin/"
-            },
-            new ServiceMethodProvider
-            {
-               instanceType = MicroserviceType,
-               factory = BuildServiceInstance,
-               pathPrefix = ""
-            });
+	      ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute,
+		      new ICallableGenerator[]
+		      {
+			      new FederatedLoginCallableGenerator()
+		      },
+		      new ServiceMethodProvider
+		      {
+			      instanceType = typeof(AdminRoutes), factory = BuildAdminInstance, pathPrefix = "admin/"
+		      },
+		      new ServiceMethodProvider
+		      {
+			      instanceType = MicroserviceType, factory = BuildServiceInstance, pathPrefix = ""
+		      });
          SwaggerGenerator.InvalidateSwagger(this);
       }
 
