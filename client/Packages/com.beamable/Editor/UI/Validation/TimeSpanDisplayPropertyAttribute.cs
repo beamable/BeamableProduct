@@ -26,9 +26,9 @@ namespace Beamable.Editor.UI.Validation
 			newParts[parts.Length - 1] = attr.FieldName;
 			var newPath = string.Join(".", newParts);
 			var prop = property.serializedObject.FindProperty(newPath);
-			
+
 			var labelRect = new Rect(position.x, position.y + 5, position.width,
-			                         EditorGUIUtility.singleLineHeight);
+									 EditorGUIUtility.singleLineHeight);
 			if (MustBeTimeSpanDuration.TryParseTimeSpan(prop.stringValue, out var span, out var readable))
 			{
 				var style = EditorStyles.miniLabel;

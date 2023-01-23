@@ -110,6 +110,12 @@ namespace Beamable.Common.Dependencies
 		bool IsDisposed { get; }
 
 		/// <summary>
+		/// By default, returns true.
+		/// Returns false after <see cref="Dispose"/> is started.
+		/// </summary>
+		bool IsActive { get; }
+
+		/// <summary>
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as transient
 		/// </summary>
 		IEnumerable<ServiceDescriptor> TransientServices { get; }
@@ -138,6 +144,8 @@ namespace Beamable.Common.Dependencies
 		private bool _isDestroying;
 
 		public bool IsDisposed => _destroyed;
+		public bool IsActive => !_isDestroying && !_destroyed;
+		
 		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
 		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
 		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
@@ -211,6 +219,7 @@ namespace Beamable.Common.Dependencies
 			if (_destroyed) throw new Exception("Provider scope has been destroyed and can no longer be accessed.");
 
 			if (t == typeof(IDependencyProvider)) return this;
+			if (t == typeof(IDependencyProviderScope)) return this;
 
 			if (Transients.TryGetValue(t, out var descriptor))
 			{
@@ -293,8 +302,8 @@ namespace Beamable.Common.Dependencies
 				}
 			}
 
-			DisposeServices(SingletonCache.Values);
-			DisposeServices(ScopeCache.Values);
+			DisposeServices(SingletonCache.Values.Distinct());
+			DisposeServices(ScopeCache.Values.Distinct());
 
 			await Promise.Sequence(disposalPromises);
 

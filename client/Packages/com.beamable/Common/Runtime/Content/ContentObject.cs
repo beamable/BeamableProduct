@@ -88,6 +88,7 @@ namespace Beamable.Common.Content
 		internal const string TooltipEventItemObtain1 = "The event item obtain";
 		internal const string TooltipEventRule1 = "The event rule";
 		internal const string TooltipEventSchedule = "The schedule for when the event repeats";
+		internal const string TooltipFederation = "Federated service that content item will be attached to";
 		internal const string TooltipGroupReward1 = "The group reward";
 		internal const string TooltipIcon1 = "The icon image";
 		internal const string TooltipId1 = "The id";
