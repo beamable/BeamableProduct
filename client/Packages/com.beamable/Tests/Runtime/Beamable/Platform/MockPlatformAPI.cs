@@ -262,9 +262,9 @@ namespace Beamable.Platform.Tests
 			set;
 		} //= new AccessToken(new AccessTokenStorage("test"), "testcid", "testpid", "testtok", "testref", 1000000);
 
-		public Promise<Unit> RefreshToken()
+		public Promise RefreshToken()
 		{
-			return PromiseBase.SuccessfulUnit;
+			return Promise.Success;
 		}
 
 		public string TimeOverride

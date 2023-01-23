@@ -3,10 +3,7 @@ using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Api.Auth;
-using Beamable.Common.Spew;
 using System;
-using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -15,7 +12,7 @@ namespace Core.Platform.SDK
 	public interface IBeamableApiRequester : IRequester
 	{
 		AccessToken Token { get; set; }
-		Promise<Unit> RefreshToken();
+		Promise RefreshToken();
 	}
 	
 	// Since the new access tokens are short lived, no need to store them. We can use the same refresh tokens
@@ -60,16 +57,9 @@ namespace Core.Platform.SDK
 		{
 			if (error is PlatformRequesterException e && e.Status == 401)
 			{
-				var authBody = new BeamableApiTokenRequest
-				{
-					refreshToken = Token.RefreshToken, customerId = Token.Cid, realmId = Token.Pid
-				};
 				try
 				{
-					var rsp = await Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody,
-					                                                  false);
-					Token = new AccessToken(accessTokenStorage, Token.Cid, Token.Pid, rsp.accessToken,
-					                        rsp.refreshToken, long.MaxValue - 1);
+					await RefreshToken();
 				}
 				catch (Exception err)
 				{
@@ -81,6 +71,18 @@ namespace Core.Platform.SDK
 			}
 
 			throw error;
+		}
+
+		public async Promise RefreshToken()
+		{
+			var authBody = new BeamableApiTokenRequest
+			{
+				refreshToken = Token.RefreshToken, customerId = Token.Cid, realmId = Token.Pid
+			};
+			var rsp = await Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody,
+			                                                  false);
+			Token = new AccessToken(accessTokenStorage, Token.Cid, Token.Pid, rsp.accessToken,
+			                        rsp.refreshToken, long.MaxValue - 1);
 		}
 	}
 
