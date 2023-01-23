@@ -635,6 +635,7 @@ namespace Beamable
 					EditorPrefs.DeleteKey(Features.Config.LAST_PID_KEY);
 					
 					await Login(email, password);
+					_loginRetries = 0;
 					return;
 				}
 
