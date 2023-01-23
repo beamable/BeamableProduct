@@ -12,7 +12,7 @@ namespace Beamable.Editor.UI.Common.Models
 	public class RealmModel : ISearchableModel
 	{
 		private const int RETRY_AMOUNT = 3;
-		
+
 		public ISearchableElement Default { get; set; }
 		public ISearchableElement Current { get; set; }
 		public List<ISearchableElement> Elements { get; set; }
@@ -40,13 +40,13 @@ namespace Beamable.Editor.UI.Common.Models
 
 			try
 			{
-				 return await api.ServiceScope.GetService<RealmsService>().GetRealms()
-				         .Map(realms => realms.ToList<ISearchableElement>())
-				         .Then(realms =>
-				         {
-					         Elements = realms.ToList<ISearchableElement>();
-					         OnAvailableElementsChanged?.Invoke(Elements);
-				         });
+				return await api.ServiceScope.GetService<RealmsService>().GetRealms()
+						.Map(realms => realms.ToList<ISearchableElement>())
+						.Then(realms =>
+						{
+							Elements = realms.ToList<ISearchableElement>();
+							OnAvailableElementsChanged?.Invoke(Elements);
+						});
 			}
 			catch (RequesterException ex)
 			{
@@ -57,7 +57,7 @@ namespace Beamable.Editor.UI.Common.Models
 						_retries = 0;
 						throw;
 					}
-					
+
 					await api.Relogin();
 					var realms = await RefreshAvailable();
 					OnElementChanged?.Invoke(Current);
