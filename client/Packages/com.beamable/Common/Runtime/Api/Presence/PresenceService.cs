@@ -2,10 +2,10 @@ namespace Beamable.Common.Api.Presence
 {
 	public class PresenceService : IPresenceApi
 	{
-		private readonly IBeamableRequester _requester;
+		private readonly IRequester _requester;
 		private readonly IUserContext _userContext;
 
-		public PresenceService(IBeamableRequester requester, IUserContext userContext)
+		public PresenceService(IRequester requester, IUserContext userContext)
 		{
 			_requester = requester;
 			_userContext = userContext;
@@ -13,10 +13,13 @@ namespace Beamable.Common.Api.Presence
 
 		public Promise<EmptyResponse> SendHeartbeat()
 		{
-			return _requester.Request<EmptyResponse>(
-			  Method.PUT,
-			  $"/players/{_userContext.UserId}/presence"
-			);
+			return _requester.BeamableRequest(new SDKRequesterOptions<EmptyResponse>
+			{
+				method = Method.PUT,
+				uri = $"/players/{_userContext.UserId}/presence",
+				includeAuthHeader = true,
+				useConnectivityPreCheck = false // the magic sauce to allow this to ignore the connectivity
+			});
 		}
 	}
 }

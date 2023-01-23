@@ -1,6 +1,8 @@
 using Beamable.Api.Connectivity;
 using Beamable.Common.Api.Presence;
+using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -39,6 +41,7 @@ namespace Beamable.Api.Sessions
 		private readonly ISessionService _sessionService;
 		private readonly CoroutineService _coroutineService;
 		private readonly IConnectivityService _connectivityService;
+		private readonly IDependencyProviderScope _provider;
 		private readonly IPresenceApi _presenceApi;
 
 		private IEnumerator _legacyHeartbeatRoutine;
@@ -48,11 +51,13 @@ namespace Beamable.Api.Sessions
 			ISessionService sessionService,
 			CoroutineService coroutineService,
 			IConnectivityService connectivityService,
+			IDependencyProviderScope provider,
 			IPresenceApi presenceApi)
 		{
 			_sessionService = sessionService;
 			_coroutineService = coroutineService;
 			_connectivityService = connectivityService;
+			_provider = provider;
 			_presenceApi = presenceApi;
 			IsRunning = false;
 			_legacyHeartbeatRoutine = SendLegacyHeartbeat(LegacyHeartbeatInterval);
@@ -84,7 +89,7 @@ namespace Beamable.Api.Sessions
 		private IEnumerator SendLegacyHeartbeat(int intervalSeconds)
 		{
 			var wait = new WaitForSeconds(intervalSeconds);
-			while (true)
+			while (_provider.IsActive)
 			{
 				if (_connectivityService.HasConnectivity)
 				{
@@ -97,14 +102,25 @@ namespace Beamable.Api.Sessions
 		private IEnumerator SendHeartbeat(int intervalSeconds)
 		{
 			var wait = new WaitForSeconds(intervalSeconds);
-			while (true)
+
+			while (_provider.IsActive)
 			{
-				if (_connectivityService.HasConnectivity)
+				try
 				{
-					_presenceApi.SendHeartbeat();
+					_presenceApi.SendHeartbeat().Error(_ =>
+					{
+						// let it go!
+					});
 				}
+				catch (Exception)
+				{
+					// Let it Gooo!
+					// because we want the heartbeat to go forever...
+				}
+
 				yield return wait;
 			}
 		}
+
 	}
 }
