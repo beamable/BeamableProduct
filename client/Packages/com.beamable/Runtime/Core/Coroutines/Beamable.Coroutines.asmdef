@@ -1,7 +1,8 @@
 {
     "name": "Beamable.Coroutines",
     "references": [
-        "Beamable.Service"
+        "Beamable.Service",
+        "Unity.Beamable.Runtime.Common"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

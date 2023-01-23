@@ -167,6 +167,7 @@ namespace Beamable.Common.Content
 
 				_contentTypeToClass = contentTypeToClassDict;
 				_classToContentType = classToContentTypeDict;
+
 			}
 
 			Instance = this;

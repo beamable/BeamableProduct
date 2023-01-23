@@ -77,7 +77,7 @@ public struct UnrealSerializableTypeDeclaration
 		{
 			ud.IntoProcessMap(processDictionary);
 
-			var decl = UnrealPropertyDeclaration.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+			var decl = ud.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 			return decl;
 		}));
@@ -86,7 +86,7 @@ public struct UnrealSerializableTypeDeclaration
 		{
 			ud.IntoProcessMap(processDictionary);
 
-			var decl = UnrealPropertyDeclaration.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+			var decl = ud.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 			return decl;
 		}));
