@@ -188,7 +188,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoDescription.text = "Select services to publish";
 
 			_docReference = Root.Q("docReference");
-			_docReference.RegisterCallback<MouseDownEvent>(_ => Application.OpenURL(Constants.URLs.Documentations.URL_DOC_MICROSERVICES));
+			_docReference.RegisterCallback<MouseDownEvent>(_ => Application.OpenURL(Constants.URLs.Documentations.URL_DOC_MICROSERVICES_PUBLISHING));
 			_docReference.tooltip = "Document";
 			
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(_allUnarchivedServices.Count);

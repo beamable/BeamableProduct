@@ -30,11 +30,13 @@
     width: 40px;
     align-items: center;
     justify-content: center;
+    cursor: link;
 }
 
 #docImage {
     width: 8px;
     height: 15px;
+    cursor: link;
 }
 
 #infoCardsContainer {
@@ -180,6 +182,7 @@
     align-self: center;
     height: 30px;
     width: 120px;
+    cursor: link;
 }
 
 #userDescription {
@@ -226,10 +229,12 @@ LoadingBarElement.hidden {
     flex-grow: 1;
     align-items: center;
     justify-content: center;
+    cursor: link;
 }
 
 #arrowLeft > Image,
 #arrowRight > Image {
     height: 50px;
     width: 50px;
+    cursor: link;
 }
