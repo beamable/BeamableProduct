@@ -4,23 +4,23 @@ using BeamableReflection;
 
 namespace Beamable.Common
 {
-	#if BEAMABLE_DEVELOPER || DB_MICROSERVICE
+#if BEAMABLE_DEVELOPER || DB_MICROSERVICE
 	public class ExampleCloudIdentity : IThirdPartyCloudIdentity
 	{
 		public string UniqueName => "Example";
 	}
-	#endif
-	
-	
+#endif
+
+
 	[Preserve]
 	public interface IThirdPartyCloudIdentity
 	{
 		string UniqueName { get; }
 	}
 
-	public interface IFederatedLogin<in T> where T : IThirdPartyCloudIdentity
+	public interface IFederatedLogin<in T> where T : IThirdPartyCloudIdentity, new()
 	{
-		FederatedAuthenticationResponse Authenticate(string token, string challenge, string solution);
+		Promise<FederatedAuthenticationResponse> Authenticate(string token, string challenge, string solution);
 	}
 
 	public class FederatedAuthenticationResponse : ExternalAuthenticationResponse
@@ -33,7 +33,7 @@ namespace Beamable.Common
 		string ServiceName { get; }
 	}
 
-	public interface ISupportsFederatedLogin<T> : IHaveServiceName where T : IThirdPartyCloudIdentity
+	public interface ISupportsFederatedLogin<T> : IHaveServiceName where T : IThirdPartyCloudIdentity, new()
 	{
 		IDependencyProvider Provider { get; }
 	}

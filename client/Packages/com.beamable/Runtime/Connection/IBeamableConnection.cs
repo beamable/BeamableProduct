@@ -11,7 +11,7 @@ namespace Beamable.Connection
 		event Action<string> Message;
 		event Action<string> Error;
 		event Action Close;
-		
+
 		Promise Connect(string address, AccessToken token);
 		Promise Disconnect();
 	}

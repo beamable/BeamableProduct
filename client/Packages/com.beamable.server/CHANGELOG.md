@@ -5,7 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-no changes
+### Added
+- Microservices with `IFederatedLogin<T>` will generate client callable methods.
 
 ## [1.10.2]
 ### Fixed
