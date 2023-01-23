@@ -23,13 +23,12 @@ public class ServicesModifyCommandArgs : LoginCommandArgs
 public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 {
 
-	private readonly BeamoLocalSystem _localBeamo;
+	private BeamoLocalSystem _localBeamo;
 
-	public ServicesModifyCommand(BeamoLocalSystem localBeamo) :
+	public ServicesModifyCommand() :
 		base("modify",
 			"Modifies a new service into the local manifest.")
 	{
-		_localBeamo = localBeamo;
 	}
 
 	public override void Configure()
@@ -67,7 +66,9 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 
 
 	public override async Task Handle(ServicesModifyCommandArgs args)
-	{
+	{		
+		_localBeamo = args.BeamoLocalSystem;
+
 		// Handle Beamo Id Option 
 		var existingBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToList();
 		{

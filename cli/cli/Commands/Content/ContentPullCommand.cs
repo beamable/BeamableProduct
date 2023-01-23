@@ -6,14 +6,14 @@ namespace cli.Content;
 
 public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 {
-	private readonly ContentService _contentService;
-	public ContentPullCommand(ContentService contentService) : base("pull", "Pulls currently deployed content")
+	private ContentService _contentService;
+	public ContentPullCommand() : base("pull", "Pulls currently deployed content")
 	{
-		_contentService = contentService;
 	}
 
 	public override async Task Handle(ContentPullCommandArgs args)
 	{
+		_contentService = args.ContentService;
 		var manifest = await _contentService.GetManifest(args.ManifestId);
 		_contentService.UpdateTags(manifest);
 		var result = await _contentService.PullContent(manifest);

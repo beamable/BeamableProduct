@@ -2,12 +2,13 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using Beamable.Common.Dependencies;
 using cli.Content;
+using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -22,16 +23,17 @@ public class App
 {
 	public static LoggingLevelSwitch LogLevel { get; set; }
 
-	public ServiceCollection Services { get; set; }
-	public IServiceProvider Provider { get; set; }
+	public IDependencyBuilder Commands { get; set; }
+	public IDependencyProviderScope CommandProvider { get; set; }
 
+	private Action<IDependencyBuilder> _serviceConfigurator;
 
 	public App()
 	{
-		Services = new ServiceCollection();
+		Commands = new DependencyBuilder();
 	}
 
-	public bool IsBuilt => Provider != null;
+	public bool IsBuilt => CommandProvider != null;
 
 	private static void ConfigureLogging()
 	{
@@ -47,8 +49,36 @@ public class App
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
 
+	/// <summary>
+	/// These services are registered AFTER the basic CLI parsing has taken place.
+	/// </summary>
+	/// <param name="services"></param>
+	private void ConfigureServices(IDependencyBuilder services)
+	{
+		// register services
+		services.AddSingleton<IAppContext, DefaultAppContext>();
+		services.AddSingleton<IRealmsApi, RealmsService>();
+		services.AddSingleton<IAliasService, AliasService>();
+		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
+		services.AddSingleton<CliRequester, CliRequester>();
+		services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
+		services.AddSingleton<IAuthApi, AuthApi>();
+		services.AddSingleton<ConfigService>();
+		services.AddSingleton<BeamoService>();
+		services.AddSingleton<BeamoLocalSystem>();
+		services.AddSingleton<ContentLocalCache>();
+		services.AddSingleton<ContentService>();
+		services.AddSingleton<CliEnvironment>();
+		services.AddSingleton<SwaggerService>();
+		services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
+		services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
+		// services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>(); // TODO: figure out how to handle this...
+		services.AddSingleton<ProjectService>();
 
-	public virtual void Configure(Action<ServiceCollection>? configurator = null)
+		_serviceConfigurator?.Invoke(services);
+	}
+	
+	public virtual void Configure(Action<IDependencyBuilder>? configurator = null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
@@ -56,17 +86,18 @@ public class App
 		ConfigureLogging();
 
 		// add global options
-		Services.AddSingleton<DryRunOption>();
-		Services.AddSingleton<CidOption>();
-		Services.AddSingleton<PidOption>();
-		Services.AddSingleton<PlatformOption>();
-		Services.AddSingleton<LimitOption>();
-		Services.AddSingleton<SkipOption>();
-		Services.AddSingleton<DeployFilePathOption>();
-		Services.AddSingleton<AccessTokenOption>();
-		Services.AddSingleton<RefreshTokenOption>();
-		Services.AddSingleton<LogOption>();
-		Services.AddSingleton(provider =>
+		Commands.AddSingleton<DryRunOption>();
+		Commands.AddSingleton<CidOption>();
+		Commands.AddSingleton<PidOption>();
+		Commands.AddSingleton<ConfigDirOption>();
+		Commands.AddSingleton<PlatformOption>();
+		Commands.AddSingleton<LimitOption>();
+		Commands.AddSingleton<SkipOption>();
+		Commands.AddSingleton<DeployFilePathOption>();
+		Commands.AddSingleton<AccessTokenOption>();
+		Commands.AddSingleton<RefreshTokenOption>();
+		Commands.AddSingleton<LogOption>();
+		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
 			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
@@ -79,63 +110,50 @@ public class App
 			return root;
 		});
 
-		// register services
-		Services.AddSingleton<IAppContext, DefaultAppContext>();
-		Services.AddSingleton<IRealmsApi, RealmsService>();
-		Services.AddSingleton<IAliasService, AliasService>();
-		Services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
-		Services.AddSingleton<CliRequester, CliRequester>();
-		Services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
-		Services.AddSingleton<IAuthApi, AuthApi>();
-		Services.AddSingleton<ConfigService>();
-		Services.AddSingleton<BeamoService>();
-		Services.AddSingleton<BeamoLocalSystem>();
-		Services.AddSingleton<ContentLocalCache>();
-		Services.AddSingleton<ContentService>();
-		Services.AddSingleton<CliEnvironment>();
-		Services.AddSingleton<SwaggerService>();
-		Services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
-		Services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
-		Services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>();
-
+		
 		// add commands
-		Services.AddRootCommand<InitCommand, InitCommandArgs>();
-		Services.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
-		Services.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
-		Services.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
-		Services.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
-		Services.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
-		Services.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
-		Services.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
-		Services.AddRootCommand<LoginCommand, LoginCommandArgs>();
-		Services.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
-		Services.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
-		Services.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
-
-
-		Services.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
-		Services.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
-		Services.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
-		Services.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
-
-		Services.AddRootCommand<ContentCommand, ContentCommandArgs>();
-		Services.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
-		Services.AddCommand<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
-		Services.AddCommand<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
-		Services.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
-		Services.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
+		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
+		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
+		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
+		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
+		Commands.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
+		Commands.AddRootCommand<LoginCommand, LoginCommandArgs>();
+		Commands.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
+		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
+		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
+		
+		// beamo commands
+		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
+		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
+		
+		// content commands
+		Commands.AddRootCommand<ContentCommand, ContentCommandArgs>();
+		Commands.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
+		Commands.AddCommand<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
+		Commands.AddCommand<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
+		Commands.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
+		Commands.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
+		
+		
 		// customize
-		configurator?.Invoke(Services);
+		_serviceConfigurator = configurator;
 	}
 
 	public virtual void Build()
@@ -143,23 +161,39 @@ public class App
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be built again");
 
-		// create the service scope
-		Provider = Services.BuildServiceProvider();
-
+		CommandProvider = Commands.Build();
+		
 		// automatically create all commands
-		Provider.GetServices<ICommandFactory>();
+		var commandFactoryServices = CommandProvider.SingletonServices.Where(t =>
+			t.Interface.IsGenericType && t.Interface.GetGenericTypeDefinition() == typeof(ICommandFactory<>)).ToList();
+		foreach (var factory in commandFactoryServices)
+		{
+			CommandProvider.GetService(factory.Interface);
+		}
 	}
 
 
 	protected virtual Parser GetProgram()
 	{
-		var root = Provider.GetRequiredService<RootCommand>();
+		var root = CommandProvider.GetRequiredService<RootCommand>();
+
 		var commandLineBuilder = new CommandLineBuilder(root);
 		commandLineBuilder.AddMiddleware(consoleContext =>
-	   {
-		   var appContext = Provider.GetRequiredService<IAppContext>();
-		   appContext.Apply(consoleContext.BindingContext);
-	   }, MiddlewareOrder.Configuration);
+		{
+			// create a scope for the execution of the command
+			var provider = CommandProvider.Fork(services =>
+			{
+				// add in the services that need to rely on the CLI parsing having completed
+				services.AddSingleton(consoleContext);
+				services.AddSingleton(consoleContext.BindingContext);
+				ConfigureServices(services);
+			});
+			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
+			consoleContext.BindingContext.AddService(_ => new AppServices{duck = provider});
+
+			var appContext = provider.GetRequiredService<IAppContext>();
+			appContext.Apply(consoleContext.BindingContext);
+		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();

@@ -15,11 +15,10 @@ public class DownloadOpenAPICommandArgs : CommandArgs
 
 public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 {
-	private readonly SwaggerService _swaggerService;
+	private SwaggerService _swaggerService;
 
-	public DownloadOpenAPICommand(SwaggerService swaggerService) : base("download", "download the Beamable Open API specs")
+	public DownloadOpenAPICommand() : base("download", "download the Beamable Open API specs")
 	{
-		_swaggerService = swaggerService;
 	}
 
 	public override void Configure()
@@ -35,6 +34,7 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 
 	public override async Task Handle(DownloadOpenAPICommandArgs args)
 	{
+		_swaggerService = args.SwaggerService;
 		// TODO: download the files to a folder...
 		var filter = BeamableApiFilter.Parse(args.Filter);
 

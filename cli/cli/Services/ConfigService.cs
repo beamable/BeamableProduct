@@ -1,20 +1,58 @@
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
+using System.CommandLine.Binding;
 
 namespace cli;
 
 
 public class ConfigService
 {
+	private readonly CliEnvironment _environment;
+	private readonly ConfigDirOption _configDirOption;
+	public string WorkingDirectory => _dir;
 	public bool? ConfigFileExists { get; private set; }
 	public string? ConfigFilePath { get; private set; }
 
 	private Dictionary<string, string>? _config;
 
-	public ConfigService(CliEnvironment environment)
+	private string _dir;
+	
+	public ConfigService(CliEnvironment environment, ConfigDirOption configDirOption)
 	{
+		_environment = environment;
+		_configDirOption = configDirOption;
+	}
+
+	public void Init(BindingContext bindingContext)
+	{
+		
+		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
+		{
+			_dir = Directory.GetCurrentDirectory();
+		}
+		
 		RefreshConfig();
-		ConfigFilePath = !string.IsNullOrEmpty(environment.ConfigDir) ? environment.ConfigDir : ConfigFilePath;
+	}
+	
+	
+	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
+	{
+		// Try to get from option
+		value = context.ParseResult.GetValueForOption(option);
+
+		// Try to get from config service
+		if (value == null)
+			value = GetConfigString(option.OptionName, defaultValue);
+
+		// Try to get from environment service.
+		if (string.IsNullOrEmpty(value))
+		{
+			_ = _environment.TryGetFromOption(option, out value);
+			CliSerilogProvider.Instance.Debug($"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
+		}
+
+		var hasValue = !string.IsNullOrEmpty(value);
+		return hasValue;
 	}
 
 	public string PrettyPrint() => JsonConvert.SerializeObject(_config, Formatting.Indented);
@@ -90,7 +128,7 @@ public class ConfigService
 	bool TryToFindBeamableConfigFolder(out string? result)
 	{
 		result = string.Empty;
-		var basePath = Directory.GetCurrentDirectory();
+		var basePath = _dir;
 		if (Directory.Exists(Path.Combine(basePath, Constants.CONFIG_FOLDER)))
 		{
 			result = Path.Combine(basePath, Constants.CONFIG_FOLDER);

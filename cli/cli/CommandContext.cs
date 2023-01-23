@@ -88,6 +88,10 @@ public abstract class AppCommand<TArgs> : Command
 		protected override TArgs GetBoundValue(BindingContext bindingContext)
 		{
 			var args = _provider.GetRequiredService<TArgs>();
+			
+			// extract the service layer and add it to the arg's execution scope.
+			args.Provider = bindingContext.GetService(typeof(AppServices)) as AppServices;
+			
 			_command.BindBaseContext(_provider, args, bindingContext);
 			foreach (var action in _command._bindingActions)
 			{
@@ -103,7 +107,14 @@ public interface ICommandFactory
 
 }
 
+public interface ICommandFactory<T>
+{
+	
+}
+public class CommandFactory<T> : ICommandFactory<T> {}
+
 public class CommandFactory : ICommandFactory
 {
 
 }
+

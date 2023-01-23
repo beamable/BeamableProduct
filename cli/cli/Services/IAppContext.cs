@@ -6,6 +6,13 @@ using System.CommandLine.Binding;
 
 namespace cli;
 
+
+public class AppServices : IServiceProvider
+{
+	public IServiceProvider duck;
+	public object GetService(Type serviceType) => duck.GetService(serviceType);
+}
+
 public interface IAppContext
 {
 	public bool IsDryRun { get; }
@@ -37,6 +44,7 @@ public class DefaultAppContext : IAppContext
 	private readonly AccessTokenOption _accessTokenOption;
 	private readonly RefreshTokenOption _refreshTokenOption;
 	private readonly LogOption _logOption;
+	private readonly ConfigDirOption _configDirOption;
 	private readonly ConfigService _configService;
 	private readonly CliEnvironment _environment;
 	public bool IsDryRun { get; private set; }
@@ -44,19 +52,18 @@ public class DefaultAppContext : IAppContext
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
-	private string _cid, _pid, _host;
+	private string _cid, _pid, _host, _dir;
 	private string _refreshToken;
 
 	public string Cid => _cid;
 	public string Pid => _pid;
 	public string Host => _host;
 	public string RefreshToken => _refreshToken;
-
-	public string WorkingDirectory { get; private set; }
+	public string WorkingDirectory => _configService.WorkingDirectory;
 	public LogEventLevel LogLevel { get; private set; }
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
-		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption,
+		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment)
 	{
 		_dryRunOption = dryRunOption;
@@ -66,6 +73,7 @@ public class DefaultAppContext : IAppContext
 		_accessTokenOption = accessTokenOption;
 		_refreshTokenOption = refreshTokenOption;
 		_logOption = logOption;
+		_configDirOption = configDirOption;
 		_configService = configService;
 		_environment = environment;
 	}
@@ -90,23 +98,24 @@ public class DefaultAppContext : IAppContext
 #endif
 			}
 		}
-
-		WorkingDirectory = Directory.GetCurrentDirectory();
-		if (!TryGetSetting(out _cid, bindingContext, _cidOption))
+		
+		if (!_configService.TryGetSetting(out _cid, bindingContext, _cidOption))
 		{
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		if (!TryGetSetting(out _pid, bindingContext, _pidOption))
+		if (!_configService.TryGetSetting(out _pid, bindingContext, _pidOption))
 		{
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		if (!TryGetSetting(out _host, bindingContext, _platformOption))
+		if (!_configService.TryGetSetting(out _host, bindingContext, _platformOption))
 		{
 			_host = Constants.DEFAULT_PLATFORM;
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
+
+		_configService.Init(bindingContext);
 
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;
@@ -115,11 +124,13 @@ public class DefaultAppContext : IAppContext
 			defaultAccessToken = response.access_token;
 			defaultRefreshToken = response.refresh_token;
 		}
-		TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
-		TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
+		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
+		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
 
 		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
 		Set(_cid, _pid, _host);
+		
+		
 	}
 
 	public void Set(string cid, string pid, string host)
@@ -137,23 +148,4 @@ public class DefaultAppContext : IAppContext
 		_token.RefreshToken = response.refresh_token;
 	}
 
-	private bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
-	{
-		// Try to get from option
-		value = context.ParseResult.GetValueForOption(option);
-
-		// Try to get from config service
-		if (value == null)
-			value = _configService.GetConfigString(option.OptionName, defaultValue);
-
-		// Try to get from environment service.
-		if (string.IsNullOrEmpty(value))
-		{
-			_ = _environment.TryGetFromOption(option, out value);
-			CliSerilogProvider.Instance.Debug($"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
-		}
-
-		var hasValue = !string.IsNullOrEmpty(value);
-		return hasValue;
-	}
 }
