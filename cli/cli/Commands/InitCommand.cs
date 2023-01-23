@@ -61,7 +61,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		await GetPidAndAuth(args, cid, host);
 
 		AnsiConsole.MarkupLine("Success! :thumbs up: Here are your connection details");
-		await _configCommand.Handle(new ConfigCommandArgs());
+		await _configCommand.Handle(args.Create<ConfigCommandArgs>());
 	}
 
 	private async Task GetPidAndAuth(InitCommandArgs args, string cid, string host)

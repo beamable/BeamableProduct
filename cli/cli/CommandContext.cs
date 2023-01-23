@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 using System.CommandLine.Binding;
@@ -78,9 +79,9 @@ public abstract class AppCommand<TArgs> : Command
 	public class Binder : BinderBase<TArgs>
 	{
 		private readonly AppCommand<TArgs> _command;
-		private readonly IServiceProvider _provider;
+		private readonly IDependencyProvider _provider;
 
-		public Binder(AppCommand<TArgs> command, IServiceProvider provider)
+		public Binder(AppCommand<TArgs> command, IDependencyProvider provider)
 		{
 			_command = command;
 			_provider = provider;
@@ -88,7 +89,6 @@ public abstract class AppCommand<TArgs> : Command
 		protected override TArgs GetBoundValue(BindingContext bindingContext)
 		{
 			var args = _provider.GetRequiredService<TArgs>();
-			
 			// extract the service layer and add it to the arg's execution scope.
 			args.Provider = bindingContext.GetService(typeof(AppServices)) as AppServices;
 			

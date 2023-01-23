@@ -8,6 +8,12 @@ namespace cli;
 
 public abstract class CommandArgs
 {
+	public T Create<T>() where T: CommandArgs, new()
+	{
+		var args = new T { Dryrun = Dryrun, Provider = Provider };
+		return args;
+	}
+	
 	public bool Dryrun { get; set; }
 	public IServiceProvider Provider { get; set; }
 
@@ -22,7 +28,7 @@ public abstract class CommandArgs
 	public BeamoLocalSystem BeamoLocalSystem => Provider.GetService<BeamoLocalSystem>();
 	public BeamoService BeamoService => Provider.GetService<BeamoService>();
 	public ContentService ContentService => Provider.GetService<ContentService>();
-	
 	public ProjectService ProjectService => Provider.GetService<ProjectService>();
+
 }
 

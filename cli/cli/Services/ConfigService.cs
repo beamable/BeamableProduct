@@ -33,6 +33,12 @@ public class ConfigService
 		
 		RefreshConfig();
 	}
+
+	public void SetTempWorkingDir(string dir)
+	{
+		_dir = dir;
+		SetBeamableDirectory(_dir);
+	}
 	
 	
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)

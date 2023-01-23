@@ -78,7 +78,7 @@ public class App
 		_serviceConfigurator?.Invoke(services);
 	}
 	
-	public virtual void Configure(Action<IDependencyBuilder>? configurator = null)
+	public virtual void Configure(Action<IDependencyBuilder>? serviceConfigurator = null, Action<IDependencyBuilder>? commandConfigurator = null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
@@ -106,6 +106,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<PlatformOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
+			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -151,9 +152,10 @@ public class App
 		Commands.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
 		
+		commandConfigurator?.Invoke(Commands);
 		
 		// customize
-		_serviceConfigurator = configurator;
+		_serviceConfigurator = serviceConfigurator;
 	}
 
 	public virtual void Build()

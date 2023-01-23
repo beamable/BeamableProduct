@@ -33,10 +33,7 @@ public static class DependencyInjectionExtensions
 			
 			command.Configure();
 			var binder = new AppCommand<TArgs>.Binder(command, provider);
-			command.SetHandler((TArgs args) =>
-			{
-				return command.Handle(args);
-			}, binder);
+			command.SetHandler((TArgs args) => command.Handle(args), binder);
 			root.AddCommand(command);
 			return factory;
 		});
