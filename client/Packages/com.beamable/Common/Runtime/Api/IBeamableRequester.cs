@@ -28,48 +28,48 @@ namespace Beamable.Common.Api
 		public Method Method { get; set; }
 		public string Uri { get; set; }
 	}
-	
+
 	public struct SDKRequesterOptions<T> : ISDKRequesterOptionData
 	{
 		/// <summary>
 		/// The HTTP method to use
 		/// </summary>
 		public Method method;
-		
+
 		/// <summary>
 		/// The C# instance body of the request
 		/// </summary>
 		public object body;
-		
+
 		/// <summary>
 		/// The request path, this should be relative to the domain. 
 		/// </summary>
 		public string uri;
-		
+
 		/// <summary>
 		/// When true, if there is no network connectivity, the response will be created from the last successful request that matched
 		/// the method and uri.
 		/// </summary>
 		public bool useCache;
-		
+
 		/// <summary>
 		/// When true, the request will include an Authorization header
 		/// </summary>
 		public bool includeAuthHeader;
-		
+
 		/// <summary>
 		/// When true, the request will check for internet connectivity before sending the request. 
 		/// </summary>
 		public bool useConnectivityPreCheck;
-		
+
 		/// <summary>
 		/// A function that takes a JSON string and should output the response of the method. 
 		/// </summary>
 		public Func<string, T> parser;
-		
+
 		public Method Method => method;
 		public string Uri => uri;
-		
+
 		public SDKRequesterOptions(SDKRequesterOptions<T> clone)
 		{
 			method = clone.method;

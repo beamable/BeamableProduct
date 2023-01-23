@@ -145,7 +145,7 @@ namespace Beamable.Common.Dependencies
 
 		public bool IsDisposed => _destroyed;
 		public bool IsActive => !_isDestroying && !_destroyed;
-		
+
 		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
 		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
 		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
