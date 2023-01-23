@@ -11,12 +11,16 @@ namespace Beamable.Editor.UI.Common.Models
 {
 	public class RealmModel : ISearchableModel
 	{
+		private const int RETRY_AMOUNT = 3;
+		
 		public ISearchableElement Default { get; set; }
 		public ISearchableElement Current { get; set; }
 		public List<ISearchableElement> Elements { get; set; }
 
 		public event Action<List<ISearchableElement>> OnAvailableElementsChanged;
 		public event Action<ISearchableElement> OnElementChanged;
+
+		private int _retries = 0;
 
 		public async void Initialize()
 		{
@@ -48,6 +52,12 @@ namespace Beamable.Editor.UI.Common.Models
 			{
 				if (ex.Status == 400) // realm is archived
 				{
+					if (++_retries > RETRY_AMOUNT)
+					{
+						_retries = 0;
+						throw;
+					}
+					
 					await api.Relogin();
 					var realms = await RefreshAvailable();
 					OnElementChanged?.Invoke(Current);

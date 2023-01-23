@@ -424,6 +424,7 @@ namespace Beamable
 	public class BeamEditorContext
 	{
 		public const string EDITOR_PLAYER_CODE_TEMPLATE = "editor.{0}.";
+		private const int LOGIN_RETRY_AMOUNT = 3;
 
 		public static Dictionary<string, BeamEditorContext> EditorContexts = new Dictionary<string, BeamEditorContext>();
 		public static List<BeamEditorContext> All => EditorContexts.Values.ToList();
@@ -431,6 +432,8 @@ namespace Beamable
 		public static BeamEditorContext ForEditorUser(int idx) => Instantiate(string.Format(EDITOR_PLAYER_CODE_TEMPLATE, idx));
 		public static BeamEditorContext ForEditorUser(string code) => Instantiate(code);
 
+		private int _loginRetries;
+		
 		public static bool ConfigFileExists { get; private set; }
 
 		/// <summary>
@@ -619,6 +622,12 @@ namespace Beamable
 			{
 				if (e.Status == 400) // project is archived
 				{
+					if (++_loginRetries > LOGIN_RETRY_AMOUNT)
+					{
+						_loginRetries = 0;
+						throw;
+					}
+					
 					// reset pids and try again
 					requester.Pid = null;
 					if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
