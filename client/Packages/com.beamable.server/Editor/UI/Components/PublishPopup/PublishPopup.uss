@@ -9,12 +9,32 @@
     align-items: center;
 }
 
+#infoContainer > VisualElement {
+    flex-grow: 1;
+    flex-direction: row;
+}
+
 #infoTitle {
+    flex-direction: row;
+    flex-grow: 1;
+    padding-left: 40px;
     padding-top: 10px;
     font-size: 16px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+#docReference {
+    width: 40px;
+    align-items: center;
+    justify-content: center;
+}
+
+#docImage {
+    width: 8px;
+    height: 15px;
 }
 
 #infoCardsContainer {
@@ -200,4 +220,16 @@ LoadingBarElement.hidden {
 #infoCardStep4.error {
     border-width: 2;
     border-color: #d93737;
+}
+
+#arrowLeft, #arrowRight{
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+#arrowLeft > Image,
+#arrowRight > Image {
+    height: 50px;
+    width: 50px;
 }

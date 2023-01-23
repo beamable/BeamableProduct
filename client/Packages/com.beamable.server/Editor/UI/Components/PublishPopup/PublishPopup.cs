@@ -23,29 +23,55 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		private readonly VisualElement _animatedElement;
 		private readonly int _offset = -300;
+		private readonly int _animDuration;
 
-		public ServicePublishStateAnimator(VisualElement animatedElement)
+		private int _selectionIndex;
+
+		public ServicePublishStateAnimator(VisualElement animatedElement, int animDuration = 500)
 		{
 			_animatedElement = animatedElement;
+			_animDuration = animDuration;
 		}
 
-		public void Animate(ServicePublishState state, int duration = 500)
+		public void Animate(ServicePublishState state)
 		{
-			var endValue = Vector3.zero;
+			_selectionIndex = -1;
 			switch (state)
 			{
-				case ServicePublishState.InProgress:
-					endValue = new Vector3(_offset*1, 0, 0);
-					break;
 				case ServicePublishState.Verifying:
-					endValue = new Vector3(_offset*2, 0, 0);
+					_selectionIndex = 1;
 					break;
-				case ServicePublishState.Failed:
+				case ServicePublishState.InProgress:
+					_selectionIndex = 2;
+					break;
 				case ServicePublishState.Published:
-					endValue = new Vector3(_offset*3, 0, 0);
+				case ServicePublishState.Failed:
+					_selectionIndex = 3;
 					break;
 			}
-			_animatedElement.experimental.animation.Position(endValue, duration);
+			if (_selectionIndex != -1)
+				Animate(new Vector3(_offset * _selectionIndex, 0, 0));
+		}
+
+		private void Animate(Vector3 to) 
+			=> Animate(to, _animDuration);
+		private void Animate(Vector3 to, int duration) =>
+			_animatedElement.experimental.animation.Position(to, duration);
+
+		public void Next()
+		{
+			if (_selectionIndex + 1 == _animatedElement.childCount)
+				return;
+			_selectionIndex++;
+			Animate(new Vector3(_offset * _selectionIndex, 0, 0));
+		}
+
+		public void Previous()
+		{
+			if (_selectionIndex - 1 < 0)
+				return;
+			_selectionIndex--;
+			Animate(new Vector3(_offset * _selectionIndex, 0, 0));
 		}
 	}
 	
@@ -91,6 +117,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private LogVisualElement _logger;
 		private Label _infoTitle;
 		private Label _infoDescription;
+		private VisualElement _arrowLeft;
+		private VisualElement _arrowRight;
+		private VisualElement _docReference;
 
 		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 		private readonly Dictionary<IBeamableService, Action> _logForwardActions = new Dictionary<IBeamableService, Action>();
@@ -157,9 +186,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoDescription = Root.Q<Label>("infoDescription");
 			_infoDescription.style.color = new StyleColor(_infoColor);
 			_infoDescription.text = "Select services to publish";
+
+			_docReference = Root.Q("docReference");
+			_docReference.RegisterCallback<MouseDownEvent>(_ => Application.OpenURL(Constants.URLs.Documentations.URL_DOC_MICROSERVICES));
+			_docReference.tooltip = "Document";
 			
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(_allUnarchivedServices.Count);
-
 			_servicesList.style.height = Mathf.Clamp(_allUnarchivedServices.Count,1, MAX_ROW) * ROW_HEIGHT;
 
 			for (int index = 0; index < _allUnarchivedServices.Count; index++)
@@ -184,6 +216,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
 			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
 
+			_arrowLeft = Root.Q("arrowLeft");
+			_arrowLeft.RegisterCallback<MouseDownEvent>(_ => _serviceServicePublishStateAnimator.Previous());
+			_arrowRight = Root.Q("arrowRight");
+			_arrowRight.RegisterCallback<MouseDownEvent>(_ => _serviceServicePublishStateAnimator.Next());
+
 			AddLogger();
 		}
 		public void PrepareParent()
@@ -193,6 +230,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		public void PrepareForPublish()
 		{
+			_arrowLeft.SetEnabled(false);
+			_arrowRight.SetEnabled(false);
 			_mainLoadingBar.Hidden = false;
 
 			foreach (var kvp in _publishManifestElements)
@@ -207,6 +246,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				if (serviceModel.IsArchived)
 					continue;
 
+				if (serviceModel is MongoStorageModel || (kvp.Value.IsRemote && !kvp.Value.IsLocal))
+				{
+					kvp.Value.UpdateStatus(ServicePublishState.Published);
+					continue;
+				}
+				
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
 				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
 				_servicesToPublish.Add(kvp.Value);
@@ -254,14 +299,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 		
 		private static string GetPublishedKey(string serviceName) => string.Format(MicroserviceReflectionCache.Registry.SERVICE_PUBLISHED_KEY, serviceName);
 
-		private void HandleProgressInfoUpdated(string message, bool isError)
+		private void HandleProgressInfoUpdated(string message, bool isError, ServicePublishState state)
 		{
 			if (isError)
 				_infoDescription.style.color = new StyleColor(_errorColor);
 			_infoDescription.text = message;
+			_serviceServicePublishStateAnimator.Animate(state);
 		}
 		private void HandlePrimaryButtonClicked()
 		{
+			if (Context.CurrentRealm.IsProduction)
+				if (!EditorUtility.DisplayDialog("Warning", "You are trying to publish services to the PROD realm. Continue?", "Publish", "Cancel")) 
+					return;
+			
 			foreach (PublishManifestEntryVisualElement manifestEntryVisualElement in _publishManifestElements.Values)
 				manifestEntryVisualElement.HandlePublishStarted();
 
@@ -275,8 +325,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 
 			element?.UpdateStatus(state);
-			_serviceServicePublishStateAnimator.Animate(state);
-			
 			switch (state)
 			{
 				case ServicePublishState.Failed:
@@ -308,6 +356,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_primarySubmitButton.SetAsFailure(!success);
 			_primarySubmitButton.Button.clickable.clicked -= HandlePrimaryButtonClicked;
 			_primarySubmitButton.Button.clickable.clicked += () => OnCloseRequested?.Invoke();
+			_arrowLeft.SetEnabled(true);
+			_arrowRight.SetEnabled(true);
 		}
 		
 		protected override void OnDestroy()

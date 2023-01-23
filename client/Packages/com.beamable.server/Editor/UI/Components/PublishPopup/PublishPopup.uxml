@@ -19,6 +19,9 @@
         <engine:VisualElement name="infoContainer">
             <engine:VisualElement>
                 <engine:Label name="infoTitle"/>
+                <engine:VisualElement name="docReference">
+                    <engine:Image name="docImage"/>
+                </engine:VisualElement>
             </engine:VisualElement>
             <engine:VisualElement name="infoCardsContainer">
                 <engine:VisualElement name="infoCardsBody">
@@ -29,11 +32,19 @@
                         <engine:Image name="infoCardStep4" class="card"/>
                     </engine:VisualElement>
                 </engine:VisualElement>
-                <engine:VisualElement class="infoCardsBorder"/>
+                <engine:VisualElement class="infoCardsBorder">
+                    <engine:VisualElement name="arrowLeft">
+                        <engine:Image name="arrowImage"/>
+                    </engine:VisualElement>
+                </engine:VisualElement>
                 <engine:VisualElement name="infoCardGradientLeft" class="infoCardsGradient"/>
                 <engine:VisualElement name="infoCardShowArea"/>
                 <engine:VisualElement name="infoCardGradientRight" class="infoCardsGradient"/>
-                <engine:VisualElement class="infoCardsBorder"/>
+                <engine:VisualElement class="infoCardsBorder">
+                    <engine:VisualElement name="arrowRight">
+                        <engine:Image name="arrowImage"/>
+                    </engine:VisualElement>
+                </engine:VisualElement>
             </engine:VisualElement>
             <engine:VisualElement name="infoDetails">
                 <engine:Label name="infoDescription"/>
