@@ -6,10 +6,6 @@ using System.CommandLine.Binding;
 
 namespace cli;
 
-public interface IAppContextLifecycleListener
-{
-	public void OnAfterContext(IServiceProvider provider);
-}
 
 public class AppServices : IServiceProvider
 {

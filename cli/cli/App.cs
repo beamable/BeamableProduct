@@ -49,6 +49,10 @@ public class App
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
 
+	/// <summary>
+	/// These services are registered AFTER the basic CLI parsing has taken place.
+	/// </summary>
+	/// <param name="services"></param>
 	private void ConfigureServices(IDependencyBuilder services)
 	{
 		// register services
@@ -73,7 +77,7 @@ public class App
 
 		_serviceConfigurator?.Invoke(services);
 	}
-
+	
 	public virtual void Configure(Action<IDependencyBuilder>? configurator = null)
 	{
 		if (IsBuilt)
@@ -176,12 +180,15 @@ public class App
 		var commandLineBuilder = new CommandLineBuilder(root);
 		commandLineBuilder.AddMiddleware(consoleContext =>
 		{
+			// create a scope for the execution of the command
 			var provider = CommandProvider.Fork(services =>
 			{
+				// add in the services that need to rely on the CLI parsing having completed
 				services.AddSingleton(consoleContext);
 				services.AddSingleton(consoleContext.BindingContext);
 				ConfigureServices(services);
 			});
+			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			consoleContext.BindingContext.AddService(_ => new AppServices{duck = provider});
 
 			var appContext = provider.GetRequiredService<IAppContext>();

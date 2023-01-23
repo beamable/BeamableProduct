@@ -88,8 +88,10 @@ public abstract class AppCommand<TArgs> : Command
 		protected override TArgs GetBoundValue(BindingContext bindingContext)
 		{
 			var args = _provider.GetRequiredService<TArgs>();
+			
+			// extract the service layer and add it to the arg's execution scope.
 			args.Provider = bindingContext.GetService(typeof(AppServices)) as AppServices;
-			// args.Provider = _provider.GetService<AppServices>();
+			
 			_command.BindBaseContext(_provider, args, bindingContext);
 			foreach (var action in _command._bindingActions)
 			{
