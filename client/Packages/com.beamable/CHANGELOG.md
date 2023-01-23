@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
 - Local Content Mode won't fail to load content if internet connection is lost mid-game.
+- Fixed an issue with logging in and realm switching while being on an archived realm.
 
 ## [1.10.2]
 ### Changed
