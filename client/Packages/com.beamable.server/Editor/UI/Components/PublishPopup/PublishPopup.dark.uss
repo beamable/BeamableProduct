@@ -37,5 +37,23 @@
     background-color: #3c3c3c;
 }
 
+#docImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_Light.png");
+}
 
+#docReference {
+    background-color: #414141;
+}
+
+#docReference:hover {
+    background-color: #474747;
+}
+
+#arrowLeft > Image {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Page Previous.png");
+}
+
+#arrowRight > Image {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/next.png");
+}
 

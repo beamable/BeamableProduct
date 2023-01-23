@@ -317,7 +317,7 @@ namespace Beamable.Server.Editor
 			public event Action<ManifestModel, string> OnDeployFailed;
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
-			public event Action<string, bool> OnProgressInfoUpdated;
+			public event Action<string, bool, ServicePublishState> OnProgressInfoUpdated;
 
 			public async Task Deploy(ManifestModel model,
 									 CancellationToken token,
@@ -334,50 +334,51 @@ namespace Beamable.Server.Editor
 					AssetDatabase.StopAssetEditing();
 				}
 			}
-
+			
 			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
-				// if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
+				// don't do anything if there are no descriptors.
+				if (Descriptors.Count == 0) 
+					return; 
 
 				if (logger == null)
-				{
 					logger = message => Debug.Log($"[{message.Level}] {message.Timestamp} - {message.Message}");
-				}
-				var descriptorsCount = Descriptors.Count;
-
-				OnBeforeDeploy?.Invoke(model, descriptorsCount);
-
+				
+				OnBeforeDeploy?.Invoke(model, Descriptors.Count);
 				OnDeploySuccess -= HandleDeploySuccess;
 				OnDeploySuccess += HandleDeploySuccess;
 				OnDeployFailed -= HandleDeployFailed;
 				OnDeployFailed += HandleDeployFailed;
 
-				OnProgressInfoUpdated?.Invoke("Preparing publish process", false);
+				OnProgressInfoUpdated?.Invoke("Preparing publish process", false, ServicePublishState.Verifying);
 				
 				// TODO perform sort of diff, and only do what is required. Because this is a lot of work.
-				var de = BeamEditorContext.Default;
-				await de.InitializePromise;
+				var context = BeamEditorContext.Default;
+				await context.InitializePromise;
 
-				var client = de.GetMicroserviceManager();
-				var existingManifest = await client.GetCurrentManifest();
-				var secret = await de.GetRealmSecret();
-				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
+				var isSuccess = CheckServicesDependencies(model, logger);
+				if (!isSuccess) return;
 
-				var nameToImageDetails = new Dictionary<string, ImageDetails>();
-				var enabledServices = new List<string>();
+				CheckServicesStatus(model, logger, onServiceDeployed);
+				
+				isSuccess = await BuildServices(model);
+				if (!isSuccess) return;
+	
+				isSuccess = await PerformHealthChecks(model, token, context);
+				if (!isSuccess) return;
+				
+				isSuccess = await PublishServices(model, token, context, logger, onServiceDeployed);
+				if (!isSuccess) return;
+				
+				void HandleDeploySuccess(ManifestModel _, int __) => WindowStateUtility.EnableAllWindows();
+				void HandleDeployFailed(ManifestModel _, string __) => WindowStateUtility.EnableAllWindows();
+			}
 
-				// if any service's storage dependencies are archived, and the service is also not archived, we are in trouble...
+			private bool CheckServicesDependencies(ManifestModel model, Action<LogMessage> logger)
+			{
 				foreach (var service in model.Services)
 				{
-					var anyArchivedStorages = service.Value.Dependencies.Any(d =>
-					{
-						if (!model.Storages.TryGetValue(d.id, out var storage))
-						{
-							return true;
-						}
-
-						return storage.Archived;
-					});
+					var anyArchivedStorages = service.Value.Dependencies.Any(d => !model.Storages.TryGetValue(d.id, out var storage) || storage.Archived);
 					if (anyArchivedStorages && !service.Value.Archived)
 					{
 						var msg =
@@ -388,18 +389,19 @@ namespace Beamable.Server.Editor
 							Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 							Message = msg
 						});
-						OnProgressInfoUpdated?.Invoke(msg, true);
+						OnProgressInfoUpdated?.Invoke(msg, true, ServicePublishState.Failed);
 						OnDeployFailed?.Invoke(model, msg);
-						return;
+						return false;
 					}
 				}
+				return true;
+			}
 
-				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
-
+			private void CheckServicesStatus(ManifestModel model, Action<LogMessage> logger, Action<IDescriptor> onServiceDeployed)
+			{
 				foreach (var descriptor in Descriptors)
 				{
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
-
 					logger(new LogMessage
 					{
 						Level = LogLevel.INFO,
@@ -432,63 +434,72 @@ namespace Beamable.Server.Editor
 						});
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
 						onServiceDeployed?.Invoke(descriptor);
-						continue;
 					}
+				}
+			}
 
+			private async Task<bool> BuildServices(ManifestModel model)
+			{
+				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
+				foreach (var descriptor in Descriptors)
+				{
 					var forceStop = new StopImageReturnableCommand(descriptor);
 					await forceStop.StartAsync(); // force the image to stop.
 					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
 
-					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Building image", false);
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Building image", false, ServicePublishState.Verifying);
 					// Build the image
 					try
 					{
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
-																 includeDebugTools: false,
-																 watch: false,
-																 pull: true,
-																 cpuContext: CPUArchitectureContext.DEPLOY);
-
+						                                         includeDebugTools: false,
+						                                         watch: false,
+						                                         pull: true,
+						                                         cpuContext: CPUArchitectureContext.DEPLOY);
 						await buildCommand.StartAsync();
-
 					}
 					catch (Exception e)
 					{
-						OnProgressInfoUpdated?.Invoke($"Deploy failed due to {descriptor.Name} failing to build", true);
+						OnProgressInfoUpdated?.Invoke($"Deploy failed due to {descriptor.Name} failing to build", true, ServicePublishState.Failed);
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to {descriptor.Name} failing to build: {e}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-
-						return;
+						return false;
 					}
+				}
+				return true;
+			}
 
-					// Try to start the image and talk to it's healthcheck endpoint.
-					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Verifying healthcheck", false);
+			private async Task<bool> PerformHealthChecks(ManifestModel model, CancellationToken token, BeamEditorContext de)
+			{
+				var secret = await de.GetRealmSecret();
+
+				foreach (var descriptor in Descriptors)
+				{
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Verifying healthcheck", false, ServicePublishState.Verifying);
+					UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
 					try
 					{
-
 						async Promise<string> CheckHealthStatus()
 						{
-							var comm = new DockerPortCommand(descriptor, Constants.Features.Services.HEALTH_PORT);
+							var comm = new DockerPortCommand(descriptor, HEALTH_PORT);
 							var dockerPortResult = await comm.StartAsync();
 
 							if (!dockerPortResult.ContainerExists)
 								return "false";
 
 							var res = await de.ServiceScope.GetService<IEditorHttpRequester>()
-											  .ManualRequest<string>(
-												  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health",
-												  parser: x => x);
+							                  .ManualRequest<string>(
+								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health",
+								                  parser: x => x);
 							return res;
 						}
 
 
 						if (MicroserviceConfiguration.Instance.EnablePrePublishHealthCheck)
 						{
-							// We are now verifying the image we just built
-							UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
-
 							// Check to see if the storage descriptor is running.
-							var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
+							var connectionStrings =
+								await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
 
 							// Create a build that will build an image that doesn't run the custom initialization hooks
 							// Let's run it locally.
@@ -496,10 +507,13 @@ namespace Beamable.Server.Editor
 							// This is because we cannot guarantee the user won't do anything in them to break this.
 							// TODO: Change algorithm to always have StorageObjects running locally during verification process.
 							// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
-							var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
+							var runServiceCommand = new RunServiceCommand(
+								descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings,
+								false, false);
 							runServiceCommand.Start();
 
-							var healthcheckTimeout = MicroserviceConfiguration.Instance.PrePublishHealthCheckTimeout.GetOrElse(10);
+							var healthcheckTimeout =
+								MicroserviceConfiguration.Instance.PrePublishHealthCheckTimeout.GetOrElse(10);
 
 							// Wait until the container has completely booted up and it's Start function has finished.
 							var timeWaitingForBoot = 0f;
@@ -526,14 +540,14 @@ namespace Beamable.Server.Editor
 
 							if (!isHealthy)
 							{
-								OnProgressInfoUpdated?.Invoke($"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.", true);
-								OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
+								var msg =
+									$"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.";
+								OnProgressInfoUpdated?.Invoke(msg, true, ServicePublishState.Failed);
+								OnDeployFailed?.Invoke(model, msg);
 								UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-
 								// Stop the container since we don't need to keep the local one alive anymore.
 								await new StopImageCommand(descriptor).StartAsync();
-
-								return;
+								return false;
 							}
 						}
 
@@ -542,24 +556,46 @@ namespace Beamable.Server.Editor
 					}
 					catch (Exception e)
 					{
-						OnProgressInfoUpdated?.Invoke($"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.", true);
-						OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
+						OnProgressInfoUpdated?.Invoke(
+							$"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.",
+							true, ServicePublishState.Failed);
+						OnDeployFailed?.Invoke(
+							model,
+							$"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-
-						return;
+						return false;
 					}
-					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
+				}
+				return true;
+			}
+			
+			private async Task<bool> PublishServices(ManifestModel model,
+			                                   CancellationToken token,
+			                                   BeamEditorContext context,
+			                                   Action<LogMessage> logger,
+			                                   Action<IDescriptor> onServiceDeployed)
+			{
+				var client = context.GetMicroserviceManager();
+				var existingManifest = await client.GetCurrentManifest();
+				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
+				var nameToImageDetails = new Dictionary<string, ImageDetails>();
+				var enabledServices = new List<string>();
 
+				foreach (var descriptor in Descriptors)
+				{
+					var entryModel = model.Services[descriptor.Name];
+					
+					if (entryModel.Archived || !entryModel.Enabled)
+						continue;
 
 					if (token.IsCancellationRequested)
 					{
-						OnProgressInfoUpdated?.Invoke($"Cancellation requested after build of {descriptor.Name}", true);
+						OnProgressInfoUpdated?.Invoke($"Cancellation requested after build of {descriptor.Name}", true, ServicePublishState.Failed);
 						OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-
-						return;
+						return false;
 					}
-					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Preparing image", false);
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Preparing image", false, ServicePublishState.InProgress);
 					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
@@ -576,18 +612,20 @@ namespace Beamable.Server.Editor
 					var imageId = imageDetails.imageId;
 					if (string.IsNullOrEmpty(imageId))
 					{
-						OnProgressInfoUpdated?.Invoke($"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}", true);
-						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
+						var msg = $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}";
+						OnProgressInfoUpdated?.Invoke(msg, true, ServicePublishState.Failed);
+						OnDeployFailed?.Invoke(model, msg);
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-						return;
+						return false;
 					}
 					// the architecture needs to be one of the supported beamable architectures...
 					if (!CPU_SUPPORTED.Any(imageDetails.Platform.Contains))
 					{
-						OnProgressInfoUpdated?.Invoke($"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}", true);
-						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
+						var msg = $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}";
+						OnProgressInfoUpdated?.Invoke(msg, true, ServicePublishState.Failed);
+						OnDeployFailed?.Invoke(model, msg);
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-						return;
+						return false;
 					}
 
 					nameToImageDetails.Add(descriptor.Name, imageDetails);
@@ -634,7 +672,7 @@ namespace Beamable.Server.Editor
 						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 						Message = $"Uploading container service=[{descriptor.Name}]"
 					});
-					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Uploading image", false);
+					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Uploading image", false, ServicePublishState.InProgress);
 					await uploader.UploadContainer(descriptor, token, () =>
 												   {
 													   Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
@@ -646,15 +684,15 @@ namespace Beamable.Server.Editor
 													   Debug.LogError(string.Format(CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
 													   if (token.IsCancellationRequested)
 													   {
-														   OnProgressInfoUpdated?.Invoke($"Cancellation requested during upload of {descriptor.Name}", true);
-														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
+														   var msg = $"Cancellation requested during upload of {descriptor.Name}";
+														   OnProgressInfoUpdated?.Invoke(msg, true, ServicePublishState.Failed);
+														   OnDeployFailed?.Invoke(model, msg);
 														   UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 													   }
 												   }, imageId);
+					
 				}
-
-
-
+				
 				// at this point, all storage objects should at least be marked as complete.
 				foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
 				{
@@ -690,7 +728,7 @@ namespace Beamable.Server.Editor
 				var localServiceReferences = nameToImageDetails.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];
-					return new ServiceReference()
+					return new ServiceReference
 					{
 						serviceName = sa.Name,
 						templateId = sa.TemplateId,
@@ -741,8 +779,8 @@ namespace Beamable.Server.Editor
 				}).ToList();
 
 				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storageManifest });
-				OnProgressInfoUpdated?.Invoke($"Services deploy process completed!", false);
-				OnDeploySuccess?.Invoke(model, descriptorsCount);
+				OnProgressInfoUpdated?.Invoke($"Services deploy process completed!", false, ServicePublishState.Published);
+				OnDeploySuccess?.Invoke(model, Descriptors.Count);
 
 				logger(new LogMessage
 				{
@@ -751,17 +789,9 @@ namespace Beamable.Server.Editor
 					Message = $"Service Deploy Complete"
 				});
 
-				void HandleDeploySuccess(ManifestModel _, int __)
-				{
-					WindowStateUtility.EnableAllWindows();
-				}
-
-				void HandleDeployFailed(ManifestModel _, string __)
-				{
-					WindowStateUtility.EnableAllWindows();
-				}
+				return true;
 			}
-
+			
 			private struct ServiceReferenceNameComp : IEqualityComparer<ServiceReference>
 			{
 				public bool Equals(ServiceReference x, ServiceReference y)

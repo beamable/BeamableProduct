@@ -46,9 +46,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			wnd._publishPopup = new PublishPopup { Model = wnd._model, InitPromise = loadPromise, Registry = servicesRegistry };
 			wnd.Refresh();
 
-			var minSize = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(MicroservicesDataModel.Instance.AllUnarchivedServices.Count, 1, MAX_ROW) * ROW_HEIGHT);
-			wnd.minSize = minSize;
-			wnd.maxSize = new Vector2(wnd.maxSize.x, minSize.y);
+			wnd.minSize = wnd.maxSize = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(MicroservicesDataModel.Instance.AllUnarchivedServices.Count, 1, MAX_ROW) * ROW_HEIGHT);;
 			wnd.position = BeamablePopupWindow.GetCenterOnMainWin(wnd);
 
 			loadPromise.Then(model =>
