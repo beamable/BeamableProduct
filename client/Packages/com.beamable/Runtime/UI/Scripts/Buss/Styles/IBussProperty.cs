@@ -85,6 +85,17 @@ namespace Beamable.UI.Buss
 		Vector2 Vector2Value { get; }
 	}
 
+	public interface IRectTransformBussProperty : IBussProperty
+	{
+		Vector2 Pivot { get; }
+		float Left { get; }
+		float Right { get; }
+		float Top { get; }
+		float Bottom { get; }
+		Vector2 AnchorMin { get; }
+		Vector2 AnchorMax { get; }
+	}
+
 	public interface IEnumBussProperty : IBussProperty
 	{
 		Enum EnumValue { get; }

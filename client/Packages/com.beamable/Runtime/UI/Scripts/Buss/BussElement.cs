@@ -21,6 +21,15 @@ namespace Beamable.UI.Buss
 		[SerializeField, HideInInspector] private List<Object> _assetReferences = new List<Object>();
 		[SerializeField, HideInInspector] private BussElement _parent;
 		[SerializeField, HideInInspector] private List<BussElement> _children = new List<BussElement>();
+
+		#region remember what the previous rect data was
+		[SerializeField, HideInInspector]
+		private bool _hasCustomRectData;
+
+		[SerializeField, HideInInspector]
+		private RectTransformProperty _customRectData;
+		#endregion
+		
 #pragma warning restore CS0649
 
 		private readonly List<string> _pseudoClasses = new List<string>();
@@ -82,6 +91,65 @@ namespace Beamable.UI.Buss
 
 		public virtual void ApplyStyle() { }
 
+		protected virtual void ApplyRectStyle(BussStyle style)
+		{
+			var rect = transform as RectTransform;
+
+			var rectStyle = BussStyle.RectTransform.GetFromStyle(style, false);
+			if (rectStyle == null)
+			{
+				if (_hasCustomRectData)
+				{
+					rectStyle = _customRectData;
+					_hasCustomRectData = false;
+				}
+				else
+				{
+					return;
+				}
+			} else if (!_hasCustomRectData)
+			{
+				_customRectData = new RectTransformProperty();
+				_customRectData.Pivot = rect.pivot;
+				_customRectData.AnchorMax = rect.anchorMax;
+				_customRectData.AnchorMin = rect.anchorMin;
+				_customRectData.Left = rect.offsetMin.x;
+				_customRectData.Right = rect.offsetMax.x;
+				_customRectData.Top = rect.offsetMin.y;
+				_customRectData.Bottom = rect.offsetMax.y;
+				_hasCustomRectData = true;
+			}
+			
+			
+			rect.anchorMax = rectStyle.AnchorMax;
+			rect.anchorMin = rectStyle.AnchorMin;
+			rect.pivot = rectStyle.Pivot;
+			
+			var isXSame = Math.Abs(rectStyle.AnchorMax.x - rectStyle.AnchorMin.x) < .0001;
+			var isYSame = Math.Abs(rectStyle.AnchorMax.y - rectStyle.AnchorMin.y) < .0001;
+
+			if (isXSame && isYSame)
+			{
+				rect.offsetMin = new Vector2(rectStyle.Left - rectStyle.Right*.5f, rectStyle.Top - rectStyle.Bottom*.5f);
+				rect.offsetMax = new Vector2(rectStyle.Left + rectStyle.Right*.5f, rectStyle.Top + rectStyle.Bottom*.5f);
+			} else if (isXSame)
+			{
+				rect.offsetMin = new Vector2(rectStyle.Left - rectStyle.Right*.5f, rectStyle.Bottom);
+				rect.offsetMax = new Vector2(rectStyle.Left + rectStyle.Right*.5f, -rectStyle.Top);
+			} else if (isYSame)
+			{
+				rect.offsetMin = new Vector2(rectStyle.Left, rectStyle.Top - rectStyle.Bottom*.5f);
+				rect.offsetMax = new Vector2(-rectStyle.Right, rectStyle.Top + rectStyle.Bottom*.5f);
+			}
+			else
+			{
+				rect.offsetMin = new Vector2(rectStyle.Left, rectStyle.Bottom);
+				rect.offsetMax = new Vector2(-rectStyle.Right, -rectStyle.Top);
+			}
+			rect.ForceUpdateRectTransforms();
+		}
+		
+		
 		#region Unity Callbacks
 
 		private void OnEnable()

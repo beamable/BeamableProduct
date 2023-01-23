@@ -49,6 +49,7 @@ namespace Beamable.Editor.UI.Buss
 			{"Enum", null},
 			{"Sprite", new SpriteBussProperty()},
 			{"Font", new FontBussAssetProperty()},
+			{"Rect", new RectTransformProperty()}
 		};
 
 		private readonly Dictionary<string, IBussProperty> _enumsDict = new Dictionary<string, IBussProperty>

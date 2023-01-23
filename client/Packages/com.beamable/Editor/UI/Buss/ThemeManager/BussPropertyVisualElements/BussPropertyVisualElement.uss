@@ -8,6 +8,31 @@
     flex-grow: 1;
 }
 
+.rectTransform .row {
+    flex-direction: row;
+    position: relative;
+}
+.rectTransform .row > * {
+    flex-grow: 1;
+    flex-shrink: 0;
+}
+.rectTransform .row > * > *{
+    flex-basis: 0;
+}
+.rectTransform .row.has-prefix {
+    margin-top: 12px;
+}
+.rectTransform .row.has-prefix Vector2Field {
+    margin-left: 4px;
+}
+.rectTransform .row .prefix {
+    flex-grow: 0;
+    position: absolute;
+    right: 100%;
+    margin-top: 2px;
+    margin-right: 4px;
+}
+
 ToolbarButton{
     flex-grow: 1;
     margin-bottom: 2px;
