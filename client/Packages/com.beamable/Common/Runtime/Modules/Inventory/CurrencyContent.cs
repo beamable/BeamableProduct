@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Serialization;
-
 #pragma warning disable CS0618
 
 namespace Beamable.Common.Inventory
 {
+
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for %Currency related to the %InventoryService.
 	///
@@ -27,7 +27,7 @@ namespace Beamable.Common.Inventory
 	[Agnostic]
 	public class CurrencyContent : ContentObject
 	{
-		[Tooltip(TooltipIcon1)]
+		[Tooltip(ContentObject.TooltipIcon1)]
 		[FormerlySerializedAs("Icon")]
 		[ContentField("icon", FormerlySerializedAs = new[] { "Icon" })]
 		public AssetReferenceSprite icon;
@@ -35,16 +35,12 @@ namespace Beamable.Common.Inventory
 		/// <summary>
 		/// <inheritdoc cref="ClientPermissions"/>
 		/// </summary>
-		[Tooltip(TooltipClientPermission1)]
+		[Tooltip(ContentObject.TooltipClientPermission1)]
 		public ClientPermissions clientPermission;
 
-		[Tooltip(TooltipAmount1)]
+		[Tooltip(ContentObject.TooltipAmount1)]
 		[MustBeNonNegative]
 		public long startingAmount;
-
-		[ContentField("external")]
-		[Tooltip(TooltipFederation)]
-		public OptionalFederation federation;
 	}
 
 	[System.Serializable]

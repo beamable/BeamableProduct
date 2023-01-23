@@ -1,5 +1,4 @@
 using Beamable.Common;
-using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
 using Beamable.Server;
 using Beamable.Server.Editor;
@@ -82,14 +81,13 @@ namespace Beamable.Server.Generator
 			targetClass.TypeAttributes =
 				TypeAttributes.Public | TypeAttributes.Sealed;
 			targetClass.BaseTypes.Add(new CodeTypeReference(MicroserviceClient_TypeName));
+
 			targetClass.Members.Add(new CodeConstructor()
 			{
 				Attributes = MemberAttributes.Public,
 				Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference("BeamContext"), "context = null") },
 				BaseConstructorArgs = { new CodeArgumentReferenceExpression("context") }
 			});
-
-
 
 			parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
 			parameterClass.IsClass = true;
@@ -106,8 +104,6 @@ namespace Beamable.Server.Generator
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(BeamContextSystemAttribute)))
 			};
 
-			AddServiceNameInterface();
-			AddFederatedLoginInterfaces();
 
 			var registrationMethod = new CodeMemberMethod
 			{
@@ -179,38 +175,6 @@ namespace Beamable.Server.Generator
 				AddParameterClass(parameterType);
 			}
 
-		}
-
-		void AddFederatedLoginInterfaces()
-		{
-			var interfaces = Descriptor.Type.GetInterfaces();
-			foreach (var type in interfaces)
-			{
-				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IFederatedLogin<>))
-				{
-					var genericType = type.GetGenericArguments()[0];
-					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedLogin<>));
-					baseReference.TypeArguments.Add(new CodeTypeReference(genericType));
-					targetClass.BaseTypes.Add(baseReference);
-				}
-			}
-		}
-
-		void AddServiceNameInterface()
-		{
-			targetClass.BaseTypes.Add(new CodeTypeReference(typeof(IHaveServiceName)));
-
-
-			var nameProperty = new CodeMemberProperty();
-			nameProperty.Type = new CodeTypeReference(typeof(string));
-			nameProperty.Attributes = MemberAttributes.Public | MemberAttributes.Final;
-			nameProperty.Name = nameof(IHaveServiceName.ServiceName);
-			nameProperty.HasGet = true;
-			nameProperty.HasSet = false;
-
-			var returnStatement = new CodeMethodReturnStatement(new CodePrimitiveExpression(Descriptor.Name));
-			nameProperty.GetStatements.Add(returnStatement);
-			targetClass.Members.Add(nameProperty);
 		}
 
 		void AddParameterClass(Type parameterType)

@@ -74,11 +74,11 @@ namespace Beamable.Common.Content.Validation
 				return false;
 			}
 		}
-
+		
 		// source: https://stackoverflow.com/questions/16689468/how-to-produce-human-readable-strings-to-represent-a-timespan
 		private static string FormatTimeSpan(TimeSpan timeSpan)
 		{
-			Func<Tuple<int, string>, string> tupleFormatter = t => $"{t.Item1} {t.Item2}{(t.Item1 == 1 ? string.Empty : "s")}";
+			Func<Tuple<int,string>, string> tupleFormatter = t => $"{t.Item1} {t.Item2}{(t.Item1 == 1 ? string.Empty : "s")}";
 			var components = new List<Tuple<int, string>>
 			{
 				Tuple.Create((int) timeSpan.TotalDays, "day"),

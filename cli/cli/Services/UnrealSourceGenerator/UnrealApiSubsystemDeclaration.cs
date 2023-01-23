@@ -81,6 +81,22 @@ public struct UnrealApiSubsystemDeclaration
 			return ufunctionDeclaration;
 		}));
 
+		var ufunctionsWithRetry = string.Join("\n\t\t", EndpointUFunctionDeclarations.Select(d =>
+		{
+			d.IntoProcessMap(helperDict);
+			var ufunction = UnrealEndpointDeclaration.U_FUNCTION_WITH_RETRY_DECLARATION.ProcessReplacement(helperDict);
+			helperDict.Clear();
+			return ufunction;
+		}));
+
+		var authUfunctionsWithRetry = string.Join("\n\t\t", AuthenticatedEndpointUFunctionDeclarations.Select(d =>
+		{
+			d.IntoProcessMap(helperDict);
+			var ufunction = UnrealEndpointDeclaration.U_FUNCTION_WITH_RETRY_AUTH_DECLARATION.ProcessReplacement(helperDict);
+			helperDict.Clear();
+			return ufunction;
+		}));
+
 
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
 
@@ -94,6 +110,9 @@ public struct UnrealApiSubsystemDeclaration
 
 		helperDict.Add(nameof(EndpointUFunctionDeclarations), ufunctions);
 		helperDict.Add(nameof(AuthenticatedEndpointUFunctionDeclarations), authUFunctions);
+
+		helperDict.Add(nameof(EndpointUFunctionWithRetryDeclarations), ufunctionsWithRetry);
+		helperDict.Add(nameof(AuthenticatedEndpointUFunctionWithRetryDeclarations), authUfunctionsWithRetry);
 	}
 
 	public void IntoProcessMapCpp(Dictionary<string, string> helperDict)
@@ -150,6 +169,22 @@ public struct UnrealApiSubsystemDeclaration
 			return ufunction;
 		}));
 
+		var ufunctionsWithRetry = string.Join("\n\t\t", EndpointUFunctionDeclarations.Select(d =>
+		{
+			d.IntoProcessMap(helperDict);
+			var ufunction = UnrealEndpointDeclaration.U_FUNCTION_WITH_RETRY_DEFINITION.ProcessReplacement(helperDict);
+			helperDict.Clear();
+			return ufunction;
+		}));
+
+		var authUfunctionsWithRetry = string.Join("\n\t\t", AuthenticatedEndpointUFunctionDeclarations.Select(d =>
+		{
+			d.IntoProcessMap(helperDict);
+			var ufunction = UnrealEndpointDeclaration.U_FUNCTION_WITH_RETRY_AUTH_DEFINITION.ProcessReplacement(helperDict);
+			helperDict.Clear();
+			return ufunction;
+		}));
+
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
 
 		helperDict.Add(nameof(EndpointRawFunctionDeclarations), endpointRawFunctions);
@@ -160,6 +195,9 @@ public struct UnrealApiSubsystemDeclaration
 
 		helperDict.Add(nameof(EndpointUFunctionDeclarations), ufunctions);
 		helperDict.Add(nameof(AuthenticatedEndpointUFunctionDeclarations), authUFunctions);
+
+		helperDict.Add(nameof(EndpointUFunctionWithRetryDeclarations), ufunctionsWithRetry);
+		helperDict.Add(nameof(AuthenticatedEndpointUFunctionWithRetryDeclarations), authUfunctionsWithRetry);
 	}
 
 
@@ -169,8 +207,6 @@ public struct UnrealApiSubsystemDeclaration
 
 #include ""CoreMinimal.h""
 #include ""BeamBackend/BeamBackend.h""
-#include ""BeamBackend/ResponseCache/BeamResponseCache.h""
-#include ""RequestTracker/BeamRequestTracker.h""
 
 ₢{nameof(IncludeStatements)}₢
 
@@ -194,12 +230,6 @@ private:
 	UPROPERTY()
 	UBeamBackend* Backend;
 
-	UPROPERTY()
-	UBeamRequestTracker* RequestTracker;
-
-	UPROPERTY()
-	UBeamResponseCache* ResponseCache;
-
 	₢{nameof(EndpointRawFunctionDeclarations)}₢
 
 	₢{nameof(AuthenticatedEndpointRawFunctionDeclarations)}₢
@@ -216,21 +246,21 @@ public:
 
 	₢{nameof(EndpointUFunctionDeclarations)}₢
 
-	₢{nameof(AuthenticatedEndpointUFunctionDeclarations)}₢
+	₢{nameof(AuthenticatedEndpointUFunctionDeclarations)}₢	
+
+	₢{nameof(EndpointUFunctionWithRetryDeclarations)}₢
+
+	₢{nameof(AuthenticatedEndpointUFunctionWithRetryDeclarations)}₢
 }};
 ";
 
 	public const string U_SUBSYSTEM_CPP = $@"
 #include ""AutoGen/SubSystems/Beam₢{nameof(SubsystemName)}₢Api.h""
-#include ""BeamCoreSettings.h""
-
 
 void UBeam₢{nameof(SubsystemName)}₢Api::Initialize(FSubsystemCollectionBase& Collection)
 {{
 	Super::Initialize(Collection);
 	Backend = Cast<UBeamBackend>(Collection.InitializeDependency(UBeamBackend::StaticClass()));
-	RequestTracker = Cast<UBeamRequestTracker>(Collection.InitializeDependency(UBeamRequestTracker::StaticClass()));
-	ResponseCache = Cast<UBeamResponseCache>(Collection.InitializeDependency(UBeamResponseCache::StaticClass()));
 }}
 
 void UBeam₢{nameof(SubsystemName)}₢Api::Deinitialize()
@@ -250,6 +280,11 @@ void UBeam₢{nameof(SubsystemName)}₢Api::Deinitialize()
 
 ₢{nameof(EndpointUFunctionDeclarations)}₢
 
-₢{nameof(AuthenticatedEndpointUFunctionDeclarations)}₢
+₢{nameof(AuthenticatedEndpointUFunctionDeclarations)}₢	
+
+₢{nameof(EndpointUFunctionWithRetryDeclarations)}₢
+
+₢{nameof(AuthenticatedEndpointUFunctionWithRetryDeclarations)}₢
+
 ";
 }
