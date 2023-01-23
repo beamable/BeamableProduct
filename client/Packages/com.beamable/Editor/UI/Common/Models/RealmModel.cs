@@ -5,7 +5,6 @@ using Beamable.Common.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
@@ -51,9 +50,6 @@ namespace Beamable.Editor.UI.Common.Models
 				{
 					await api.Relogin();
 					var realms = await RefreshAvailable();
-					// await api.SwitchRealm((RealmView)Current);
-					var curr = api.CurrentRealm;
-					OnElementChanged?.Invoke(Current);
 					OnElementChanged?.Invoke(Current);
 					return realms;
 				}

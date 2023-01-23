@@ -2,7 +2,6 @@ using Beamable.Common.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 
 namespace Beamable.Common.Api.Realms
 {
@@ -156,7 +155,7 @@ namespace Beamable.Common.Api.Realms
 					}
 				}
 
-				throw ex;
+				throw;
 			}
 		}
 	}
