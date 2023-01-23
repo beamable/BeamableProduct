@@ -139,14 +139,14 @@ namespace Beamable.Api.Connectivity
 	/// </summary>
 	public class ConnectivityService : IConnectivityService
 	{
-		private bool _isConnected = true;		public bool HasConnectivity => _isConnected && !Disabled;
+		private bool _isConnected = true;
+		public bool HasConnectivity => _isConnected && !Disabled;
 
 		private bool _forceDisabled;
 		public bool ForceDisabled
 		{
 			get => _forceDisabled;
 			set => _forceDisabled = value;
-			// SetHasInternet(HasConnectivity);
 		}
 
 		public bool Disabled => _forceDisabled || IConnectivityServiceExtensions.GlobalForceDisabled;

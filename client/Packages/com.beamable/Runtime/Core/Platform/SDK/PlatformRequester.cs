@@ -1,3 +1,9 @@
+#if !BEAMABLE_DISABLE_VERSION_HEADERS
+#define BEAMABLE_ENABLE_VERSION_HEADERS
+#else 
+#undef BEAMABLE_ENABLE_VERSION_HEADERS
+#endif
+
 using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
@@ -9,9 +15,11 @@ using Beamable.Serialization;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Api
 {
@@ -200,13 +208,13 @@ namespace Beamable.Api
 			});
 		}
 
-		[Obsolete]
+		[Obsolete("Use " + nameof(Request) + " instead")]
 		public Promise<T> RequestForm<T>(string uri, WWWForm form, bool includeAuthHeader = true)
 		{
 			return RequestForm<T>(uri, form, Method.POST, includeAuthHeader);
 		}
 
-		[Obsolete]
+		[Obsolete("Use " + nameof(Request) + " instead")]
 		public Promise<T> RequestForm<T>(string uri, WWWForm form, Method method, bool includeAuthHeader = true)
 		{
 			var opts = new SDKRequesterOptions<T>
@@ -372,6 +380,7 @@ namespace Beamable.Api
 		}
 		
 		
+		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
 		protected void AddVersionHeaders(UnityWebRequest request)
 		{
 #if !BEAMABLE_DISABLE_VERSION_HEADERS
