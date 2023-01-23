@@ -41,6 +41,7 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_Light.png");
 }
 
+#infoTitle,
 #docReference {
     background-color: #414141;
 }
@@ -56,4 +57,3 @@
 #arrowRight > Image {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/next.png");
 }
-

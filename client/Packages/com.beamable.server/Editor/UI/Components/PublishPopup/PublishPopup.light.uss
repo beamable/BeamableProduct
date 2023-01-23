@@ -44,6 +44,7 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_Dark.png");
 }
 
+#infoTitle,
 #docReference {
     background-color: #C4C4C4;
 }
