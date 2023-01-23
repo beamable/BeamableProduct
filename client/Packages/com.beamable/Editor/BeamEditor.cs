@@ -433,7 +433,7 @@ namespace Beamable
 		public static BeamEditorContext ForEditorUser(string code) => Instantiate(code);
 
 		private int _loginRetries;
-		
+
 		public static bool ConfigFileExists { get; private set; }
 
 		/// <summary>
@@ -627,13 +627,13 @@ namespace Beamable
 						_loginRetries = 0;
 						throw;
 					}
-					
+
 					// reset pids and try again
 					requester.Pid = null;
 					if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
 						ConfigDatabase.Reset(Features.Config.PID_KEY);
 					EditorPrefs.DeleteKey(Features.Config.LAST_PID_KEY);
-					
+
 					await Login(email, password);
 					_loginRetries = 0;
 					return;
@@ -641,7 +641,7 @@ namespace Beamable
 
 				throw;
 			}
-			
+
 			var token = new AccessToken(accessTokenStorage, requester.Cid, pid, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
 			await Login(token, pid);
@@ -653,7 +653,7 @@ namespace Beamable
 			var currentToken = Requester.Token;
 			var expiresIn = (long)(currentToken.ExpiresAt - DateTime.UtcNow).TotalMilliseconds;
 			var newToken = new AccessToken(accessTokenStorage, Requester.Cid, null, currentToken.Token,
-			                               currentToken.RefreshToken, expiresIn);
+										   currentToken.RefreshToken, expiresIn);
 			await Login(newToken);
 		}
 
