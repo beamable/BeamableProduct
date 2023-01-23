@@ -66,28 +66,9 @@ namespace Beamable.Common.Api.Presence
 		public DateTime LastOnline => DateTime.Parse(lastOnline);
 	}
 
-	// TODO: Remove this once lastOnline format gets unified
-	[Serializable]
-	public class PlayerPresenceTest
-	{
-		public bool online;
-		public LastOnline lastOnline;
-		public long playerId;
-		public int status;
-		public string description;
-	}
-
-	// TODO: Remove this once lastOnline format gets unified
-	[Serializable]
-	public class LastOnline
-	{
-		public long seconds;
-		public int nanos;
-	}
-
 	public enum PresenceStatus
 	{
-		Online = 0,
+		Visible = 0,
 		Invisible = 1,
 		Dnd = 2,
 		Away = 3,
@@ -96,6 +77,6 @@ namespace Beamable.Common.Api.Presence
 	[Serializable]
 	public class MultiplePlayersStatus
 	{
-		public List<PlayerPresenceTest> playersStatus;
+		public List<PlayerPresence> playersStatus;
 	}
 }
