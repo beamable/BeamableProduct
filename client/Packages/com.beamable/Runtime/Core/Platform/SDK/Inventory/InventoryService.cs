@@ -33,6 +33,12 @@ namespace Beamable.Api.Inventory
 			UsesHierarchyScopes = true;
 		}
 
+		public InventorySubscription(IDependencyProvider provider, bool useCache)
+			: base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(useCache, OfflineResponse))
+		{
+			UsesHierarchyScopes = true;
+		}
+
 		private static InventoryResponse OfflineResponse(string url)
 		{
 			return new InventoryResponse
@@ -114,6 +120,10 @@ namespace Beamable.Api.Inventory
 	{
 		public InventorySubscription Subscribable { get; }
 
+		public InventoryService(IDependencyProvider provider, InventorySubscription subscription) : base(provider.GetService<IBeamableRequester>(), provider.GetService<IUserContext>())
+		{
+			Subscribable = subscription;
+		}
 
 		public InventoryService(IDependencyProvider provider) : base(provider.GetService<IBeamableRequester>(), provider.GetService<IUserContext>())
 		{
@@ -123,11 +133,17 @@ namespace Beamable.Api.Inventory
 		public InventoryService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
 		{
 			Subscribable = new InventorySubscription(provider);
-
 		}
 
 		public override Promise<InventoryView> GetCurrent(string scope = "") => Subscribable.GetCurrent(scope);
 
+	}
+
+	public class CachelessInventoryService : InventoryService
+	{
+		public CachelessInventoryService(IDependencyProvider provider) : base(provider, new InventorySubscription(provider, false))
+		{
+		}
 	}
 }
 

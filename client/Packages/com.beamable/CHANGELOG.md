@@ -5,8 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `PlayerInventory` supports storing player's inventory in offline mode
+- `PlayerInventory` supports `UpdateDelayed` method
+- `IFederatedLogin<T>` interface type available for Microservices
+
 ### Changed
+- `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
+- `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
+- Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
 - Connectivity events are sourced from the `Heartbeat` every 5 seconds, instead of from the `ConnectivityService` every 3 seconds.
+
+### Fixed
+- `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
+- Local Content Mode won't fail to load content if internet connection is lost mid-game.
 
 ### Removed
 - `connectivityRoute` option in `config-defaults` no longer has any effect. All connectivity checks happen as part of the heart beat cycle every 5 seconds.
@@ -22,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tournament content can be scheduled for any ISO 8601 Period
 - Detect using invalid AA assets inside `LoadTexture` helper method for `AssetReferenceSprite`
 
+
 ## [1.10.1]
 ### Fixed
 - possible `NullReferenceException` during Content Manager initialization
@@ -30,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Player Account PSDK
 - `EditorDownloadBatchSize` setting in Content Configuration controls the batch download size for Content Manager. The default value is 100.
+- Added SDK support for a direct Websocket connection to Beamable services toggleable via realm configuration.
 
 ### Changed
 - Content Manager uses batch operations for better performance.

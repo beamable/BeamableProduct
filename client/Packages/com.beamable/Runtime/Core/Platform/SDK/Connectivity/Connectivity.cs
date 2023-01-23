@@ -139,7 +139,7 @@ namespace Beamable.Api.Connectivity
 	/// </summary>
 	public class ConnectivityService : IConnectivityService
 	{
-		public bool HasConnectivity { get; private set; } = true;
+		private bool _isConnected = true;		public bool HasConnectivity => _isConnected && !Disabled;
 
 		private bool _forceDisabled;
 		public bool ForceDisabled
@@ -165,11 +165,11 @@ namespace Beamable.Api.Connectivity
 				hasInternet = false;
 			}
 
-			var isReconnection = (hasInternet && !HasConnectivity);
-			var isChange = hasInternet != HasConnectivity;
+			var isReconnection = (hasInternet && !_isConnected);
+			var isChange = hasInternet != _isConnected;
 
 
-			HasConnectivity = hasInternet;
+			_isConnected = hasInternet;
 			if (isReconnection)
 			{
 				_reconnectionPromises.Sort((a, b) => a.Item2.CompareTo(b.Item2));

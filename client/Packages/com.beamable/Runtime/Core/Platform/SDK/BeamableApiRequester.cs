@@ -15,6 +15,7 @@ namespace Core.Platform.SDK
 	public interface IBeamableApiRequester : IRequester
 	{
 		AccessToken Token { get; set; }
+		Promise<Unit> RefreshToken();
 	}
 	
 	// Since the new access tokens are short lived, no need to store them. We can use the same refresh tokens
@@ -51,6 +52,7 @@ namespace Core.Platform.SDK
 			{
 				return null;
 			}
+
 			return $"Bearer {Token.Token}";
 		}
 
