@@ -16,6 +16,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants.Features.Services;
+using static Beamable.Common.Constants.Features.Services.PublishWindow;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -205,6 +206,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_publishManifestElements.Add(model.Name, newElement);
 				_scrollContainer.Add(newElement);
 			}
+
+			Root.Q("enableC").tooltip = ON_OFF_HEADER_TOOLTIP;
+			Root.Q("nameC").tooltip = NAME_HEADER_TOOLTIP;
+			Root.Q("knownLocationC").tooltip = KNOWN_LOCATION_HEADER_TOOLTIP;
+			Root.Q("dependenciesC").tooltip = DEPENDENCIES_HEADER_TOOLTIP;
+			Root.Q("commentsC").tooltip = COMMENTS_HEADER_TOOLTIP;
+			Root.Q("statusC").tooltip = STATUS_HEADER_TOOLTIP;
 
 			_userDescription = Root.Q<TextField>("userDescription");
 			_userDescription.AddPlaceholder("Description here...");

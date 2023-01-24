@@ -94,10 +94,6 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_2_build_and_verify.png");
 }
 
-#infoCardStep3 {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_3_upload_all.png");
-}
-
 #infoCardStep4 {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_4_send_updated.png");
 }

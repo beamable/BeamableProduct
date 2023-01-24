@@ -60,3 +60,7 @@
 #arrowRight > Image {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/next light.png");
 }
+
+#infoCardStep3 {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_3_upload_all_dark.png");
+}
