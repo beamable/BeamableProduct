@@ -424,12 +424,15 @@ namespace Beamable
 	public class BeamEditorContext
 	{
 		public const string EDITOR_PLAYER_CODE_TEMPLATE = "editor.{0}.";
+		private const int LOGIN_RETRY_AMOUNT = 3;
 
 		public static Dictionary<string, BeamEditorContext> EditorContexts = new Dictionary<string, BeamEditorContext>();
 		public static List<BeamEditorContext> All => EditorContexts.Values.ToList();
 		public static BeamEditorContext Default => Instantiate(string.Format(EDITOR_PLAYER_CODE_TEMPLATE, "0"));
 		public static BeamEditorContext ForEditorUser(int idx) => Instantiate(string.Format(EDITOR_PLAYER_CODE_TEMPLATE, idx));
 		public static BeamEditorContext ForEditorUser(string code) => Instantiate(code);
+
+		private int _loginRetries;
 
 		public static bool ConfigFileExists { get; private set; }
 
@@ -524,9 +527,9 @@ namespace Beamable
 			}
 
 			// Load up the current Configuration data
-			ConfigDatabase.TryGetString("alias", out var alias);
-			var cid = ConfigDatabase.GetString("cid");
-			var pid = ConfigDatabase.GetString("pid");
+			ConfigDatabase.TryGetString(Features.Config.ALIAS_KEY, out var alias);
+			ConfigDatabase.TryGetString(Features.Config.CID_KEY, out string cid);
+			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out string pid);
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
 
@@ -595,7 +598,7 @@ namespace Beamable
 			var cid = res.Cid.GetOrThrow();
 
 			// Gets the stored pid, if its there
-			ConfigDatabase.TryGetString("pid", out var pid);
+			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out var pid);
 
 			// Set the config defaults to reflect the new Customer.
 			SaveConfig(alias, pid, BeamableEnvironment.ApiUrl, cid);
@@ -609,10 +612,49 @@ namespace Beamable
 			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 			var authService = ServiceScope.GetService<IEditorAuthApi>();
 			var requester = ServiceScope.GetService<PlatformRequester>();
-			var tokenRes = await authService.Login(email, password, customerScoped: true);
+
+			TokenResponse tokenRes = null;
+			try
+			{
+				tokenRes = await authService.Login(email, password, customerScoped: true);
+			}
+			catch (RequesterException e)
+			{
+				if (e.Status == 400) // project is archived
+				{
+					if (++_loginRetries > LOGIN_RETRY_AMOUNT)
+					{
+						_loginRetries = 0;
+						throw;
+					}
+
+					// reset pids and try again
+					requester.Pid = null;
+					if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
+						ConfigDatabase.Reset(Features.Config.PID_KEY);
+					EditorPrefs.DeleteKey(Features.Config.LAST_PID_KEY);
+
+					await Login(email, password);
+					_loginRetries = 0;
+					return;
+				}
+
+				throw;
+			}
+
 			var token = new AccessToken(accessTokenStorage, requester.Cid, pid, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 			// use this token.
 			await Login(token, pid);
+		}
+
+		public async Promise Relogin()
+		{
+			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
+			var currentToken = Requester.Token;
+			var expiresIn = (long)(currentToken.ExpiresAt - DateTime.UtcNow).TotalMilliseconds;
+			var newToken = new AccessToken(accessTokenStorage, Requester.Cid, null, currentToken.Token,
+										   currentToken.RefreshToken, expiresIn);
+			await Login(newToken);
 		}
 
 		public async Promise Login(AccessToken token, string pid = null)
@@ -653,17 +695,34 @@ namespace Beamable
 			{
 				var games = await realmService.GetGames();
 
-				if (string.IsNullOrEmpty(pid))
+				if (EditorPrefs.HasKey(Features.Config.LAST_PID_KEY))
 				{
-					var realms = await realmService.GetRealms(games.First());
-					realm = realms.First(rv => !rv.Archived);
-				}
-				else
-				{
-					realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
-					if (realm == null)
+					string lastPid = EditorPrefs.GetString(Features.Config.LAST_PID_KEY);
+					if (!string.IsNullOrEmpty(lastPid))
 					{
-						Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+						var realms = await realmService.GetRealms(lastPid);
+						realm = realms.FirstOrDefault(rv => rv.Pid == lastPid);
+						if (realm != null && realm.Archived)
+						{
+							realm = null;
+						}
+					}
+				}
+
+				if (realm == null)
+				{
+					if (string.IsNullOrEmpty(pid))
+					{
+						var realms = await realmService.GetRealms(games.First());
+						realm = realms.First(rv => !rv.Archived);
+					}
+					else
+					{
+						realm = (await realmService.GetRealms(pid)).FirstOrDefault(rv => rv.Pid == pid);
+						if (realm == null)
+						{
+							Debug.LogWarning($"Beamable could not find a realm for pid=[{pid}]. ");
+						}
 					}
 				}
 			}
@@ -835,6 +894,12 @@ namespace Beamable
 			var requester = ServiceScope.GetService<PlatformRequester>();
 			ClearLastAuthenticatedUserDataForToken(requester.Token, CurrentRealm?.Pid);
 			requester.DeleteToken();
+			if (ConfigDatabase.HasKey(Features.Config.PID_KEY))
+			{
+				EditorPrefs.SetString(Features.Config.LAST_PID_KEY, ConfigDatabase.GetString(Features.Config.PID_KEY));
+				ConfigDatabase.Reset(Features.Config.PID_KEY);
+				SaveConfig(CurrentCustomer?.Alias, "", cid: CurrentCustomer?.Cid);
+			}
 			CurrentUser = null;
 			OnUserChange?.Invoke(null);
 			BeamableEnvironment.ReloadEnvironment();
@@ -918,6 +983,11 @@ namespace Beamable
 			if (string.IsNullOrEmpty(host))
 			{
 				host = BeamableEnvironment.ApiUrl;
+			}
+
+			if (!string.IsNullOrEmpty(pid))
+			{
+				ConfigDatabase.SetString(Features.Config.PID_KEY, pid, createField: true);
 			}
 
 			WriteConfig(alias, pid, host, cid);

@@ -456,10 +456,11 @@ namespace Beamable
 			builder.AddSingleton<IBeamableApiRequester>(
 				provider => new BeamableApiRequester(
 					_environment.ApiUrl,
+					_environment.SdkVersion,
 					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>())
+					provider.GetService<IConnectivityService>(),
+					provider.GetService<OfflineCache>())
 			);
-
 			builder.AddSingleton<IPlatformRequester>(provider => provider.GetService<PlatformRequester>());
 			builder.AddSingleton<IBeamableAPI>(provider => Api);
 			builder.AddSingleton<BeamContext>(this);
