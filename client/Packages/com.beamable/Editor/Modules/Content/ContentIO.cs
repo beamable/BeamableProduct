@@ -86,7 +86,6 @@ namespace Beamable.Editor.Content
 		Promise<Manifest> FetchManifest(string id);
 		IEnumerable<ContentObject> FindAll(ContentQuery query = null);
 		string Checksum(IContentObject content);
-		LocalContentManifest BuildLocalManifest();
 	}
 
 	[System.Serializable]

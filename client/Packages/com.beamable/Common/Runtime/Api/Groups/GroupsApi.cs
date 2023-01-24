@@ -129,11 +129,11 @@ namespace Beamable.Common.Api.Groups
 		public Promise<AvailabilityResponse> CheckAvailability(string name, string tag)
 		{
 			string query = "";
-			if (!string.IsNullOrEmpty(name))
+			if (name != null)
 			{
 				query += "name=" + name;
 			}
-			if (!string.IsNullOrEmpty(tag))
+			if (tag != null)
 			{
 				if (name != null) { query += "&"; }
 				query += "tag=" + tag;

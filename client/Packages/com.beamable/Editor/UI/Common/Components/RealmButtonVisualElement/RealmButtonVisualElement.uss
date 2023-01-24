@@ -6,7 +6,7 @@
     margin-right: 10px;
     margin-top: 0px;
     margin-bottom: 0px;
-    border-radius: 2px;
+    border-radius: 5px;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
@@ -28,8 +28,8 @@
     top: 0px;
     bottom: 0px;
     width: 5px;
-    border-bottom-left-radius: 2px;
-    border-top-left-radius: 2px;
+    border-bottom-left-radius: 3px;
+    border-top-left-radius: 3px;
 }
 #realmButton {
     justify-content: center;

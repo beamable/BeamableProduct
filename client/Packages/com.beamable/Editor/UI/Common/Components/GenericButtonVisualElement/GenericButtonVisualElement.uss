@@ -14,7 +14,6 @@
     align-self: flex-end;
     background-image: none;
     height: 15px;
-    border-radius: 0px;
     border-bottom-width: 1px;
     border-right-width: 0px;
     border-left-width: 0px;

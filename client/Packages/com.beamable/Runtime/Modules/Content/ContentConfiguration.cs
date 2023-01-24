@@ -2,7 +2,6 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
 using static Beamable.Common.Constants.Features.ContentManager;
 using static Beamable.Common.Constants.MenuItems.Assets;
 
@@ -70,11 +69,9 @@ namespace Beamable.Content
 				{
 					Debug.LogWarning($"Beamable API is using manifest with id '{manifestID}' while manifest namespaces feature is disabled!");
 				}
-
 				return new ContentParameterProvider()
 				{
-					manifestID = manifestID,
-					EnableLocalContentInEditor = EnableLocalContentInEditor
+					manifestID = manifestID
 				};
 			}
 		}

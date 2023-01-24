@@ -26,6 +26,9 @@ ExplorerVisualElement > TemplateContainer,
 ExplorerVisualElement {
     flex-grow: 1;
 }
+#actionBarVisualElement{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
 
 #status-bar-container {
     position: absolute;
@@ -33,7 +36,7 @@ ExplorerVisualElement {
     right: 0px;
     bottom: 0px;
     height: 30px;
-   background-color: #484848;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
 
 /* Debug colors */

@@ -3,8 +3,9 @@ TagVisualElement, TagVisualElement > TemplateContainer {
 }
 
 TagVisualElement #mainVisualElement {
-	border-radius:3px;
-    height: 15px;
+	border-radius:6px;
+    height: 13px;
+    top: 1px;
     margin-left: 2px;
 }
 #mainVisualElement .localOnly {

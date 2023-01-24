@@ -24,8 +24,6 @@ namespace Beamable.Common.Content
 		{
 			public FieldInfo RawField;
 			public string SerializedName;
-			public bool IsBackingField;
-			public string BackingFieldSerializedName => $"<{SerializedName}>k__BackingField";
 			public string[] FormerlySerializedAs;
 			public Type FieldType => RawField.FieldType;
 
@@ -386,10 +384,6 @@ namespace Beamable.Common.Content
 						{
 							fieldValue = DeserializeResult(property, field.FieldType);
 						}
-						else if (field.IsBackingField && dict.TryGetValue(field.BackingFieldSerializedName, out property))
-						{
-							fieldValue = DeserializeResult(property, field.FieldType);
-						}
 						else
 						{
 							// check for the formerly serialized options...
@@ -433,7 +427,6 @@ namespace Beamable.Common.Content
 				}
 				else if (field.Name.StartsWith("<") && field.Name.Contains('>'))
 				{
-					wrapper.IsBackingField = true;
 					wrapper.SerializedName = field.Name.Split('>')[0].Substring(1);
 				}
 				else
@@ -674,11 +667,8 @@ namespace Beamable.Common.Content
 
 			foreach (var field in fields)
 			{
-				if (field.IsBackingField && properties.TryGetValue(field.BackingFieldSerializedName, out var property))
-				{
-					field.SerializedName = field.BackingFieldSerializedName;
-				}
-				if (!properties.TryGetValue(field.SerializedName, out property))
+				var fieldName = field.SerializedName;
+				if (!properties.TryGetValue(fieldName, out var property))
 				{
 					// mark empty optional, if exists.
 					if (typeof(Optional).IsAssignableFrom(field.FieldType))
