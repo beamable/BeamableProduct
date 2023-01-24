@@ -69,6 +69,16 @@ namespace Beamable.Common
 						public const string OK = "Ok";
 					}
 				}
+
+				public static class PublishWindow
+				{
+					public const string ON_OFF_HEADER_TOOLTIP = "A service can either be off or on. If the service is off, no ClientCallable methods can execute";
+					public const string NAME_HEADER_TOOLTIP = "The name of the service";
+					public const string KNOWN_LOCATION_HEADER_TOOLTIP = "A service can exist on your machine, or in a remote realm, or both. A 'Remote' value means that the service has been deployed previously, and only exists on the realm. A 'Local' value means that the service has not been deployed yet, and only exists on your machine. A 'Local & Remote' value means that the service exists on the realm and on your machine";
+					public const string DEPENDENCIES_HEADER_TOOLTIP = "The storage objects that the service requires to run";
+					public const string COMMENTS_HEADER_TOOLTIP = "You may enter in specific comments per service that are viewable from portal for this deployment";
+					public const string STATUS_HEADER_TOOLTIP = "Indicates the current phase of the publication for the service";
+				}
 			}
 		}
 	}
