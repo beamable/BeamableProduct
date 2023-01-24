@@ -98,7 +98,8 @@ public class DefaultAppContext : IAppContext
 #endif
 			}
 		}
-		
+		_configService.Init(bindingContext);
+
 		if (!_configService.TryGetSetting(out _cid, bindingContext, _cidOption))
 		{
 			// throw new CliException("cannot run without a cid. Please login.");
@@ -115,7 +116,6 @@ public class DefaultAppContext : IAppContext
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		_configService.Init(bindingContext);
 
 		string defaultAccessToken = string.Empty;
 		string defaultRefreshToken = string.Empty;

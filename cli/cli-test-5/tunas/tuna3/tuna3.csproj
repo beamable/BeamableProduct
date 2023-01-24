@@ -4,7 +4,6 @@
         
         <!-- As of Beamable 1.0, net6.0 is required. -->
         <TargetFramework>net6.0</TargetFramework>
-        
         <!-- Advanced C# Features are disabled by default. The Unity SDK does not support these features. 
              If you enable them, it will be harder to copy/paste code between the service and Unity. -->
         <ImplicitUsings>disable</ImplicitUsings>
@@ -20,18 +19,20 @@
         <DocumentationFile>serviceDocs.xml</DocumentationFile>
     </PropertyGroup>
 
-
     <PropertyGroup>
         <SkipVerification Condition="'$(SkipVerification)'==''">True</SkipVerification>
     </PropertyGroup>
 
+
     <Target Name="setup" BeforeTargets="Build" DependsOnTargets="RunResolvePackageDependencies" Condition="'$(SkipVerification)'=='True'">
 
+        <Exec Command="dotnet beam config"/>
+        
         <Message Text="Creating beamable version file..." Importance="high" />
         <CreateItem Include="@(PackageDefinitions)" Condition="'%(Name)' == 'Beamable.Microservice.Runtime'">
             <Output TaskParameter="Include" ItemName="BeamablePackage" />
         </CreateItem>
-
+        
         <PropertyGroup>
             <BeamableVersion>
                 <!-- TODO: this is how we get the nuget version, but until we pass the runtime env, it doesn't make to use this.-->
@@ -43,19 +44,19 @@
                 %3Cdoc%3E
                 %3C/doc%3E
             </BeamableBaseDocs>
-
+            
         </PropertyGroup>
-
+        
         <Message Text="[$(BeamableVersion)]" Importance="High" />
-
+        
         <!-- We need a file that lets the runtime know what version of Beamable it was built with... -->
         <WriteLinesToFile File="$(OutDir)/.beamablesdkversion" Lines="$(BeamableVersion)" Overwrite="true" />
-
+        
         <!-- We need a file that contains the base image docstrings... -->
         <WriteLinesToFile File="$(OutDir)/baseImageDocs.xml" Lines="$(BeamableBaseDocs)" Overwrite="true" />
 
 
-        <!-- https://portal.beamable.com/chris-test-2/games/DE_1564095355314180/realms/DE_1564095355314180/microservices/tuna3/docs?prefix=chris-->
+<!--        https://portal.beamable.com/chris-test-2/games/DE_1564095355314180/realms/DE_1564095355314180/microservices/tuna3/docs?prefix=chris-->
         <WriteLinesToFile File="$(OutDir)/.env" Lines="" Overwrite="true" />
         <WriteLinesToFile File="$(OutDir)/.env" Lines="HOST=wss://api.beamable.com/socket" />
         <WriteLinesToFile File="$(OutDir)/.env" Lines="BEAM_INSTANCE_COUNT=1" />
@@ -64,6 +65,13 @@
         <WriteLinesToFile File="$(OutDir)/.env" Lines="PID=DE_1564095355314180" />
         <WriteLinesToFile File="$(OutDir)/.env" Lines="SECRET=0c9e399c-0295-4b13-b910-86a04be16126" />
     </Target>
+
+    <!-- Project content -->
+  
+<!--    <Target Name="Exec">-->
+<!--        <Exec Command="env"-->
+<!--              EnvironmentVariables="FOO=bar2" />-->
+<!--    </Target>-->
     
     <ItemGroup>
         <PackageReference Include="Beamable.Microservice.Runtime" Version="1.10.2" />
@@ -79,4 +87,9 @@
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
         <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.*" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="Src" />
+    </ItemGroup>
+
 </Project>

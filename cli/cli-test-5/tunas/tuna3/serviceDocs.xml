@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>tuna3</name>
+    </assembly>
+    <members>
+        <member name="M:Beamable.tuna3.Program.Main">
+            <summary>
+            The entry point for the microservice.
+            </summary>
+        </member>
+    </members>
+</doc>

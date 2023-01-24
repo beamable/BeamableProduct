@@ -42,6 +42,9 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		_authApi = args.AuthApi;
 		var username = GetUserName(args);
 		var password = GetPassword(args);
+		
+		BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
+		BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
 		var response = await _authApi.Login(username, password, false, args.customerScoped).ShowLoading("Authorizing...");
 		if (args.saveToEnvironment && !string.IsNullOrWhiteSpace(response.refresh_token))
 		{
