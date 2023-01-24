@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Beamable.Common.Dependencies
@@ -123,6 +124,13 @@ namespace Beamable.Common.Dependencies
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as singleton
 		/// </summary>
 		IEnumerable<ServiceDescriptor> SingletonServices { get; }
+		
+		/// <summary>
+		/// If <see cref="IDependencyProvider.Fork"/> had been called on this instance, then there would be children.
+		/// If you want to disassociate the parent/child relationship, use this function.
+		/// </summary>
+		/// <param name="child"></param>
+		void RemoveChild(IDependencyProviderScope child);
 	}
 
 	public class DependencyProvider : IDependencyProviderScope
@@ -141,6 +149,15 @@ namespace Beamable.Common.Dependencies
 		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
 		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
 		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
+		public void RemoveChild(IDependencyProviderScope child)
+		{
+			lock (_children)
+			{
+				BeamableLogger.Log("removing Di scope");
+				_childToConfigurator[child] = null;
+				_children.Remove(child);
+			}
+		}
 
 		public IDependencyProviderScope Parent { get; private set; }
 		private HashSet<IDependencyProviderScope> _children = new HashSet<IDependencyProviderScope>();
@@ -256,12 +273,13 @@ namespace Beamable.Common.Dependencies
 			var disposalPromises = new List<Promise<Unit>>();
 
 			// remove from parent.
+			Parent?.RemoveChild(this);
 
 			var childRemovalPromises = new List<Promise<Unit>>();
 			lock (_children)
 			{
-
-				foreach (var child in _children)
+				var childrenClone = _children.ToList();
+				foreach (var child in childrenClone)
 				{
 					if (child != null)
 					{

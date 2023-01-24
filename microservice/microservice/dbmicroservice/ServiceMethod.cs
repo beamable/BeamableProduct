@@ -47,26 +47,37 @@ namespace Beamable.Server
 		{
 			var args = GetArgs(ctx, parameterProvider);
 			var target = InstanceFactory(ctx);
-			var task = Executor(target, args);
-			if (task != null)
+			try
 			{
-				await task;
-
-				var resultProperty = task.GetType().GetProperty("Result");
-				var result =
-					resultProperty
-						.GetValue(task); // TODO: XXX It stinks that there is active reflection going on the callpath
-
-				if (result is string strResult)
+				var task = Executor(target, args);
+				if (task != null)
 				{
-					return strResult; // If the data is already in a string format, then just use that.
-				}
+					await task;
 
-				return result;
+					var resultProperty = task.GetType().GetProperty("Result");
+					var result =
+						resultProperty
+							.GetValue(
+								task); // TODO: XXX It stinks that there is active reflection going on the callpath
+
+					if (result is string strResult)
+					{
+						return strResult; // If the data is already in a string format, then just use that.
+					}
+
+					return result;
+				}
+				else
+				{
+					return "";
+				}
 			}
-			else
+			finally
 			{
-				return "";
+				if (target is IDisposable disposable)
+				{
+					disposable.Dispose();
+				}
 			}
 		}
 	}

@@ -32,7 +32,7 @@ namespace Beamable.Server
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public abstract class Microservice
+	public abstract class Microservice : IDisposable
 	{
 		/// <summary>
 		/// This type defines the %Microservice %RequestContext.
@@ -152,6 +152,11 @@ namespace Beamable.Server
 				Services = services,
 				Provider = provider
 			};
+		}
+
+		public void Dispose()
+		{
+			var _ = _serviceProvider.Dispose();
 		}
 	}
 }
