@@ -29,9 +29,17 @@ namespace Beamable.Editor.UI.Model
 		public List<MongoStorageModel> localStorages = new List<MongoStorageModel>();
 		public List<RemoteMongoStorageModel> remoteStorages = new List<RemoteMongoStorageModel>();
 
-		public int AllUnarchivedServiceCount =>
-			localServices.Count(model => !model.IsArchived) + localStorages.Count(model => !model.IsArchived) +
-			remoteServices.Count(model => !model.IsArchived) + remoteStorages.Count(model => !model.IsArchived);
+		public List<IBeamableService> AllUnarchivedServices
+		{
+			get
+			{
+				var tmpList = new List<IBeamableService>(localServices.Where(x => !x.IsArchived));
+				tmpList.AddRange(localStorages.Where(x => !x.IsArchived));
+				tmpList.AddRange(remoteServices.Where(x => !x.IsArchived));
+				tmpList.AddRange(remoteStorages.Where(x => !x.IsArchived));
+				return tmpList.GroupBy(x => x.Name).Select(y => y.First()).ToList();
+			}
+		}
 
 		public IReadOnlyList<IBeamableService> AllLocalServices
 		{
