@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Microservices with `IFederatedLogin<T>` will generate client callable methods.
+- New `Publish Window` UI styling in `Microservice Manager`
 
 ## [1.10.2]
 ### Fixed
