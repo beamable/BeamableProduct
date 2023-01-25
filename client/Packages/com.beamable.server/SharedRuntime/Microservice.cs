@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using System;
@@ -152,6 +153,18 @@ namespace Beamable.Server
 				Services = services,
 				Provider = provider
 			};
+		}
+
+		public async Promise DisposeMicroservice()
+		{
+			await _serviceProvider.Dispose();
+			_serviceProvider = null;
+			Context = null;
+			Requester = null;
+			Services = null;
+			_requesterFactory = null;
+			_servicesFactory = null;
+			_scopeGenerator = null;
 		}
 	}
 }
