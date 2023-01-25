@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using System;
@@ -32,7 +33,7 @@ namespace Beamable.Server
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public abstract class Microservice : IDisposable
+	public abstract class Microservice
 	{
 		/// <summary>
 		/// This type defines the %Microservice %RequestContext.
@@ -154,9 +155,16 @@ namespace Beamable.Server
 			};
 		}
 
-		public void Dispose()
+		public async Promise DisposeMicroservice()
 		{
-			var _ = _serviceProvider.Dispose();
+			await _serviceProvider.Dispose();
+			_serviceProvider = null;
+			Context = null;
+			Requester = null;
+			Services = null;
+			_requesterFactory = null;
+			_servicesFactory = null;
+			_scopeGenerator = null;
 		}
 	}
 }

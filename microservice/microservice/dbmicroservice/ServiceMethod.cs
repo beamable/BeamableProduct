@@ -74,9 +74,9 @@ namespace Beamable.Server
 			}
 			finally
 			{
-				if (target is IDisposable disposable)
+				if (target is Microservice microservice)
 				{
-					disposable.Dispose();
+					await microservice.DisposeMicroservice();
 				}
 			}
 		}

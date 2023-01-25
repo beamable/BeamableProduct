@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Beamable.Common.Dependencies
 {
@@ -379,7 +378,7 @@ namespace Beamable.Common.Dependencies
 		/// The actual return value will be a <see cref="IDependencyProviderScope"/> which has lifecycle controls for the <see cref="IDependencyProvider"/>
 		/// </summary>
 		/// <returns>A <see cref="IDependencyProviderScope"/> instance</returns>
-		IDependencyProviderScope Build();
+		IDependencyProviderScope Build(BuildOptions options = null);
 
 		/// <summary>
 		/// Removes a service of some type that was added with any of the AddTransient, AddScoped, or AddSingleton calls.
@@ -413,6 +412,14 @@ namespace Beamable.Common.Dependencies
 		/// </summary>
 		/// <returns>A new <see cref="IDependencyBuilder"/></returns>
 		IDependencyBuilder Clone();
+	}
+
+	public class BuildOptions
+	{
+		/// <summary>
+		/// When building a provider, if this is false, then any calls to `Hydrate` won't be allowed.
+		/// </summary>
+		public bool allowHydration = true;
 	}
 
 	/// <summary>
@@ -579,7 +586,21 @@ namespace Beamable.Common.Dependencies
 
 			// TODO: XXX: This only works for the largest constructor (the one with the most dependencies); really it should scan for the constructor it can match with the most dependencies
 			// Currently, we just get the constructor with the most parameters
-			var cons = constructors.Aggregate((c1, c2) => c1.GetParameters().Length.CompareTo(c2.GetParameters().Length) > 0 ? c1 : c2);
+			var bestConstructor = constructors[0];
+			var bestLength = bestConstructor.GetParameters().Length;
+			for (var i = 1; i < constructors.Length; i++)
+			{
+				var currConstructor = constructors[i];
+				var currLength = currConstructor.GetParameters().Length;
+				if (currLength > bestLength)
+				{
+					bestConstructor = currConstructor;
+					bestLength = currLength;
+				}
+			}
+
+			var cons = bestConstructor;
+			// var cons = constructors.Aggregate((c1, c2) => c1.GetParameters().Length.CompareTo(c2.GetParameters().Length) > 0 ? c1 : c2);
 			if (cons == null)
 				throw new Exception(
 					$"Cannot create {type.Name} via automatic reflection with Dependency Injection. There isn't a single constructor found.");
@@ -594,9 +615,9 @@ namespace Beamable.Common.Dependencies
 			return instance;
 		}
 
-		public IDependencyProviderScope Build()
+		public IDependencyProviderScope Build(BuildOptions options=null)
 		{
-			return new DependencyProvider(this);
+			return new DependencyProvider(this, options);
 		}
 
 		public IDependencyBuilder RemoveIfExists<T>() => Has<T>() ? Remove<T>() : this;
@@ -631,19 +652,46 @@ namespace Beamable.Common.Dependencies
 
 		public bool TryGetTransient(Type type, out ServiceDescriptor descriptor)
 		{
-			descriptor = TransientServices.FirstOrDefault(s => s.Interface == type);
-			return descriptor != null;
+			foreach (var x in TransientServices)
+			{
+				if (x.Interface == type)
+				{
+					descriptor = x;
+					return true;
+				}
+			}
+
+			descriptor = default(ServiceDescriptor);
+			return false;
 		}
 		public bool TryGetScoped(Type type, out ServiceDescriptor descriptor)
 		{
-			descriptor = ScopedServices.FirstOrDefault(s => s.Interface == type);
-			return descriptor != null;
+			foreach (var x in ScopedServices)
+			{
+				if (x.Interface == type)
+				{
+					descriptor = x;
+					return true;
+				}
+			}
+
+			descriptor = default(ServiceDescriptor);
+			return false;
 		}
 
 		public bool TryGetSingleton(Type type, out ServiceDescriptor descriptor)
 		{
-			descriptor = SingletonServices.FirstOrDefault(s => s.Interface == type);
-			return descriptor != null;
+			foreach (var x in SingletonServices)
+			{
+				if (x.Interface == type)
+				{
+					descriptor = x;
+					return true;
+				}
+			}
+
+			descriptor = default(ServiceDescriptor);
+			return false;
 		}
 
 
@@ -651,9 +699,9 @@ namespace Beamable.Common.Dependencies
 		{
 			return new DependencyBuilder
 			{
-				ScopedServices = ScopedServices.ToList(),
-				TransientServices = TransientServices.ToList(),
-				SingletonServices = SingletonServices.ToList()
+				ScopedServices = new List<ServiceDescriptor>(ScopedServices),
+				TransientServices = new List<ServiceDescriptor>(TransientServices),
+				SingletonServices = new List<ServiceDescriptor>(SingletonServices)
 			};
 		}
 	}
