@@ -414,10 +414,13 @@ namespace Beamable.Common.Dependencies
 		IDependencyBuilder Clone();
 	}
 
+	/// <summary>
+	/// Configuration that controls how a <see cref="IDependencyProvider"/> will be constructed
+	/// </summary>
 	public class BuildOptions
 	{
 		/// <summary>
-		/// When building a provider, if this is false, then any calls to `Hydrate` won't be allowed.
+		/// When building a provider, if this is false, then any calls to <see cref="IDependencyProviderScope.Hydrate"/> won't be allowed.
 		/// </summary>
 		public bool allowHydration = true;
 	}
@@ -600,7 +603,6 @@ namespace Beamable.Common.Dependencies
 			}
 
 			var cons = bestConstructor;
-			// var cons = constructors.Aggregate((c1, c2) => c1.GetParameters().Length.CompareTo(c2.GetParameters().Length) > 0 ? c1 : c2);
 			if (cons == null)
 				throw new Exception(
 					$"Cannot create {type.Name} via automatic reflection with Dependency Injection. There isn't a single constructor found.");
@@ -652,11 +654,11 @@ namespace Beamable.Common.Dependencies
 
 		public bool TryGetTransient(Type type, out ServiceDescriptor descriptor)
 		{
-			foreach (var x in TransientServices)
+			foreach (var serviceDescriptor in TransientServices)
 			{
-				if (x.Interface == type)
+				if (serviceDescriptor.Interface == type)
 				{
-					descriptor = x;
+					descriptor = serviceDescriptor;
 					return true;
 				}
 			}
@@ -666,11 +668,11 @@ namespace Beamable.Common.Dependencies
 		}
 		public bool TryGetScoped(Type type, out ServiceDescriptor descriptor)
 		{
-			foreach (var x in ScopedServices)
+			foreach (var serviceDescriptor in ScopedServices)
 			{
-				if (x.Interface == type)
+				if (serviceDescriptor.Interface == type)
 				{
-					descriptor = x;
+					descriptor = serviceDescriptor;
 					return true;
 				}
 			}
@@ -681,11 +683,11 @@ namespace Beamable.Common.Dependencies
 
 		public bool TryGetSingleton(Type type, out ServiceDescriptor descriptor)
 		{
-			foreach (var x in SingletonServices)
+			foreach (var serviceDescriptor in SingletonServices)
 			{
-				if (x.Interface == type)
+				if (serviceDescriptor.Interface == type)
 				{
-					descriptor = x;
+					descriptor = serviceDescriptor;
 					return true;
 				}
 			}
