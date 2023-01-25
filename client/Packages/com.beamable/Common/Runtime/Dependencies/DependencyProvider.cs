@@ -288,11 +288,6 @@ namespace Beamable.Common.Dependencies
 			disposalPromises.Clear();
 			childRemovalPromises.Clear();
 
-			if (!_options.allowHydration)
-			{
-				// remove from parent.
-				Parent?.RemoveChild(this);
-			}
 
 			lock (_children)
 			{
@@ -342,13 +337,7 @@ namespace Beamable.Common.Dependencies
 			}
 			
 
-			ClearServices(Singletons);
-			ClearServices(Transients);
-			ClearServices(Scoped);
-			Singletons = null;
-			Transients = null;
-			Scoped = null;
-			
+
 			DisposeServices(SingletonCache.Values);
 			DisposeServices(ScopeCache.Values);
 			
@@ -356,8 +345,22 @@ namespace Beamable.Common.Dependencies
 
 			SingletonCache.Clear();
 			ScopeCache.Clear();
-			SingletonCache = null;
-			ScopeCache = null;
+			
+			if (!_options.allowHydration)
+			{
+				// remove from parent.
+				Parent?.RemoveChild(this);
+				
+				ClearServices(Singletons);
+				ClearServices(Transients);
+				ClearServices(Scoped);
+				Singletons = null;
+				Transients = null;
+				Scoped = null;
+				
+				SingletonCache = null;
+				ScopeCache = null;
+			}
 
 			_destroyed = true;
 		}
