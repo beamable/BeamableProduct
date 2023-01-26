@@ -25,6 +25,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		protected IDependencies System;
 
+		private AccountAvatar _avatarToSet;
+
 		public bool IsVisible
 		{
 			get => gameObject.activeSelf;
@@ -43,6 +45,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return;
 			}
+			
+			_avatarToSet = null;
 
 			string currentAvatarName = await System.GetCurrentAvatarName(System.Context.PlayerId);
 			
@@ -66,12 +70,17 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private void OnAvatarSelectionChanged(AccountAvatar avatar)
 		{
-			System.SetAvatar(System.Context.PlayerId, avatar.Name);
+			_avatarToSet = avatar;
 		}
 
 		private void OnConfirmPressed()
 		{
 			// set new account data
+
+			if (_avatarToSet != null)
+			{
+				System.SetAvatar(System.Context.PlayerId, _avatarToSet.Name);
+			}
 			
 			OpenAccountsView();
 		}
