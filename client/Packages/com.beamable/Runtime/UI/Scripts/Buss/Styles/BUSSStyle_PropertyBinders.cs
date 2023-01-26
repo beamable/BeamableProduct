@@ -70,6 +70,10 @@ namespace Beamable.UI.Buss
 		public static readonly PropertyBinding<IVertexColorBussProperty> BorderColor =
 			new PropertyBinding<IVertexColorBussProperty>("borderColor", new SingleColorBussProperty());
 
+		// Transform
+		public static readonly PropertyBinding<IRectTransformBussProperty> RectTransform
+			= new PropertyBinding<IRectTransformBussProperty>("rect", new RectTransformProperty());
+		
 		// Shadow
 		public static readonly PropertyBinding<IVector2BussProperty> ShadowOffset =
 			new PropertyBinding<IVector2BussProperty>("shadowOffset", new Vector2BussProperty());
@@ -189,7 +193,7 @@ namespace Beamable.UI.Buss
 				return GetFromStyle(style) ?? DefaultValue;
 			}
 
-			private T GetFromStyle(BussStyle style)
+			public T GetFromStyle(BussStyle style, bool useDefaultIfNotFound=true)
 			{
 				if (style._properties.TryGetValue(Key, out var property) && property != null)
 				{
@@ -215,7 +219,7 @@ namespace Beamable.UI.Buss
 					}
 				}
 
-				return DefaultValue;
+				return useDefaultIfNotFound ? DefaultValue : null;
 			}
 
 			private T GetFromPseudoStyle(BussPseudoStyle style)
