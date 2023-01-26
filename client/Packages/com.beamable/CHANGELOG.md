@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
 - Local Content Mode won't fail to load content if internet connection is lost mid-game.
 - Fixed an issue with logging in and realm switching while being on an archived realm.
+- Duplicate content is now displayed immediately in `Content Manager`
 
 ### Removed
 - `connectivityRoute` option in `config-defaults` no longer has any effect. All connectivity checks happen as part of the heart beat cycle every 5 seconds.
