@@ -6,7 +6,7 @@ namespace Beamable.Server
 	public static class ThirdPartyFederatedLoginExtensions
 	{
 
-		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution=null)
+		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution = null)
 			where T : IThirdPartyCloudIdentity, new()
 		{
 			var identity = client.Provider.GetService<T>();
@@ -22,7 +22,7 @@ namespace Beamable.Server
 			return api.DetachIdentity(client.ServiceName, userId, identity.UniqueName);
 		}
 
-		public static Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution=null)
+		public static Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity<T>(this ISupportsFederatedLogin<T> client, string token, ChallengeSolution solution = null)
 			where T : IThirdPartyCloudIdentity, new()
 		{
 			var identity = client.Provider.GetService<T>();

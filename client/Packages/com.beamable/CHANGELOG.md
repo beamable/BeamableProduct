@@ -14,10 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
 - `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
 - Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
+- Connectivity events are sourced from the `Heartbeat` every 5 seconds, instead of from the `ConnectivityService` every 3 seconds.
 
 ### Fixed
 - `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
 - Local Content Mode won't fail to load content if internet connection is lost mid-game.
+- Fixed an issue with logging in and realm switching while being on an archived realm.
+- Duplicate content is now displayed immediately in `Content Manager`
+
+### Removed
+- `connectivityRoute` option in `config-defaults` no longer has any effect. All connectivity checks happen as part of the heart beat cycle every 5 seconds.
+
+## [1.10.3]
+### Changed
+- `IDependencyBuilder.Build()` accepts `BuildOptions` to control re-hydration options for dependency scopes
 
 ## [1.10.2]
 ### Changed
