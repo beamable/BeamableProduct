@@ -307,9 +307,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		
 		private static string GetPublishedKey(string serviceName) => string.Format(MicroserviceReflectionCache.Registry.SERVICE_PUBLISHED_KEY, serviceName);
 
-		private void HandleProgressInfoUpdated(string message, bool isError, ServicePublishState state)
+		private void HandleProgressInfoUpdated(string message, ServicePublishState state)
 		{
-			if (isError)
+			if (state == ServicePublishState.Failed)
 				_infoDescription.style.color = new StyleColor(_errorColor);
 			_infoDescription.text = message;
 			_serviceServicePublishStateAnimator.Animate(state);
