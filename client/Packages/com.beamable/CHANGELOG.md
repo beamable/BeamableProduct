@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PlayerInventory` supports storing player's inventory in offline mode
 - `PlayerInventory` supports `UpdateDelayed` method
 - `IFederatedLogin<T>` interface type available for Microservices
+- Added `BeamContext.Presence` layer to handle requesting/changing player's presence status
+- `BeamContext.Social` now contains an event for players changing their presence status
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
