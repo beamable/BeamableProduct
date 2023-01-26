@@ -64,6 +64,46 @@ namespace Beamable.Common.Api.Presence
 
 		public PresenceStatus Status => (PresenceStatus)Enum.Parse(typeof(PresenceStatus), status);
 		public DateTime LastOnline => DateTime.Parse(lastOnline);
+		
+		#region auto-generated-equality
+		protected bool Equals(PlayerPresence other)
+		{
+			return online == other.online && lastOnline == other.lastOnline && playerId == other.playerId && status == other.status && description == other.description;
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (ReferenceEquals(null, obj))
+			{
+				return false;
+			}
+
+			if (ReferenceEquals(this, obj))
+			{
+				return true;
+			}
+
+			if (obj.GetType() != this.GetType())
+			{
+				return false;
+			}
+
+			return Equals((PlayerPresence) obj);
+		}
+
+		public override int GetHashCode()
+		{
+			unchecked
+			{
+				var hashCode = online.GetHashCode();
+				hashCode = (hashCode * 397) ^ (lastOnline != null ? lastOnline.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ playerId.GetHashCode();
+				hashCode = (hashCode * 397) ^ (status != null ? status.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (description != null ? description.GetHashCode() : 0);
+				return hashCode;
+			}
+		}
+		#endregion
 	}
 
 	public enum PresenceStatus
@@ -78,5 +118,17 @@ namespace Beamable.Common.Api.Presence
 	public class MultiplePlayersStatus
 	{
 		public List<PlayerPresence> playersStatus;
+	}
+
+	[Serializable]
+	public class FriendStatusChangedNotification
+	{
+		// TODO: [TD000007] Change those fields according to the new notification structure
+		public long friendId;
+		public string onlineStatus;
+		public string lastOnline;
+		public string description;
+		
+		public DateTime LastOnline => DateTime.Parse(lastOnline);
 	}
 }
