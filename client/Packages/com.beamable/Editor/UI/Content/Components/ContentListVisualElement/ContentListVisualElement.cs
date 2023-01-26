@@ -417,6 +417,13 @@ namespace Beamable.Editor.Content.Components
 													  ContentVisualElement_OnDownloadSingle(item);
 												  }));
 				}
+#if BEAMABLE_DEVELOPER
+				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_PRINT_JSON_ITEM,
+				                              (Action<Vector2>)((pos) =>
+				                              {
+					                              ContentVisualElement_OnPrintSingle(item);
+				                              }));
+#endif
 			}
 
 			if (item.LocalStatus == HostStatus.NOT_AVAILABLE && item.ServerStatus == HostStatus.AVAILABLE)
@@ -497,6 +504,11 @@ namespace Beamable.Editor.Content.Components
 		private void ContentVisualElement_OnDownloadSingle(ContentItemDescriptor contentItemDescriptor)
 		{
 			OnItemDownload?.Invoke(new List<ContentItemDescriptor> { contentItemDescriptor });
+		}
+
+		private void ContentVisualElement_OnPrintSingle(ContentItemDescriptor contentItemDescriptor)
+		{
+			Debug.Log(contentItemDescriptor.GetLocalContent().Content.ToJson());
 		}
 
 		private void ContentVisualElement_OnDownloadMany(List<ContentItemDescriptor> contentItemDescriptors)

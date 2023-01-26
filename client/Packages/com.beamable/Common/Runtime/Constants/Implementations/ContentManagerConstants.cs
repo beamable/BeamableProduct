@@ -82,6 +82,7 @@ namespace Beamable.Common
 					public const string CONTENT_LIST_DELETE_ITEMS = "Delete Items";
 					public const string CONTENT_LIST_RENAME_ITEM = "Rename Item";
 					public const string CONTENT_LIST_DOWNLOAD_ITEM = "Download Item";
+					public const string CONTENT_LIST_PRINT_JSON_ITEM = "Print Item (JSON)";
 					public const string CONTENT_LIST_REVERT_ITEM = "Revert Item";
 					public const string CONTENT_LIST_DOWNLOAD_ITEMS = "Download Items";
 				}
