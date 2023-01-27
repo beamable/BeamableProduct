@@ -11,10 +11,10 @@ namespace Beamable.Server.Editor
 
 		[UsedImplicitly]
 		static void OnPostprocessAllAssets(string[] importedAssets,
-		                                   string[] deletedAssets,
-		                                   string[] movedAssets,
-		                                   string[] movedFromAssetPaths,
-		                                   bool didDomainReload)
+										   string[] deletedAssets,
+										   string[] movedAssets,
+										   string[] movedFromAssetPaths,
+										   bool didDomainReload)
 		{
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			foreach (string importedAsset in importedAssets)
@@ -30,7 +30,7 @@ namespace Beamable.Server.Editor
 				for (int i = 0; i < serviceRegistry.Descriptors.Count; i++)
 				{
 					if (serviceRegistry.Descriptors[i].SourcePath.Contains(dirPath) &&
-					    BeamServicesCodeWatcher.Default.IsServiceDependedOnStorage(serviceRegistry.Descriptors[i]))
+						BeamServicesCodeWatcher.Default.IsServiceDependedOnStorage(serviceRegistry.Descriptors[i]))
 					{
 						descriptor = serviceRegistry.Descriptors[i];
 						break;
