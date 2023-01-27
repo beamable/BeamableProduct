@@ -225,7 +225,7 @@ namespace Beamable.Server.Editor
 			{
 				return;
 			}
-			
+
 			// Add Mongo Libraries to each of the ones that are missing them.
 			AssetDatabase.StartAssetEditing();
 			missingMongoDepsAsmDefs.AddMongoLibraries();

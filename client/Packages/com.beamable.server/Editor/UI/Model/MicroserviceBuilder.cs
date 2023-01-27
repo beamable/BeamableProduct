@@ -133,7 +133,7 @@ namespace Beamable.Editor.UI.Model
 
 				// Update the config with the code handle identifying the version of the code this is building with (see BeamServicesCodeWatcher).
 				// Check for any local code changes to C#MS or it's dependent Storage/Common assemblies and update the hint state.
-				
+
 				codeWatcher.UpdateBuiltImageCodeHandles(Descriptor.Name);
 				codeWatcher.CheckForLocalChangesNotYetDeployed();
 
