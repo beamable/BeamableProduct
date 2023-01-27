@@ -104,18 +104,26 @@ namespace Beamable.Editor.UI.Model
 			if (IsBuilding) return true;
 
 			IsBuilding = true;
+			var serviceDescriptor = Descriptor as MicroserviceDescriptor;
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
 			if (isWatch)
 			{
 				// before we can build this container, we need to remove any contains that may have bind mounts open to the service's filesystems.
 				//  because if we don't, its possible Docker might prevent the directory cleanup operations and flunk the build.
 				await TryToStop(); // for it to stop.
-				await BeamServicesCodeWatcher.StopClientSourceCodeGenerator((MicroserviceDescriptor)Descriptor);
+				await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(serviceDescriptor);
 			}
 
 			var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
+			var codeWatcher = BeamServicesCodeWatcher.Default;
+			bool ensureMongoDependencies = MicroserviceConfiguration.Instance.EnsureMongoAssemblyDependencies;
 
-			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, availableArchitectures, includeDebuggingTools, isWatch);
+			if (ensureMongoDependencies && codeWatcher.IsServiceDependedOnStorage(serviceDescriptor))
+			{
+				codeWatcher.AddMissingMongoDependencies(serviceDescriptor);
+			}
+
+			var command = new BuildImageCommand(serviceDescriptor, availableArchitectures, includeDebuggingTools, isWatch);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			try
@@ -125,8 +133,7 @@ namespace Beamable.Editor.UI.Model
 
 				// Update the config with the code handle identifying the version of the code this is building with (see BeamServicesCodeWatcher).
 				// Check for any local code changes to C#MS or it's dependent Storage/Common assemblies and update the hint state.
-				var codeWatcher = default(BeamServicesCodeWatcher);
-				BeamEditor.GetBeamHintSystem(ref codeWatcher);
+				
 				codeWatcher.UpdateBuiltImageCodeHandles(Descriptor.Name);
 				codeWatcher.CheckForLocalChangesNotYetDeployed();
 
@@ -151,7 +158,7 @@ namespace Beamable.Editor.UI.Model
 			finally
 			{
 				IsBuilding = false;
-				BeamServicesCodeWatcher.GenerateClientSourceCode((MicroserviceDescriptor)Descriptor);
+				BeamServicesCodeWatcher.GenerateClientSourceCode(serviceDescriptor);
 			}
 
 			return false;
