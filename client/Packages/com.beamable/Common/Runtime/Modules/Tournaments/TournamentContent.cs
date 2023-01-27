@@ -1,6 +1,7 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Inventory;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -180,6 +181,11 @@ namespace Beamable.Common.Tournaments
 		[Tooltip("ISO UTC Anchor time. From what time are the cycles relative to?")]
 		[MustBeDateString]
 		public string anchorTimeUTC = "2020-01-01T12:00:00Z";
+
+		[IgnoreContentField]
+		[SerializeField]
+		[TimeSpanDisplay(nameof(cycleDuration))]
+		private int cycleText;
 
 		[Tooltip("ISO duration string. How long does each tournament cycle last? Default is 1 Day.")]
 		[MustBeTimeSpanDuration]

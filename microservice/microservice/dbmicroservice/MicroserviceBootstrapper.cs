@@ -338,7 +338,10 @@ namespace Beamable.Server
 	        
 	        // configure the root service scope, and then build the root service provider.
 	        var serviceBuilder = ConfigureServices<TMicroService>(envArgs);
-	        var rootServiceScope = serviceBuilder.Build();
+	        var rootServiceScope = serviceBuilder.Build(new BuildOptions
+	        {
+		        allowHydration = false
+	        });
 	        InitializeServices(rootServiceScope);
 	        
 	        
@@ -347,8 +350,8 @@ namespace Beamable.Server
 		        conf.ServiceScope = rootServiceScope;
 	        });
 
-
-            for (var i = 0; i < args.BeamInstanceCount; i++)
+	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
+	        for (var i = 0; i < args.BeamInstanceCount; i++)
             {
 	            var isFirstInstance = i == 0;
 	            var beamableService = new BeamableMicroService();
@@ -378,6 +381,10 @@ namespace Beamable.Server
 	            try
 	            {
 		            await beamableService.Start<TMicroService>(instanceArgs);
+		            if (isFirstInstance && (attribute?.EnableEagerContentLoading ?? false))
+		            {
+			            await rootServiceScope.GetService<ContentService>().initializedPromise;
+		            }
 	            }
 	            catch (Exception ex)
 	            {
