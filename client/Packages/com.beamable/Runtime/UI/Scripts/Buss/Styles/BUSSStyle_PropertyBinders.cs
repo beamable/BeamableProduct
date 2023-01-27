@@ -49,7 +49,7 @@ namespace Beamable.UI.Buss
 
 		// Background
 		public static readonly PropertyBinding<IVertexColorBussProperty> BackgroundColor = 
-      new PropertyBinding<IVertexColorBussProperty>("backgroundColor", new SingleColorBussProperty());
+      new PropertyBinding<IVertexColorBussProperty>("backgroundColor", new SingleColorBussProperty(Color.clear));
 
 		public static readonly PropertyBinding<IFloatFromFloatBussProperty> RoundCorners =
 			new PropertyBinding<IFloatFromFloatBussProperty>("roundCorners", new FloatBussProperty());
