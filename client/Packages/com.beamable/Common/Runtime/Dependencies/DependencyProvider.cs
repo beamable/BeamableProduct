@@ -129,7 +129,7 @@ namespace Beamable.Common.Dependencies
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as singleton
 		/// </summary>
 		IEnumerable<ServiceDescriptor> SingletonServices { get; }
-		
+
 		/// <summary>
 		/// If <see cref="IDependencyProvider.Fork"/> had been called on this instance, then there would be children.
 		/// If you want to disassociate the parent/child relationship, use this function.
@@ -152,7 +152,7 @@ namespace Beamable.Common.Dependencies
 
 		public bool IsDisposed => _destroyed;
 		public bool IsActive => !_isDestroying && !_destroyed;
-		
+
 		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
 		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
 		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
@@ -168,7 +168,7 @@ namespace Beamable.Common.Dependencies
 
 		private BuildOptions _options;
 
-		public DependencyProvider(DependencyBuilder builder, BuildOptions options=null)
+		public DependencyProvider(DependencyBuilder builder, BuildOptions options = null)
 		{
 			if (options == null)
 			{
@@ -181,13 +181,13 @@ namespace Beamable.Common.Dependencies
 			{
 				Transients.Add(desc.Interface, desc);
 			}
-			
+
 			Scoped = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in builder.ScopedServices)
 			{
 				Scoped.Add(desc.Interface, desc);
 			}
-			
+
 			Singletons = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in builder.SingletonServices)
 			{
@@ -345,29 +345,29 @@ namespace Beamable.Common.Dependencies
 				}
 				descriptors.Clear();
 			}
-			
+
 
 
 			DisposeServices(SingletonCache.Values.Distinct());
 			DisposeServices(ScopeCache.Values.Distinct());
-			
+
 			await Promise.Sequence(disposalPromises);
 
 			SingletonCache.Clear();
 			ScopeCache.Clear();
-			
+
 			if (!_options.allowHydration)
 			{
 				// remove from parent.
 				Parent?.RemoveChild(this);
-				
+
 				ClearServices(Singletons);
 				ClearServices(Transients);
 				ClearServices(Scoped);
 				Singletons = null;
 				Transients = null;
 				Scoped = null;
-				
+
 				SingletonCache = null;
 				ScopeCache = null;
 			}
@@ -378,7 +378,7 @@ namespace Beamable.Common.Dependencies
 		public void Hydrate(IDependencyProviderScope other)
 		{
 			if (!_options.allowHydration) throw new InvalidOperationException("Cannot rehydrate scope.");
-			
+
 			_destroyed = other.IsDisposed;
 			_isDestroying = false;
 			Transients = new Dictionary<Type, ServiceDescriptor>();
@@ -442,7 +442,7 @@ namespace Beamable.Common.Dependencies
 				});
 			}
 		}
-		
+
 		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null)
 		{
 			var builder = new DependencyBuilder();
