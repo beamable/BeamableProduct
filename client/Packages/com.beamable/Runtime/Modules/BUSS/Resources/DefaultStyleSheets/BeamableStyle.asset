@@ -1306,6 +1306,11 @@ MonoBehaviour:
         _type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
           Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"Enum":514}'
+    - _key: fontColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
     _cachedProperties: []
     _selector: .subHeader
   - _folded: 0

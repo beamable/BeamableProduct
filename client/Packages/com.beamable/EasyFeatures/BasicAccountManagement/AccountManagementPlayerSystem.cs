@@ -1,6 +1,7 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.EasyFeatures.Components;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -12,17 +13,40 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 	{
 		public BeamContext Context { get; set; }
 		
+		private async Promise<Dictionary<string, string>> GetPublicStats(long playerId) => await Context.Api.StatsService.GetStats("client", "public", "player", playerId); 
+		
 		public async Promise<string> GetCurrentAvatarName(long playerId)
 		{
-			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
+			var stats = await GetPublicStats(playerId);
 			stats.TryGetValue("avatar", out string avatarName);
 			return avatarName;
 		}
 
-		public async Promise SetAvatar(long playerId, string avatarName)
+		public async Promise SetAvatar(string avatarName)
 		{
-			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
+			var stats = await GetPublicStats(Context.PlayerId);
 			stats["avatar"] = avatarName;
+			await Context.Api.StatsService.SetStats("public", stats);
+		}
+
+		/// <summary>
+		/// Provides the current username of the given player. Returns an empty string if no username was set.
+		/// </summary>
+		public async Promise<string> GetUsername(long playerId)
+		{
+			var stats = await GetPublicStats(playerId);
+			if (stats.TryGetValue("alias", out string username))
+			{
+				return username;
+			}
+
+			return string.Empty;
+		}
+
+		public async Promise SetUsername(string username)
+		{
+			var stats = await GetPublicStats(Context.PlayerId);
+			stats["alias"] = username;
 			await Context.Api.StatsService.SetStats("public", stats);
 		}
 

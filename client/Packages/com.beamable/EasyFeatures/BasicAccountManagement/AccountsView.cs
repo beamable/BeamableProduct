@@ -69,6 +69,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return;
 			}
+
+			FeatureControl.SetLoadingOverlay(true);
 			
 			await System.Context.Accounts.OnReady;
 			
@@ -117,6 +119,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				
 				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected);
 			}
+			
+			FeatureControl.SetLoadingOverlay(false);
 		}
 
 		private void OnOtherAccountSelected(long playerId)

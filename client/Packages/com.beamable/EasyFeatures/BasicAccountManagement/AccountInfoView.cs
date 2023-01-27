@@ -1,6 +1,7 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.EasyFeatures.Components;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,7 +13,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			BeamContext Context { get; set; }
 			Promise<string> GetCurrentAvatarName(long playerId);
-			Promise SetAvatar(long playerId, string avatarName);
+			Promise SetAvatar(string avatarName);
+			Promise<string> GetUsername(long playerId);
+			Promise SetUsername(string username);
 		}
 
 		public AccountManagementFeatureControl FeatureControl;
@@ -22,10 +25,12 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public Button CancelButton;
 		public ToggleGroup AvatarsGroup;
 		public AvatarToggle AvatarTogglePrefab;
+		public TMP_InputField UsernameInputField;
 
 		protected IDependencies System;
 
 		private AccountAvatar _avatarToSet;
+		private string _currentUsername;
 
 		public bool IsVisible
 		{
@@ -45,9 +50,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return;
 			}
+
+			_currentUsername = await System.GetUsername(System.Context.PlayerId);
+			UsernameInputField.text = _currentUsername;
 			
 			_avatarToSet = null;
-
 			string currentAvatarName = await System.GetCurrentAvatarName(System.Context.PlayerId);
 			
 			foreach (Transform child in AvatarsGroup.transform)
@@ -75,11 +82,14 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private void OnConfirmPressed()
 		{
-			// set new account data
-
 			if (_avatarToSet != null)
 			{
-				System.SetAvatar(System.Context.PlayerId, _avatarToSet.Name);
+				System.SetAvatar(_avatarToSet.Name);
+			}
+
+			if (!string.IsNullOrWhiteSpace(UsernameInputField.text) && UsernameInputField.text != _currentUsername)
+			{
+				System.SetUsername(UsernameInputField.text);
 			}
 			
 			OpenAccountsView();

@@ -25,6 +25,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public View DefaultView = View.Accounts;
 		public Button BackButton;
 		public Button HomeButton;
+		public GameObject LoadingOverlay;
 		
 		public IEnumerable<BeamableViewGroup> ManagedViewGroups { get; }
 
@@ -162,5 +163,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			BackButton.onClick.RemoveAllListeners();
 			BackButton.onClick.AddListener(action);
 		}
+		
+		public void SetLoadingOverlay(bool active) => LoadingOverlay.SetActive(active);
 	}
 }
