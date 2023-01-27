@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Microservices with `IFederatedLogin<T>` will generate client callable methods.
 
+### Fixed
+- Check for missing dependencies before microservices deploy
+
 ## [1.10.3]
 ### Fixed
 - Memory leak no longer occurs while handling requests. `IDependencyProvider` disposal frees memory.
