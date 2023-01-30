@@ -74,6 +74,39 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
+        
+        [Test]
+        [NonParallelizable]
+        public async Task HandleSimpleTraffic_CaseInsensitive()
+        {
+
+	        TestSocket testSocket = null;
+	        var ms = new TestSetup(new TestSocketProvider(socket =>
+	        {
+		        testSocket = socket;
+		        socket.AddStandardMessageHandlers()
+	                
+			        .AddMessageHandler(
+				        MessageMatcher
+					        .WithReqId(1)
+					        .WithStatus(200)
+					        .WithPayload<int>(n => n == 3),
+				        MessageResponder.NoResponse(),
+				        MessageFrequency.OnlyOnce()
+			        );
+	        }));
+
+	        await ms.Start<SimpleMicroservice>(new TestArgs());
+	        Assert.IsTrue(ms.HasInitialized);
+
+	        testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "add", 1, 1, 1, 2));
+
+	        // simulate shutdown event...
+	        await ms.OnShutdown(this, null);
+	        Assert.IsTrue(testSocket.AllMocksCalled());
+        }
+
+        
         [Test]
         [NonParallelizable]
         public async Task HandleScopedRoute_FailsWithoutPropertyScope()
