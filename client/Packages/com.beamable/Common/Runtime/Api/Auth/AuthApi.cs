@@ -430,7 +430,7 @@ namespace Beamable.Common.Api.Auth
 		/// If the player has associated any external identities with their account, they will appear here.
 		/// </summary>
 		public List<ExternalIdentity> external;
-		
+
 		/// <summary>
 		/// Check if the player has registered an email address with their account.
 		/// </summary>
