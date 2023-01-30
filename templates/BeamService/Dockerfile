@@ -1,16 +1,34 @@
-﻿# TODO: how do we get the actual beamable version?
-FROM beamservice AS build-env
-RUN dotnet --version
+﻿# use the dotnet SDK as a build stage
+FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build-env
+
+# copy in required files
+#WORKDIR /subsrc
+#COPY BeamService/BeamService.csproj ./BeamService
+#COPY BeamService/. ./BeamService
+#
+## copy in any other common libraries
+#COPY CommonLibrary/. ./CommonLibrary
+
+WORKDIR /subsrc/BeamServiceCommon
+COPY BeamServiceCommon/. .
+
+# copy in required files
+WORKDIR /subsrc/BeamService
+COPY BeamService/BeamService.csproj .
+COPY BeamService/. .
+
+# build the dotnet program
+RUN dotnet publish -c release -o /subapp
+
+# use the dotnet runtime as the final stage
+FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine
 WORKDIR /subapp
 
-COPY BeamService.csproj .
+# expose the health port
+EXPOSE 6565 
 
-RUN cp /src/baseImageDocs.xml .
-RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
+# copy the built program
+COPY --from=build-env /subapp .
 
-EXPOSE 6565
-ENV BEAMABLE_SDK_VERSION_EXECUTION=0.0.0
-ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
-
-RUN dotnet restore .
-ENTRYPOINT ["dotnet", "watch"]
+# when starting the container, run dotnet with the built dll
+ENTRYPOINT ["dotnet", "/subapp/BeamService.dll"]

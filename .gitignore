@@ -82,6 +82,9 @@ cli/cli/beamoLocalRuntime.json
 /templates/BeamService/bin/
 /templates/BeamService/obj/
 /templates/BeamService/.idea/
+/templates/CommonLibrary/bin/
+/templates/CommonLibrary/obj/
+/templates/CommonLibrary/.idea/
 /templates/*.sln.DotSettings.*
 
 # Server generated files.

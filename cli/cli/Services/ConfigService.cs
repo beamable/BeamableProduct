@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
 using System.CommandLine.Binding;
@@ -12,6 +13,7 @@ public class ConfigService
 	public string WorkingDirectory => _dir;
 	public bool? ConfigFileExists { get; private set; }
 	public string? ConfigFilePath { get; private set; }
+	public string BaseDirectory => Path.GetDirectoryName(ConfigFilePath);
 
 	private Dictionary<string, string>? _config;
 
@@ -32,6 +34,52 @@ public class ConfigService
 		}
 		
 		RefreshConfig();
+	}
+
+	/// <summary>
+	/// by default, paths are relative to the execution working directory...
+	/// But you may need them to be relative to the project root.
+	///
+	/// This function will take a relative directory from the execution site, and turn it into a relative path from the project's root.
+	/// The project's root is the folder that _contains_ /.beamable
+	/// </summary>
+	/// <param name="relativePath"></param>
+	/// <returns></returns>
+	public string GetRelativePath(string relativePath)
+	{
+		var rootDir = Directory.GetParent(ConfigFilePath).FullName;
+		var fullRoot = Path.GetFullPath(rootDir); 
+
+		var path = Path.Combine(fullRoot, relativePath);
+		path = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
+		return path;
+	}
+
+	public void SaveDataFile<T>(string fileName, T data)
+	{
+		if (!fileName.EndsWith(".json")) fileName += ".json";
+		var json = JsonConvert.SerializeObject(data,  new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
+		var dir = Path.Combine(ConfigFilePath, fileName);
+		File.WriteAllText(dir, json);
+	}
+
+	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
+	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
+	{
+		try
+		{
+			if (!fileName.EndsWith(".json")) fileName += ".json";
+			var dir = Path.Combine(ConfigFilePath, fileName);
+			if (!File.Exists(dir)) { return defaultValueGenerator(); }
+			var json = File.ReadAllText(dir);
+			var data = JsonConvert.DeserializeObject<T>(json,  new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
+			return data;
+		}
+		catch (Exception ex)
+		{
+			BeamableLogger.LogError(ex.Message);
+			throw;
+		}
 	}
 
 	public void SetTempWorkingDir(string dir)

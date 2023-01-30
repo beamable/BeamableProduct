@@ -23,5 +23,9 @@
         <Content Include="Data/BeamService/**" Exclude="Data/BeamService/bin/**;Data/BeamService/obj/**;" />
         <Compile Remove="**/*" />
     </ItemGroup>
+        <ItemGroup>
+        <Content Include="Data/CommonLibrary/**" Exclude="Data/CommonLibrary/bin/**;Data/CommonLibrary/obj/**;" />
+        <Compile Remove="**/*" />
+    </ItemGroup>
 
 </Project>

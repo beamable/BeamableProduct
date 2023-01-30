@@ -4,47 +4,94 @@ using CliWrap;
 
 namespace cli.Services;
 
+public class ProjectData
+{
+	public HashSet<string> unityProjectsPaths = new HashSet<string>();
+}
+
 public class ProjectService
 {
-	private readonly InitCommand _initCommand;
 	private readonly ConfigService _configService;
 	private readonly IDependencyProvider _provider;
-	// TODO: automatically install Beam.Templates if not installed... 
+	private readonly BeamoLocalSystem _localBeamo;
 
-	public ProjectService(InitCommand initCommand, ConfigService configService, IDependencyProvider provider)
+	private ProjectData _projects;
+
+	public ProjectService(ConfigService configService, IDependencyProvider provider, BeamoLocalSystem localBeamo)
 	{
-		_initCommand = initCommand;
 		_configService = configService;
 		_provider = provider;
+		_localBeamo = localBeamo;
+		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
+	}
+
+	public List<string> GetLinkedUnityProjects()
+	{
+		return _projects.unityProjectsPaths.ToList();
 	}
 	
-	public async Task CreateNewSolution(string directory, string solutionName, string projectName)
+	public void AddUnityProject(string relativePath)
+	{
+		_projects.unityProjectsPaths.Add(relativePath);
+		_configService.SaveDataFile( ".linkedProjects", _projects);
+	}
+	
+	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName)
 	{
 		if (string.IsNullOrEmpty(directory))
 		{
-			directory = ".";
+			directory = projectName;
 		}
 
-		var path = Path.Combine(_configService.WorkingDirectory, directory);
+		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
+		var path = Path.Combine(solutionPath, "services");
+		var commonProjectName = $"{projectName}Common";
 		var projectPath = Path.Combine(path, projectName);
+		var commonProjectPath = Path.Combine(path, commonProjectName);
 	
+		// TODO: automatically install Beam.Templates if not installed... 
+		
+		
+		// create the solution
 		await Cli.Wrap($"dotnet")
-			.WithArguments($"new sln -n {solutionName} -o {path}")
+			.WithArguments($"new sln -n {solutionName} -o {solutionPath}")
 			.ExecuteAsync().Task;
 		
+		// create the beam microservice project
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"new beamservice -n {projectName} -o {projectPath}")
 			.ExecuteAsync().Task;
 		
+		// restore the microservice tools
 		await Cli.Wrap($"dotnet")
-			.WithArguments($"sln {path} add {projectPath}")
+			.WithArguments($"tool restore --tool-manifest {Path.Combine(projectName, ".config", "dotnet-tools.json")}")
+			.ExecuteAsync().Task;
+		
+		// add the microservice to the solution
+		await Cli.Wrap($"dotnet")
+			.WithArguments($"sln {solutionPath} add {projectPath}")
 			.ExecuteAsync().Task;
 
-		_configService.SetTempWorkingDir(path);
-		await _initCommand.Handle(new InitCommandArgs
-		{
-			Provider = _provider,
-			saveToFile = true
-		});
+		// create the shared library project
+		await Cli.Wrap($"dotnet")
+			.WithArguments($"new beamlib -n {commonProjectName} -o {commonProjectPath}")
+			.ExecuteAsync().Task;
+		
+		// restore the shared library tools
+		await Cli.Wrap($"dotnet")
+			.WithArguments($"tool restore --tool-manifest {Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}")
+			.ExecuteAsync().Task;
+		
+		// add the shared library to the solution
+		await Cli.Wrap($"dotnet")
+			.WithArguments($"sln {solutionPath} add {commonProjectPath}")
+			.ExecuteAsync().Task;
+		
+		// add the shared library as a reference of the project
+		await Cli.Wrap($"dotnet")
+			.WithArguments($"add {projectPath} reference {commonProjectPath}")
+			.ExecuteAsync().Task;
+
+		return solutionPath;
 	}
 }

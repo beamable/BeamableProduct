@@ -101,13 +101,7 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 				// Handle Dockerfile path
 				if (!EnsureLocalDockerfilePath(ref httpArgs, localProtocol.RelativeDockerfilePath))
 					return;
-
-				// Log Level
-				EnsureLocalLogLevel(ref httpArgs, Enum.Parse<LogEventLevel>(localProtocol.LogLevel));
-
-				// Health Check
-				EnsureLocalHealthEndpointAndPort(ref httpArgs, new string[2] { localProtocol.HealthCheckEndpoint, localProtocol.HealthCheckInternalPort });
-
+				
 				// Hot Reloading
 				EnsureLocalHotReloadingConfig(ref httpArgs,
 					new[]

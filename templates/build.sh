@@ -5,14 +5,16 @@ dotnet new -u Beamable.Templates
 rm -rf ./templates/Data
 mkdir ./templates/Data
 cp -R ./BeamService/ ./templates/Data/BeamService
+cp -R ./CommonLibrary/ ./templates/Data/CommonLibrary
 
 # TODO: modify the version number of the copied data
 
 # produce a nuget package...
-dotnet pack ./templates/templates.csproj -o ./artifacts/ --no-build --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
+# dotnet pack ./templates/templates.csproj -o ./artifacts/ --no-build --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
+dotnet pack ./templates/templates.csproj -o ./artifacts/ --no-build /p:VersionPrefix=0.0.0
 
 # clean the folder again...
 rm -rf ./templates/Data
 
 # install the latest version...
-dotnet new -i ./artifacts/Beamable.Templates.1.4.0.nupkg
+dotnet new -i ./artifacts/Beamable.Templates.0.0.0.nupkg

@@ -358,15 +358,6 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 			if (httpArgs.LocalDockerfileRelativePath != null)
 				localProtocol.RelativeDockerfilePath = httpArgs.LocalDockerfileRelativePath;
 
-			if (httpArgs.LocalLogLevel != null)
-				localProtocol.LogLevel = httpArgs.LocalLogLevel.Value.ToString();
-
-			if (httpArgs.LocalHealthEndpointAndPort != null)
-			{
-				localProtocol.HealthCheckEndpoint = httpArgs.LocalHealthEndpointAndPort[0];
-				localProtocol.HealthCheckInternalPort = httpArgs.LocalHealthEndpointAndPort[1];
-			}
-
 			if (httpArgs.LocalHotReloadingConfig != null)
 			{
 				localProtocol.HotReloadEnabledEndpoint = httpArgs.LocalHotReloadingConfig[0];

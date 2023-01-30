@@ -120,6 +120,10 @@ public class App
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
+		Commands.AddCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
+		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
