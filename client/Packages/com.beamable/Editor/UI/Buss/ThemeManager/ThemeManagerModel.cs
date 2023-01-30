@@ -18,7 +18,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class ThemeManagerModel : ThemeModel
 	{
-		private readonly BussPrefabSceneManager _sceneManager;
+		private readonly IBussPrefabSceneManager _sceneManager;
 		public override BussElement SelectedElement { get; set; }
 
 		public string SelectedElementId =>
@@ -71,7 +71,7 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
-		public ThemeManagerModel(BussPrefabSceneManager sceneManager)
+		public ThemeManagerModel(IBussPrefabSceneManager sceneManager)
 		{
 			_sceneManager = sceneManager;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
@@ -263,11 +263,6 @@ namespace Beamable.Editor.UI.Buss
 				}
 			} else if (currentPrefab == null)
 			{
-				// var roots = SceneManager.GetActiveScene().GetRootGameObjects();
-				// foreach (var root in roots)
-				// {
-				// 	Traverse(root, 0);
-				// }
 				foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
 				{
 					GameObject gameObject = (GameObject)foundObject;

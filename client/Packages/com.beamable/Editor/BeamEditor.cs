@@ -106,7 +106,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
 			DependencyBuilder.AddSingleton<ContentDatabase>();
-			DependencyBuilder.AddSingleton<BussPrefabSceneManager>();
+			DependencyBuilder.AddSingleton<IBussPrefabSceneManager, BussPrefabSceneManager>();
 			DependencyBuilder.AddSingleton<BussPrefabLoaderSourceProvider>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);

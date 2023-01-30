@@ -49,7 +49,7 @@ namespace Beamable.Editor.UI.Buss
 
 		protected override void Build()
 		{
-			var manager = ActiveContext.ServiceScope.GetService<BussPrefabSceneManager>();
+			var manager = ActiveContext.ServiceScope.GetService<IBussPrefabSceneManager>();
 			_model = new ThemeManagerModel(manager);
 
 			minSize = ThemeManagerWindowSize;

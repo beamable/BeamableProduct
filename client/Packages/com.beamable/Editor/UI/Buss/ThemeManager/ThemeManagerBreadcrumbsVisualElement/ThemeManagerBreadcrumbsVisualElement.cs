@@ -46,14 +46,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void HandlePrefabButtonClicked()
 		{
-			var srvc = Context.ServiceScope.GetService<BussPrefabSceneManager>();
+			var srvc = Context.ServiceScope.GetService<IBussPrefabSceneManager>();
 			srvc.TogglePrefabScene();
 			UpdatePrefabButtonClasses();
 		}
 
 		private void UpdatePrefabButtonClasses()
 		{
-			var srvc = Context.ServiceScope.GetService<BussPrefabSceneManager>();
+			var srvc = Context.ServiceScope.GetService<IBussPrefabSceneManager>();
 			_sceneViewToggle.EnableInClassList("active", srvc.IsPrefabSceneOpen());
 		}
 
