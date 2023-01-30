@@ -384,7 +384,9 @@ namespace Beamable.Editor.Content.Components
 				ContentObject contentObject = (ContentObject)AssetDatabase.LoadMainAssetAtPath(nextPath);
 				var fileName = Path.GetFileNameWithoutExtension(nextPath);
 				contentObject.SetContentName(fileName);
+				contentObject.LastChanged = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 				AssetDatabase.ForceReserializeAssets(new[] { nextPath });
+				ContentIO.NotifyCreated(contentObject);
 			}
 		}
 

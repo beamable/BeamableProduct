@@ -38,6 +38,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
+using Beamable.Connection;
 using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
@@ -226,6 +227,10 @@ namespace Beamable
 				provider => provider.GetService<PubnubSubscriptionManager>());
 			DependencyBuilder.AddSingleton<INotificationService>(
 				provider => provider.GetService<NotificationService>());
+
+			DependencyBuilder.AddSingleton<IBeamableConnection, WebSocketConnection>();
+			DependencyBuilder.AddSingleton<BeamableSubscriptionManager>();
+
 			DependencyBuilder.AddSingleton<ApiServices>();
 
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());

@@ -262,6 +262,11 @@ namespace Beamable.Platform.Tests
 			set;
 		} //= new AccessToken(new AccessTokenStorage("test"), "testcid", "testpid", "testtok", "testref", 1000000);
 
+		public Promise RefreshToken()
+		{
+			return Promise.Success;
+		}
+
 		public string TimeOverride
 		{
 			get;
@@ -378,6 +383,11 @@ namespace Beamable.Platform.Tests
 		public string EscapeURL(string url)
 		{
 			return UnityWebRequest.EscapeURL(url);
+		}
+
+		public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

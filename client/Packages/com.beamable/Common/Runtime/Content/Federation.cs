@@ -4,7 +4,7 @@ namespace Beamable.Common.Content
 {
 	[System.Serializable]
 	[Agnostic]
-	public class ExternalIdentity
+	public class Federation
 	{
 		[ContentField("service")]
 		public string Service;
@@ -14,5 +14,5 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalExternalIdentity : Optional<ExternalIdentity> { }
+	public class OptionalFederation : Optional<Federation> { }
 }
