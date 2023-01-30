@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Check for missing dependencies before microservices deploy
+- `GetManifestWithID` method works for manifest ids other than `"global"`. 
 
 ## [1.10.3]
 ### Fixed
