@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PlayerInventory` supports storing player's inventory in offline mode
 - `PlayerInventory` supports `UpdateDelayed` method
 - `IFederatedLogin<T>` interface type available for Microservices
+- "external" identities section has been added to a `User` class
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
