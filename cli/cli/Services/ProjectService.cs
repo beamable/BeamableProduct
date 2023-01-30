@@ -51,7 +51,6 @@ public class ProjectService
 	
 		// TODO: automatically install Beam.Templates if not installed... 
 		
-		
 		// create the solution
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"new sln -n {solutionName} -o {solutionPath}")

@@ -8,64 +8,100 @@ A `.gitignore` file is included, but if you are using a different version contro
 must create a custom ignore-file.
 
 ## Getting Started
-
 Before you begin, you'll need to create a Beamable organization.
 You can create a Beamable organization through the Unity Editor, or online at [Beamable.com](https://beta-portal.beamable.com/signup/registration/).
 
-You will need to install the Beamable dotnet templates. 
-These templates are available on Nuget.
-```shell
-# install the template
-dotnet new -i Beamable.Templates
+Here is the expected file structure.
+```
+/project
+  project.sln
+  /.beamable
+     .config-defaults.json
+     .linkedProjects.json
+     .beamoLocalManifest.json
+     .beamoLocalRuntime.json
+  /services
+     /BeamService
+        BeamService.csproj
+        Dockerfile
+        Program.cs
+        BeamService.cs
+     /BeamServiceLibrary
+        BeamServiceLibrary.csproj
+        BeamServiceLibrary.cs
 ```
 
-Now that the templates are installed, you can create a new dotnet project using the beamservice template.
+## Running Locally
+The BeamService project can be run locally by starting it from an IDE, or by executing the `dotnet run` command.
+When a Microservice is built, a web-page will be opened automatically directed to the local swagger documentation for the service.
+
+The project may also be run in Docker by executing the following command. However, it is recommended to 
+run the dotnet process locally for workflow speed. 
 ```shell
-# create a project
-dotnet new beamservice -n MyService
-# navigate your terminal into the project
-cd MyService
+beam services deploy --ids BeamService
 ```
 
-Now that you have a project, you'll need to run a command to update the template for your Beamable organization.
-This command will update the Beamable SDK and Tools package to the latest version, prompt you for 
-your Beamable login credentials, and configure the project with Docker.
+### MSBuild Properties
+The `BeamService.csproj` file has a few configuration options that can be set.
+```xml
+<PropertyGroup>
+    <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
+    <BeamableTool>dotnet beam</BeamableTool>
 
-```shell
-# initialize the Beamable project
-dotnet build -t:beam-init
+    <!-- When "true", this will open a website to the local swagger page for the running service -->
+    <OpenLocalSwaggerOnRun>true</OpenLocalSwaggerOnRun>
+
+    <!-- When "true", this will auto-generate client code to any linked unity projects -->
+    <GenerateClientCode>true</GenerateClientCode>
+</PropertyGroup>
 ```
 
-Now you can run your service locally.
+#### BeamableTool
+By default, both BeamService and BeamServiceLibrary have the BeamCLI installed as a project tool. 
+However, it is likely that `beam` is installed as a global tool, and as such, the `BeamableTool` value
+could be changed `beam`. 
+
+#### OpenLocalSwaggerOnRun
+If the `OpenLocalSwaggerOnRun` setting is set to `false`, then the local swagger will not open when the project is
+built. However, it can be opened manually by the following shell command. Optionally, pass the `--remote` flag to open the
+remote swagger. 
 ```shell
-# run the service for development
-dotnet build -t:beam-dev
+beam project open-swagger BeamService
 ```
 
-
-## FAQ
-
-#### How do I run the service?
+### Connecting to a Unity Project
+The project can be linked to a number of Unity Projects. The `./beamable/.linkedProjects.json` file 
+contains the relative paths to linked Unity Projects. You can add an association by editing that file, 
+or by executing
 ```shell
-# Run the local service
-dotnet build -t:beam-dev
+beam project add-unity-project .
 ```
 
-#### What is the /Src folder?
-Any file that is not included in the `/src` folder will not be included in the built service.
-Build time configurations and documentation may exist outside the `/src` folder, but everything
-else should exist in the `/src`, otherwise it won't be used. 
+When the project is built, the `generate-client` msbuild target will generate a C# client file
+at each linked Unity project's `Assets/Beamable/Microservice/Microservices/BeamServiceClient.cs`. 
 
-#### How do I publish the service?
-TODO
+Additionally, the `share-code` msbuild target in the BeamServiceLibrary project will copy their
+built `.dll` files into the `Assets/Beamable/Microservices/CommonDlls` directory. Unity will be able
+to share the `.dll` files meant for the shared library. 
 
-#### How do I configure the service?
-TODO
+### Limitations
 
-#### How do I update Beamable?
-Run the following command, which will update the version number in `./config/dotnet-tools.json`
-and the version number in `./BeamService.csproj`.
+## Deploying
+The project can be deployed to the remote realm by running the follow command. 
 ```shell
-# update Beamable SDK and Tools
-dotnet build -t:beam-update
+beam services ps --remote
+beam services deploy --remote
+```
+
+However, the realm that is used will depend on the current value of the beam CLI. The current value
+can be viewed by inspecting the `./beamable/.config-defaults.json` file, or by running the following
+command.
+```shell
+beam config
+```
+
+If the CLI is not authenticated, then you must log in and pass the `--saveToFile` flag. Otherwise, 
+you will need to add the `--refresh-token` option to the `beam services` commands. 
+```shell
+beam login --saveToFile
 ```

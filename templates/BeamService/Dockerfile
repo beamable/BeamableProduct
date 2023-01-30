@@ -2,13 +2,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build-env
 
 # copy in required files
-#WORKDIR /subsrc
-#COPY BeamService/BeamService.csproj ./BeamService
-#COPY BeamService/. ./BeamService
-#
-## copy in any other common libraries
-#COPY CommonLibrary/. ./CommonLibrary
-
 WORKDIR /subsrc/BeamServiceCommon
 COPY BeamServiceCommon/. .
 
