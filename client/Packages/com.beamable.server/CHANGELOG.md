@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Microservices with `IFederatedLogin<T>` will generate client callable methods.
+- Microservices with `IFederatedInventory<T>` will generate client callable methods.
+
+### Fixed
+- Empty dictionary of supported subtypes no longer break request serialization.
 
 ### Fixed
 - Check for missing dependencies before microservices deploy
