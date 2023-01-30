@@ -38,6 +38,7 @@ namespace Beamable.Common.Inventory
 
 		[ContentField("external")]
 		[Tooltip(TooltipFederation)]
+		[FederationMustBeValid]
 		public OptionalFederation federation;
 	}
 
