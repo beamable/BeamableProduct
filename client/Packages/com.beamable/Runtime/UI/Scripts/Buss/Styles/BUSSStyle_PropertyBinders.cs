@@ -1,6 +1,8 @@
+﻿using Beamable.Common.Dependencies;
 using Beamable.UI.Tweening;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -23,6 +25,15 @@ namespace Beamable.UI.Buss
 			return _bindings.TryGetValue(propertyKey, out binding);
 		}
 
+		private static IVertexColorBussProperty[] _defaultVertexColorValues = new IVertexColorBussProperty[]
+		{
+			new SingleColorBussProperty(), new VertexColorBussProperty()
+		};
+		private static IVertexColorBussProperty[] _defaultTransparentVertexColorValues = new IVertexColorBussProperty[]
+		{
+			new SingleColorBussProperty(Color.clear), new VertexColorBussProperty(Color.clear)
+		};
+		
 		protected readonly Dictionary<string, IBussProperty> _properties = new Dictionary<string, IBussProperty>();
 
 		public static readonly PropertyBinding<MainTextureBussProperty> MainTextureSource =
@@ -48,8 +59,8 @@ namespace Beamable.UI.Buss
 			new PropertyBinding<NineSliceSourceBussProperty>("nineSliceSource", new NineSliceSourceBussProperty(Sdf.SdfImage.NineSliceSource.SdfFirst));
 
 		// Background
-		public static readonly PropertyBinding<IVertexColorBussProperty> BackgroundColor = 
-      new PropertyBinding<IVertexColorBussProperty>("backgroundColor", new SingleColorBussProperty());
+		public static readonly PropertyBinding<IVertexColorBussProperty> BackgroundColor =
+			new PropertyBinding<IVertexColorBussProperty>("backgroundColor", _defaultVertexColorValues);
 
 		public static readonly PropertyBinding<IFloatFromFloatBussProperty> RoundCorners =
 			new PropertyBinding<IFloatFromFloatBussProperty>("roundCorners", new FloatBussProperty());
@@ -68,7 +79,7 @@ namespace Beamable.UI.Buss
 			new PropertyBinding<IFloatBussProperty>("borderWidth", new FloatBussProperty());
 
 		public static readonly PropertyBinding<IVertexColorBussProperty> BorderColor =
-			new PropertyBinding<IVertexColorBussProperty>("borderColor", new SingleColorBussProperty());
+			new PropertyBinding<IVertexColorBussProperty>("borderColor", _defaultVertexColorValues);
 
 		// Transform
 		public static readonly PropertyBinding<IRectTransformBussProperty> RectTransform
@@ -82,7 +93,7 @@ namespace Beamable.UI.Buss
 			new PropertyBinding<IFloatBussProperty>("shadowThreshold", new FloatBussProperty());
 
 		public static readonly PropertyBinding<IVertexColorBussProperty> ShadowColor =
-			new PropertyBinding<IVertexColorBussProperty>("shadowColor", new SingleColorBussProperty());
+			new PropertyBinding<IVertexColorBussProperty>("shadowColor", _defaultTransparentVertexColorValues);
 
 		public static readonly PropertyBinding<IFloatBussProperty> ShadowSoftness =
 			new PropertyBinding<IFloatBussProperty>("shadowSoftness", new FloatBussProperty());
@@ -132,10 +143,11 @@ namespace Beamable.UI.Buss
 			/// When true, an element can inherit this property from the element's parent.
 			/// </summary>
 			bool Inheritable { get; }
-
+			
 			IBussProperty GetProperty(BussStyle style);
 			void SetProperty(BussStyle style, IBussProperty property);
-			IBussProperty GetDefaultValue();
+			IBussProperty GetDefaultValue(Type specificType);
+			Type[] GetTypesOfDefaultValues();
 		}
 
 		public sealed class PropertyBinding<T> : IPropertyBinding where T : class, IBussProperty
@@ -145,10 +157,14 @@ namespace Beamable.UI.Buss
 				get;
 			}
 
-			public T DefaultValue
+			public T DefaultValue => DefaultValues[0];
+
+			public T[] DefaultValues
 			{
 				get;
 			}
+			
+			public Type[] DefaultValueTypes { get; }
 
 			public bool Inheritable { get; }
 
@@ -159,10 +175,25 @@ namespace Beamable.UI.Buss
 			internal PropertyBinding(string key, T defaultValue, bool inheritable = false)
 			{
 				Key = key;
-				DefaultValue = defaultValue;
+				DefaultValues = new T[]{defaultValue};
+				DefaultValueTypes = new Type[] {defaultValue.GetType()};
 				_bindings[key] = this;
 				Inheritable = inheritable;
 			}
+			
+			internal PropertyBinding(string key, T[] defaultValues, bool inheritable = false)
+			{
+				Key = key;
+				DefaultValues = defaultValues.ToArray();
+				DefaultValueTypes = new Type[defaultValues.Length];
+				for (var i = 0; i < defaultValues.Length; i++)
+				{
+					DefaultValueTypes[i] = defaultValues[i].GetType();
+				}
+				_bindings[key] = this;
+				Inheritable = inheritable;
+			}
+
 
 			IBussProperty IPropertyBinding.GetProperty(BussStyle style) => Get(style);
 
@@ -178,9 +209,28 @@ namespace Beamable.UI.Buss
 				}
 			}
 
-			public IBussProperty GetDefaultValue()
+			public IBussProperty GetDefaultValue(Type specificType=null)
 			{
-				return DefaultValue;
+				if (specificType == null)
+				{
+					return DefaultValues[0];
+				}
+
+				foreach (var value in DefaultValues)
+				{
+					if (value.GetType().IsAssignableFrom(specificType))
+					{
+						return value;
+					}
+				}
+
+				throw new InvalidOperationException(
+					$"Cannot find a default value for {this.Key} with type {specificType.Name}");
+			}
+
+			public Type[] GetTypesOfDefaultValues()
+			{
+				return DefaultValueTypes;
 			}
 
 			public T Get(BussStyle style)
