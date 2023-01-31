@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
@@ -37,6 +38,7 @@ namespace Beamable.Server
 	public class MicroserviceClient
 	{
 		protected IBeamableRequester _requester;
+		protected BeamContext _ctx;
 
 		protected MicroserviceClient(IBeamableRequester requester = null)
 		{
@@ -45,8 +47,10 @@ namespace Beamable.Server
 
 		protected MicroserviceClient(BeamContext ctx) : this(ctx?.Requester)
 		{
-
+			_ctx = ctx;
 		}
+
+		public IDependencyProvider Provider => _ctx?.ServiceProvider ?? BeamContext.Default.ServiceProvider;
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{

@@ -7,10 +7,10 @@ using UnityEngine;
 namespace Beamable.Common
 {
 	[Serializable]
-	public class IntTrie : Trie<int, IntTrieEntry> {}
-	
+	public class IntTrie : Trie<int, IntTrieEntry> { }
+
 	[Serializable]
-	public class IntTrieEntry : TrieSerializationEntry<int> {}
+	public class IntTrieEntry : TrieSerializationEntry<int> { }
 
 	/// <summary>
 	/// A Trie is a tree like data structure that holds information by prefix key.
@@ -28,22 +28,22 @@ namespace Beamable.Common
 			/// The full path to this node
 			/// </summary>
 			public string path;
-			
+
 			/// <summary>
 			/// The last part of the path to this node
 			/// </summary>
 			public string part;
-			
+
 			/// <summary>
 			/// The parent <see cref="Node"/> of the current <see cref="Node"/>, or null if no parent exists.
 			/// </summary>
 			public Node parent;
-			
+
 			/// <summary>
 			/// A dictionary where the keys are <see cref="part"/> values, and the values are <see cref="Node"/>s
 			/// </summary>
 			public Dictionary<string, Node> children = new Dictionary<string, Node>();
-			
+
 			/// <summary>
 			/// the values stored at this current <see cref="path"/>
 			/// </summary>
@@ -79,7 +79,7 @@ namespace Beamable.Common
 		// "a" -> node,
 		// doesn't include entires for "a.b"
 		private Dictionary<string, Node> _firstPartToNode = new Dictionary<string, Node>();
-		
+
 		// "a.b.c" -> Node
 		private Dictionary<string, Node> _pathToNode = new Dictionary<string, Node>();
 		private Dictionary<string, List<T>> _pathAllCache = new Dictionary<string, List<T>>();
@@ -87,13 +87,13 @@ namespace Beamable.Common
 
 		[SerializeField]
 		private char _splitter = '.';
-		
+
 		[SerializeField]
 		private List<TEntry> data = new List<TEntry>();
 
 		public Trie() : this('.')
 		{
-			
+
 		}
 
 		public Trie(char splitter)
@@ -111,7 +111,7 @@ namespace Beamable.Common
 			var node = Search(key);
 			node.values.Add(value);
 		}
-		
+
 		/// <summary>
 		/// Add a series of values to the given key
 		/// </summary>
@@ -144,7 +144,7 @@ namespace Beamable.Common
 			var node = Search(key);
 			node.values.Clear();
 		}
-		
+
 		/// <summary>
 		/// Remove the given value from the key
 		/// </summary>
@@ -155,7 +155,7 @@ namespace Beamable.Common
 			var node = Search(key);
 			node.values.Remove(value);
 		}
-		
+
 		/// <summary>
 		/// Remove a set of values at the given key
 		/// </summary>
@@ -187,7 +187,7 @@ namespace Beamable.Common
 			}
 			return returnData;
 		}
-		
+
 		/// <summary>
 		/// Get all values under the given key.
 		/// If the given key is "a.b.c", this method will return all values at "a.b.c", and
@@ -271,7 +271,7 @@ namespace Beamable.Common
 				}
 			}
 			return set;
-		} 
+		}
 
 		/// <summary>
 		/// Given a set of key values, this will return the set of keys that would return data in the trie.
@@ -332,11 +332,11 @@ namespace Beamable.Common
 		/// <param name="key"></param>
 		/// <param name="autoCreate">If false, then the iteration stops as soon as no node is found the next part of the key</param>
 		/// <returns></returns>
-		public IEnumerable<Node> Traverse(string key, bool autoCreate=true)
+		public IEnumerable<Node> Traverse(string key, bool autoCreate = true)
 		{
 			var parts = key.Split(_splitter);
 			var first = parts[0];
-			
+
 			if (!_firstPartToNode.TryGetValue(first, out var node))
 			{
 				if (!autoCreate)
@@ -364,8 +364,8 @@ namespace Beamable.Common
 					}
 					_pathToNode[subPath] = node.children[curr] = nextNode = new Node
 					{
-						parent = node, 
-						part = curr, 
+						parent = node,
+						part = curr,
 						path = subPath
 					};
 				}
