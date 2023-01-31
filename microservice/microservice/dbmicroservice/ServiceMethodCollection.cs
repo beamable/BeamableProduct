@@ -14,15 +14,15 @@ namespace Beamable.Server
       public ServiceMethodCollection(IEnumerable<ServiceMethod> methods)
       {
          _methods = methods;
-         _pathToMethod = methods.ToDictionary(method => method.Path);
+         _pathToMethod = methods.ToDictionary(method => method.Path.ToLower());
       }
 
       public IEnumerable<ServiceMethod> Methods => _methods.ToList();
 
       public async Task<string> Handle(RequestContext ctx, string path, IParameterProvider parameterProvider)
       {
-         BeamableSerilogProvider.LogContext.Value.Debug("Handling {path}", path);
-         if (_pathToMethod.TryGetValue(path, out var method) )
+         BeamableSerilogProvider.LogContext.Value.Debug($"Handling {path}");
+         if (_pathToMethod.TryGetValue(path.ToLower(), out var method) )
          {
             if (!ctx.HasScopes(method.RequiredScopes))
             {
@@ -37,14 +37,14 @@ namespace Beamable.Server
 
             var output = method.Execute(ctx, parameterProvider);
             var result = await output;
-            BeamableSerilogProvider.LogContext.Value.Debug("Method finished with {result}", result);
+            BeamableSerilogProvider.LogContext.Value.Verbose("Method finished with {result}", result);
 
             var serializedResult = method.ResponseSerializer.SerializeResponse(ctx, result);
             return serializedResult;
          }
          else
          {
-            BeamableSerilogProvider.LogContext.Value.Warning("No method available for {path}", path);
+            BeamableSerilogProvider.LogContext.Value.Warning($"No method available for {path}");
 
             throw new UnhandledPathException(path);
          }

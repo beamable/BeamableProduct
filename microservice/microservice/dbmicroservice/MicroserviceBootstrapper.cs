@@ -338,7 +338,10 @@ namespace Beamable.Server
 	        
 	        // configure the root service scope, and then build the root service provider.
 	        var serviceBuilder = ConfigureServices<TMicroService>(envArgs);
-	        var rootServiceScope = serviceBuilder.Build();
+	        var rootServiceScope = serviceBuilder.Build(new BuildOptions
+	        {
+		        allowHydration = false
+	        });
 	        InitializeServices(rootServiceScope);
 	        
 	        
