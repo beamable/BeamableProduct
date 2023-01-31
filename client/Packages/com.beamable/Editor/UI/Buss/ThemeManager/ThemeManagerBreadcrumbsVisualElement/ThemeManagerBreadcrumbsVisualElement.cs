@@ -19,6 +19,8 @@ namespace Beamable.Editor.UI.Components
 				{ThemeModel.PropertyDisplayFilter.IgnoreOverridden, "Ignore Overriden"}
 			};
 
+		private Button _sceneViewToggle;
+
 		public ThemeManagerBreadcrumbsVisualElement(ThemeManagerModel model) : base(nameof(ThemeManagerBreadcrumbsVisualElement))
 		{
 			Model = model;
@@ -33,7 +35,26 @@ namespace Beamable.Editor.UI.Components
 			_propertiesFilterLabel = _propertiesFilter.Q<Label>();
 			_propertiesFilter.clickable.clicked -= HandlePropertiesFilterButton;
 			_propertiesFilter.clickable.clicked += HandlePropertiesFilterButton;
+
+			_sceneViewToggle = Root.Q<Button>("sceneViewToggle");
+			_sceneViewToggle.tooltip = "Toggle the Prefab Scene";
+			UpdatePrefabButtonClasses();
+			_sceneViewToggle.clickable.clicked -= HandlePrefabButtonClicked;
+			_sceneViewToggle.clickable.clicked += HandlePrefabButtonClicked;
 			UpdateServicesFilterText(Model.DisplayFilter);
+		}
+
+		private void HandlePrefabButtonClicked()
+		{
+			var srvc = Context.ServiceScope.GetService<IBussPrefabSceneManager>();
+			srvc.TogglePrefabScene();
+			UpdatePrefabButtonClasses();
+		}
+
+		private void UpdatePrefabButtonClasses()
+		{
+			var srvc = Context.ServiceScope.GetService<IBussPrefabSceneManager>();
+			_sceneViewToggle.EnableInClassList("active", srvc.IsPrefabSceneOpen());
 		}
 
 		private void UpdateServicesFilterText(ThemeModel.PropertyDisplayFilter filter)

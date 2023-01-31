@@ -7,3 +7,6 @@
 Image#dropDownIcon{
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close Dark.png")
 }
+#sceneViewIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/SceneView_LightMode.png")
+}
