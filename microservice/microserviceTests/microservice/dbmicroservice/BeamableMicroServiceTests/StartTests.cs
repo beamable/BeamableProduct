@@ -79,7 +79,6 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
         [NonParallelizable]
         public async Task HandleSimpleTraffic_CaseInsensitive()
         {
-
 	        TestSocket testSocket = null;
 	        var ms = new TestSetup(new TestSocketProvider(socket =>
 	        {
