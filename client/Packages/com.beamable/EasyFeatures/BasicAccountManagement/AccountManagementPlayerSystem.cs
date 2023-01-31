@@ -24,9 +24,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		public async Promise SetAvatar(string avatarName)
 		{
-			var stats = await GetPublicStats(Context.PlayerId);
-			stats["avatar"] = avatarName;
-			await Context.Api.StatsService.SetStats("public", stats);
+			await Context.Accounts.SetAvatar(avatarName);
 		}
 
 		/// <summary>
@@ -45,9 +43,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		public async Promise SetUsername(string username)
 		{
-			var stats = await GetPublicStats(Context.PlayerId);
-			stats["alias"] = username;
-			await Context.Api.StatsService.SetStats("public", stats);
+			await Context.Accounts.SetAlias(username);
 		}
 
 		/// <summary>

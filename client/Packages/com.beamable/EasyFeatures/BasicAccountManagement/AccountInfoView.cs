@@ -80,16 +80,16 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			_avatarToSet = avatar;
 		}
 
-		private void OnConfirmPressed()
+		private async void OnConfirmPressed()
 		{
 			if (_avatarToSet != null)
 			{
-				System.SetAvatar(_avatarToSet.Name);
+				await System.SetAvatar(_avatarToSet.Name);
 			}
 
 			if (!string.IsNullOrWhiteSpace(UsernameInputField.text) && UsernameInputField.text != _currentUsername)
 			{
-				System.SetUsername(UsernameInputField.text);
+				await System.SetUsername(UsernameInputField.text);
 			}
 			
 			OpenAccountsView();

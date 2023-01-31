@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.EasyFeatures.Components;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -74,7 +75,6 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			
 			await System.Context.Accounts.OnReady;
 			
-			// TODO enable proper set of buttons
 			SignInButtonsGroup.SetActive(System.Context.Accounts.Count == 1);
 			SwitchButtonsGroup.SetActive(System.Context.Accounts.Count > 1);
 			NextCancelButtonsGroup.SetActive(false);
@@ -94,6 +94,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			SwitchAccountButton.onClick.ReplaceOrAddListener(OnSwitchAccount);
 			NextButton.onClick.ReplaceOrAddListener(OnSignIn);
 			CancelButton.onClick.ReplaceOrAddListener(OnCancel);
+			EmailInputField.onEndEdit.ReplaceOrAddListener(CheckIfEmailExists);
 
 			// setup current account
 			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData
@@ -123,6 +124,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.SetLoadingOverlay(false);
 		}
 
+		private void CheckIfEmailExists(string email)
+		{
+			// var result = await System.Context.Accounts.RecoverAccountWithEmail(email, "");
+		}
+
 		private void OnOtherAccountSelected(long playerId)
 		{
 			_selectedOtherAccountId = playerId;
@@ -140,7 +146,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		private void OnSwitchAccount()
 		{
 			var popup = FeatureControl.OverlaysController.ShowCustomOverlay(SwitchAccountPopupPrefab);
-			popup.Setup(StartSignIn, OpenCreateAccountView, FeatureControl.OverlaysController);
+			popup.Setup(StartSignIn, OnCreateAccount, FeatureControl.OverlaysController);
 
 			void StartSignIn()
 			{
@@ -151,18 +157,21 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				EmailInputField.gameObject.SetActive(true);
 				InfoText.text = ENTER_EMAIL_TEXT;
 			}
-
-			void OpenCreateAccountView()
-			{
-				FeatureControl.OverlaysController.HideOverlay();
-				FeatureControl.OpenCreateAccountView();
-			}
 		}
 
-		private void OnLoadGame()
+		private async void OnLoadGame()
 		{
-			// load profile with id == _selectedOtherAccountId
-			throw new System.NotImplementedException();
+			var account = System.Context.Accounts.FirstOrDefault(acc => acc.GamerTag == _selectedOtherAccountId);
+			if (account != null)
+			{
+				FeatureControl.SetLoadingOverlay(true);
+				await account.SwitchToAccount();
+				FeatureControl.OpenAccountsView();
+			}
+			else
+			{
+				Debug.LogError($"Account with id '{_selectedOtherAccountId}' was not found");
+			}
 		}
 
 		private void OpenAccountsView()
@@ -185,9 +194,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.OpenSignInView();
 		}
 
-		private void OnCreateAccount()
+		private async void OnCreateAccount()
 		{
-			FeatureControl.OpenCreateAccountView();
+			var guestAccount = await System.Context.Accounts.CreateNewAccount();
+			await guestAccount.SwitchToAccount();
+			FeatureControl.OpenAccountsView();
 		}
 	}
 }
