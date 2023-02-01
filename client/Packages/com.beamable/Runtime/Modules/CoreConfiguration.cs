@@ -1,3 +1,4 @@
+using Beamable.Common.Api;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -82,6 +83,20 @@ namespace Beamable
 		[Tooltip("It will enable/disable hearbeat service default behaviour.\n" +
 				 "Disabling it allows to reduce amount of calls to Beamable with cost of disabling support for matchmaking services.")]
 		public bool SendHeartbeat = true;
+
+		[Tooltip("The ConnectivityStrategy allows the developer to configure how Beamable determines connectivity to the internet. " +
+		         "Without connectivity, Beamable will not function as intended. By default, the \"BeamableGateway\" strategy will " + 
+		         "configure the SDK to send periodic requests to api.beamable.com/health. The result of those network requests will " +
+				 "determine connectivity for the rest of the SDK. \n\n" + 
+		         "The \"BeamablePresence\" strategy will use the results of the existing " + 
+		         "presence heartbeat to determine network connectivity. If the " + nameof(SendHeartbeat) + @" property is disabled, " + 
+		         "then \"BeamablePresence\" is invalid. \n\n" +
+		         "Finally, the \"None\" strategy will not create any connectivity checker. In this case, it is up to the developer " +
+		         "to register a custom IConnectivityChecker with the BeamContext dependencies. If no IConnectivityChecker is registered, " +
+		         "an exception will be thrown on startup."
+		)]
+		public ConnectivityStrategy ConnectivityStrategy = ConnectivityStrategy.BeamableGateway;
+		
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]

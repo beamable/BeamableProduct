@@ -143,6 +143,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
+			DependencyBuilder.AddSingleton<GatewayConnectivityChecker>();
+			RegisterConnectivityChecker();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
 			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
@@ -271,6 +273,38 @@ namespace Beamable
 				}
 			};
 #endif
+		}
+
+		private static void RegisterConnectivityChecker()
+		{
+			var strategy = CoreConfiguration.Instance.ConnectivityStrategy;
+
+			void Register<T>() where T : IConnectivityChecker
+			{
+				DependencyBuilder.AddSingleton<IConnectivityChecker>(p =>
+				{
+					var checker = p.GetService<T>();
+					checker.ConnectivityCheckingEnabled = true;
+					return checker;
+				});
+			}
+			
+			switch (strategy)
+			{
+				case ConnectivityStrategy.BeamableGateway:
+					Register<GatewayConnectivityChecker>();
+					break;
+				case ConnectivityStrategy.BeamablePresence when !CoreConfiguration.Instance.SendHeartbeat:
+					throw new InvalidOperationException(
+						"It is invalid to set the Beamable ConnectivityStrategy to BeamablePresence when the SendHeartbeat flag is false.");
+				case ConnectivityStrategy.BeamablePresence:
+					Register<IPresenceApi>();
+					break;
+				case ConnectivityStrategy.None:
+				default:
+					// its up the developer to add a service
+					break;
+			}
 		}
 
 		/// <summary>

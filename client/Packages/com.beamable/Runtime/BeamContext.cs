@@ -248,6 +248,7 @@ namespace Beamable
 		private IAuthService _authService;
 		private IContentApi _contentService;
 		private IConnectivityService _connectivityService;
+		private IConnectivityChecker _connectivityChecker;
 		private NotificationService _notification;
 		private IPubnubSubscriptionManager _pubnubSubscriptionManager;
 		private IPubnubNotificationService _pubnubNotificationService;
@@ -509,6 +510,7 @@ namespace Beamable
 			_requester.Pid = pid;
 
 			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
+			_connectivityChecker = ServiceProvider.GetService<IConnectivityChecker>();
 			_notification = ServiceProvider.GetService<NotificationService>();
 			_pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
 			_pubnubNotificationService = ServiceProvider.GetService<IPubnubNotificationService>();
