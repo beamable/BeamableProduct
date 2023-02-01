@@ -1,7 +1,5 @@
-﻿using Beamable.UI.Tweening;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
@@ -98,11 +96,20 @@ namespace Beamable.UI.Buss
 			return typeof(IBussProperty);
 		}
 
-		public static IBussProperty GetDefaultValue(string key)
+		public static IBussProperty GetDefaultValue(string key, Type specificType=null)
 		{
 			if (_bindings.TryGetValue(key, out var binding))
 			{
-				return binding.GetDefaultValue();
+				return binding.GetDefaultValue(specificType);
+			}
+			return null;
+		}
+
+		public static Type[] GetTypesOfDefaultValues(string key)
+		{
+			if (_bindings.TryGetValue(key, out var binding))
+			{
+				return binding.GetTypesOfDefaultValues();
 			}
 
 			return null;
