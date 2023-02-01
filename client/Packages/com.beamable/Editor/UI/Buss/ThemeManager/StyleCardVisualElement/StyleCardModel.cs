@@ -94,12 +94,7 @@ namespace Beamable.Editor.UI.Components
 			foreach (string key in sorted)
 			{
 				if (keys.Contains(key)) continue;
-				Type baseType = BussStyle.GetBaseType(key);
-				SerializableValueImplementationHelper.ImplementationData data =
-					SerializableValueImplementationHelper.Get(baseType);
-				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-																   t != typeof(FractionFloatBussProperty)).ToList();
-
+				var types = BussStyle.GetTypesOfDefaultValues(key);
 				foreach (Type type in types)
 				{
 					GUIContent label = new GUIContent(types.Count() > 1
@@ -109,8 +104,11 @@ namespace Beamable.Editor.UI.Components
 					context.AddItem(new GUIContent(label), false, () =>
 					{
 						Undo.RecordObject(StyleSheet, $"Add {label}");
+						
+						
+						var instance = BussStyle.GetDefaultValue(key, type).CopyProperty();
 						StyleRule.Properties.Add(
-							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
+							BussPropertyProvider.Create(key, instance));
 #if UNITY_EDITOR
 						EditorUtility.SetDirty(StyleSheet);
 #endif
