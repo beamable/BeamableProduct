@@ -51,7 +51,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// An event which fires when any of the player's friends changes presence status. 
 		/// </summary>
-		public event Action<PlayerFriend> PlayerPresenceChanged;
+		public event Action<PlayerFriend> FriendPresenceChanged;
 
 		private SocialList _socialList;
 
@@ -89,8 +89,11 @@ namespace Beamable.Player
 		{
 			// TODO: [TD000007] Use information from the notification instead of requesting player presence
 			var presence = await _presenceApi.GetPlayerPresence(notification.friendId);
-			var player = Friends.First(friend => friend.playerId == notification.friendId);
-			player.Presence = presence;
+			var player = Friends.FirstOrDefault(friend => friend.playerId == notification.friendId);
+			if (player != null)
+			{
+				player.Presence = presence;
+			}
 		}
 
 		private void OnMailUpdate(object _)
@@ -121,8 +124,8 @@ namespace Beamable.Player
 			var friends = new List<PlayerFriend>(_socialList.friends.Count);
 			foreach (var friend in _socialList.friends)
 			{
-				var currentStatus = statuses.playersStatus.Find(status => status.playerId.ToString() == friend.playerId);
-				friends.Add(new PlayerFriend(this, currentStatus, player => PlayerPresenceChanged?.Invoke(player))
+				var currentStatus = statuses.playersStatus.FirstOrDefault(status => status.playerId.ToString() == friend.playerId);
+				friends.Add(new PlayerFriend(this, currentStatus, player => FriendPresenceChanged?.Invoke(player))
 				{
 					playerId = long.Parse(friend.playerId)
 				});

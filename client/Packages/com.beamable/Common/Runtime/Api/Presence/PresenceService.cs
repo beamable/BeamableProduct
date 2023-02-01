@@ -1,3 +1,4 @@
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 
@@ -46,7 +47,14 @@ namespace Beamable.Common.Api.Presence
 
 		public Promise<MultiplePlayersStatus> GetManyStatuses(params long[] playerIds)
 		{
-			string json = $"{{ \"playerIds\": [\"{string.Join("\", \"", playerIds)}\"] }}";
+			string[] ids = Array.ConvertAll(playerIds, id => id.ToString());
+			return GetManyStatuses(ids);
+		}
+
+		public Promise<MultiplePlayersStatus> GetManyStatuses(params string[] playerIds)
+		{
+			ArrayDict dict = new ArrayDict {{"playerIds", playerIds}};
+			string json = Json.Serialize(dict, null);
 
 			return _requester.Request<MultiplePlayersStatus>(
 				Method.POST,

@@ -22,5 +22,8 @@ namespace Beamable.Common.Api.Presence
 		/// <param name="playerIds">Ids of players to check.</param>
 		/// <returns>A <see cref="MultiplePlayersStatus"/> containing a list of statuses of queried players.</returns>
 		Promise<MultiplePlayersStatus> GetManyStatuses(params long[] playerIds);
+		
+		/// <inheritdoc cref="GetManyStatuses(long[])"/>
+		Promise<MultiplePlayersStatus> GetManyStatuses(params string[] playerIds);
 	}
 }
