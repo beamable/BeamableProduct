@@ -277,8 +277,24 @@ namespace Beamable
 
 		private static void RegisterConnectivityChecker()
 		{
-			var strategy = CoreConfiguration.Instance.ConnectivityStrategy;
+			// XXX: Whenever the presence API is stable enough to use as a connectivity source, replace this hardcoded value with a CoreConfig option
+			var strategy = ConnectivityStrategy.BeamableGateway;
 
+			#region example core config option
+			// [Tooltip("The ConnectivityStrategy allows the developer to configure how Beamable determines connectivity to the internet. " +
+			//          "Without connectivity, Beamable will not function as intended. By default, the \"BeamableGateway\" strategy will " + 
+			//          "configure the SDK to send periodic requests to api.beamable.com/health. The result of those network requests will " +
+			// 		 "determine connectivity for the rest of the SDK. \n\n" + 
+			//          "The \"BeamablePresence\" strategy will use the results of the existing " + 
+			//          "presence heartbeat to determine network connectivity. If the " + nameof(SendHeartbeat) + @" property is disabled, " + 
+			//          "then \"BeamablePresence\" is invalid. \n\n" +
+			//          "Finally, the \"None\" strategy will not create any connectivity checker. In this case, it is up to the developer " +
+			//          "to register a custom IConnectivityChecker with the BeamContext dependencies. If no IConnectivityChecker is registered, " +
+			//          "an exception will be thrown on startup."
+			// )]
+			// public ConnectivityStrategy ConnectivityStrategy = ConnectivityStrategy.BeamableGateway;
+			#endregion
+			
 			void Register<T>() where T : IConnectivityChecker
 			{
 				DependencyBuilder.AddSingleton<IConnectivityChecker>(p =>

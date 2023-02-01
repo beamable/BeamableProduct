@@ -28,7 +28,7 @@ namespace Beamable.Api.Connectivity
 		public GatewayConnectivityChecker(
 			IConnectivityService connectivityService, 
 			CoroutineService coroutineService,
-			PlatformRequester requester,
+			IPlatformRequester requester,
 			IDependencyProviderScope provider)
 		{
 			_connectivityService = connectivityService;
