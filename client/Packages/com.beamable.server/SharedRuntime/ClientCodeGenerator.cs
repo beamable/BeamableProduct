@@ -108,6 +108,7 @@ namespace Beamable.Server.Generator
 
 			AddServiceNameInterface();
 			AddFederatedLoginInterfaces();
+			AddFederatedInventoryInterfaces();
 
 			var registrationMethod = new CodeMemberMethod
 			{
@@ -190,6 +191,21 @@ namespace Beamable.Server.Generator
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedLogin<>));
+					baseReference.TypeArguments.Add(new CodeTypeReference(genericType));
+					targetClass.BaseTypes.Add(baseReference);
+				}
+			}
+		}
+		
+		void AddFederatedInventoryInterfaces()
+		{
+			var interfaces = Descriptor.Type.GetInterfaces();
+			foreach (var type in interfaces)
+			{
+				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IFederatedInventory<>))
+				{
+					var genericType = type.GetGenericArguments()[0];
+					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedInventory<>));
 					baseReference.TypeArguments.Add(new CodeTypeReference(genericType));
 					targetClass.BaseTypes.Add(baseReference);
 				}
