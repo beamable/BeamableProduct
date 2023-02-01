@@ -510,7 +510,10 @@ namespace Beamable
 			_requester.Pid = pid;
 
 			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
-			_connectivityChecker = ServiceProvider.GetService<IConnectivityChecker>();
+			if (ServiceProvider.CanBuildService<IConnectivityChecker>())
+			{
+				_connectivityChecker = ServiceProvider.GetService<IConnectivityChecker>();
+			}
 			_notification = ServiceProvider.GetService<NotificationService>();
 			_pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
 			_pubnubNotificationService = ServiceProvider.GetService<IPubnubNotificationService>();
