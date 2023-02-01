@@ -502,8 +502,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		     
 	      view.currencyProperties.Add("prop1",new List<CurrencyProperty>(){cr});
 	      view.items.Add("tt", itemViews);
-	      view.OnBeforeSerialize();
-	      
+
 	      TestSocket testSocket = null;
 	      var ms = new TestSetup(new TestSocketProvider(socket =>
 	      {
