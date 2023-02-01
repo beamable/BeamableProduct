@@ -119,8 +119,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			OpenView(View.Accounts);
 		}
 		
-		public void OpenCreateAccountView()
+		public void OpenCreateAccountView(string email = "")
 		{
+			PlayerSystem.Email = email;
 			OpenView(View.CreateAccount);
 		}
 		

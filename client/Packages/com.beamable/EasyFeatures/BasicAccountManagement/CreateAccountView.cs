@@ -11,6 +11,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
+			string Email { get; set; }
 			bool IsAccountDataValid(string email, string password, string confirmPassword, out string errorMessage);
 		}
 		
@@ -46,6 +47,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			}
 
 			ErrorText.HideMessage();
+			EmailInput.text = System.Email;
+			PasswordInput.text = string.Empty;
+			ConfirmPasswordInput.text = string.Empty;
+			
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
 			SignUpButton.onClick.ReplaceOrAddListener(OnSignUpPressed);
@@ -74,6 +79,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			string confirmation = ConfirmPasswordInput.text;
 			if (System.IsAccountDataValid(email, password, confirmation, out string errorMessage))
 			{
+				FeatureControl.SetLoadingOverlay(true);
 				var result = await System.Context.Accounts.AddEmail(email, password);
 				if (result.isSuccess)
 				{
@@ -96,6 +102,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 							break;
 					}
 				}
+				
+				FeatureControl.SetLoadingOverlay(false);
 			}
 			else
 			{

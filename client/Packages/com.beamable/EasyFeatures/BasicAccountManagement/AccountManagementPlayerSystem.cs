@@ -12,6 +12,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 	                                             AccountInfoView.IDependencies
 	{
 		public BeamContext Context { get; set; }
+		public string Email { get; set; }
 		
 		private async Promise<Dictionary<string, string>> GetPublicStats(long playerId) => await Context.Api.StatsService.GetStats("client", "public", "player", playerId); 
 		
