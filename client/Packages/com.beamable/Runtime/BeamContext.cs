@@ -13,6 +13,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -172,6 +173,11 @@ namespace Beamable
 		/// Access the <see cref="PlayerParty"/> for this context.
 		/// </summary>
 		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
+
+		/// <summary>
+		/// Access the <see cref="IPresenceApi"/> for this context.
+		/// </summary>
+		public IPresenceApi Presence => _serviceScope.GetService<IPresenceApi>();
 
 		/// <summary>
 		/// Access the <see cref="PlayerAccounts"/> for this context.
