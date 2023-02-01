@@ -1,5 +1,4 @@
-﻿using JetBrains.Annotations;
-using System.IO;
+﻿using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,12 +8,28 @@ namespace Beamable.Server.Editor
 	{
 		const string EXTENSION = "asmdef";
 
-		[UsedImplicitly]
+#if UNITY_2021_1_OR_NEWER
 		static void OnPostprocessAllAssets(string[] importedAssets,
-										   string[] deletedAssets,
-										   string[] movedAssets,
-										   string[] movedFromAssetPaths,
-										   bool didDomainReload)
+		                                   string[] deletedAssets,
+		                                   string[] movedAssets,
+		                                   string[] movedFromAssetPaths,
+		                                   bool _
+
+		)
+		{
+			Process(importedAssets);
+		}
+#else
+		static void OnPostprocessAllAssets(string[] importedAssets,
+		                                   string[] deletedAssets,
+		                                   string[] movedAssets,
+		                                   string[] movedFromAssetPaths)
+		{
+			Process(importedAssets);
+		}
+#endif
+		
+		static void Process(string[] importedAssets) 
 		{
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			foreach (string importedAsset in importedAssets)
