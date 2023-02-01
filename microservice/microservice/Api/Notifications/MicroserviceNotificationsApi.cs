@@ -89,11 +89,11 @@ namespace Beamable.Server.Api.Notifications
 	        var payload = CreateStringPayload(messagePayload);
 	        var jsonSerializedPayload = JsonConvert.SerializeObject(payload, Formatting.None, UnitySerializationSettings.Instance);
 	        
-	        var body = new
+	        var body = new NotificationServerBody
 	        {
+		        toAll = toAll,
 		        @event = eventName, 
-		        payload = messagePayload,
-		        toAll = toAll
+		        payload = jsonSerializedPayload,
 	        };
 	        return Requester.Request<EmptyResponse>(Method.POST, URI_NOTIFICATION_SERVER, body);
         }
@@ -168,6 +168,14 @@ namespace Beamable.Server.Api.Notifications
         public NotificationPayload payload;
     }
 
+    [Serializable]
+    public class NotificationServerBody
+    {
+	    public bool toAll;
+	    public string @event;
+	    public string payload;
+    }
+    
     /// <summary>
     /// Format of the Notification request when notifying multiple players.
     /// </summary>
