@@ -66,9 +66,16 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				avatar = accountAvatar.Sprite;
 			}
 
+			string description = "";
+			var account = Context.Accounts.FirstOrDefault(acc => acc.GamerTag == playerId);
+			if (account != null)
+			{
+				description = account.HasEmail ? account.Email : "No email linked";
+			}
+
 			var data = new AccountSlotPresenter.ViewData
 			{
-				PlayerId = playerId, PlayerName = playerName, Avatar = avatar, Description = "Description"
+				PlayerId = playerId, PlayerName = playerName, Avatar = avatar, Description = description
 			};
 
 			return data;

@@ -78,7 +78,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			TryAgainLabel.SetActive(wasSent);
 			HiddenFieldsGroup.SetActive(wasSent);
 			ConfirmButtonLabel.text = wasSent ? CONFIRM_TEXT : SEND_TEXT;
-			ErrorText.SetErrorMessage("");
+			ErrorText.HideMessage();
 			
 			ConfirmButton.onClick.RemoveAllListeners();
 			CancelButton.onClick.RemoveAllListeners();

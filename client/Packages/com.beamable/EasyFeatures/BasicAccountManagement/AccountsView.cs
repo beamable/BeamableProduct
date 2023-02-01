@@ -17,16 +17,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			/// <inheritdoc cref="AccountManagementPlayerSystem.GetAccountViewData"/>
 			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(long playerId = -1);
 		}
-
-		
-		private const string ENTER_EMAIL_TEXT = "Please enter your email here...";
-		private const string SIGN_IN_INFO_TEXT = "Sign in or create an account to save your progress online.";
 		
 		public AccountManagementFeatureControl FeatureControl;
 		public int EnrichOrder;
 
 		public AccountSlotPresenter AccountPresenter;
-		public TextMeshProUGUI InfoText;
 		public AccountsListPresenter OtherAccountsList;
 		public ToggleGroup OtherAccountsToggleGroup;
 		public GameObject OtherAccountsGroup;
@@ -34,14 +29,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		[Header("Button groups")]
 		public GameObject SignInButtonsGroup;
 		public GameObject SwitchButtonsGroup;
-		public GameObject NextCancelButtonsGroup;
 		
 		[Space]
 		public Button SignInButton;
 		public Button CreateAccountButton;
-		public Button NextButton;
-		public Button CancelButton;
-		public TMP_InputField EmailInputField;
 		
 		[Header("Switch Account Popup")]
 		public SwitchAccountPopup SwitchAccountPopupPrefab;
@@ -77,14 +68,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			
 			SignInButtonsGroup.SetActive(System.Context.Accounts.Count == 1);
 			SwitchButtonsGroup.SetActive(System.Context.Accounts.Count > 1);
-			NextCancelButtonsGroup.SetActive(false);
 			LoadGameButton.interactable = _selectedOtherAccountId > 0;
 			
 			SwitchAccountPopupPrefab.gameObject.SetActive(false);
-			EmailInputField.gameObject.SetActive(false);
 
-			InfoText.text = SIGN_IN_INFO_TEXT;
-			
 			// setup callbacks
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
@@ -92,9 +79,6 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			CreateAccountButton.onClick.ReplaceOrAddListener(OnCreateAccount);
 			LoadGameButton.onClick.ReplaceOrAddListener(OnLoadGame);
 			SwitchAccountButton.onClick.ReplaceOrAddListener(OnSwitchAccount);
-			NextButton.onClick.ReplaceOrAddListener(OnSignIn);
-			CancelButton.onClick.ReplaceOrAddListener(OnCancel);
-			EmailInputField.onEndEdit.ReplaceOrAddListener(CheckIfEmailExists);
 
 			// setup current account
 			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData
@@ -124,38 +108,21 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.SetLoadingOverlay(false);
 		}
 
-		private void CheckIfEmailExists(string email)
-		{
-			// var result = await System.Context.Accounts.RecoverAccountWithEmail(email, "");
-		}
-
 		private void OnOtherAccountSelected(long playerId)
 		{
 			_selectedOtherAccountId = playerId;
 			LoadGameButton.interactable = true;
 		}
 
-		private void OnCancel()
-		{
-			// restore normal accounts view
-			NextCancelButtonsGroup.SetActive(false);
-			SwitchButtonsGroup.SetActive(true);
-			EmailInputField.gameObject.SetActive(false);
-		}
-
 		private void OnSwitchAccount()
 		{
 			var popup = FeatureControl.OverlaysController.ShowCustomOverlay(SwitchAccountPopupPrefab);
-			popup.Setup(StartSignIn, OnCreateAccount, FeatureControl.OverlaysController);
+			popup.Setup(OpenSignInView, OnCreateAccount, FeatureControl.OverlaysController);
 
-			void StartSignIn()
+			void OpenSignInView()
 			{
 				FeatureControl.OverlaysController.HideOverlay();
-				SwitchButtonsGroup.SetActive(false);
-				OtherAccountsGroup.SetActive(false);
-				NextCancelButtonsGroup.SetActive(true);
-				EmailInputField.gameObject.SetActive(true);
-				InfoText.text = ENTER_EMAIL_TEXT;
+				OnSignIn();
 			}
 		}
 
@@ -179,10 +146,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.OpenAccountsView();
 		}
 
-		private void GoBack()
-		{
-			throw new System.NotImplementedException();
-		}
+		private void GoBack() { }
 
 		private void OpenAccountInfoView(long playerId)
 		{

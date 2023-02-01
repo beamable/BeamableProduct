@@ -1,4 +1,5 @@
 ﻿using Beamable.EasyFeatures.Components;
+using Beamable.Player;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -44,7 +45,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
-			ErrorText.SetErrorMessage("");
+			ErrorText.HideMessage();
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
 			SignUpButton.onClick.ReplaceOrAddListener(OnSignUpPressed);
@@ -58,7 +59,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private void GoBack()
 		{
-			throw new System.NotImplementedException();
+			FeatureControl.OpenAccountsView();
 		}
 
 		private void OpenSignInView()
@@ -66,17 +67,40 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.OpenSignInView();
 		}
 
-		private void OnSignUpPressed()
+		private async void OnSignUpPressed()
 		{
 			string email = EmailInput.text;
 			string password = PasswordInput.text;
 			string confirmation = ConfirmPasswordInput.text;
 			if (System.IsAccountDataValid(email, password, confirmation, out string errorMessage))
 			{
-				// create an account
+				var result = await System.Context.Accounts.AddEmail(email, password);
+				if (result.isSuccess)
+				{
+					ErrorText.HideMessage();
+
+					await result.account.SwitchToAccount();
+					FeatureControl.OpenAccountsView();
+				}
+				else
+				{
+					switch (result.error)
+					{
+						case PlayerRegistrationError.ALREADY_HAS_CREDENTIAL:
+						case PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN:
+							ErrorText.SetErrorMessage("Account already exists");
+							break;
+						
+						default:
+							ErrorText.SetErrorMessage("Unknown error has occured");
+							break;
+					}
+				}
 			}
-			
-			ErrorText.SetErrorMessage(errorMessage);
+			else
+			{
+				ErrorText.SetErrorMessage(errorMessage);
+			}
 		}
 	}
 }
