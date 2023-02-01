@@ -626,7 +626,7 @@ namespace Beamable.Common.Dependencies
 			return instance;
 		}
 
-		public IDependencyProviderScope Build(BuildOptions options=null)
+		public IDependencyProviderScope Build(BuildOptions options = null)
 		{
 			return new DependencyProvider(this, options);
 		}

@@ -309,7 +309,8 @@ namespace Beamable.Server
 	      ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute,
 		      new ICallableGenerator[]
 		      {
-			      new FederatedLoginCallableGenerator()
+			      new FederatedLoginCallableGenerator(),
+			      new FederatedInventoryCallbackGenerator()
 		      },
 		      new ServiceMethodProvider
 		      {
