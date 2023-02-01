@@ -20,11 +20,8 @@ namespace Beamable.Server.Common
 				new StringToSomethingDictionaryConverter<int>(),
 				new StringToSomethingDictionaryConverter<long>(),
 				new StringToSomethingDictionaryConverter<CurrencyPropertyList>(),
-<<<<<<< HEAD
-=======
 				new StringToSomethingDictionaryConverter<List<FederatedItemProxy>>(),
-
->>>>>>> 39085bf2fe00f3f2a059f4667b3d7d4e9e5f8091
+				
 				// THIS MUST BE LAST, because it is hacky, and falls back onto other converts as its _normal_ behaviour. If its not last, then other converts can run twice, which causes newtonsoft to explode.
 				new UnitySerializationCallbackInvoker(),
 
