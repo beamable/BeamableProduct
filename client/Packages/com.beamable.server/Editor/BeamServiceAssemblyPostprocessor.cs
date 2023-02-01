@@ -21,15 +21,15 @@ namespace Beamable.Server.Editor
 		}
 #else
 		static void OnPostprocessAllAssets(string[] importedAssets,
-		                                   string[] deletedAssets,
-		                                   string[] movedAssets,
-		                                   string[] movedFromAssetPaths)
+										   string[] deletedAssets,
+										   string[] movedAssets,
+										   string[] movedFromAssetPaths)
 		{
 			Process(importedAssets);
 		}
 #endif
-		
-		static void Process(string[] importedAssets) 
+
+		static void Process(string[] importedAssets)
 		{
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			foreach (string importedAsset in importedAssets)
