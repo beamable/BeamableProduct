@@ -181,6 +181,7 @@ namespace Beamable.UI.Buss
 			return _properties.Find(prop => prop.Key == key) != null;
 		}
 
+		// TODO: why do we need this? 
 		public bool TryGetCachedProperty(string key, out IBussProperty property)
 		{
 			BussPropertyProvider provider = _cachedProperties.Find(prop => prop.Key == key);
@@ -257,6 +258,7 @@ namespace Beamable.UI.Buss
 
 		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
 		public bool HasVariableReference => GetProperty() is VariableProperty;
+		public bool IsComputedReference => GetProperty() is IComputedProperty;
 
 		public BussPropertyValueType ValueType => GetProperty().ValueType;
 

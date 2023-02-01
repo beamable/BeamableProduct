@@ -42,10 +42,11 @@ namespace Beamable.Editor.UI.Components
 		public bool IsInherited => PropertyProvider.ValueType == BussPropertyValueType.Inherited;
 		public bool IsInitial => PropertyProvider.ValueType == BussPropertyValueType.Initial;
 		public bool HasVariableConnected => PropertyProvider.HasVariableReference;
+		public bool IsComputedProperty => PropertyProvider.IsComputedReference;
 
 		public bool IsVariableConnectionEmpty =>
 			(PropertyProvider.GetProperty() is VariableProperty r) && string.IsNullOrEmpty(r.VariableName);
-		public bool HasNonValueConnection => HasVariableConnected || IsInherited || IsInitial;
+		public bool HasNonValueConnection => IsComputedProperty || HasVariableConnected || IsInherited || IsInitial;
 
 		public bool IsOverriden
 		{
@@ -174,6 +175,20 @@ namespace Beamable.Editor.UI.Components
 				Undo.RecordObject(StyleSheet, "Set initial");
 				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Initial;
 			}
+			else if (option.DisplayName == Constants.Features.Buss.MenuItems.COMPUTED_VALUE)
+			{
+				Undo.RecordObject(StyleSheet, "Set computed");
+				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Value;
+				Debug.Log("What now?");
+				if (StyleRule.TryGetCachedProperty(PropertyProvider.Key, out _))
+				{
+					StyleRule.RemoveCachedProperty(PropertyProvider.Key);
+				}
+
+				StyleRule.CacheProperty(PropertyProvider.Key, PropertyProvider.GetProperty());
+				PropertyProvider.SetProperty(new FloatMaxOperation());
+				// ((VariableProperty)PropertyProvider.GetProperty()).VariableName = option.DisplayName;
+			}
 			else
 			{
 				Undo.RecordObject(StyleSheet, "Set variable");
@@ -194,7 +209,9 @@ namespace Beamable.Editor.UI.Components
 		{
 			var options = new List<DropdownEntry> { InitialOption };
 			var inheritedOption = new DropdownEntry(Constants.Features.Buss.MenuItems.INHERITED_VALUE, false);
+			var mathOption = new DropdownEntry(Constants.Features.Buss.MenuItems.COMPUTED_VALUE, false);
 			options.Add(inheritedOption);
+			options.Add(mathOption);
 
 			if (_parentModel.HasElementContext)
 			{
@@ -204,7 +221,7 @@ namespace Beamable.Editor.UI.Components
 					var variables = PropertySourceTracker.GetAllVariableNames(baseType).ToList();
 					if (variables.Count > 0)
 					{
-						inheritedOption.LineBelow = true;
+						mathOption.LineBelow = true;
 					}
 					options.AddRange(variables);
 				}

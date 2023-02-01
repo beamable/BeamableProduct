@@ -1,4 +1,4 @@
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
@@ -97,6 +97,10 @@ namespace Beamable.Editor.UI.Components
 				var initialValue = BussStyle.GetDefaultValue(_model.PropertyProvider.Key);
 				var field = CreateEditableField(initialValue);
 				field.DisableInput("The initial value cannot be changed.");
+			}
+			else if (_model.IsComputedProperty)
+			{
+				CreateMessageField("Compute go waht?");
 			}
 			else if (_model.HasVariableConnected)
 			{
