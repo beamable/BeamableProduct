@@ -217,7 +217,7 @@ LoadingBarElement.hidden {
 }
 
 #infoCardStep4.error {
-    border-width: 2;
+    border-width: 2px;
     border-color: #d93737;
 }
 
