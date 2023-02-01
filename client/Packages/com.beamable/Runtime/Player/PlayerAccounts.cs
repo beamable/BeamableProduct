@@ -1267,6 +1267,15 @@ namespace Beamable.Player
 		}
 
 		/// <summary>
+		/// Checks if the given third party token is available for usage.
+		/// </summary>
+		/// <returns>True when the token is available, false if taken.</returns>
+		public async Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
+		{
+			return await _authService.IsThirdPartyAvailable(thirdParty, token);
+		}
+
+		/// <summary>
 		/// Adds an email credential to the given <see cref="PlayerAccount"/>,
 		/// and returns a <see cref="RegistrationResult"/>. If the returned
 		/// <see cref="RegistrationResult.isSuccess"/> is true, then the addition worked.
@@ -1312,6 +1321,15 @@ namespace Beamable.Player
 			await Refresh();
 
 			return res;
+		}
+
+		/// <summary>
+		/// Checks if the provided email is already attached to a player account.
+		/// </summary>
+		/// <returns>True when email is free to be used, false when it's already taken.</returns>
+		public async Promise<bool> IsEmailAvailable(string email)
+		{
+			return await _authService.IsEmailAvailable(email);
 		}
 
 		/// <summary>

@@ -14,7 +14,7 @@ namespace Core.Platform.SDK
 		AccessToken Token { get; set; }
 		Promise RefreshToken();
 	}
-	
+
 	// Since the new access tokens are short lived, no need to store them. We can use the same refresh tokens
 	// in AccessTokenStorage and store the JWT in memory until it expires and we need to fetch a new one.
 	public class BeamableApiRequester : PlatformRequester, IDisposable, IBeamableApiRequester
@@ -22,13 +22,13 @@ namespace Core.Platform.SDK
 		private const string ACCEPT_HEADER = "application/vnd.beamable.v1+json";
 
 		public BeamableApiRequester(string host,
-		                            PackageVersion beamableVersion,
-		                            AccessTokenStorage accessTokenStorage,
-		                            IConnectivityService connectivityService,
-		                            OfflineCache offlineCache) : base(host, beamableVersion, accessTokenStorage,
-		                                                              connectivityService, offlineCache)
+									PackageVersion beamableVersion,
+									AccessTokenStorage accessTokenStorage,
+									IConnectivityService connectivityService,
+									OfflineCache offlineCache) : base(host, beamableVersion, accessTokenStorage,
+																	  connectivityService, offlineCache)
 		{
-			
+
 		}
 
 		protected override string GetAcceptHeader() => ACCEPT_HEADER;
@@ -42,7 +42,7 @@ namespace Core.Platform.SDK
 		{
 			// no-op
 		}
-		
+
 		protected override string GenerateAuthorizationHeader()
 		{
 			if (Token == null || string.IsNullOrEmpty(Token?.Token))
@@ -77,12 +77,14 @@ namespace Core.Platform.SDK
 		{
 			var authBody = new BeamableApiTokenRequest
 			{
-				refreshToken = Token.RefreshToken, customerId = Token.Cid, realmId = Token.Pid
+				refreshToken = Token.RefreshToken,
+				customerId = Token.Cid,
+				realmId = Token.Pid
 			};
 			var rsp = await Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody,
-			                                                  false);
+															  false);
 			Token = new AccessToken(accessTokenStorage, Token.Cid, Token.Pid, rsp.accessToken,
-			                        rsp.refreshToken, long.MaxValue - 1);
+									rsp.refreshToken, long.MaxValue - 1);
 		}
 	}
 

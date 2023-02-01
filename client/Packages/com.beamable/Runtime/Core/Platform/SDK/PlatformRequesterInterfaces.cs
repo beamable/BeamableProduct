@@ -19,6 +19,6 @@ namespace Beamable.Api
 		void DeleteToken();
 	}
 
-	
-	
+
+
 }

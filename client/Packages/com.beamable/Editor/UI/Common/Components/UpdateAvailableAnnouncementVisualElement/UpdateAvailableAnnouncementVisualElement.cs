@@ -36,15 +36,8 @@ namespace Beamable.Editor.Toolbox.Components
 			ignoreButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnIgnore?.Invoke();
 
 			var whatsnewButton = Root.Q<Button>("announcement-whatsnew");
-			if (BeamablePackageUpdateMeta.IsBlogSiteAvailable)
-			{
-				whatsnewButton.text = UpdateAvailableAnnouncementModel.WhatsNewButtonText;
-				whatsnewButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnWhatsNew?.Invoke();
-			}
-			else
-			{
-				whatsnewButton.RemoveFromHierarchy();
-			}
+			whatsnewButton.text = UpdateAvailableAnnouncementModel.WhatsNewButtonText;
+			whatsnewButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnWhatsNew?.Invoke();
 
 			var installButton = Root.Q<Button>("announcement-install");
 			installButton.text = UpdateAvailableAnnouncementModel.InstallButtonText;
