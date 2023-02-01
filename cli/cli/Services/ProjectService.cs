@@ -44,12 +44,14 @@ public class ProjectService
 		}
 
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
-		var path = Path.Combine(solutionPath, "services");
+		var rootServicesPath = Path.Combine(solutionPath, "services");
 		var commonProjectName = $"{projectName}Common";
-		var projectPath = Path.Combine(path, projectName);
-		var commonProjectPath = Path.Combine(path, commonProjectName);
+		var projectPath = Path.Combine(rootServicesPath, projectName);
+		var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
 	
 		// TODO: automatically install Beam.Templates if not installed... 
+		
+		// TODO: if the folder already exists, fail the command. 
 		
 		// create the solution
 		await Cli.Wrap($"dotnet")

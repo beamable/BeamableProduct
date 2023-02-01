@@ -7,6 +7,9 @@ This project assumes that you are using [Git](https://git-scm.com/) for version 
 A `.gitignore` file is included, but if you are using a different version control system, you 
 must create a custom ignore-file.
 
+// TODO: What happens if you create template directly with `dotnet new` instead of using `beam project new`
+
+
 ## Getting Started
 Before you begin, you'll need to create a Beamable organization.
 You can create a Beamable organization through the Unity Editor, or online at [Beamable.com](https://beta-portal.beamable.com/signup/registration/).

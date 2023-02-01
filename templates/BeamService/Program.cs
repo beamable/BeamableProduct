@@ -24,7 +24,7 @@ namespace Beamable.BeamService
 		static void LoadEnvironmentVariables(string filePath=".env")
 		{
 			if (!File.Exists(filePath))
-				return;
+				throw new Exception($"No environment file found at path=[{filePath}]");
 
 			foreach (var line in File.ReadAllLines(filePath))
 			{

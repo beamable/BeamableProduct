@@ -62,9 +62,7 @@
             </BeamableBaseDocs>
 
         </PropertyGroup>
-
-        <Message Text="[$(BeamableVersion)]" Importance="High" />
-
+        
         <!-- We need a file that lets the runtime know what version of Beamable it was built with... -->
         <Message Text="Creating beamable version file..." Importance="high" />
         <WriteLinesToFile File="$(OutDir)/.beamablesdkversion" Lines="$(BeamableVersion)" Overwrite="true" />

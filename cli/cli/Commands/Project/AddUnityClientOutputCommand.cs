@@ -7,7 +7,6 @@ namespace cli.Dotnet;
 public class AddUnityClientOutputCommandArgs : CommandArgs
 {
 	public string path;
-	public bool interactive = true;
 }
 
 public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputCommandArgs>
@@ -19,15 +18,18 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("path", "the relative path to the Unity project"), (args, i) => args.path = i);
-		// AddOption(new Option<bool>("--no-interaction", "if"), (args, i) => args.path = i);
 	}
 
 	public override Task Handle(AddUnityClientOutputCommandArgs args)
 	{
 		var workingDir = Directory.GetCurrentDirectory();
 		var directory = Path.Combine(workingDir, args.path);
+		
+		// TODO: doesn't this just undo the logic we did with Combine() ? 
 		var startingDir = directory = Path.GetRelativePath(workingDir, directory);
 
+		// TODO: check a few known cases, add auto-detection
+		
 		while (!IsDirectoryUnityEsque(directory))
 		{
 			var subDirs = Directory.GetDirectories(directory).ToList();
@@ -50,6 +52,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 		{
 			if (!AnsiConsole.Confirm($"Add {directory} as unity project?"))
 			{
+				// TODO: if you cancel, go back to the folder search code, so the user can re-select
 				return Task.CompletedTask;
 			}
 		}
@@ -66,7 +69,8 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 
 		var hasAssets = subDirs.Contains("Assets");
 		var hasPackages = subDirs.Contains("Packages");
+		var hasSettings = subDirs.Contains("ProjectSettings");
 
-		return hasAssets && hasPackages;
+		return hasAssets && hasPackages && hasSettings;
 	}
 }
