@@ -136,8 +136,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			OpenView(View.ForgotPassword);
 		}
 
-		public void OpenAccountInfoView()
+		public void OpenAccountInfoView(string email = "")
 		{
+			PlayerSystem.Email = email;
 			OpenView(View.AccountInfo);
 		}
 

@@ -2,7 +2,6 @@
 using Beamable.EasyFeatures.Components;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +16,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			/// <inheritdoc cref="AccountManagementPlayerSystem.GetAccountViewData"/>
 			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(long playerId = -1);
 			int AuthenticatedAccountsCount();
+			/// <inheritdoc cref="AccountManagementPlayerSystem.GetLinkedEmailAddress"/>
+			string GetLinkedEmailAddress(long playerId);
 		}
 		
 		public AccountManagementFeatureControl FeatureControl;
@@ -158,7 +159,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private void OpenAccountInfoView(long playerId)
 		{
-			FeatureControl.OpenAccountInfoView();
+			string email = System.GetLinkedEmailAddress(playerId);
+			FeatureControl.OpenAccountInfoView(email);
 		}
 
 		private void OnSignIn()

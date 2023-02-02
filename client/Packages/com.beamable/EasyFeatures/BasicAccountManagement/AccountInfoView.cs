@@ -12,6 +12,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
+			string Email { get; set; }
 			Promise<string> GetCurrentAvatarName(long playerId);
 			Promise SetAvatar(string avatarName);
 			Promise<string> GetUsername(long playerId);
@@ -26,6 +27,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public ToggleGroup AvatarsGroup;
 		public AvatarToggle AvatarTogglePrefab;
 		public TMP_InputField UsernameInputField;
+		public TMP_InputField EmailInputField;
 
 		protected IDependencies System;
 
@@ -53,6 +55,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 			_currentUsername = await System.GetUsername(System.Context.PlayerId);
 			UsernameInputField.text = _currentUsername;
+			EmailInputField.text = System.Email;
 			
 			_avatarToSet = null;
 			string currentAvatarName = await System.GetCurrentAvatarName(System.Context.PlayerId);

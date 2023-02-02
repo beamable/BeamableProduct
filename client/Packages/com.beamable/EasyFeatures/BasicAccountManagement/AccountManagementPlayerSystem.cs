@@ -57,7 +57,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
 			if (!stats.TryGetValue("alias", out string playerName))
 			{
-				playerName = playerId.ToString();
+				playerName = "Anonymous";
 			}
 
 			Sprite avatar = null;
@@ -87,6 +87,20 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			return Context.Accounts.Count(acc => acc.HasEmail ||
 			                                     (acc.ThirdParties != null && acc.ThirdParties.Length > 0));
+		}
+
+		/// <summary>
+		/// Gets a linked email address for a given player or an empty string if there's no linked email.
+		/// </summary>
+		public string GetLinkedEmailAddress(long playerId)
+		{
+			var account = Context.Accounts.FirstOrDefault(acc => acc.GamerTag == playerId);
+			if (account != null && account.HasEmail)
+			{
+				return account.Email;
+			}
+
+			return string.Empty;
 		}
 
 		public bool IsAccountDataValid(string email, string password, string confirmPassword, out string errorMessage)
