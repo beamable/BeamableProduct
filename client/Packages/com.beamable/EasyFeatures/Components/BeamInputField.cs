@@ -36,7 +36,7 @@ namespace Beamable.EasyFeatures.Components
 				InputField.ForceLabelUpdate();
 			}
 			
-			EyeIconElement.SetClass(OFF_CLASS, InputField.inputType != TMP_InputField.InputType.Password);
+			EyeIconElement.SetClass(OFF_CLASS, InputField.inputType == TMP_InputField.InputType.Password);
 		}
 	}
 }

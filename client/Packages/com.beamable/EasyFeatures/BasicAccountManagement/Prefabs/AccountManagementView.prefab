@@ -1489,16 +1489,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -2149,7 +2149,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Account
+  m_text: Account Management
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
   m_sharedMaterial: {fileID: 0}
@@ -2218,10 +2218,10 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 7205423474027422817}
-    characterCount: 7
+    characterCount: 18
     spriteCount: 0
-    spaceCount: 0
-    wordCount: 1
+    spaceCount: 1
+    wordCount: 2
     linkCount: 0
     lineCount: 1
     pageCount: 1
@@ -2907,16 +2907,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -3610,10 +3610,10 @@ MonoBehaviour:
     TopRightColor: {r: 0.3254902, g: 0.19215687, b: 0.8117647, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -4460,21 +4460,21 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 427035828340901417}
-  - {fileID: 508367519945976199}
-  - {fileID: 586030245461912481}
-  - {fileID: 2407786953933349831}
-  - {fileID: 2522049664562069560}
-  - {fileID: 3324868442909639236}
-  - {fileID: 3615290116143217769}
-  - {fileID: 4991845482585433647}
-  - {fileID: 6549706862673109174}
-  - {fileID: 6979439371910223720}
   - {fileID: 8180741317843119882}
-  - {fileID: 6752300448129104452}
   - {fileID: 7235735019774571100}
+  - {fileID: 6979439371910223720}
+  - {fileID: 6752300448129104452}
+  - {fileID: 6549706862673109174}
+  - {fileID: 4991845482585433647}
   - {fileID: 3841177212819572843}
+  - {fileID: 3615290116143217769}
+  - {fileID: 3324868442909639236}
+  - {fileID: 2522049664562069560}
+  - {fileID: 2407786953933349831}
   - {fileID: 641592799817038064}
+  - {fileID: 586030245461912481}
+  - {fileID: 508367519945976199}
+  - {fileID: 427035828340901417}
   - {fileID: 630896819374098195}
   - {fileID: 2515785191096472536}
   - {fileID: 6300351256642658095}
@@ -7623,10 +7623,10 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -8101,16 +8101,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -8753,16 +8753,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -9080,16 +9080,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -10676,16 +10676,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -10819,16 +10819,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -10960,16 +10960,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -11482,16 +11482,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -11815,16 +11815,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -12665,10 +12665,10 @@ MonoBehaviour:
     TopRightColor: {r: 0.3260951, g: 0.19116001, b: 0.81, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -14005,16 +14005,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -14269,16 +14269,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -15032,16 +15032,16 @@ MonoBehaviour:
   meshFrame: 0
   outlineWidth: 0
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
@@ -20313,17 +20313,62 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
+      propertyPath: colorRect.TopLeftColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.TopLeftColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.TopLeftColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
       propertyPath: colorRect.TopRightColor.a
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
-      propertyPath: shadowColor.TopLeftColor.a
+      propertyPath: colorRect.TopRightColor.b
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
+      propertyPath: colorRect.TopRightColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.TopRightColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: shadowColor.TopLeftColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
       propertyPath: colorRect.BottomLeftColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.BottomLeftColor.r
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
@@ -20333,12 +20378,42 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
-      propertyPath: shadowColor.TopRightColor.a
+      propertyPath: outlineColor.TopLeftColor.b
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
+      propertyPath: outlineColor.TopLeftColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.TopLeftColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: shadowColor.TopRightColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
       propertyPath: colorRect.BottomRightColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: colorRect.BottomRightColor.r
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
@@ -20348,8 +20423,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
-      propertyPath: shadowColor.BottomLeftColor.a
+      propertyPath: outlineColor.TopRightColor.b
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.TopRightColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.TopRightColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: shadowColor.BottomLeftColor.a
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
@@ -20358,12 +20448,42 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
-      propertyPath: shadowColor.BottomRightColor.a
+      propertyPath: outlineColor.BottomLeftColor.b
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
+      propertyPath: outlineColor.BottomLeftColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomLeftColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: shadowColor.BottomRightColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
       propertyPath: outlineColor.BottomRightColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 957780606897295090, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.r
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1096672687114123725, guid: c5cb533faf2e3694680a7411cd262bf9,
@@ -20639,7 +20759,7 @@ PrefabInstance:
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
       propertyPath: shadowColor.TopLeftColor.a
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
@@ -20648,8 +20768,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
-      propertyPath: shadowColor.TopRightColor.a
+      propertyPath: outlineColor.TopLeftColor.b
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.TopLeftColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.TopLeftColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: shadowColor.TopRightColor.a
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
@@ -20658,8 +20793,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
-      propertyPath: shadowColor.BottomLeftColor.a
+      propertyPath: outlineColor.TopRightColor.b
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.TopRightColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.TopRightColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: shadowColor.BottomLeftColor.a
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
@@ -20668,12 +20818,42 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
-      propertyPath: shadowColor.BottomRightColor.a
+      propertyPath: outlineColor.BottomLeftColor.b
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
+      propertyPath: outlineColor.BottomLeftColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomLeftColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: shadowColor.BottomRightColor.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
       propertyPath: outlineColor.BottomRightColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4366330724537788567, guid: c5cb533faf2e3694680a7411cd262bf9,
+        type: 3}
+      propertyPath: outlineColor.BottomRightColor.r
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4995023560149850356, guid: c5cb533faf2e3694680a7411cd262bf9,
@@ -20829,22 +21009,22 @@ PrefabInstance:
     - target: {fileID: 8076698583190743188, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
       propertyPath: shadowColor.TopLeftColor.a
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8076698583190743188, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
       propertyPath: shadowColor.TopRightColor.a
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8076698583190743188, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
       propertyPath: shadowColor.BottomLeftColor.a
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8076698583190743188, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}
       propertyPath: shadowColor.BottomRightColor.a
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8164768214723620810, guid: c5cb533faf2e3694680a7411cd262bf9,
         type: 3}

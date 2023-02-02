@@ -148,8 +148,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 						var confirm = await _passwordResetOperation.Confirm(CodeInput.text, password);
 						if (confirm.isSuccess)
 						{
-							await confirm.account.SwitchToAccount();
-							FeatureControl.OpenAccountsView();
+							FeatureControl.OpenSignInView();
 						}
 						else
 						{
