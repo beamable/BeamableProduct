@@ -1,16 +1,14 @@
 ﻿#mainVisualElement {
     height: 30px;
     flex-direction: row-reverse;
-    padding-right: 5px;
+    padding-top: 4px;
+    padding-bottom: 4px;
 }
 
 .boundedButton {
-    height: 22px;
     position: relative;
-    top: 4px;
-    left: 10px;
     margin-left: 0px;
-    margin-right: 10px;
+    margin-right:2px;
     margin-top: 0px;
     margin-bottom: 0px;
     border-radius: 3px;
@@ -21,8 +19,23 @@
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     cursor: pan;
     background-image: none;
-    /*border-color:#8f8f8f;*/
     justify-content: center;
+}
+
+#sceneViewToggle {
+    width: 30px;
+    position: relative;
+    display:flex;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+#sceneViewToggle.active {
+    background-color: rgba(64, 128, 255, .8);
+}
+#sceneViewIcon {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/SceneView_DarkMode.png");
+    height: 30px;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 #propertiesFilter Label {

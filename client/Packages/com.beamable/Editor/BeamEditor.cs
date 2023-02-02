@@ -27,6 +27,7 @@ using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
+using Beamable.Editor.UI.Buss;
 using Beamable.Inventory.Scripts;
 using Beamable.Reflection;
 using Beamable.Serialization;
@@ -105,6 +106,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
 			DependencyBuilder.AddSingleton<ContentDatabase>();
+			DependencyBuilder.AddSingleton<IBussPrefabSceneManager, BussPrefabSceneManager>();
+			DependencyBuilder.AddSingleton<BussPrefabLoaderSourceProvider>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}

@@ -43,8 +43,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				if (_isFolded == value) return;
 				_isFolded = value;
-				_foldIcon.EnableInClassList("folded", _isFolded);
-				_foldIcon.EnableInClassList("unfolded", !_isFolded);
+				_foldIcon?.EnableInClassList("folded", _isFolded);
+				_foldIcon?.EnableInClassList("unfolded", !_isFolded);
 
 				OnFoldChanged?.Invoke(IsFolded);
 			}

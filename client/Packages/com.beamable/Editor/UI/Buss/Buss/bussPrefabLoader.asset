@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06281791053a40d59c99819885f9a02e, type: 3}
+  m_Name: bussPrefabLoader
+  m_EditorClassIdentifier: 
+  easyFeatures:
+  - label: Lobby
+    prefab: {fileID: 1188065237752030572, guid: 5b6e26f36ae93c14c8d576af64596640,
+      type: 3}
+  - label: Party
+    prefab: {fileID: 7294926749084121182, guid: d7b72f6fd406a684896da5a420143c81,
+      type: 3}
+  categories:
+  - category: buttons
+    components:
+    - label: back
+      prefab: {fileID: 6237241394372990089, guid: e791cedd8e2ad744dbc72483ecf15024,
+        type: 3}
+      forcedWidth:
+        HasValue: 0
+        Value: 0
+      forcedHeight:
+        HasValue: 0
+        Value: 0
+      extraVariants: []
+    - label: disable
+      prefab: {fileID: 9132774532206557189, guid: 82610794997f82f4e82fb2201a085bec,
+        type: 3}
+      forcedWidth:
+        HasValue: 0
+        Value: 0
+      forcedHeight:
+        HasValue: 0
+        Value: 0
+      extraVariants: []
+    - label: primary
+      prefab: {fileID: 7960614596834471379, guid: 382d3ea8ec7bd39488fe933ee8263e4c,
+        type: 3}
+      forcedWidth:
+        HasValue: 0
+        Value: 0
+      forcedHeight:
+        HasValue: 0
+        Value: 0
+      extraVariants: []
+    - label: secondary
+      prefab: {fileID: 356811798329406904, guid: 50438764574b22f40ac65ac57c0ddbe1,
+        type: 3}
+      forcedWidth:
+        HasValue: 0
+        Value: 0
+      forcedHeight:
+        HasValue: 0
+        Value: 0
+      extraVariants: []
+    - label: primary half
+      prefab: {fileID: 794408762362322139, guid: 7ce9fada313ddf44f8b6c2c7272ae760,
+        type: 3}
+      forcedWidth:
+        HasValue: 0
+        Value: 0
+      forcedHeight:
+        HasValue: 0
+        Value: 0
+      extraVariants: []
+  - category: containers
+    components:
+    - label: card
+      prefab: {fileID: 2359088114615509357, guid: 86aaaeca45600e249a88b7fc52733f51,
+        type: 3}
+      forcedWidth:
+        HasValue: 1
+        Value: 400
+      forcedHeight:
+        HasValue: 1
+        Value: 300
+      extraVariants: []
+  - category: texts
+    components:
+    - label: textfield
+      prefab: {fileID: 7040282913979266079, guid: b854b4d37d2255d4185efee6fdd2aac5,
+        type: 3}
+      forcedWidth:
+        HasValue: 0
+        Value: 0
+      forcedHeight:
+        HasValue: 0
+        Value: 0
+      extraVariants: []
+    - label: label
+      prefab: {fileID: 1942525304160539352, guid: 411e18eaf555e1d41a80c70cf15b28bd,
+        type: 3}
+      forcedWidth:
+        HasValue: 1
+        Value: 400
+      forcedHeight:
+        HasValue: 1
+        Value: 100
+      extraVariants: []
+    - label: header
+      prefab: {fileID: 2454696200542049909, guid: 2156a3bb338773c41ac3d2679b6b5c46,
+        type: 3}
+      forcedWidth:
+        HasValue: 0
+        Value: 0
+      forcedHeight:
+        HasValue: 0
+        Value: 0
+      extraVariants: []
