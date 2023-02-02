@@ -51,7 +51,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			PasswordInput.text = string.Empty;
 			
 			PasswordInput.gameObject.SetActive(false);
-			ForgotPasswordButton.gameObject.SetActive(false);
+			ForgotPasswordButton.transform.parent.gameObject.SetActive(false);
 			SignInButton.gameObject.SetActive(false);
 			NextButton.gameObject.SetActive(true);
 			
@@ -76,7 +76,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				else
 				{
 					PasswordInput.gameObject.SetActive(true);
-					ForgotPasswordButton.gameObject.SetActive(true);
+					ForgotPasswordButton.transform.parent.gameObject.SetActive(true);
 					NextButton.gameObject.SetActive(false);
 					SignInButton.gameObject.SetActive(true);
 				}
@@ -93,6 +93,12 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			string email = EmailInput.text;
 			string password = PasswordInput.text;
+
+			if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+			{
+				ErrorText.SetErrorMessage("Please provide your credentials");
+				return;
+			}
 
 			FeatureControl.SetLoadingOverlay(true);
 			var result = await System.Context.Accounts.RecoverAccountWithEmail(email, password);
@@ -133,7 +139,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private void OpenForgotPasswordView()
 		{
-			FeatureControl.OpenForgotPasswordView();
+			string email = System.IsEmailValid(EmailInput.text, out _) ? EmailInput.text : string.Empty;
+			FeatureControl.OpenForgotPasswordView(email);
 		}
 		
 		private void OpenCreateAccountView()

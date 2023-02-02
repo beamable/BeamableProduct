@@ -1,4 +1,6 @@
-﻿using Beamable.EasyFeatures.Components;
+﻿using Beamable.Api;
+using Beamable.EasyFeatures.Components;
+using Beamable.Player;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,6 +12,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
+			string Email { get; set; }
 			bool IsEmailValid(string email, out string errorMessage);
 			bool IsPasswordValid(string password, string confirmation, out string errorMessage);
 		}
@@ -34,6 +37,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public Button CancelButton;
 
 		protected IDependencies System;
+
+		private PasswordResetOperation _passwordResetOperation;
 		
 		public bool IsVisible
 		{
@@ -53,12 +58,13 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return;
 			}
-			
+
+			EmailInput.text = System.Email;
 			SetCodeSentState(false);
 			
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
-			TryAgainButton.onClick.ReplaceOrAddListener(SendCode);
+			TryAgainButton.onClick.ReplaceOrAddListener(() => SetCodeSentState(false));
 		}
 
 		private void OpenAccountsView()
@@ -94,30 +100,83 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			}
 		}
 
-		private void SendCode()
+		private async void SendCode()
 		{
 			if (System.IsEmailValid(EmailInput.text, out string errorMessage))
 			{
-				SetCodeSentState(true);
-				// send code to email
-				throw new System.NotImplementedException();
+				ErrorText.HideMessage();
+				FeatureControl.SetLoadingOverlay(true);
+				_passwordResetOperation = await System.Context.Accounts.ResetPassword();
+
+				if (_passwordResetOperation.isSuccess)
+				{
+					SetCodeSentState(true);	
+				}
+				else
+				{
+					switch (_passwordResetOperation.error)
+					{
+						case PasswordResetError.NO_EXISTING_CREDENTIAL:
+							ErrorText.SetErrorMessage("Provided account does not exist");
+							break;
+						
+						default:
+							ErrorText.SetErrorMessage("Unknown error has occurred");
+							break;
+					}
+				}
+				
+				FeatureControl.SetLoadingOverlay(false);
 			}
 
 			ErrorText.SetErrorMessage(errorMessage);
 		}
 
-		private void ChangePassword()
+		private async void ChangePassword()
 		{
-			string email = EmailInput.text;
 			string password = PasswordInput.text;
 			string confirmation = ConfirmPasswordInput.text;
 			if (System.IsPasswordValid(password, confirmation, out string errorMessage))
 			{
-				// change password if the code matches
-				throw new System.NotImplementedException();
-			}
+				if (!string.IsNullOrWhiteSpace(CodeInput.text))
+				{
+					ErrorText.HideMessage();
+					FeatureControl.SetLoadingOverlay(true);
 
-			ErrorText.SetErrorMessage(errorMessage);
+					try
+					{
+						var confirm = await _passwordResetOperation.Confirm(CodeInput.text, password);
+						if (confirm.isSuccess)
+						{
+							await confirm.account.SwitchToAccount();
+							FeatureControl.OpenAccountsView();
+						}
+						else
+						{
+							ErrorText.SetErrorMessage("Unknown error has occured");
+						}
+					}
+					catch (PlatformRequesterException e)
+					{
+						if (e.Error.error == "InvalidConfirmationCodeError")
+						{
+							ErrorText.SetErrorMessage("Provided code is invalid");
+						}
+					}
+					finally
+					{
+						FeatureControl.SetLoadingOverlay(false);	
+					}
+				}
+				else
+				{
+					ErrorText.SetErrorMessage("You must provide reset code");
+				}
+			}
+			else
+			{
+				ErrorText.SetErrorMessage(errorMessage);
+			}
 		}
 	}
 }

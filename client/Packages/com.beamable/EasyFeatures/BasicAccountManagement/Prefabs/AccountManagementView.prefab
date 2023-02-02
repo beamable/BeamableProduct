@@ -794,7 +794,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.3529412, g: 0.7647059, b: 0.9254902, a: 1}
     BottomRightColor: {r: 0.3529412, g: 0.7647059, b: 0.9254902, a: 1}
@@ -1336,7 +1336,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 540, y: -360}
+  m_AnchoredPosition: {x: 540, y: -205}
   m_SizeDelta: {x: 780, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1278262990577373594
@@ -4460,20 +4460,20 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 7235735019774571100}
-  - {fileID: 4991845482585433647}
   - {fileID: 427035828340901417}
-  - {fileID: 586030245461912481}
-  - {fileID: 3841177212819572843}
-  - {fileID: 6752300448129104452}
-  - {fileID: 2407786953933349831}
   - {fileID: 508367519945976199}
-  - {fileID: 3324868442909639236}
-  - {fileID: 6979439371910223720}
-  - {fileID: 3615290116143217769}
+  - {fileID: 586030245461912481}
+  - {fileID: 2407786953933349831}
   - {fileID: 2522049664562069560}
+  - {fileID: 3324868442909639236}
+  - {fileID: 3615290116143217769}
+  - {fileID: 4991845482585433647}
   - {fileID: 6549706862673109174}
+  - {fileID: 6979439371910223720}
   - {fileID: 8180741317843119882}
+  - {fileID: 6752300448129104452}
+  - {fileID: 7235735019774571100}
+  - {fileID: 3841177212819572843}
   - {fileID: 641592799817038064}
   - {fileID: 630896819374098195}
   - {fileID: 2515785191096472536}
@@ -6697,7 +6697,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
     BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -11943,7 +11943,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
     BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -13849,7 +13849,7 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   imageType: 0
   nineSliceSource: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
     BottomRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
@@ -19535,7 +19535,7 @@ PrefabInstance:
     - target: {fileID: 3704552576468880816, guid: d3d8732e414e6c44c9c3d0a97518d4ff,
         type: 3}
       propertyPath: mode
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3704552576468880816, guid: d3d8732e414e6c44c9c3d0a97518d4ff,
         type: 3}
@@ -21311,7 +21311,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+      objectReference: {fileID: 0}
     - target: {fileID: 2025803743771229833, guid: 1e288d70007e48b40a1db0a5f905993f,
         type: 3}
       propertyPath: m_textInfo.lineCount
@@ -23025,7 +23025,7 @@ PrefabInstance:
     - target: {fileID: 8299230495958663133, guid: bce9b9d08c07c994789492f7bf7ebac9,
         type: 3}
       propertyPath: mode
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8299230495958663133, guid: bce9b9d08c07c994789492f7bf7ebac9,
         type: 3}
