@@ -13,9 +13,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 	{
 		public BeamContext Context { get; set; }
 		public string Email { get; set; }
-		
-		private async Promise<Dictionary<string, string>> GetPublicStats(long playerId) => await Context.Api.StatsService.GetStats("client", "public", "player", playerId); 
-		
+
+		private async Promise<Dictionary<string, string>> GetPublicStats(long playerId) =>
+			await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
+
 		public async Promise<string> GetCurrentAvatarName(long playerId)
 		{
 			var stats = await GetPublicStats(playerId);
@@ -80,6 +81,12 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			};
 
 			return data;
+		}
+
+		public int AuthenticatedAccountsCount()
+		{
+			return Context.Accounts.Count(acc => acc.HasEmail ||
+			                                     (acc.ThirdParties != null && acc.ThirdParties.Length > 0));
 		}
 
 		public bool IsAccountDataValid(string email, string password, string confirmPassword, out string errorMessage)

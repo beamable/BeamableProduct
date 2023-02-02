@@ -16,6 +16,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 			/// <inheritdoc cref="AccountManagementPlayerSystem.GetAccountViewData"/>
 			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(long playerId = -1);
+			int AuthenticatedAccountsCount();
 		}
 		
 		public AccountManagementFeatureControl FeatureControl;
@@ -65,9 +66,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.SetLoadingOverlay(true);
 			
 			await System.Context.Accounts.OnReady;
-			
-			SignInButtonsGroup.SetActive(System.Context.Accounts.Count == 1);
-			SwitchButtonsGroup.SetActive(System.Context.Accounts.Count > 1);
+
+			bool hasSingleGuestAccount = System.Context.Accounts.Count == 1 && System.AuthenticatedAccountsCount() == 0;
+			SignInButtonsGroup.SetActive(hasSingleGuestAccount);
+			SwitchButtonsGroup.SetActive(!hasSingleGuestAccount);
 			LoadGameButton.interactable = _selectedOtherAccountId > 0;
 			
 			SwitchAccountPopupPrefab.gameObject.SetActive(false);
@@ -117,12 +119,18 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		private void OnSwitchAccount()
 		{
 			var popup = FeatureControl.OverlaysController.ShowCustomOverlay(SwitchAccountPopupPrefab);
-			popup.Setup(OpenSignInView, OnCreateAccount, FeatureControl.OverlaysController);
+			popup.Setup(OpenSignInView, CreateAccount, FeatureControl.OverlaysController);
 
 			void OpenSignInView()
 			{
 				FeatureControl.OverlaysController.HideOverlay();
 				OnSignIn();
+			}
+
+			void CreateAccount()
+			{
+				FeatureControl.OverlaysController.HideOverlay();
+				OnCreateAccount();
 			}
 		}
 
@@ -160,8 +168,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private async void OnCreateAccount()
 		{
+			FeatureControl.SetLoadingOverlay(true);
 			var guestAccount = await System.Context.Accounts.CreateNewAccount();
 			await guestAccount.SwitchToAccount();
+			FeatureControl.SetLoadingOverlay(false);
 			FeatureControl.OpenAccountsView();
 		}
 	}
