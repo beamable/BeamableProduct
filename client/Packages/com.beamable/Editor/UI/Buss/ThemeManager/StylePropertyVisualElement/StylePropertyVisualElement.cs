@@ -94,13 +94,13 @@ namespace Beamable.Editor.UI.Components
 			}
 			else if (_model.IsInitial)
 			{
-				var initialValue = BussStyle.GetDefaultValue(_model.PropertyProvider.Key);
+				var initialValue = _model.GetInitialValue();
 				var field = CreateEditableField(initialValue);
 				field.DisableInput("The initial value cannot be changed.");
 			}
 			else if (_model.IsComputedProperty)
 			{
-				CreateMessageField("Compute go waht?");
+				CreateEditableField(_model.PropertyProvider.GetProperty());
 			}
 			else if (_model.HasVariableConnected)
 			{
@@ -143,11 +143,11 @@ namespace Beamable.Editor.UI.Components
 					}
 					else
 					{
-						var srcTracker = _model.PropertySourceTracker;
-						if (srcTracker != null)
+						var varTracker = _model.VariableNameProvider;
+						if (varTracker != null)
 						{
 							var appliedPropertyProvider =
-								srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
+								varTracker.ResolveVariableProperty(variableName);
 							
 							if (appliedPropertyProvider != null)
 							{
@@ -179,7 +179,9 @@ namespace Beamable.Editor.UI.Components
 
 			SetupVariableConnection();
 			CheckIfIsReadOnly();
-			EnableInClassList("overriden", _model.IsOverriden && _model.IsInStyle);
+
+			var isOverriden = _model.IsOverriden && _model.IsInStyle;
+			EnableInClassList("overriden",isOverriden );
 
 			_overrideIndicatorParent.tooltip = _model.Tooltip;
 		}
@@ -201,7 +203,7 @@ namespace Beamable.Editor.UI.Components
 
 		private BussPropertyVisualElement CreateEditableField(IBussProperty property)
 		{
-			var element = _propertyVisualElement = property.GetVisualElement();
+			var element = _propertyVisualElement = property.GetVisualElement(_model);
 
 			if (_propertyVisualElement == null)
 			{
@@ -260,13 +262,13 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetupVariableConnection()
 		{
-			if (_model.PropertyProvider.IsVariable)
-				return;
+			// if (_model.PropertyProvider.IsVariable)
+			// 	return;
 
-			if (_variableConnection != null)
-			{
-				return;
-			}
+			// if (_variableConnection != null)
+			// {
+			// 	return;
+			// }
 
 			_variableConnection = new VariableConnectionVisualElement(_model);
 			_variableConnection.Init();

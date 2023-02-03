@@ -4,14 +4,75 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-	public class FloatMaxOperation : 
+	
+	[Serializable]
+	public class FloatMaxOperation : Float2Operation
+	{
+		protected override float Compute(float a, float b)
+		{
+			return Mathf.Max(a, b);
+		}
+	}
+	
+	[Serializable]
+	public class FloatMinOperation : Float2Operation
+	{
+		protected override float Compute(float a, float b)
+		{
+			return Mathf.Min(a, b);
+		}
+	}
+
+	[Serializable]
+	public class FloatAddOperation : Float2Operation
+	{
+		protected override float Compute(float a, float b)
+		{
+			return a + b;
+		}
+	}
+
+
+	public abstract class Float2Operation : 
 		IFloatBussProperty, 
 		IFloatFromFloatBussProperty,
-		IComputedProperty
+		IComputedProperty<IFloatBussProperty>,
+		IComputedProperty<IFloatFromFloatBussProperty>
 	{
-		public float FloatValue => 1;//Mathf.Max(a.FloatValue, b.FloatValue);
+		public float FloatValue => 0;
 
-		public IFloatBussProperty a, b;
+		public ComputedPropertyArg a = ComputedPropertyArg.Create<FloatBussProperty>(nameof(a));
+		public ComputedPropertyArg b = ComputedPropertyArg.Create<FloatBussProperty>(nameof(b));
+
+		public FloatBussProperty GetComputedFloat(BussStyle style)
+		{
+			var aVal = 0f;
+			var bVal = 0f;
+			if (a.TryGetProperty<IFloatBussProperty>(style, out var aProp))
+			{
+				aVal = aProp.FloatValue;
+			}
+			if (b.TryGetProperty<IFloatBussProperty>(style, out var bProp))
+			{
+				bVal = bProp.FloatValue;
+			}
+
+			var val = Compute(aVal, bVal);
+			
+			return new FloatBussProperty(val); // TODO: replace with an object pool? I think this could cause excessive GC
+		}
+
+		protected abstract float Compute(float a, float b);
+		
+		IFloatBussProperty IComputedProperty<IFloatBussProperty>.GetComputedValue(BussStyle style)
+		{
+			return GetComputedFloat(style);
+		}
+
+		IFloatFromFloatBussProperty IComputedProperty<IFloatFromFloatBussProperty>.GetComputedValue(BussStyle style)
+		{
+			return GetComputedFloat(style);
+		}
 
 		public BussPropertyValueType ValueType { get; set; } = BussPropertyValueType.Value;
 
@@ -24,8 +85,9 @@ namespace Beamable.UI.Buss
 
 		public void NotifyValueChange()
 		{
-			OnValueChanged?.Invoke();
-			// throw new NotImplementedException();
+			var delegates = OnValueChanged;
+			OnValueChanged = () => { };
+			delegates?.Invoke();
 		}
 
 		public IBussProperty Interpolate(IBussProperty other, float value)
@@ -35,9 +97,12 @@ namespace Beamable.UI.Buss
 
 		public float GetFloatValue(float input)
 		{
-			return 1;
+			return FloatValue;
 		}
 
-		public IEnumerable<IBussProperty> Members => new[] {a, b};
+		public IEnumerable<ComputedPropertyArg> Members => new[]
+		{
+			a, b
+		};
 	}
 }

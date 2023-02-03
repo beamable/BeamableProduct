@@ -166,7 +166,7 @@ namespace Beamable.Editor.UI.Buss
 			_selectedBussProperty = kvp.Value;
 
 			var propertyProvider = BussPropertyProvider.Create(kvp.Key, kvp.Value);
-			_currentPropertyElement = propertyProvider.GetVisualElement();
+			_currentPropertyElement = propertyProvider.GetVisualElement(null);
 			_propertyValue.Add(_currentPropertyElement);
 			_propertyLabel.text = kvp.Key;
 			_currentPropertyElement.Init();

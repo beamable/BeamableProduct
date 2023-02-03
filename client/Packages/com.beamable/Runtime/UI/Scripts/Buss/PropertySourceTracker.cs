@@ -7,7 +7,15 @@ using PropertyReference = Beamable.UI.Buss.PropertyReference;
 
 namespace Beamable.UI.Buss
 {
-	public class PropertySourceTracker
+	public interface IVariableNameProvider
+	{
+		IEnumerable<string> GetAllVariableNames(Type baseType);
+		IEnumerable<string> GetAllVariableNames(Type[] baseTypes);
+		PropertyReference ResolveVariableProperty(string key);
+	}
+	
+	
+	public class PropertySourceTracker : IVariableNameProvider
 	{
 		private readonly Dictionary<string, SourceData> _sources = new Dictionary<string, SourceData>();
 		public BussElement Element { get; }
@@ -80,6 +88,17 @@ namespace Beamable.UI.Buss
 			return _sources.Keys.Where(BussStyleSheetUtility.IsValidVariableName);
 		}
 
+		public IEnumerable<string> GetAllVariableNames(Type[] baseTypes)
+		{
+			foreach (var type in baseTypes)
+			{
+				var names = GetAllVariableNames(type);
+				foreach (var name in names)
+				{
+					yield return name;
+				}
+			}
+		}
 		public IEnumerable<string> GetAllVariableNames(Type baseType)
 		{
 			foreach (var kvp in _sources)
@@ -89,6 +108,7 @@ namespace Beamable.UI.Buss
 				var firstProperty = kvp.Value.Properties.FirstOrDefault();
 				if (firstProperty == null) continue;
 
+				var prop = firstProperty.PropertyProvider.GetProperty();
 				if (firstProperty.PropertyProvider.IsPropertyOfType(baseType))
 				{
 					yield return kvp.Key;
