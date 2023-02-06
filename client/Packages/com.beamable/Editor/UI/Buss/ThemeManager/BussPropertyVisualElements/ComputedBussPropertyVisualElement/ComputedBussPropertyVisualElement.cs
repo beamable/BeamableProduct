@@ -23,10 +23,12 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			var baseType = BussStyle.GetBaseType(_rootModel.PropertyProvider.Key);
+			// var baseType = BussStyle.GetBaseType(_rootModel.PropertyProvider.Key);
+			var baseType = _rootModel.PropertyProvider.GetInitialPropertyType();
 			if (!BussStyle.TryGetOperatorBinding(baseType, out var operatorBinding))
 			{
 				Debug.LogError("Unknown compute properties");
+				return;
 			}
 			
 			// create field???

@@ -95,7 +95,7 @@ namespace Beamable.Editor.UI.Components
 			_defaultValueFactory = defaultValueFactory ?? (() =>
 			{
 				var key = _templateProperty?.Key ?? PropertyProvider.Key;
-				var nextProp = BussStyle.GetDefaultValue(key);
+				var nextProp = BussStyle.GetDefaultValue(key).CopyProperty();
 				return nextProp;
 			});
 			_parentModel = parentModel;
@@ -252,9 +252,10 @@ namespace Beamable.Editor.UI.Components
 
 				// TODO: any any of these cache things needed?
 				// StyleRule.CacheProperty(PropertyProvider.Key, PropertyProvider.GetProperty());
-				
 
-				var baseType = BussStyle.GetBaseType(PropertyProvider.Key);
+
+
+				var baseType = PropertyProvider.GetInitialPropertyType();//BussStyle.GetBaseType(PropertyProvider.Key);
 				if (!BussStyle.TryGetOperatorBinding(baseType, out var operatorBinding))
 				{
 					Debug.LogError("Unable to find binding for key value...");
@@ -271,6 +272,7 @@ namespace Beamable.Editor.UI.Components
 				{
 					existingVariable.ValueType = BussPropertyValueType.Value;
 					existingVariable.VariableName = option.DisplayName;
+					PropertyProvider.SetProperty(property);
 				}
 				else
 				{
@@ -300,7 +302,8 @@ namespace Beamable.Editor.UI.Components
 				options.Add(inheritedOption);
 			}
 
-			var propType = BussStyle.GetBaseType(_templateProperty.Key);
+			// _templateProperty.GetInitial()
+			var propType = _templateProperty.GetInitialPropertyType(); //BussStyle.GetBaseType(_templateProperty.Key);
 			if (_allowComputed && BussStyle.TryGetOperatorBinding(propType,
 				                                    out var operatorBinding) && operatorBinding.HasAnyFactories)
 			{
@@ -384,6 +387,10 @@ namespace Beamable.Editor.UI.Components
 				else
 				{
 					var old = StyleRule.GetPropertyProvider(PropertyProvider.Key).GetProperty();
+					if (old is VariableProperty oldVar)
+					{
+						return;
+					}
 					StyleRule.GetPropertyProvider(PropertyProvider.Key).SetProperty(property);
 
 					var areDifferentTypes = old.GetType() != property.GetType();

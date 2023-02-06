@@ -151,18 +151,27 @@ namespace Beamable.Editor.UI.Components
 							
 							if (appliedPropertyProvider != null)
 							{
-								var field = CreateEditableField(appliedPropertyProvider.PropertyProvider.GetProperty());
-								field.DisableInput("The field is disabled because it references a variable.");
-
-								void UpdateField()
+								if (appliedPropertyProvider.PropertyProvider.IsComputedReference)
 								{
-									if (field.IsRemoved) return;
-									field.OnPropertyChangedExternally();
+									CreateMessageField($"\"{variableName.Substring(2)}\" is computed.");
+								}
+								else
+								{
+									var field = CreateEditableField(
+										appliedPropertyProvider.PropertyProvider.GetProperty());
+									field.DisableInput("The field is disabled because it references a variable.");
+
+									void UpdateField()
+									{
+										if (field.IsRemoved) return;
+										field.OnPropertyChangedExternally();
+										appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged +=
+											UpdateField;
+									}
+
 									appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged +=
 										UpdateField;
 								}
-
-								appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged += UpdateField;
 							}
 							else
 							{

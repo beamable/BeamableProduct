@@ -306,9 +306,13 @@ namespace Beamable.UI.Buss
 			// SetProperty(_initialValue.Get<IBussProperty>());
 		}
 
+		public Type GetInitialPropertyType() => GetInitial()?.GetType();
+
 		public bool IsPropertyOfType(Type type)
 		{
-			return type.IsInstanceOfType(GetProperty());
+			return type.IsInstanceOfType(GetInitial());
 		}
+		// public bool IsInitia
+
 	}
 }

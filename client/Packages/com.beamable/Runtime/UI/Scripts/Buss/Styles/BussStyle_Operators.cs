@@ -9,6 +9,12 @@ namespace Beamable.UI.Buss
 	{
 		private static Dictionary<Type, BussComputeOperatorBinding> typeToOperators = new Dictionary<Type, BussComputeOperatorBinding>();
 
+		public static BussOperatorBinding<FloatBussProperty> FloatOperators
+			= new BussOperatorBinding<FloatBussProperty>()
+			  .AddOperator<FloatMaxOperation>()
+			  .AddOperator<FloatMinOperation>()
+			  .AddOperator<FloatAddOperation>();
+		
 		public static BussOperatorBinding<IFloatBussProperty> IFloatOperators
 			= new BussOperatorBinding<IFloatBussProperty>()
 				.AddOperator<FloatMaxOperation>()
@@ -22,18 +28,36 @@ namespace Beamable.UI.Buss
 				  .AddOperator<FloatMinOperation>()
 				  .AddOperator<FloatAddOperation>()
 			;
-		
+
 		public static BussOperatorBinding<IVertexColorBussProperty> IColorBussOperators
-				= new BussOperatorBinding<IVertexColorBussProperty>()
-				  .AddOperator<ColorFadeOperation>()
-				  .AddOperator<ColorDesaturateOperation>()
-				  .AddOperator<ColorSaturateOperation>()
-				  .AddOperator<ColorLightenOperation>()
-				  .AddOperator<ColorDarkenOperation>()
-				  .AddOperator<ColorSpinOperation>()
-				  .AddOperator<SingleColorToMultiColorOperation>()
-				  
-			;
+			= new BussOperatorBinding<IVertexColorBussProperty>()
+			  .AddOperator<ColorFadeOperation>()
+			  .AddOperator<ColorDesaturateOperation>()
+			  .AddOperator<ColorSaturateOperation>()
+			  .AddOperator<ColorLightenOperation>()
+			  .AddOperator<ColorDarkenOperation>()
+			  .AddOperator<ColorSpinOperation>()
+			  .AddOperator<SingleColorToMultiColorOperation>();
+
+		public static BussOperatorBinding<VertexColorBussProperty> VertexColorBussOperators
+			= new BussOperatorBinding<VertexColorBussProperty>()
+			  .AddOperator<ColorFadeOperation>()
+			  .AddOperator<ColorDesaturateOperation>()
+			  .AddOperator<ColorSaturateOperation>()
+			  .AddOperator<ColorLightenOperation>()
+			  .AddOperator<ColorDarkenOperation>()
+			  .AddOperator<ColorSpinOperation>()
+			  .AddOperator<SingleColorToMultiColorOperation>();
+
+
+		public static BussOperatorBinding<SingleColorBussProperty> ColorBussOperators
+			= new BussOperatorBinding<SingleColorBussProperty>()
+			  .AddOperator<ColorFadeOperation>()
+			  .AddOperator<ColorDesaturateOperation>()
+			  .AddOperator<ColorSaturateOperation>()
+			  .AddOperator<ColorLightenOperation>()
+			  .AddOperator<ColorDarkenOperation>()
+			  .AddOperator<ColorSpinOperation>();
 
 		public static bool TryGetOperatorBinding(Type propertyType, out BussComputeOperatorBinding operatorBinding)
 		{

@@ -104,11 +104,10 @@ namespace Beamable.UI.Buss
 			foreach (var kvp in _sources)
 			{
 				if (!BussStyleSheetUtility.IsValidVariableName(kvp.Key)) continue;
-
+				
 				var firstProperty = kvp.Value.Properties.FirstOrDefault();
 				if (firstProperty == null) continue;
-
-				var prop = firstProperty.PropertyProvider.GetProperty();
+				
 				if (firstProperty.PropertyProvider.IsPropertyOfType(baseType))
 				{
 					yield return kvp.Key;

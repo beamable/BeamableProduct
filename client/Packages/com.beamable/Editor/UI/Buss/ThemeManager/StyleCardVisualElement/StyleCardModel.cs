@@ -106,7 +106,7 @@ namespace Beamable.Editor.UI.Components
 						Undo.RecordObject(StyleSheet, $"Add {label}");
 						
 						
-						var instance = BussStyle.GetDefaultValue(key, type);
+						var instance = BussStyle.GetDefaultValue(key, type).CopyProperty();
 						StyleRule.Properties.Add(
 							BussPropertyProvider.Create(key, instance));
 #if UNITY_EDITOR
@@ -309,7 +309,6 @@ namespace Beamable.Editor.UI.Components
 					continue;
 				}
 
-				var initial = propertyProvider.GetProperty().CopyProperty();
 				var model = new StylePropertyModel(_parentModel, StyleSheet, StyleRule, propertyProvider,
 				                                   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
 				                                   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked,

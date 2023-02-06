@@ -36,6 +36,7 @@ namespace Beamable.UI.Buss
 	public abstract class Float2Operation : 
 		IFloatBussProperty, 
 		IFloatFromFloatBussProperty,
+		IComputedProperty<FloatBussProperty>,
 		IComputedProperty<IFloatBussProperty>,
 		IComputedProperty<IFloatFromFloatBussProperty>
 	{
@@ -70,6 +71,11 @@ namespace Beamable.UI.Buss
 		}
 
 		IFloatFromFloatBussProperty IComputedProperty<IFloatFromFloatBussProperty>.GetComputedValue(BussStyle style)
+		{
+			return GetComputedFloat(style);
+		}
+		
+		public FloatBussProperty GetComputedValue(BussStyle style)
 		{
 			return GetComputedFloat(style);
 		}

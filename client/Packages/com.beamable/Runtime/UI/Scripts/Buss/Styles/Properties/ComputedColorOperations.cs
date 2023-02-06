@@ -74,7 +74,8 @@ namespace Beamable.UI.Buss
 	[Serializable]
 	public class SingleColorToMultiColorOperation : 
 		IVertexColorBussProperty,
-		IComputedProperty<IVertexColorBussProperty> 
+		IComputedProperty<IVertexColorBussProperty>,
+		IComputedProperty<VertexColorBussProperty>
 	{
 		
 		public ComputedPropertyArg topLeft = ComputedPropertyArg.Create<SingleColorBussProperty>(nameof(topLeft));
@@ -84,6 +85,16 @@ namespace Beamable.UI.Buss
 
 		
 		public IVertexColorBussProperty GetComputedValue(BussStyle style)
+		{
+			return ComputeVertexColors(style);
+		}
+
+		VertexColorBussProperty IComputedProperty<VertexColorBussProperty>.GetComputedValue(BussStyle style)
+		{
+			return ComputeVertexColors(style);
+		}
+		
+		VertexColorBussProperty ComputeVertexColors(BussStyle style)
 		{
 			var topLeftColor = Color.white;
 			var topRightColor = Color.white;
@@ -108,7 +119,6 @@ namespace Beamable.UI.Buss
 			var vertexProp = new VertexColorBussProperty(lowLeftColor, lowRightColor, topLeftColor, topRightColor);
 			return vertexProp;
 		}
-
 
 		public BussPropertyValueType ValueType { get; set; } = BussPropertyValueType.Value;
 
@@ -144,7 +154,9 @@ namespace Beamable.UI.Buss
 		IColorBussProperty, 
 		IVertexColorBussProperty,
 		IComputedProperty<IColorBussProperty>,
-		IComputedProperty<IVertexColorBussProperty>
+		IComputedProperty<IVertexColorBussProperty>,
+		IComputedProperty<SingleColorBussProperty>,
+		IComputedProperty<VertexColorBussProperty>
 	{
 		public float FloatValue => 0;
 
@@ -172,7 +184,7 @@ namespace Beamable.UI.Buss
 			return mapped;
 		}
 
-		IColorBussProperty IComputedProperty<IColorBussProperty>.GetComputedValue(BussStyle style)
+		SingleColorBussProperty ComputeSingle(BussStyle style)
 		{
 			var aVal = Color.white;
 			var bVal = 0f;
@@ -188,6 +200,12 @@ namespace Beamable.UI.Buss
 			var val = Compute(aVal, MapDomainToRange(bVal));
 			
 			return new SingleColorBussProperty(val); 
+		}
+		
+		
+		IColorBussProperty IComputedProperty<IColorBussProperty>.GetComputedValue(BussStyle style)
+		{
+			return ComputeSingle(style);
 		}
 
 		public IVertexColorBussProperty GetComputedValue(BussStyle style)
@@ -206,6 +224,16 @@ namespace Beamable.UI.Buss
 			var val = Compute(aVal, MapDomainToRange(bVal));
 			
 			return new VertexColorBussProperty(val); 
+		}
+
+		SingleColorBussProperty IComputedProperty<SingleColorBussProperty>.GetComputedValue(BussStyle style)
+		{
+			return ComputeSingle(style);
+		}
+
+		VertexColorBussProperty IComputedProperty<VertexColorBussProperty>.GetComputedValue(BussStyle style)
+		{
+			return GetComputedValue(style) as VertexColorBussProperty;
 		}
 
 		public BussPropertyValueType ValueType { get; set; } = BussPropertyValueType.Value;

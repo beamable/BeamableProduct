@@ -103,7 +103,7 @@ namespace Beamable.UI.Buss
 		{
 			if (_bindings.TryGetValue(key, out var binding))
 			{
-				return binding.GetDefaultValue(specificType).CopyProperty();
+				return binding.GetDefaultValue(specificType);//.CopyProperty();
 			}
 			return null;
 		}
@@ -161,6 +161,11 @@ namespace Beamable.UI.Buss
 					if (property is VariableProperty variableProperty)
 					{
 						found = TryInternal(variableProperty.VariableName, out innerOutput);
+					}
+					else if (property is IComputedProperty<T> nestedComputedProperty)
+					{
+						found = true;
+						innerOutput = nestedComputedProperty.GetComputedValue(this);
 					}
 					else if (property is T typedProperty)
 					{
