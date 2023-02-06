@@ -23,21 +23,15 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("source", "the .dll filepath for the built microservice"), (arg, i) => arg.microserviceAssemblyPath = i);
-		
-		// TODO: use an output flag to decide if we should auto-go to all links
 		AddOption(new Option<string>("--output-dir", "the directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
-		
 		AddOption(new Option<bool>("--output-links", () => true, "when true, generate the source client files to all associated projects"), (arg, i) => arg.outputToLinkedProjects = i);
 	}
 
 	public override Task Handle(GenerateClientFileCommandArgs args)
 	{
-		// load up the 
-		
-		// AppDomain.Cre
 
+		#region load client dll into current domain
 		var absolutePath = Path.GetFullPath(args.microserviceAssemblyPath);
-		// var userAssembly = Assembly.LoadFile(absolutePath);
 		var absoluteDir = Path.GetDirectoryName(absolutePath);
 		AssemblyLoadContext.Default.Resolving += (context, name) =>
 		{
@@ -47,7 +41,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			return null;
 		};
 		var userAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(absolutePath);
-
+		#endregion
 		
 		var allTypes = userAssembly.GetExportedTypes();
 		foreach (var type in allTypes)
@@ -85,6 +79,9 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 					Directory.CreateDirectory(outputDirectory);
 					var outputPath = Path.Combine(outputDirectory, $"{descriptor.Name}Client.cs");
 					BeamableLogger.Log("Writing client to " + outputPath);
+
+					var nextGeneratedSourceCode = generator.GetCSharpCodeString();
+					// TODO: don't write file if the content is the same
 					generator.GenerateCSharpCode(outputPath);
 				}
 			}

@@ -23,8 +23,6 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>
 
 	public override Task Handle(OpenSwaggerCommandArgs args)
 	{
-		//https://portal.beamable.com/chris-test-2/games/DE_1564095355314180/realms/DE_1564095355314180/microservices/tuna3/docs?prefix=4D3FC3B0-3967-584B-A429-9139DA2C84F5
-
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
 		var url = $"{args.AppContext.Host.Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.serviceName}/docs";

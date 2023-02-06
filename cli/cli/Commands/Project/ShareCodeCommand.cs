@@ -19,18 +19,13 @@ public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("source", "the .dll filepath for the built code"), (arg, i) => arg.dllPath = i);
-		// TODO: at some point, add configuration settings, but for now, just assume we are always sending data to associated projects
 	}
 
 	public override Task Handle(ShareCodeCommandArgs args)
 	{
-		// var absolutePath = Path.GetFullPath(args.dllPath);
-
 		var absolutePath = Path.GetFullPath(args.dllPath);
 		var fileName = Path.GetFileName(absolutePath);
-		var name = Path.GetFileNameWithoutExtension(fileName);
 
-		// var userAssembly = Assembly.LoadFile(absolutePath);
 		var absoluteDir = Path.GetDirectoryName(absolutePath);
 
 		var dlls = Directory.GetFiles(absoluteDir, "*.dll");

@@ -24,7 +24,6 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 
 	public override async Task Handle(GenerateEnvFileCommandArgs args)
 	{
-		// TODO: write an env file...
 		var realmsApi = args.Provider.GetService<IRealmsApi>();
 		var res = await realmsApi.GetAdminCustomer();
 		var proj = res.customer.projects.FirstOrDefault(p => p.name == args.AppContext.Pid);

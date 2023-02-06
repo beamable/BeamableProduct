@@ -12,16 +12,12 @@ public class ProjectData
 public class ProjectService
 {
 	private readonly ConfigService _configService;
-	private readonly IDependencyProvider _provider;
-	private readonly BeamoLocalSystem _localBeamo;
 
 	private ProjectData _projects;
 
-	public ProjectService(ConfigService configService, IDependencyProvider provider, BeamoLocalSystem localBeamo)
+	public ProjectService(ConfigService configService)
 	{
 		_configService = configService;
-		_provider = provider;
-		_localBeamo = localBeamo;
 		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
 	}
 

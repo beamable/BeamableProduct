@@ -1,4 +1,3 @@
-using Spectre.Console.Cli;
 
 namespace cli.Dotnet;
 
