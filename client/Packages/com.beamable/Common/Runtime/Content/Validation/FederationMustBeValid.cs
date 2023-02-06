@@ -26,7 +26,7 @@ namespace Beamable.Common.Content.Validation
 				Validate(args, fieldValue);
 				return;
 			}
-			
+
 			throw new ContentValidationException(obj, field, $"{nameof(FederationMustBeValid)} is only valid on {nameof(Federation)}");
 		}
 
@@ -41,8 +41,8 @@ namespace Beamable.Common.Content.Validation
 			{
 				throw new ContentValidationException(args.Content, args.ValidationField, $"Namespace cannot be empty");
 			}
-			
-			
+
+
 			if (federation.Service.EndsWith(MISSING_SUFFIX))
 			{
 				throw new ContentValidationException(args.Content, args.ValidationField, $"Microservice must exist");
