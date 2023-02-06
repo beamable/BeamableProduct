@@ -23,12 +23,37 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 	public override Task Handle(AddUnityClientOutputCommandArgs args)
 	{
 		var workingDir = Directory.GetCurrentDirectory();
-		var directory = Path.Combine(workingDir, args.path);
-		
-		// TODO: doesn't this just undo the logic we did with Combine() ? 
-		var startingDir = directory = Path.GetRelativePath(workingDir, directory);
+		var startingDir = args.path;
+		var directory = args.path;
 
-		// TODO: check a few known cases, add auto-detection
+		var expectedUnityParentDirectories = new string[]
+		{
+			".", // maybe the unity project a child of the current folder...
+			".." // or maybe the unity project is a sibling of the current folder...
+		}.Select(p => Path.Combine(startingDir, p)).ToArray();
+		
+		var defaultValues = GetUnityProjectCandidates(expectedUnityParentDirectories).ToList();
+		if (defaultValues.Count == 1) // if there is only one detected file, offer to use that.
+		{
+			if (AnsiConsole.Confirm($"Automatically found{defaultValues[0]}. Add as unity project?"))
+			{
+				args.ProjectService.AddUnityProject(defaultValues[0]);
+				return Task.CompletedTask;
+			}
+		} else if (defaultValues.Count > 0) // if there are many detected files, offer up a list of them
+		{
+			defaultValues.Add("continue");
+			var selection = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("Select the Unity project to link, or continue to search manually")
+					.AddChoices(defaultValues)
+				);
+			if (selection != "continue")
+			{
+				args.ProjectService.AddUnityProject(selection);
+				return Task.CompletedTask;
+			}
+		}
 		
 		while (!IsDirectoryUnityEsque(directory))
 		{
@@ -52,16 +77,34 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 		{
 			if (!AnsiConsole.Confirm($"Add {directory} as unity project?"))
 			{
-				// TODO: if you cancel, go back to the folder search code, so the user can re-select
 				return Task.CompletedTask;
 			}
 		}
 
 		args.ProjectService.AddUnityProject(directory);
-		
 		return Task.CompletedTask;
 	}
 
+	IEnumerable<string> GetUnityProjectCandidates(string[] paths)
+	{
+		foreach (var path in paths)
+		{
+			BeamableLogger.Log($"Looking in {path} for default unity projects");
+			var childPaths = Directory.GetDirectories(path);
+			foreach (var childPath in childPaths)
+			{
+				BeamableLogger.Log($"-- looking at {childPath} ");
+
+				if (IsDirectoryUnityEsque(childPath))
+				{
+					BeamableLogger.Log($"-- I think that {childPath} is a unity projet");
+
+					yield return childPath;
+				}
+			}
+		}
+	}
+	
 	bool IsDirectoryUnityEsque(string path)
 	{
 		var subDirs = Directory.GetDirectories(path).ToList();
