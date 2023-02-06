@@ -8,6 +8,7 @@ namespace Beamable.UI.Buss
 	public interface IComputedProperty : IBussProperty
 	{
 		IEnumerable<ComputedPropertyArg> Members { get; }
+		IBussProperty GetComputedProperty(BussStyle style);
 	}
 
 	public interface IComputedProperty<T> : IComputedProperty

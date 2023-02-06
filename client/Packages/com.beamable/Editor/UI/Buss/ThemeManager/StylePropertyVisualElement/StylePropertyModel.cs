@@ -14,9 +14,6 @@ namespace Beamable.Editor.UI.Components
 
 	public class StylePropertyModel
 	{
-		// private static readonly DropdownEntry InitialOption =
-		// 	new DropdownEntry(Constants.Features.Buss.MenuItems.INITIAL_VALUE, false);
-
 		private readonly ThemeModel _parentModel;
 		private readonly Action<string> _removePropertyAction;
 		private readonly Action _globalRefresh;
@@ -245,17 +242,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				Undo.RecordObject(StyleSheet, "Set computed");
 				PropertyProvider.GetProperty().ValueType = BussPropertyValueType.Value;
-				// if (StyleRule.TryGetCachedProperty(PropertyProvider.Key, out _))
-				// {
-				// 	StyleRule.RemoveCachedProperty(PropertyProvider.Key);
-				// }
-
-				// TODO: any any of these cache things needed?
-				// StyleRule.CacheProperty(PropertyProvider.Key, PropertyProvider.GetProperty());
-
-
-
-				var baseType = PropertyProvider.GetInitialPropertyType();//BussStyle.GetBaseType(PropertyProvider.Key);
+				
+				var baseType = PropertyProvider.GetInitialPropertyType();
 				if (!BussStyle.TryGetOperatorBinding(baseType, out var operatorBinding))
 				{
 					Debug.LogError("Unable to find binding for key value...");
@@ -302,8 +290,7 @@ namespace Beamable.Editor.UI.Components
 				options.Add(inheritedOption);
 			}
 
-			// _templateProperty.GetInitial()
-			var propType = _templateProperty.GetInitialPropertyType(); //BussStyle.GetBaseType(_templateProperty.Key);
+			var propType = _templateProperty.GetInitialPropertyType();
 			if (_allowComputed && BussStyle.TryGetOperatorBinding(propType,
 				                                    out var operatorBinding) && operatorBinding.HasAnyFactories)
 			{
@@ -316,7 +303,6 @@ namespace Beamable.Editor.UI.Components
 			if (_parentModel.HasElementContext)
 			{
 				var baseType = GetInitialValue().GetType();
-				// var baseTypes = BussStyle.GetTypesOfDefaultValues(_templateProperty.Key);
 				if (VariableNameProvider != null)
 				{
 					var variables = VariableNameProvider.GetAllVariableNames(baseType).ToList();

@@ -180,60 +180,7 @@ namespace Beamable.UI.Buss
 		{
 			return _properties.Find(prop => prop.Key == key) != null;
 		}
-		//
-		// // TODO: why do we need this? 
-		// public bool TryGetCachedProperty(string key, out IBussProperty property)
-		// {
-		// 	BussPropertyProvider provider = _cachedProperties.Find(prop => prop.Key == key);
-		// 	property = provider?.GetProperty();
-		// 	return property != null;
-		// }
-		//
-		// public bool CacheProperty(string key, IBussProperty property)
-		// {
-		// 	if (TryGetCachedProperty(key, out _))
-		// 	{
-		// 		return false;
-		// 	}
-		//
-		// 	BussPropertyProvider provider = BussPropertyProvider.Create(key, property.CopyProperty());
-		// 	_cachedProperties.Add(provider);
-		//
-		// 	CleanupCachedProperties();
-		//
-		// 	return true;
-		// }
-		//
-		// public void RemoveCachedProperty(string key)
-		// {
-		// 	var cachedProperty = _cachedProperties.Find(prop => prop.Key == key);
-		// 	_cachedProperties.Remove(cachedProperty);
-		//
-		// 	CleanupCachedProperties();
-		// }
-		//
-		// private void CleanupCachedProperties()
-		// {
-		// 	var indexesToRemove = new List<int>();
-		//
-		// 	for (int index = 0; index < _cachedProperties.Count; index++)
-		// 	{
-		// 		BussPropertyProvider cachedProperty = _cachedProperties[index];
-		// 		if (cachedProperty.Key == String.Empty)
-		// 		{
-		// 			indexesToRemove.Add(index);
-		// 		}
-		// 	}
-		//
-		// 	for (int index = _cachedProperties.Count - 1; index >= 0; index--)
-		// 	{
-		// 		if (indexesToRemove.Contains(index))
-		// 		{
-		// 			_cachedProperties.RemoveAt(index);
-		// 		}
-		// 	}
-		// }
-
+		
 		public void SetFolded(bool value)
 		{
 			_folded = value;
@@ -303,7 +250,6 @@ namespace Beamable.UI.Buss
 		public IBussProperty GetInitial()
 		{
 			return _initialValue?.Get<IBussProperty>()?.CopyProperty() ?? new VariableProperty();
-			// SetProperty(_initialValue.Get<IBussProperty>());
 		}
 
 		public Type GetInitialPropertyType() => GetInitial()?.GetType();
@@ -312,7 +258,6 @@ namespace Beamable.UI.Buss
 		{
 			return type.IsInstanceOfType(GetInitial());
 		}
-		// public bool IsInitia
 
 	}
 }

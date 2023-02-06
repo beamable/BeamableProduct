@@ -235,6 +235,19 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
 			_propertyVisualElement.Init();
 			_valueParent.Add(_propertyVisualElement);
+			
+			// var globalVariableSection = Root.Q("globalVariable");
+	
+			var subVariableConnections = _propertyVisualElement.Query<VariableConnectionVisualElement>().ToList();
+			// for (var i = 0; i < subVariableConnections.Count; i++)
+				for (var i = subVariableConnections.Count - 1; i >= 0; i--)
+			{
+				var variableConnection = subVariableConnections[i];
+				variableConnection.RemoveFromHierarchy();
+				_variableParent.Add(variableConnection);
+				// globalVariableSection.Add(variableConnection);
+			}
+			
 			return element;
 		}
 
@@ -271,14 +284,6 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetupVariableConnection()
 		{
-			// if (_model.PropertyProvider.IsVariable)
-			// 	return;
-
-			// if (_variableConnection != null)
-			// {
-			// 	return;
-			// }
-
 			_variableConnection = new VariableConnectionVisualElement(_model);
 			_variableConnection.Init();
 			_variableParent.Add(_variableConnection);

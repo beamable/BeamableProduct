@@ -10,7 +10,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class FloatBussPropertyVisualElement : BussPropertyVisualElement<FloatBussProperty>
+	public class FloatBussPropertyVisualElement : BussPropertyVisualElement<FloatBussProperty>, IBussPropertyVisualElementSupportsPreview
 	{
 		private FloatField _field;
 
@@ -39,6 +39,14 @@ namespace Beamable.Editor.UI.Components
 		public override void OnPropertyChangedExternally()
 		{
 			_field.value = Property.FloatValue;
+		}
+
+		public void SetValueFromProperty(IBussProperty property)
+		{
+			if (property is FloatBussProperty floatProp)
+			{
+				_field.value = floatProp.FloatValue;
+			}
 		}
 	}
 }

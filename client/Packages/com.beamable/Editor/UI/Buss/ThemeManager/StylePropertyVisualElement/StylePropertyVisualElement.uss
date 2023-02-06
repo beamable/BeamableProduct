@@ -29,6 +29,7 @@ CustomMessageBussPropertyVisualElement > Label {
     width: 140px;
     flex-grow: 1;
     align-self: flex-start;
+    flex-direction: column-reverse;
 }
 .overriden #globalVariable {
     display: none;

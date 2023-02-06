@@ -23,7 +23,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			// var baseType = BussStyle.GetBaseType(_rootModel.PropertyProvider.Key);
 			var baseType = _rootModel.PropertyProvider.GetInitialPropertyType();
 			if (!BussStyle.TryGetOperatorBinding(baseType, out var operatorBinding))
 			{
@@ -31,13 +30,12 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 			
-			// create field???
 			var args = Property.Members.ToArray();
-
 			var operationDropDown = new DropdownVisualElement();
 			if (!operatorBinding.TryGetFactoryForOperatorType(Property.GetType(), out var initialFactory))
 			{
 				Debug.LogError("Unknown initial factory");
+				return;
 			}
 			var names = operatorBinding.Factories.Select(f => f.name).ToList();
 			var initialSelectedFactoryIndex = names.FindIndex(name => initialFactory.name == name);
@@ -51,7 +49,6 @@ namespace Beamable.Editor.UI.Components
 
 				if (currFactory == factory) return; // nothing...
 				
-				// TODO: add undo record
 				OnBeforeChange?.Invoke();
 				var newProp = factory.factory?.Invoke();
 				OnValueChanged?.Invoke(newProp);
@@ -60,18 +57,44 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(operationDropDown);
 			operationDropDown.Refresh();
 			AddBussPropertyFieldClass(operationDropDown);
+			
+			
+			var subProperty = Property.GetComputedProperty(_rootModel.AppliedToElement.Style);
+			var subElement = subProperty.GetVisualElement(null);
+
+			
 			foreach (var arg in args)
 			{
-				
 				var subModel = _rootModel.CreateChildModel(arg, prop =>
 				{
+					if (subElement is IBussPropertyVisualElementSupportsPreview previewAble)
+					{
+						subProperty = Property.GetComputedProperty(_rootModel.AppliedToElement.Style);
+						previewAble.SetValueFromProperty(subProperty);
+					}
 					OnValueChanged?.Invoke(Property);
 				});
 				var elem = new StylePropertyVisualElement(subModel);
-			
 				Root.Add(elem);
 				elem.Init();
 			}
+
+			if (subElement is IBussPropertyVisualElementSupportsPreview previewAble)
+			{
+				subElement.Init();
+				subElement.DisableInput("Computed value is not directly editable.");
+				previewAble.SetValueFromProperty(subProperty);
+				var outputRow = new VisualElement();
+				outputRow.EnableInClassList("output-row", true);
+				outputRow.Add(new Label("Output"));
+				outputRow.Add(subElement);
+				Root.Add(outputRow);
+			}
+			else
+			{
+				Root.Add(new Label("No available preview"));
+			}
+
 		}
 
 		public override void OnPropertyChangedExternally()

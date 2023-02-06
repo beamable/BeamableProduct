@@ -17,7 +17,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class VertexColorBussPropertyVisualElement : BussPropertyVisualElement<VertexColorBussProperty>
+	public class VertexColorBussPropertyVisualElement : BussPropertyVisualElement<VertexColorBussProperty>, IBussPropertyVisualElementSupportsPreview
 	{
 		private DropdownVisualElement _drawerModeDropdown;
 		private VisualElement _topRow;
@@ -237,6 +237,26 @@ namespace Beamable.Editor.UI.Components
 			VerticalGradient,
 			DiagonalGradient,
 			FlippedDiagonalGradient,
+		}
+
+		public void SetValueFromProperty(IBussProperty property)
+		{
+			_drawerModeDropdown.RemoveFromHierarchy();
+			switch (property)
+			{
+				
+				case SingleColorBussProperty colorProp:
+					DrawerMode = Mode.SingleColor;
+					_bottomLeftColor.SetValueWithoutNotify(colorProp.Color);
+					break;
+				case VertexColorBussProperty vertexProp:
+					DrawerMode = Mode.PerVertexColor;
+					_bottomLeftColor.SetValueWithoutNotify(vertexProp.ColorRect.BottomLeftColor);
+					_bottomRightColor.SetValueWithoutNotify(vertexProp.ColorRect.BottomRightColor);
+					_topLeftColor.SetValueWithoutNotify(vertexProp.ColorRect.TopLeftColor);
+					_topRightColor.SetValueWithoutNotify(vertexProp.ColorRect.TopRightColor);
+					break;
+			}
 		}
 	}
 }

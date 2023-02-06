@@ -268,39 +268,6 @@ namespace Beamable.UI.Buss
 				}
 
 				return styleProperty;
-				// if (style._properties.TryGetValue(Key, out var property) && property != null)
-				// {
-				// 	if (property is VariableProperty variable)
-				// 	{
-				// 		return GetFromVariable(style, variable.VariableName);
-				// 	}
-				// 	else
-				// 	{
-				// 		switch (property.ValueType)
-				// 		{
-				// 			case BussPropertyValueType.Inherited:
-				// 			// return GetFromStyle(style._inheritedFromStyle);
-				// 			case BussPropertyValueType.Value:
-				//
-				// 				if (property is IComputedProperty computedProperty)
-				// 				{
-				// 					Debug.Log("reading computed property");
-				// 					// var computedValue = computedProperty.GetComputedValue<T>(style);
-				// 					// return computedValue;
-				// 				}
-				// 				
-				// 				return property as T;
-				// 			case BussPropertyValueType.Initial:
-				// 				return DefaultValue;
-				//
-				// 			default:
-				// 				throw new InvalidOperationException("Unknown property value type");
-				// 		}
-				// 		// return (T)property;
-				// 	}
-				// }
-				//
-				// return useDefaultIfNotFound ? DefaultValue : null;
 			}
 
 			private T GetFromPseudoStyle(BussPseudoStyle style)
@@ -328,28 +295,6 @@ namespace Beamable.UI.Buss
 				}
 
 				return variableProperty;
-				// if (_keyControler.Contains(variableName))
-				// {
-				// 	Debug.LogWarning("Cyclical variable reference in BUSS properties.");
-				// 	return DefaultValue;
-				// }
-				//
-				// _keyControler.Add(variableName);
-				// var result = DefaultValue;
-				// if (style._properties.TryGetValue(variableName, out var property))
-				// {
-				// 	if (property is VariableProperty variableProperty)
-				// 	{
-				// 		result = GetFromVariable(style, variableProperty.VariableName);
-				// 	}
-				// 	else
-				// 	{
-				// 		result = (property as T) ?? DefaultValue;
-				// 	}
-				// }
-				//
-				// _keyControler.Clear();
-				// return result;
 			}
 
 			public void Set(BussStyle style, T property)

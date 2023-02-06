@@ -148,6 +148,7 @@ namespace Beamable.UI.Buss
 			new ComputedPropertyArg[] {topLeft, topRight, lowLeft, lowRight};
 
 		public ColorRect ColorRect { get; }
+		public IBussProperty GetComputedProperty(BussStyle style) => GetComputedValue(style);
 	}
 	
 	public abstract class SingleColorAndFloatOperation : 
@@ -264,5 +265,8 @@ namespace Beamable.UI.Buss
 
 		public Color Color { get; }
 		public ColorRect ColorRect { get; }
+		
+		public IBussProperty GetComputedProperty(BussStyle style) => GetComputedValue(style);
+
 	}
 }

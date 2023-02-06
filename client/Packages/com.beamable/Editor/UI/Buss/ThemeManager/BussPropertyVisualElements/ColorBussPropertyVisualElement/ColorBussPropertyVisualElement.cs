@@ -11,7 +11,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class ColorBussPropertyVisualElement : BussPropertyVisualElement<SingleColorBussProperty>
+	public class ColorBussPropertyVisualElement : BussPropertyVisualElement<SingleColorBussProperty>, IBussPropertyVisualElementSupportsPreview
 	{
 		private ColorField _field;
 
@@ -39,6 +39,19 @@ namespace Beamable.Editor.UI.Components
 		public override void OnPropertyChangedExternally()
 		{
 			_field.SetValueWithoutNotify(Property.Color);
+		}
+
+		public void SetValueFromProperty(IBussProperty property)
+		{
+			switch (property)
+			{
+				case SingleColorBussProperty colorProp:
+					_field.SetValueWithoutNotify(colorProp.Color);
+					break;
+				case VertexColorBussProperty vertexProp:
+					_field.SetValueWithoutNotify(vertexProp.ColorRect.BottomLeftColor);
+					break;
+			}
 		}
 	}
 }

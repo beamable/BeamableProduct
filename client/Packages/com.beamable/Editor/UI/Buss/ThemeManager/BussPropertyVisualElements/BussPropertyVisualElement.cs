@@ -38,7 +38,10 @@ namespace Beamable.Editor.UI.Components
 
 		public void DisableInput(string tooltip = "Disabled")
 		{
-			this.Q<BindableElement>().SetEnabled(false);
+			foreach (var bindable in this.Query<BindableElement>().ToList())
+			{
+				bindable.SetEnabled(false);
+			}
 			this.tooltip = tooltip;
 		}
 
@@ -51,6 +54,11 @@ namespace Beamable.Editor.UI.Components
 
 	}
 
+	public interface IBussPropertyVisualElementSupportsPreview
+	{
+		void SetValueFromProperty(IBussProperty property);
+
+	}
 	public abstract class BussPropertyVisualElement<T> : BussPropertyVisualElement where T : IBussProperty
 	{
 		public override IBussProperty BaseProperty => Property;

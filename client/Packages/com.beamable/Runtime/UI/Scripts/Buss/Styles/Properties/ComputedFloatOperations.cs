@@ -45,6 +45,23 @@ namespace Beamable.UI.Buss
 		public ComputedPropertyArg a = ComputedPropertyArg.Create<FloatBussProperty>(nameof(a));
 		public ComputedPropertyArg b = ComputedPropertyArg.Create<FloatBussProperty>(nameof(b));
 
+		private Dictionary<BussStyle, FloatBussProperty> _styleToPropertyCache =
+			new Dictionary<BussStyle, FloatBussProperty>();
+
+		private FloatBussProperty AddOrUpdate(BussStyle style, float val)
+		{
+			if (!_styleToPropertyCache.TryGetValue(style, out var existing))
+			{
+				_styleToPropertyCache[style] = existing = new FloatBussProperty(val);
+			}
+			else
+			{
+				existing.FloatValue = val;
+			}
+	
+			return existing;
+		}
+
 		public FloatBussProperty GetComputedFloat(BussStyle style)
 		{
 			var aVal = 0f;
@@ -59,8 +76,8 @@ namespace Beamable.UI.Buss
 			}
 
 			var val = Compute(aVal, bVal);
-			
-			return new FloatBussProperty(val); // TODO: replace with an object pool? I think this could cause excessive GC
+
+			return AddOrUpdate(style, val); // TODO: replace with an object pool? I think this could cause excessive GC
 		}
 
 		protected abstract float Compute(float a, float b);
@@ -110,5 +127,7 @@ namespace Beamable.UI.Buss
 		{
 			a, b
 		};
+
+		public IBussProperty GetComputedProperty(BussStyle style) => GetComputedFloat(style);
 	}
 }
