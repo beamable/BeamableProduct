@@ -45,9 +45,21 @@ public class ProjectService
 		var projectPath = Path.Combine(rootServicesPath, projectName);
 		var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
 	
-		// TODO: automatically install Beam.Templates if not installed... 
+		if (Directory.Exists(solutionPath))
+		{
+			throw new CliException("Cannot create a solution because the directory already exists");
+		}
 		
-		// TODO: if the folder already exists, fail the command. 
+		// check that we have the templates available
+		var canUseTemplates = await Cli.Wrap("dotnet")
+			.WithArguments($"new list --tag beamable")
+			.WithValidation(CommandResultValidation.None)
+			.ExecuteAsync().Select(res => res.ExitCode == 0).Task;
+
+		if (!canUseTemplates)
+		{
+			throw new CliException("Cannot access Beamable.Templates dotnet templates. Please install the Beamable templates and try again.");
+		}
 		
 		// create the solution
 		await Cli.Wrap($"dotnet")
