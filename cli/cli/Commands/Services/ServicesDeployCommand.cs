@@ -18,17 +18,15 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 {
-	private readonly IAppContext _ctx;
-	private readonly BeamoLocalSystem _localBeamo;
+	private IAppContext _ctx;
+	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
 
-	public ServicesDeployCommand(IAppContext ctx, BeamoLocalSystem localBeamo, BeamoService remoteRemoteBeamo) :
+	public ServicesDeployCommand() :
 		base("deploy",
 			"Deploys services, either locally or remotely (to the current realm).")
 	{
-		_ctx = ctx;
-		_localBeamo = localBeamo;
-		_remoteBeamo = remoteRemoteBeamo;
+
 	}
 
 	public override void Configure()
@@ -59,6 +57,9 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
 	{
+		_ctx = args.AppContext;
+		_localBeamo = args.BeamoLocalSystem;
+		_remoteBeamo = args.BeamoService;
 		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 		await _localBeamo.StartListeningToDocker();
 

@@ -13,16 +13,16 @@ public class CliEnvironment
 		LogLevel = Environment.GetEnvironmentVariable(Constants.KEY_ENV_LOG_LEVEL) ?? string.Empty;
 	}
 
-	public string Api { get; }
-	public string Cid { get; }
-	public string Pid { get; }
-	public string AccessToken { get; }
-	public string RefreshToken { get; }
-	public string ConfigDir { get; }
+	private string Api { get; }
+	private string Cid { get; }
+	private string Pid { get; }
+	private string AccessToken { get; }
+	private string RefreshToken { get; }
+	private string ConfigDir { get; }
 	public string LogLevel { get; }
 
 
-	private static readonly Type[] SUPPORTED_OPTION_TYPES = new[] { typeof(PlatformOption), typeof(CidOption), typeof(PidOption), typeof(AccessTokenOption), typeof(RefreshTokenOption) };
+	private static readonly Type[] SUPPORTED_OPTION_TYPES = new[] { typeof(PlatformOption), typeof(CidOption), typeof(PidOption), typeof(AccessTokenOption), typeof(RefreshTokenOption), typeof(ConfigDirOption) };
 
 	public bool TryGetFromOption(ConfigurableOption option, out string var)
 	{
@@ -45,6 +45,7 @@ public class CliEnvironment
 			PidOption => Pid,
 			AccessTokenOption => AccessToken,
 			RefreshTokenOption => RefreshToken,
+			ConfigDirOption => ConfigDir,
 			_ => throw new ArgumentException($"Unsupported Option Type given! Type={option.GetType().Name} does not have an Environment Variable fallback!")
 		};
 	}

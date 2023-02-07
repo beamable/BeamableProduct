@@ -20,14 +20,13 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 	public static readonly Option<bool> BEAM_SERVICE_OPTION_ENABLE_ON_REMOTE_DEPLOY = new("--enabled", "Whether or not we should try and run the service when we deploy remotely.");
 	public static readonly Option<bool?> BEAM_SERVICE_OPTION_IGNORE_DEPENDENCIES = new("--no-deps", () => null, "Propagates the change to the services dependencies. When disabling, this is true by default.");
 
-	private readonly BeamoLocalSystem _localBeamo;
+	private BeamoLocalSystem _localBeamo;
 
 
-	public ServicesEnableCommand(BeamoLocalSystem localBeamo) :
+	public ServicesEnableCommand() :
 		base("enable",
 			"Enables/Disables existing services.")
 	{
-		_localBeamo = localBeamo;
 	}
 
 	public override void Configure()
@@ -48,6 +47,8 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 
 	public override async Task Handle(ServicesEnableCommandArgs args)
 	{
+		_localBeamo = args.BeamoLocalSystem;
+
 		// Handle Beamo Id Option 
 		var existingBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToList();
 		{

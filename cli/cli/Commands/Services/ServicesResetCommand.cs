@@ -15,13 +15,12 @@ public class ServicesResetCommandArgs : LoginCommandArgs
 
 public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 {
-	private readonly BeamoLocalSystem _localBeamo;
+	private BeamoLocalSystem _localBeamo;
 
-	public ServicesResetCommand(BeamoLocalSystem localBeamo) :
+	public ServicesResetCommand() :
 		base("reset",
 			"Resets services to default settings and cleans up docker images (if any exist).")
 	{
-		_localBeamo = localBeamo;
 	}
 
 	public override void Configure()
@@ -37,6 +36,8 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 
 	public override async Task Handle(ServicesResetCommandArgs args)
 	{
+		_localBeamo = args.BeamoLocalSystem;
+
 		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 		await _localBeamo.StartListeningToDocker();
 

@@ -4,11 +4,10 @@ namespace cli.Content;
 
 public class ContentResetCommand : AppCommand<ContentResetCommandArgs>
 {
-	private readonly ContentService _contentService;
+	private ContentService _contentService;
 
-	public ContentResetCommand(ContentService contentService) : base("reset", string.Empty)
+	public ContentResetCommand() : base("reset", string.Empty)
 	{
-		_contentService = contentService;
 	}
 
 	public override void Configure()
@@ -19,6 +18,8 @@ public class ContentResetCommand : AppCommand<ContentResetCommandArgs>
 
 	public override async Task Handle(ContentResetCommandArgs args)
 	{
+		_contentService = args.ContentService;
+
 		var manifest = await _contentService.GetManifest(args.ManifestId);
 		_contentService.UpdateTags(manifest);
 		var _ = await _contentService.PullContent(manifest);
