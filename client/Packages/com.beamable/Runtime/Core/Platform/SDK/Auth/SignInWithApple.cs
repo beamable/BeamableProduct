@@ -145,7 +145,7 @@ namespace Beamable.Platform.SDK.Auth
             }
             s_CredentialStateCallback = callback;
 
-            GetCredentialState(userID);
+            GetCredentialStateInternal(userID);
         }
 
         private void GetCredentialStateInternal(string userID)
