@@ -387,6 +387,7 @@ namespace Beamable
 				// the GameObject will get destroyed soon, and services will start throwing
 				// exceptions that the GameObject doesn't exist. Better to curb the init process all
 				// together, since the application is exiting playmode anyway.
+				_initPromise = new Promise(); // do not complete the promise...
 				return;
 			}
 #endif
