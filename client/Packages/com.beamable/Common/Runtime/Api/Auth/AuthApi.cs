@@ -237,11 +237,11 @@ namespace Beamable.Common.Api.Auth
 		}
 
 		public Promise<ExternalLoginResponse> LoginExternalIdentity(
-			string externalToken, 
-			string providerService, 
+			string externalToken,
+			string providerService,
 			string providerNamespace,
 			ChallengeSolution challengeSolution = null,
-			bool mergeGamerTagToAccount=true)
+			bool mergeGamerTagToAccount = true)
 		{
 			ExternalAuthenticationRequest body;
 
@@ -271,9 +271,9 @@ namespace Beamable.Common.Api.Auth
 				Method.POST, TOKEN_URL, body, includeAuthHeader: mergeGamerTagToAccount, parser: json =>
 				{
 					var res = new ExternalLoginResponse();
-					
+
 					var authResult = JsonUtility.FromJson<ExternalAuthenticationResponse>(json);
-					
+
 					if (authResult?.challenge?.Length > 0)
 					{
 						// the response object is requesting a further challenge to be made.
@@ -284,11 +284,11 @@ namespace Beamable.Common.Api.Auth
 						var tokenResult = JsonUtility.FromJson<TokenResponse>(json);
 						res.tokenResponse.Set(tokenResult);
 					}
-					
+
 					return res;
 				});
 		}
-		
+
 		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
 																	  string providerService,
 																	  string providerNamespace = "",
@@ -531,9 +531,9 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class OptionalTokenResponse : Optional<TokenResponse>
 	{
-		
+
 	}
-	
+
 	/// <summary>
 	/// This type defines the functionality for the %TokenResponse for the %AuthService.
 	///
@@ -754,7 +754,7 @@ namespace Beamable.Common.Api.Auth
 	{
 		public ChallengeSolution challenge_solution;
 	}
-	
+
 	[Serializable]
 	public class AttachExternalIdentityResponse
 	{
@@ -801,9 +801,9 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class OptionalExternalAuthenticationResponse : Optional<ExternalAuthenticationResponse>
 	{
-		
+
 	}
-	
+
 	[Serializable]
 	public class ExternalAuthenticationResponse
 	{
