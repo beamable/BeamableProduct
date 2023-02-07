@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
@@ -17,13 +18,21 @@ namespace Beamable.Common.Api.Presence
 
 		public Promise<EmptyResponse> SendHeartbeat()
 		{
+			/*
+			 * if the ConnectivityCheckingEnabled is enabled, then we DON'T want the request
+			 * to include the pre-check. But if the ConnectivityCheckingEnabled is disabled,
+			 * then we should include the pre-check.
+			 */ 
+			var useConnectivityPreCheck = !ConnectivityCheckingEnabled;
+
 			return _requester.BeamableRequest(new SDKRequesterOptions<EmptyResponse>
 			{
 				method = Method.PUT,
 				uri = $"/players/{_userContext.UserId}/presence",
 				includeAuthHeader = true,
-				useConnectivityPreCheck = false // the magic sauce to allow this to ignore the connectivity
-			});
+				useConnectivityPreCheck =
+					useConnectivityPreCheck // the magic sauce to allow this to ignore the connectivity
+			}).RecoverFromNoConnectivity(() => EmptyResponse.Unit); // if no connection happens, that is fine, just carry on.
 		}
 
 		public Promise<PlayerPresence> GetPlayerPresence(long playerId)
@@ -62,6 +71,8 @@ namespace Beamable.Common.Api.Presence
 				json
 			);
 		}
+
+		public bool ConnectivityCheckingEnabled { get; set; }
 	}
 
 	[Serializable]

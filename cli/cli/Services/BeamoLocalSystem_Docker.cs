@@ -173,62 +173,91 @@ public partial class BeamoLocalSystem
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest")
 	{
+		dockerBuildContextPath = _configService.GetRelativePath(dockerBuildContextPath);
+		
+
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
 		{
+			
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
-			await _client.Images.BuildImageFromDockerfileAsync(
-				new ImageBuildParameters { Tags = new[] { tag }, Dockerfile = dockerfilePathInBuildContext, Labels = new Dictionary<string, string>() { { "beamoId", imageName } } },
-				stream,
-				null,
-				new Dictionary<string, string>(),
-				new Progress<JSONMessage>(message =>
-				{
-					/* Potentially relevant stream messages formats (in order of appearance):
-					 *
-					 * {"stream":"\n"}
-					 * {"stream":"Step 14/14 : LABEL beamoId=test1"}
-					 * {"stream":" ---> Running in 286bb8db47b8\n"}
-					 * {"stream":"Removing intermediate container 286bb8db47b8\n"}
-					 * {"stream":" ---> 08705e552527\n"}
-					 * {"aux":{"ID":"sha256:08705e552527b5b7d5dce08777c134338d8d642878670d79ff2d8ec393f75852"}}
-					 * {"stream":"Successfully built 08705e552527\n"}
-					 * {"stream":"Successfully tagged test1:latest\n"}
-					 */
-
-					// If you need to make changes to this and aren't super familiar with regex --- go here and learn it:
-					// https://regex101.com/r/gpX8Ix/1
-					var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
-
-					var messageStream = message.Stream;
-					if (!string.IsNullOrEmpty(messageStream))
+			try
+			{
+				await _client.Images.BuildImageFromDockerfileAsync(
+					new ImageBuildParameters
 					{
-						if (regex.IsMatch(messageStream))
+						Tags = new[] { tag },
+						Dockerfile = dockerfilePathInBuildContext,
+						Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
+					},
+					stream,
+					null,
+					new Dictionary<string, string>(),
+					new Progress<JSONMessage>(message =>
+					{
+						/* Potentially relevant stream messages formats (in order of appearance):
+						 *
+						 * {"stream":"\n"}
+						 * {"stream":"Step 14/14 : LABEL beamoId=test1"}
+						 * {"stream":" ---> Running in 286bb8db47b8\n"}
+						 * {"stream":"Removing intermediate container 286bb8db47b8\n"}
+						 * {"stream":" ---> 08705e552527\n"}
+						 * {"aux":{"ID":"sha256:08705e552527b5b7d5dce08777c134338d8d642878670d79ff2d8ec393f75852"}}
+						 * {"stream":"Successfully built 08705e552527\n"}
+						 * {"stream":"Successfully tagged test1:latest\n"}
+						 */
+
+						// If you need to make changes to this and aren't super familiar with regex --- go here and learn it:
+						// https://regex101.com/r/gpX8Ix/1
+						var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
+
+						BeamableLogger.LogError(message.ErrorMessage);
+						if (message.Error != null)
 						{
-							// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
-							var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
-							var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
-
-							var currStep = float.Parse(currentStepStr);
-							// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
-							var totalStep = float.Parse(totalStepStr) + 1;
-
-							// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
-							// IDK why this happens, but... it does...
-							var currProgress = currStep / totalStep;
-							progress = progress < currProgress ? currProgress : progress;
+							BeamableLogger.LogError(message.Error.Code.ToString());
+							BeamableLogger.LogError(message.Error.Message);
+							BeamableLogger.LogError("Failed!");
+							throw new Exception(
+								$"Failed to build {tag} code=[{message.Error.Code}] message=[{message.Error.Message}]");
 						}
 
-						// We set this to one here when we receive this stream message as it's the final one
-						if (messageStream.StartsWith("Successfully tagged"))
-							progress = 1;
+						var messageStream = message.Stream;
+						if (!string.IsNullOrEmpty(messageStream))
+						{
+							// BeamableLogger.Log(messageStream);
+							if (regex.IsMatch(messageStream))
+							{
+								// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
+								var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
+								var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
 
-						// Update the progress handler
-						progressUpdateHandler?.Invoke(progress);
-					}
-				}));
+								var currStep = float.Parse(currentStepStr);
+								// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
+								var totalStep = float.Parse(totalStepStr) + 1;
+
+								// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
+								// IDK why this happens, but... it does...
+								var currProgress = currStep / totalStep;
+								progress = progress < currProgress ? currProgress : progress;
+							}
+
+							// We set this to one here when we receive this stream message as it's the final one
+							if (messageStream.StartsWith("Successfully tagged"))
+								progress = 1;
+
+							// Update the progress handler
+							progressUpdateHandler?.Invoke(progress);
+						}
+					}));
+			}
+			catch (Exception ex)
+			{
+				BeamableLogger.LogError(ex);
+				BeamableLogger.LogError(ex?.InnerException);
+			}
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);
+			
 			return builtImage.ID;
 		}
 	}
@@ -347,6 +376,15 @@ public partial class BeamoLocalSystem
 		var tarball = new MemoryStream(512 * 1024);
 		var files = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories);
 
+		var filteredFiles = new List<string>();
+		foreach (var file in files)
+		{
+			if (file.Contains("/bin/")) continue;
+			if (file.Contains("/obj/")) continue;
+			filteredFiles.Add(file);
+		}
+
+		files = filteredFiles.ToArray();
 		using var archive = new TarOutputStream(tarball, Encoding.Default)
 		{
 			//Prevent the TarOutputStream from closing the underlying memory stream when done
