@@ -216,7 +216,8 @@ namespace Beamable.Common.Api.Auth
 		Promise<CurrentProjectResponse> GetCurrentProject();
 
 		/// <summary>
-		/// Use a token issued by an external identity to retrieve a <see cref="TokenResponse"/>. The resulting token response
+		/// Use a token issued by an external identity provider to retrieve a <see cref="TokenResponse"/>. The resulting token response
+
 		/// can be used to change the current <see cref="User"/>.
 		///
 		/// This method returns a <see cref="ExternalLoginResponse"/>, which will contain a <see cref="TokenResponse"/> if the
