@@ -17,13 +17,12 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public AccountManagementFeatureControl FeatureControl;
 		public int EnrichOrder;
 
-		public TMP_InputField EmailInput;
-		public TMP_InputField PasswordInput;
+		public BeamInputField EmailInput;
+		public BeamInputField PasswordInput;
 		public Button ForgotPasswordButton;
 		public Button NextButton;
 		public Button SignInButton;
 		public Button SignUpButton;
-		public ErrorMessageText ErrorText;
 
 		protected IDependencies System;
 		
@@ -46,9 +45,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 			
-			ErrorText.HideMessage();
-			EmailInput.text = string.Empty;
-			PasswordInput.text = string.Empty;
+			EmailInput.Clear();
+			PasswordInput.Clear();
 			
 			PasswordInput.gameObject.SetActive(false);
 			ForgotPasswordButton.transform.parent.gameObject.SetActive(false);
@@ -67,7 +65,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			if (System.IsEmailValid(EmailInput.text, out string error))
 			{
-				ErrorText.HideMessage();
+				EmailInput.SetValidState();
 				FeatureControl.SetLoadingOverlay(true);
 				if (await System.Context.Accounts.IsEmailAvailable(EmailInput.text))
 				{
@@ -83,7 +81,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			}
 			else
 			{
-				ErrorText.SetErrorMessage(error);
+				EmailInput.SetInvalidState(error);
 			}
 			
 			FeatureControl.SetLoadingOverlay(false);
@@ -94,19 +92,25 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			string email = EmailInput.text;
 			string password = PasswordInput.text;
 
-			if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+			if (string.IsNullOrWhiteSpace(email) || !System.IsEmailValid(EmailInput.text, out _))
 			{
-				ErrorText.SetErrorMessage("Please provide your credentials");
+				EmailInput.SetInvalidState("Please provide a valid email address");
 				return;
 			}
+			EmailInput.SetValidState();
+
+			if (string.IsNullOrWhiteSpace(password))
+			{
+				PasswordInput.SetInvalidState("Please provide a password");
+				return;
+			}
+			PasswordInput.SetValidState();
 
 			FeatureControl.SetLoadingOverlay(true);
 			var result = await System.Context.Accounts.RecoverAccountWithEmail(email, password);
 			
 			if (result.isSuccess)
 			{
-				ErrorText.HideMessage();
-				
 				await result.SwitchToAccount();
 				FeatureControl.OpenAccountsView();
 			}
@@ -115,11 +119,13 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				switch (result.error)
 				{
 					case PlayerRecoveryError.UNKNOWN_CREDENTIALS:
-						ErrorText.SetErrorMessage("Incorrect credentials");
+						EmailInput.SetInvalidState();
+						PasswordInput.SetInvalidState("Incorrect credentials");
 						break;
 					
 					default:
-						ErrorText.SetErrorMessage("Unknown error has occured");
+						EmailInput.SetInvalidState();
+						PasswordInput.SetInvalidState("Unknown error has occured");
 						break;
 				}
 			}
