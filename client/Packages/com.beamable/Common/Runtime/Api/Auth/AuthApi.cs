@@ -444,6 +444,7 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class User
 	{
+		
 		/// <summary>
 		/// The unique id of the player, sometimes called a "dbid".
 		/// </summary>
@@ -526,6 +527,27 @@ namespace Beamable.Common.Api.Auth
 		{
 			return scopes.Contains(scope) || scopes.Contains("*");
 		}
+		
+		/// <summary>
+		/// The broadcast checksum is used by the various Player Centric SDKs to determine if an object has changed
+		/// since the previous update event.
+		/// </summary>
+		/// <returns></returns>
+		public int GetBroadcastChecksum()
+		{
+			unchecked
+			{
+				var hashCode = id.GetHashCode();
+				hashCode = (hashCode * 397) ^ (email != null ? email.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (language != null ? language.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (scopes != null ? scopes.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (thirdPartyAppAssociations != null ? thirdPartyAppAssociations.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (deviceIds != null ? deviceIds.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (external != null ? external.GetHashCode() : 0);
+				return hashCode;
+			}
+		}
+
 	}
 
 	[Serializable]

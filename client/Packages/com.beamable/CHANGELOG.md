@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.11.0]
 ### Added
 - `PlayerInventory` supports storing player's inventory in offline mode
 - `PlayerInventory` supports `UpdateDelayed` method
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `BeamContext.Presence` layer to handle requesting/changing player's presence status
 - `BeamContext.Social` now contains an event for players changing their presence status
 - `PlayerAccounts` supports external identity auth.
+- `BeamContext.Default.Instance` returns a `Promise<BeamContext>` that returns the default context.
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
@@ -27,9 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue with logging in and realm switching while being on an archived realm.
 - Duplicate content is now displayed immediately in `Content Manager`
 - Update banner in Toolbox will update both `com.beamable` and `com.beamable.server` package. 
-
-### Removed
-- `connectivityRoute` option in `config-defaults` no longer has any effect. All connectivity checks happen as part of the heart beat cycle every 5 seconds.
 
 ## [1.10.3]
 ### Changed
