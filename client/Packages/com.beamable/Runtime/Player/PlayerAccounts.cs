@@ -317,7 +317,7 @@ namespace Beamable.Player
 		}
 		
 		/// <inheritdoc cref="PlayerAccounts.AddExternalIdentity"/>
-		public Promise<RegistrationResult> AddExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler)
+		public Promise<RegistrationResult> AddExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler=null)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
@@ -820,6 +820,12 @@ namespace Beamable.Player
 		{
 			Error = error;
 		}
+
+		public PlayerRecoveryException(PlayerRecoveryError error, string message)
+			: base($"The recovery failed. error=[{error}] message=[{message}]")
+		{
+			
+		}
 	}
 
 	/// <summary>
@@ -880,7 +886,12 @@ namespace Beamable.Player
 		/// <summary>
 		/// Represents that the given credentials weren't valid, or didn't map to an existing <see cref="PlayerAccount"/>
 		/// </summary>
-		UNKNOWN_CREDENTIALS
+		UNKNOWN_CREDENTIALS,
+		
+		/// <summary>
+		/// Represents that the given recovery did not specify enough information to login 
+		/// </summary>
+		INSUFFICIENT_DATA
 	}
 
 	/// <summary>
@@ -1130,6 +1141,10 @@ namespace Beamable.Player
 					res = await loginFunction(_authService, false);
 				}
 			}
+			catch (PlayerRecoveryException)
+			{
+				return new PlayerRecoveryOperation { error = PlayerRecoveryError.INSUFFICIENT_DATA };
+			}
 			catch (PlatformRequesterException)
 			{
 				return new PlayerRecoveryOperation { error = PlayerRecoveryError.UNKNOWN_CREDENTIALS };
@@ -1331,14 +1346,14 @@ namespace Beamable.Player
 		/// A unique token for the player from the external third party
 		/// </param>
 		/// <param name="challengeHandler">
-		/// The server will request the client to meet a challenge. The <see cref="ChallengeHandler"/> will be given
-		/// the challenge string from the server, and it must sign the challenge and return the solution. The solution
+		/// The server may request the client to meet a challenge. The <see cref="ChallengeHandler"/> will be given
+		/// the challenge string from the server, and it must solve the challenge and return the solution. The solution
 		/// will be given back to the server to validate identity. 
 		/// </param>
 		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
-		public Promise<PlayerRecoveryOperation> RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler)
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler=null)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
@@ -1356,6 +1371,11 @@ namespace Beamable.Player
 					}
 
 					var challenge = res.challenge.Value;
+					if (challengeHandler == null)
+					{
+						throw new PlayerRecoveryException(PlayerRecoveryError.INSUFFICIENT_DATA,
+						                                  "A challenge was requested, but no challenge handler was provided.");
+					}
 					var solution = await challengeHandler?.Invoke(challenge.challenge);
 					var nextRes = await auth.LoginExternalIdentity(token, client.ServiceName, ident.UniqueName, new ChallengeSolution
 					{
@@ -1365,8 +1385,8 @@ namespace Beamable.Player
 					return await HandleResponse(nextRes);
 				}
 
-				var res = await auth.LoginExternalIdentity(token, client.ServiceName, ident.UniqueName, mergeGamerTagToAccount:merge);
-				return await HandleResponse(res);
+				var loginRes = await auth.LoginExternalIdentity(token, client.ServiceName, ident.UniqueName, mergeGamerTagToAccount:merge);
+				return await HandleResponse(loginRes);
 			});
 		}
 
@@ -1392,15 +1412,15 @@ namespace Beamable.Player
 		/// A unique player specific token from the external third party.
 		/// </param>
 		/// <param name="challengeHandler">
-		/// The server will request the client to meet a challenge. The <see cref="ChallengeHandler"/> will be given
-		/// the challenge string from the server, and it must sign the challenge and return the solution. The solution
+		/// The server may request the client to meet a challenge. The <see cref="ChallengeHandler"/> will be given
+		/// the challenge string from the server, and it must solve the challenge and return the solution. The solution
 		/// will be given back to the server to validate identity. 
 		/// </param>
 		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <param name="account"></param>
 		/// <returns>A <see cref="RegistrationResult"/> representing the result of the deviceId addition. </returns>
-		public async Promise<RegistrationResult> AddExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler, PlayerAccount account = null)
+		public async Promise<RegistrationResult> AddExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler = null, PlayerAccount account = null)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
@@ -1420,7 +1440,11 @@ namespace Beamable.Player
 				switch (response.result)
 				{
 					case "challenge":
-						var solution = await challengeHandler?.Invoke(response.challenge_token);
+						if (challengeHandler == null)
+						{
+							throw new InvalidOperationException("A challenge was requested, but no challenge handler was provided.");
+						}
+						var solution = await challengeHandler.Invoke(response.challenge_token);
 						var solutionRes = await service.AttachIdentity(token, client.ServiceName, ident.UniqueName, new ChallengeSolution
 						{
 							challenge_token = response.challenge_token,
@@ -1452,7 +1476,7 @@ namespace Beamable.Player
 			{
 				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
 				return res;
-			}
+			} 
 			
 			await Refresh();
 			return res;
