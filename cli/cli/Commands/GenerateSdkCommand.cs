@@ -22,11 +22,10 @@ public enum GenerateSdkConflictResolutionStrategy
 
 public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 {
-	private readonly SwaggerService _swagger;
+	private SwaggerService _swagger;
 
-	public GenerateSdkCommand(SwaggerService swagger) : base("generate", "generate Beamable client source code from open API documents")
+	public GenerateSdkCommand() : base("generate", "generate Beamable client source code from open API documents")
 	{
-		_swagger = swagger;
 	}
 
 	public override void Configure()
@@ -53,6 +52,8 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 
 	public override async Task Handle(GenerateSdkCommandArgs args)
 	{
+		_swagger = args.SwaggerService;
+
 		var filter = BeamableApiFilter.Parse(args.Filter);
 		var output = await _swagger.Generate(filter, args.Engine, args.ResolutionStrategy);
 

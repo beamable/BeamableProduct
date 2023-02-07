@@ -5,10 +5,9 @@ namespace cli.Content;
 
 public class ContentCommand : AppCommand<ContentCommandArgs>
 {
-	private readonly ContentService _contentService;
-	public ContentCommand(ContentService contentService) : base("content", "Open content folder in file explorer")
+	private ContentService _contentService;
+	public ContentCommand() : base("content", "Open content folder in file explorer")
 	{
-		_contentService = contentService;
 	}
 
 	public override void Configure()
@@ -19,6 +18,7 @@ public class ContentCommand : AppCommand<ContentCommandArgs>
 
 	public override Task Handle(ContentCommandArgs args)
 	{
+		_contentService = args.ContentService;
 		new Process
 		{
 			StartInfo = new ProcessStartInfo(_contentService.ContentLocal.ContentDirPath)

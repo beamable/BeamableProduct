@@ -2,12 +2,10 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
-using Beamable.Editor;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Reflection;
-using Beamable.Server.Editor.CodeGen;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI;
@@ -18,11 +16,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
-using UnityEditor.Callbacks;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Docker;
 using static Beamable.Common.Constants.Features.Services;
@@ -32,12 +28,12 @@ using LogMessage = Beamable.Editor.UI.Model.LogMessage;
 namespace Beamable.Server.Editor
 {
 #if BEAMABLE_DEVELOPER
-	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache",
+	                 order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 #endif
 	public class MicroserviceReflectionCache : ReflectionSystemObject
 	{
-		[NonSerialized]
-		public Registry Cache;
+		[NonSerialized] public Registry Cache;
 
 		public override IReflectionSystem System => Cache;
 
@@ -63,20 +59,29 @@ namespace Beamable.Server.Editor
 			static Registry()
 			{
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
-				MICROSERVICE_ATTRIBUTE = new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { }, new[] { typeof(Microservice) });
+				MICROSERVICE_ATTRIBUTE =
+					new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { },
+					                        new[] {typeof(Microservice)});
 
 				MONGO_STORAGE_OBJECT_BASE_TYPE = new BaseTypeOfInterest(typeof(MongoStorageObject));
-				STORAGE_OBJECT_ATTRIBUTE = new AttributeOfInterest(typeof(StorageObjectAttribute), new Type[] { }, new[] { typeof(StorageObject) });
+				STORAGE_OBJECT_ATTRIBUTE =
+					new AttributeOfInterest(typeof(StorageObjectAttribute), new Type[] { },
+					                        new[] {typeof(StorageObject)});
 
-				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() { MICROSERVICE_BASE_TYPE, MONGO_STORAGE_OBJECT_BASE_TYPE };
-				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() { MICROSERVICE_ATTRIBUTE, STORAGE_OBJECT_ATTRIBUTE };
+				BASE_TYPES_OF_INTEREST =
+					new List<BaseTypeOfInterest>() {MICROSERVICE_BASE_TYPE, MONGO_STORAGE_OBJECT_BASE_TYPE};
+				ATTRIBUTES_OF_INTEREST =
+					new List<AttributeOfInterest>() {MICROSERVICE_ATTRIBUTE, STORAGE_OBJECT_ATTRIBUTE};
 			}
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
 			public List<AttributeOfInterest> AttributesOfInterest => ATTRIBUTES_OF_INTEREST;
 
-			private Dictionary<string, MicroserviceBuilder> _serviceToBuilder = new Dictionary<string, MicroserviceBuilder>();
-			private Dictionary<string, MongoStorageBuilder> _storageToBuilder = new Dictionary<string, MongoStorageBuilder>();
+			private Dictionary<string, MicroserviceBuilder> _serviceToBuilder =
+				new Dictionary<string, MicroserviceBuilder>();
+
+			private Dictionary<string, MongoStorageBuilder> _storageToBuilder =
+				new Dictionary<string, MongoStorageBuilder>();
 
 			public readonly List<StorageObjectDescriptor> StorageDescriptors = new List<StorageObjectDescriptor>();
 			public readonly List<MicroserviceDescriptor> Descriptors = new List<MicroserviceDescriptor>();
@@ -102,7 +107,7 @@ namespace Beamable.Server.Editor
 			}
 
 			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
-											   PerAttributeCache perAttributeCache)
+			                                   PerAttributeCache perAttributeCache)
 			{
 				// TODO: Display BeamHint of validation type for microservices declared in ignored assemblies.
 			}
@@ -119,11 +124,14 @@ namespace Beamable.Server.Editor
 				{
 					var validationResults = cachedMicroserviceSubtypes
 						.GetAndValidateAttributeExistence(MICROSERVICE_ATTRIBUTE,
-														  info =>
-														  {
-															  var message = $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
-															  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
-														  });
+						                                  info =>
+						                                  {
+							                                  var message =
+								                                  $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
+							                                  return new AttributeValidationResult(
+								                                  null, info,
+								                                  ReflectionCache.ValidationResultType.Error, message);
+						                                  });
 
 					// Get all Microservice Attribute usage errors found
 					validationResults.SplitValidationResults(out _, out _, out var microserviceAttrErrors);
@@ -131,7 +139,9 @@ namespace Beamable.Server.Editor
 					// Register a hint with all its validation errors as the context object
 					if (microserviceAttrErrors.Count > 0)
 					{
-						var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING);
+						var hint = new BeamHintHeader(BeamHintType.Validation,
+						                              BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
+						                              BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING);
 						_hintStorage.AddOrReplaceHint(hint, microserviceAttrErrors);
 					}
 				}
@@ -140,11 +150,14 @@ namespace Beamable.Server.Editor
 				{
 					var validationResults = cachedStorageObjectSubTypes
 						.GetAndValidateAttributeExistence(STORAGE_OBJECT_ATTRIBUTE,
-														  info =>
-														  {
-															  var message = $"{nameof(StorageObject)} sub-class [{info.Name}] does not have the [{nameof(StorageObjectAttribute)}].";
-															  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
-														  });
+						                                  info =>
+						                                  {
+							                                  var message =
+								                                  $"{nameof(StorageObject)} sub-class [{info.Name}] does not have the [{nameof(StorageObjectAttribute)}].";
+							                                  return new AttributeValidationResult(
+								                                  null, info,
+								                                  ReflectionCache.ValidationResultType.Error, message);
+						                                  });
 
 					// Get all Microservice Attribute usage errors found
 					validationResults.SplitValidationResults(out _, out _, out var storageObjAttrErrors);
@@ -152,13 +165,16 @@ namespace Beamable.Server.Editor
 					// Register a hint with all its validation errors as the context object
 					if (storageObjAttrErrors.Count > 0)
 					{
-						var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_STORAGE_OBJECT_ATTRIBUTE_MISSING);
+						var hint = new BeamHintHeader(BeamHintType.Validation,
+						                              BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
+						                              BeamHintIds.ID_STORAGE_OBJECT_ATTRIBUTE_MISSING);
 						_hintStorage.AddOrReplaceHint(hint, storageObjAttrErrors);
 					}
 				}
 			}
 
-			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType, IReadOnlyList<MemberAttribute> cachedMemberAttributes)
+			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType,
+			                                       IReadOnlyList<MemberAttribute> cachedMemberAttributes)
 			{
 				if (attributeType.Equals(MICROSERVICE_ATTRIBUTE))
 					ParseMicroserviceAttributes(cachedMemberAttributes);
@@ -169,47 +185,59 @@ namespace Beamable.Server.Editor
 				void ParseMicroserviceAttributes(IReadOnlyList<MemberAttribute> cachedMicroserviceAttributes)
 				{
 					// Searches for all unique name collisions.
-					var uniqueNameValidationResults = cachedMicroserviceAttributes.GetAndValidateUniqueNamingAttributes<MicroserviceAttribute>();
+					var uniqueNameValidationResults = cachedMicroserviceAttributes
+						.GetAndValidateUniqueNamingAttributes<MicroserviceAttribute>();
 
 					// Registers a hint with all name collisions found.
 					if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
 					{
-						var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_MICROSERVICE_NAME_COLLISION);
+						var hint = new BeamHintHeader(BeamHintType.Validation,
+						                              BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
+						                              BeamHintIds.ID_MICROSERVICE_NAME_COLLISION);
 						_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
 					}
 
 					// Get all ClientCallables
 					var clientCallableValidationResults = cachedMicroserviceAttributes
-														  .SelectMany(pair => pair.InfoAs<Type>().GetMethods(BindingFlags.Public | BindingFlags.Instance))
-														  .GetOptionalAttributeInMembers<ClientCallableAttribute>();
+					                                      .SelectMany(
+						                                      pair => pair.InfoAs<Type>()
+						                                                  .GetMethods(
+							                                                  BindingFlags.Public |
+							                                                  BindingFlags.Instance))
+					                                      .GetOptionalAttributeInMembers<ClientCallableAttribute>();
 
 					// Handle invalid signatures and warnings
 					clientCallableValidationResults.SplitValidationResults(out var clientCallablesValid,
-																		   out var clientCallableWarnings,
-																		   out var clientCallableErrors);
+					                                                       out var clientCallableWarnings,
+					                                                       out var clientCallableErrors);
 					if (clientCallableWarnings.Count > 0)
 					{
-						var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID);
+						var hint = new BeamHintHeader(BeamHintType.Hint,
+						                              BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
+						                              BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID);
 						_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
 					}
 
 					if (clientCallableErrors.Count > 0)
 					{
-						var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS);
+						var hint = new BeamHintHeader(BeamHintType.Validation,
+						                              BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
+						                              BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS);
 						_hintStorage.AddOrReplaceHint(hint, clientCallableErrors);
 					}
 
 					// Builds a lookup of DeclaringType => MemberAttribute.
 					var validClientCallablesLookup = clientCallablesValid
-													 .Concat(clientCallableWarnings)
-													 .Concat(clientCallableErrors)
-													 .Select(result => result.Pair)
-													 .CreateMemberAttributeOwnerLookupTable();
+					                                 .Concat(clientCallableWarnings)
+					                                 .Concat(clientCallableErrors)
+					                                 .Select(result => result.Pair)
+					                                 .CreateMemberAttributeOwnerLookupTable();
 
 					// Register all configured microservices
 					for (int k = 0; k < uniqueNameValidationResults.PerAttributeNameValidations.Count; k++)
 					{
-						var serviceAttribute = uniqueNameValidationResults.PerAttributeNameValidations[k].Pair.AttrAs<MicroserviceAttribute>();
+						var serviceAttribute = uniqueNameValidationResults.PerAttributeNameValidations[k].Pair
+						                                                  .AttrAs<MicroserviceAttribute>();
 						var type = uniqueNameValidationResults.PerAttributeNameValidations[k].Pair.InfoAs<Type>();
 
 						// TODO: XXX this is a hacky way to ignore the default microservice...
@@ -219,8 +247,10 @@ namespace Beamable.Server.Editor
 							continue;
 
 						// Create descriptor
-						var hasWarning = uniqueNameValidationResults.PerAttributeNameValidations[k].Type == ReflectionCache.ValidationResultType.Warning;
-						var hasError = uniqueNameValidationResults.PerAttributeNameValidations[k].Type == ReflectionCache.ValidationResultType.Error;
+						var hasWarning = uniqueNameValidationResults.PerAttributeNameValidations[k].Type ==
+						                 ReflectionCache.ValidationResultType.Warning;
+						var hasError = uniqueNameValidationResults.PerAttributeNameValidations[k].Type ==
+						               ReflectionCache.ValidationResultType.Error;
 						var descriptor = new MicroserviceDescriptor
 						{
 							Name = serviceAttribute.MicroserviceName,
@@ -234,7 +264,7 @@ namespace Beamable.Server.Editor
 						if (validClientCallablesLookup.TryGetValue(type, out var clientCallables))
 						{
 							// Generates descriptors for each of the individual client callables.
-							descriptor.Methods = clientCallables.Select(delegate (MemberAttribute pair)
+							descriptor.Methods = clientCallables.Select(delegate(MemberAttribute pair)
 							{
 								var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
 								var clientCallableMethod = pair.InfoAs<MethodInfo>();
@@ -243,22 +273,46 @@ namespace Beamable.Server.Editor
 								var callableScopes = clientCallableAttribute.RequiredScopes;
 
 								var parameters = clientCallableMethod
-												 .GetParameters()
-												 .Select((param, i) =>
-												 {
-													 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
-													 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
-														 ? param.Name
-														 : paramAttr.ParameterNameOverride;
-													 return new ClientCallableParameterDescriptor { Name = paramName, Index = i, Type = param.ParameterType };
-												 }).ToArray();
+								                 .GetParameters()
+								                 .Select((param, i) =>
+								                 {
+									                 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
+									                 var paramName =
+										                 string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
+											                 ? param.Name
+											                 : paramAttr.ParameterNameOverride;
+									                 return new ClientCallableParameterDescriptor
+									                 {
+										                 Name = paramName, Index = i, Type = param.ParameterType
+									                 };
+								                 }).ToArray();
 
-								return new ClientCallableDescriptor() { Path = callableName, Scopes = callableScopes, Parameters = parameters, };
+								return new ClientCallableDescriptor()
+								{
+									Path = callableName, Scopes = callableScopes, Parameters = parameters,
+								};
 							}).ToList();
 						}
 						else // If no client callables were found in the C#MS, initialize an empty list.
 						{
 							descriptor.Methods = new List<ClientCallableDescriptor>();
+						}
+
+						// Check if MS is used for external identity federation
+						var interfaces = descriptor.Type.GetInterfaces();
+
+						foreach (var it in interfaces)
+						{
+							if(!it.IsGenericType) continue;
+							if (it.GetGenericTypeDefinition() != typeof(IFederatedLogin<>)) continue;
+
+							var map = descriptor.Type.GetInterfaceMap(it);
+							var federatedType = it.GetGenericArguments()[0];
+
+							if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+							{
+								descriptor.FederatedNamespaces.Add(identity.UniqueName);
+							}
 						}
 
 						Descriptors.Add(descriptor);
@@ -269,12 +323,15 @@ namespace Beamable.Server.Editor
 				void ParseStorageObjectAttributes(IReadOnlyList<MemberAttribute> cachedStorageObjectAttributes)
 				{
 					// Searches for all unique name collisions.
-					var uniqueNameValidationResults = cachedStorageObjectAttributes.GetAndValidateUniqueNamingAttributes<StorageObjectAttribute>();
+					var uniqueNameValidationResults = cachedStorageObjectAttributes
+						.GetAndValidateUniqueNamingAttributes<StorageObjectAttribute>();
 
 					// Registers a hint with all name collisions found.
 					if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
 					{
-						var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_STORAGE_OBJECT_NAME_COLLISION);
+						var hint = new BeamHintHeader(BeamHintType.Validation,
+						                              BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
+						                              BeamHintIds.ID_STORAGE_OBJECT_NAME_COLLISION);
 						_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
 					}
 
@@ -319,9 +376,9 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
 			public async Task Deploy(ManifestModel model,
-									 CancellationToken token,
-									 Action<IDescriptor> onServiceDeployed = null,
-									 Action<LogMessage> logger = null)
+			                         CancellationToken token,
+			                         Action<IDescriptor> onServiceDeployed = null,
+			                         Action<LogMessage> logger = null)
 			{
 				try
 				{
@@ -334,7 +391,10 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-			private async Task DeployInternal(ManifestModel model, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
+			private async Task DeployInternal(ManifestModel model,
+			                                  CancellationToken token,
+			                                  Action<IDescriptor> onServiceDeployed = null,
+			                                  Action<LogMessage> logger = null)
 			{
 				// if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -342,6 +402,7 @@ namespace Beamable.Server.Editor
 				{
 					logger = message => Debug.Log($"[{message.Level}] {message.Timestamp} - {message.Message}");
 				}
+
 				var descriptorsCount = Descriptors.Count;
 
 				OnBeforeDeploy?.Invoke(model, descriptorsCount);
@@ -433,19 +494,19 @@ namespace Beamable.Server.Editor
 
 					var forceStop = new StopImageReturnableCommand(descriptor);
 					await forceStop.StartAsync(); // force the image to stop.
-					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
+					await BeamServicesCodeWatcher
+						.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
 
 					// Build the image
 					try
 					{
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
-																 includeDebugTools: false,
-																 watch: false,
-																 pull: true,
-																 cpuContext: CPUArchitectureContext.DEPLOY);
+						                                         includeDebugTools: false,
+						                                         watch: false,
+						                                         pull: true,
+						                                         cpuContext: CPUArchitectureContext.DEPLOY);
 
 						await buildCommand.StartAsync();
-
 					}
 					catch (Exception e)
 					{
@@ -458,7 +519,6 @@ namespace Beamable.Server.Editor
 					// Try to start the image and talk to it's healthcheck endpoint.
 					try
 					{
-
 						async Promise<string> CheckHealthStatus()
 						{
 							var comm = new DockerPortCommand(descriptor, Constants.Features.Services.HEALTH_PORT);
@@ -468,12 +528,11 @@ namespace Beamable.Server.Editor
 								return "false";
 
 							var res = await de.ServiceScope.GetService<IEditorHttpRequester>()
-											  .ManualRequest<string>(
-												  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health",
-												  parser: x => x);
+							                  .ManualRequest<string>(
+								                  Method.GET, $"http://{dockerPortResult.LocalFullAddress}/health",
+								                  parser: x => x);
 							return res;
 						}
-
 
 						if (MicroserviceConfiguration.Instance.EnablePrePublishHealthCheck)
 						{
@@ -481,7 +540,8 @@ namespace Beamable.Server.Editor
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
 
 							// Check to see if the storage descriptor is running.
-							var connectionStrings = await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
+							var connectionStrings =
+								await GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)descriptor);
 
 							// Create a build that will build an image that doesn't run the custom initialization hooks
 							// Let's run it locally.
@@ -489,10 +549,13 @@ namespace Beamable.Server.Editor
 							// This is because we cannot guarantee the user won't do anything in them to break this.
 							// TODO: Change algorithm to always have StorageObjects running locally during verification process.
 							// TODO: Allow users to enable running custom hooks on specific C#MSs instances --- this implies they'd know what they are doing.
-							var runServiceCommand = new RunServiceCommand(descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings, false, false);
+							var runServiceCommand = new RunServiceCommand(
+								descriptor, de.CurrentCustomer.Cid, de.CurrentRealm.Pid, secret, connectionStrings,
+								false, false);
 							runServiceCommand.Start();
 
-							var healthcheckTimeout = MicroserviceConfiguration.Instance.PrePublishHealthCheckTimeout.GetOrElse(10);
+							var healthcheckTimeout =
+								MicroserviceConfiguration.Instance.PrePublishHealthCheckTimeout.GetOrElse(10);
 
 							// Wait until the container has completely booted up and it's Start function has finished.
 							var timeWaitingForBoot = 0f;
@@ -519,7 +582,9 @@ namespace Beamable.Server.Editor
 
 							if (!isHealthy)
 							{
-								OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
+								OnDeployFailed?.Invoke(
+									model,
+									$"Deploy failed due to build of {descriptor.Name} failing to start. Check out the C#MS logs to understand why.");
 								UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 								// Stop the container since we don't need to keep the local one alive anymore.
@@ -534,13 +599,15 @@ namespace Beamable.Server.Editor
 					}
 					catch (Exception e)
 					{
-						OnDeployFailed?.Invoke(model, $"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
+						OnDeployFailed?.Invoke(
+							model,
+							$"Deploy failed due to build of {descriptor.Name} failing to start: Exception={e} Message={e.Message}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 						return;
 					}
-					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
 
+					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
 
 					if (token.IsCancellationRequested)
 					{
@@ -549,6 +616,7 @@ namespace Beamable.Server.Editor
 
 						return;
 					}
+
 					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
@@ -565,14 +633,19 @@ namespace Beamable.Server.Editor
 					var imageId = imageDetails.imageId;
 					if (string.IsNullOrEmpty(imageId))
 					{
-						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
+						OnDeployFailed?.Invoke(
+							model,
+							$"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
+
 					// the architecture needs to be one of the supported beamable architectures...
 					if (!CPU_SUPPORTED.Any(imageDetails.Platform.Contains))
 					{
-						OnDeployFailed?.Invoke(model, $"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
+						OnDeployFailed?.Invoke(
+							model,
+							$"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
@@ -583,7 +656,6 @@ namespace Beamable.Server.Editor
 					{
 						if (existingReference.imageId == imageId)
 						{
-
 							logger(new LogMessage
 							{
 								Level = LogLevel.INFO,
@@ -610,7 +682,7 @@ namespace Beamable.Server.Editor
 						if (!enabledServices.Contains(storage.Name))
 							enabledServices.Add(storage.Name);
 
-						serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
+						serviceDependencies.Add(new ServiceDependency {id = storage.Name, storageType = "storage"});
 					}
 
 					entryModel.Dependencies = serviceDependencies;
@@ -622,23 +694,28 @@ namespace Beamable.Server.Editor
 						Message = $"Uploading container service=[{descriptor.Name}]"
 					});
 					await uploader.UploadContainer(descriptor, token, () =>
-												   {
-													   Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
-													   onServiceDeployed?.Invoke(descriptor);
-													   UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
-												   },
-												   () =>
-												   {
-													   Debug.LogError(string.Format(CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
-													   if (token.IsCancellationRequested)
-													   {
-														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
-														   UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-													   }
-												   }, imageId);
+					                               {
+						                               Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE,
+						                                                       descriptor.Name));
+						                               onServiceDeployed?.Invoke(descriptor);
+						                               UpdateServiceDeployStatus(
+							                               descriptor, ServicePublishState.Published);
+					                               },
+					                               () =>
+					                               {
+						                               Debug.LogError(
+							                               string.Format(
+								                               CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
+						                               if (token.IsCancellationRequested)
+						                               {
+							                               OnDeployFailed?.Invoke(
+								                               model,
+								                               $"Cancellation requested during upload of {descriptor.Name}.");
+							                               UpdateServiceDeployStatus(
+								                               descriptor, ServicePublishState.Failed);
+						                               }
+					                               }, imageId);
 				}
-
-
 
 				// at this point, all storage objects should at least be marked as complete.
 				foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
@@ -649,7 +726,7 @@ namespace Beamable.Server.Editor
 						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 						Message = $"Comitting storage=[{storage.StorageName}]"
 					});
-					var storageDesc = new StorageObjectDescriptor { Name = storage.StorageName };
+					var storageDesc = new StorageObjectDescriptor {Name = storage.StorageName};
 					onServiceDeployed?.Invoke(storageDesc);
 					OnServiceDeployStatusChanged?.Invoke(storageDesc, ServicePublishState.Published);
 				}
@@ -658,7 +735,7 @@ namespace Beamable.Server.Editor
 				var remoteOnlyServices = model.Services.Where(s => !nameToImageDetails.ContainsKey(s.Key)).ToList();
 				foreach (var remoteOnly in remoteOnlyServices)
 				{
-					var desc = new MicroserviceDescriptor { Name = remoteOnly.Key };
+					var desc = new MicroserviceDescriptor {Name = remoteOnly.Key};
 					onServiceDeployed?.Invoke(desc);
 					OnServiceDeployStatusChanged?.Invoke(desc, ServicePublishState.Published);
 				}
@@ -686,7 +763,8 @@ namespace Beamable.Server.Editor
 						imageCpuArch = kvp.Value.cpuArch,
 						dependencies = sa.Dependencies
 					};
-				}).Where(service => !service.archived); // If this is a local-only service, and its archived, best not to send it _at all_.
+				}).Where(service => !service
+					         .archived); // If this is a local-only service, and its archived, best not to send it _at all_.
 
 				// 2- Finds all Known Remote Service (and their last uploaded configuration/image id).
 				var remoteServiceReferences = model.ServerManifest.Select(kvp => kvp.Value);
@@ -704,12 +782,13 @@ namespace Beamable.Server.Editor
 				// 4- Make sure we only have each service once on the list.
 				manifest = manifest.Distinct(new ServiceReferenceNameComp()).ToList();
 
-
 				// Identify storages to enable
 				// 1- Make a list of all dependencies that are depended on by any of the services that will be enabled
-				var allDependenciesThatMustBeEnabled = manifest.Where(serviceRef => serviceRef.enabled).SelectMany(sr => sr.dependencies)
-															   .Select(deps => deps.id)
-															   .ToList();
+				var allDependenciesThatMustBeEnabled = manifest
+				                                       .Where(serviceRef => serviceRef.enabled)
+				                                       .SelectMany(sr => sr.dependencies)
+				                                       .Select(deps => deps.id)
+				                                       .ToList();
 
 				// 2- Only enable storages that are actually depended on by services.
 				var storageManifest = model.Storages.Select(kvp =>
@@ -725,7 +804,12 @@ namespace Beamable.Server.Editor
 					};
 				}).ToList();
 
-				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storageManifest });
+				await client.Deploy(new ServiceManifest
+				{
+					comments = model.Comment,
+					manifest = manifest,
+					storageReference = storageManifest
+				});
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
 
 				logger(new LogMessage
@@ -809,7 +893,10 @@ namespace Beamable.Server.Editor
 					// get enablement for each service...
 					var entries = allServices.Select(name =>
 					{
-						var configEntry = MicroserviceConfiguration.Instance.GetEntry(name); //config.FirstOrDefault(s => s.ServiceName == name);
+						var configEntry =
+							MicroserviceConfiguration.Instance
+							                         .GetEntry(
+								                         name); //config.FirstOrDefault(s => s.ServiceName == name);
 						var descriptor = Descriptors.FirstOrDefault(d => d.Name == configEntry.ServiceName);
 						var remote = manifest.manifest.FirstOrDefault(s => string.Equals(s.serviceName, name));
 						var serviceDependencies = new List<ServiceDependency>();
@@ -817,7 +904,8 @@ namespace Beamable.Server.Editor
 						{
 							foreach (var storage in descriptor.GetStorageReferences())
 							{
-								serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
+								serviceDependencies.Add(
+									new ServiceDependency {id = storage.Name, storageType = "storage"});
 							}
 						}
 						else if (remote != null)
@@ -870,7 +958,6 @@ namespace Beamable.Server.Editor
 						Storages = storageEntries.ToDictionary(s => s.Name)
 					};
 				});
-
 			}
 
 			private void UpdateServiceDeployStatus(MicroserviceDescriptor descriptor, ServicePublishState status)
@@ -885,7 +972,8 @@ namespace Beamable.Server.Editor
 
 			#region Running Services
 
-			public async Promise<Dictionary<string, string>> GetConnectionStringEnvironmentVariables(MicroserviceDescriptor service)
+			public async Promise<Dictionary<string, string>> GetConnectionStringEnvironmentVariables(
+				MicroserviceDescriptor service)
 			{
 				var env = new Dictionary<string, string>();
 				foreach (var reference in service.GetStorageReferences())
@@ -913,7 +1001,6 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-
 			#endregion
 
 			#region Service Builders
@@ -927,6 +1014,7 @@ namespace Beamable.Server.Editor
 					builder.Init(descriptor);
 					_serviceToBuilder.Add(key, builder);
 				}
+
 				return _serviceToBuilder[key];
 			}
 

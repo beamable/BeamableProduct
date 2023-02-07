@@ -2,6 +2,7 @@
 #define DISABLE_THREADING
 #endif
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -37,6 +38,7 @@ namespace Beamable.Common.Runtime.Collections
 		public IEnumerable<TValue> Values => _internal.Values;
 		public void Clear() => _internal.Clear();
 		public bool TryGetValue(TKey key, out TValue value) => _internal.TryGetValue(key, out value);
+		public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory) => _internal.GetOrAdd(key, valueFactory);
 
 		public TValue this[TKey key]
 		{
@@ -50,7 +52,6 @@ namespace Beamable.Common.Runtime.Collections
 		IEnumerator IEnumerable.GetEnumerator() => _internal.GetEnumerator();
 
 		public bool Remove(TKey key) => _internal.TryRemove(key, out _);
-
 #else
       private Dictionary<TKey, TValue> _internal = new Dictionary<TKey, TValue>();
       public bool ContainsKey(TKey key) => _internal.ContainsKey(key);
@@ -70,6 +71,15 @@ namespace Beamable.Common.Runtime.Collections
       public void Clear() => _internal.Clear();
 
       public bool TryGetValue(TKey key, out TValue value) => _internal.TryGetValue(key, out value);
+      public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory) {
+        TValue value;
+        if (!_internal.TryGetValue(key, out value))
+        {
+          value = valueFactory(key);
+          _internal.Add(key, value);
+        }
+        return value;
+      }
 
       public int Count => _internal.Count;
       public IEnumerable<TValue> Values => _internal.Values;

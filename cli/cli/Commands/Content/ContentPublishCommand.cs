@@ -4,11 +4,10 @@ namespace cli.Content;
 
 public class ContentPublishCommand : AppCommand<ContentPublishCommandArgs>
 {
-	private readonly ContentService _contentService;
+	private ContentService _contentService;
 
-	public ContentPublishCommand(ContentService contentService) : base("publish", "Publish content and manifest")
+	public ContentPublishCommand() : base("publish", "Publish content and manifest")
 	{
-		_contentService = contentService;
 	}
 
 	public override void Configure()
@@ -19,6 +18,7 @@ public class ContentPublishCommand : AppCommand<ContentPublishCommandArgs>
 
 	public override async Task Handle(ContentPublishCommandArgs args)
 	{
+		_contentService = args.ContentService;
 		await _contentService.PublishContentAndManifest(args.ManifestId);
 	}
 }
