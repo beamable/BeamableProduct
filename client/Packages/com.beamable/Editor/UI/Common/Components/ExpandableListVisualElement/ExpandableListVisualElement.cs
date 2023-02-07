@@ -80,6 +80,7 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			label.text = displayValues[0];
+			label.tooltip = displayValues[0];
 			label.UnregisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 			label.RegisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 
@@ -94,7 +95,9 @@ namespace Beamable.Editor.UI.Components
 			{
 				for (int i = 1; i < displayValues.Length; i++)
 				{
-					label.text += "\n" + displayValues[i];
+					var txt = "\n" + displayValues[i];
+					label.text += txt;
+					label.tooltip += txt;
 				}
 
 #if UNITY_2019_1_OR_NEWER
