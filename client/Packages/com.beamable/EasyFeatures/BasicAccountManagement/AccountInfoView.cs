@@ -12,7 +12,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
-			string Email { get; set; }
+			string Email { get; }
 			Promise<string> GetCurrentAvatarName(long playerId);
 			Promise SetAvatar(string avatarName);
 			Promise<string> GetUsername(long playerId);

@@ -103,16 +103,6 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			return string.Empty;
 		}
 
-		public bool IsAccountDataValid(string email, string password, string confirmPassword, out string errorMessage)
-		{
-			if (!IsEmailValid(email, out errorMessage))
-			{
-				return false;
-			}
-
-			return IsPasswordValid(password, confirmPassword, out errorMessage);
-		}
-
 		public bool IsEmailValid(string email, out string errorMessage)
 		{
 			if (string.IsNullOrWhiteSpace(email))

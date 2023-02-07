@@ -11,17 +11,17 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
-			string Email { get; set; }
-			bool IsAccountDataValid(string email, string password, string confirmPassword, out string errorMessage);
+			string Email { get; }
+			bool IsEmailValid(string email, out string errorMessage);
+			bool IsPasswordValid(string password, string confirmation, out string errorMessage);
 		}
 		
 		public AccountManagementFeatureControl FeatureControl;
 		public int EnrichOrder;
 
-		public TMP_InputField EmailInput;
-		public TMP_InputField PasswordInput;
-		public TMP_InputField ConfirmPasswordInput;
-		public ErrorMessageText ErrorText;
+		public BeamInputField EmailInput;
+		public BeamInputField PasswordInput;
+		public BeamInputField ConfirmPasswordInput;
 		public Button SignUpButton;
 		public Button SignInButton;
 
@@ -46,10 +46,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
-			ErrorText.HideMessage();
+			EmailInput.Clear();
 			EmailInput.text = System.Email;
-			PasswordInput.text = string.Empty;
-			ConfirmPasswordInput.text = string.Empty;
+			PasswordInput.Clear();
+			ConfirmPasswordInput.Clear();
 			
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
@@ -77,38 +77,48 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			string email = EmailInput.text;
 			string password = PasswordInput.text;
 			string confirmation = ConfirmPasswordInput.text;
-			if (System.IsAccountDataValid(email, password, confirmation, out string errorMessage))
-			{
-				FeatureControl.SetLoadingOverlay(true);
-				var result = await System.Context.Accounts.AddEmail(email, password);
-				if (result.isSuccess)
-				{
-					ErrorText.HideMessage();
 
-					await result.account.SwitchToAccount();
-					FeatureControl.OpenAccountsView();
-				}
-				else
-				{
-					switch (result.error)
-					{
-						case PlayerRegistrationError.ALREADY_HAS_CREDENTIAL:
-						case PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN:
-							ErrorText.SetErrorMessage("Account already exists");
-							break;
-						
-						default:
-							ErrorText.SetErrorMessage("Unknown error has occured");
-							break;
-					}
-				}
-				
-				FeatureControl.SetLoadingOverlay(false);
+			if (!System.IsEmailValid(email, out string emailError))
+			{
+				EmailInput.SetInvalidState(emailError);
+				return;
+			}
+			EmailInput.SetValidState();
+
+			if (!System.IsPasswordValid(password, confirmation, out string passwordError))
+			{
+				PasswordInput.SetInvalidState();
+				ConfirmPasswordInput.SetInvalidState(passwordError);
+				return;
+			}
+			PasswordInput.SetValidState();
+			ConfirmPasswordInput.SetValidState();
+			
+			FeatureControl.SetLoadingOverlay(true);
+			var result = await System.Context.Accounts.AddEmail(email, password);
+			if (result.isSuccess)
+			{
+				await result.account.SwitchToAccount();
+				FeatureControl.OpenAccountsView();
 			}
 			else
 			{
-				ErrorText.SetErrorMessage(errorMessage);
+				switch (result.error)
+				{
+					case PlayerRegistrationError.ALREADY_HAS_CREDENTIAL:
+					case PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN:
+						EmailInput.SetInvalidState("Account already exists");
+						break;
+						
+					default:
+						EmailInput.SetInvalidState();
+						PasswordInput.SetInvalidState();
+						ConfirmPasswordInput.SetInvalidState("Unknown error has occured");
+						break;
+				}
 			}
+				
+			FeatureControl.SetLoadingOverlay(false);
 		}
 	}
 }

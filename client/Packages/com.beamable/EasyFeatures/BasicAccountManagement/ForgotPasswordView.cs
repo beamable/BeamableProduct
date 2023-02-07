@@ -12,7 +12,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public interface IDependencies : IBeamableViewDeps
 		{
 			BeamContext Context { get; set; }
-			string Email { get; set; }
+			string Email { get; }
 			bool IsEmailValid(string email, out string errorMessage);
 			bool IsPasswordValid(string password, string confirmation, out string errorMessage);
 		}
