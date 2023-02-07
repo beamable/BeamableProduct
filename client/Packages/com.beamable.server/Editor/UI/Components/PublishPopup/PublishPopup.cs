@@ -200,10 +200,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			for (int index = 0; index < _allUnarchivedServices.Count; index++)
 			{
 				var model = _allUnarchivedServices[index];
-				var wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
 				var isLocal = MicroservicesDataModel.Instance.ContainsModel(model.Name);
 				var isRemote = MicroservicesDataModel.Instance.ContainsRemoteOnlyModel(model.Name);
-				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, index, isLocal, isRemote);
+				var newElement = new PublishManifestEntryVisualElement(model, index, isLocal, isRemote);
 				newElement.Refresh();
 				_publishManifestElements.Add(model.Name, newElement);
 				elements.Add(newElement);

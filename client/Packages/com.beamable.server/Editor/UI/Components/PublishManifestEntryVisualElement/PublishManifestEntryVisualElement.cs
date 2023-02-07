@@ -53,7 +53,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private string _currentPublishState;
 
-		private readonly bool _wasPublished;
 		private readonly int _index;
 		private readonly bool _isRemote;
 		private readonly bool _isLocal;
@@ -76,13 +75,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		};
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
-		                                         bool argWasPublished,
 		                                         int elementIndex,
 		                                         bool isLocal,
 		                                         bool isRemote) : base(nameof(PublishManifestEntryVisualElement))
 		{
 			Model = model;
-			_wasPublished = argWasPublished;
 			_index = elementIndex;
 			_isLocal = isLocal;
 			_isRemote = isRemote;
@@ -99,8 +96,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_enableState = Root.Q<BeamableCheckboxVisualElement>("enableState");
 			_enableState.Refresh();
-			_enableState.SetWithoutNotify(_wasPublished);
-			UpdateEnableState(_wasPublished);
+			_enableState.SetWithoutNotify(Model.Enabled);
+			UpdateEnableState(Model.Enabled);
 			_enableState.OnValueChanged += UpdateEnableState;
 			_enableState.tooltip = CHECKBOX_TOOLTIP;
 
