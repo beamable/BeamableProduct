@@ -318,7 +318,7 @@ namespace Beamable
 					break;
 				case ConnectivityStrategy.None:
 				default:
-					// its up the developer to add a service
+					// it is up the developer to add a service
 					break;
 			}
 		}

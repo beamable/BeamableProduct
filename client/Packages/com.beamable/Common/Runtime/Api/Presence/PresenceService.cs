@@ -21,7 +21,7 @@ namespace Beamable.Common.Api.Presence
 			/*
 			 * if the ConnectivityCheckingEnabled is enabled, then we DON'T want the request
 			 * to include the pre-check. But if the ConnectivityCheckingEnabled is disabled,
-			 * then we should include the pre-check, because presence 
+			 * then we should include the pre-check.
 			 */ 
 			var useConnectivityPreCheck = !ConnectivityCheckingEnabled;
 
@@ -32,7 +32,7 @@ namespace Beamable.Common.Api.Presence
 				includeAuthHeader = true,
 				useConnectivityPreCheck =
 					useConnectivityPreCheck // the magic sauce to allow this to ignore the connectivity
-			}).RecoverFromNoConnectivity(() => EmptyResponse.Unit); // if no connection happens, thats fine, just carry on.
+			}).RecoverFromNoConnectivity(() => EmptyResponse.Unit); // if no connection happens, that is fine, just carry on.
 		}
 
 		public Promise<PlayerPresence> GetPlayerPresence(long playerId)
