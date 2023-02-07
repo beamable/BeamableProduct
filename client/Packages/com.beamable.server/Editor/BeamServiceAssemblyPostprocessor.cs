@@ -31,6 +31,11 @@ namespace Beamable.Server.Editor
 		
 		static void Process(string[] importedAssets) 
 		{
+			if (!BeamEditor.IsInitialized)
+			{
+				return;
+			}
+			
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			foreach (string importedAsset in importedAssets)
 			{
