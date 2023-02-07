@@ -216,6 +216,35 @@ namespace Beamable.Common.Api.Auth
 		Promise<CurrentProjectResponse> GetCurrentProject();
 
 		/// <summary>
+		/// Use a token issued by an external identity provider to retrieve a <see cref="TokenResponse"/>. The resulting token response
+
+		/// can be used to change the current <see cref="User"/>.
+		///
+		/// This method returns a <see cref="ExternalLoginResponse"/>, which will contain a <see cref="TokenResponse"/> if the
+		/// <see cref="challengeSolution"/> field is given.
+		/// Otherwise, this method's <see cref="ExternalLoginResponse"/> will contain a <see cref="ExternalAuthenticationResponse"/>
+		/// which has a challenge that needs to be signed.
+		/// 
+		/// A login will only work after the external identity has been registered by using the <see cref="AttachIdentity"/> method.
+		/// </summary>
+		/// <param name="externalToken">Unique token identifying player.</param>
+		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
+		/// implement Authenticate(string token, string challenge, string solution) method there</param>
+		/// <param name="providerNamespace">Optional parameter to differentiate paths to a provider authenticate method
+		/// in case of having more than one authenticate method in a microservice. Method in microservice should have
+		/// ClientCallable attribute with pathnameOverrider set to "{providerNamespace}/authenticate"</param>
+		/// <param name="challengeSolution"><see cref="ChallengeSolution"/> that contains full challenge token received
+		/// from server and signed/solved solution for that challenge.</param>
+		/// <param name="mergeGamerTagToAccount"></param>
+		/// <returns></returns>
+		Promise<ExternalLoginResponse> LoginExternalIdentity(string externalToken,
+		                                               string providerService,
+		                                               string providerNamespace,
+		                                               ChallengeSolution challengeSolution = null,
+		                                               bool mergeGamerTagToAccount=true);
+		
+		
+		/// <summary>
 		/// Method for registering external identity.
 		/// </summary>
 		/// <param name="externalToken">Unique token identifying player.</param>

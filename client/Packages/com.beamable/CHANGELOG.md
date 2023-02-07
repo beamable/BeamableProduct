@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BeamContext.Default.Accounts` now has `IsThirdPartyAvailable` and `IsEmailAvailable` methods which check if given credentials are available for usage.
 - Added `BeamContext.Presence` layer to handle requesting/changing player's presence status
 - `BeamContext.Social` now contains an event for players changing their presence status
+- `PlayerAccounts` supports external identity auth.
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
