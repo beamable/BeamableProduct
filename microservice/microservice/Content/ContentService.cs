@@ -107,57 +107,163 @@ namespace Beamable.Server.Content
 	   }
    }
 
+   public class CachedContentManifest
+   {
+	   public string _name;
+	   private readonly MicroserviceRequester _requester;
+	   private readonly ConcurrentDictionary<string, ContentReference> _idToContentReference = new ConcurrentDictionary<string, ContentReference>();
+	   private readonly Cache<ContentCacheKey, IContentObject> _contentCache;
+	   private Promise<ClientManifest> _waitForManifest;
+	   private readonly object _manifestLock = new object();
+	   private readonly IContentResolver _contentResolver;
+	   private readonly MicroserviceContentSerializer _serializer = new MicroserviceContentSerializer();
+	   private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
+
+	   
+	   public CachedContentManifest(string name, MicroserviceRequester requester, IContentResolver contentResolver, ReflectionCache reflectionCache)
+	   {
+		   _name = name;
+		   _requester = requester;
+		   _contentResolver = contentResolver;
+		   _contentCache = new Cache<ContentCacheKey, IContentObject>(CacheResolver);
+		   _contentTypeReflectionCache = reflectionCache.GetFirstSystemOfType<ContentTypeReflectionCache>();
+	   }
+	   
+	   private async Task<IContentObject> CacheResolver(ContentCacheKey key)
+	   {
+		   var json = await _contentResolver.RequestContent(key.Uri);
+		   var referencedType = _contentTypeReflectionCache.GetTypeFromId(key.Id);
+		   var content = _serializer.DeserializeByType(json, referencedType);
+		   return content;
+	   }
+	   
+	   public Promise<ClientManifest> WaitForManifest()
+	   {
+		   var hasNoManifest = true;
+		   lock (_manifestLock)
+		   {
+			   hasNoManifest = _waitForManifest == null;
+			   if (hasNoManifest)
+			   {
+				   RefreshManifest();
+			   }
+		   }
+
+		   return _waitForManifest;
+	   }
+	   
+	   public virtual Promise<IContentObject> GetContent(string contentId, Type contentType)
+	   {
+		   return WaitForManifest().FlatMap(_ =>
+		   {
+			   if (!_idToContentReference.TryGetValue(contentId, out var content))
+			   {
+				   throw new ContentNotFoundException(contentId);
+			   }
+
+			   return _contentCache.Get(new ContentCacheKey(content.id, content.uri)).ToPromise();
+		   });
+	   }
+
+	   
+      public void RefreshManifest()
+      {
+         lock (_manifestLock)
+         {
+            var oldPromise = _waitForManifest;
+            // reset the manifest promise, so that if a content request comes while a manifest is being retrieved, we wait for the updated content to be served
+            _waitForManifest = _requester.Request<ContentManifest>(Method.GET, $"/basic/content/manifest?id={_name}")
+	            .RecoverFrom404(ex => new ContentManifest
+	            {
+		            id = _name, created = 0, references = new List<ContentReference>()
+	            })
+	            .Map(manifest =>
+               {
+                  _idToContentReference.Clear();
+
+                  foreach (var reference in manifest.references)
+                  {
+                     // TODO how do we separate the private from the public?
+                     if (!reference.IsPublic) continue;
+
+                     if (!_idToContentReference.ContainsKey(reference.id))
+                     {
+                        if (!_idToContentReference.TryAdd(reference.id, reference))
+                        {
+                           BeamableLogger.LogWarning("Couldn't add content id=[{id}] because it already existed.", reference.id);
+                        }
+                     }
+                  }
+
+                  var keysToKeep = _idToContentReference
+                     .Select(kvp => new ContentCacheKey(kvp.Key, kvp.Value.uri))
+                     .ToHashSet();
+                  _contentCache.PurgeAllExcept(keysToKeep);
+
+                  return new ClientManifest
+                  {
+                     entries = _idToContentReference.Values.Select(r => new ClientContentInfo
+                     {
+                        contentId = r.id,
+                        visibility = ContentVisibilityExtensions.FromString(r.visibility),
+                        tags = r.tags,
+                        version = r.version,
+                        uri = r.uri,
+                        type = r.type
+                     }).ToList()
+                  };
+               });
+
+            if (oldPromise != null && !oldPromise.IsCompleted)
+            {
+               _waitForManifest.Then(manifest => oldPromise.CompleteSuccess(manifest));
+            }
+         }
+      }
+   }
+
    public class ContentService : IMicroserviceContentApi
    {
       private readonly MicroserviceRequester _requester;
       private readonly SocketRequesterContext _socket;
       private readonly IContentResolver _contentResolver;
-
-      private readonly ConcurrentDictionary<string, ContentReference> _idToContentReference = new ConcurrentDictionary<string, ContentReference>();
-
-      private Promise<ClientManifest> _waitForManifest; // TODO: Turn this into a null-checking property accessor
+      private readonly ReflectionCache _reflectionCache;
       private readonly MicroserviceContentSerializer _serializer = new MicroserviceContentSerializer();
-
-      private readonly Cache<ContentCacheKey, IContentObject> _contentCache;
-      private readonly object _manifestLock = new object();
       private readonly ContentTypeReflectionCache _contentTypeReflectionCache;
+
       private bool _hasStartedInit;
+
+      private ConcurrentDictionary<string, CachedContentManifest> _nameToManifest =
+	      new ConcurrentDictionary<string, CachedContentManifest>();
 
       public Promise initializedPromise;
 
       public ContentService(MicroserviceRequester requester, SocketRequesterContext socket, IContentResolver contentResolver, ReflectionCache reflectionCache)
       {
 	      initializedPromise = new Promise();
-         _contentCache = new Cache<ContentCacheKey, IContentObject>(CacheResolver);
          _requester = requester;
          _socket = socket;
          _contentResolver = contentResolver;
+         _reflectionCache = reflectionCache;
          _contentTypeReflectionCache = reflectionCache.GetFirstSystemOfType<ContentTypeReflectionCache>();
       }
 
-      private async Task<IContentObject> CacheResolver(ContentCacheKey key)
+      private Promise<ClientManifest> WaitForManifest(string manifestName=null)
       {
-         var json = await _contentResolver.RequestContent(key.Uri);
-         var referencedType = _contentTypeReflectionCache.GetTypeFromId(key.Id);
-         var content = _serializer.DeserializeByType(json, referencedType);
-         return content;
+	      return GetManifestEntry(manifestName).WaitForManifest();
       }
 
-      private Promise<ClientManifest> WaitForManifest()
+      private CachedContentManifest GetManifestEntry(string manifestName = null)
       {
-         var hasNoManifest = true;
-         lock (_manifestLock)
-         {
-            hasNoManifest = _waitForManifest == null;
-            if (hasNoManifest)
-            {
-               RefreshManifest();
-            }
-         }
-
-         return _waitForManifest;
+	      if (string.IsNullOrEmpty(manifestName)) manifestName = "global";
+	      var manifest = _nameToManifest.GetOrAdd(manifestName, name =>
+	      {
+		      var entry = new CachedContentManifest(name, _requester, _contentResolver, _reflectionCache);
+		      return entry;
+	      });
+	      return manifest;
       }
-
+      
       public async Promise Init(bool preload = false)
       {
 		  if (_hasStartedInit) return;
@@ -234,65 +340,12 @@ namespace Beamable.Server.Content
 
       void HandleContentPublish(ContentManifestEvent manifestEvent)
       {
-         // the event data isn't super useful on its own, so just use it to know that our cache is invalid.
-         RefreshManifest(); // TODO: Maybe this should get debounced? If a flood of events started pouring in for whatever reason, this could kill us.
+	      GetManifestEntry().RefreshManifest();
+	      // the event data isn't super useful on its own, so just use it to know that our cache is invalid.
+         // TODO: Maybe this should get debounced? If a flood of events started pouring in for whatever reason, this could kill us.
       }
 
-      void RefreshManifest()
-      {
-         lock (_manifestLock)
-         {
-            var oldPromise = _waitForManifest;
-            // reset the manifest promise, so that if a content request comes while a manifest is being retrieved, we wait for the updated content to be served
-            _waitForManifest = _requester.Request<ContentManifest>(Method.GET, "/basic/content/manifest")
-	            .RecoverFrom404(ex => new ContentManifest
-	            {
-		            id = "global", created = 0, references = new List<ContentReference>()
-	            })
-	            .Map(manifest =>
-               {
-                  _idToContentReference.Clear();
-
-                  foreach (var reference in manifest.references)
-                  {
-                     // TODO how do we separate the private from the public?
-                     if (!reference.IsPublic) continue;
-
-                     if (!_idToContentReference.ContainsKey(reference.id))
-                     {
-                        if (!_idToContentReference.TryAdd(reference.id, reference))
-                        {
-                           BeamableLogger.LogWarning("Couldn't add content id=[{id}] because it already existed.", reference.id);
-                        }
-                     }
-                  }
-
-                  var keysToKeep = _idToContentReference
-                     .Select(kvp => new ContentCacheKey(kvp.Key, kvp.Value.uri))
-                     .ToHashSet();
-                  _contentCache.PurgeAllExcept(keysToKeep);
-
-                  return new ClientManifest
-                  {
-                     entries = _idToContentReference.Values.Select(r => new ClientContentInfo
-                     {
-                        contentId = r.id,
-                        visibility = ContentVisibilityExtensions.FromString(r.visibility),
-                        tags = r.tags,
-                        version = r.version,
-                        uri = r.uri,
-                        type = r.type
-                     }).ToList()
-                  };
-               });
-
-            if (oldPromise != null && !oldPromise.IsCompleted)
-            {
-               _waitForManifest.Then(manifest => oldPromise.CompleteSuccess(manifest));
-            }
-         }
-      }
-
+    
       public Promise<TContent> Resolve<TContent>(IContentRef<TContent> reference) where TContent : IContentObject, new()
       {
          return GetContent(reference?.GetId(), typeof(TContent)).Map(content => (TContent) content);
@@ -319,27 +372,19 @@ namespace Beamable.Server.Content
 
       public virtual Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
       {
-         return WaitForManifest().FlatMap(_ =>
-         {
-            if (!_idToContentReference.TryGetValue(contentId, out var content))
-            {
-               throw new ContentNotFoundException(contentId);
-            }
-
-            return _contentCache.Get(new ContentCacheKey(content.id, content.uri)).ToPromise();
-         });
+	      return GetManifestEntry(manifestID).GetContent(contentId, contentType);
       }
 
       public Promise<IContentObject> GetContent(string contentId, string manifestID = "")
       {
          var referencedType = _contentTypeReflectionCache.GetTypeFromId(contentId);
-         return GetContent(contentId, referencedType);
+         return GetContent(contentId, referencedType, manifestID);
       }
 
       public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
       {
          var referencedType = _contentTypeReflectionCache.GetTypeFromId(reference.GetId());
-         return GetContent(reference.GetId(), referencedType);
+         return GetContent(reference.GetId(), referencedType, manifestID);
       }
 
       public Promise<TContent> GetContent<TContent>(IContentRef reference, string manifestID = "")
@@ -350,23 +395,23 @@ namespace Beamable.Server.Content
             return Promise<TContent>.Failed(new ContentNotFoundException());
          }
          var referencedType = reference.GetReferencedType();
-         return GetContent(reference.GetId(), referencedType).Map( c => (TContent)c);
+         return GetContent(reference.GetId(), referencedType, manifestID).Map( c => (TContent)c);
       }
 
 
       public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
       {
-         return WaitForManifest();
+         return WaitForManifest(manifestID);
       }
 
       public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
       {
-         return WaitForManifest().Map(x => x.Filter(filter));
+         return WaitForManifest(manifestID).Map(x => x.Filter(filter));
       }
 
       public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
       {
-         return WaitForManifest().Map(x => x.Filter(query));
+         return WaitForManifest(manifestID).Map(x => x.Filter(query));
       }
    }
 }
