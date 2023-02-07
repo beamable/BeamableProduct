@@ -1,6 +1,6 @@
 namespace Beamable.Common.Api.Presence
 {
-	public interface IPresenceApi
+	public interface IPresenceApi : IConnectivityChecker
 	{
 		Promise<EmptyResponse> SendHeartbeat();
 		

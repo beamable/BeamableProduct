@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
 - `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
 - Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
-- Connectivity events are sourced from the `Heartbeat` every 5 seconds, instead of from the `ConnectivityService` every 3 seconds.
 - Update banner in Toolbox will link to changelog instead of blog post.
 
 ### Fixed
