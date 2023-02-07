@@ -262,7 +262,9 @@ namespace Beamable.Common.Api.Auth
 					grant_type = "external",
 					external_token = externalToken,
 					provider_service = providerService,
+					provider_namespace = providerNamespace,
 					challenge_solution = challengeSolution
+
 				};
 			}
 			return Requester.Request<ExternalLoginResponse>(
