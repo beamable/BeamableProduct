@@ -23,15 +23,14 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public AccountManagementFeatureControl FeatureControl;
 		public int EnrichOrder;
 
-		public TMP_InputField EmailInput;
+		public BeamInputField EmailInput;
 		public GameObject InfoLabel;
 		public GameObject TryAgainLabel;
 		public Button TryAgainButton;
 		public GameObject HiddenFieldsGroup;
-		public TMP_InputField CodeInput;
-		public TMP_InputField PasswordInput;
-		public TMP_InputField ConfirmPasswordInput;
-		public ErrorMessageText ErrorText;
+		public BeamInputField CodeInput;
+		public BeamInputField PasswordInput;
+		public BeamInputField ConfirmPasswordInput;
 		public Button ConfirmButton;
 		public TextMeshProUGUI ConfirmButtonLabel;
 		public Button CancelButton;
@@ -59,6 +58,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
+			EmailInput.Clear();
 			EmailInput.text = System.Email;
 			SetCodeSentState(false);
 			
@@ -84,7 +84,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			TryAgainLabel.SetActive(wasSent);
 			HiddenFieldsGroup.SetActive(wasSent);
 			ConfirmButtonLabel.text = wasSent ? CONFIRM_TEXT : SEND_TEXT;
-			ErrorText.HideMessage();
+			CodeInput.Clear();
+			PasswordInput.Clear();
+			ConfirmPasswordInput.Clear();
 			
 			ConfirmButton.onClick.RemoveAllListeners();
 			CancelButton.onClick.RemoveAllListeners();
@@ -102,79 +104,83 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private async void SendCode()
 		{
-			if (System.IsEmailValid(EmailInput.text, out string errorMessage))
+			if (!System.IsEmailValid(EmailInput.text, out string errorMessage))
 			{
-				ErrorText.HideMessage();
-				FeatureControl.SetLoadingOverlay(true);
-				_passwordResetOperation = await System.Context.Accounts.ResetPassword();
-
-				if (_passwordResetOperation.isSuccess)
-				{
-					SetCodeSentState(true);	
-				}
-				else
-				{
-					switch (_passwordResetOperation.error)
-					{
-						case PasswordResetError.NO_EXISTING_CREDENTIAL:
-							ErrorText.SetErrorMessage("Provided account does not exist");
-							break;
-						
-						default:
-							ErrorText.SetErrorMessage("Unknown error has occurred");
-							break;
-					}
-				}
-				
-				FeatureControl.SetLoadingOverlay(false);
+				EmailInput.SetInvalidState(errorMessage);
+				return;
 			}
+			EmailInput.SetValidState();
+			
+			FeatureControl.SetLoadingOverlay(true);
+			_passwordResetOperation = await System.Context.Accounts.ResetPassword();
 
-			ErrorText.SetErrorMessage(errorMessage);
+			if (_passwordResetOperation.isSuccess)
+			{
+				SetCodeSentState(true);
+			}
+			else
+			{
+				switch (_passwordResetOperation.error)
+				{
+					case PasswordResetError.NO_EXISTING_CREDENTIAL:
+						EmailInput.SetInvalidState("Provided account does not exist");
+						break;
+						
+					default:
+						EmailInput.SetInvalidState();
+						PasswordInput.SetInvalidState();
+						ConfirmPasswordInput.SetInvalidState("Unknown error has occurred");
+						break;
+				}
+			}
+				
+			FeatureControl.SetLoadingOverlay(false);
 		}
 
 		private async void ChangePassword()
 		{
 			string password = PasswordInput.text;
 			string confirmation = ConfirmPasswordInput.text;
-			if (System.IsPasswordValid(password, confirmation, out string errorMessage))
+			if (!System.IsPasswordValid(password, confirmation, out string errorMessage))
 			{
-				if (!string.IsNullOrWhiteSpace(CodeInput.text))
-				{
-					ErrorText.HideMessage();
-					FeatureControl.SetLoadingOverlay(true);
+				PasswordInput.SetInvalidState();
+				ConfirmPasswordInput.SetInvalidState(errorMessage);
+				return;
+			}
+			PasswordInput.SetValidState();
+			ConfirmPasswordInput.SetValidState();
 
-					try
-					{
-						var confirm = await _passwordResetOperation.Confirm(CodeInput.text, password);
-						if (confirm.isSuccess)
-						{
-							FeatureControl.OpenSignInView();
-						}
-						else
-						{
-							ErrorText.SetErrorMessage("Unknown error has occured");
-						}
-					}
-					catch (PlatformRequesterException e)
-					{
-						if (e.Error.error == "InvalidConfirmationCodeError")
-						{
-							ErrorText.SetErrorMessage("Provided code is invalid");
-						}
-					}
-					finally
-					{
-						FeatureControl.SetLoadingOverlay(false);	
-					}
+			if (string.IsNullOrWhiteSpace(CodeInput.text))
+			{
+				CodeInput.SetInvalidState("Please enter a password reset code");
+				return;
+			}
+			CodeInput.SetValidState();
+			
+			FeatureControl.SetLoadingOverlay(true);
+			
+			try
+			{
+				var confirm = await _passwordResetOperation.Confirm(CodeInput.text, password);
+				if (confirm.isSuccess)
+				{
+					FeatureControl.OpenSignInView();
 				}
 				else
 				{
-					ErrorText.SetErrorMessage("You must provide reset code");
+					CodeInput.SetInvalidState("Unknown error has occured");
 				}
 			}
-			else
+			catch (PlatformRequesterException e)
 			{
-				ErrorText.SetErrorMessage(errorMessage);
+				if (e.Error.error == "InvalidConfirmationCodeError")
+				{
+					CodeInput.SetInvalidState("Provided code is invalid");
+				}
+			}
+			finally
+			{
+				FeatureControl.SetLoadingOverlay(false);	
 			}
 		}
 	}

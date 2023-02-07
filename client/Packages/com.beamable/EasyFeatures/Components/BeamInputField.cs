@@ -24,6 +24,12 @@ namespace Beamable.EasyFeatures.Components
 			set => InputField.text = value;
 		}
 
+		public bool interactable
+		{
+			get => InputField.interactable;
+			set => InputField.interactable = value;
+		}
+
 		private void Start()
 		{
 			ShowHideContentButton.gameObject.SetActive(AllowShowHideContent);
