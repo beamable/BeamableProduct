@@ -195,6 +195,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(_allUnarchivedServices.Count);
 			_servicesList.style.height = Mathf.Clamp(_allUnarchivedServices.Count,1, MAX_ROW) * ROW_HEIGHT;
 
+			var elements = new List<PublishManifestEntryVisualElement>();
+		
 			for (int index = 0; index < _allUnarchivedServices.Count; index++)
 			{
 				var model = _allUnarchivedServices[index];
@@ -204,9 +206,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, index, isLocal, isRemote);
 				newElement.Refresh();
 				_publishManifestElements.Add(model.Name, newElement);
-				_scrollContainer.Add(newElement);
+				elements.Add(newElement);
 			}
 
+			var orderedElements = elements.OrderBy(x => x.Model.Type)
+			                                                .ThenByDescending(x => x.IsLocal && !x.IsRemote)
+			                                                .ToList();
+			
+			_scrollContainer.AddRange(orderedElements);
+			
 			Root.Q("enableC").tooltip = ON_OFF_HEADER_TOOLTIP;
 			Root.Q("nameC").tooltip = NAME_HEADER_TOOLTIP;
 			Root.Q("knownLocationC").tooltip = KNOWN_LOCATION_HEADER_TOOLTIP;
