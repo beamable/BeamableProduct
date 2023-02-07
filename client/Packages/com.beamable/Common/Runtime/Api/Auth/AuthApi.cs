@@ -234,53 +234,6 @@ namespace Beamable.Common.Api.Auth
 															  useCache: true);
 		}
 
-		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
-																	  string providerService,
-																	  string providerNamespace = "",
-																	  ChallengeSolution challengeSolution = null)
-		{
-			AttachExternalIdentityRequest body;
-
-			if (challengeSolution == null)
-			{
-				body = new AttachExternalIdentityRequest
-				{
-					provider_service = providerService,
-					provider_namespace = providerNamespace,
-					external_token = externalToken
-				};
-			}
-			else
-			{
-				body = new ChallengedAttachExternalIdentityRequest
-				{
-					provider_service = providerService,
-					provider_namespace = providerNamespace,
-					external_token = externalToken,
-					challenge_solution = challengeSolution,
-				};
-			}
-
-			return Requester.Request<AttachExternalIdentityResponse>(
-				Method.POST, $"{ACCOUNT_URL}/external_identity", body);
-		}
-
-		public Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService,
-																	  string userId,
-																	  string providerNamespace = "")
-		{
-			DetachExternalIdentityRequest body =
-				new DetachExternalIdentityRequest
-				{
-					provider_service = providerService,
-					provider_namespace = providerNamespace,
-					user_id = userId,
-				};
-
-			return Requester.Request<DetachExternalIdentityResponse>(Method.DELETE, $"{ACCOUNT_URL}/external_identity",
-																	 body);
-		}
-
 		public Promise<ExternalAuthenticationResponse> AuthorizeExternalIdentity(string externalToken,
 			string providerService,
 			string providerNamespace = "",

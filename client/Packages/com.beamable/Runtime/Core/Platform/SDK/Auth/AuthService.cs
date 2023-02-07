@@ -109,6 +109,37 @@ namespace Beamable.Api.Auth
 		/// </param>
 		/// <returns>A <see cref="Promise{TokenResponse}"/> that results in the <see cref="TokenResponse"/> for the requested <see cref="User"/>'s device id</returns>
 		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true);
+
+		/// <summary>
+		/// Method for registering external identity.
+		/// </summary>
+		/// <param name="externalToken">Unique token identifying player.</param>
+		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
+		/// implement Authenticate(string token, string challenge, string solution) method there</param>
+		/// <param name="providerNamespace">Optional parameter to differentiate paths to a provider authenticate method
+		/// in case of having more than one authenticate method in a microservice. Method in microservice should have
+		/// ClientCallable attribute with pathnameOverrider set to "{providerNamespace}/authenticate"</param>
+		/// <param name="challengeSolution"><see cref="ChallengeSolution"/> that contains full challenge token received
+		/// from server and signed/solved solution for that challenge.</param>
+		/// <returns><see cref="AttachExternalIdentityResponse"/></returns>
+		Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
+		                                                       string providerService,
+		                                                       string providerNamespace = "",
+		                                                       ChallengeSolution challengeSolution = null);
+
+		/// <summary>
+		/// Method for unregistering previously registered external identity.
+		/// </summary>
+		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
+		/// implement Authenticate(string token, string challenge, string solution) method there</param>
+		/// <param name="userId">Identity we want to unregister for.</param>
+		/// <param name="providerNamespace">Optional parameter to differentiate paths to a provider authenticate method
+		/// in case of having more than one authenticate method in a microservice. Method in microservice should have
+		/// ClientCallable attribute with pathnameOverrider set to "{providerNamespace}/authenticate"</param>
+		/// <returns><see cref="DetachExternalIdentityResponse"/></returns>
+		Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService,
+		                                                       string userId,
+		                                                       string providerNamespace = "");
 	}
 
 	/// <summary>
@@ -129,7 +160,9 @@ namespace Beamable.Api.Auth
 		const string DEVICE_ID_URI = ACCOUNT_URL + "/me";
 		const string DEVICE_DELETE_URI = ACCOUNT_URL + "/me/device";
 
-		public AuthService(IBeamableRequester requester, IDeviceIdResolver deviceIdResolver = null, IAuthSettings settings = null) : base(requester, settings)
+		public AuthService(IBeamableRequester requester,
+		                   IDeviceIdResolver deviceIdResolver = null,
+		                   IAuthSettings settings = null) : base(requester, settings)
 		{
 			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
 		}
@@ -139,8 +172,9 @@ namespace Beamable.Api.Auth
 			var deviceId = await _deviceIdResolver.GetDeviceId();
 			var encodedDeviceId = Requester.EscapeURL(deviceId);
 			return await Requester.Request<AvailabilityResponse>(Method.GET,
-					$"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}", null, false)
-				.Map(resp => resp.available);
+			                                                     $"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}",
+			                                                     null, false)
+			                      .Map(resp => resp.available);
 		}
 
 		public Promise<User> SetLanguage(SystemLanguage language) =>
@@ -150,12 +184,9 @@ namespace Beamable.Api.Auth
 		{
 			var deviceId = await _deviceIdResolver.GetDeviceId();
 
-			var req = new LoginDeviceIdRequest
-			{
-				grant_type = "device",
-				device_id = deviceId
-			};
-			return await Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, includeAuthHeader: mergeGamerTagToAccount);
+			var req = new LoginDeviceIdRequest {grant_type = "device", device_id = deviceId};
+			return await Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req,
+			                                              includeAuthHeader: mergeGamerTagToAccount);
 		}
 
 		public class LoginDeviceIdRequest
@@ -168,10 +199,7 @@ namespace Beamable.Api.Auth
 		{
 			var deviceId = await _deviceIdResolver.GetDeviceId();
 
-			return await UpdateDeviceId(new RegisterDeviceIdRequest
-			{
-				deviceId = deviceId
-			});
+			return await UpdateDeviceId(new RegisterDeviceIdRequest {deviceId = deviceId});
 		}
 
 		public async Promise<string> GetDeviceId()
@@ -188,7 +216,7 @@ namespace Beamable.Api.Auth
 		{
 			var deviceId = await _deviceIdResolver.GetDeviceId();
 
-			var ids = new string[] { deviceId };
+			var ids = new string[] {deviceId};
 			return await RemoveDeviceIds(ids);
 		}
 
@@ -204,7 +232,53 @@ namespace Beamable.Api.Auth
 			{
 				body = DeleteDevicesRequest.Create(deviceIds);
 			}
+
 			return Requester.Request<User>(Method.DELETE, DEVICE_DELETE_URI, body);
+		}
+
+		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
+		                                                              string providerService,
+		                                                              string providerNamespace = "",
+		                                                              ChallengeSolution challengeSolution = null)
+		{
+			AttachExternalIdentityRequest body;
+
+			if (challengeSolution == null)
+			{
+				body = new AttachExternalIdentityRequest
+				{
+					provider_service = providerService,
+					provider_namespace = providerNamespace,
+					external_token = externalToken
+				};
+			}
+			else
+			{
+				body = new ChallengedAttachExternalIdentityRequest
+				{
+					provider_service = providerService,
+					provider_namespace = providerNamespace,
+					external_token = externalToken,
+					challenge_solution = challengeSolution,
+				};
+			}
+
+			return Requester.Request<AttachExternalIdentityResponse>(
+				Method.POST, $"{ACCOUNT_URL}/external_identity", body);
+		}
+
+		public Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService,
+		                                                              string userId,
+		                                                              string providerNamespace = "")
+		{
+			DetachExternalIdentityRequest body =
+				new DetachExternalIdentityRequest
+				{
+					provider_service = providerService, provider_namespace = providerNamespace, user_id = userId,
+				};
+
+			return Requester.Request<DetachExternalIdentityResponse>(Method.DELETE, $"{ACCOUNT_URL}/external_identity",
+			                                                         body);
 		}
 
 		[Serializable]
@@ -220,10 +294,7 @@ namespace Beamable.Api.Auth
 
 			public static DeleteDevicesRequest Create(string[] ids)
 			{
-				var req = new DeleteDevicesRequest
-				{
-					deviceIds = ids
-				};
+				var req = new DeleteDevicesRequest {deviceIds = ids};
 
 				return req;
 			}

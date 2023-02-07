@@ -216,37 +216,6 @@ namespace Beamable.Common.Api.Auth
 		Promise<CurrentProjectResponse> GetCurrentProject();
 
 		/// <summary>
-		/// Method for registering external identity.
-		/// </summary>
-		/// <param name="externalToken">Unique token identifying player.</param>
-		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
-		/// implement Authenticate(string token, string challenge, string solution) method there</param>
-		/// <param name="providerNamespace">Optional parameter to differentiate paths to a provider authenticate method
-		/// in case of having more than one authenticate method in a microservice. Method in microservice should have
-		/// ClientCallable attribute with pathnameOverrider set to "{providerNamespace}/authenticate"</param>
-		/// <param name="challengeSolution"><see cref="ChallengeSolution"/> that contains full challenge token received
-		/// from server and signed/solved solution for that challenge.</param>
-		/// <returns><see cref="AttachExternalIdentityResponse"/></returns>
-		Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
-															   string providerService,
-															   string providerNamespace = "",
-															   ChallengeSolution challengeSolution = null);
-
-		/// <summary>
-		/// Method for unregistering previously registered external identity.
-		/// </summary>
-		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
-		/// implement Authenticate(string token, string challenge, string solution) method there</param>
-		/// <param name="userId">Identity we want to unregister for.</param>
-		/// <param name="providerNamespace">Optional parameter to differentiate paths to a provider authenticate method
-		/// in case of having more than one authenticate method in a microservice. Method in microservice should have
-		/// ClientCallable attribute with pathnameOverrider set to "{providerNamespace}/authenticate"</param>
-		/// <returns><see cref="DetachExternalIdentityResponse"/></returns>
-		Promise<DetachExternalIdentityResponse> DetachIdentity(string providerService,
-															   string userId,
-															   string providerNamespace = "");
-
-		/// <summary>
 		/// Method for authorizing previously attached identity.
 		/// </summary>
 		/// <param name="externalToken">Unique token identifying player.</param>
