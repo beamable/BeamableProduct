@@ -594,7 +594,10 @@ namespace Beamable.Server.Editor
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return false;
 					}
+					
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Preparing image", ServicePublishState.InProgress);
+					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
+
 					var uploader = new ContainerUploadHarness();
 					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
 					uploader.onProgress += msModel.OnDeployProgress;
@@ -923,7 +926,7 @@ namespace Beamable.Server.Editor
 				OnServiceDeployStatusChanged?.Invoke(descriptor, status);
 
 				foreach (var storageDesc in descriptor.GetStorageReferences())
-					OnServiceDeployStatusChanged?.Invoke(storageDesc, status);
+					OnServiceDeployStatusChanged?.Invoke(storageDesc, ServicePublishState.Published);
 			}
 
 			#endregion
