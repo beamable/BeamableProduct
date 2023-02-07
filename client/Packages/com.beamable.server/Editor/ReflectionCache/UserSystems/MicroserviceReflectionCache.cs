@@ -16,7 +16,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -304,12 +303,13 @@ namespace Beamable.Server.Editor
 
 						foreach (var it in interfaces)
 						{
-							Type[] genericArguments = it.GetGenericArguments();
-							Type first = genericArguments.First();
+							if(!it.IsGenericType) continue;
+							if (it.GetGenericTypeDefinition() != typeof(IFederatedLogin<>)) continue;
 
-							if (first is Type interfaceType &&
-							    FormatterServices.GetUninitializedObject(interfaceType) is IThirdPartyCloudIdentity
-								    identity)
+							var map = descriptor.Type.GetInterfaceMap(it);
+							var federatedType = it.GetGenericArguments()[0];
+
+							if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
 							{
 								descriptor.FederatedNamespaces.Add(identity.UniqueName);
 							}

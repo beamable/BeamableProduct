@@ -12,6 +12,7 @@ namespace Beamable.Server.Editor
 	{
 		private const int PADDING = 2;
 
+		private List<MicroserviceDescriptor> _filteredDescriptors;
 		private readonly List<FederationOption> _options = new List<FederationOption>();
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -22,9 +23,15 @@ namespace Beamable.Server.Editor
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var filteredDescriptors = serviceRegistry.Descriptors.FindAll(descriptor => descriptor.IsUsedForFederation).ToList();
 
-			if (filteredDescriptors.Count == 0)
+			if (_filteredDescriptors == null)
+			{
+				_filteredDescriptors = serviceRegistry.Descriptors
+				                                      .FindAll(descriptor => descriptor.IsUsedForFederation)
+				                                      .ToList();
+			}
+
+			if (_filteredDescriptors.Count == 0)
 			{
 				position = EditorGUI.PrefixLabel(position, label);
 				EditorGUI.SelectableLabel(
@@ -34,7 +41,7 @@ namespace Beamable.Server.Editor
 				return;
 			}
 
-			BuildOptions(filteredDescriptors);
+			BuildOptions(_filteredDescriptors);
 
 			var routeInfoPosition = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
 			EditorGUI.LabelField(routeInfoPosition, "Federation",
@@ -77,7 +84,8 @@ namespace Beamable.Server.Editor
 			                                       servicesGuiContents.ToArray(), EditorStyles.popup);
 			if (EditorGUI.EndChangeCheck())
 			{
-				var option = _options.FirstOrDefault(opt => opt.ToString().Equals(servicesGuiContents[nextServiceIndex].text));
+				var option =
+					_options.FirstOrDefault(opt => opt.ToString().Equals(servicesGuiContents[nextServiceIndex].text));
 				serviceProperty.stringValue = option?.Microservice;
 				namespaceProperty.stringValue = option?.Namespace;
 			}
