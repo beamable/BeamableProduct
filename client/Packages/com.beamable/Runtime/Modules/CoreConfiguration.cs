@@ -183,7 +183,9 @@ namespace Beamable
 
 			for (int i = 0; i < AssembliesToSweep.Count; i++)
 			{
-				if (AssembliesToSweep[i].Contains("Test"))
+				if (AssembliesToSweep[i].Contains("Test") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Microservice") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Storage"))
 				{
 					AssembliesToSweep.RemoveAt(i);
 					i--;
