@@ -11,10 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Empty dictionary of supported subtypes no longer break request serialization.
-
-### Fixed
 - Check for missing dependencies before microservices deploy
 - `GetManifestWithID` method works for manifest ids other than `"global"`. 
+- Microservice path names are case insensitive 
 
 ## [1.10.3]
 ### Fixed

@@ -3,6 +3,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
 
 namespace Beamable.Server;
 
@@ -20,6 +21,12 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 		
 		var interfaces = type.GetInterfaces();
 
+		var methodToPathMap = new Dictionary<string, string>
+		{
+			[nameof(IFederatedInventory<DummyThirdParty>.GetInventoryState)] = "inventory/state",
+			[nameof(IFederatedInventory<DummyThirdParty>.StartInventoryTransaction)] = "inventory/put",
+		};
+		
 		foreach (var interfaceType in interfaces)
 		{
 			if (!interfaceType.IsGenericType) continue;
@@ -37,7 +44,12 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 				var attribute = method.GetCustomAttribute<CallableAttribute>(true);
 				if (attribute != null) continue;
 
-				var path = $"{federatedNamespace}/{interfaceMethod.Name}";
+				if (!methodToPathMap.TryGetValue(interfaceMethod.Name, out var pathName))
+				{
+					var err = $"Unable to map method name to path part. name=[{interfaceMethod.Name}]";
+					throw new Exception(err);
+				}
+				var path = $"{federatedNamespace}/{pathName}";
 				var tag = federatedNamespace;
 
 				var serviceMethod = ServiceMethodHelper.CreateMethod(
@@ -65,6 +77,10 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 		var output = new List<ServiceMethod>();
 		
 		var interfaces = type.GetInterfaces();
+		var methodToPathMap = new Dictionary<string, string>
+		{
+			[nameof(IFederatedLogin<DummyThirdParty>.Authenticate)] = "authenticate",
+		};
 
 		foreach (var interfaceType in interfaces)
 		{
@@ -81,7 +97,12 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 			var attribute = method.GetCustomAttribute<CallableAttribute>(true);
 			if (attribute != null) continue;
 			
-			var path = $"{federatedNamespace}/{nameof(IFederatedLogin<DummyThirdParty>.Authenticate)}";
+			if (!methodToPathMap.TryGetValue(map.InterfaceMethods[0].Name, out var pathName))
+			{
+				var err = $"Unable to map method name to path part. name=[{method.Name}]";
+				throw new Exception(err);
+			}
+			var path = $"{federatedNamespace}/{pathName}";
 			var tag = federatedNamespace;
 			
 			var serviceMethod = ServiceMethodHelper.CreateMethod(
