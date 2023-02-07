@@ -3,6 +3,7 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
 using System.CommandLine;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -84,7 +85,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 					if (File.Exists(outputPath))
 					{
 						var existingContent = File.ReadAllText(outputPath);
-						if (existingContent == nextGeneratedSourceCode)
+						if (string.Compare(existingContent, nextGeneratedSourceCode, CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols) == 0)
 						{
 							// don't need to write anything, because the files are identical.
 							return Task.CompletedTask;
