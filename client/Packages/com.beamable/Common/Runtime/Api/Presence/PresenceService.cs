@@ -53,7 +53,7 @@ namespace Beamable.Common.Api.Presence
 
 		public Promise<MultiplePlayersStatus> GetManyStatuses(params string[] playerIds)
 		{
-			ArrayDict dict = new ArrayDict {{"playerIds", playerIds}};
+			ArrayDict dict = new ArrayDict { { "playerIds", playerIds } };
 			string json = Json.Serialize(dict, null);
 
 			return _requester.Request<MultiplePlayersStatus>(
@@ -75,7 +75,7 @@ namespace Beamable.Common.Api.Presence
 
 		public PresenceStatus Status => (PresenceStatus)Enum.Parse(typeof(PresenceStatus), status);
 		public DateTime LastOnline => DateTime.Parse(lastOnline);
-		
+
 		#region auto-generated-equality
 		protected bool Equals(PlayerPresence other)
 		{
@@ -99,7 +99,7 @@ namespace Beamable.Common.Api.Presence
 				return false;
 			}
 
-			return Equals((PlayerPresence) obj);
+			return Equals((PlayerPresence)obj);
 		}
 
 		public override int GetHashCode()
@@ -139,7 +139,7 @@ namespace Beamable.Common.Api.Presence
 		public string onlineStatus;
 		public string lastOnline;
 		public string description;
-		
+
 		public DateTime LastOnline => DateTime.Parse(lastOnline);
 	}
 }
