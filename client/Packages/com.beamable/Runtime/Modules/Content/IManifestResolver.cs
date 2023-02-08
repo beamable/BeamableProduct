@@ -25,7 +25,7 @@ namespace Beamable.Content
 		/// </summary>
 		public Promise<ClientManifest> ResolveManifest(IBeamableRequester requester, string url, ManifestSubscription subscription)
 		{
-			return requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
+			return requester.Request(Method.GET, url, null, false, ClientManifest.ParseCSV, true).Recover(ex =>
 			{
 				// TODO: Put "global" as a constant value somewhere. Currently it lives in a different asm, and its too much trouble.
 				if (ex is PlatformRequesterException err && err.Status == 404 && subscription.ManifestID.Equals("global"))

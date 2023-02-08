@@ -32,10 +32,11 @@ namespace Beamable.Common.Api.Auth
 			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
 		}
 
-		public virtual Promise<User> GetUser(TokenResponse token)
+		public virtual async Promise<User> GetUser(TokenResponse token)
 		{
 			var tokenizedRequester = _requester.WithAccessToken(token);
-			return tokenizedRequester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
+			var user = await tokenizedRequester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
+			return user;
 		}
 
 		public Promise<bool> IsEmailAvailable(string email)

@@ -66,6 +66,7 @@ namespace Beamable.Api.Sessions
 
 		public void Start()
 		{
+			if (IsRunning) return; // don't allow the heartbeat to start multiple times...
 			IsRunning = true;
 			_coroutineService.StartCoroutine(_legacyHeartbeatRoutine);
 			_coroutineService.StartCoroutine(_heartbeatRoutine);

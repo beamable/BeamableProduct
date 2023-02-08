@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -172,7 +173,20 @@ namespace Beamable.Api
 			AliasHelper.ValidateCid(cid);
 			var compressedTokens = PlayerPrefs.GetString(GetDeviceTokenKey(cid, pid), "");
 			var refreshTokens = compressedTokens.Split(Constants.DelimiterSplit, StringSplitOptions.RemoveEmptyEntries);
-			return Array.ConvertAll(refreshTokens, Convert);
+			var converted = Array.ConvertAll(refreshTokens, Convert);
+
+			// return converted;
+			var validTokens = new List<TokenResponse>();
+			foreach (var convert in converted)
+			{
+				var isOfflineToken = convert.access_token == "offline";
+				if (!isOfflineToken)
+				{
+					validTokens.Add(convert);
+				}
+			}
+			
+			return validTokens.ToArray();
 		}
 
 		private string Convert(IAccessToken token)
