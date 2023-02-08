@@ -7,7 +7,7 @@ namespace Beamable.UI.Buss
 {
 	public partial class BussStyle
 	{
-		private static Dictionary<Type, BussComputeOperatorBinding> typeToOperators = new Dictionary<Type, BussComputeOperatorBinding>();
+		private static Dictionary<Type, BussComputeOperatorBinding> _typeToOperators = new Dictionary<Type, BussComputeOperatorBinding>();
 
 		public static BussOperatorBinding<FloatBussProperty> FloatOperators
 			= new BussOperatorBinding<FloatBussProperty>()
@@ -15,20 +15,6 @@ namespace Beamable.UI.Buss
 			  .AddOperator<FloatMinOperation>()
 			  .AddOperator<FloatAddOperation>();
 		
-		public static BussOperatorBinding<IFloatBussProperty> IFloatOperators
-			= new BussOperatorBinding<IFloatBussProperty>()
-				.AddOperator<FloatMaxOperation>()
-				.AddOperator<FloatMinOperation>()
-				.AddOperator<FloatAddOperation>()
-			;
-		
-		public static BussOperatorBinding<IFloatFromFloatBussProperty> IFloatFromFloatOperators
-				= new BussOperatorBinding<IFloatFromFloatBussProperty>()
-				  .AddOperator<FloatMaxOperation>()
-				  .AddOperator<FloatMinOperation>()
-				  .AddOperator<FloatAddOperation>()
-			;
-
 		public static BussOperatorBinding<IVertexColorBussProperty> IColorBussOperators
 			= new BussOperatorBinding<IVertexColorBussProperty>()
 			  .AddOperator<ColorFadeOperation>()
@@ -61,28 +47,33 @@ namespace Beamable.UI.Buss
 
 		public static bool TryGetOperatorBinding(Type propertyType, out BussComputeOperatorBinding operatorBinding)
 		{
-			return typeToOperators.TryGetValue(propertyType, out operatorBinding);
+			return _typeToOperators.TryGetValue(propertyType, out operatorBinding);
 		}
 
 
-		public abstract class BussComputeOperatorBinding
+		public class BussComputeOperatorBinding
 		{
-			protected Dictionary<Type, BussOperatorFactory> opTypeToFactory = new Dictionary<Type, BussOperatorFactory>();
+			protected Dictionary<Type, BussOperatorDescriptor> _opTypeToDescriptors = new Dictionary<Type, BussOperatorDescriptor>();
+			
+			public List<BussOperatorDescriptor> Descriptors => _opTypeToDescriptors.Values.ToList();
+			public bool HasAnyFactories => _opTypeToDescriptors.Count > 0;
 
-			public abstract IBussProperty Create(Type operatorType);
-			public List<BussOperatorFactory> Factories => opTypeToFactory.Values.ToList();
-			public bool HasAnyFactories => opTypeToFactory.Count > 0;
-
-			public bool TryGetFactoryForOperatorType(Type operatorType, out BussOperatorFactory factory)
+			public bool TryGetDescriptorForOperatorType(Type operatorType, out BussOperatorDescriptor descriptor)
 			{
-				return opTypeToFactory.TryGetValue(operatorType, out factory);
+				return _opTypeToDescriptors.TryGetValue(operatorType, out descriptor);
 			}
 			
-			public IBussProperty Create() => Create(opTypeToFactory.Keys.FirstOrDefault());
+			public IBussProperty Create() => Create(_opTypeToDescriptors.Keys.FirstOrDefault());
 			public IBussProperty Create<TOp>() where TOp : IComputedProperty => Create(typeof(TOp));
+			public IBussProperty Create(Type operatorType)
+			{
+				var factory = _opTypeToDescriptors[operatorType];
+				var instance = factory.factory?.Invoke();
+				return instance;
+			}
 		}
 
-		public class BussOperatorFactory
+		public class BussOperatorDescriptor
 		{
 			public Func<IBussProperty> factory;
 			public string name;
@@ -95,13 +86,13 @@ namespace Beamable.UI.Buss
 
 			public BussOperatorBinding()
 			{
-				typeToOperators.Add(typeof(TProp), this);
+				_typeToOperators.Add(typeof(TProp), this);
 			}
 
 			public BussOperatorBinding<TProp> AddOperator<TOp>() 
 				where TOp : IComputedProperty<TProp>, new()
 			{
-				opTypeToFactory[typeof(TOp)] = new BussOperatorFactory
+				_opTypeToDescriptors[typeof(TOp)] = new BussOperatorDescriptor
 				{
 					name = typeof(TOp).Name
 					                  .Replace("Operation", "")
@@ -112,13 +103,6 @@ namespace Beamable.UI.Buss
 					operatorType = typeof(TOp)
 				};
 				return this;
-			}
-
-			public override IBussProperty Create(Type operatorType)
-			{
-				var factory = opTypeToFactory[operatorType];
-				var instance = factory.factory?.Invoke();
-				return instance;
 			}
 		}
 	}

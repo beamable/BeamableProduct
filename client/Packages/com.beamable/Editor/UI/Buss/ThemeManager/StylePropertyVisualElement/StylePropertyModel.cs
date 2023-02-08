@@ -294,12 +294,10 @@ namespace Beamable.Editor.UI.Components
 			if (_allowComputed && BussStyle.TryGetOperatorBinding(propType,
 				                                    out var operatorBinding) && operatorBinding.HasAnyFactories)
 			{
-				var mathOption = new DropdownEntry(Constants.Features.Buss.MenuItems.COMPUTED_VALUE, false);
-				options.Add(mathOption);
+				var computedOption = new DropdownEntry(Constants.Features.Buss.MenuItems.COMPUTED_VALUE, false);
+				options.Add(computedOption);
 			}
 			
-			
-
 			if (_parentModel.HasElementContext)
 			{
 				var baseType = GetInitialValue().GetType();
@@ -373,7 +371,7 @@ namespace Beamable.Editor.UI.Components
 				else
 				{
 					var old = StyleRule.GetPropertyProvider(PropertyProvider.Key).GetProperty();
-					if (old is VariableProperty oldVar)
+					if (old is VariableProperty)
 					{
 						return;
 					}

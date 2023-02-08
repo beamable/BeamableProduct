@@ -98,10 +98,6 @@ namespace Beamable.Editor.UI.Components
 				var field = CreateEditableField(initialValue);
 				field.DisableInput("The initial value cannot be changed.");
 			}
-			else if (_model.IsComputedProperty)
-			{
-				CreateEditableField(_model.PropertyProvider.GetProperty());
-			}
 			else if (_model.HasVariableConnected)
 			{
 				string variableName = ((VariableProperty)_model.PropertyProvider.GetProperty()).VariableName;

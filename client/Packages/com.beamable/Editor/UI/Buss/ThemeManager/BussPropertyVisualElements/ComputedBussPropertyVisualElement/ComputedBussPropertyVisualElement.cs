@@ -30,39 +30,39 @@ namespace Beamable.Editor.UI.Components
 				return;
 			}
 			
-			var args = Property.Members.ToArray();
+			#region setup operation picker
 			var operationDropDown = new DropdownVisualElement();
-			if (!operatorBinding.TryGetFactoryForOperatorType(Property.GetType(), out var initialFactory))
+			if (!operatorBinding.TryGetDescriptorForOperatorType(Property.GetType(), out var initialDescriptor))
 			{
-				Debug.LogError("Unknown initial factory");
+				Debug.LogError("Unknown initial descriptor");
 				return;
 			}
-			var names = operatorBinding.Factories.Select(f => f.name).ToList();
-			var initialSelectedFactoryIndex = names.FindIndex(name => initialFactory.name == name);
+			var names = operatorBinding.Descriptors.Select(f => f.name).ToList();
+			var initialSelectedFactoryIndex = names.FindIndex(name => initialDescriptor.name == name);
 			operationDropDown.Setup(names, i =>
 			{
-				var factory = operatorBinding.Factories[i];
-				if (!operatorBinding.TryGetFactoryForOperatorType(Property.GetType(), out var currFactory))
+				var descriptor = operatorBinding.Descriptors[i];
+				if (!operatorBinding.TryGetDescriptorForOperatorType(Property.GetType(), out var currDescriptor))
 				{
-					Debug.LogError("Unknown initial factory after selection");
+					Debug.LogError("Unknown initial descriptor after selection");
 				}
 
-				if (currFactory == factory) return; // nothing...
+				if (currDescriptor == descriptor) return; // nothing...
 				
 				OnBeforeChange?.Invoke();
-				var newProp = factory.factory?.Invoke();
+				var newProp = descriptor.factory?.Invoke();
 				OnValueChanged?.Invoke(newProp);
 				
 			}, initialSelectedFactoryIndex);
 			Root.Add(operationDropDown);
 			operationDropDown.Refresh();
 			AddBussPropertyFieldClass(operationDropDown);
-			
+			#endregion
 			
 			var subProperty = Property.GetComputedProperty(_rootModel.AppliedToElement.Style);
 			var subElement = subProperty.GetVisualElement(null);
 
-			
+			var args = Property.Members.ToArray();
 			foreach (var arg in args)
 			{
 				var subModel = _rootModel.CreateChildModel(arg, prop =>

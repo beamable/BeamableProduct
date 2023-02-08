@@ -32,19 +32,17 @@ namespace Beamable.UI.Buss
 		}
 	}
 
-
 	public abstract class Float2Operation : 
 		IFloatBussProperty, 
 		IFloatFromFloatBussProperty,
-		IComputedProperty<FloatBussProperty>,
-		IComputedProperty<IFloatBussProperty>,
-		IComputedProperty<IFloatFromFloatBussProperty>
+		IComputedProperty<FloatBussProperty>
 	{
 		public float FloatValue => 0;
 
 		public ComputedPropertyArg a = ComputedPropertyArg.Create<FloatBussProperty>(nameof(a));
 		public ComputedPropertyArg b = ComputedPropertyArg.Create<FloatBussProperty>(nameof(b));
 
+		// TODO remove this; it doesn't actually help.
 		private Dictionary<BussStyle, FloatBussProperty> _styleToPropertyCache =
 			new Dictionary<BussStyle, FloatBussProperty>();
 
@@ -81,16 +79,6 @@ namespace Beamable.UI.Buss
 		}
 
 		protected abstract float Compute(float a, float b);
-		
-		IFloatBussProperty IComputedProperty<IFloatBussProperty>.GetComputedValue(BussStyle style)
-		{
-			return GetComputedFloat(style);
-		}
-
-		IFloatFromFloatBussProperty IComputedProperty<IFloatFromFloatBussProperty>.GetComputedValue(BussStyle style)
-		{
-			return GetComputedFloat(style);
-		}
 		
 		public FloatBussProperty GetComputedValue(BussStyle style)
 		{

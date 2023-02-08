@@ -11,7 +11,8 @@ namespace Beamable.UI.Buss
 		IBussProperty GetComputedProperty(BussStyle style);
 	}
 
-	public interface IComputedProperty<T> : IComputedProperty
+	public interface IComputedProperty<out T> : IComputedProperty
+		where T : IBussProperty
 	{
 		T GetComputedValue(BussStyle style);
 	}
@@ -33,20 +34,24 @@ namespace Beamable.UI.Buss
 		[SerializeField]
 		private string _name;
 		public string Name => _name;
+		
+		/// <summary>
+		/// The current value property of the arg.
+		/// </summary>
 		public IBussProperty Property { get; private set; }
 		
+		/// <summary>
+		/// The template property's job is to remember the initial value for this argument.
+		/// </summary>
 		public IBussProperty TemplateProperty { get; private set; }
 		
 		[SerializeField]
 		private SerializableValueObject _serializable;
-
-		/// <summary>
-		/// The template property's job is to remember the initial value for this argument.
-		/// </summary>
+		
 		[SerializeField]
 		private SerializableValueObject _templateProperty;
 		
-		public ComputedPropertyArg(string name, IBussProperty arg)
+		private ComputedPropertyArg(string name, IBussProperty arg)
 		{
 			_name = name;
 			Property = arg;

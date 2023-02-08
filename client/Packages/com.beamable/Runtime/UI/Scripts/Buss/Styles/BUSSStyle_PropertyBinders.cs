@@ -138,8 +138,7 @@ namespace Beamable.UI.Buss
 			{
 				get;
 			}
-			// Type[] PropertyTypes { get; }
-
+			
 			/// <summary>
 			/// When true, an element can inherit this property from the element's parent.
 			/// </summary>
