@@ -261,7 +261,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				if (serviceModel.IsArchived)
 					continue;
 
-				if (serviceModel is MongoStorageModel || (kvp.Value.IsRemote && !kvp.Value.IsLocal))
+				if (serviceModel is MongoStorageModel || !kvp.Value.Model.Enabled || (kvp.Value.IsRemote && !kvp.Value.IsLocal))
 				{
 					kvp.Value.UpdateStatus(ServicePublishState.Published);
 					continue;

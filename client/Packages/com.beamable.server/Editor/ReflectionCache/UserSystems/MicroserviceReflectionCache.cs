@@ -443,6 +443,10 @@ namespace Beamable.Server.Editor
 				var availableArchitectures = await new GetBuildOutputArchitectureCommand().StartAsync();
 				foreach (var descriptor in Descriptors)
 				{
+					var entryModel = model.Services[descriptor.Name];
+					if (entryModel.Archived || !entryModel.Enabled)
+						continue;
+					
 					var forceStop = new StopImageReturnableCommand(descriptor);
 					await forceStop.StartAsync(); // force the image to stop.
 					await BeamServicesCodeWatcher.StopClientSourceCodeGenerator(descriptor); // force the generator to stop.
@@ -475,6 +479,10 @@ namespace Beamable.Server.Editor
 
 				foreach (var descriptor in Descriptors)
 				{
+					var entryModel = model.Services[descriptor.Name];
+					if (entryModel.Archived || !entryModel.Enabled)
+						continue;
+					
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Verifying healthcheck", ServicePublishState.Verifying);
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
 					try
@@ -583,7 +591,6 @@ namespace Beamable.Server.Editor
 				foreach (var descriptor in Descriptors)
 				{
 					var entryModel = model.Services[descriptor.Name];
-					
 					if (entryModel.Archived || !entryModel.Enabled)
 						continue;
 
