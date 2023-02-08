@@ -54,6 +54,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			return await Context.Presence.GetPlayerPresence(Context.PlayerId);
 		}
 
+		public async Promise UpdateOnlineStatus(PresenceStatus status, string description)
+		{
+			await Context.Presence.SetPlayerStatus(status, description);
+		}
+
 		/// <summary>
 		/// Gets account view data for a given player. Default parameter will return current user's view data.
 		/// </summary>

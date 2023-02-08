@@ -19,6 +19,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			Promise<string> GetUsername(long playerId);
 			Promise SetUsername(string username);
 			Promise<PlayerPresence> GetOnlineStatus();
+			Promise UpdateOnlineStatus(PresenceStatus status, string description);
 		}
 
 		public AccountManagementFeatureControl FeatureControl;
@@ -31,6 +32,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public TMP_InputField UsernameInputField;
 		public TMP_InputField EmailInputField;
 		public SetStatusButton StatusButton;
+		public SetStatusPopup SetStatusPopupPrefab;
 
 		protected IDependencies System;
 
@@ -55,13 +57,15 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return;
 			}
+			
+			SetStatusPopupPrefab.gameObject.SetActive(false);
 
 			_currentUsername = await System.GetUsername(System.Context.PlayerId);
 			UsernameInputField.text = _currentUsername;
 			EmailInputField.text = System.Email;
 
 			var status = await System.GetOnlineStatus();
-			StatusButton.Setup(status.Status, OpenStatusPopup);
+			SetupStatusButton(status.Status);
 			
 			_avatarToSet = null;
 			string currentAvatarName = await System.GetCurrentAvatarName(System.Context.PlayerId);
@@ -84,9 +88,19 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			CancelButton.onClick.ReplaceOrAddListener(OpenAccountsView);
 		}
 
+		private void SetupStatusButton(PresenceStatus status) => StatusButton.Setup(status, OpenStatusPopup);
+
 		private void OpenStatusPopup()
 		{
-			throw new System.NotImplementedException();
+			var popup = FeatureControl.OverlaysController.ShowCustomOverlay(SetStatusPopupPrefab);
+			popup.Setup(UpdatePresenceStatus, FeatureControl.OverlaysController);
+		}
+
+		private async void UpdatePresenceStatus(PresenceStatus status)
+		{
+			await System.UpdateOnlineStatus(status, "");
+			SetupStatusButton(status);
+			FeatureControl.OverlaysController.HideOverlay();
 		}
 
 		private void OnAvatarSelectionChanged(AccountAvatar avatar)
