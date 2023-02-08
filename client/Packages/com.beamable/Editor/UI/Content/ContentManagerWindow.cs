@@ -57,8 +57,8 @@ namespace Beamable.Editor.Content
 		private List<string> _cachedItemsToDownload;
 		private bool _cachedCreateNewManifestFlag;
 
-		private SerializableDictionary<string, ContentIO.ValidationChecksum> _checksums =
-			new SerializableDictionary<string, ContentIO.ValidationChecksum>();
+		[SerializeField]
+		private ContentIO.MapOfValidationChecksums _checksumsChache;
 
 		private void Update()
 		{
@@ -235,25 +235,15 @@ namespace Beamable.Editor.Content
 
 		public override void OnBeforeSerialize()
 		{
-			var toSerializable = ContentIO.GetCheckSumTable();
-
-			if (toSerializable.Count > 0)
-			{
-				_checksums.Clear();
-
-				foreach (var elem in toSerializable)
-				{
-					_checksums.Add(elem.Key, elem.Value);
-				}
-			}
-			_checksums.OnBeforeSerialize();
+			_checksumsChache = ContentIO.GetCheckSumTable();
+			_checksumsChache.OnBeforeSerialize();
 			base.OnBeforeSerialize();
 		}
 
 		public override void OnAfterDeserialize()
 		{
-			_checksums.OnAfterDeserialize();
-			ContentIO.SetCheckSumTable(_checksums);
+			_checksumsChache.OnAfterDeserialize();
+			ContentIO.SetCheckSumTable(_checksumsChache);
 			base.OnAfterDeserialize();
 		}
 
