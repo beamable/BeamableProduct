@@ -11,7 +11,7 @@ public class MachineHelper
 	{
 		return Environment.MachineName;
 	}
-	
+
 	public static void OpenBrowser(string url)
 	{
 		try
