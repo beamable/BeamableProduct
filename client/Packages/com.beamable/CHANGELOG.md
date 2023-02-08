@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue with logging in and realm switching while being on an archived realm.
 - Duplicate content is now displayed immediately in `Content Manager`
 - Update banner in Toolbox will update both `com.beamable` and `com.beamable.server` package. 
+- Fixed issues with wrong content status and checksum on domain reload.
 
 ## [1.10.3]
 ### Changed
