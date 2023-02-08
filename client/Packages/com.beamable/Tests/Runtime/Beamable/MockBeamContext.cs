@@ -60,10 +60,12 @@ namespace Beamable.Tests.Runtime
 			builder.Remove<IBeamableRequester>();
 			builder.Remove<IPlatformRequester>();
 			builder.Remove<IBeamableApiRequester>();
+			builder.Remove<IConnectivityChecker>();
 
 			builder.AddSingleton<IPlatformRequester>(Requester);
 			builder.AddSingleton<IBeamableRequester>(Requester);
 			builder.AddSingleton<IBeamableApiRequester>(Requester);
+			builder.AddSingleton<IConnectivityChecker, MockConnectivityChecker>();
 			_mutateDependencies?.Invoke(builder);
 		}
 

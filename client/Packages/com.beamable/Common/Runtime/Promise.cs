@@ -75,6 +75,11 @@ namespace Beamable.Common
 		/// </summary>
 		public bool IsCompleted => done;
 
+		/// <summary>
+		/// True when the promise has completed and the promise has failed.
+		/// </summary>
+		public bool IsFailed => done && err != null;
+
 		private static event PromiseEvent OnPotentialUncaughtError;
 
 		public static bool HasUncaughtErrorHandler => OnPotentialUncaughtError != null;

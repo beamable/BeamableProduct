@@ -268,7 +268,6 @@ namespace Beamable
 				
 				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
 				{
-					Debug.Log("Stopping all contexts manually");
 					await StopAllContexts();
 				}
 			};

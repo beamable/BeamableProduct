@@ -35,7 +35,7 @@ namespace Beamable.Api.Caches
 
 		private string GetKey(string key, IAccessToken token, bool includeAuthHeader)
 		{
-			if (includeAuthHeader)
+			if (!includeAuthHeader)
 			{
 				return key;
 			}
