@@ -121,19 +121,19 @@ namespace Beamable.Tests.Runtime.Api
 		}
 
 		public Promise<ExternalLoginResponse> LoginExternalIdentity(string externalToken,
-		                                                     string providerService,
-		                                                     string providerNamespace,
-		                                                     ChallengeSolution challengeSolution = null,
-		                                                     bool mergeGamerTagToAccount = true)
+															 string providerService,
+															 string providerNamespace,
+															 ChallengeSolution challengeSolution = null,
+															 bool mergeGamerTagToAccount = true)
 		{
 			throw new NotImplementedException();
 		}
-		
+
 
 		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
-		                                                              string providerService,
-		                                                              string providerNamespace = "",
-		                                                              ChallengeSolution challengeSolution = null)
+																	  string providerService,
+																	  string providerNamespace = "",
+																	  ChallengeSolution challengeSolution = null)
 		{
 			throw new NotImplementedException();
 		}
