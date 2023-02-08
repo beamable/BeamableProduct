@@ -1,5 +1,6 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
+using Beamable.Common.Api.Presence;
 using Beamable.EasyFeatures.Components;
 using TMPro;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			Promise SetAvatar(string avatarName);
 			Promise<string> GetUsername(long playerId);
 			Promise SetUsername(string username);
+			Promise<PlayerPresence> GetOnlineStatus();
 		}
 
 		public AccountManagementFeatureControl FeatureControl;
@@ -28,6 +30,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public AvatarToggle AvatarTogglePrefab;
 		public TMP_InputField UsernameInputField;
 		public TMP_InputField EmailInputField;
+		public SetStatusButton StatusButton;
 
 		protected IDependencies System;
 
@@ -56,6 +59,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			_currentUsername = await System.GetUsername(System.Context.PlayerId);
 			UsernameInputField.text = _currentUsername;
 			EmailInputField.text = System.Email;
+
+			var status = await System.GetOnlineStatus();
+			StatusButton.Setup(status.Status, OpenStatusPopup);
 			
 			_avatarToSet = null;
 			string currentAvatarName = await System.GetCurrentAvatarName(System.Context.PlayerId);
@@ -76,6 +82,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.SetHomeAction(OpenAccountsView);
 			ConfirmButton.onClick.ReplaceOrAddListener(OnConfirmPressed);
 			CancelButton.onClick.ReplaceOrAddListener(OpenAccountsView);
+		}
+
+		private void OpenStatusPopup()
+		{
+			throw new System.NotImplementedException();
 		}
 
 		private void OnAvatarSelectionChanged(AccountAvatar avatar)

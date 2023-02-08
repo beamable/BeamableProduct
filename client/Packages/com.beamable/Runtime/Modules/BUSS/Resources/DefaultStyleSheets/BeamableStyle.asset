@@ -917,7 +917,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         _json: '{"_valueType":0,"_color":{"r":1.0,"g":0.8441374897956848,"b":0.0,"a":1.0}}'
     _cachedProperties: []
-    _selector: .presenceDot.busy
+    _selector: .presenceDot.away
   - _folded: 0
     _showAll: 0
     _properties:
@@ -1723,6 +1723,16 @@ MonoBehaviour:
         _json: '{"_valueType":0,"Enum":513}'
     _cachedProperties: []
     _selector: .text.error
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundColor
+      _property:
+        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"_color":{"r":0.027450982481241227,"g":0.7529412508010864,"b":0.9215686917304993,"a":1.0}}'
+    _cachedProperties: []
+    _selector: .presenceDot.invisible
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}

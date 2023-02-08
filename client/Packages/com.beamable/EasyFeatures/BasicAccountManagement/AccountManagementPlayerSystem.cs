@@ -1,5 +1,6 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
+using Beamable.Common.Api.Presence;
 using Beamable.EasyFeatures.Components;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,6 +47,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public async Promise SetUsername(string username)
 		{
 			await Context.Accounts.SetAlias(username);
+		}
+
+		public async Promise<PlayerPresence> GetOnlineStatus()
+		{
+			return await Context.Presence.GetPlayerPresence(Context.PlayerId);
 		}
 
 		/// <summary>
