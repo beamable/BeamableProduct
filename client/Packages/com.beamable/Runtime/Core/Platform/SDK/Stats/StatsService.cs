@@ -44,7 +44,8 @@ namespace Beamable.Api.Stats
 			return Requester.Request<BatchReadStatsResponse>(
 			   Method.GET,
 			   $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
-			   useCache: true
+			   useCache: true,
+			   includeAuthHeader: false
 			).RecoverWith(ex =>
 			   {
 				   if (!_offlineCache.UseOfflineCache)
@@ -90,7 +91,6 @@ namespace Beamable.Api.Stats
 					   _offlineCache.Merge("stats", Requester.AccessToken, playerStats);
 			   });
 		}
-
 
 	}
 

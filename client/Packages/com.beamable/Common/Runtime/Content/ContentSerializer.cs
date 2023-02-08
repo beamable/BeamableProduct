@@ -132,11 +132,14 @@ namespace Beamable.Common.Content
 #endif
 
 				case AssetReference addressable:
-					var addressableDict = new ArrayDict
-			   {
-				  {"referenceKey", addressable.AssetGUID},
-			   };
-					if (addressable.SubObjectName != null)
+					var addressableDict = new ArrayDict();
+
+					if (!string.IsNullOrEmpty(addressable.AssetGUID))
+					{
+						addressableDict.Add("referenceKey", addressable.AssetGUID);
+					}
+					
+					if (!string.IsNullOrEmpty(addressable.SubObjectName))
 					{
 						addressableDict.Add("subObjectName", addressable.SubObjectName);
 					}

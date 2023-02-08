@@ -15,6 +15,8 @@
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
 			public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
 			public const string OPEN = "Open";
+
+			public const string OFFLINE = "offline";
 		}
 
 		public static class Environment

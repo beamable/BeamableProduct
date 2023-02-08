@@ -58,7 +58,7 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 					path,
 					tag,
 					false,
-					new HashSet<string>(),
+					new HashSet<string>(new []{"*"}),
 					method);
 
 				output.Add(serviceMethod);
@@ -111,7 +111,7 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 				path,
 				tag,
 				false,
-				new HashSet<string>(),
+				new HashSet<string>(new []{"*"}),
 				method);
 
 			output.Add(serviceMethod);

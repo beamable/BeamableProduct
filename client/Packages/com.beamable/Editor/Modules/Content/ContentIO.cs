@@ -895,9 +895,13 @@ namespace Beamable.Editor.Content
 			public string Checksum;
 		}
 
-		private static Dictionary<string, ValidationChecksum> _checksumTable =
-			new Dictionary<string, ValidationChecksum>();
+		[Serializable]
+		public class MapOfValidationChecksums : SerializableDictionaryStringToSomething<ValidationChecksum>
+		{
+			
+		}
 
+		private static MapOfValidationChecksums _checksumTable = new MapOfValidationChecksums();
 		private IDependencyProvider _provider;
 
 		public static string ComputeChecksum(IContentObject content)
@@ -944,22 +948,14 @@ namespace Beamable.Editor.Content
 			return match;
 		}
 
-		public static Dictionary<string, ValidationChecksum> GetCheckSumTable()
+		public static MapOfValidationChecksums GetCheckSumTable()
 		{
 			return _checksumTable;
 		}
 
-		public static void SetCheckSumTable(SerializableDictionary<string, ValidationChecksum> table)
+		public static void SetCheckSumTable(MapOfValidationChecksums table)
 		{
-			_checksumTable.Clear();
-
-			if (table != null)
-			{
-				foreach (var elem in table)
-				{
-					_checksumTable.Add(elem.Key, elem.Value);
-				}
-			}
+			_checksumTable = table;
 		}
 
 		public string Checksum(IContentObject content)
