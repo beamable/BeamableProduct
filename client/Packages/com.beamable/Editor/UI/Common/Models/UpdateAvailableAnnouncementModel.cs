@@ -22,12 +22,9 @@ namespace Beamable.Editor.Toolbox.Models
 		public Action OnIgnore;
 		public Action OnWhatsNew;
 
-		private string _blurbBlogText = "Read all about it on the Beamable Blog.";
-
-		public void SetDescription(string version, bool addBlurbBlogText = false)
+		public void SetDescription(string version)
 		{
-			var blurbText = addBlurbBlogText ? _blurbBlogText : string.Empty;
-			DescriptionLabelText = $"Good news, {version} has been released! You can upgrade now and check out the new features. {blurbText}";
+			DescriptionLabelText = $"Good news, {version} has been released! You can upgrade now and check out the new features.";
 		}
 
 		public override BeamableVisualElement CreateVisualElement()

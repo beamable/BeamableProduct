@@ -14,16 +14,14 @@ public class ServicesLogsUrlCommandArgs : LoginCommandArgs
 
 public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
 {
-	private readonly BeamoLocalSystem _localBeamo;
-	private readonly BeamoService _remoteBeamo;
+	private BeamoLocalSystem _localBeamo;
+	private BeamoService _remoteBeamo;
 
 
-	public ServicesLogsUrlCommand(BeamoLocalSystem localBeamo, BeamoService remoteBeamo) :
+	public ServicesLogsUrlCommand() :
 		base("service-logs",
 			"Gets the URL that we can use to see logs our service is emitting.")
 	{
-		_localBeamo = localBeamo;
-		_remoteBeamo = remoteBeamo;
 	}
 
 	public override void Configure()
@@ -33,6 +31,8 @@ public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
 
 	public override async Task Handle(ServicesLogsUrlCommandArgs args)
 	{
+		_localBeamo = args.BeamoLocalSystem;
+		_remoteBeamo = args.BeamoService;
 		// Make sure we are up-to-date with the remote manifest
 		var currentRemoteManifest = await _remoteBeamo.GetCurrentManifest();
 		// Only allow selecting from services we know are enabled remotely (serviceName maps to Beamo Ids)
