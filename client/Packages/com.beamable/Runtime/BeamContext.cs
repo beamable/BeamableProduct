@@ -603,7 +603,7 @@ namespace Beamable
 				catch (NoConnectivityException)
 				{
 					// we tried so hard to avoid this.
-					Debug.LogWarning("Lost internet during Beamable initiation. Unpredicatable behaviour may occur.");
+					Debug.LogWarning("Lost internet during Beamable initiation. unpredictable behaviour may occur.");
 				}
 			}
 
