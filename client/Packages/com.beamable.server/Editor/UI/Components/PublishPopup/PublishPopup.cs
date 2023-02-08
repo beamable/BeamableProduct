@@ -125,7 +125,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 		private readonly Dictionary<IBeamableService, Action> _logForwardActions = new Dictionary<IBeamableService, Action>();
 		private readonly List<PublishManifestEntryVisualElement> _servicesToPublish = new List<PublishManifestEntryVisualElement>();
-		
+
+		private readonly Dictionary<StorageEntryModel, List<ManifestEntryModel>> _storageDependsOnServiceRepresentation =
+			new Dictionary<StorageEntryModel, List<ManifestEntryModel>>();
+
 		private List<IEntryModel> _allUnarchivedServices;
 
 		private readonly Color _infoColor = new Color(0f, 146f / 255, 255f / 255);
@@ -204,6 +207,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var isRemote = MicroservicesDataModel.Instance.ContainsRemoteOnlyModel(model.Name);
 				var newElement = new PublishManifestEntryVisualElement(model, index, isLocal, isRemote);
 				newElement.Refresh();
+				newElement.OnEnableStateChanged += HandleEnableStateChanged;
 				_publishManifestElements.Add(model.Name, newElement);
 				elements.Add(newElement);
 			}
@@ -211,6 +215,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var orderedElements = elements.OrderBy(x => x.Model.Type)
 			                                                .ThenByDescending(x => x.IsLocal && !x.IsRemote)
 			                                                .ToList();
+			
+			orderedElements.ForEach(x =>
+			{
+				var dependencies = GetAllDependencies(x.Model);
+				foreach (var dependency in dependencies)
+				{
+					if (!(dependency.Model is StorageEntryModel storageEntryModel) || !(x.Model is ManifestEntryModel serviceModel))
+						continue;
+
+					if (_storageDependsOnServiceRepresentation.ContainsKey(storageEntryModel))
+					{
+						_storageDependsOnServiceRepresentation[storageEntryModel].Add(serviceModel);
+						continue;
+					}
+					_storageDependsOnServiceRepresentation.Add(storageEntryModel, new List<ManifestEntryModel> {serviceModel});
+				}
+				dependencies.ForEach(y => y.EnableState.SetEnabled(false));
+			});
 			
 			_scrollContainer.AddRange(orderedElements);
 			
@@ -238,6 +260,33 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			AddLogger();
 		}
+
+		private List<PublishManifestEntryVisualElement> GetAllDependencies(IEntryModel model)
+		{
+			var dependenciesToUpdate = new List<PublishManifestEntryVisualElement>();
+			if (model is ManifestEntryModel serviceModel)
+			{
+				dependenciesToUpdate.AddRange(from PublishManifestEntryVisualElement entry in _publishManifestElements.Values
+				                              from dependency in serviceModel.Dependencies 
+				                              where entry.Model.Name == dependency.id 
+				                              select entry);
+			}
+			return dependenciesToUpdate;
+		}
+		
+		private void HandleEnableStateChanged(IEntryModel model)
+		{
+			GetAllDependencies(model)?.ForEach(x =>
+			{
+				if (!(x.Model is StorageEntryModel storageEntryModel))
+					return;
+
+				var isAnyDependentServiceEnabled = _storageDependsOnServiceRepresentation[storageEntryModel].Any(y => y.Enabled);
+				x.UpdateEnableState(isAnyDependentServiceEnabled);
+			});;
+			
+		}
+
 		public void PrepareParent()
 		{
 			parent.name = "PublishWindowContainer";

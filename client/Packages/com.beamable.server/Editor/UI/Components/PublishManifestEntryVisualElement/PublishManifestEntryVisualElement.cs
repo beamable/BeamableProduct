@@ -1,4 +1,5 @@
 using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	public class PublishManifestEntryVisualElement : MicroserviceComponent,
 													 IComparable<PublishManifestEntryVisualElement>
 	{
+		public Action<IEntryModel> OnEnableStateChanged;
 		public IEntryModel Model { get; }
 		public int Index => _index;
 		public bool IsRemote => _isRemote;
@@ -41,16 +43,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return _loadingBar;
 			}
 		}
+		public BeamableCheckboxVisualElement EnableState { get; private set; }
 
 		private Image _checkImage;
 		private LoadingBarElement _loadingBar;
-		private BeamableCheckboxVisualElement _enableState;
 		private DropdownVisualElement _sizeDropdown;
 		private TextField _commentField;
 		private Label _stateLabel;
 		private Label _serviceName;
 		private VisualElement _knowLocationEntry;
-
+		
 		private string _currentPublishState;
 
 		private readonly int _index;
@@ -74,6 +76,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{ "mongov1", "StorageObject" }
 		};
 
+
 		public PublishManifestEntryVisualElement(IEntryModel model,
 		                                         int elementIndex,
 		                                         bool isLocal,
@@ -94,12 +97,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_loadingBar.Hidden = true;
 			_loadingBar.Refresh();
 
-			_enableState = Root.Q<BeamableCheckboxVisualElement>("enableState");
-			_enableState.Refresh();
-			_enableState.SetWithoutNotify(Model.Enabled);
+			EnableState = Root.Q<BeamableCheckboxVisualElement>("enableState");
+			EnableState.Refresh();
 			UpdateEnableState(Model.Enabled);
-			_enableState.OnValueChanged += UpdateEnableState;
-			_enableState.tooltip = CHECKBOX_TOOLTIP;
+			EnableState.OnValueChanged += UpdateEnableState;
+			EnableState.tooltip = CHECKBOX_TOOLTIP;
 
 			Root.Q<Image>("serviceIcon").AddToClassList(TryGetServiceProperTypeName(Model.Type));
 
@@ -150,11 +152,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateStatus(ServicePublishState.Unpublished);
 		}
 
-		private void UpdateEnableState(bool isEnabled)
+		public void UpdateEnableState(bool isEnabled)
 		{
 			Model.Enabled = isEnabled;
-			_enableState.EnableInClassList("enabled", isEnabled);
-			_enableState.EnableInClassList("disabled", !isEnabled);
+			EnableState.EnableInClassList("enabled", isEnabled);
+			EnableState.EnableInClassList("disabled", !isEnabled);
+			
+			if (Model is ManifestEntryModel)
+				OnEnableStateChanged?.Invoke(Model);
 		}
 		private void OnLabelSizeChanged(GeometryChangedEvent evt)
 		{
@@ -173,7 +178,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		public void HandlePublishStarted()
 		{
-			_enableState.SetEnabled(false);
+			EnableState.SetEnabled(false);
 			// _sizeDropdown.SetEnabled(false);
 			_commentField.SetEnabled(false);
 		}
