@@ -231,9 +231,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 					}
 					_storageDependsOnServiceRepresentation.Add(storageEntryModel, new List<ManifestEntryModel> {serviceModel});
 				}
-				dependencies.ForEach(y => y.EnableState.SetEnabled(false));
 			});
 			
+			orderedElements.ForEach(x => HandleEnableStateChanged(x.Model));
 			_scrollContainer.AddRange(orderedElements);
 			
 			Root.Q("enableC").tooltip = ON_OFF_HEADER_TOOLTIP;
@@ -282,7 +282,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 					return;
 
 				var isAnyDependentServiceEnabled = _storageDependsOnServiceRepresentation[storageEntryModel].Any(y => y.Enabled);
-				x.UpdateEnableState(isAnyDependentServiceEnabled);
+				x.UpdateEnableState(true);
+				x.EnableState.SetEnabled(!isAnyDependentServiceEnabled);
 			});;
 			
 		}

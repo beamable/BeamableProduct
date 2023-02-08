@@ -155,6 +155,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void UpdateEnableState(bool isEnabled)
 		{
 			Model.Enabled = isEnabled;
+			EnableState.SetWithoutNotify(isEnabled); 
 			EnableState.EnableInClassList("enabled", isEnabled);
 			EnableState.EnableInClassList("disabled", !isEnabled);
 			
