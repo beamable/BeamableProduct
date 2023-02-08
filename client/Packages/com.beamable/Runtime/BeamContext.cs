@@ -29,6 +29,7 @@ using System.Linq;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using EmptyResponse = Beamable.Common.Api.EmptyResponse;
+using ExternalIdentity = Beamable.Common.Api.Auth.ExternalIdentity;
 using Random = UnityEngine.Random;
 using TokenResponse = Beamable.Common.Api.Auth.TokenResponse;
 
@@ -84,7 +85,13 @@ namespace Beamable
 		/// </summary>
 		public ObservableUser AuthorizedUser = new ObservableUser
 		{
-			Value = new User()
+			Value = new User
+			{
+				thirdPartyAppAssociations = new List<string>(),
+				external = new List<ExternalIdentity>(),
+				deviceIds = new List<string>(),
+				scopes = new List<string>()
+			}
 		};
 
 		/// <summary>
@@ -327,12 +334,8 @@ namespace Beamable
 
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
-
-			// await InitStep_SaveToken();
-			await InitStep_GetUser();
-			await InitStep_StartNewSession();
-			await InitStep_ServerToClientConnection();
-
+			
+			await InitProcedure(silent: true);
 
 			// before we broadcast the event; we'll ask the accounts to update if they exist...
 			if (HasAccountsService)
@@ -426,8 +429,8 @@ namespace Beamable
 
 			InitServices(cid, pid);
 			_behaviour.Initialize(this);
-
 			_initPromise = new Promise();
+
 			IEnumerator Try()
 			{
 				var success = false;
@@ -438,7 +441,7 @@ namespace Beamable
 				while (!success)
 				{
 					var attemptIndex = attempt;
-					yield return InitializeUser()
+					yield return InitProcedure()
 						.Error(err =>
 						{
 							errors[attemptIndex] = err;
@@ -545,132 +548,6 @@ namespace Beamable
 			_requester.DeleteToken();
 		}
 
-		private async Promise InitStep_StartNewSession()
-		{
-			try
-			{
-				var adId = await AdvertisingIdentifier.GetIdentifier();
-				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
-				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
-			}
-			catch (NoConnectivityException)
-			{
-				/*
-				 * TODO: We could record that a session started at a certain time, and report that later. But the API doesn't support custom startTimes
-				 * For now, we'll ignore any offline sessions.
-				 */
-				_connectivityService.OnReconnectOnce(async () => await InitStep_StartNewSession());
-			}
-		}
-
-
-		private async Promise InitStep_SaveToken()
-		{
-			if (AccessToken == null || AccessToken.Token == "offline")
-			{
-				try
-				{
-					var rsp = await _authService.CreateUser();
-					await SaveToken(rsp);
-				}
-				catch (NoConnectivityException)
-				{
-					/*
-					 * in this case, we can't create a user with no internet, so lets make a random one.
-					 * When the user comes back online, we need to _FIRST_ create them a valid token,
-					 * and _THEN_ perform the replay operations from any resourceful SDK layers
-					 */
-
-					await SaveToken(new TokenResponse
-					{
-						token_type = "offline",
-						access_token = "offline",
-						refresh_token = "offline",
-						expires_in = long.MaxValue - 1
-					});
-
-					if (_offlineCache.UseOfflineCache)
-					{
-						_offlineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me",
-							new User
-							{
-								id = Random.Range(int.MinValue, 0),
-								scopes = new List<string>(),
-								thirdPartyAppAssociations = new List<string>(),
-								deviceIds = new List<string>()
-							}, Requester.AccessToken, true);
-					}
-
-					_connectivityService.OnReconnectOnce(async () =>
-					{
-						// disable the old token, because its bad
-						ClearToken();
-
-						// re-create the user
-						await InitStep_SaveToken();
-						await InitStep_GetUser();
-						await InitStep_ServerToClientConnection();
-					}, -100);
-				}
-			}
-			else if (AccessToken.IsExpired)
-			{
-				try
-				{
-					var rsp = await _authService.LoginRefreshToken(AccessToken.RefreshToken);
-					await SaveToken(rsp);
-				}
-				catch (NoConnectivityException)
-				{
-					/*
-					 * in this event, the token is expired, but it doesn't matter because we are offline anyway.
-					 * When the user comes back online, we need to use this token to refresh ourselves,
-					 * so we don't want to erase it.
-					 */
-				}
-			}
-		}
-
-		private async Promise InitStep_GetUser()
-		{
-			var user = new User
-			{
-				id = 0,
-				scopes = new List<string>(),
-				thirdPartyAppAssociations = new List<string>(),
-				deviceIds = new List<string>()
-			};
-			try
-			{
-				user = await _authService.GetUser();
-			}
-			catch (NoConnectivityException)
-			{
-				// Debug.Log("Will get user when reconnect...");
-				// _connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
-			}
-
-
-			AuthorizedUser.Value = user;
-		}
-
-		private async Promise InitStep_ServerToClientConnection()
-		{
-			// Get the realm config
-			RealmConfiguration config = await ServiceProvider.GetService<IRealmsApi>().GetClientDefaults();
-			string provider = config.websocketConfig.provider ?? "pubnub";
-			if (provider != "pubnub")
-			{
-				// Let's make sure that we get a fresh new JWT before attempting to connect.
-				await _beamableApiRequester.RefreshToken();
-				await InitStep_StartWebsocket(config.websocketConfig.uri);
-			}
-			else
-			{
-				await InitStep_StartPubnub();
-			}
-		}
-
 		private async Promise InitStep_StartPubnub()
 		{
 			try
@@ -681,7 +558,6 @@ namespace Beamable
 			catch (NoConnectivityException)
 			{
 				// let it go..
-				// _connectivityService.OnReconnectOnce(async () => await InitStep_StartPubnub());
 			}
 		}
 
@@ -693,9 +569,80 @@ namespace Beamable
 			await connection.Connect(socketUri, _beamableApiRequester.Token);
 		}
 
-		private async Promise InitStep_StartPurchaser()
+
+		private async Promise InitProcedure(bool silent=false)
 		{
-			try
+
+			#region load token from storage
+			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
+			_beamableApiRequester.Token = _requester.Token;
+			#endregion
+
+			#region wait for connectivity...
+			var hasInternet = await _connectivityChecker.ForceCheck();
+			#endregion
+
+			#region make decisions about the current account
+			var hasNoToken = AccessToken == null;
+			var hasOfflineToken = AccessToken?.Token == Constants.Commons.OFFLINE;
+			var needsToken = hasNoToken || hasOfflineToken;
+			#endregion
+			
+			if (!hasInternet)
+			{
+				await SetupWithoutConnection();
+				// when internet reconnects, re-run the init. 
+				_connectivityService.OnReconnectOnce(() => InitProcedure(), -100);
+			}
+			else
+			{
+				try
+				{
+					await SetupWithConnection();
+				}
+				catch (NoConnectivityException)
+				{
+					// we tried so hard to avoid this.
+					Debug.LogWarning("Lost internet during Beamable initiation. unpredictable behaviour may occur.");
+				}
+			}
+
+			async Promise SetupBeamableNotificationChannel()
+			{
+				RealmConfiguration config = await ServiceProvider.GetService<IRealmsApi>().GetClientDefaults();
+
+				string provider = config.websocketConfig.provider ?? "pubnub";
+				if (provider != "pubnub")
+				{
+					// Let's make sure that we get a fresh new JWT before attempting to connect.
+					await _beamableApiRequester.RefreshToken();
+					await InitStep_StartWebsocket(config.websocketConfig.uri);
+				}
+				else
+				{
+					await InitStep_StartPubnub();
+				}
+			}
+
+			async Promise SetupGetUser()
+			{
+				var user = await _authService.GetUser();
+				AuthorizedUser.Value = user;
+			}
+			
+			async Promise SetupNewSession()
+			{
+				var adId = await AdvertisingIdentifier.GetIdentifier();
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId);
+				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
+				if (CoreConfiguration.Instance.SendHeartbeat)
+				{
+					// this breakpoint only hit one time, so the session isn't restarting? But also, the id is bad???
+					_heartbeatService.Start();
+				}
+			}
+
+			async Promise SetupPurchaser()
 			{
 				if (ServiceProvider.CanBuildService<IBeamablePurchaser>())
 				{
@@ -709,37 +656,72 @@ namespace Beamable
 					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
 				}
 			}
-			catch (NoConnectivityException)
+
+			void SetupEmitEvents()
 			{
-				_connectivityService.OnReconnectOnce(async () => await InitStep_StartPurchaser());
+				if (silent) return;
+				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
+				OnReloadUser?.Invoke();
+			}
+			
+			async Promise SetupWithoutConnection()
+			{
+				if (needsToken)
+				{
+					var offlineToken = new TokenResponse
+					{
+						token_type = Constants.Commons.OFFLINE,
+						access_token = Constants.Commons.OFFLINE,
+						refresh_token = Constants.Commons.OFFLINE,
+						expires_in = long.MaxValue - 1
+					};
+					await SaveToken(offlineToken);
+
+					if (_offlineCache.UseOfflineCache)
+					{
+						var dbid = Random.Range(int.MinValue, 0);
+						_offlineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me",
+						                        new User
+						                        {
+							                        id = dbid,
+							                        scopes = new List<string>(),
+							                        thirdPartyAppAssociations = new List<string>(),
+							                        deviceIds = new List<string>()
+						                        }, Requester.AccessToken, true);
+						_offlineCache.Merge("stats", Requester.AccessToken, new Dictionary<long, Dictionary<string, string>>
+						{
+							[dbid] = new Dictionary<string, string>()
+						});
+					}
+				}
+
+				await SetupGetUser();
+				SetupEmitEvents();
+			}
+
+			async Promise SetupWithConnection()
+			{
+				if (needsToken)
+				{
+					var rsp = await _authService.CreateUser();
+					await SaveToken(rsp);
+				} else if (AccessToken.IsExpired)
+				{
+					var rsp = await _authService.LoginRefreshToken(AccessToken.RefreshToken);
+					await SaveToken(rsp);
+				}
+
+				await SetupGetUser();
+				var connection = SetupBeamableNotificationChannel();
+				var session = SetupNewSession();
+				var purchase = SetupPurchaser();
+				await Promise.Sequence(connection, session, purchase);
+
+				SetupEmitEvents();
 			}
 		}
 
-		private async Promise InitializeUser()
-		{
-			// Create a new account
-			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
-			_beamableApiRequester.Token = _requester.Token;
-
-			await InitStep_SaveToken();
-			await InitStep_GetUser();
-			Promise connection = InitStep_ServerToClientConnection();
-			// Start Session
-			Promise session = InitStep_StartNewSession();
-			if (CoreConfiguration.Instance.SendHeartbeat)
-			{
-				_heartbeatService.Start();
-			}
-
-			// Check if we should initialize the purchaser
-			var purchase = InitStep_StartPurchaser();
-			await Promise.Sequence(connection, session, purchase);
-
-			OnReloadUser?.Invoke();
-
-			ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
-		}
-
+		
 
 		/// <summary>
 		/// Create or retrieve a <see cref="BeamContext"/> for the given <see cref="PlayerCode"/>. There is only one instance of a context per <see cref="PlayerCode"/>.
