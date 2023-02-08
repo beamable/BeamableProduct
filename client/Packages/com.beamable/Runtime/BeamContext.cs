@@ -584,7 +584,7 @@ namespace Beamable
 
 			#region make decisions about the current account
 			var hasNoToken = AccessToken == null;
-			var hasOfflineToken = AccessToken?.Token == "offline";
+			var hasOfflineToken = AccessToken?.Token == Constants.Commons.OFFLINE;
 			var needsToken = hasNoToken || hasOfflineToken;
 			#endregion
 			
@@ -670,9 +670,9 @@ namespace Beamable
 				{
 					var offlineToken = new TokenResponse
 					{
-						token_type = "offline",
-						access_token = "offline",
-						refresh_token = "offline",
+						token_type = Constants.Commons.OFFLINE,
+						access_token = Constants.Commons.OFFLINE,
+						refresh_token = Constants.Commons.OFFLINE,
 						expires_in = long.MaxValue - 1
 					};
 					await SaveToken(offlineToken);
@@ -692,9 +692,7 @@ namespace Beamable
 						{
 							[dbid] = new Dictionary<string, string>()
 						});
-
 					}
-
 				}
 
 				await SetupGetUser();

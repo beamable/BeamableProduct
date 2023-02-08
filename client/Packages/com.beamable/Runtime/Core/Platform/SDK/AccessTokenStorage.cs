@@ -179,7 +179,7 @@ namespace Beamable.Api
 			var validTokens = new List<TokenResponse>();
 			foreach (var convert in converted)
 			{
-				var isOfflineToken = convert.access_token == "offline";
+				var isOfflineToken = convert.access_token == Common.Constants.Commons.OFFLINE;
 				if (!isOfflineToken)
 				{
 					validTokens.Add(convert);
