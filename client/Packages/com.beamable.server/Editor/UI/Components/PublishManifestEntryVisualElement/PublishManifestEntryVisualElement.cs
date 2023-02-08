@@ -182,7 +182,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			switch (state)
 			{
 				case ServicePublishState.Failed:
-					_loadingBar.UpdateProgress(0, failed: true);
+					_loadingBar.UpdateProgress(1, failed: true);
 					_stateLabel.AddToClassList("error");
 					_stateLabel.text = "FAILED";
 					return;
