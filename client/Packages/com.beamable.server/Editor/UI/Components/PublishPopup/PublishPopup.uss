@@ -216,10 +216,11 @@ LoadingBarElement.hidden {
     max-height: 0px;
 }
 
-#infoCardStep4.error {
+.card-error {
     border-width: 2px;
     border-color: #d93737;
 }
+
 
 #arrowLeft, #arrowRight{
     flex-grow: 1;
