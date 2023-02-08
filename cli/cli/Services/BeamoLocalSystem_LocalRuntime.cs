@@ -70,7 +70,7 @@ public partial class BeamoLocalSystem
 
 			if (string.IsNullOrEmpty(beamoId))
 			{
-				BeamableLogger.LogWarning($"Skipping container [{dockerContainer.ID}] because no ImageId matched this containers Image={dockerContainer.Image} or ImageId={dockerContainer.ImageID}");
+				// BeamableLogger.LogWarning($"Skipping container [{dockerContainer.ID}] because no ImageId matched this containers Image={dockerContainer.Image} or ImageId={dockerContainer.ImageID}");
 				continue;
 			}
 
@@ -222,16 +222,16 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.BeamoServiceDefinition)"/>.
 	/// </summary>
-	public static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, string beamoId)
-	{
-		var toCheck = manifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId);
-		return VerifyCanBeBuiltLocally(manifest, toCheck);
-	}
+	// public static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, string beamoId)
+	// {
+	// 	var toCheck = manifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId);
+	// 	return VerifyCanBeBuiltLocally(manifest, toCheck);
+	// }
 
 	/// <summary>
 	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.BeamoServiceDefinition)"/>.
 	/// </summary>
-	private static bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
+	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
 		IBeamoLocalProtocol protocol = toCheck.Protocol switch
 		{
@@ -240,7 +240,7 @@ public partial class BeamoLocalSystem
 			_ => throw new ArgumentOutOfRangeException()
 		};
 
-		return protocol.VerifyCanBeBuiltLocally();
+		return protocol.VerifyCanBeBuiltLocally(_configService);
 	}
 
 	/// <summary>

@@ -15,25 +15,25 @@ public class ServicesCommandArgs : LoginCommandArgs
 
 public class ServicesCommand : AppCommand<ServicesCommandArgs>
 {
-	private readonly IAppContext _ctx;
-	private readonly ConfigService _configService;
-	private readonly LoginCommand _loginCommand;
-	private readonly ConfigCommand _configCommand;
-	private readonly IRealmsApi _realmsApi;
-	private readonly IAliasService _aliasService;
-	private readonly BeamoLocalSystem _localBeamo;
+	private IAppContext _ctx;
+	private ConfigService _configService;
+	private LoginCommand _loginCommand;
+	private ConfigCommand _configCommand;
+	private IRealmsApi _realmsApi;
+	private IAliasService _aliasService;
+	private BeamoLocalSystem _localBeamo;
 
-	public ServicesCommand(IAppContext ctx, BeamoLocalSystem localBeamo)
+	public ServicesCommand()
 		: base("services", "Initialize a new beamable project in the current directory.")
 	{
-		_ctx = ctx;
-		_localBeamo = localBeamo;
 	}
 
 	public override void Configure() { }
 
-	public override async Task Handle(ServicesCommandArgs args)
+	public override Task Handle(ServicesCommandArgs args)
 	{
-
+		_ctx = args.AppContext;
+		_localBeamo = args.BeamoLocalSystem;
+		return Task.CompletedTask;
 	}
 }

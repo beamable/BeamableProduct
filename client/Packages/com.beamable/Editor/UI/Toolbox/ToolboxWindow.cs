@@ -1,24 +1,14 @@
 using Beamable.Common;
 using Beamable.Editor.Environment;
-using Beamable.Editor.Login.UI;
-using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
-
-using Beamable.Common.Dependencies;
-
-using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
+
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Toolbox;
 using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
@@ -96,8 +86,7 @@ namespace Beamable.Editor.Toolbox.UI
 			BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
-				if (isUpdated && BeamablePackageUpdateMeta.IsBlogSiteAvailable &&
-					!BeamablePackageUpdateMeta.IsBlogVisited &&
+				if (isUpdated && 
 					!EditorPrefs.GetBool(IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
 				{
 					ShowWhatsNewAnnouncement();
@@ -229,10 +218,8 @@ namespace Beamable.Editor.Toolbox.UI
 				{
 					// show the announcement!
 					var versionString = latestVersion.ToString();
-					var isBlog = BeamableWebRequester.IsBlogSpotAvailable(versionString);
-					BeamablePackageUpdateMeta.IsBlogSiteAvailable = isBlog;
 					var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel();
-					updateAvailableAnnouncement.SetDescription(versionString, isBlog);
+					updateAvailableAnnouncement.SetDescription(versionString);
 
 					updateAvailableAnnouncement.OnIgnore += () =>
 					{
@@ -241,8 +228,7 @@ namespace Beamable.Editor.Toolbox.UI
 					};
 					updateAvailableAnnouncement.OnWhatsNew += () =>
 					{
-						Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
-						BeamablePackageUpdateMeta.IsBlogVisited = true;
+						BeamablePackages.OpenUrlForVersion(versionString);
 					};
 					updateAvailableAnnouncement.OnInstall += () =>
 					{
@@ -279,36 +265,32 @@ namespace Beamable.Editor.Toolbox.UI
 				return;
 			}
 
-			BeamablePackageUpdateMeta.IsBlogSiteAvailable = BeamableWebRequester.IsBlogSpotAvailable(BeamablePackageUpdateMeta.NewestVersionNumber);
 			var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel();
-			updateAvailableAnnouncement.SetDescription(BeamablePackageUpdateMeta.NewestVersionNumber, BeamablePackageUpdateMeta.IsBlogSiteAvailable);
+			updateAvailableAnnouncement.SetDescription(BeamablePackageUpdateMeta.NewestVersionNumber);
 
-			if (BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+			updateAvailableAnnouncement.OnWhatsNew = () =>
 			{
-				updateAvailableAnnouncement.OnWhatsNew = () =>
-				{
-					Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
-					BeamablePackageUpdateMeta.IsBlogVisited = true;
-				};
-			}
-			else
+				BeamablePackages.OpenUrlForVersion(BeamablePackageUpdateMeta.NewestVersionNumber);
 
-				updateAvailableAnnouncement.OnIgnore = () =>
-				{
-					BeamablePackageUpdateMeta.IsInstallationIgnored = true;
-					EditorPrefs.SetBool(IS_PACKAGE_UPDATE_IGNORED, true);
-					_model.RemoveAnnouncement(updateAvailableAnnouncement);
-				};
-
-			updateAvailableAnnouncement.OnInstall = () => BeamablePackages.UpdatePackage().Then(_ =>
+				
+			};
+		
+			updateAvailableAnnouncement.OnIgnore = () =>
 			{
+				BeamablePackageUpdateMeta.IsInstallationIgnored = true;
+				EditorPrefs.SetBool(IS_PACKAGE_UPDATE_IGNORED, true);
 				_model.RemoveAnnouncement(updateAvailableAnnouncement);
-				if (!BeamablePackageUpdateMeta.IsBlogVisited &&
-					BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+			};
+
+			updateAvailableAnnouncement.OnInstall = () =>
+			{
+				BeamableLogger.Log($"Updating the Beamable package to version=[{BeamablePackageUpdateMeta.NewestVersionNumber}]. It may take a while...");
+				BeamablePackages.UpdatePackage().Then(_ =>
 				{
-					ShowWhatsNewAnnouncement();
-				}
-			});
+					BeamableLogger.Log("The Beamable package update process completed successfully!");
+					_model.RemoveAnnouncement(updateAvailableAnnouncement);
+				});
+			};
 
 			_model.AddAnnouncement(updateAvailableAnnouncement);
 		}
@@ -323,8 +305,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 			whatsNewAnnouncement.OnWhatsNew = () =>
 			{
-				Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
-				BeamablePackageUpdateMeta.IsBlogVisited = true;
+				BeamablePackages.OpenUrlForVersion(BeamableEnvironment.SdkVersion);
 				_model.RemoveAnnouncement(whatsNewAnnouncement);
 			};
 			whatsNewAnnouncement.OnIgnore = () =>

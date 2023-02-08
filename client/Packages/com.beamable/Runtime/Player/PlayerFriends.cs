@@ -1,7 +1,7 @@
 ﻿using Beamable.Common;
-using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Mail;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
@@ -19,6 +19,7 @@ namespace Beamable.Player
 		private const string SOCIAL_UPDATE_CHANNEL = "SOCIAL.UPDATE";
 		private const string MAIL_UPDATE_CHANNEL = "MAILBOX.UPDATE";
 		private const string MAIL_SOCIAL_INVITE_CATEGORY = "SOCIAL.FRIEND.INVITE";
+		private const string FRIEND_PRESENCE_CHANGED = "social.friend_presence_changed";
 
 		/// <summary>
 		/// This promise will complete when the first social data has arrived
@@ -48,18 +49,25 @@ namespace Beamable.Player
 		/// </summary>
 		public ReceivedFriendInviteList ReceivedInvites;
 
+		/// <summary>
+		/// An event which fires when any of the player's friends changes presence status. 
+		/// </summary>
+		public event Action<PlayerFriend> FriendPresenceChanged;
+
 		private SocialList _socialList;
 
 		private ISocialApi _socialApi;
 		private List<MailMessage> _inviteMail;
 		private readonly INotificationService _notificationService;
 		private readonly IMailApi _mailApi;
+		private readonly IPresenceApi _presenceApi;
 
-		public PlayerSocial(ISocialApi socialApi, INotificationService notificationService, IMailApi mailApi)
+		public PlayerSocial(ISocialApi socialApi, INotificationService notificationService, IMailApi mailApi, IPresenceApi presenceApi)
 		{
 			_socialApi = socialApi;
 			_notificationService = notificationService;
 			_mailApi = mailApi;
+			_presenceApi = presenceApi;
 			_inviteMail = new List<MailMessage>();
 
 			Friends = new PlayerFriendList(FriendsListRefresh);
@@ -72,8 +80,21 @@ namespace Beamable.Player
 
 			// but critically, friend invitations only appear on the mail channel :/
 			_notificationService.Subscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			
+			_notificationService.Subscribe<FriendStatusChangedNotification>(FRIEND_PRESENCE_CHANGED, OnFriendPresenceChanged);
 
 			OnReady = Refresh().FlatMap(_ => RefreshMail()).ToPromise();
+		}
+
+		private async void OnFriendPresenceChanged(FriendStatusChangedNotification notification)
+		{
+			// TODO: [TD000007] Use information from the notification instead of requesting player presence
+			var presence = await _presenceApi.GetPlayerPresence(notification.friendId);
+			var player = Friends.FirstOrDefault(friend => friend.PlayerId == notification.friendId);
+			if (player != null)
+			{
+				player.Presence = presence;
+			}
 		}
 
 		private void OnMailUpdate(object _)
@@ -96,15 +117,19 @@ namespace Beamable.Player
 			var __ = Refresh();
 		}
 
-		private Promise<List<PlayerFriend>> FriendsListRefresh()
+		private async Promise<List<PlayerFriend>> FriendsListRefresh()
 		{
+			var playerIds = _socialList.friends.Select(friend => long.Parse(friend.playerId)).ToArray();
+			var statuses = await _presenceApi.GetManyStatuses(playerIds);
+			
 			var friends = new List<PlayerFriend>(_socialList.friends.Count);
 			foreach (var friend in _socialList.friends)
 			{
-				friends.Add(new PlayerFriend(this, long.Parse(friend.playerId)));
+				var currentStatus = statuses.playersStatus.FirstOrDefault(status => status.playerId.ToString() == friend.playerId);
+				friends.Add(new PlayerFriend(this, long.Parse(friend.playerId), currentStatus, player => FriendPresenceChanged?.Invoke(player)));
 			}
 
-			return Promise<List<PlayerFriend>>.Successful(friends);
+			return friends;
 		}
 
 		private Promise<List<BlockedPlayer>> BlockedListRefresh()
@@ -309,6 +334,7 @@ namespace Beamable.Player
 		{
 			_notificationService.Unsubscribe<FriendRequestUpdateNotification>(SOCIAL_UPDATE_CHANNEL, OnSocialUpdate);
 			_notificationService.Unsubscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
+			_notificationService.Unsubscribe<FriendStatusChangedNotification>(FRIEND_PRESENCE_CHANGED, OnFriendPresenceChanged);
 			_socialApi = null;
 			return Promise.Success;
 		}
@@ -334,8 +360,6 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerFriend : IPlayerId
 	{
-		private readonly PlayerSocial _sdk;
-
 		[SerializeField]
 		private long playerId;
 
@@ -344,12 +368,31 @@ namespace Beamable.Player
 		/// </summary>
 		public long PlayerId => playerId;
 
-		internal PlayerFriend(PlayerSocial sdk, long playerId)
+		/// <summary>
+		/// The current <see cref="PlayerPresence"/> status of the player.
+		/// </summary>
+		public PlayerPresence Presence
+		{
+			get => _presence;
+			set
+			{
+				_presence = value;
+				_onPresenceUpdated?.Invoke(this);
+			}
+		}
+		private PlayerPresence _presence;
+		private Action<PlayerFriend> _onPresenceUpdated;
+
+		private readonly PlayerSocial _sdk;
+
+		internal PlayerFriend(PlayerSocial sdk, long playerId, PlayerPresence presenceStatus, Action<PlayerFriend> onPresenceUpdated)
 		{
 			_sdk = sdk;
 			this.playerId = playerId;
+			_presence = presenceStatus;
+			_onPresenceUpdated = onPresenceUpdated;
 		}
-
+		
 		/// <summary>
 		/// Blocks the friend
 		/// </summary>
@@ -370,7 +413,7 @@ namespace Beamable.Player
 		#region auto-generated-equality
 		protected bool Equals(PlayerFriend other)
 		{
-			return PlayerId == other.PlayerId;
+			return PlayerId == other.PlayerId && Equals(_presence, other._presence);
 		}
 
 		public override bool Equals(object obj)
@@ -390,12 +433,15 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PlayerFriend)obj);
+			return Equals((PlayerFriend) obj);
 		}
 
 		public override int GetHashCode()
 		{
-			return PlayerId.GetHashCode();
+			unchecked
+			{
+				return (PlayerId.GetHashCode() * 397) ^ (_presence != null ? _presence.GetHashCode() : 0);
+			}
 		}
 		#endregion
 	}

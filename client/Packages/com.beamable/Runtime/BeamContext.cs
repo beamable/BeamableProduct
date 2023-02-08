@@ -13,6 +13,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
+using Beamable.Common.Api.Presence;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
@@ -174,6 +175,11 @@ namespace Beamable
 		public PlayerParty Party => _serviceScope.GetService<PlayerParty>();
 
 		/// <summary>
+		/// Access the <see cref="IPresenceApi"/> for this context.
+		/// </summary>
+		public IPresenceApi Presence => _serviceScope.GetService<IPresenceApi>();
+
+		/// <summary>
 		/// Access the <see cref="PlayerAccounts"/> for this context.
 		/// </summary>
 		public PlayerAccounts Accounts
@@ -242,6 +248,7 @@ namespace Beamable
 		private IAuthService _authService;
 		private IContentApi _contentService;
 		private IConnectivityService _connectivityService;
+		private IConnectivityChecker _connectivityChecker;
 		private NotificationService _notification;
 		private IPubnubSubscriptionManager _pubnubSubscriptionManager;
 		private IPubnubNotificationService _pubnubNotificationService;
@@ -503,6 +510,10 @@ namespace Beamable
 			_requester.Pid = pid;
 
 			_connectivityService = ServiceProvider.GetService<IConnectivityService>();
+			if (ServiceProvider.CanBuildService<IConnectivityChecker>())
+			{
+				_connectivityChecker = ServiceProvider.GetService<IConnectivityChecker>();
+			}
 			_notification = ServiceProvider.GetService<NotificationService>();
 			_pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
 			_pubnubNotificationService = ServiceProvider.GetService<IPubnubNotificationService>();

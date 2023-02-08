@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.PackageManager;
+using UnityEngine;
 using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
@@ -20,9 +21,6 @@ namespace Beamable.Editor.Environment
 		public static event Action OnPackageUpdated;
 
 		public static bool IsInstallationIgnored { get; set; }
-		public static bool IsBlogSiteAvailable { get; set; }
-		public static bool IsBlogVisited { get; set; }
-
 		public static string CurrentVersionNumber { get; set; }
 		public static string CurrentServerVersionNumber { get; set; }
 
@@ -39,8 +37,6 @@ namespace Beamable.Editor.Environment
 		{
 			EditorPrefs.SetString(NEWEST_VERSION_NUMBER, versionNumber);
 			IsInstallationIgnored = false;
-			IsBlogVisited = false;
-			IsBlogSiteAvailable = BeamableWebRequester.IsBlogSpotAvailable(versionNumber);
 		}
 		public static void SetNewestServerVersionNumber(string versionNumber)
 		{
@@ -53,16 +49,38 @@ namespace Beamable.Editor.Environment
 		public const string BeamablePackageName = "com.beamable";
 		public const string ServerPackageName = "com.beamable.server";
 
+		public const string SESSION_KEY_UPDATE_SERVER_REQUIRED = "beam-update-server-package-requested";
+
 		private static Dictionary<string, Action> _packageToWindowInitialization = new Dictionary<string, Action>();
 
 		private static Promise<BeamablePackageMeta> _serverPackageMetaPromise;
 
 		public static Promise<BeamablePackageMeta> ServerPackageMeta =>
 			_serverPackageMetaPromise ?? (_serverPackageMetaPromise = GetServerPackage());
-
+		
+		
 		static BeamablePackages()
 		{
 			var _ = ServerPackageMeta;
+			var __ = CheckForPendingUpdates();
+		}
+
+		private static async Promise CheckForPendingUpdates()
+		{
+			if (IsServerUpdateRequested)
+			{
+				var isUpdated = await IsServerPackageUpdated();
+				if (!isUpdated)
+				{
+					await UpdateBeamablePackageServer();
+				}
+			}
+		}
+
+		private static bool IsServerUpdateRequested
+		{
+			get => SessionState.GetBool(SESSION_KEY_UPDATE_SERVER_REQUIRED, false);
+			set => SessionState.SetBool(SESSION_KEY_UPDATE_SERVER_REQUIRED, value);
 		}
 
 		public static void ShowServerWindow()
@@ -208,18 +226,26 @@ namespace Beamable.Editor.Environment
 			return promise;
 		}
 
-		public static Promise<Unit> UpdatePackage()
+		public static async Promise UpdatePackage()
 		{
-			return UpdateBeamablePackage().Then(_ =>
+			IsServerUpdateRequested = true;
+			await UpdateBeamablePackage();
+			await CheckForPendingUpdates();
+		}
+
+		public static void OpenUrlForVersion(PackageVersion version)
+		{
+			var url = "https://beamable.github.io/changes/";
+			if (version.IsReleaseCandidate)
 			{
-				IsServerPackageUpdated().Then(isUpdated =>
-			 {
-				 if (!isUpdated)
-				 {
-					 UpdateBeamablePackageServer();
-				 }
-			 });
-			});
+				url += "?preview";
+			} else if (version.IsNightly)
+			{
+				url += "?ci";
+			}
+
+			url += $"#{version.Major}.{version.Minor}.{version.Patch}";
+			Application.OpenURL(url);
 		}
 
 		private static Promise<Unit> UpdateBeamablePackage()
@@ -271,7 +297,7 @@ namespace Beamable.Editor.Environment
 				if (!req.IsCompleted) return;
 
 				EditorApplication.update -= Callback;
-
+				IsServerUpdateRequested = false;
 				if (req.Status == StatusCode.Success)
 				{
 					promise.CompleteSuccess(PromiseBase.Unit);
