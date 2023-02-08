@@ -20,8 +20,11 @@ namespace Beamable.Player
 				base.Value.scopes = value.scopes;
 				base.Value.deviceIds = value.deviceIds;
 				base.Value.thirdPartyAppAssociations = value.thirdPartyAppAssociations;
+				base.Value.external = value.external;
 				TriggerUpdate();
 			}
 		}
+
+		public override int GetBroadcastChecksum() => Value?.GetBroadcastChecksum() ?? base.GetBroadcastChecksum();
 	}
 }
