@@ -22,11 +22,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	internal class ServicePublishStateAnimator
 	{
+		public int SelectionIndex { get; private set; }
+
 		private readonly VisualElement _animatedElement;
 		private readonly int _offset = -300;
 		private readonly int _animDuration;
-
-		private int _selectionIndex;
 
 		public ServicePublishStateAnimator(VisualElement animatedElement, int animDuration = 500)
 		{
@@ -36,22 +36,22 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void Animate(ServicePublishState state)
 		{
-			_selectionIndex = -1;
+			SelectionIndex = -1;
 			switch (state)
 			{
 				case ServicePublishState.Verifying:
-					_selectionIndex = 1;
+					SelectionIndex = 1;
 					break;
 				case ServicePublishState.InProgress:
-					_selectionIndex = 2;
+					SelectionIndex = 2;
 					break;
 				case ServicePublishState.Published:
 				case ServicePublishState.Failed:
-					_selectionIndex = 3;
+					SelectionIndex = 3;
 					break;
 			}
-			if (_selectionIndex != -1)
-				Animate(new Vector3(_offset * _selectionIndex, 0, 0));
+			if (SelectionIndex != -1)
+				Animate(new Vector3(_offset * SelectionIndex, 0, 0));
 		}
 
 		private void Animate(Vector3 to) 
@@ -61,18 +61,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void Next()
 		{
-			if (_selectionIndex + 1 == _animatedElement.childCount)
+			if (SelectionIndex + 1 == _animatedElement.childCount)
 				return;
-			_selectionIndex++;
-			Animate(new Vector3(_offset * _selectionIndex, 0, 0));
+			SelectionIndex++;
+			Animate(new Vector3(_offset * SelectionIndex, 0, 0));
 		}
 
 		public void Previous()
 		{
-			if (_selectionIndex - 1 < 0)
+			if (SelectionIndex - 1 < 0)
 				return;
-			_selectionIndex--;
-			Animate(new Vector3(_offset * _selectionIndex, 0, 0));
+			SelectionIndex--;
+			Animate(new Vector3(_offset * SelectionIndex, 0, 0));
 		}
 	}
 	
@@ -316,10 +316,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleProgressInfoUpdated(string message, ServicePublishState state)
 		{
+			_infoDescription.text = message;
 			if (state == ServicePublishState.Failed)
 				_infoDescription.style.color = new StyleColor(_errorColor);
-			_infoDescription.text = message;
-			_serviceServicePublishStateAnimator.Animate(state);
+			else
+				_serviceServicePublishStateAnimator.Animate(state);
 		}
 		private void HandlePrimaryButtonClicked()
 		{
@@ -343,7 +344,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			switch (state)
 			{
 				case ServicePublishState.Failed:
-					Root.Q<Image>("infoCardStep4").AddToClassList("error");
+					Root.Q<Image>($"infoCardStep{_serviceServicePublishStateAnimator.SelectionIndex + 1}").AddToClassList("card-error");
 					_primarySubmitButton.Enable();
 					_mainLoadingBar.UpdateProgress(0, failed: true);
 					foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
@@ -365,7 +366,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandleDeploySuccess(ManifestModel _, int __) => HandleDeployEnded(true);
 		private void HandleDeployEnded(bool success)
 		{
-			_serviceServicePublishStateAnimator.Animate(success ? ServicePublishState.Published : ServicePublishState.Failed);
+			if (success)
+				_serviceServicePublishStateAnimator.Animate(ServicePublishState.Published);
+			
 			_primarySubmitButton.SetText("Close");
 			_primarySubmitButton.Enable();
 			_primarySubmitButton.SetAsFailure(!success);
