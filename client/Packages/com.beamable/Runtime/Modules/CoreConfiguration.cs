@@ -1,14 +1,8 @@
-using System;
-using Beamable.Common.Api;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using System.Reflection;
-using UnityEditor.Compilation;
-#endif
 using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable
