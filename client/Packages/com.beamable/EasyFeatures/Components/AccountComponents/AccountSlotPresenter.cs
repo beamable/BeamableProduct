@@ -1,4 +1,6 @@
-﻿using Beamable.UI.Buss;
+﻿using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Presence;
+using Beamable.UI.Buss;
 using Beamable.UI.Scripts;
 using System;
 using TMPro;
@@ -13,9 +15,13 @@ namespace Beamable.EasyFeatures.Components
 		private const string OFFLINE_CLASS = "offline";
 		private const string SELECTED_CLASS = "selected";
 
+		public float AuthIconSize = 45;
+		
+		[Space]
 		public Image AvatarImage;
 		public TextMeshProUGUI UsernameText;
 		public TextMeshProUGUI DescriptionText;
+		public TextMeshProUGUI StatusText;
 		public Button ConfirmButton;
 		public TextMeshProUGUI ConfirmButtonText;
 		public Button MainButton;
@@ -25,6 +31,9 @@ namespace Beamable.EasyFeatures.Components
 		public Button AcceptButton;
 		public Button CancelButton;
 		public BussElement PresenceDotBussElement;
+		public Transform LinkedAuthsRoot;
+		public AuthMethodButton AuthMethodButtonPrefab;
+		
 		[Range(0, 1)]
 		public float OnlineAlpha = 1;
 		[Range(0, 1)]
@@ -36,7 +45,11 @@ namespace Beamable.EasyFeatures.Components
 			public long PlayerId;
 			public string PlayerName;
 			public string Description;
+			public string Status;
 			public Sprite Avatar;
+			public bool HasEmail;
+			public AuthThirdParty[] ThirdParties;
+			public PlayerPresence Presence;
 		}
 		
 		public class PoolData : PoolableScrollView.IItem
@@ -102,6 +115,25 @@ namespace Beamable.EasyFeatures.Components
 			AvatarImage.color = viewData.Avatar == null ? Color.clear : Color.white;
 			UsernameText.text = viewData.PlayerName;
 			DescriptionText.text = viewData.Description;
+			StatusText.text = viewData.Status;
+			StatusText.gameObject.SetActive(!string.IsNullOrWhiteSpace(viewData.Status));
+
+			// clear old icon instances
+			foreach (Transform child in LinkedAuthsRoot)
+			{
+				Destroy(child.gameObject);
+			}
+			
+			if (viewData.HasEmail)
+				Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupEmail(true, false, AuthIconSize);
+
+			if (viewData.ThirdParties != null)
+			{
+				foreach (var thirdParty in viewData.ThirdParties)
+				{
+					Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupThirdParty(thirdParty, true, false, AuthIconSize);
+				}
+			}
 		}
 
 		public void SetOnlineState(bool online)

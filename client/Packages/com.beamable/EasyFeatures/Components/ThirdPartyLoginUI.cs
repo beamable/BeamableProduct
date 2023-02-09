@@ -6,6 +6,8 @@ namespace Beamable.EasyFeatures.Components
 {
 	public class ThirdPartyLoginUI : MonoBehaviour
 	{
+		public AuthMethodButton AuthMethodButtonPrefab;
+		
 		public Button AppleLoginButton;
 		public Button FacebookLoginButton;
 		public Button GameCenterLoginButton;

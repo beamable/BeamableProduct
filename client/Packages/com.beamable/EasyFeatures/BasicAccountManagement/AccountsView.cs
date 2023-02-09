@@ -14,7 +14,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			BeamContext Context { get; set; }
 
 			/// <inheritdoc cref="AccountManagementPlayerSystem.GetAccountViewData"/>
-			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(long playerId = -1);
+			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(bool includeAuthMethods, bool includePresence, long playerId = -1);
 			int AuthenticatedAccountsCount();
 			/// <inheritdoc cref="AccountManagementPlayerSystem.GetLinkedEmailAddress"/>
 			string GetLinkedEmailAddress(long playerId);
@@ -86,7 +86,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			// setup current account
 			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData
 			{
-				Height = 150, Index = 0, ViewData = await System.GetAccountViewData()
+				Height = 150, Index = 0, ViewData = await System.GetAccountViewData(true, true)
 			};
 			
 			AccountPresenter.Setup(data, OpenAccountInfoView, null);
@@ -102,7 +102,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 					if (account.GamerTag == System.Context.PlayerId)
 						continue;
 
-					accountsViewData.Add(await System.GetAccountViewData(account.GamerTag));
+					accountsViewData.Add(await System.GetAccountViewData(true, true, account.GamerTag));
 				}
 				
 				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected);

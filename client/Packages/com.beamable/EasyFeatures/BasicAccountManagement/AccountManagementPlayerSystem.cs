@@ -1,5 +1,6 @@
 ﻿using Beamable.Avatars;
 using Beamable.Common;
+using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Presence;
 using Beamable.EasyFeatures.Components;
 using System.Collections.Generic;
@@ -60,9 +61,12 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		}
 
 		/// <summary>
-		/// Gets account view data for a given player. Default parameter will return current user's view data.
+		/// Gets account view data for a given player. Default playerId will return current user's view data.
 		/// </summary>
-		public async Promise<AccountSlotPresenter.ViewData> GetAccountViewData(long playerId = -1)
+		public async Promise<AccountSlotPresenter.ViewData> GetAccountViewData(
+			bool includeAuthMethods,
+			bool includePresence,
+			long playerId = -1)
 		{
 			playerId = playerId == -1 ? Context.PlayerId : playerId;
 			var stats = await Context.Api.StatsService.GetStats("client", "public", "player", playerId);
@@ -86,9 +90,28 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				description = account.HasEmail ? account.Email : "No email linked";
 			}
 
+			AuthThirdParty[] thirdParties = null;
+			if (includeAuthMethods)
+			{
+				thirdParties = account.ThirdParties;
+			}
+
+			PlayerPresence presence = null;
+			if (includePresence)
+			{
+				presence = await Context.Presence.GetPlayerPresence(playerId);
+			}
+
 			var data = new AccountSlotPresenter.ViewData
 			{
-				PlayerId = playerId, PlayerName = playerName, Avatar = avatar, Description = description
+				PlayerId = playerId,
+				PlayerName = playerName,
+				Avatar = avatar,
+				Description = description,
+				Status = account?.SubText,
+				Presence = presence,
+				HasEmail = account?.HasEmail ?? false,
+				ThirdParties = thirdParties
 			};
 
 			return data;
