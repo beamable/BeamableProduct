@@ -33,6 +33,8 @@ namespace Beamable.Server.Editor
 		public bool HasValidationError { get; set; }
 		public bool HasValidationWarning { get; set; }
 		public bool IsGenerator { get; set; }
+		public List<string> FederatedNamespaces { get; set; } = new List<string>();
+		public bool IsUsedForFederation => FederatedNamespaces.Count > 0;
 
 		public bool TryGetCustomProjectFragment(out string csProjFragment)
 		{

@@ -215,21 +215,25 @@ namespace Beamable.AccountManagement
 					DeferBroadcast(activeUser, s => s.UserAnonymous);
 				}
 
-				return de.GetDeviceUsers().Map(userBundles =>
-			 {
-				 var otherUserBundles = userBundles
-				 .Where(userBundle => userBundle.User.id != activeUser.id)
-				 .ToList();
-				 otherUserBundles.Sort((a, b) => a.User.id.CompareTo(b.User.id));
+				return de.GetDeviceUsers().Error(ex =>
+				{
+					Debug.LogError("Unable to load device users");
+					Debug.LogError(ex);
+				}).Map(userBundles =>
+				{
+					var otherUserBundles = userBundles
+					                       .Where(userBundle => userBundle.User.id != activeUser.id)
+					                       .ToList();
+					otherUserBundles.Sort((a, b) => a.User.id.CompareTo(b.User.id));
 
-				 var deviceUserArg = new DeviceUserArg
-				 {
-					 ActiveUser = activeUser,
-					 OtherUsers = otherUserBundles
-				 };
-				 Broadcast(deviceUserArg, s => s.DeviceUsersAvailable);
-				 return deviceUserArg;
-			 });
+					var deviceUserArg = new DeviceUserArg
+					{
+						ActiveUser = activeUser,
+						OtherUsers = otherUserBundles
+					};
+					Broadcast(deviceUserArg, s => s.DeviceUsersAvailable);
+					return deviceUserArg;
+				});
 			})).Error(HandleError);
 		}
 

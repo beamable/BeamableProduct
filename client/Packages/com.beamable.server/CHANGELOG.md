@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.11.0]
 ### Added
 - Microservices with `IFederatedLogin<T>` will generate client callable methods.
 - New `Publish Window` UI styling in `Microservice Manager`
@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Empty dictionary of supported subtypes no longer break request serialization.
 - Check for missing dependencies before microservices deploy
+- `GetManifestWithID` method works for manifest ids other than `"global"`. 
 - Microservice path names are case insensitive 
 
 ## [1.10.3]

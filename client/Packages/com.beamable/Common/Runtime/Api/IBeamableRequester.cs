@@ -1,3 +1,5 @@
+using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization;
 using System;
@@ -153,6 +155,7 @@ namespace Beamable.Common.Api
 	[Serializable]
 	public class EmptyResponse
 	{
+		public static readonly EmptyResponse Unit = new EmptyResponse();
 	}
 
 	/// <summary>
@@ -506,3 +509,22 @@ namespace Beamable.Common.Api
 		}
 	}
 }
+
+namespace Beamable.Api
+{
+	public static class ConnectivityExceptionExtensions
+	{
+		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<T> recovery) =>
+			self.RecoverFromNoConnectivity(_ => recovery());
+
+		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<NoConnectivityException, T> recovery)
+		{
+			return self.Recover(ex =>
+			{
+				if (ex is NoConnectivityException err) return recovery(err);
+				throw ex;
+			});
+		}
+	}
+}
+
