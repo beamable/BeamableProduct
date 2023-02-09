@@ -303,7 +303,7 @@ namespace Beamable.Editor.UI.Components
 				var baseType = GetInitialValue().GetType();
 				if (VariableNameProvider != null)
 				{
-					var variables = VariableNameProvider.GetAllVariableNames(baseType).ToList();
+					var variables = VariableNameProvider.GetAllVariableNamesNonLooping(_templateProperty ?? PropertyProvider, baseType).ToList();
 					if (variables.Count > 0)
 					{
 						options[options.Count - 1].LineBelow = true;
