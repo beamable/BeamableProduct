@@ -5,7 +5,7 @@ namespace cli;
 
 public class BaseRequestDeleteCommand : BaseRequestCommand
 {
-	public BaseRequestDeleteCommand() : base( "delete", "base DELETE request command") { }
+	public BaseRequestDeleteCommand() : base("delete", "base DELETE request command") { }
 	protected override Method Method => Method.DELETE;
 
 }

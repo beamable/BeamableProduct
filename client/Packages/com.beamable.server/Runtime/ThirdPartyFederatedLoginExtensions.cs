@@ -44,8 +44,8 @@ namespace Beamable.Server
 			var serviceNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
 			return api.AuthorizeExternalIdentity(token, client.ServiceName,
-			                                     serviceNamespace,
-			                                     solution);
+												 serviceNamespace,
+												 solution);
 		}
 	}
 }
