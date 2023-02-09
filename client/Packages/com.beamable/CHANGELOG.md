@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `PlayerInventory` has explicit methods for getting Items and Currencies with string references.
+- `PlayerInventory` has load methods for Items and Currencies that retrieve data and call `Refresh()`.
+
 ## [1.11.0]
 ### Added
 - `PlayerInventory` supports storing player's inventory in offline mode
