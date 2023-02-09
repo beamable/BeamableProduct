@@ -74,7 +74,6 @@ namespace Beamable.UI.Buss
 	[Serializable]
 	public class SingleColorToMultiColorOperation : 
 		IVertexColorBussProperty,
-		IComputedProperty<IVertexColorBussProperty>,
 		IComputedProperty<VertexColorBussProperty>
 	{
 		
@@ -154,8 +153,6 @@ namespace Beamable.UI.Buss
 	public abstract class SingleColorAndFloatOperation : 
 		IColorBussProperty, 
 		IVertexColorBussProperty,
-		IComputedProperty<IColorBussProperty>,
-		IComputedProperty<IVertexColorBussProperty>,
 		IComputedProperty<SingleColorBussProperty>,
 		IComputedProperty<VertexColorBussProperty>
 	{
@@ -203,11 +200,6 @@ namespace Beamable.UI.Buss
 			return new SingleColorBussProperty(val); 
 		}
 		
-		
-		IColorBussProperty IComputedProperty<IColorBussProperty>.GetComputedValue(BussStyle style)
-		{
-			return ComputeSingle(style);
-		}
 
 		public IVertexColorBussProperty GetComputedValue(BussStyle style)
 		{

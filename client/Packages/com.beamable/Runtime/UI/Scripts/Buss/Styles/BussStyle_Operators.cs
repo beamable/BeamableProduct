@@ -15,16 +15,6 @@ namespace Beamable.UI.Buss
 			  .AddOperator<FloatMinOperation>()
 			  .AddOperator<FloatAddOperation>();
 		
-		public static BussOperatorBinding<IVertexColorBussProperty> IColorBussOperators
-			= new BussOperatorBinding<IVertexColorBussProperty>()
-			  .AddOperator<ColorFadeOperation>()
-			  .AddOperator<ColorDesaturateOperation>()
-			  .AddOperator<ColorSaturateOperation>()
-			  .AddOperator<ColorLightenOperation>()
-			  .AddOperator<ColorDarkenOperation>()
-			  .AddOperator<ColorSpinOperation>()
-			  .AddOperator<SingleColorToMultiColorOperation>();
-
 		public static BussOperatorBinding<VertexColorBussProperty> VertexColorBussOperators
 			= new BussOperatorBinding<VertexColorBussProperty>()
 			  .AddOperator<ColorFadeOperation>()
