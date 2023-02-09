@@ -1733,6 +1733,66 @@ MonoBehaviour:
         _json: '{"_valueType":0,"_color":{"r":0.027450982481241227,"g":0.7529412508010864,"b":0.9215686917304993,"a":1.0}}'
     _cachedProperties: []
     _selector: .presenceDot.invisible
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":26}'
+    _cachedProperties: []
+    _selector: .icon.email
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":27}'
+    _cachedProperties: []
+    _selector: .icon.email.inactive
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":28}'
+    _cachedProperties: []
+    _selector: .icon.gameCenter.inactive
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":29}'
+    _cachedProperties: []
+    _selector: .icon.googlePlay.inactive
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":30}'
+    _cachedProperties: []
+    _selector: .icon.steam.inactive
+  - _folded: 0
+    _showAll: 0
+    _properties:
+    - _key: backgroundImage
+      _property:
+        _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        _json: '{"_valueType":0,"AssetSerializationKey":20}'
+    _cachedProperties: []
+    _selector: .icon.apple.inactive
   _assetReferences:
   - {fileID: 21300000, guid: a4a0dd4691ed8c64787aac4285b0dda8, type: 3}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
@@ -1754,11 +1814,16 @@ MonoBehaviour:
   - {fileID: 21300000, guid: f92e444b1e659644fa182feb8601b974, type: 3}
   - {fileID: 21300000, guid: 542a2f25c57de9c4e9b1fd8f3cb02dc0, type: 3}
   - {fileID: 21300000, guid: 8f8a4ace060db6641bfff44c15df8b0f, type: 3}
-  - {fileID: 21300000, guid: 3bc6be4866606c343be3d08bb5259d55, type: 3}
+  - {fileID: 21300000, guid: c894e9ad37544204fb7eeda01562ffb4, type: 3}
   - {fileID: 21300000, guid: 1c04cbf291b1d7a4bb9bac4945921e78, type: 3}
-  - {fileID: 21300000, guid: 35a3c33748dc8614fa7d67c1e6e66a14, type: 3}
-  - {fileID: 21300000, guid: 332084343d8329b449b249fd3a338d9c, type: 3}
-  - {fileID: 21300000, guid: efd675b446ae3d54e867caf379072c0f, type: 3}
-  - {fileID: 21300000, guid: 629037f29afc7204994c55f58f474745, type: 3}
+  - {fileID: 21300000, guid: 5fd60b2993ee7664cbb263765d09b3b4, type: 3}
+  - {fileID: 21300000, guid: 90ff19427bd4e7f4c8b9b2bf49fe59ff, type: 3}
+  - {fileID: 21300000, guid: 3436e37c5760f7c4aad9b3edc5cb2312, type: 3}
+  - {fileID: 21300000, guid: 4ca5b78533a4def45824fc762ed82c9f, type: 3}
+  - {fileID: 21300000, guid: ec5f65783c604d54c965abbce7b710fb, type: 3}
+  - {fileID: 21300000, guid: 185d114bb27dc9349a956b3cfff6462a, type: 3}
+  - {fileID: 21300000, guid: a16f4a08bf4fa15408fb65a85b0ea005, type: 3}
+  - {fileID: 21300000, guid: 5d3260c4916a00042ae92dbf69905544, type: 3}
+  - {fileID: 21300000, guid: 8cfac50121f46dd449f5c31294295821, type: 3}
   _isReadOnly: 1
   _sortingOrder: 0
