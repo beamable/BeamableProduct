@@ -1726,11 +1726,6 @@ MonoBehaviour:
   - _folded: 0
     _showAll: 0
     _properties:
-    - _key: backgroundColor
-      _property:
-        _type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_color":{"r":0.027450982481241227,"g":0.7529412508010864,"b":0.9215686917304993,"a":1.0}}'
     - _key: backgroundImage
       _property:
         _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -1795,7 +1790,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"AssetSerializationKey":23}'
+        _json: '{"_valueType":0,"AssetSerializationKey":34}'
     _cachedProperties: []
     _selector: .icon.apple.inactive
   _assetReferences:
@@ -1822,7 +1817,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: f92e444b1e659644fa182feb8601b974, type: 3}
   - {fileID: 21300000, guid: 542a2f25c57de9c4e9b1fd8f3cb02dc0, type: 3}
   - {fileID: 21300000, guid: 8f8a4ace060db6641bfff44c15df8b0f, type: 3}
-  - {fileID: 21300000, guid: c894e9ad37544204fb7eeda01562ffb4, type: 3}
+  - {fileID: 21300000, guid: 3c8da2cd3be96a34a92e0c8e30fd8e44, type: 3}
   - {fileID: 21300000, guid: 1c04cbf291b1d7a4bb9bac4945921e78, type: 3}
   - {fileID: 21300000, guid: 5fd60b2993ee7664cbb263765d09b3b4, type: 3}
   - {fileID: 21300000, guid: 90ff19427bd4e7f4c8b9b2bf49fe59ff, type: 3}
@@ -1833,5 +1828,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: a16f4a08bf4fa15408fb65a85b0ea005, type: 3}
   - {fileID: 21300000, guid: 5d3260c4916a00042ae92dbf69905544, type: 3}
   - {fileID: 21300000, guid: 8cfac50121f46dd449f5c31294295821, type: 3}
+  - {fileID: 21300000, guid: c894e9ad37544204fb7eeda01562ffb4, type: 3}
   _isReadOnly: 1
   _sortingOrder: 0
