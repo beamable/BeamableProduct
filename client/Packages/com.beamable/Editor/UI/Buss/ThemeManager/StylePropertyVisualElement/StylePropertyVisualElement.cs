@@ -145,6 +145,7 @@ namespace Beamable.Editor.UI.Components
 							var appliedPropertyProvider =
 								varTracker.ResolveVariableProperty(variableName);
 							
+							
 							if (appliedPropertyProvider != null)
 							{
 								if (appliedPropertyProvider.PropertyProvider.IsComputedReference)
@@ -160,7 +161,7 @@ namespace Beamable.Editor.UI.Components
 									void UpdateField()
 									{
 										if (field.IsRemoved) return;
-										field.OnPropertyChangedExternally();
+										field.NotifyPropertyChangedExternally();
 										appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged +=
 											UpdateField;
 									}

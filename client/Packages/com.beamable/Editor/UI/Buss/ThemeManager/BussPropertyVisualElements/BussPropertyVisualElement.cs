@@ -16,6 +16,7 @@ namespace Beamable.Editor.UI.Components
 
 		public Action<IBussProperty> OnValueChanged;
 		public Action OnBeforeChange;
+		public Action onExternalChange;
 
 		public bool IsRemoved { get; private set; }
 
@@ -50,6 +51,11 @@ namespace Beamable.Editor.UI.Components
 			ve.AddToClassList("bussPropertyField");
 		}
 
+		public void NotifyPropertyChangedExternally()
+		{
+			OnPropertyChangedExternally();
+			onExternalChange?.Invoke();
+		}
 		public abstract void OnPropertyChangedExternally();
 
 	}
