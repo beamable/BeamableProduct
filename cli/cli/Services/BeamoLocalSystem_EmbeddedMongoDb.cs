@@ -136,7 +136,7 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
 
-	public bool VerifyCanBeBuiltLocally()
+	public bool VerifyCanBeBuiltLocally(ConfigService _)
 	{
 		if (!BaseImage.Contains("mongo:"))
 			throw new Exception($"Base Image [{BaseImage}] must be a version of mongo.");

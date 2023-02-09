@@ -1,4 +1,5 @@
 using System;
+using Beamable.Common.Api;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -85,6 +86,7 @@ namespace Beamable
 		[Tooltip("It will enable/disable hearbeat service default behaviour.\n" +
 				 "Disabling it allows to reduce amount of calls to Beamable with cost of disabling support for matchmaking services.")]
 		public bool SendHeartbeat = true;
+		
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
@@ -205,7 +207,9 @@ namespace Beamable
 
 			for (int i = 0; i < AssembliesToSweep.Count; i++)
 			{
-				if (AssembliesToSweep[i].Contains("Test"))
+				if (AssembliesToSweep[i].Contains("Test") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Microservice") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Storage"))
 				{
 					AssembliesToSweep.RemoveAt(i);
 					i--;

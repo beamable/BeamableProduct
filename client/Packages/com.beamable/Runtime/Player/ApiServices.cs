@@ -102,18 +102,35 @@ namespace Beamable.Player
 			OnUserChanged?.Invoke(user);
 		}
 
-		public Promise<ISet<UserBundle>> GetDeviceUsers()
+		public async Promise<ISet<UserBundle>> GetDeviceUsers()
 		{
 			var storage = _ctx.ServiceProvider.GetService<AccessTokenStorage>();
-			var promises = Array.ConvertAll(storage.RetrieveDeviceRefreshTokens(Cid, Pid),
-											token => AuthService.GetUser(token).Map(user => new UserBundle
-											{
-												User = user,
-												Token = token
-											}));
+			var tokens = storage.RetrieveDeviceRefreshTokens(Cid, Pid);
+			var userPromises = new List<Promise<User>>();
+			var userBundles = new HashSet<UserBundle>();
+			for (var i = 0; i < tokens.Length; i++)
+			{
+				var token = tokens[i];
+				userPromises.Add(AuthService.GetUser(token).RecoverFromNoConnectivity(_ =>
+				{
+					var dbid = UnityEngine.Random.Range(int.MinValue, 0);
+					return new User(){id = dbid};
+				}));
+			}
 
-			return Promise.Sequence(promises)
-						  .Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
+			await Promise.Sequence(userPromises);
+
+			for (var i = 0; i < userPromises.Count; i++)
+			{
+				var userPromise = userPromises[i];
+				var user = userPromise.GetResult();
+				if (user != null)
+				{
+					userBundles.Add(new UserBundle {User = user, Token = tokens[i]});
+				}
+			}
+
+			return userBundles;
 		}
 
 		public void RemoveDeviceUser(TokenResponse token)
