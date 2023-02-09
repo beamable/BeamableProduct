@@ -1,3 +1,5 @@
+using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization;
 using System;
@@ -6,6 +8,87 @@ using System.Linq;
 
 namespace Beamable.Common.Api
 {
+	public interface IRequester : IBeamableRequester
+	{
+		/// <summary>
+		/// Make a request to the Beamable API
+		/// </summary>
+		/// <param name="req">A <see cref="SDKRequesterOptions{T}"/> that defines the request</param>
+		/// <typeparam name="T">the return type of the data</typeparam>
+		/// <returns>A promise that will complete with your data</returns>
+		Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req);
+	}
+
+	public interface ISDKRequesterOptionData
+	{
+		Method Method { get; }
+		string Uri { get; }
+	}
+
+	public struct SDKRequesterOptionData : ISDKRequesterOptionData
+	{
+		public Method Method { get; set; }
+		public string Uri { get; set; }
+	}
+
+	public struct SDKRequesterOptions<T> : ISDKRequesterOptionData
+	{
+		/// <summary>
+		/// The HTTP method to use
+		/// </summary>
+		public Method method;
+
+		/// <summary>
+		/// The C# instance body of the request
+		/// </summary>
+		public object body;
+
+		/// <summary>
+		/// The request path, this should be relative to the domain. 
+		/// </summary>
+		public string uri;
+
+		/// <summary>
+		/// When true, if there is no network connectivity, the response will be created from the last successful request that matched
+		/// the method and uri.
+		/// </summary>
+		public bool useCache;
+
+		/// <summary>
+		/// When true, the request will include an Authorization header
+		/// </summary>
+		public bool includeAuthHeader;
+
+		/// <summary>
+		/// When true, the request will check for internet connectivity before sending the request. 
+		/// </summary>
+		public bool useConnectivityPreCheck;
+
+		/// <summary>
+		/// A function that takes a JSON string and should output the response of the method. 
+		/// </summary>
+		public Func<string, T> parser;
+
+		public Method Method => method;
+		public string Uri => uri;
+
+		public SDKRequesterOptions(SDKRequesterOptions<T> clone)
+		{
+			method = clone.method;
+			uri = clone.uri;
+			body = clone.body;
+			useCache = clone.useCache;
+			includeAuthHeader = clone.includeAuthHeader;
+			useConnectivityPreCheck = clone.useConnectivityPreCheck;
+			parser = clone.parser;
+		}
+	}
+
+	public enum BeamableBackendType
+	{
+		Scala,
+		ProtoActor
+	}
 	public enum Method
 	{
 		GET = 1,
@@ -72,6 +155,7 @@ namespace Beamable.Common.Api
 	[Serializable]
 	public class EmptyResponse
 	{
+		public static readonly EmptyResponse Unit = new EmptyResponse();
 	}
 
 	/// <summary>
@@ -421,7 +505,26 @@ namespace Beamable.Common.Api
 		/// </returns>
 		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long status, System.Func<RequesterException, T> recovery)
 		{
-			return RecoverFromStatus(self, new long[]{status}, recovery);
+			return RecoverFromStatus(self, new long[] { status }, recovery);
 		}
 	}
 }
+
+namespace Beamable.Api
+{
+	public static class ConnectivityExceptionExtensions
+	{
+		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<T> recovery) =>
+			self.RecoverFromNoConnectivity(_ => recovery());
+
+		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<NoConnectivityException, T> recovery)
+		{
+			return self.Recover(ex =>
+			{
+				if (ex is NoConnectivityException err) return recovery(err);
+				throw ex;
+			});
+		}
+	}
+}
+

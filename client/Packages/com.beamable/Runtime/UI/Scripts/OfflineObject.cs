@@ -1,4 +1,5 @@
 ﻿using Beamable;
+using Beamable.Api.Connectivity;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -6,38 +7,39 @@ using UnityEngine.UI;
 
 public class OfflineObject : MonoBehaviour
 {
-	private IBeamableAPI _engineInstance;
-
 	public UIBehaviour Component;
+
+	private IConnectivityService Connectivity => _beamContext.ServiceProvider.GetService<IConnectivityService>();
+	private BeamContext _beamContext;
 
 	private async void Start()
 	{
-		_engineInstance = await Beamable.API.Instance;
-		_engineInstance.ConnectivityService.OnConnectivityChanged += toggleOfflineMode;
+		_beamContext = BeamContext.InParent(this);
+		await _beamContext.OnReady;
+		Connectivity.OnConnectivityChanged += ToggleOfflineMode;
 		ObtainSupportedComponent();
-		if (!_engineInstance.ConnectivityService.HasConnectivity)
+		if (!Connectivity.HasConnectivity)
 		{
-			toggleOfflineMode(false);
+			ToggleOfflineMode(false);
 		}
 	}
 
-	private void toggleOfflineMode(bool offlineStatus)
+	private void ToggleOfflineMode(bool offlineStatus)
 	{
-		if (Component != null)
+		if (Component == null)
 		{
-			switch (Component)
-			{
-				case Button b:
-					b.interactable = offlineStatus;
-					break;
-				case TMP_InputField t:
-					t.interactable = offlineStatus;
-					break;
-				default:
-					Debug.LogWarning("No Offline Functionality selected for GameObject: " + gameObject.name +
-						". Consider removing this component if not planned for use.");
-					break;
-			}
+			return;
+		}
+
+		switch (Component)
+		{
+			case Selectable selectable:
+				selectable.interactable = offlineStatus;
+				break;
+			default:
+				Debug.LogWarning("No Offline Functionality selected for GameObject: " + gameObject.name +
+								 ". Consider removing this component if not planned for use.");
+				break;
 		}
 	}
 
@@ -56,12 +58,11 @@ public class OfflineObject : MonoBehaviour
 
 	public void OnDestroy()
 	{
-		if (_engineInstance != null)
+		if (_beamContext != null && !_beamContext.IsStopped)
 		{
-			_engineInstance.ConnectivityService.OnConnectivityChanged -= toggleOfflineMode;
+			Connectivity.OnConnectivityChanged -= ToggleOfflineMode;
 		}
+
 		Destroy(this);
 	}
 }
-
-

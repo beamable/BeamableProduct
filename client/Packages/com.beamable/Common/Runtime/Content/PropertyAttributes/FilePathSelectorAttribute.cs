@@ -7,13 +7,12 @@ namespace Beamable.Common.Content
 		public string DialogTitle;
 		public bool OnlyFiles;
 		public string FileExtension;
-		public string RootFolder;
+		public string RootFolder => Application.dataPath;
 		public string PathRelativeTo;
 
 		public FilePathSelectorAttribute(bool absolutePath = false)
 		{
 #if UNITY_EDITOR
-			RootFolder = Application.dataPath;
 			PathRelativeTo = absolutePath ? null : RootFolder;
 #endif
 		}

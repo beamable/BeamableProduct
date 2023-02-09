@@ -132,27 +132,31 @@ namespace Beamable.Common.Api.Realms
 			return GetRealms(pid);
 		}
 
-		public Promise<List<RealmView>> GetRealms(string pid)
+		public async Promise<List<RealmView>> GetRealms(string pid)
 		{
 			if (string.IsNullOrEmpty(pid))
 			{
-				return Promise<List<RealmView>>.Successful(new List<RealmView>());
+				return new List<RealmView>();
 			}
 
 			// TODO: Consider using helper methods here to do the parent/child stuff, and the bfs-depth-find stuff
-			return _requester
-				   .Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true)
-				   .Map(resp => ProcessProjects(resp.projects))
-				   .Recover(ex =>
-				   {
-					   if (ex is RequesterException err && (err.Status == 403 || err.Status == 404))
-					   {
-						   return new List<RealmView>(); // empty set.
-					   }
+			try
+			{
+				var response = await _requester.Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true);
+				return ProcessProjects(response.projects);
+			}
+			catch (Exception ex)
+			{
+				if (ex is RequesterException err)
+				{
+					if (err.Status == 403 || err.Status == 404)
+					{
+						return new List<RealmView>(); // empty set.   
+					}
+				}
 
-					   throw ex;
-				   });
-
+				throw;
+			}
 		}
 	}
 

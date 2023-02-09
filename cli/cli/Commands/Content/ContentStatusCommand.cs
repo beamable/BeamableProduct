@@ -4,10 +4,9 @@ namespace cli.Content;
 
 public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 {
-	private readonly ContentService _contentService;
-	public ContentStatusCommand(ContentService contentService) : base("status", "Show current status of the content")
+	private ContentService _contentService;
+	public ContentStatusCommand() : base("status", "Show current status of the content")
 	{
-		_contentService = contentService;
 	}
 
 	public override void Configure()
@@ -24,6 +23,7 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 
 	public override async Task Handle(ContentStatusCommandArgs args)
 	{
+		_contentService = args.ContentService;
 		await _contentService.DisplayStatusTable(args.ManifestId, args.showUpToDate, args.limit, args.skip);
 	}
 }
