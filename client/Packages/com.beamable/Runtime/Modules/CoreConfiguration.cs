@@ -165,44 +165,27 @@ namespace Beamable
 
 #if UNITY_EDITOR
 			
-			
 			// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
 			
-			foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+			var coreAssembly = System.Reflection.Assembly.Load("UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+			var runtimeType = coreAssembly.GetType("UnityEngine.ScriptingRuntime");
+			var getAssembliesMethodInfo = runtimeType.GetMethod("GetAllUserAssemblies");
+			
+			if (getAssembliesMethodInfo != null)
 			{
-				bool isFound = false;
-				
-				foreach (Type t in a.GetTypes())
+				string[] assemblyNames =  (string[])getAssembliesMethodInfo.Invoke(null, null);
+
+				for (int i = 0; i < assemblyNames.Length; i++)
 				{
-					if (t.Name.Contains("ScriptingRuntime"))
+					var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
+
+					if (!AssembliesToSweep.Contains(nameWithoutEx) && !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/"))
 					{
-						MethodInfo staticMethodInfo = t.GetMethod("GetAllUserAssemblies");
-
-						if (staticMethodInfo != null)
-						{
-							string[] assemblyNames =  (string[])staticMethodInfo.Invoke(null, null);
-							
-							for (int i = 0; i < assemblyNames.Length; i++)
-							{
-								var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
-
-								if (!AssembliesToSweep.Contains(nameWithoutEx) && !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/"))
-								{
-									AssembliesToSweep.Add(nameWithoutEx);
-								}
-							}
-
-							isFound = true;
-							break;
-						}
+						AssembliesToSweep.Add(nameWithoutEx);
 					}
 				}
-				
-				if (isFound)
-					break;
 			}
 			
-
 #if BEAMABLE_DEVELOPER
 
 			for (int i = 0; i < AssembliesToSweep.Count; i++)
