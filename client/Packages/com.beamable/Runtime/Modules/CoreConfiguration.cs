@@ -168,8 +168,7 @@ namespace Beamable
 			// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
 			
 			var coreAssembly = System.Reflection.Assembly.Load("UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
-			var runtimeType = coreAssembly.GetType("UnityEngine.ScriptingRuntime");
-			var getAssembliesMethodInfo = runtimeType.GetMethod("GetAllUserAssemblies");
+			var getAssembliesMethodInfo = coreAssembly?.GetType("UnityEngine.ScriptingRuntime")?.GetMethod("GetAllUserAssemblies");
 			
 			if (getAssembliesMethodInfo != null)
 			{
