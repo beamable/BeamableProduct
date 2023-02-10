@@ -66,6 +66,7 @@ namespace Beamable.Editor.UI.Components
 				: ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			_valueParent.Clear();
+			_variableParent.Clear();
 
 			if (_model.IsInherited)
 			{
