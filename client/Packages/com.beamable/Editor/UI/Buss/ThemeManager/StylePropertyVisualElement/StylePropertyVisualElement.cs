@@ -148,9 +148,21 @@ namespace Beamable.Editor.UI.Components
 							
 							if (appliedPropertyProvider != null)
 							{
-								if (appliedPropertyProvider.PropertyProvider.IsComputedReference)
+								if (appliedPropertyProvider.PropertyProvider.GetProperty() is IComputedProperty computedProperty)
 								{
-									CreateMessageField($"\"{variableName.Substring(2)}\" is computed.");
+									var field = CreateEditableField(
+										computedProperty.GetComputedProperty(_model.AppliedToElement.Style));
+									field.DisableInput("The field is disabled because it is a computed reference.");
+
+									void UpdateField()
+									{
+										if (field.IsRemoved) return;
+										field.NotifyPropertyChangedExternally();
+										computedProperty.OnValueChanged +=
+											UpdateField;
+									}
+									computedProperty.OnValueChanged +=
+										UpdateField;
 								}
 								else
 								{

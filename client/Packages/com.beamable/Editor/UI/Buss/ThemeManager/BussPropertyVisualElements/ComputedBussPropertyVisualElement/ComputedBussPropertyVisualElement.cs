@@ -65,8 +65,20 @@ namespace Beamable.Editor.UI.Components
 			var args = Property.Members.ToArray();
 			foreach (var arg in args)
 			{
+
+				void UpdateComputedOutput()
+				{
+					if (subElement is IBussPropertyVisualElementSupportsPreview previewAbleElement)
+					{
+						subProperty = Property.GetComputedProperty(_rootModel.AppliedToElement.Style);
+						previewAbleElement.SetValueFromProperty(subProperty);
+					}
+					OnValueChanged?.Invoke(Property);
+				}
+				
 				var subModel = _rootModel.CreateChildModel(arg, prop =>
 				{
+					UpdateComputedOutput();
 					OnValueChanged?.Invoke(Property);
 				});
 				var elem = new StylePropertyVisualElement(subModel);
@@ -77,14 +89,7 @@ namespace Beamable.Editor.UI.Components
 				var subBussVisualElements = elem.Query<BussPropertyVisualElement>().ToList();
 				foreach (var subBussVisualElement in subBussVisualElements)
 				{
-					if (subElement is IBussPropertyVisualElementSupportsPreview previewAbleElement)
-					{
-						subBussVisualElement.onExternalChange += () =>
-						{
-							subProperty = Property.GetComputedProperty(_rootModel.AppliedToElement.Style);
-							previewAbleElement.SetValueFromProperty(subProperty);
-						};
-					}
+					subBussVisualElement.onExternalChange += UpdateComputedOutput;
 				}
 			}
 

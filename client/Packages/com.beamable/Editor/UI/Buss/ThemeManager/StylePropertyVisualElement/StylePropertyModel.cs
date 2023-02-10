@@ -25,6 +25,7 @@ namespace Beamable.Editor.UI.Components
 		private readonly Func<IBussProperty> _defaultValueFactory;
 		private readonly Action<IBussProperty> _changeHandler;
 		public IVariableNameProvider VariableNameProvider => _variableNameProvider ?? PropertySourceTracker;
+		public BussPropertyProvider TemplateProvider => _templateProperty;
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }

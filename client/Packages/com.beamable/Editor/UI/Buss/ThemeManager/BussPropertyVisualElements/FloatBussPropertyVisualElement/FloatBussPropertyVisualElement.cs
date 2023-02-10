@@ -47,6 +47,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				_field.value = floatProp.FloatValue;
 			}
+			BaseProperty?.NotifyValueChange();
+
 		}
 	}
 }
