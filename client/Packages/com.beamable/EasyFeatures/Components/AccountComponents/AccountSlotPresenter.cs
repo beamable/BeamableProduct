@@ -11,14 +11,13 @@ namespace Beamable.EasyFeatures.Components
 {
 	public class AccountSlotPresenter : MonoBehaviour
 	{
-		private const string ONLINE_CLASS = "online";
-		private const string OFFLINE_CLASS = "offline";
 		private const string SELECTED_CLASS = "selected";
 
 		public float AuthIconSize = 45;
 		
 		[Space]
 		public Image AvatarImage;
+		public Image DefaultAvatarImage;
 		public TextMeshProUGUI UsernameText;
 		public TextMeshProUGUI DescriptionText;
 		public TextMeshProUGUI StatusText;
@@ -45,7 +44,7 @@ namespace Beamable.EasyFeatures.Components
 			public long PlayerId;
 			public string PlayerName;
 			public string Description;
-			public string Status;
+			public bool IsCurrentPlayer;
 			public Sprite Avatar;
 			public bool HasEmail;
 			public AuthThirdParty[] ThirdParties;
@@ -70,8 +69,6 @@ namespace Beamable.EasyFeatures.Components
 			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 			MainToggle.gameObject.SetActive(false);
 			AcceptCancelButtons.SetActive(false);
-			
-			SetOnlineState(true);
 		}
 
 		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onCancelPressed, Action<long> onAcceptPressed)
@@ -85,8 +82,6 @@ namespace Beamable.EasyFeatures.Components
 			AcceptCancelButtons.SetActive(true);
 			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptPressed?.Invoke(item.ViewData.PlayerId));
 			CancelButton.onClick.ReplaceOrAddListener(() => onCancelPressed?.Invoke(item.ViewData.PlayerId));
-			
-			SetOnlineState(true);
 		}
 		
 		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<long> onEntrySelected)
@@ -105,18 +100,16 @@ namespace Beamable.EasyFeatures.Components
 					onEntrySelected?.Invoke(item.ViewData.PlayerId);
 			});
 			AcceptCancelButtons.SetActive(false);
-			
-			SetOnlineState(true);
 		}
 
 		private void SetViewData(ViewData viewData)
 		{
 			AvatarImage.sprite = viewData.Avatar;
 			AvatarImage.color = viewData.Avatar == null ? Color.clear : Color.white;
+			DefaultAvatarImage.enabled = viewData.Avatar == null;
 			UsernameText.text = viewData.PlayerName;
 			DescriptionText.text = viewData.Description;
-			StatusText.text = viewData.Status;
-			StatusText.gameObject.SetActive(!string.IsNullOrWhiteSpace(viewData.Status));
+			StatusText.gameObject.SetActive(viewData.Presence != null);
 
 			// clear old icon instances
 			foreach (Transform child in LinkedAuthsRoot)
@@ -124,6 +117,7 @@ namespace Beamable.EasyFeatures.Components
 				Destroy(child.gameObject);
 			}
 			
+			// show linked auths icons
 			if (viewData.HasEmail)
 				Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupEmail(true, false, AuthIconSize);
 
@@ -134,12 +128,15 @@ namespace Beamable.EasyFeatures.Components
 					Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupThirdParty(thirdParty, true, false, AuthIconSize);
 				}
 			}
-		}
+			
+			// update presence status
+			if (viewData.Presence != null)
+			{
+				CanvasGroup.alpha = viewData.Presence.online ? OnlineAlpha : OfflineAlpha;
 
-		public void SetOnlineState(bool online)
-		{
-			PresenceDotBussElement.AddClass(online ? ONLINE_CLASS : OFFLINE_CLASS);
-			CanvasGroup.alpha = online ? OnlineAlpha : OfflineAlpha;
+				StatusText.text = viewData.Presence.GetName(viewData.IsCurrentPlayer);
+				viewData.Presence.SetPresenceDotClasses(PresenceDotBussElement, viewData.IsCurrentPlayer);
+			}
 		}
 	}
 }

@@ -108,7 +108,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				PlayerName = playerName,
 				Avatar = avatar,
 				Description = description,
-				Status = account?.SubText,
+				IsCurrentPlayer = playerId == Context.PlayerId,
 				Presence = presence,
 				HasEmail = account?.HasEmail ?? false,
 				ThirdParties = thirdParties

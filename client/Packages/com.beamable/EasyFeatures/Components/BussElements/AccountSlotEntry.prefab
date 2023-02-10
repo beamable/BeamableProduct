@@ -979,6 +979,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AuthIconSize: 50
   AvatarImage: {fileID: 2456856760506039621}
+  DefaultAvatarImage: {fileID: 4366330724537788567}
   UsernameText: {fileID: 6643906542889409263}
   DescriptionText: {fileID: 2456856759634126664}
   StatusText: {fileID: 702478900253079075}
