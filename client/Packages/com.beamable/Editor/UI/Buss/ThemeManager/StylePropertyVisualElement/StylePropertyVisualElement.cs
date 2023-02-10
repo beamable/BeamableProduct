@@ -51,7 +51,7 @@ namespace Beamable.Editor.UI.Components
 
 			var overrideIndicatorSpacer = new VisualElement();
 			overrideIndicatorSpacer.AddToClassList("overrideIndicatorSpacer");
-			_overrideIndicatorParent.Add(overrideIndicatorSpacer);
+			//_overrideIndicatorParent.Add(overrideIndicatorSpacer);
 
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
