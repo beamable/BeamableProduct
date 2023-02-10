@@ -49,9 +49,12 @@ namespace Beamable.Editor.UI.Components
 					_field.SetValueWithoutNotify(colorProp.Color);
 					break;
 				case VertexColorBussProperty vertexProp:
+					
 					_field.SetValueWithoutNotify(vertexProp.ColorRect.BottomLeftColor);
 					break;
 			}
+
+			BaseProperty?.NotifyValueChange();
 		}
 	}
 }

@@ -51,7 +51,7 @@ namespace Beamable.Editor.UI.Components
 
 			var overrideIndicatorSpacer = new VisualElement();
 			overrideIndicatorSpacer.AddToClassList("overrideIndicatorSpacer");
-			_overrideIndicatorParent.Add(overrideIndicatorSpacer);
+			//_overrideIndicatorParent.Add(overrideIndicatorSpacer);
 
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
@@ -66,6 +66,7 @@ namespace Beamable.Editor.UI.Components
 				: ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			_valueParent.Clear();
+			_variableParent.Clear();
 
 			if (_model.IsInherited)
 			{
@@ -145,11 +146,24 @@ namespace Beamable.Editor.UI.Components
 							var appliedPropertyProvider =
 								varTracker.ResolveVariableProperty(variableName);
 							
+							
 							if (appliedPropertyProvider != null)
 							{
-								if (appliedPropertyProvider.PropertyProvider.IsComputedReference)
+								if (appliedPropertyProvider.PropertyProvider.GetProperty() is IComputedProperty computedProperty)
 								{
-									CreateMessageField($"\"{variableName.Substring(2)}\" is computed.");
+									var field = CreateEditableField(
+										computedProperty.GetComputedProperty(_model.AppliedToElement.Style));
+									field.DisableInput("The field is disabled because it is a computed reference.");
+
+									void UpdateField()
+									{
+										if (field.IsRemoved) return;
+										field.NotifyPropertyChangedExternally();
+										computedProperty.OnValueChanged +=
+											UpdateField;
+									}
+									computedProperty.OnValueChanged +=
+										UpdateField;
 								}
 								else
 								{
@@ -160,7 +174,7 @@ namespace Beamable.Editor.UI.Components
 									void UpdateField()
 									{
 										if (field.IsRemoved) return;
-										field.OnPropertyChangedExternally();
+										field.NotifyPropertyChangedExternally();
 										appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged +=
 											UpdateField;
 									}

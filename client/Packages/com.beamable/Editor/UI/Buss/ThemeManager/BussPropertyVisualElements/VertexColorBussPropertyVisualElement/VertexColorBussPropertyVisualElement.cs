@@ -257,6 +257,8 @@ namespace Beamable.Editor.UI.Components
 					_topRightColor.SetValueWithoutNotify(vertexProp.ColorRect.TopRightColor);
 					break;
 			}
+			BaseProperty?.NotifyValueChange();
+
 		}
 	}
 }

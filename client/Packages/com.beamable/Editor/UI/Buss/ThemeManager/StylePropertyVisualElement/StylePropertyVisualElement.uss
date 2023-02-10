@@ -31,9 +31,6 @@ CustomMessageBussPropertyVisualElement > Label {
     align-self: flex-start;
     flex-direction: column-reverse;
 }
-.overriden #globalVariable {
-    display: none;
-}
 
 .dropdown {
     margin-left: 3px;
@@ -67,26 +64,31 @@ CustomMessageBussPropertyVisualElement > Label {
 .overrideIndicatorParent {
     position: absolute;
     top: 0px;
-    left: -20px;
+    left: 0px;
     right: 0px;
     bottom: 0px;
-    padding-left: 10px;
-    padding-right: 10px;
-    justify-content: center;
+    padding-left: 0px;
+    padding-right: 0px;
     display: none;
-    align-items: center;
 }
 
 .overrideIndicator{
     height: 2px;
     position: relative;
-    top: 2px;
-    flex-grow: 2;
+    top: 18px;
+    left: -15px;
+    width: 150px;
     opacity: .8;
 }
-.overrideIndicatorSpacer {
-    flex-grow: 1;
-    margin-left: -16px;
+
+ComputedBussPropertyVisualElement StylePropertyVisualElement #root .overrideIndicator {
+    flex-grow: 0;
+    position: absolute;
+    right: 100%;
+    top: 8px;
+    margin-top: 8px;
+    margin-right: 4px;
+    width: auto;
 }
 
 .overriden {
