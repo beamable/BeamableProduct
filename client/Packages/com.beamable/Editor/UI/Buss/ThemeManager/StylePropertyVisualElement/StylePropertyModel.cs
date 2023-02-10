@@ -25,6 +25,7 @@ namespace Beamable.Editor.UI.Components
 		private readonly Func<IBussProperty> _defaultValueFactory;
 		private readonly Action<IBussProperty> _changeHandler;
 		public IVariableNameProvider VariableNameProvider => _variableNameProvider ?? PropertySourceTracker;
+		public BussPropertyProvider TemplateProvider => _templateProperty;
 		public BussStyleSheet StyleSheet { get; }
 		public BussStyleRule StyleRule { get; }
 		public BussPropertyProvider PropertyProvider { get; }
@@ -303,7 +304,7 @@ namespace Beamable.Editor.UI.Components
 				var baseType = GetInitialValue().GetType();
 				if (VariableNameProvider != null)
 				{
-					var variables = VariableNameProvider.GetAllVariableNames(baseType).ToList();
+					var variables = VariableNameProvider.GetAllVariableNamesNonLooping(_templateProperty ?? PropertyProvider, baseType).ToList();
 					if (variables.Count > 0)
 					{
 						options[options.Count - 1].LineBelow = true;

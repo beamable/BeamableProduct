@@ -9,9 +9,8 @@ namespace Beamable.UI.Buss
 {
 	public interface IVariableNameProvider
 	{
-		IEnumerable<string> GetAllVariableNames(Type baseType);
-		IEnumerable<string> GetAllVariableNames(Type[] baseTypes);
 		PropertyReference ResolveVariableProperty(string key);
+		IEnumerable<string> GetAllVariableNamesNonLooping(BussPropertyProvider provider, Type baseType);
 	}
 	
 	
@@ -83,35 +82,86 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public IEnumerable<string> GetAllVariableNames()
+		/// <summary>
+		/// Get all the variable names in the given style that don't lead back to an infinite loop 
+		/// </summary>
+		/// <param name="provider">The starting property</param>
+		/// <param name="baseType">The type of variable to look for.</param>
+		/// <returns></returns>
+		public IEnumerable<string> GetAllVariableNamesNonLooping(BussPropertyProvider provider, Type baseType)
 		{
-			return _sources.Keys.Where(BussStyleSheetUtility.IsValidVariableName);
-		}
-
-		public IEnumerable<string> GetAllVariableNames(Type[] baseTypes)
-		{
-			foreach (var type in baseTypes)
-			{
-				var names = GetAllVariableNames(type);
-				foreach (var name in names)
-				{
-					yield return name;
-				}
-			}
-		}
-		public IEnumerable<string> GetAllVariableNames(Type baseType)
-		{
+			var startingName = provider.Key;
+			var referenceMap = new Dictionary<string, HashSet<string>>();
+			var candidates = new HashSet<string>();
+			
+			// phase 1, build up a map of references and variable name candidates.
+			//          we can't check for loops in this first pass, because its possible not all the
+			//          references have been identified.
 			foreach (var kvp in _sources)
 			{
 				if (!BussStyleSheetUtility.IsValidVariableName(kvp.Key)) continue;
-				
 				var firstProperty = kvp.Value.Properties.FirstOrDefault();
 				if (firstProperty == null) continue;
 				
-				if (firstProperty.PropertyProvider.IsPropertyOfType(baseType))
+				if (!firstProperty.PropertyProvider.IsPropertyOfType(baseType)) continue;
+
+				var prop = firstProperty.PropertyProvider.GetProperty();
+				if (!referenceMap.TryGetValue(kvp.Key, out var references))
 				{
-					yield return kvp.Key;
+					referenceMap[kvp.Key] = references = new HashSet<string>();
 				}
+
+				if (prop is VariableProperty variableProperty)
+				{
+					references.Add(variableProperty.VariableName);
+				} else if (prop is IComputedProperty computedProperty)
+				{
+					foreach (var member in computedProperty.Members)
+					{
+						if (member.Property is VariableProperty computedPropertyVariableProperty)
+						{
+							references.Add(computedPropertyVariableProperty.VariableName);
+						}
+					}
+				}
+				
+				candidates.Add(kvp.Key);
+			}
+
+			// Return true if the given key would result in an asyclic reference to the start
+			bool HasCycle(string start, string key)
+			{
+				bool Iteration(string curr, int maxIter, HashSet<string> seen)
+				{
+					if (maxIter <= 0) return true; // infinite-loop base case: Sure, the editor will be laggy, but it shouldn't brick.
+					if (seen.Contains(curr)) return true; // base case: We've detected a loop!
+
+					seen.Add(curr); // remember this node
+					
+					if (!referenceMap.TryGetValue(curr, out var references))
+					{
+						return false; // there are no more references from this location, so if we haven't looped yet, we can't
+					}
+
+					foreach (var reference in references)
+					{
+						if (Iteration(reference, maxIter - 1, new HashSet<string>(seen)))
+						{
+							return true; // the recursive call resulted in a loop, so by nature, this call contains a loop too.
+						}
+					}
+
+					return false; // we didn't find any loops
+				}
+
+				return Iteration(key, 100, new HashSet<string>{start});
+			}
+			
+			// phase 2, check the candidates against the reference map.
+			foreach (var key in candidates)
+			{
+				if (HasCycle(startingName, key)) continue;
+				yield return key;
 			}
 		}
 
