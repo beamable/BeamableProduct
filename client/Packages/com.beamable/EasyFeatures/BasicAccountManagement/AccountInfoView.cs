@@ -65,7 +65,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			EmailInputField.text = System.Email;
 
 			var status = await System.GetOnlineStatus();
-			SetupStatusButton(status.Status);
+			SetupStatusButton(status);
 			
 			_avatarToSet = null;
 			string currentAvatarName = await System.GetCurrentAvatarName(System.Context.PlayerId);
@@ -88,7 +88,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			CancelButton.onClick.ReplaceOrAddListener(OpenAccountsView);
 		}
 
-		private void SetupStatusButton(PresenceStatus status) => StatusButton.Setup(status, OpenStatusPopup);
+		private void SetupStatusButton(PlayerPresence status) => StatusButton.Setup(status, OpenStatusPopup);
 
 		private void OpenStatusPopup()
 		{
@@ -99,7 +99,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		private async void UpdatePresenceStatus(PresenceStatus status)
 		{
 			await System.UpdateOnlineStatus(status, "");
-			SetupStatusButton(status);
+			PlayerPresence presence = new PlayerPresence {online = true, status = status.ToString()};
+			SetupStatusButton(presence);
 			FeatureControl.OverlaysController.HideOverlay();
 		}
 

@@ -12,17 +12,18 @@ namespace Beamable.EasyFeatures.Components
 		public void Setup(Action<PresenceStatus> onStatusChanged, OverlaysController overlaysController)
 		{
 			base.Setup(overlaysController);
-			
+
 			StatusButtonPrefab.gameObject.SetActive(false);
 			var statuses = (PresenceStatus[])Enum.GetValues(typeof(PresenceStatus));
 
 			foreach (var status in statuses)
 			{
+				PlayerPresence presence = new PlayerPresence {online = true, status = status.ToString()};
 				var button = Instantiate(StatusButtonPrefab, ButtonsRoot);
 				button.gameObject.SetActive(true);
-				button.Setup(status, () => onStatusChanged?.Invoke(status));
+				button.Setup(presence, () => onStatusChanged?.Invoke(status));
 			}
-			
+
 			gameObject.SetActive(true);
 		}
 	}
