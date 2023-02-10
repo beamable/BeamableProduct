@@ -282,8 +282,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 					return;
 
 				var isAnyDependentServiceEnabled = _storageDependsOnServiceRepresentation[storageEntryModel].Any(y => y.Enabled);
-				x.UpdateEnableState(true);
 				x.EnableState.SetEnabled(!isAnyDependentServiceEnabled);
+				if (isAnyDependentServiceEnabled)
+					x.UpdateEnableState(true);
 			});;
 			
 		}
