@@ -1,4 +1,4 @@
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
@@ -51,7 +51,7 @@ namespace Beamable.Editor.UI.Components
 
 			var overrideIndicatorSpacer = new VisualElement();
 			overrideIndicatorSpacer.AddToClassList("overrideIndicatorSpacer");
-			_overrideIndicatorParent.Add(overrideIndicatorSpacer);
+			//_overrideIndicatorParent.Add(overrideIndicatorSpacer);
 
 			Root.parent.EnableInClassList("exists", _model.IsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_model.IsInStyle);
@@ -66,6 +66,7 @@ namespace Beamable.Editor.UI.Components
 				: ThemeManagerHelper.FormatKey(_model.PropertyProvider.Key);
 
 			_valueParent.Clear();
+			_variableParent.Clear();
 
 			if (_model.IsInherited)
 			{
@@ -94,7 +95,7 @@ namespace Beamable.Editor.UI.Components
 			}
 			else if (_model.IsInitial)
 			{
-				var initialValue = BussStyle.GetDefaultValue(_model.PropertyProvider.Key);
+				var initialValue = _model.GetInitialValue();
 				var field = CreateEditableField(initialValue);
 				field.DisableInput("The initial value cannot be changed.");
 			}
@@ -139,26 +140,48 @@ namespace Beamable.Editor.UI.Components
 					}
 					else
 					{
-						var srcTracker = _model.PropertySourceTracker;
-						if (srcTracker != null)
+						var varTracker = _model.VariableNameProvider;
+						if (varTracker != null)
 						{
 							var appliedPropertyProvider =
-								srcTracker.ResolveVariableProperty(_model.PropertyProvider.Key);
+								varTracker.ResolveVariableProperty(variableName);
+							
 							
 							if (appliedPropertyProvider != null)
 							{
-								var field = CreateEditableField(appliedPropertyProvider.PropertyProvider.GetProperty());
-								field.DisableInput("The field is disabled because it references a variable.");
-
-								void UpdateField()
+								if (appliedPropertyProvider.PropertyProvider.GetProperty() is IComputedProperty computedProperty)
 								{
-									if (field.IsRemoved) return;
-									field.OnPropertyChangedExternally();
+									var field = CreateEditableField(
+										computedProperty.GetComputedProperty(_model.AppliedToElement.Style));
+									field.DisableInput("The field is disabled because it is a computed reference.");
+
+									void UpdateField()
+									{
+										if (field.IsRemoved) return;
+										field.NotifyPropertyChangedExternally();
+										computedProperty.OnValueChanged +=
+											UpdateField;
+									}
+									computedProperty.OnValueChanged +=
+										UpdateField;
+								}
+								else
+								{
+									var field = CreateEditableField(
+										appliedPropertyProvider.PropertyProvider.GetProperty());
+									field.DisableInput("The field is disabled because it references a variable.");
+
+									void UpdateField()
+									{
+										if (field.IsRemoved) return;
+										field.NotifyPropertyChangedExternally();
+										appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged +=
+											UpdateField;
+									}
+
 									appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged +=
 										UpdateField;
 								}
-
-								appliedPropertyProvider.PropertyProvider.GetProperty().OnValueChanged += UpdateField;
 							}
 							else
 							{
@@ -175,7 +198,9 @@ namespace Beamable.Editor.UI.Components
 
 			SetupVariableConnection();
 			CheckIfIsReadOnly();
-			EnableInClassList("overriden", _model.IsOverriden && _model.IsInStyle);
+
+			var isOverriden = _model.IsOverriden && _model.IsInStyle;
+			EnableInClassList("overriden",isOverriden );
 
 			_overrideIndicatorParent.tooltip = _model.Tooltip;
 		}
@@ -197,7 +222,7 @@ namespace Beamable.Editor.UI.Components
 
 		private BussPropertyVisualElement CreateEditableField(IBussProperty property)
 		{
-			var element = _propertyVisualElement = property.GetVisualElement();
+			var element = _propertyVisualElement = property.GetVisualElement(_model);
 
 			if (_propertyVisualElement == null)
 			{
@@ -220,6 +245,19 @@ namespace Beamable.Editor.UI.Components
 			_propertyVisualElement.UpdatedStyleSheet = _model.StyleSheet;
 			_propertyVisualElement.Init();
 			_valueParent.Add(_propertyVisualElement);
+			
+			// var globalVariableSection = Root.Q("globalVariable");
+	
+			var subVariableConnections = _propertyVisualElement.Query<VariableConnectionVisualElement>().ToList();
+			// for (var i = 0; i < subVariableConnections.Count; i++)
+				for (var i = subVariableConnections.Count - 1; i >= 0; i--)
+			{
+				var variableConnection = subVariableConnections[i];
+				variableConnection.RemoveFromHierarchy();
+				_variableParent.Add(variableConnection);
+				// globalVariableSection.Add(variableConnection);
+			}
+			
 			return element;
 		}
 
@@ -256,14 +294,6 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetupVariableConnection()
 		{
-			if (_model.PropertyProvider.IsVariable)
-				return;
-
-			if (_variableConnection != null)
-			{
-				return;
-			}
-
 			_variableConnection = new VariableConnectionVisualElement(_model);
 			_variableConnection.Init();
 			_variableParent.Add(_variableConnection);

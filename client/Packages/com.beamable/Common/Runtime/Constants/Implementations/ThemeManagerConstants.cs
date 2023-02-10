@@ -38,6 +38,7 @@ namespace Beamable.Common
 					public const string NONE = "None";
 					public const string INITIAL_VALUE = "Initial";
 					public const string INHERITED_VALUE = "Inherit";
+					public const string COMPUTED_VALUE = "Computed";
 
 					public const string CONNECT_VARIABLE_TEXT = "Use a variable or a keyword";
 					public const string REMOVE_VARIABLE_CONNECT = "Use a hardcoded value";

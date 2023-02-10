@@ -197,10 +197,11 @@ namespace Beamable.Editor.UI.Components
 			DropdownOptionsVisualElement optionsWindow =
 				new DropdownOptionsVisualElement().Setup(allOptions, OnOptionsClosed);
 
+			var width = Mathf.Max(100, _root.localBound.width);
+			var height = optionsWindow.GetHeight();
 			_optionsPopup = await BeamablePopupWindow.ShowDropdownAsync("", popupWindowRect,
-																		new Vector2(
-																			_root.localBound.width,
-																			optionsWindow.GetHeight()), optionsWindow);
+																		new Vector2(width,height), 
+																		optionsWindow);
 		}
 
 		private void OnOptionsClosed()

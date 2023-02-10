@@ -4,13 +4,13 @@ namespace Beamable.UI.Buss
 {
 	public static class BussPropertyVisualElementUtility
 	{
-		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider)
+		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider, StylePropertyModel model)
 		{
 			var property = propertyProvider.GetProperty();
-			return GetVisualElement(property);
+			return GetVisualElement(property, model);
 		}
 
-		public static BussPropertyVisualElement GetVisualElement(this IBussProperty property)
+		public static BussPropertyVisualElement GetVisualElement(this IBussProperty property, StylePropertyModel model)
 		{
 			switch (property)
 			{
@@ -30,6 +30,8 @@ namespace Beamable.UI.Buss
 					return new EnumBussPropertyVisualElement(enumBussProperty);
 				case BaseAssetProperty assetProperty:
 					return new AssetBussPropertyVisualElement(assetProperty);
+				case IComputedProperty computedProperty:
+					return new ComputedBussPropertyVisualElement(computedProperty, model);
 				default:
 					return new NotImplementedBussPropertyVisualElement(property);
 			}

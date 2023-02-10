@@ -1,3 +1,4 @@
+ComputedBussPropertyVisualElement #propertyLabel:hover,
 #propertyLabel {
     color:rgba(0,0,0,1);
 }

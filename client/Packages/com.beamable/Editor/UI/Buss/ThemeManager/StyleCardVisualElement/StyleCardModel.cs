@@ -183,7 +183,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				var propertyProvider = StyleRule.Properties.Find(provider => provider.Key == key) ??
 									   BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
-
+				
 				var model = new StylePropertyModel(_parentModel, StyleSheet, StyleRule, propertyProvider,
 				                                   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement,
 				                                   null, RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
@@ -311,7 +311,8 @@ namespace Beamable.Editor.UI.Components
 
 				var model = new StylePropertyModel(_parentModel, StyleSheet, StyleRule, propertyProvider,
 				                                   PropertiesDatabase.GetTracker(SelectedElement), SelectedElement, null,
-				                                   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked);
+				                                   RemovePropertyClicked, _globalRefresh, SetValueTypeClicked,
+					defaultValueFactory:() => propertyProvider.GetInitial());
 				variables.Add(model);
 			}
 
