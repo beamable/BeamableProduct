@@ -66,7 +66,7 @@ namespace Beamable.Common.Content
 			return "null";
 		}
 
-		protected string SerializeArgument(object arg, Type argType, bool serializeForChecksum = false)
+		protected string SerializeArgument(object arg, Type argType, bool sortByName = false)
 		{
 			// JSONUtility will serialize objects correctly, but doesn't handle primitives well.
 			if (arg == null)
@@ -156,7 +156,7 @@ namespace Beamable.Common.Content
 					 * We can't use the JsonUtility.ToJson because we can't override certain types,
 					 *  like optionals, addressables, links or refs.
 					 */
-					var fields = GetFieldInfos(argType, serializeForChecksum);
+					var fields = GetFieldInfos(argType, sortByName);
 					var dict = new ArrayDict();
 					foreach (var field in fields)
 					{
@@ -183,7 +183,7 @@ namespace Beamable.Common.Content
 								continue; // skip field.
 							}
 						}
-						var fieldJson = SerializeArgument(fieldValue, fieldType, serializeForChecksum);
+						var fieldJson = SerializeArgument(fieldValue, fieldType, sortByName);
 						dict.Add(field.SerializedName, new PropertyValue { rawJson = fieldJson });
 					}
 
@@ -424,7 +424,7 @@ namespace Beamable.Common.Content
 			}
 		}
 
-		private List<FieldInfoWrapper> GetFieldInfos(Type type, bool serializeForChecksum = false)
+		private List<FieldInfoWrapper> GetFieldInfos(Type type, bool sortByName = false)
 		{
 			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
 			{
@@ -490,12 +490,12 @@ namespace Beamable.Common.Content
 			var serializableFields = listOfPublicFields.Union(listOfPrivateFields);
 			var notIgnoredFields = serializableFields.Where(field => field.GetCustomAttribute<IgnoreContentFieldAttribute>() == null);
 
-			var ll = notIgnoredFields.Select(CreateFieldWrapper).ToList();
+			var ll = notIgnoredFields.Select(CreateFieldWrapper);
 			
-			if (serializeForChecksum)
-				ll = ll.OrderBy(n => n.SerializedName).ToList();
+			if (sortByName)
+				ll = ll.OrderBy(n => n.SerializedName);
 			
-			return ll;
+			return ll.ToList();
 		}
 
 		[System.Serializable]
@@ -515,11 +515,11 @@ namespace Beamable.Common.Content
 		/// <param name="content"></param>
 		/// <typeparam name="TContent"></typeparam>
 		/// <returns></returns>
-		public string SerializeProperties<TContent>(TContent content, bool serializeForChecksum)
+		public string SerializeProperties<TContent>(TContent content, bool sortByName)
 		   where TContent : IContentObject
 
 		{
-			var fields = GetFieldInfos(content.GetType(), serializeForChecksum)
+			var fields = GetFieldInfos(content.GetType(), sortByName)
 			   .ToDictionary(f => f.SerializedName);
 			var propertyDict = new ArrayDict();
 
@@ -572,7 +572,7 @@ namespace Beamable.Common.Content
 						{
 							continue;
 						}
-						var jsonValue = SerializeArgument(fieldValue, fieldType, serializeForChecksum);
+						var jsonValue = SerializeArgument(fieldValue, fieldType, sortByName);
 						fieldDict.Add("data", new PropertyValue { rawJson = jsonValue });
 						propertyDict.Add(fieldName, fieldDict);
 						break;

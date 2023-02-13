@@ -911,9 +911,11 @@ namespace Beamable.Editor.Content
 				return cachedChecksum;
 			}
 
+			var sortProperties = !ContentConfiguration.Instance.EnableContentChecksumDependentOfPropertyOrder;
+			
 			using (var md5 = MD5.Create())
 			{
-				var json = ClientContentSerializer.SerializeProperties(content);
+				var json = ClientContentSerializer.SerializeProperties(content, sortProperties);
 				var bytes = Encoding.ASCII.GetBytes(json);
 				var hash = md5.ComputeHash(bytes);
 				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
