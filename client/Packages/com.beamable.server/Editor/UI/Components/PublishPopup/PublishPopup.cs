@@ -226,7 +226,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					if (service.Dependencies.Count != dependencies.Count)
 					{
 						x.EnableState.SetEnabled(false);
-						x.UpdateEnableState(false, true);
+						x.UpdateEnableState(false, true, CHECKBOX_TOOLTIP_ARCHIVED_STORAGE);
 						return;
 					}
 				}
@@ -300,7 +300,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var isAnyDependentServiceEnabled = _storageDependsOnServiceRepresentation[storageEntryModel].Any(y => y.Enabled);
 				x.EnableState.SetEnabled(!isAnyDependentServiceEnabled);
 				if (isAnyDependentServiceEnabled)
-					x.UpdateEnableState(true);
+					x.UpdateEnableState(true, additionalTooltip: CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE);
 			});
 		}
 

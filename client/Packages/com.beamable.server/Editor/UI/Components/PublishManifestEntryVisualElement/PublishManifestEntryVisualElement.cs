@@ -52,7 +52,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Label _stateLabel;
 		private Label _serviceName;
 		private VisualElement _knowLocationEntry;
-		
+		private VisualElement _enableColumn;
+
 		private string _currentPublishState;
 
 		private readonly int _index;
@@ -76,7 +77,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{ "mongov1", "StorageObject" }
 		};
 
-
 		public PublishManifestEntryVisualElement(IEntryModel model,
 		                                         int elementIndex,
 		                                         bool isLocal,
@@ -97,6 +97,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_loadingBar.Hidden = true;
 			_loadingBar.Refresh();
 
+			_enableColumn = Root.Q("enableC");
+			_enableColumn.tooltip = CHECKBOX_TOOLTIP;
+			
 			EnableState = Root.Q<BeamableCheckboxVisualElement>("enableState");
 			EnableState.Refresh();
 			UpdateEnableState(Model.Enabled);
@@ -152,12 +155,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateStatus(ServicePublishState.Unpublished);
 		}
 
-		public void UpdateEnableState(bool isEnabled, bool isSilentUpdate = false)
+		public void UpdateEnableState(bool isEnabled, bool isSilentUpdate = false, string additionalTooltip = "")
 		{
 			Model.Enabled = isEnabled;
 			EnableState.SetWithoutNotify(isEnabled); 
 			EnableState.EnableInClassList("enabled", isEnabled);
 			EnableState.EnableInClassList("disabled", !isEnabled);
+
+			var tooltip = CHECKBOX_TOOLTIP;
+			if (!string.IsNullOrWhiteSpace(additionalTooltip))
+				tooltip += $"\n\nOn/Off state is in fixed state due to:\n{additionalTooltip}";
+			_enableColumn.tooltip = tooltip;
 			
 			if (Model is ManifestEntryModel && !isSilentUpdate)
 				OnEnableStateChanged?.Invoke(Model);
