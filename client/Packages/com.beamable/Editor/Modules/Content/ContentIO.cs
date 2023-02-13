@@ -911,7 +911,7 @@ namespace Beamable.Editor.Content
 				return cachedChecksum;
 			}
 
-			var sortProperties = !ContentConfiguration.Instance.EnableContentChecksumDependentOfPropertyOrder;
+			var sortProperties = !ContentConfiguration.Instance.EnablePropertyOrderDependenceForContentChecksum;
 			
 			using (var md5 = MD5.Create())
 			{
