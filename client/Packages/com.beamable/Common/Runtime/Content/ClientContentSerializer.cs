@@ -11,8 +11,8 @@ namespace Beamable.Common.Content.Serialization
 		public static string SerializeContent<TContent>(TContent content) where TContent : IContentObject, new() =>
 		   Instance.Serialize(content);
 
-		public new static string SerializeProperties<TContent>(TContent content) where TContent : IContentObject =>
-		   Instance.SerializeProperties(content);
+		public new static string SerializeProperties<TContent>(TContent content, bool serializeForChecksum = false) where TContent : IContentObject =>
+		   Instance.SerializeProperties(content, serializeForChecksum);
 
 		protected override TContent CreateInstance<TContent>()
 		{
