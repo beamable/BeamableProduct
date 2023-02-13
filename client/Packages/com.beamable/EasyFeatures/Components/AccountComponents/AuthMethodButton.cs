@@ -11,8 +11,7 @@ namespace Beamable.EasyFeatures.Components
 	{
 		public RectTransform RectTransform;
 		public BussElement IconBussElement;
-		public Button Button;
-		public Image[] Images;
+		public CanvasGroup Group;
 
 		private static readonly Dictionary<AuthThirdParty, string> AuthMethodToBussClass =
 			new Dictionary<AuthThirdParty, string>
@@ -61,14 +60,8 @@ namespace Beamable.EasyFeatures.Components
 
 		private void SetInteractable(bool interactable)
 		{
-			Button.interactable = interactable;
-			if (Images != null)
-			{
-				foreach (var image in Images)
-				{
-					image.raycastTarget = interactable;
-				}
-			}
+			Group.interactable = interactable;
+			Group.blocksRaycasts = interactable;
 		}
 	}
 }

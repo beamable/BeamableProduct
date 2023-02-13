@@ -154,6 +154,7 @@ GameObject:
   - component: {fileID: 4941083953091597138}
   - component: {fileID: 6852257016571663373}
   - component: {fileID: 1222007225013202443}
+  - component: {fileID: 545460382515281264}
   m_Layer: 0
   m_Name: AuthMethodButton
   m_TagString: Untagged
@@ -279,3 +280,16 @@ MonoBehaviour:
   Images:
   - {fileID: 6852257016571663373}
   - {fileID: 7723343301949902043}
+  Group: {fileID: 545460382515281264}
+--- !u!225 &545460382515281264
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2244987817464320924}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
