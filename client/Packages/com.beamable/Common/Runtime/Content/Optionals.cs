@@ -62,7 +62,7 @@ namespace Beamable.Common.Content
 			HasValue = true;
 		}
 
-		public void Set(T value)
+		public virtual void Set(T value)
 		{
 			Value = value;
 			HasValue = true;
@@ -101,6 +101,12 @@ namespace Beamable.Common.Content
 		public Optional<T> DoIfExists(Action<T> callback)
 		{
 			if (HasValue) callback(Value);
+			return this;
+		}
+
+		public Optional<T> DoIfNotExists(Action callback)
+		{
+			if (!HasValue) callback();
 			return this;
 		}
 	}
@@ -259,6 +265,42 @@ namespace Beamable.Common.Content
 		{
 			Value = value;
 			HasValue = true;
+		}
+	}
+
+	[System.Serializable]
+	public class ReadonlyOptionalString : OptionalString
+	{
+		public ReadonlyOptionalString(OptionalString source)
+		{
+			HasValue = source.HasValue;
+			Value = source.Value;
+		}
+
+		public ReadonlyOptionalString()
+		{
+			HasValue = false;
+		}
+		
+		public ReadonlyOptionalString(string value)
+		{
+			HasValue = true;
+			Value = value;
+		}
+		
+		public override void SetValue(object value)
+		{
+			throw new InvalidOperationException("Cannot write to a readonly string");
+		}
+
+		public override void Clear()
+		{
+			throw new InvalidOperationException("Cannot write to a readonly string");
+		}
+
+		public override void Set(string value)
+		{
+			throw new InvalidOperationException("Cannot write to a readonly string");
 		}
 	}
 

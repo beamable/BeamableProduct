@@ -106,6 +106,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<ValidationContext>();
 			DependencyBuilder.AddSingleton<ContentDatabase>();
 
+			DependencyBuilder.AddSingleton<ConfigDefaultsService>();
+
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 	}
@@ -516,43 +518,77 @@ namespace Beamable
 			ServiceScope = builder.Build();
 			oldScope?.Hydrate(ServiceScope);
 
-			ConfigFileExists = ConfigDatabase.HasConfigFile(ConfigDatabase.GetConfigFileName());
+			/*
+			 * 1: load up the config-default values as is
+			 * 2: resolve the CID
+			 * 3: resolve the PID
+			 */
 
-			if (!ConfigFileExists)
-			{
-				SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
-				Logout();
-				InitializePromise = Promise.Success;
-				return;
-			}
+			
+
+			// TODO: Redux. its possible at this point we don't have a cid/pid
+			
+			// ConfigFileExists = ConfigDatabase.HasConfigFile(ConfigDatabase.GetConfigFileName());
+			//
+			// if (!ConfigFileExists)
+			// {
+			// 	SaveConfig(string.Empty, string.Empty, BeamableEnvironment.ApiUrl);
+			// 	Logout();
+			// 	InitializePromise = Promise.Success;
+			// 	return;
+			// }
 
 			// Load up the current Configuration data
-			ConfigDatabase.TryGetString(Features.Config.ALIAS_KEY, out var alias);
-			ConfigDatabase.TryGetString(Features.Config.CID_KEY, out string cid);
-			ConfigDatabase.TryGetString(Features.Config.PID_KEY, out string pid);
-			AliasHelper.ValidateAlias(alias);
-			AliasHelper.ValidateCid(cid);
+			// ConfigDatabase.TryGetString(Features.Config.ALIAS_KEY, out var alias);
+			// ConfigDatabase.TryGetString(Features.Config.CID_KEY, out string cid);
+			// ConfigDatabase.TryGetString(Features.Config.PID_KEY, out string pid);
+			// AliasHelper.ValidateAlias(alias); // TODO: REDUX: these will throw exceptions if the values aren't right
+			// AliasHelper.ValidateCid(cid);
 
-			if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
-			{
-				SaveConfig(string.Empty, pid, BeamableEnvironment.ApiUrl);
-				Logout();
-				InitializePromise = Promise.Success;
-				return;
-			}
+			// if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
+			// {
+			// 	SaveConfig(string.Empty, pid, BeamableEnvironment.ApiUrl); // TODO: REDUX: we don't need the host here anymore, its sourced from env
+			// 	Logout();
+			// 	InitializePromise = Promise.Success;
+			// 	return;
+			// }
 
 			// Initialize the requester configuration data so we can attempt a login.
-			var requester = ServiceScope.GetService<PlatformRequester>();
-			requester.Cid = cid;
-			requester.Pid = pid;
-			requester.Host = BeamableEnvironment.ApiUrl;
-			ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
+			// var requester = ServiceScope.GetService<PlatformRequester>();
+			// requester.Cid = cid;
+			// requester.Pid = pid;
+			// requester.Host = BeamableEnvironment.ApiUrl;
+			// ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 			// pre-initialize the dispatcher to dodge having to make the dependency scope handling multi-threaded inserts
 			ServiceScope.GetService<BeamableDispatcher>();
 
 			async Promise Initialize()
 			{
+				
+				var configService = ServiceScope.GetService<ConfigDefaultsService>();
+				await configService.LoadFromDisk();
+				
+				// Make sure there is a CID.
+				if (!configService.Cid.HasValue)
+				{
+					Logout();
+					return;
+				}
+
+				if (!configService.Pid.HasValue)
+				{
+					Logout();
+					return;
+				}
+
+				var requester = ServiceScope.GetService<PlatformRequester>();
+				requester.Cid = configService.Cid.GetOrThrow();
+				requester.Pid = configService.Pid.GetOrThrow();;
+				requester.Host = BeamableEnvironment.ApiUrl;
+				ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
+
+				
 				// Attempts to login with recovery.
 				// TODO: use newly added recover with extension with these timings new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
@@ -587,7 +623,17 @@ namespace Beamable
 				}
 			}
 
-			InitializePromise = Initialize();
+			InitializePromise = Initialize().Recover(ex =>
+			{
+				switch (ex)
+				{
+					case ConfigDefaultException:
+						// TODO?
+						return PromiseBase.Unit;
+					default:
+						throw ex;
+				}
+			}).ToPromise();
 		}
 
 		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
