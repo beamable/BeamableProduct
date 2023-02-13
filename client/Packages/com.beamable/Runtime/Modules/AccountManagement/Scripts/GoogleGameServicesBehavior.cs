@@ -13,6 +13,9 @@ namespace Beamable.AccountManagement
 		private SignInWithGPG _gpg;
 #endif
 		private ThirdPartyLoginPromise _promise;
+#pragma warning disable CS0414
+		[SerializeField] private bool forceRefreshToken = true;
+#pragma warning restore CS0414
 
 		public void StartLogin(ThirdPartyLoginPromise promise)
 		{
@@ -29,6 +32,7 @@ namespace Beamable.AccountManagement
 			}
 #if BEAMABLE_GPGS && UNITY_ANDROID
 			_gpg = new SignInWithGPG();
+			_gpg.ForceRefreshToken = forceRefreshToken;
 			_gpg.OnLoginResult += HandleLoginResult;
 			_gpg.OnRequestServerSideAccessResult += HandleRequestServerSideAccessResult;
 			
