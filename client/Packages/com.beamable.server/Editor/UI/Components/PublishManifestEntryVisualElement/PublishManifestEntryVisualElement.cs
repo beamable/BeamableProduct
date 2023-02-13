@@ -100,7 +100,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			EnableState = Root.Q<BeamableCheckboxVisualElement>("enableState");
 			EnableState.Refresh();
 			UpdateEnableState(Model.Enabled);
-			EnableState.OnValueChanged += UpdateEnableState;
+			EnableState.OnValueChanged += x => UpdateEnableState(x);
 			EnableState.tooltip = CHECKBOX_TOOLTIP;
 
 			Root.Q<Image>("serviceIcon").AddToClassList(TryGetServiceProperTypeName(Model.Type));
@@ -152,14 +152,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateStatus(ServicePublishState.Unpublished);
 		}
 
-		public void UpdateEnableState(bool isEnabled)
+		public void UpdateEnableState(bool isEnabled, bool isSilentUpdate = false)
 		{
 			Model.Enabled = isEnabled;
 			EnableState.SetWithoutNotify(isEnabled); 
 			EnableState.EnableInClassList("enabled", isEnabled);
 			EnableState.EnableInClassList("disabled", !isEnabled);
 			
-			if (Model is ManifestEntryModel)
+			if (Model is ManifestEntryModel && !isSilentUpdate)
 				OnEnableStateChanged?.Invoke(Model);
 		}
 		private void OnLabelSizeChanged(GeometryChangedEvent evt)
