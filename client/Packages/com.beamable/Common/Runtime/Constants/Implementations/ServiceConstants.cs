@@ -35,6 +35,8 @@ namespace Beamable.Common
 				public const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
 				public const string STORAGE_IMAGE_CLASS = "storageImage";
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
+				public const string CHECKBOX_TOOLTIP_ARCHIVED_STORAGE = "At least one dependent StorageObject is archived.";
+				public const string CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE = "Depends on at least one Microservice.";
 
 				public static readonly Vector2 MIN_SIZE = new Vector2(900, 560);
 				public const int MAX_ROW = 4;
