@@ -219,6 +219,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 			orderedElements.ForEach(x =>
 			{
 				var dependencies = GetAllDependencies(x.Model);
+				if (x.Model is ManifestEntryModel service)
+				{
+					// if the number of dependencies is different than those created as PublishManifestEntryVisualElement
+					// means that at least one dependent SO for given MS is archived. In that case turn off service.
+					if (service.Dependencies.Count != dependencies.Count)
+					{
+						x.EnableState.SetEnabled(false);
+						x.UpdateEnableState(false, true);
+						return;
+					}
+				}
+				
 				foreach (var dependency in dependencies)
 				{
 					if (!(dependency.Model is StorageEntryModel storageEntryModel) || !(x.Model is ManifestEntryModel serviceModel))
@@ -233,7 +245,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 				}
 			});
 			
-			orderedElements.ForEach(x => HandleEnableStateChanged(x.Model));
+			orderedElements.ForEach(x =>
+			{
+				if (x.Model.Enabled)
+					HandleEnableStateChanged(x.Model);
+			});
 			_scrollContainer.AddRange(orderedElements);
 			
 			Root.Q("enableC").tooltip = ON_OFF_HEADER_TOOLTIP;
@@ -285,8 +301,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				x.EnableState.SetEnabled(!isAnyDependentServiceEnabled);
 				if (isAnyDependentServiceEnabled)
 					x.UpdateEnableState(true);
-			});;
-			
+			});
 		}
 
 		public void PrepareParent()

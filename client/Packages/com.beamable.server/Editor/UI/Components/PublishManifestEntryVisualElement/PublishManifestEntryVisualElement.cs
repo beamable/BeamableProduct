@@ -152,14 +152,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateStatus(ServicePublishState.Unpublished);
 		}
 
-		public void UpdateEnableState(bool isEnabled)
+		public void UpdateEnableState(bool isEnabled) => UpdateEnableState(isEnabled, false);
+		public void UpdateEnableState(bool isEnabled, bool isSilentUpdate)
 		{
 			Model.Enabled = isEnabled;
 			EnableState.SetWithoutNotify(isEnabled); 
 			EnableState.EnableInClassList("enabled", isEnabled);
 			EnableState.EnableInClassList("disabled", !isEnabled);
 			
-			if (Model is ManifestEntryModel)
+			if (Model is ManifestEntryModel && !isSilentUpdate)
 				OnEnableStateChanged?.Invoke(Model);
 		}
 		private void OnLabelSizeChanged(GeometryChangedEvent evt)
