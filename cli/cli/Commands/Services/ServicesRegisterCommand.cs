@@ -88,7 +88,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 
 	public ServicesRegisterCommand() :
 		base("register",
-			"Registers a new service into the local manifest.")
+			"Registers a new service into the local manifest")
 	{
 	}
 

@@ -24,7 +24,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 	public ServicesDeployCommand() :
 		base("deploy",
-			"Deploys services, either locally or remotely (to the current realm).")
+			"Deploys services, either locally or remotely (to the current realm)")
 	{
 
 	}

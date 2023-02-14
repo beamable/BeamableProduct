@@ -20,7 +20,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 
 	public ServicesListCommand() :
 		base("ps",
-			"Lists the current local or remote service manifest and status (as summary table or json).")
+			"Lists the current local or remote service manifest and status (as summary table or json)")
 	{
 
 	}

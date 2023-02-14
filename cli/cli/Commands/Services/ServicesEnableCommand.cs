@@ -25,7 +25,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 
 	public ServicesEnableCommand() :
 		base("enable",
-			"Enables/Disables existing services.")
+			"Enables/Disables existing services")
 	{
 	}
 

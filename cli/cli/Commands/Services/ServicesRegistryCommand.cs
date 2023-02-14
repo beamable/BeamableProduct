@@ -18,7 +18,7 @@ public class ServicesRegistryCommand : AppCommand<ServicesRegistryCommandArgs>
 
 	public ServicesRegistryCommand() :
 		base("registry",
-			"Gets the docker registry URL that we upload docker images into when deploying services remotely for this realm.")
+			"Gets the docker registry URL that we upload docker images into when deploying services remotely for this realm")
 	{
 	}
 

@@ -23,7 +23,7 @@ public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArg
 
 	public ServicesMetricsUrlCommand() :
 		base("service-metrics",
-			"Gets the URL that we can use to see the metrics for our services.")
+			"Gets the URL that we can use to see the metrics for our services")
 	{
 	}
 

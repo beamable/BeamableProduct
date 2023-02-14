@@ -30,7 +30,7 @@ public class Tests
 	}
 
 	[Test]
-	public void CheckNaming()
+	public void NamingPass()
 	{
 		const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
 		var baseType = typeof(Command);
@@ -53,11 +53,15 @@ public class Tests
 		{
 			if (string.IsNullOrWhiteSpace(command.Description))
 			{
-				Assert.Fail($"{command.Name} command description should be provided.");
+				Assert.Fail($"{command.Name} command description should be provided.", command);
 			}
 			if (!char.IsUpper(command.Description[0]))
 			{
-				Assert.Fail($"{command.Name} command description should start with upper letter.");
+				Assert.Fail($"{command.Name} command description should start with upper letter.", command);
+			}
+			if (command.Description.TrimEnd()[^1] == '.')
+			{
+				Assert.Fail($"{command.Name} command description should not end with dot.", command);
 			}
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
@@ -66,11 +70,11 @@ public class Tests
 
 			if (sameDescriptionCommand != null)
 			{
-				Assert.Fail($"{command.Name} and {sameDescriptionCommand.Name} have the same description.");
+				Assert.Fail($"{command.Name} and {sameDescriptionCommand.Name} have the same description.", command, sameDescriptionCommand);
 			}
 			
 			var match = Regex.Match(command.Name, KEBAB_CASE_PATTERN);
-			Assert.AreEqual(match.Success, true, $"{command.Name} does not match kebab case naming.");
+			Assert.AreEqual(match.Success, true, $"{command.Name} does not match kebab case naming.", command);
 		}
 	}
 

@@ -25,7 +25,7 @@ public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 
 	public ServicesPromoteCommand() :
 		base("promote",
-			"Promotes the manifest from the given 'sourcePid' to your current realm.")
+			"Promotes the manifest from the given 'sourcePid' to your current realm")
 	{
 	}
 

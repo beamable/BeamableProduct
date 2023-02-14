@@ -19,7 +19,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 
 	public ServicesResetCommand() :
 		base("reset",
-			"Resets services to default settings and cleans up docker images (if any exist).")
+			"Resets services to default settings and cleans up docker images (if any exist)")
 	{
 	}
 
