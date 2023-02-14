@@ -4,7 +4,13 @@ using cli;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.CommandLine;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace tests;
@@ -21,6 +27,43 @@ public class Tests
 	{
 		var status = Cli.RunWithParams("--version");
 		Assert.AreEqual(0, status);
+	}
+
+	[Test]
+	public void CheckNaming()
+	{
+		const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
+		var baseType = typeof(Command);
+		var allTypes = Assembly.GetAssembly(typeof(App))!.GetTypes();
+		var commandsList = new List<Command>();
+		var app = new App();
+		app.Configure();
+		app.Build();
+		
+		foreach (Type type in allTypes.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(baseType)))
+		{
+			var command = app.CommandProvider.GetService(type);
+			if(command != null)
+			{
+				commandsList.Add((Command)command);
+			}
+		}
+
+		foreach (var command in commandsList)
+		{
+			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
+				c.Name != command.Name &&
+				c.Description != null &&
+				c.Description.Equals(command.Description, StringComparison.InvariantCultureIgnoreCase));
+
+			if (sameDescriptionCommand != null)
+			{
+				Assert.Fail($"{command.Name} and {sameDescriptionCommand.Name} have the same description.");
+			}
+			
+			var match = Regex.Match(command.Name, KEBAB_CASE_PATTERN);
+			Assert.AreEqual(match.Success, true, $"{command.Name} does not match kebab case naming.");
+		}
 	}
 
 	// // use this test to help identify live issues
