@@ -17,7 +17,7 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 {
 	private SwaggerService _swaggerService;
 
-	public DownloadOpenAPICommand() : base("download", "download the Beamable Open API specs")
+	public DownloadOpenAPICommand() : base("download", "Download the Beamable Open API specs")
 	{
 	}
 

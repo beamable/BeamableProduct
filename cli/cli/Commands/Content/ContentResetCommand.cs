@@ -6,7 +6,7 @@ public class ContentResetCommand : AppCommand<ContentResetCommandArgs>
 {
 	private ContentService _contentService;
 
-	public ContentResetCommand() : base("reset", string.Empty)
+	public ContentResetCommand() : base("reset", "Sets local content to match remote one")
 	{
 	}
 

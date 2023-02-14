@@ -12,7 +12,7 @@ public class ShareCodeCommandArgs : CommandArgs
 }
 public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 {
-	public ShareCodeCommand() : base("share-code", "given a dll, copy the dll to the associated unity projects")
+	public ShareCodeCommand() : base("share-code", "Given a dll, copy the dll to the associated unity projects")
 	{
 	}
 

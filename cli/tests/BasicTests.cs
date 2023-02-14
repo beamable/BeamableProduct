@@ -51,6 +51,14 @@ public class Tests
 
 		foreach (var command in commandsList)
 		{
+			if (string.IsNullOrWhiteSpace(command.Description))
+			{
+				Assert.Fail($"{command.Name} command description should be provided.");
+			}
+			if (!char.IsUpper(command.Description[0]))
+			{
+				Assert.Fail($"{command.Name} command description should start with upper letter.");
+			}
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
 				c.Description != null &&

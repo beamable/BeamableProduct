@@ -11,7 +11,7 @@ public class AddUnityClientOutputCommandArgs : CommandArgs
 
 public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputCommandArgs>
 {
-	public AddUnityClientOutputCommand() : base("add-unity-project", "add a unity project to this beamable cli project")
+	public AddUnityClientOutputCommand() : base("add-unity-project", "Add a unity project to this beamable cli project")
 	{
 	}
 

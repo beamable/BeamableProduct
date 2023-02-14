@@ -19,7 +19,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 	private readonly InitCommand _initCommand;
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
 
-	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand) : base("new", "start a brand new beamable solution using dotnet")
+	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand) : base("new", "Start a brand new beamable solution using dotnet")
 	{
 		_initCommand = initCommand;
 		_addUnityCommand = addUnityCommand;

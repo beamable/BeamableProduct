@@ -11,7 +11,7 @@ public class OpenSwaggerCommandArgs : CommandArgs
 
 public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>
 {
-	public OpenSwaggerCommand() : base("open-swagger", "opens the swagger page for a given service ")
+	public OpenSwaggerCommand() : base("open-swagger", "Opens the swagger page for a given service")
 	{
 	}
 

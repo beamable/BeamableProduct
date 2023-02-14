@@ -17,7 +17,7 @@ public class GenerateClientFileCommandArgs : CommandArgs
 }
 public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>
 {
-	public GenerateClientFileCommand() : base("generate-client", "generate a C# client file based on a built C# microservice dll directory")
+	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
 	{
 	}
 
