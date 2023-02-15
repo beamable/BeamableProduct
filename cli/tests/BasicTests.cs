@@ -32,7 +32,30 @@ public class Tests
 	[Test]
 	public void NamingPass()
 	{
-		const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
+		void CheckNaming(string commandName, string description, string optionName = null)
+		{
+			const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
+			var isOption = !string.IsNullOrWhiteSpace(optionName);
+			var logPrefix = isOption ? 
+				$"{optionName} argument for command {commandName}" :
+				$"{commandName} command";
+			if (string.IsNullOrWhiteSpace(description))
+			{
+				Assert.Fail($"{logPrefix} description should be provided.");
+			}
+			if (!char.IsUpper(description[0]))
+			{
+				Assert.Fail($"{logPrefix} description should start with upper letter.");
+			}
+			if (description.TrimEnd()[^1] == '.')
+			{
+				Assert.Fail($"{logPrefix} description should not end with dot.");
+			}
+
+			var valueToCheck = isOption ? optionName : commandName;
+			var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
+			Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
+		}
 		var commandTypes = Assembly.GetAssembly(typeof(App))!.GetTypes()
 			.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Command)));
 		var commandsList = new List<Command>();
@@ -51,18 +74,8 @@ public class Tests
 
 		foreach (var command in commandsList)
 		{
-			if (string.IsNullOrWhiteSpace(command.Description))
-			{
-				Assert.Fail($"{command.Name} command description should be provided.", command);
-			}
-			if (!char.IsUpper(command.Description[0]))
-			{
-				Assert.Fail($"{command.Name} command description should start with upper letter.", command);
-			}
-			if (command.Description.TrimEnd()[^1] == '.')
-			{
-				Assert.Fail($"{command.Name} command description should not end with dot.", command);
-			}
+			CheckNaming(command.Name, command.Description);
+			
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
 				c.Description != null &&
@@ -72,24 +85,10 @@ public class Tests
 			{
 				Assert.Fail($"{command.Name} and {sameDescriptionCommand.Name} have the same description.", command, sameDescriptionCommand);
 			}
-			
-			var match = Regex.Match(command.Name, KEBAB_CASE_PATTERN);
-			Assert.AreEqual(match.Success, true, $"{command.Name} does not match kebab case naming.", command);
 
 			foreach (Option option in command.Options)
 			{
-				match = Regex.Match(option.Name, KEBAB_CASE_PATTERN);
-				Assert.AreEqual(match.Success, true, $"{option.Name} argument for command {command.Name} does not match kebab case naming.", command);
-				
-				if (string.IsNullOrWhiteSpace(option.Description))
-				{
-					Assert.Fail($"{option.Name} argument for command {command.Name} description should be provided.", command);
-				}
-				
-				if (!char.IsUpper(option.Description[0]))
-				{
-					Assert.Fail($"{option.Name} argument for command {command.Name} description should start with upper letter.", command);
-				}
+				CheckNaming(command.Name, option.Description, option.Name);
 			}
 		}
 		

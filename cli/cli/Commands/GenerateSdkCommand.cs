@@ -34,7 +34,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 			"When true, all the generated code will be in one file. When false, there will be multiple files"),
 			(args, val) => args.Concat = val); // TODO: In C#, we can concat, but in C++/js, it could make no sense to support concat
 		AddOption(new Option<string>("--output", () => null,
-			"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path."),
+			"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
 			(args, val) => args.OutputPath = val);
 
 		AddOption(new Option<string>("--filter", () => null,
@@ -46,7 +46,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 			(args, val) => args.Engine = val);
 
 		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy", () => GenerateSdkConflictResolutionStrategy.None,
-			"When multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved."),
+			"When multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved"),
 			(args, val) => args.ResolutionStrategy = val);
 	}
 

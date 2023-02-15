@@ -27,10 +27,10 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new Option<bool>("--remote", "Makes it so that we output the current realm's remote manifest, instead of the local one."),
+		AddOption(new Option<bool>("--remote", "Makes it so that we output the current realm's remote manifest, instead of the local one"),
 			(args, i) => args.Remote = i);
 
-		AddOption(new Option<bool>("--json", "Outputs as json instead of summary table."),
+		AddOption(new Option<bool>("--json", "Outputs as json instead of summary table"),
 			(args, i) => args.AsJson = i);
 	}
 
