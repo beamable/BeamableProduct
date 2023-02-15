@@ -380,7 +380,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		private static Promise<bool> DockerCheckTask;
-		private static int DockerDesktopProcessId = int.MinValue;
+		static int DockerDesktopProcessId
+		{
+			get => SessionState.GetInt("DockerDesktopProcessId", int.MinValue);
+			set => SessionState.SetInt("DockerDesktopProcessId", value);
+		}
 
 		public static Promise<bool> CheckDockerAppRunning()
 		{
@@ -395,13 +399,14 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 
 			bool dockerNotRunning = DockerNotRunning;
+			var dockerDesktopId = DockerDesktopProcessId;
 			var task = new Task<bool>(() =>
 			{
-				if (DockerDesktopProcessId > int.MinValue)
+				if (dockerDesktopId > int.MinValue)
 				{
 					try
 					{
-						var process = Process.GetProcessById(DockerDesktopProcessId);
+						var process = Process.GetProcessById(dockerDesktopId);
 						if (process.ProcessName.Contains(procName, StringComparison.InvariantCultureIgnoreCase))
 						{
 							dockerNotRunning = false;
@@ -420,7 +425,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					{
 						if (procList[i].ProcessName.Contains(procName, StringComparison.InvariantCultureIgnoreCase))
 						{
-							DockerDesktopProcessId = procList[i].Id;
+							dockerDesktopId = procList[i].Id;
 							dockerNotRunning = false;
 							return dockerNotRunning;
 						}
@@ -438,6 +443,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			DockerCheckTask = task.ToPromise();
 			DockerCheckTask.Then(_ =>
 			{
+				DockerDesktopProcessId = dockerDesktopId;
 				DockerNotRunning = dockerNotRunning;
 			});
 
