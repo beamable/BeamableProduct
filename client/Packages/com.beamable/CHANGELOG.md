@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
+
 ## [1.11.0]
 ### Added
 - `PlayerInventory` supports storing player's inventory in offline mode
@@ -18,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
-- `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
 - Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
 - Update banner in Toolbox will link to changelog instead of blog post.
 - Refactored `BeamContext` initialization logic.
@@ -30,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate content is now displayed immediately in `Content Manager`
 - Update banner in Toolbox will update both `com.beamable` and `com.beamable.server` package. 
 - Fixed issues with wrong content status and checksum on domain reload.
+- `FilePathSelectorAttribute` no longer accesses `Application` in constructor.
 
 ## [1.10.3]
 ### Changed
