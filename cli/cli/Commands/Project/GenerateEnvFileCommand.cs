@@ -27,7 +27,7 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 		var realmsApi = args.Provider.GetService<IRealmsApi>();
 		var res = await realmsApi.GetAdminCustomer();
 		var proj = res.customer.projects.FirstOrDefault(p => p.name == args.AppContext.Pid);
-		
+
 		var secret = proj.secret;
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;

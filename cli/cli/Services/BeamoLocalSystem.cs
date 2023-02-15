@@ -92,7 +92,7 @@ public partial class BeamoLocalSystem
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 		});
 		// Load or create the local runtime data
-		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(beamoLocalRuntimeFileName, () => 
+		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(beamoLocalRuntimeFileName, () =>
 			new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) });
 
 		// Make a cancellation token source to cancel the docker event stream we listen for updates. See StartListeningToDocker.
