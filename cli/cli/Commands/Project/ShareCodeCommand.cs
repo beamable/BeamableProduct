@@ -18,7 +18,7 @@ public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("source", "the .dll filepath for the built code"), (arg, i) => arg.dllPath = i);
+		AddArgument(new Argument<string>("source", "The .dll filepath for the built code"), (arg, i) => arg.dllPath = i);
 	}
 
 	public override Task Handle(ShareCodeCommandArgs args)

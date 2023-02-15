@@ -33,14 +33,14 @@ public class Tests
 	public void NamingPass()
 	{
 		const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
-		var baseType = typeof(Command);
-		var allTypes = Assembly.GetAssembly(typeof(App))!.GetTypes();
+		var commandTypes = Assembly.GetAssembly(typeof(App))!.GetTypes()
+			.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Command)));
 		var commandsList = new List<Command>();
 		var app = new App();
 		app.Configure();
 		app.Build();
 		
-		foreach (Type type in allTypes.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(baseType)))
+		foreach (Type type in commandTypes)
 		{
 			var command = app.CommandProvider.GetService(type);
 			if(command != null)
@@ -75,7 +75,25 @@ public class Tests
 			
 			var match = Regex.Match(command.Name, KEBAB_CASE_PATTERN);
 			Assert.AreEqual(match.Success, true, $"{command.Name} does not match kebab case naming.", command);
+
+			foreach (Option option in command.Options)
+			{
+				match = Regex.Match(option.Name, KEBAB_CASE_PATTERN);
+				Assert.AreEqual(match.Success, true, $"{option.Name} argument for command {command.Name} does not match kebab case naming.", command);
+				
+				if (string.IsNullOrWhiteSpace(option.Description))
+				{
+					Assert.Fail($"{option.Name} argument for command {command.Name} description should be provided.", command);
+				}
+				
+				if (!char.IsUpper(option.Description[0]))
+				{
+					Assert.Fail($"{option.Name} argument for command {command.Name} description should start with upper letter.", command);
+				}
+			}
 		}
+		
+		
 	}
 
 	// // use this test to help identify live issues

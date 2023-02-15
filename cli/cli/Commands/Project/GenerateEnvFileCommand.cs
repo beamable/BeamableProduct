@@ -19,7 +19,7 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("output", "where to output the .env file"), (args, i) => args.output = i);
+		AddArgument(new Argument<string>("output", "Where to output the .env file"), (args, i) => args.output = i);
 	}
 
 	public override async Task Handle(GenerateEnvFileCommandArgs args)

@@ -17,7 +17,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("path", "the relative path to the Unity project"), (args, i) => args.path = i);
+		AddArgument(new Argument<string>("path", "Relative path to the Unity project"), (args, i) => args.path = i);
 	}
 
 	public override Task Handle(AddUnityClientOutputCommandArgs args)

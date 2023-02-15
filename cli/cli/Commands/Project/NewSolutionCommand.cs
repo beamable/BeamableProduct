@@ -27,8 +27,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("name", "the name of the new project"), (args, i) => args.name = i);
-		AddArgument(new Argument<string>("output", () => "", description: "where the project be created"), (args, i) => args.directory = i);
+		AddArgument(new Argument<string>("name", "Name of the new project"), (args, i) => args.name = i);
+		AddArgument(new Argument<string>("output", () => "", description: "Where the project be created"), (args, i) => args.directory = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)

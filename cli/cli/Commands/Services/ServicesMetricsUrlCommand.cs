@@ -15,7 +15,7 @@ public class ServicesMetricsUrlCommandArgs : LoginCommandArgs
 
 public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArgs>
 {
-	public static readonly Option<string> METRIC_NAME_OPTION_ID = new("--metric", "'cpu' or 'memory'");
+	public static readonly Option<string> METRIC_NAME_OPTION_ID = new("--metric", "Set to 'cpu' or 'memory'");
 
 	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
