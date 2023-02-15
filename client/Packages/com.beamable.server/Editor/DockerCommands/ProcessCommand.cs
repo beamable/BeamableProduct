@@ -380,8 +380,15 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		private static Promise<bool> DockerCheckTask;
+		private static int DockerDesktopProcessId = int.MinValue;
+
 		public static Promise<bool> CheckDockerAppRunning()
 		{
+#if UNITY_EDITOR_WIN
+			const string procName = "docker desktop";
+#else
+			const string procName = "docker";
+#endif
 			if (DockerCheckTask != null && !DockerCheckTask.IsCompleted)
 			{
 				return DockerCheckTask;
@@ -390,29 +397,42 @@ namespace Beamable.Server.Editor.DockerCommands
 			bool dockerNotRunning = DockerNotRunning;
 			var task = new Task<bool>(() =>
 			{
+				if (DockerDesktopProcessId > int.MinValue)
+				{
+					try
+					{
+						var process = Process.GetProcessById(DockerDesktopProcessId);
+						if (process.ProcessName.Contains(procName, StringComparison.InvariantCultureIgnoreCase))
+						{
+							dockerNotRunning = false;
+							return dockerNotRunning;
+						}
+					}
+					catch
+					{
+						//
+					}
+				}
 				var procList = Process.GetProcesses();
 				for (int i = 0; i < procList.Length; i++)
 				{
 					try
 					{
-#if UNITY_EDITOR_WIN
-						const string procName = "docker desktop";
-#else
-						const string procName = "docker";
-#endif
-						if (procList[i].ProcessName.ToLower().Contains(procName))
+						if (procList[i].ProcessName.Contains(procName, StringComparison.InvariantCultureIgnoreCase))
 						{
+							DockerDesktopProcessId = procList[i].Id;
 							dockerNotRunning = false;
-							return false;
+							return dockerNotRunning;
 						}
 					}
 					catch
 					{
+						//
 					}
 				}
 
 				dockerNotRunning = true;
-				return true;
+				return dockerNotRunning;
 			});
 			task.Start();
 			DockerCheckTask = task.ToPromise();
