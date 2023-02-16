@@ -147,6 +147,7 @@ namespace Beamable.AccountManagement
 		public ThirdPartyLoginPromiseEvent ThirdPartyLoginAttempted;
 
 		private string _currentEmail;
+		private BeamContext _beamContext;
 
 		private static TokenResponse _pendingToken;
 		private static User _pendingUser;
@@ -156,19 +157,20 @@ namespace Beamable.AccountManagement
 
 		protected override void OnAfterDisable()
 		{
-			API.Instance.Then(de =>
+			if (_beamContext != null)
 			{
-				de.OnUserLoggingOut -= OnUserLoggingOut;
-				de.OnUserChanged -= TriggerUserLoggedIn;
-			});
+				_beamContext.OnUserLoggingOut -= OnUserLoggingOut;
+				_beamContext.OnUserLoggedIn -= TriggerUserLoggedIn;
+			}
 		}
 
 		protected override void OnAfterEnable()
 		{
-			API.Instance.Then(de =>
+			_beamContext = BeamContext.InParent(this);
+			_beamContext.Instance.Then(_ =>
 			{
-				de.OnUserLoggingOut += OnUserLoggingOut;
-				de.OnUserChanged += TriggerUserLoggedIn;
+				_beamContext.OnUserLoggingOut += OnUserLoggingOut;
+				_beamContext.OnUserLoggedIn += TriggerUserLoggedIn;
 			});
 		}
 
@@ -203,9 +205,9 @@ namespace Beamable.AccountManagement
 
 		public void CheckSignedInUser()
 		{
-			WithLoading("Fetching Account...", API.Instance.FlatMap(de =>
+			WithLoading("Fetching Account...", _beamContext.Instance.FlatMap(de =>
 			{
-				var activeUser = de.User;
+				var activeUser = de.AuthorizedUser.Value;
 				if (activeUser.HasAnyCredentials())
 				{
 					DeferBroadcast(activeUser, s => s.UserAvailable);
@@ -215,7 +217,7 @@ namespace Beamable.AccountManagement
 					DeferBroadcast(activeUser, s => s.UserAnonymous);
 				}
 
-				return de.GetDeviceUsers().Error(ex =>
+				return de.Api.GetDeviceUsers().Error(ex =>
 				{
 					Debug.LogError("Unable to load device users");
 					Debug.LogError(ex);
@@ -258,7 +260,7 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Checking Account...", API.Instance.Then(api => api.IsEmailRegistered(_currentEmail).Then(registered =>
+			WithLoading("Checking Account...", _beamContext.Instance.Then(ctx => ctx.Api.IsEmailRegistered(_currentEmail).Then(registered =>
 			{
 				if (registered)
 				{
@@ -312,13 +314,13 @@ namespace Beamable.AccountManagement
 				return;
 			}
 
-			WithLoading("Logging In...", API.Instance.FlatMap(de =>
+			WithLoading("Logging In...", _beamContext.Instance.FlatMap(de =>
 			{
-				return de.GetDeviceUsers().FlatMap(deviceUsers =>
+				return de.Api.GetDeviceUsers().FlatMap(deviceUsers =>
 				{
-					return de.IsEmailRegistered(email).FlatMap(registered =>
+					return de.Api.IsEmailRegistered(email).FlatMap(registered =>
 					{
-						var currentUserHasEmail = de.User.HasDBCredentials();
+						var currentUserHasEmail = de.Api.User.HasDBCredentials();
 						var storedUser =
 							deviceUsers.FirstOrDefault(b => b.User.email != null && b.User.email.Equals(email));
 
@@ -328,19 +330,19 @@ namespace Beamable.AccountManagement
 
 						if (shouldSwitchUser)
 						{
-							return GetAccountWithCredentials(de, email, password)
+							return GetAccountWithCredentials(de.Api, email, password)
 								.Then(OfferSwitch);
 						}
 
 						if (shouldCreateNewUser)
 						{
-							return LoginToNewUser(de)
-								.FlatMap(_ => AttachEmailToCurrentUser(de, email, password));
+							return LoginToNewUser(de.Api)
+								.FlatMap(_ => AttachEmailToCurrentUser(de.Api, email, password));
 						}
 
 						if (shouldAttachToCurrentUser)
 						{
-							return AttachEmailToCurrentUser(de, email, password);
+							return AttachEmailToCurrentUser(de.Api, email, password);
 						}
 
 						throw new Exception(
@@ -372,35 +374,35 @@ namespace Beamable.AccountManagement
 
 		public void BecomeAnonymous()
 		{
-			API.Instance.Then(de =>
+			_beamContext.Instance.Then(de =>
 			{
-				WithCriticalLoading("New Account...", de.AuthService.CreateUser().Then(newToken =>
+				WithCriticalLoading("New Account...", de.Api.AuthService.CreateUser().Then(newToken =>
 				{
-					de.ApplyToken(newToken).Then(_ => { CheckSignedInUser(); });
+					de.Api.ApplyToken(newToken).Then(_ => { CheckSignedInUser(); });
 				}));
 			}).Error(HandleError);
 		}
 
 		public void ForgetUser(TokenReference reference)
 		{
-			API.Instance.Then(de =>
+			_beamContext.Instance.Then(de =>
 			{
-				if (reference.Bundle.User.id == de.User.id)
+				if (reference.Bundle.User.id == de.Api.User.id)
 				{
 					throw new Exception("Cannot forget current user");
 				}
 
-				de.RemoveDeviceUser(reference.Bundle.Token);
+				de.Api.RemoveDeviceUser(reference.Bundle.Token);
 			}).Error(HandleError);
 		}
 
 		public void StartForgotPassword(ForgotPasswordArguments reference)
 		{
 			var email = reference.Email.Value;
-			API.Instance
+			_beamContext.Instance
 			   .Then(de =>
 			   {
-				   WithLoading("Sending Email...", de.AuthService.IssuePasswordUpdate(email))
+				   WithLoading("Sending Email...", de.Api.AuthService.IssuePasswordUpdate(email))
 				   .Then(_ => DeferBroadcast(email, s => s.ForgotPasswordEmailSent));
 			   })
 			   .Error(ex =>
@@ -417,9 +419,9 @@ namespace Beamable.AccountManagement
 
 		public void ConfirmForgotPassword(string email, string code, string password)
 		{
-			API.Instance.Then(de =>
+			_beamContext.Instance.Then(de =>
 			{
-				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
+				WithLoading("Confirming Code...", de.Api.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
 			 {
 				 Login(email, password);
 			 }).Error(ex =>
@@ -438,9 +440,9 @@ namespace Beamable.AccountManagement
 					"There was no account switch available. This can only be run after a login as been attempted, that links to another account");
 			}
 
-			API.Instance.Then(de =>
+			_beamContext.Instance.Then(de =>
 			{
-				WithCriticalLoading("Switching Account...", de.ApplyToken(_pendingToken))
+				WithCriticalLoading("Switching Account...", de.Api.ApplyToken(_pendingToken))
 					.Error(HandleError);
 			});
 		}
@@ -448,7 +450,7 @@ namespace Beamable.AccountManagement
 		private Promise<User> StartThirdPartyLogin(ThirdPartyLoginResponse thirdPartyResponse,
 												   AuthThirdParty thirdParty)
 		{
-			return API.Instance.FlatMap(api => ThirdPartyLogin(api, thirdPartyResponse, thirdParty));
+			return _beamContext.Instance.FlatMap(de => ThirdPartyLogin(de.Api, thirdPartyResponse, thirdParty));
 		}
 
 		Promise<User> ThirdPartyLogin(IBeamableAPI beamableAPI,
@@ -566,11 +568,11 @@ namespace Beamable.AccountManagement
 
 		private void OfferSwitch(User user)
 		{
-			API.Instance.Then(api =>
+			_beamContext.Instance.Then(ctx =>
 			{
-				if (api.User.id == user.id)
+				if (ctx.Api.User.id == user.id)
 				{
-					api.UpdateUserData(user);
+					ctx.Api.UpdateUserData(user);
 				}
 				else
 				{
