@@ -36,7 +36,7 @@ public class Tests
 		{
 			const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
-			var logPrefix = isOption ? 
+			var logPrefix = isOption ?
 				$"{optionName} argument for command {commandName}" :
 				$"{commandName} command";
 			if (string.IsNullOrWhiteSpace(description))
@@ -62,11 +62,11 @@ public class Tests
 		var app = new App();
 		app.Configure();
 		app.Build();
-		
+
 		foreach (Type type in commandTypes)
 		{
 			var command = app.CommandProvider.GetService(type);
-			if(command != null)
+			if (command != null)
 			{
 				commandsList.Add((Command)command);
 			}
@@ -75,7 +75,7 @@ public class Tests
 		foreach (var command in commandsList)
 		{
 			CheckNaming(command.Name, command.Description);
-			
+
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
 				c.Description != null &&
@@ -91,8 +91,8 @@ public class Tests
 				CheckNaming(command.Name, option.Description, option.Name);
 			}
 		}
-		
-		
+
+
 	}
 
 	// // use this test to help identify live issues

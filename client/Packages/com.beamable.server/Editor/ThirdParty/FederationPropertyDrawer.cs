@@ -27,8 +27,8 @@ namespace Beamable.Server.Editor
 			if (_filteredDescriptors == null)
 			{
 				_filteredDescriptors = serviceRegistry.Descriptors
-				                                      .FindAll(descriptor => descriptor.IsUsedForFederation)
-				                                      .ToList();
+													  .FindAll(descriptor => descriptor.IsUsedForFederation)
+													  .ToList();
 			}
 
 			if (_filteredDescriptors.Count == 0)
@@ -45,25 +45,25 @@ namespace Beamable.Server.Editor
 
 			var routeInfoPosition = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
 			EditorGUI.LabelField(routeInfoPosition, "Federation",
-			                     new GUIStyle(EditorStyles.label) {font = EditorStyles.boldFont});
+								 new GUIStyle(EditorStyles.label) { font = EditorStyles.boldFont });
 			EditorGUI.indentLevel += 1;
 
 			var servicesGuiContents = _options
-			                          .Select(opt => new GUIContent(opt.ToString()))
-			                          .ToList();
+									  .Select(opt => new GUIContent(opt.ToString()))
+									  .ToList();
 
 			var nextRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + PADDING,
-			                        position.width, EditorGUIUtility.singleLineHeight);
+									position.width, EditorGUIUtility.singleLineHeight);
 
 			SerializedProperty serviceProperty = property.FindPropertyRelative(nameof(Federation.Service));
 			SerializedProperty namespaceProperty = property.FindPropertyRelative(nameof(Federation.Namespace));
 			var originalServiceIndex = _options.FindIndex(opt => opt.Microservice == serviceProperty.stringValue &&
-			                                                     opt.Namespace == namespaceProperty.stringValue);
+																 opt.Namespace == namespaceProperty.stringValue);
 
 			if (originalServiceIndex == -1)
 			{
 				if (string.IsNullOrEmpty(serviceProperty.stringValue) ||
-				    string.IsNullOrEmpty(namespaceProperty.stringValue))
+					string.IsNullOrEmpty(namespaceProperty.stringValue))
 				{
 					servicesGuiContents.Insert(0, new GUIContent("<none>"));
 					originalServiceIndex = 0;
@@ -81,7 +81,7 @@ namespace Beamable.Server.Editor
 
 			EditorGUI.BeginChangeCheck();
 			var nextServiceIndex = EditorGUI.Popup(nextRect, new GUIContent("Federation"), originalServiceIndex,
-			                                       servicesGuiContents.ToArray(), EditorStyles.popup);
+												   servicesGuiContents.ToArray(), EditorStyles.popup);
 			if (EditorGUI.EndChangeCheck())
 			{
 				var option =
@@ -99,7 +99,7 @@ namespace Beamable.Server.Editor
 			{
 				foreach (var federatedNamespace in descriptor.FederatedNamespaces)
 				{
-					_options.Add(new FederationOption {Microservice = descriptor.Name, Namespace = federatedNamespace});
+					_options.Add(new FederationOption { Microservice = descriptor.Name, Namespace = federatedNamespace });
 				}
 			}
 		}

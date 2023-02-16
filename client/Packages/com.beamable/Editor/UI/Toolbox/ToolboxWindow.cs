@@ -86,7 +86,7 @@ namespace Beamable.Editor.Toolbox.UI
 			BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
-				if (isUpdated && 
+				if (isUpdated &&
 					!EditorPrefs.GetBool(IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
 				{
 					ShowWhatsNewAnnouncement();
@@ -272,9 +272,9 @@ namespace Beamable.Editor.Toolbox.UI
 			{
 				BeamablePackages.OpenUrlForVersion(BeamablePackageUpdateMeta.NewestVersionNumber);
 
-				
+
 			};
-		
+
 			updateAvailableAnnouncement.OnIgnore = () =>
 			{
 				BeamablePackageUpdateMeta.IsInstallationIgnored = true;

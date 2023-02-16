@@ -41,7 +41,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		_configService = args.ConfigService;
 		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
-		
+
 		AnsiConsole.Write(
 			new FigletText("Beam")
 				.LeftAligned()

@@ -5,7 +5,7 @@ namespace cli;
 
 public class ConfigCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class ConfigCommand : AppCommand<ConfigCommandArgs>

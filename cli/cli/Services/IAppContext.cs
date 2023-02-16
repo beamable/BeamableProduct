@@ -129,8 +129,8 @@ public class DefaultAppContext : IAppContext
 
 		_token = new CliToken(accessToken, RefreshToken, _cid, _pid);
 		Set(_cid, _pid, _host);
-		
-		
+
+
 	}
 
 	public void Set(string cid, string pid, string host)

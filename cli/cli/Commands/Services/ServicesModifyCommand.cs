@@ -66,7 +66,7 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 
 
 	public override async Task Handle(ServicesModifyCommandArgs args)
-	{		
+	{
 		_localBeamo = args.BeamoLocalSystem;
 
 		// Handle Beamo Id Option 
@@ -101,7 +101,7 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 				// Handle Dockerfile path
 				if (!EnsureLocalDockerfilePath(ref httpArgs, localProtocol.RelativeDockerfilePath))
 					return;
-				
+
 				// Hot Reloading
 				EnsureLocalHotReloadingConfig(ref httpArgs,
 					new[]

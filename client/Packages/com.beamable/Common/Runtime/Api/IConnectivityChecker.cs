@@ -32,12 +32,12 @@ namespace Beamable.Common.Api
 		/// Send periodic HTTP requests to the Beamable gateway health endpoint.
 		/// </summary>
 		BeamableGateway,
-		
+
 		/// <summary>
 		/// Use the presence API calls to infer connectivity.
 		/// </summary>
 		BeamablePresence,
-		
+
 		/// <summary>
 		/// Allow the developer to register a custom <see cref="IConnectivityChecker"/> service with the
 		/// dependency builder.

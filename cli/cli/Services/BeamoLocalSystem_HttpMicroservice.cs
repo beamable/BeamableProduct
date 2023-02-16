@@ -87,7 +87,7 @@ public partial class BeamoLocalSystem
 		var waitRetryMax = 3;
 		var tries = 5;
 		var port = 6565;
-		var endpoint ="health";
+		var endpoint = "health";
 		var pipeCmd = "kill";
 		var cmdStr = $"wget -O- -q --timeout={reqTimeout} --waitretry={waitRetryMax} --tries={tries} http://localhost:{port}/{endpoint} || {pipeCmd} 1";
 
@@ -126,7 +126,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private async Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
 	{
-	
+
 
 		local.CustomPortBindings = new List<DockerPortBinding>();
 		local.CustomVolumes = new List<DockerVolume>();

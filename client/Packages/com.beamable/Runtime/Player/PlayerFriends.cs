@@ -79,7 +79,7 @@ namespace Beamable.Player
 
 			// but critically, friend invitations only appear on the mail channel :/
 			_notificationService.Subscribe(MAIL_UPDATE_CHANNEL, OnMailUpdate);
-			
+
 			_notificationService.Subscribe<FriendStatusChangedNotification>(FRIEND_PRESENCE_CHANGED, OnFriendPresenceChanged);
 
 			OnReady = Refresh().FlatMap(_ => RefreshMail()).ToPromise();
@@ -120,7 +120,7 @@ namespace Beamable.Player
 		{
 			var playerIds = _socialList.friends.Select(friend => long.Parse(friend.playerId)).ToArray();
 			var statuses = await _presenceApi.GetManyStatuses(playerIds);
-			
+
 			var friends = new List<PlayerFriend>(_socialList.friends.Count);
 			foreach (var friend in _socialList.friends)
 			{
@@ -383,7 +383,7 @@ namespace Beamable.Player
 			_presence = presenceStatus;
 			_onPresenceUpdated = onPresenceUpdated;
 		}
-		
+
 		/// <summary>
 		/// Blocks the friend
 		/// </summary>
@@ -424,7 +424,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PlayerFriend) obj);
+			return Equals((PlayerFriend)obj);
 		}
 
 		public override int GetHashCode()

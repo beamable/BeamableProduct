@@ -36,7 +36,7 @@ public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 
 	public override async Task Handle(ServicesPromoteCommandArgs args)
 	{
-		
+
 		_ctx = args.AppContext;
 		_realms = args.RealmsApi;
 		_remoteBeamo = args.BeamoService;

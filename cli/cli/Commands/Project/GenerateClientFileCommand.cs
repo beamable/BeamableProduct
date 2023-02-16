@@ -37,13 +37,13 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		AssemblyLoadContext.Default.Resolving += (context, name) =>
 		{
 			var assemblyPath = Path.Combine(absoluteDir, $"{name.Name}.dll");
-			if (assemblyPath != null)   
-				return context.LoadFromAssemblyPath(assemblyPath);     
+			if (assemblyPath != null)
+				return context.LoadFromAssemblyPath(assemblyPath);
 			return null;
 		};
 		var userAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(absolutePath);
 		#endregion
-		
+
 		var allTypes = userAssembly.GetExportedTypes();
 		foreach (var type in allTypes)
 		{
@@ -53,9 +53,11 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 			var descriptor = new MicroserviceDescriptor
 			{
-				Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type
+				Name = attribute.MicroserviceName,
+				AttributePath = attribute.SourcePath,
+				Type = type
 			};
-			
+
 			var generator = new ClientCodeGenerator(descriptor);
 
 			if (!string.IsNullOrEmpty(args.outputDirectory))
@@ -81,7 +83,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 					var outputPath = Path.Combine(outputDirectory, $"{descriptor.Name}Client.cs");
 
 					var nextGeneratedSourceCode = generator.GetCSharpCodeString();
-					
+
 					if (File.Exists(outputPath))
 					{
 						var existingContent = File.ReadAllText(outputPath);
@@ -91,12 +93,12 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 							return Task.CompletedTask;
 						}
 					}
-					
+
 					File.WriteAllText(outputPath, nextGeneratedSourceCode);
 				}
 			}
 		}
-		
+
 		return Task.CompletedTask;
 	}
 }

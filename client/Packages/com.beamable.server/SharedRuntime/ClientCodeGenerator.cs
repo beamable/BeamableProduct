@@ -196,7 +196,7 @@ namespace Beamable.Server.Generator
 				}
 			}
 		}
-		
+
 		void AddFederatedInventoryInterfaces()
 		{
 			var interfaces = Descriptor.Type.GetInterfaces();
