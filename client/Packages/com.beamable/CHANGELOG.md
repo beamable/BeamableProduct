@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The _config-defaults.txt_ file no longer controls the which CID/PID are used while in Editor. The _config-defaults.txt_ file will still control the CID/PID in a built game.
+- Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
 
 ### Removed
 - The Toolbox signin flow no longer allows for guest accounts.

@@ -293,7 +293,7 @@ namespace Beamable
 			// )]
 			// public ConnectivityStrategy ConnectivityStrategy = ConnectivityStrategy.BeamableGateway;
 			#endregion
-			
+
 			void Register<T>() where T : IConnectivityChecker
 			{
 				DependencyBuilder.AddSingleton<IConnectivityChecker>(p =>
@@ -303,7 +303,7 @@ namespace Beamable
 					return checker;
 				});
 			}
-			
+
 			switch (strategy)
 			{
 				case ConnectivityStrategy.BeamableGateway:

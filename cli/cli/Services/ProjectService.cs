@@ -25,13 +25,13 @@ public class ProjectService
 	{
 		return _projects.unityProjectsPaths.ToList();
 	}
-	
+
 	public void AddUnityProject(string relativePath)
 	{
 		_projects.unityProjectsPaths.Add(relativePath);
-		_configService.SaveDataFile( ".linkedProjects", _projects);
+		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
-	
+
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName)
 	{
 		if (string.IsNullOrEmpty(directory))
@@ -44,12 +44,12 @@ public class ProjectService
 		var commonProjectName = $"{projectName}Common";
 		var projectPath = Path.Combine(rootServicesPath, projectName);
 		var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
-	
+
 		if (Directory.Exists(solutionPath))
 		{
 			throw new CliException("Cannot create a solution because the directory already exists");
 		}
-		
+
 		// check that we have the templates available
 		var canUseTemplates = await Cli.Wrap("dotnet")
 			.WithArguments($"new list --tag beamable")
@@ -60,22 +60,22 @@ public class ProjectService
 		{
 			throw new CliException("Cannot access Beamable.Templates dotnet templates. Please install the Beamable templates and try again.");
 		}
-		
+
 		// create the solution
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"new sln -n {solutionName} -o {solutionPath}")
 			.ExecuteAsync().Task;
-		
+
 		// create the beam microservice project
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"new beamservice -n {projectName} -o {projectPath}")
 			.ExecuteAsync().Task;
-		
+
 		// restore the microservice tools
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"tool restore --tool-manifest {Path.Combine(projectName, ".config", "dotnet-tools.json")}")
 			.ExecuteAsync().Task;
-		
+
 		// add the microservice to the solution
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"sln {solutionPath} add {projectPath}")
@@ -85,17 +85,17 @@ public class ProjectService
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"new beamlib -n {commonProjectName} -o {commonProjectPath}")
 			.ExecuteAsync().Task;
-		
+
 		// restore the shared library tools
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"tool restore --tool-manifest {Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}")
 			.ExecuteAsync().Task;
-		
+
 		// add the shared library to the solution
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"sln {solutionPath} add {commonProjectPath}")
 			.ExecuteAsync().Task;
-		
+
 		// add the shared library as a reference of the project
 		await Cli.Wrap($"dotnet")
 			.WithArguments($"add {projectPath} reference {commonProjectPath}")

@@ -8,12 +8,12 @@ namespace cli;
 
 public abstract class CommandArgs
 {
-	public T Create<T>() where T: CommandArgs, new()
+	public T Create<T>() where T : CommandArgs, new()
 	{
 		var args = new T { Dryrun = Dryrun, Provider = Provider };
 		return args;
 	}
-	
+
 	public bool Dryrun { get; set; }
 	public IServiceProvider Provider { get; set; }
 

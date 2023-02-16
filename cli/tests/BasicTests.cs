@@ -4,7 +4,13 @@ using cli;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.CommandLine;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace tests;
@@ -21,6 +27,72 @@ public class Tests
 	{
 		var status = Cli.RunWithParams("--version");
 		Assert.AreEqual(0, status);
+	}
+
+	[Test]
+	public void NamingPass()
+	{
+		void CheckNaming(string commandName, string description, string optionName = null)
+		{
+			const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
+			var isOption = !string.IsNullOrWhiteSpace(optionName);
+			var logPrefix = isOption ?
+				$"{optionName} argument for command {commandName}" :
+				$"{commandName} command";
+			if (string.IsNullOrWhiteSpace(description))
+			{
+				Assert.Fail($"{logPrefix} description should be provided.");
+			}
+			if (!char.IsUpper(description[0]))
+			{
+				Assert.Fail($"{logPrefix} description should start with upper letter.");
+			}
+			if (description.TrimEnd()[^1] == '.')
+			{
+				Assert.Fail($"{logPrefix} description should not end with dot.");
+			}
+
+			var valueToCheck = isOption ? optionName : commandName;
+			var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
+			Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
+		}
+		var commandTypes = Assembly.GetAssembly(typeof(App))!.GetTypes()
+			.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Command)));
+		var commandsList = new List<Command>();
+		var app = new App();
+		app.Configure();
+		app.Build();
+
+		foreach (Type type in commandTypes)
+		{
+			var command = app.CommandProvider.GetService(type);
+			if (command != null)
+			{
+				commandsList.Add((Command)command);
+			}
+		}
+
+		foreach (var command in commandsList)
+		{
+			CheckNaming(command.Name, command.Description);
+
+			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
+				c.Name != command.Name &&
+				c.Description != null &&
+				c.Description.Equals(command.Description, StringComparison.InvariantCultureIgnoreCase));
+
+			if (sameDescriptionCommand != null)
+			{
+				Assert.Fail($"{command.Name} and {sameDescriptionCommand.Name} have the same description.", command, sameDescriptionCommand);
+			}
+
+			foreach (Option option in command.Options)
+			{
+				CheckNaming(command.Name, option.Description, option.Name);
+			}
+		}
+
+
 	}
 
 	// // use this test to help identify live issues
