@@ -18,7 +18,7 @@ public class ServicesTemplatesCommand : AppCommand<ServicesTemplatesCommandArgs>
 
 	public ServicesTemplatesCommand() :
 		base("templates",
-			"Gets all the template types available in this realm.")
+			"Gets all the template types available in this realm")
 	{
 	}
 
