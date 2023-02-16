@@ -118,6 +118,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, EditorFilesystemAccessor>();
 			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
+			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 		
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
@@ -490,7 +491,7 @@ namespace Beamable
 		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
-		public AccountService EditorAccountService => ServiceScope.GetService<AccountService>();
+		public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
 
 		public CustomerView CurrentCustomer => EditorAccount?.CustomerView;
 		public RealmView CurrentRealm => EditorAccount?.CurrentRealm?.GetOrElse(() => null);
@@ -554,7 +555,7 @@ namespace Beamable
 				}
 				
 				var requester = ServiceScope.GetService<PlatformRequester>();
-				var cid = requester.Cid = EditorAccountService.cid.GetOrThrow();
+				var cid = requester.Cid = EditorAccountService.Cid.GetOrThrow();
 
 				if (_editorAccount.realmPid.HasValue)
 				{

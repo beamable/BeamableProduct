@@ -1,6 +1,7 @@
 using Beamable.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Editor.Toolbox.Models;
 using System.Collections;
 using UnityEngine.TestTools;
 
@@ -30,13 +31,19 @@ namespace Beamable.Editor.Tests
 		public IEnumerator Setup()
 		{
 			var builder = BeamEditorDependencies.DependencyBuilder.Clone();
+			builder.ReplaceSingleton<IWebsiteHook, MockWebsiteHook>();
+			builder.ReplaceSingleton<IAccountService, MockAccountService>(provider =>
+			{
+				var service = new MockAccountService();
+
+				
+				
+				return service;
+			});
 			Configure(builder);
 
 			Context = BeamEditorContext.Instantiate("test", builder);
-
-			// Context.CurrentCustomer = new CustomerView();
-			// Context.ProductionRealm = new RealmView();
-			// Context.CurrentRealm = new RealmView();
+			
 			Context.Requester.Token = new AccessToken(new AccessTokenStorage(), "000", "111", "token", "refreshToken", 420);
 
 			yield return Context.InitializePromise.ToYielder();

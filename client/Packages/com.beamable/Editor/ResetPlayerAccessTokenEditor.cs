@@ -28,9 +28,6 @@ namespace Beamable.Editor
 				}
 				if (GUILayout.Button("Clear Token"))
 				{
-					BeamEditorContext.Default.EditorAccountService.editorAccounts = new List<EditorAccountInfo>();
-					BeamEditorContext.Default.EditorAccountService.cid.Clear();
-					BeamEditorContext.Default.Requester.DeleteToken();
 					var api = BeamEditorContext.Default;
 					var storage = new AccessTokenStorage(Prefix);
 					storage.ClearDeviceRefreshTokens(api.CurrentCustomer.Cid, api.CurrentRealm.Pid);

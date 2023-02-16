@@ -14,12 +14,25 @@ using CustomerView = Beamable.Common.Api.Realms.CustomerView;
 
 namespace Beamable.Editor
 {
-	public class AccountService : IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
+
+	public interface IAccountService
+	{
+		Promise<AccountServiceInitResult> TryInit();
+		Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken);
+		void Logout(bool clearRealmPid);
+		ReadonlyOptionalString Cid { get; }
+		void ApplyConfigValuesToRuntime();
+		void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid);
+		void WriteUnsetConfigValues();
+	}
+	
+	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		private readonly IDependencyProviderScope _scope;
 
 		public OptionalString cid = new OptionalString();
-		
+
+		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(cid);
 		
 		public List<EditorAccountInfo> editorAccounts = new List<EditorAccountInfo>();
 
@@ -68,7 +81,7 @@ namespace Beamable.Editor
 		
 		private bool GetAccountForCid(string cid, out EditorAccountInfo account)
 		{
-			account = editorAccounts.FirstOrDefault(account => account.cid == cid);
+			account = editorAccounts.FirstOrDefault(a => a.cid == cid);
 			if (account != null)
 			{
 				return true;
