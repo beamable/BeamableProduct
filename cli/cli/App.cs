@@ -75,12 +75,12 @@ public class App
 		services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
 		// services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>(); // TODO: figure out how to handle this...
 		services.AddSingleton<ProjectService>();
-		
+
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
 	}
-	
+
 	public virtual void Configure(Action<IDependencyBuilder>? serviceConfigurator = null, Action<IDependencyBuilder>? commandConfigurator = null)
 	{
 		if (IsBuilt)
@@ -114,7 +114,7 @@ public class App
 			return root;
 		});
 
-		
+
 		// add commands
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
@@ -136,7 +136,7 @@ public class App
 		Commands.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
 		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
-		
+
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
 		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
@@ -152,7 +152,7 @@ public class App
 		Commands.AddCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
-		
+
 		// content commands
 		Commands.AddRootCommand<ContentCommand, ContentCommandArgs>();
 		Commands.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
@@ -160,9 +160,9 @@ public class App
 		Commands.AddCommand<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
 		Commands.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
-		
+
 		commandConfigurator?.Invoke(Commands);
-		
+
 		// customize
 		_serviceConfigurator = serviceConfigurator;
 	}
@@ -173,7 +173,7 @@ public class App
 			throw new InvalidOperationException("The app has already been built, and cannot be built again");
 
 		CommandProvider = Commands.Build();
-		
+
 		// automatically create all commands
 		var commandFactoryServices = CommandProvider.SingletonServices.Where(t =>
 			t.Interface.IsGenericType && t.Interface.GetGenericTypeDefinition() == typeof(ICommandFactory<>)).ToList();
@@ -200,7 +200,7 @@ public class App
 				ConfigureServices(services);
 			});
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
-			consoleContext.BindingContext.AddService(_ => new AppServices{duck = provider});
+			consoleContext.BindingContext.AddService(_ => new AppServices { duck = provider });
 
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(consoleContext.BindingContext);

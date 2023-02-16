@@ -5,7 +5,7 @@ namespace cli;
 public class DryRunOption : Option<bool>
 {
 	public DryRunOption()
-		: base("--dryrun", "should any networking happen?")
+		: base("--dryrun", "Should any networking happen?")
 	{
 
 	}
