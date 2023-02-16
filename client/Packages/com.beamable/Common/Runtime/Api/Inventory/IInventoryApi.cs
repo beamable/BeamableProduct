@@ -632,6 +632,7 @@ namespace Beamable.Common.Api.Inventory
 	public class CurrencyPropertyList : DisplayableList<CurrencyProperty>
 	{
 		public List<CurrencyProperty> Properties = new List<CurrencyProperty>();
+		
 		public CurrencyPropertyList(List<CurrencyProperty> existing)
 		{
 			foreach (var elem in existing)
@@ -673,7 +674,7 @@ namespace Beamable.Common.Api.Inventory
 			}
 		}
 	}
-
+	
 	/// <summary>
 	/// This type defines the %Beamable item %content related to the %InventoryService.
 	///
@@ -745,19 +746,21 @@ namespace Beamable.Common.Api.Inventory
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+
+	[Serializable]
 	public class InventoryView
 	{
 		public Dictionary<string, long> currencies = new Dictionary<string, long>();
 		public Dictionary<string, List<CurrencyProperty>> currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
 		public Dictionary<string, List<ItemView>> items = new Dictionary<string, List<ItemView>>();
-
+		
 		public void Clear()
 		{
 			currencies.Clear();
 			items.Clear();
 		}
 	}
-
+	
 	/// <summary>
 	/// This type defines the render-friendly data of the %InventoryService.
 	///
@@ -770,10 +773,11 @@ namespace Beamable.Common.Api.Inventory
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+	[Serializable]
 	public class ItemView
 	{
 		public long id;
-		public Dictionary<string, string> properties;
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
 		public long createdAt;
 		public long updatedAt;
 	}
