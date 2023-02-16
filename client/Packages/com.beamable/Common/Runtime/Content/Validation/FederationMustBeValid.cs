@@ -33,7 +33,7 @@ namespace Beamable.Common.Content.Validation
 			if (string.IsNullOrEmpty(federation.Service))
 			{
 				throw new ContentValidationException(args.Content, args.ValidationField,
-				                                     $"Microservice cannot be empty");
+													 $"Microservice cannot be empty");
 			}
 
 			if (string.IsNullOrEmpty(federation.Namespace))

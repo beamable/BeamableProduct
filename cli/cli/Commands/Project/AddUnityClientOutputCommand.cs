@@ -31,7 +31,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 			".", // maybe the unity project a child of the current folder...
 			".." // or maybe the unity project is a sibling of the current folder...
 		}.Select(p => Path.Combine(startingDir, p)).ToArray();
-		
+
 		var defaultValues = GetUnityProjectCandidates(expectedUnityParentDirectories).ToList();
 		if (defaultValues.Count == 1) // if there is only one detected file, offer to use that.
 		{
@@ -40,7 +40,8 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 				args.ProjectService.AddUnityProject(defaultValues[0]);
 				return Task.CompletedTask;
 			}
-		} else if (defaultValues.Count > 0) // if there are many detected files, offer up a list of them
+		}
+		else if (defaultValues.Count > 0) // if there are many detected files, offer up a list of them
 		{
 			defaultValues.Add("continue");
 			var selection = AnsiConsole.Prompt(
@@ -54,7 +55,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 				return Task.CompletedTask;
 			}
 		}
-		
+
 		while (!IsDirectoryUnityEsque(directory))
 		{
 			var subDirs = Directory.GetDirectories(directory).ToList();
@@ -66,7 +67,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 					.Title("This doesn't look like a Unity project. Where is it from here?")
 					.AddChoices(subDirs)
 			);
-			
+
 			directory = Path.Combine(directory, dirSelection);
 			directory = Path.GetRelativePath(workingDir, directory);
 		}
@@ -104,7 +105,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 			}
 		}
 	}
-	
+
 	bool IsDirectoryUnityEsque(string path)
 	{
 		var subDirs = Directory.GetDirectories(path).ToList();
