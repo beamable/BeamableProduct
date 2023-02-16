@@ -343,6 +343,7 @@ namespace Beamable.Common.Player
 			{
 				OnElementsAdded?.Invoke(added);
 			}
+			TriggerUpdate();
 		}
 
 		// public override object GetData() => _data;
