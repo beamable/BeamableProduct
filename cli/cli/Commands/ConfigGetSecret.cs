@@ -6,7 +6,7 @@ namespace cli;
 
 public class ConfigGetSecretArgs : CommandArgs
 {
-	
+
 }
 public class ConfigGetSecret : AppCommand<ConfigGetSecretArgs>
 {
@@ -16,7 +16,7 @@ public class ConfigGetSecret : AppCommand<ConfigGetSecretArgs>
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override async Task Handle(ConfigGetSecretArgs args)
@@ -25,7 +25,7 @@ public class ConfigGetSecret : AppCommand<ConfigGetSecretArgs>
 		var res = await api.GetAdminCustomer();
 		var proj = res.customer.projects.FirstOrDefault(p => p.name == args.AppContext.Pid);
 		var secret = proj.secret;
-		
+
 		BeamableLogger.Log(secret);
 	}
 }

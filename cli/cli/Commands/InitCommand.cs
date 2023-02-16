@@ -20,7 +20,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 	private ConfigService _configService;
 
 	public InitCommand(LoginCommand loginCommand, ConfigCommand configCommand)
-		: base("init", "Initialize a new beamable project in the current directory.")
+		: base("init", "Initialize a new Beamable project in the current directory")
 	{
 		_loginCommand = loginCommand;
 		_configCommand = configCommand;
@@ -41,7 +41,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		_configService = args.ConfigService;
 		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
-		
+
 		AnsiConsole.Write(
 			new FigletText("Beam")
 				.LeftAligned()

@@ -16,16 +16,16 @@ public class ServicesEnableCommandArgs : LoginCommandArgs
 
 public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 {
-	public static readonly Option<string> BEAM_SERVICE_OPTION_ID = new("--id", "The Unique Id for this service within this Beamable CLI context.");
-	public static readonly Option<bool> BEAM_SERVICE_OPTION_ENABLE_ON_REMOTE_DEPLOY = new("--enabled", "Whether or not we should try and run the service when we deploy remotely.");
-	public static readonly Option<bool?> BEAM_SERVICE_OPTION_IGNORE_DEPENDENCIES = new("--no-deps", () => null, "Propagates the change to the services dependencies. When disabling, this is true by default.");
+	public static readonly Option<string> BEAM_SERVICE_OPTION_ID = new("--id", "The Unique Id for this service within this Beamable CLI context");
+	public static readonly Option<bool> BEAM_SERVICE_OPTION_ENABLE_ON_REMOTE_DEPLOY = new("--enabled", "Whether or not we should try and run the service when we deploy remotely");
+	public static readonly Option<bool?> BEAM_SERVICE_OPTION_IGNORE_DEPENDENCIES = new("--no-deps", () => null, "Propagates the change to the services dependencies. When disabling, this is true by default");
 
 	private BeamoLocalSystem _localBeamo;
 
 
 	public ServicesEnableCommand() :
 		base("enable",
-			"Enables/Disables existing services.")
+			"Enables/Disables existing services")
 	{
 	}
 

@@ -57,8 +57,8 @@ namespace Beamable.Editor.Environment
 
 		public static Promise<BeamablePackageMeta> ServerPackageMeta =>
 			_serverPackageMetaPromise ?? (_serverPackageMetaPromise = GetServerPackage());
-		
-		
+
+
 		static BeamablePackages()
 		{
 			var _ = ServerPackageMeta;
@@ -239,7 +239,8 @@ namespace Beamable.Editor.Environment
 			if (version.IsReleaseCandidate)
 			{
 				url += "?preview";
-			} else if (version.IsNightly)
+			}
+			else if (version.IsNightly)
 			{
 				url += "?ci";
 			}

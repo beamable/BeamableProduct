@@ -5,7 +5,7 @@ namespace cli;
 
 public class LogOption : ConfigurableOption
 {
-	public LogOption() : base("log", "should extra logs get printed out")
+	public LogOption() : base("log", "Extra logs gets printed out")
 	{
 	}
 

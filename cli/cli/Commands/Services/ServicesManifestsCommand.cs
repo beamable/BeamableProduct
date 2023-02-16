@@ -8,7 +8,7 @@ public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
 {
 	private BeamoService _beamoService;
 
-	public ServicesManifestsCommand() : base("manifests", "outputs manifests json to console")
+	public ServicesManifestsCommand() : base("manifests", "Outputs manifests json to console")
 	{
 	}
 	public override void Configure()

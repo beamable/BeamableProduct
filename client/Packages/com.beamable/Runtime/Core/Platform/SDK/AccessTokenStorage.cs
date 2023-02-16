@@ -185,7 +185,7 @@ namespace Beamable.Api
 					validTokens.Add(convert);
 				}
 			}
-			
+
 			return validTokens.ToArray();
 		}
 

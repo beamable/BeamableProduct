@@ -30,7 +30,7 @@ public static class DependencyInjectionExtensions
 			var factory = new CommandFactory<TCommand>();
 			var root = provider.GetRequiredService<TBaseCommand>();
 			var command = provider.GetRequiredService<TCommand>();
-			
+
 			command.Configure();
 			var binder = new AppCommand<TArgs>.Binder(command, provider);
 			command.SetHandler((TArgs args) => command.Handle(args), binder);

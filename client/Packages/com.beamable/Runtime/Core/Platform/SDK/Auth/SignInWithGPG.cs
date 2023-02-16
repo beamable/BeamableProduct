@@ -11,6 +11,8 @@ namespace Beamable.Platform.SDK.Auth
 		public Action<bool> OnLoginResult;
 		public Action<bool, string> OnRequestServerSideAccessResult;
 
+		public bool ForceRefreshToken { get; set; } = true;
+
 		public SignInWithGPG()
 		{
 			PlayGamesPlatform.Activate();
@@ -24,7 +26,7 @@ namespace Beamable.Platform.SDK.Auth
 		public static Promise<string> RequestServerSideToken()
 		{
 			var promise = new Promise<string>();
-			PlayGamesPlatform.Instance.RequestServerSideAccess(false, result =>
+			PlayGamesPlatform.Instance.RequestServerSideAccess(ForceRefreshToken, result =>
 			{
 				if(string.IsNullOrEmpty(result))
 					promise.CompleteError(new Exception("Cannot get server side token"));

@@ -11,9 +11,9 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("manifestId", "set the manifest to use, 'global' by default"),
+		AddOption(new ConfigurableOption("manifest-id", "Set the manifest to use, 'global' by default"),
 			(args, s) => args.ManifestId = s);
-		AddOption(new ConfigurableOptionFlag(nameof(ContentStatusCommandArgs.showUpToDate), "Show up to date content"),
+		AddOption(new ConfigurableOptionFlag("show-up-to-date", "Show up to date content"),
 			(args, b) => args.showUpToDate = b);
 		AddOption(new ConfigurableIntOption(nameof(ContentStatusCommandArgs.limit), "Limit content displayed amount (default: 100)"),
 			(args, s) => args.limit = s);

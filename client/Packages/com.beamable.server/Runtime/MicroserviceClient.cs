@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Inventory;
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -123,6 +124,8 @@ namespace Beamable.Server
 					return JsonUtility.ToJson(new Vector2IntEx(prim));
 				case Vector3Int prim:
 					return JsonUtility.ToJson(new Vector3IntEx(prim));
+				case InventoryView prim:
+					return JsonUtility.ToJson(new InventoryViewEx(prim));
 			}
 
 			return JsonUtility.ToJson(arg);
@@ -170,6 +173,8 @@ namespace Beamable.Server
 					return (T)(object)Vector2IntEx.DeserializeToVector2(json);
 				case Vector3Int _:
 					return (T)(object)Vector3IntEx.DeserializeToVector3(json);
+				case InventoryView _:
+					return (T)(object)InventoryViewEx.DeserializeToInventoryView(json);
 			}
 
 			if (typeof(IDictionary).IsAssignableFrom(type))

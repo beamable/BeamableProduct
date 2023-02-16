@@ -138,7 +138,7 @@ namespace Beamable.Common.Content
 					{
 						addressableDict.Add("referenceKey", addressable.AssetGUID);
 					}
-					
+
 					if (!string.IsNullOrEmpty(addressable.SubObjectName))
 					{
 						addressableDict.Add("subObjectName", addressable.SubObjectName);

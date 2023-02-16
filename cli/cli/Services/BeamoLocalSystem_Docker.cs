@@ -174,11 +174,11 @@ public partial class BeamoLocalSystem
 		string containerImageTag = "latest")
 	{
 		dockerBuildContextPath = _configService.GetRelativePath(dockerBuildContextPath);
-		
+
 
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
 		{
-			
+
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
 			try
@@ -257,7 +257,7 @@ public partial class BeamoLocalSystem
 			}
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);
-			
+
 			return builtImage.ID;
 		}
 	}

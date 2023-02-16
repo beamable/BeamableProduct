@@ -1,7 +1,7 @@
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Inventory;
-using Beamable.Common.Dependencies;
 using Beamable.Common.Content;
+using Beamable.Common.Dependencies;
 using BeamableReflection;
 using System;
 using System.Collections.Generic;
@@ -50,7 +50,7 @@ namespace Beamable.Common
 		public string name;
 		public long value;
 	}
-	
+
 	[Serializable]
 	public class FederatedInventoryProxyState
 	{
@@ -64,7 +64,7 @@ namespace Beamable.Common
 		public string proxyId;
 		public List<ItemProperty> properties;
 	}
-	
+
 	public interface IHaveServiceName
 	{
 		string ServiceName { get; }
@@ -78,6 +78,6 @@ namespace Beamable.Common
 	public interface ISupportsFederatedInventory<T> : ISupportsFederatedLogin<T>
 		where T : IThirdPartyCloudIdentity, new()
 	{
-		
+
 	}
 }

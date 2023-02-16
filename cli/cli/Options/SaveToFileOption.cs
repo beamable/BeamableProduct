@@ -2,5 +2,5 @@
 
 public class SaveToFileOption : ConfigurableOptionFlag
 {
-	public SaveToFileOption() : base("saveToFile", "save login refresh token to file") { }
+	public SaveToFileOption() : base("save-to-file", "Save login refresh token to file") { }
 }

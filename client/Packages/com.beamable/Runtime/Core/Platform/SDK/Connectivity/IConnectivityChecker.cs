@@ -25,9 +25,9 @@ namespace Beamable.Api.Connectivity
 
 		private float _pingStartDateTime;
 		private readonly WaitForSeconds _delay;
-		
+
 		public GatewayConnectivityChecker(
-			IConnectivityService connectivityService, 
+			IConnectivityService connectivityService,
 			CoroutineService coroutineService,
 			IPlatformRequester requester,
 			IDependencyProviderScope provider)
@@ -44,7 +44,7 @@ namespace Beamable.Api.Connectivity
 			ConnectivityRoute = route;
 			coroutineService.StartCoroutine(MonitorConnectivity());
 		}
-		
+
 		public async Promise<bool> ForceCheck()
 		{
 			try
@@ -79,7 +79,7 @@ namespace Beamable.Api.Connectivity
 				yield return _delay; // don't spam the internet checking...
 
 				if (!ConnectivityCheckingEnabled) continue; // if the checker isn't enabled, then this just sits here doing nothing... // TODO: check this... 
-				
+
 				_pingStartDateTime = Time.time;
 
 				var request = _requester.BeamableRequest(new SDKRequesterOptions<EmptyResponse>
@@ -107,6 +107,6 @@ namespace Beamable.Api.Connectivity
 				}
 			}
 		}
-		
+
 	}
 }

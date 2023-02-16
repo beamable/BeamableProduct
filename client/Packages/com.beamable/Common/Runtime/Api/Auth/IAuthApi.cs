@@ -238,12 +238,12 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="mergeGamerTagToAccount"></param>
 		/// <returns></returns>
 		Promise<ExternalLoginResponse> LoginExternalIdentity(string externalToken,
-		                                               string providerService,
-		                                               string providerNamespace,
-		                                               ChallengeSolution challengeSolution = null,
-		                                               bool mergeGamerTagToAccount=true);
-		
-		
+													   string providerService,
+													   string providerNamespace,
+													   ChallengeSolution challengeSolution = null,
+													   bool mergeGamerTagToAccount = true);
+
+
 		/// <summary>
 		/// Method for registering external identity.
 		/// </summary>

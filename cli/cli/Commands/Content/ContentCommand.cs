@@ -12,7 +12,7 @@ public class ContentCommand : AppCommand<ContentCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("manifestId", "set the manifest to use, 'global' by default"),
+		AddOption(new ConfigurableOption("manifest-id", "Set the manifest to use, 'global' by default"),
 			(args, s) => args.ManifestId = s);
 	}
 

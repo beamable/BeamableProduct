@@ -18,7 +18,7 @@ public class ConfigService
 	private Dictionary<string, string>? _config;
 
 	private string _dir;
-	
+
 	public ConfigService(CliEnvironment environment, ConfigDirOption configDirOption)
 	{
 		_environment = environment;
@@ -27,12 +27,12 @@ public class ConfigService
 
 	public void Init(BindingContext bindingContext)
 	{
-		
+
 		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
 		{
 			_dir = Directory.GetCurrentDirectory();
 		}
-		
+
 		RefreshConfig();
 	}
 
@@ -48,7 +48,7 @@ public class ConfigService
 	public string GetRelativePath(string relativePath)
 	{
 		var rootDir = Directory.GetParent(ConfigFilePath).FullName;
-		var fullRoot = Path.GetFullPath(rootDir); 
+		var fullRoot = Path.GetFullPath(rootDir);
 
 		var path = Path.Combine(fullRoot, relativePath);
 		path = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
@@ -58,7 +58,7 @@ public class ConfigService
 	public void SaveDataFile<T>(string fileName, T data)
 	{
 		if (!fileName.EndsWith(".json")) fileName += ".json";
-		var json = JsonConvert.SerializeObject(data,  new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
+		var json = JsonConvert.SerializeObject(data, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
 		var dir = Path.Combine(ConfigFilePath, fileName);
 		File.WriteAllText(dir, json);
 	}
@@ -72,7 +72,7 @@ public class ConfigService
 			var dir = Path.Combine(ConfigFilePath, fileName);
 			if (!File.Exists(dir)) { return defaultValueGenerator(); }
 			var json = File.ReadAllText(dir);
-			var data = JsonConvert.DeserializeObject<T>(json,  new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
+			var data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
 			return data;
 		}
 		catch (Exception ex)
@@ -87,8 +87,8 @@ public class ConfigService
 		_dir = dir;
 		SetBeamableDirectory(_dir);
 	}
-	
-	
+
+
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
 	{
 		// Try to get from option

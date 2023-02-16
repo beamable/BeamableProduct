@@ -114,7 +114,7 @@ namespace Beamable.Player
 				userPromises.Add(AuthService.GetUser(token).RecoverFromNoConnectivity(_ =>
 				{
 					var dbid = UnityEngine.Random.Range(int.MinValue, 0);
-					return new User(){id = dbid};
+					return new User() { id = dbid };
 				}));
 			}
 
@@ -126,7 +126,7 @@ namespace Beamable.Player
 				var user = userPromise.GetResult();
 				if (user != null)
 				{
-					userBundles.Add(new UserBundle {User = user, Token = tokens[i]});
+					userBundles.Add(new UserBundle { User = user, Token = tokens[i] });
 				}
 			}
 

@@ -14,10 +14,10 @@ public class ServicesUploadApiCommandArgs : LoginCommandArgs
 public class ServicesUploadApiCommand : AppCommand<ServicesUploadApiCommandArgs>
 {
 	private BeamoService _remoteBeamo;
-	
+
 	public ServicesUploadApiCommand() :
 		base("upload-api",
-			"Gets the URL that we upload docker images into when deploying services remotely for this realm.")
+			"Gets the URL that we upload docker images into when deploying services remotely for this realm")
 	{
 	}
 

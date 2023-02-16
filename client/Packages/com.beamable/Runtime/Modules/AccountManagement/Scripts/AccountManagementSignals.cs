@@ -222,8 +222,8 @@ namespace Beamable.AccountManagement
 				}).Map(userBundles =>
 				{
 					var otherUserBundles = userBundles
-					                       .Where(userBundle => userBundle.User.id != activeUser.id)
-					                       .ToList();
+										   .Where(userBundle => userBundle.User.id != activeUser.id)
+										   .ToList();
 					otherUserBundles.Sort((a, b) => a.User.id.CompareTo(b.User.id));
 
 					var deviceUserArg = new DeviceUserArg
