@@ -36,8 +36,6 @@ namespace Beamable.Editor.Tests
 			{
 				var service = new MockAccountService();
 
-				
-				
 				return service;
 			});
 			Configure(builder);

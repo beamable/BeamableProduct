@@ -9,6 +9,7 @@ using Beamable.Editor.Modules.Account;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using CustomerView = Beamable.Common.Api.Realms.CustomerView;
 
@@ -28,6 +29,16 @@ namespace Beamable.Editor
 	
 	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
 	{
+		[MenuItem("Clear/ClearIt")]
+		public static void Clear()
+		{
+			var service = BeamEditorContext.Default.EditorAccountService as AccountService;
+			service.editorAccounts = new List<EditorAccountInfo>();
+			service.cid.Clear();
+			BeamEditorContext.Default.Requester.DeleteToken();
+		}
+		
+		
 		private readonly IDependencyProviderScope _scope;
 
 		public OptionalString cid = new OptionalString();
@@ -170,6 +181,7 @@ namespace Beamable.Editor
 					return cid.Value;
 				}
 
+				
 				return null;
 			});
 			
