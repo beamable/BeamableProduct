@@ -2,6 +2,6 @@
 
 public class SelectEnvironmentOption : ConfigurableOptionFlag
 {
-	public SelectEnvironmentOption() : base("selectEnvironment", "select backend environment")
+	public SelectEnvironmentOption() : base("select-environment", "Select backend environment")
 	{ }
 }

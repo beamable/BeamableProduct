@@ -12,13 +12,13 @@ public class ShareCodeCommandArgs : CommandArgs
 }
 public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 {
-	public ShareCodeCommand() : base("share-code", "given a dll, copy the dll to the associated unity projects")
+	public ShareCodeCommand() : base("share-code", "Given a dll, copy the dll to the associated unity projects")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("source", "the .dll filepath for the built code"), (arg, i) => arg.dllPath = i);
+		AddArgument(new Argument<string>("source", "The .dll filepath for the built code"), (arg, i) => arg.dllPath = i);
 	}
 
 	public override Task Handle(ShareCodeCommandArgs args)

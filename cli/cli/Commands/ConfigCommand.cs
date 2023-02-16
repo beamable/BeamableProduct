@@ -11,7 +11,7 @@ public class ConfigCommandArgs : CommandArgs
 public class ConfigCommand : AppCommand<ConfigCommandArgs>
 {
 
-	public ConfigCommand() : base("config", "list the current configuration")
+	public ConfigCommand() : base("config", "List the current configuration")
 	{
 	}
 

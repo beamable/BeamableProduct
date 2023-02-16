@@ -13,13 +13,13 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 
 public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 {
-	public GenerateEnvFileCommand() : base("generate-env", "generate an .env file at a given location for a Microservice execution")
+	public GenerateEnvFileCommand() : base("generate-env", "Generate an .env file at a given location for a Microservice execution")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("output", "where to output the .env file"), (args, i) => args.output = i);
+		AddArgument(new Argument<string>("output", "Where to output the .env file"), (args, i) => args.output = i);
 	}
 
 	public override async Task Handle(GenerateEnvFileCommandArgs args)

@@ -20,7 +20,7 @@ public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
 
 	public ServicesLogsUrlCommand() :
 		base("service-logs",
-			"Gets the URL that we can use to see logs our service is emitting.")
+			"Gets the URL that we can use to see logs our service is emitting")
 	{
 	}
 

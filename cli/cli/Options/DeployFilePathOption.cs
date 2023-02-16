@@ -2,5 +2,5 @@
 
 public class DeployFilePathOption : ConfigurableOption
 {
-	public DeployFilePathOption() : base("deployManifestPath", "Path to the file with manifest to deploy") { }
+	public DeployFilePathOption() : base("deploy-manifest-path", "Path to the file with manifest to deploy") { }
 }

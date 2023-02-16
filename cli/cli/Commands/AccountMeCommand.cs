@@ -10,7 +10,7 @@ public class AccountMeCommandArgs : CommandArgs { }
 public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
 {
 
-	public AccountMeCommand() : base("me", "temp command to get current account")
+	public AccountMeCommand() : base("me", "Temp command to get current account")
 	{
 	}
 

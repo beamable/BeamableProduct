@@ -17,15 +17,15 @@ public class GenerateClientFileCommandArgs : CommandArgs
 }
 public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>
 {
-	public GenerateClientFileCommand() : base("generate-client", "generate a C# client file based on a built C# microservice dll directory")
+	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("source", "the .dll filepath for the built microservice"), (arg, i) => arg.microserviceAssemblyPath = i);
-		AddOption(new Option<string>("--output-dir", "the directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
-		AddOption(new Option<bool>("--output-links", () => true, "when true, generate the source client files to all associated projects"), (arg, i) => arg.outputToLinkedProjects = i);
+		AddArgument(new Argument<string>("source", "The .dll filepath for the built microservice"), (arg, i) => arg.microserviceAssemblyPath = i);
+		AddOption(new Option<string>("--output-dir", "Directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
+		AddOption(new Option<bool>("--output-links", () => true, "When true, generate the source client files to all associated projects"), (arg, i) => arg.outputToLinkedProjects = i);
 	}
 
 	public override Task Handle(GenerateClientFileCommandArgs args)

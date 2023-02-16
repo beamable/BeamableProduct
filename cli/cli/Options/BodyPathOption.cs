@@ -2,5 +2,5 @@
 
 public class BodyPathOption : ConfigurableOption
 {
-	public BodyPathOption() : base("body", "relative path to request body") { }
+	public BodyPathOption() : base("body", "Relative path to request body") { }
 }

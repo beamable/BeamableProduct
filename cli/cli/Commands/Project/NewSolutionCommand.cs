@@ -19,7 +19,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 	private readonly InitCommand _initCommand;
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
 
-	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand) : base("new", "start a brand new beamable solution using dotnet")
+	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand) : base("new", "Start a brand new beamable solution using dotnet")
 	{
 		_initCommand = initCommand;
 		_addUnityCommand = addUnityCommand;
@@ -27,8 +27,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("name", "the name of the new project"), (args, i) => args.name = i);
-		AddArgument(new Argument<string>("output", () => "", description: "where the project be created"), (args, i) => args.directory = i);
+		AddArgument(new Argument<string>("name", "Name of the new project"), (args, i) => args.name = i);
+		AddArgument(new Argument<string>("output", () => "", description: "Where the project be created"), (args, i) => args.directory = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)

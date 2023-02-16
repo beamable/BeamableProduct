@@ -27,7 +27,7 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 
 	public ServicesModifyCommand() :
 		base("modify",
-			"Modifies a new service into the local manifest.")
+			"Modifies a new service into the local manifest")
 	{
 	}
 

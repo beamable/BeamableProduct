@@ -21,7 +21,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	private ConfigService _configService;
 	private IAuthApi _authApi;
 
-	public LoginCommand() : base("login", "save credentials to file")
+	public LoginCommand() : base("login", "Save credentials")
 	{
 		
 	}
