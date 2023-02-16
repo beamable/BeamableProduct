@@ -350,6 +350,20 @@ namespace Beamable
 		}
 
 		/// <summary>
+		/// Changes the current PID value for the game, and resets the game to the given scene defined by <see cref="sceneQualifier"/>.
+		/// When the next <see cref="BeamContext"/> loads, it will use the same CID as before, but the
+		/// PID will be the value given to this function.
+		/// </summary>
+		/// <param name="pid">a valid Beamable PID for the current CID.</param>
+		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
+		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
+		{
+			await StopAllContexts();
+			ConfigDatabase.SetString("pid", pid, persist:false); // setting persist to false means the new pid won't be stored in player prefs.
+			await ResetToScene(sceneQualifier);
+		}
+
+		/// <summary>
 		/// Unload every scene, and reload some requested scene.
 		/// If no <paramref name="sceneQualifier"/> is given, then this will reload the current scene.
 		/// If you are in the Unity Editor, this means the scene will reload to the state when you entered Playmode.

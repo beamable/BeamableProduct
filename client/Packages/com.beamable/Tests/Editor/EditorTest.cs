@@ -34,9 +34,9 @@ namespace Beamable.Editor.Tests
 
 			Context = BeamEditorContext.Instantiate("test", builder);
 
-			Context.CurrentCustomer = new CustomerView();
-			Context.ProductionRealm = new RealmView();
-			Context.CurrentRealm = new RealmView();
+			// Context.CurrentCustomer = new CustomerView();
+			// Context.ProductionRealm = new RealmView();
+			// Context.CurrentRealm = new RealmView();
 			Context.Requester.Token = new AccessToken(new AccessTokenStorage(), "000", "111", "token", "refreshToken", 420);
 
 			yield return Context.InitializePromise.ToYielder();

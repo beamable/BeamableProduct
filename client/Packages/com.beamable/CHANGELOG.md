@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `Beam.ChangePid` allows the game to change the assigned pid. The pid will reset when the game restarts.
+- `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
+
+### Changed
+- The _config-defaults.txt_ file no longer controls the which CID/PID are used while in Editor. The _config-defaults.txt_ file will still control the CID/PID in a built game.
+
+### Removed
+- The Toolbox signin flow no longer allows for guest accounts.
+
 ## [1.11.0]
 ### Added
 - `PlayerInventory` supports storing player's inventory in offline mode

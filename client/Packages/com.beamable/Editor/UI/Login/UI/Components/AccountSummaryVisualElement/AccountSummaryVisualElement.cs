@@ -52,6 +52,20 @@ namespace Beamable.Editor.Login.UI.Components
 			_switchGameButton = Root.Q<GenericButtonVisualElement>("switchGame");
 			_switchGameButton.OnClick += Manager.GotoProjectSelectVisualElement;
 
+			var commitConfigDefaults = Root.Q<GenericButtonVisualElement>("commitConfigDefaults");
+			commitConfigDefaults.OnClick += () =>
+			{
+				commitConfigDefaults.EnableInClassList("writing", true);
+				EditorDebouncer.Debounce("commit-defaults", () =>
+				{
+					Context.WriteConfig();
+					EditorDebouncer.Debounce("commit-defaults-reset", () =>
+					{
+						commitConfigDefaults.EnableInClassList("writing", false);
+					}, .3f);
+				}, .1f);
+			};
+			
 			var resetPasswordButton = Root.Q<GenericButtonVisualElement>("resetPassword");
 			resetPasswordButton.OnClick += Manager.GotoForgotPassword;
 
@@ -73,8 +87,7 @@ namespace Beamable.Editor.Login.UI.Components
 			if (Model.CurrentUser == null) return;
 
 			_emailField.SetValueWithoutNotify(Model.CurrentUser.email);
-			_roleField.SetValueWithoutNotify(Model.CurrentUser.GetPermissionsForRealm(Model.CurrentRealm.Pid).Role);
-
+			_roleField.SetValueWithoutNotify(Model.CurrentUser.GetPermissionsForRealm(Model.CurrentRealm?.Pid).Role);
 		}
 
 		private void SetGameView()

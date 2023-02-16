@@ -8,14 +8,6 @@ using System;
 
 namespace Beamable.Editor
 {
-	public class ConfigDefaultException : Exception
-	{
-		public ConfigDefaultException(string message) : base(message)
-		{
-			
-		}
-	}
-	
 	public class ConfigDefaultsService
 	{
 		private readonly AliasService _aliasService;
@@ -24,15 +16,31 @@ namespace Beamable.Editor
 		private OptionalString _cid = new OptionalString();
 		private OptionalString _pid = new OptionalString();
 
-
-		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(_cid); // TODO cache?
-		public ReadonlyOptionalString Pid => new ReadonlyOptionalString(_pid); // TODO cache?
+		/// <summary>
+		/// A readonly optional string for the CID in the config-defaults file.
+		/// </summary>
+		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(_cid);
+		
+		/// <summary>
+		/// A readonly optional string for the PID in the config-defaults file.
+		/// </summary>
+		public ReadonlyOptionalString Pid => new ReadonlyOptionalString(_pid); 
+		
+		/// <summary>
+		/// A readonly optional string for the Alias in the config-defaults file.
+		/// </summary>
+		public ReadonlyOptionalString Alias => new ReadonlyOptionalString(_alias);
 		
 		public ConfigDefaultsService(AliasService aliasService)
 		{
 			_aliasService = aliasService;
 		}
-
+		
+		/// <summary>
+		/// This will read the config-defaults file and store the values in the
+		/// <see cref="Alias"/>, <see cref="Cid"/>, and <see cref="Pid"/> fields.
+		/// This will also resolve the alias and cid such that the CID is a cid, and the alias is an alias.
+		/// </summary>
 		public async Promise LoadFromDisk()
 		{
 			var hasFile = ConfigDatabase.HasConfigFile(ConfigDatabase.GetConfigFileName());
@@ -45,8 +53,7 @@ namespace Beamable.Editor
 			_alias = LoadConfigStringFromDisk(Constants.Features.Config.ALIAS_KEY);
 			_cid = LoadConfigStringFromDisk(Constants.Features.Config.CID_KEY);
 			_pid = LoadConfigStringFromDisk(Constants.Features.Config.PID_KEY);
-
-
+			
 			// check that the alias is valid
 			try
 			{
@@ -55,16 +62,6 @@ namespace Beamable.Editor
 					var aliasResolve = await _aliasService.Resolve(_alias.Value);
 					aliasResolve.Alias.DoIfExists(_alias.Set);
 					aliasResolve.Cid.DoIfExists(_cid.Set);
-					// aliasResolve.Alias.DoIfNotExists(_alias.Clear); // if the resolved alias didn't include anything, then the alias isn't valid.
-					// aliasResolve.Cid.DoIfExists(cid =>
-					// {
-					// 	// if the alias mapped to a cid
-					// 	// and the current cid doesn't exist, or isn't valid...
-					// 	if (!_cid.HasValue || !AliasHelper.IsCid(_cid.Value))
-					// 	{
-					// 		_cid.Set(cid);
-					// 	}
-					// });
 				}
 				
 				_alias.DoIfExists(AliasHelper.ValidateAlias);
@@ -92,9 +89,6 @@ namespace Beamable.Editor
 				// if the cid isn't valid, erase it from memory
 				_cid.Clear();
 			}
-			
-			
-			
 		}
 
 		/// <summary>
@@ -105,7 +99,7 @@ namespace Beamable.Editor
 		/// <returns></returns>
 		private static OptionalString LoadConfigStringFromDisk(string key)
 		{
-			if (ConfigDatabase.TryGetString(key, out var value) && !string.IsNullOrWhiteSpace(value))
+			if (ConfigDatabase.TryGetString(key, out var value, allowSessionOverrides:false) && !string.IsNullOrWhiteSpace(value))
 			{
 				return new OptionalString(value);
 			}

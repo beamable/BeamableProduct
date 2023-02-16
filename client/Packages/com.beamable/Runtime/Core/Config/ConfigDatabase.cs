@@ -11,11 +11,19 @@ namespace Beamable.Config
 		private static readonly Dictionary<string, string> sessionOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		private const string ConfigFileKey = "config_file_key";
 
-		public static void Init()
+		/// <summary>
+		/// The init method must be called before any values can be reliably read from the
+		/// config database. 
+		/// </summary>
+		/// <param name="forceReload">
+		/// When true, calling this method will force reload the values from disk.
+		/// Session overrides remain.
+		/// </param>
+		public static void Init(bool forceReload=false)
 		{
 			var alreadyInitialized = database != null && database.Count > 0;
 
-			if (!alreadyInitialized)
+			if (forceReload || !alreadyInitialized)
 			{
 				SetConfigValuesFromFile(GetConfigFileName());
 			}
@@ -98,16 +106,16 @@ namespace Beamable.Config
 			}
 		}
 
-		public static bool TryGetString(string name, out string value)
+		public static bool TryGetString(string name, out string value, bool allowSessionOverrides=true)
 		{
 			name = name.Trim();
 			if (ConfigDatabase.database.ContainsKey(name))
 			{
-				if (sessionOverrides.ContainsKey(name))
+				if (allowSessionOverrides && sessionOverrides.ContainsKey(name))
 				{
 					value = sessionOverrides[name];
 				}
-				value = PlayerPrefs.HasKey(name) ? PlayerPrefs.GetString(name).Trim() : ConfigDatabase.database[name];
+				value = (allowSessionOverrides && PlayerPrefs.HasKey(name)) ? PlayerPrefs.GetString(name).Trim() : ConfigDatabase.database[name];
 				return true;
 			}
 			value = null;
