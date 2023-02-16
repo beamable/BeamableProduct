@@ -111,7 +111,7 @@ namespace Beamable.Player
 			foreach (var kvp in Properties)
 			{
 				hash = CombineHashCodes(hash, kvp.Key?.GetHashCode() ?? 1);
-				hash = CombineHashCodes(hash, kvp.Value?.GetHashCode() ?? 1 );
+				hash = CombineHashCodes(hash, kvp.Value?.GetHashCode() ?? 1);
 			}
 
 			hash = CombineHashCodes(hash, UpdatedAt.GetHashCode());
