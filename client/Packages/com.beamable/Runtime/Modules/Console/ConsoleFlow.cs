@@ -117,7 +117,6 @@ namespace Beamable.Console
 
 		private void Update()
 		{
-			var _ = BeamContext.ForPlayer(_playerCode).OnReady;
 			if (!_isInitialized) return;
 
 			if (_showNextTick)
