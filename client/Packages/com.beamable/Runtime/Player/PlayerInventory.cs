@@ -762,7 +762,6 @@ namespace Beamable.Player
 			var transaction = data.Item2;
 			try
 			{
-				Debug.Log("SENDING INVENTORY UPDATE!!!!");
 				await _inventoryApi.Update(builder, transaction);
 			}
 			catch (NoConnectivityException)
