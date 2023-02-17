@@ -155,3 +155,15 @@ LoadingBarElement {
 .StorageObject {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/SO not running without wifi.png");
 }
+
+.--positionHidden {
+    position: absolute;
+    font-size: 0;
+    width: 0px;
+    height: 0px;
+    visibility: hidden;
+    right: 0px;
+    left: 0px;
+    top: 0px;
+    bottom: 0px;
+}
