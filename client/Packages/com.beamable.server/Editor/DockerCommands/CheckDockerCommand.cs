@@ -16,7 +16,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public static async Promise<bool> PerformCheck()
 		{
 			var result = !DockerNotInstalled;
-			if(!DockerCheckPerformed)
+			if (!DockerCheckPerformed)
 			{
 				result = await new CheckDockerCommand().StartAsync();
 			}
