@@ -52,18 +52,18 @@ namespace Beamable.Server
 							{
 								nameof(ItemView.properties),
 								selectedItem.properties
-								            .Select(newProperty =>
-									                    new ArrayDict
-									                    {
-										                    {
-											                    nameof(newProperty.Key),
-											                    newProperty.Key
-										                    },
-										                    {
-											                    nameof(newProperty.Value),
-											                    newProperty.Value
-										                    }
-									                    }).ToArray()
+											.Select(newProperty =>
+														new ArrayDict
+														{
+															{
+																nameof(newProperty.Key),
+																newProperty.Key
+															},
+															{
+																nameof(newProperty.Value),
+																newProperty.Value
+															}
+														}).ToArray()
 							}
 						}).ToArray();
 
@@ -82,13 +82,13 @@ namespace Beamable.Server
 			Dictionary<string, string> ExtractProperty(ArrayDict dc, string name)
 			{
 				if (dc.TryGetValue(name, out var currencyObj) &&
-				    currencyObj is List<object> objs)
+					currencyObj is List<object> objs)
 				{
 					var subDict = objs.Cast<ArrayDict>();
 
 					var nn = subDict.Select(x => new KeyValuePair<string, string>(
-						                        x["Key"]?.ToString(),
-						                        x["Value"]?.ToString())).ToDictionary(item => item.Key,
+												x["Key"]?.ToString(),
+												x["Value"]?.ToString())).ToDictionary(item => item.Key,
 						item => item.Value);
 
 					return nn;
@@ -104,14 +104,14 @@ namespace Beamable.Server
 			if (dict != null)
 			{
 				if (dict.TryGetValue(nameof(InventoryView.currencies), out var currencyObj) &&
-				    currencyObj is ArrayDict storedCurrencies)
+					currencyObj is ArrayDict storedCurrencies)
 				{
 					tmp.currencies = storedCurrencies.ToDictionary(kvp => kvp.Key, kvp => (long)kvp.Value);
 					;
 				}
 
 				if (dict.TryGetValue(nameof(InventoryView.currencyProperties), out var currPropsObj) &&
-				    currPropsObj is ArrayDict storedCurrProps)
+					currPropsObj is ArrayDict storedCurrProps)
 				{
 					tmp.currencyProperties = storedCurrProps.ToDictionary(
 						kvp => kvp.Key,
@@ -133,7 +133,7 @@ namespace Beamable.Server
 				}
 
 				if (dict.TryGetValue(nameof(InventoryView.items), out var currItemsObj) &&
-				    currItemsObj is ArrayDict storedItems)
+					currItemsObj is ArrayDict storedItems)
 				{
 					tmp.items = storedItems.ToDictionary(
 						kvp => kvp.Key,
