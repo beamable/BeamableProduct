@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
-- Improved `MicroserviceWindow` performance by optimizing Docker checks
 
 ## [1.11.0]
 ### Added
