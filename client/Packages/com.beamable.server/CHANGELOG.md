@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 - Improved `MicroserviceWindow` performance by optimizing Docker checks
 
+## [1.11.1]
+### Fixed
+- `InventoryView` is serializable.
+
 ## [1.11.0]
 ### Added
 - Microservices with `IFederatedLogin<T>` will generate client callable methods.
