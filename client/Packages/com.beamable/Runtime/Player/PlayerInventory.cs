@@ -275,6 +275,7 @@ namespace Beamable.Player
 							plrItems[i] = existingItem;
 							existingItem.Content = content;
 							existingItem.CreatedAt = group.items[i].createdAt.GetOrElse(0);
+							existingItem.ProxyId = group.items[i].proxyId.GetOrElse(string.Empty);
 							existingItem.UpdatedAt = group.items[i].updatedAt.GetOrElse(0);
 							existingItem.Properties.Clear();
 							foreach (var property in group.items[i].properties)
@@ -291,6 +292,7 @@ namespace Beamable.Player
 								Content = content,
 								ItemId = itemId,
 								ContentId = group.id,
+								ProxyId = group.items[i].proxyId.GetOrElse(string.Empty),
 								CreatedAt = group.items[i].createdAt.GetOrElse(0),
 								UpdatedAt = group.items[i].updatedAt.GetOrElse(0),
 								UniqueCode = code
@@ -629,6 +631,7 @@ namespace Beamable.Player
 						ItemId = nextItemId,
 						Properties = newItem.properties,
 						CreatedAt = 0,
+						ProxyId = null,
 						UpdatedAt = 0,
 						Content = content
 					});
