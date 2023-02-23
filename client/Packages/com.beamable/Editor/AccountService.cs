@@ -18,6 +18,8 @@ namespace Beamable.Editor
 
 	public interface IAccountService
 	{
+		EditorAccountInfo Account { get; }
+		
 		Promise<AccountServiceInitResult> TryInit();
 		Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken);
 		void Logout(bool clearRealmPid);
@@ -25,20 +27,35 @@ namespace Beamable.Editor
 		void ApplyConfigValuesToRuntime();
 		void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid);
 		void WriteUnsetConfigValues();
+		
 	}
 	
 	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		[MenuItem("Clear/ClearIt")]
-		public static void Clear()
+		public static void ClearData()
 		{
 			var service = BeamEditorContext.Default.EditorAccountService as AccountService;
-			service.editorAccounts = new List<EditorAccountInfo>();
-			service.cid.Clear();
+			service.Clear();
 			BeamEditorContext.Default.Requester.DeleteToken();
 		}
+
+		public void Clear()
+		{
+			cid?.Clear();
+			editorAccounts?.Clear();
+			_saveHandle?.Save();
+		}
 		
-		
+		public EditorAccountInfo Account
+		{
+			get
+			{
+				if (!cid.HasValue) return null;
+				return editorAccounts?.FirstOrDefault(a => a?.cid?.Equals(cid.Value) ?? false);
+			}
+		}
+
 		private readonly IDependencyProviderScope _scope;
 
 		public OptionalString cid = new OptionalString();
@@ -213,9 +230,11 @@ namespace Beamable.Editor
 
 			if (needsWrite)
 			{
-				BeamEditorContext.WriteConfig(nextAlias, nextPid, cid: nextCid);
+				ConfigDefaultsService.SaveConfig(nextAlias, nextCid, nextPid);
 			}
 		}
+		
+	
 		
 		public void ReceiveStorageHandle(StorageHandle<AccountService> handle)
 		{
@@ -224,7 +243,7 @@ namespace Beamable.Editor
 
 		public void OnBeforeSaveState()
 		{
-				WriteUnsetConfigValues();
+				// WriteUnsetConfigValues();
 		}
 
 		public void OnAfterLoadState()
@@ -281,7 +300,6 @@ namespace Beamable.Editor
 			this.cid = cid;
 		}
 
-		
 
 		public void SetCustomerViewResponse(CustomerViewResponse customer=null)
 		{

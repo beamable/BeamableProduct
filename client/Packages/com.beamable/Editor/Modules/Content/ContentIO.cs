@@ -1034,13 +1034,56 @@ namespace Beamable.Editor.Content
 		}
 
 		/// <summary>
+		/// Checks if there are any local changes to content
+		/// </summary>
+		/// <returns>true if there are local changes, and false if not.</returns>
+		public static async Promise<bool> HasLocalChanges()
+		{
+			var api = BeamEditorContext.Default;
+			await api.InitializePromise;
+
+			var allContent = api.ContentIO.FindAll();
+
+			List<ContentObject> contentList = null;
+			if (allContent != null)
+			{
+				contentList = allContent.ToList();
+			}
+
+			if (contentList == null || contentList.Count == 0)
+			{
+				return false;
+			}
+
+			// get all valid (up-to-date) content pieces
+			List<ContentObject> objectsToBake = new List<ContentObject>();
+			foreach (var content in contentList)
+			{
+				var status = await api.ContentIO.GetStatus(content);
+				if (status == ContentStatus.CURRENT)
+				{
+					objectsToBake.Add(content);
+				}
+			}
+
+			// check for local changes
+			if (objectsToBake.Count != contentList.Count)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Checks if local content has changes. If no changes then it proceeds to baking.
 		/// If there are local changes then displays a warning.
 		/// Writes all content objects to streaming assets in either compressed or uncompressed form
 		/// based on setting in Content Configuration.
 		/// </summary>
 		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
-		public static async Task BakeContent()
+		public static Task BakeContent() => BakeContent(false);
+		public static async Task BakeContent(bool skipCheck)
 		{
 			void BakeLog(string message) => Debug.Log($"[Bake Content] {message}");
 
@@ -1073,7 +1116,7 @@ namespace Beamable.Editor.Content
 			}
 
 			// check for local changes
-			if (objectsToBake.Count != contentList.Count)
+			if (!skipCheck && objectsToBake.Count != contentList.Count)
 			{
 				bool continueBaking = EditorUtility.DisplayDialog("Local changes",
 																  "You have local changes in your content. " +

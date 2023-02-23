@@ -123,7 +123,7 @@ namespace Beamable
 			{
 				ConfigDatabase.Init();
 			}
-			catch (FileNotFoundException)
+			catch (FileNotFoundException) when (!Application.isEditor)
 			{
 				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
 			}

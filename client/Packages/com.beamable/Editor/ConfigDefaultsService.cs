@@ -5,6 +5,10 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Config;
 using System;
+using System.IO;
+using UnityEditor;
+using UnityEditor.VersionControl;
+using UnityEngine;
 
 namespace Beamable.Editor
 {
@@ -34,6 +38,77 @@ namespace Beamable.Editor
 		public ConfigDefaultsService(AliasService aliasService)
 		{
 			_aliasService = aliasService;
+		}
+		
+		
+		public void SaveConfig(string alias, string cid, string pid)
+		{
+			
+			// var configService = ServiceScope.GetService<ConfigDefaultsService>();
+			AliasHelper.ValidateAlias(alias);
+			AliasHelper.ValidateCid(cid);
+			_cid.Set(cid);
+			_pid.Set(pid);
+			_alias.Set(alias);
+			var config = new ConfigData()
+			{
+				cid = cid,
+				alias = alias,
+				pid = pid,
+			};
+
+			string path = ConfigDatabase.GetFullPath("config-defaults");
+			var asJson = JsonUtility.ToJson(config, true);
+
+			var writeConfig = true;
+			if (File.Exists(path))
+			{
+				var existingJson = File.ReadAllText(path);
+				if (string.Equals(existingJson, asJson))
+				{
+					writeConfig = false;
+				}
+			}
+
+			if (writeConfig)
+			{
+				string directoryName = Path.GetDirectoryName(path);
+				if (!string.IsNullOrWhiteSpace(directoryName))
+				{
+					Directory.CreateDirectory(directoryName);
+				}
+
+				if (File.Exists(path))
+				{
+					var fileInfo = new FileInfo(path);
+					fileInfo.IsReadOnly = false;
+				}
+
+				if (Provider.enabled)
+				{
+					var vcTask = Provider.Checkout(path, CheckoutMode.Asset);
+					vcTask.Wait();
+					if (!vcTask.success)
+					{
+						Debug.LogWarning($"Unable to checkout: {path}");
+					}
+				}
+
+				File.WriteAllText(path, asJson);
+				
+
+				AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+				try
+				{
+					ConfigDatabase.Init();
+				}
+				catch (FileNotFoundException)
+				{
+					Debug.LogError("Failed to find 'config-defaults' file from EditorAPI.SaveConfig. This should never be seen here. If you do, please file a bug-report.");
+				}
+
+				AssetDatabase.Refresh();
+			}
 		}
 		
 		/// <summary>

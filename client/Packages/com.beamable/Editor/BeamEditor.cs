@@ -207,39 +207,14 @@ namespace Beamable
 			// Reload the current environment data
 			BeamableEnvironment.ReloadEnvironment();
 
-			// Initializes the Config database
-			// This solves the same problem that the try/catch block around the ModuleConfigurations solves.
-			bool TryInitConfigDatabase(bool allowRetry = true)
+			try
 			{
-				try
-				{
-					ConfigDatabase.Init();
-					return true;
-				}
-				catch (FileNotFoundException e)
-				{
-					if (e.FileName == ConfigDatabase.GetConfigFileName())
-					{
-						if (allowRetry)
-						{
-							BeamEditorContext.WriteConfig(string.Empty, string.Empty);
-							return TryInitConfigDatabase(false);
-						}
-						else
-						{
-							Logger.DoSpew("Config File not found during initialization dodged!");
-							EditorApplication.delayCall += Initialize;
-							return false;
-						}
-					}
-
-					throw;
-				}
+				ConfigDatabase.Init();
 			}
-
-			if (!TryInitConfigDatabase())
-			{
-				return;
+			catch (FileNotFoundException)
+			{ 
+				// if the file doesn't exist, then the config database will be empty. 
+				// and in the editor case, this is valid. 
 			}
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
@@ -500,8 +475,7 @@ namespace Beamable
 		public AliasService AliasService => ServiceScope.GetService<AliasService>();
 		public IEditorAuthApi AuthService => ServiceScope.GetService<IEditorAuthApi>();
 
-		private EditorAccountInfo _editorAccount;
-		public EditorAccountInfo EditorAccount => _editorAccount; // TODO: events and setting?
+		public EditorAccountInfo EditorAccount => EditorAccountService.Account; // TODO: events and setting?
 
 		/// <summary>
 		/// The permissions for the <see cref="CurrentUser"/> in the <see cref="CurrentRealm"/>.
@@ -547,7 +521,7 @@ namespace Beamable
 			{
 				var configService = ServiceScope.GetService<ConfigDefaultsService>();
 				var initResult = await EditorAccountService.TryInit();
-				_editorAccount = initResult.account;
+				var account = initResult.account;
 				if (!initResult.hasCid)
 				{
 					Requester.DeleteToken(); // not signed in... 
@@ -557,13 +531,13 @@ namespace Beamable
 				var requester = ServiceScope.GetService<PlatformRequester>();
 				var cid = requester.Cid = EditorAccountService.Cid.GetOrThrow();
 
-				if (_editorAccount.realmPid.HasValue)
+				if (account.realmPid.HasValue)
 				{
-					requester.Pid = _editorAccount.realmPid.Value;
+					requester.Pid = account.realmPid.Value;
 				}
 				else if (configService.Pid.HasValue)
 				{
-					_editorAccount.realmPid.Set(configService.Pid.Value);
+					account.realmPid.Set(configService.Pid.Value);
 					requester.Pid = configService.Pid.Value;
 				}
 				
@@ -611,7 +585,6 @@ namespace Beamable
 		private async Promise ApplyToken(string cid, AccessToken token)
 		{
 			var info = await EditorAccountService.Login(cid, token);
-			_editorAccount = info;
 			await token.SaveAsCustomerScoped();
 			Requester.Token = token;
 
@@ -658,75 +631,9 @@ namespace Beamable
 
 		public static void WriteConfig(string alias, string pid, string host = null, string cid = "")
 		{
-			AliasHelper.ValidateAlias(alias);
-			AliasHelper.ValidateCid(cid);
-
-			if (string.IsNullOrEmpty(host))
-			{
-				host = BeamableEnvironment.ApiUrl;
-			}
-
-			var config = new ConfigData()
-			{
-				cid = cid,
-				alias = alias,
-				pid = pid,
-				platform = host,
-				socket = host,
-				containerPrefix = GetCustomContainerPrefix()
-			};
-
-			string path = ConfigDatabase.GetFullPath("config-defaults");
-			var asJson = JsonUtility.ToJson(config, true);
-
-			var writeConfig = true;
-			if (File.Exists(path))
-			{
-				var existingJson = File.ReadAllText(path);
-				if (string.Equals(existingJson, asJson))
-				{
-					writeConfig = false;
-				}
-			}
-
-			if (writeConfig)
-			{
-				string directoryName = Path.GetDirectoryName(path);
-				if (!string.IsNullOrWhiteSpace(directoryName))
-				{
-					Directory.CreateDirectory(directoryName);
-				}
-
-				if (File.Exists(path))
-				{
-					var fileInfo = new FileInfo(path);
-					fileInfo.IsReadOnly = false;
-				}
-
-				if (Provider.enabled)
-				{
-					var vcTask = Provider.Checkout(path, CheckoutMode.Asset);
-					vcTask.Wait();
-					if (!vcTask.success)
-					{
-						Debug.LogWarning($"Unable to checkout: {path}");
-					}
-				}
-
-				File.WriteAllText(path, asJson);
-
-				AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-				try
-				{
-					ConfigDatabase.Init();
-				}
-				catch (FileNotFoundException)
-				{
-					Debug.LogError("Failed to find 'config-defaults' file from EditorAPI.SaveConfig. This should never be seen here. If you do, please file a bug-report.");
-				}
-
-				AssetDatabase.Refresh();
-			}
+			BeamEditorContext.Default.ServiceScope
+			                 .GetService<ConfigDefaultsService>()
+			                 .SaveConfig(alias, cid, pid);
 		}
 
 		/// <summary>
@@ -969,8 +876,12 @@ namespace Beamable
 		public string cid;
 		public string alias;
 		public string pid;
+		
+		[Obsolete("This will be removed in a future version of Beamable. Use " + nameof(BeamableEnvironment) + "." + nameof(BeamableEnvironment.ApiUrl) + " instead.")]
 		public string platform;
+		[Obsolete("This will be removed in a future version of Beamable. Use " + nameof(BeamableEnvironment) + "." + nameof(BeamableEnvironment.SocketUrl) + " instead.")]
 		public string socket;
+		[Obsolete("This will be removed in a future version of Beamable.")]
 		public string containerPrefix;
 	}
 

@@ -41,7 +41,9 @@ namespace Beamable.Editor.Tests
 			});
 			AccountInfo.SetRealm("pid", "pid");
 		}
-		
+
+		public EditorAccountInfo Account => AccountInfo;
+
 		public Promise<AccountServiceInitResult> TryInit()
 		{
 			return Promise<AccountServiceInitResult>.Successful(InitResult);

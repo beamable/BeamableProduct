@@ -243,7 +243,8 @@ namespace Beamable.Config
 			var asset = Resources.Load(fileName) as TextAsset;
 			if (asset == null)
 			{
-				throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
+				return "{}"; // empty json.
+				// throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
 			}
 
 			return asset.text;
