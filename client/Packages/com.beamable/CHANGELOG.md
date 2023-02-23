@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Parse optional `proxyId` field for items related to `FederatedInventory` feature
 
+### Changed
+- Exception on using `BeamContext` outside playMode
+
+### Fixed
+- Fixed slow SDK instalation process.
+
 ## [1.11.1]
 ### Changed
 - Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
