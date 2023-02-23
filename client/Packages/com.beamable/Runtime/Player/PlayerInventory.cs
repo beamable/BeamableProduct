@@ -631,7 +631,7 @@ namespace Beamable.Player
 						ItemId = nextItemId,
 						Properties = newItem.properties,
 						CreatedAt = 0,
-						FederatedId = new OptionalString(){HasValue = false},
+						FederatedId = new OptionalString() { HasValue = false },
 						UpdatedAt = 0,
 						Content = content
 					});
