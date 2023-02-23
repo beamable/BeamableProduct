@@ -27,25 +27,12 @@ namespace Beamable.Editor
 		void ApplyConfigValuesToRuntime();
 		void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid);
 		void WriteUnsetConfigValues();
-		
+		void Clear();
 	}
 	
 	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
 	{
-		[MenuItem("Clear/ClearIt")]
-		public static void ClearData()
-		{
-			var service = BeamEditorContext.Default.EditorAccountService as AccountService;
-			service.Clear();
-			BeamEditorContext.Default.Requester.DeleteToken();
-		}
 
-		public void Clear()
-		{
-			cid?.Clear();
-			editorAccounts?.Clear();
-			_saveHandle?.Save();
-		}
 		
 		public EditorAccountInfo Account
 		{
@@ -120,6 +107,12 @@ namespace Beamable.Editor
 			return false;
 		}
 
+		public void Clear()
+		{
+			cid?.Clear();
+			editorAccounts?.Clear();
+			_saveHandle?.Save();
+		}
 		
 		public async Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken)
 		{

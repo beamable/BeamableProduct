@@ -20,6 +20,15 @@ namespace Beamable.Editor
 			private string Prefix;
 			private void OnGUI()
 			{
+				EditorGUILayout.LabelField("Editor (the token used in edit mode)");
+				if (GUILayout.Button("Clear Tokens"))
+				{
+					BeamEditorContext.Default.EditorAccountService.Clear();
+					BeamEditorContext.Default.Requester.DeleteToken();
+				}
+
+				EditorGUILayout.LabelField("Runtime (the token used when you enter playmode)");
+				
 				Prefix = EditorGUILayout.TextField("PlayerCode", Prefix);
 				if (GUILayout.Button("Cancel"))
 				{

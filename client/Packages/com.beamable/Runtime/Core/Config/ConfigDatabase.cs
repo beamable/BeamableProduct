@@ -41,8 +41,7 @@ namespace Beamable.Config
 
 			return configFileName;
 		}
-
-		[Obsolete]
+		
 		public static TextAsset GetConfigAsset()
 		{
 			return Resources.Load<TextAsset>(GetConfigFileName());
