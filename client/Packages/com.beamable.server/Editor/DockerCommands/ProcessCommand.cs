@@ -407,7 +407,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					try
 					{
 						var process = Process.GetProcessById(dockerDesktopId);
-						if (process.ProcessName.Contains(procName, StringComparison.InvariantCultureIgnoreCase))
+						if (process.ProcessName.Contains(procName))
 						{
 							dockerNotRunning = false;
 							return dockerNotRunning;
@@ -423,7 +423,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					try
 					{
-						if (procList[i].ProcessName.Contains(procName, StringComparison.InvariantCultureIgnoreCase))
+						if (procList[i].ProcessName.Contains(procName))
 						{
 							dockerDesktopId = procList[i].Id;
 							dockerNotRunning = false;

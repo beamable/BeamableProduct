@@ -67,6 +67,11 @@ namespace Beamable.Player
 		public long ItemId;
 
 		/// <summary>
+		/// The item instance id for federated inventory. This id should be unique across players.
+		/// </summary>
+		public OptionalString FederatedId;
+
+		/// <summary>
 		/// The epoch timestamp in milliseconds when the item was created.
 		/// </summary>
 		public long CreatedAt;
