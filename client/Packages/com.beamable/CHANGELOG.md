@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Parse optional `proxyId` field for items related to `FederatedInventory` feature
+- Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
 
 ### Changed
 - Exception on using `BeamContext` outside playMode
