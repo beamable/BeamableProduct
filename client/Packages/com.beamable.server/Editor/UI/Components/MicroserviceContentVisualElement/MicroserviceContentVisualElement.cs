@@ -146,8 +146,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var model = new AnnouncementModel() {Status = ToolboxAnnouncementStatus.DANGER, ActionText = "Fix it!", Action = FixDestroyedMicroservices};
 			model.SetTitle("Broken Remote Microservices");
-			var description = "Looks like there are broken microservices that will make impossible to do a <b>publish</b>. You need to recreate this services: \n\t-" +
-			                  string.Join("\n\t- ",Model.BrokenRemoteServicesNames);
+			var description = string.Format(BROKEN_REMOTE_SERVICES_MESSAGE, string.Join("\n\t- ",
+				                                Model.BrokenRemoteServicesNames));
 			model.SetDescription(description);
 			var element = new AnnouncementVisualElement() {AnnouncementModel = model};
 			Root.Q<VisualElement>("announcementList").Add(element);
