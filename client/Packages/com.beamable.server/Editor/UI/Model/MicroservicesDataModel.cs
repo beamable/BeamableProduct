@@ -32,12 +32,25 @@ namespace Beamable.Editor.UI.Model
 		public int AllUnarchivedServiceCount =>
 			localServices.Count(model => !model.IsArchived) + localStorages.Count(model => !model.IsArchived) +
 			remoteServices.Count(model => !model.IsArchived) + remoteStorages.Count(model => !model.IsArchived);
-		public IEnumerable<string> BrokenRemoteServicesNames => remoteServices
-			.Where(service => string.IsNullOrWhiteSpace(service.RemoteReference.imageId)&& localServices.All(l=>l.Name!= service.Name))
-			.Select(model => model.Name);
+
+		public IEnumerable<string> BrokenRemoteServicesNames =>
+			remoteServices
+				.Where(service =>
+					{
+						if (string.IsNullOrWhiteSpace(service.RemoteReference.imageId) &&
+						    !localServices.Any(l => l.Descriptor.Name.Equals(service.Descriptor.Name)))
+						{
+							return true;
+						}
+
+						return false;
+					}
+				)
+				.Select(model => model.Name);
 
 		public bool HasAnyBrokenRemoteService =>
-			remoteServices.Any(service => string.IsNullOrWhiteSpace(service.RemoteReference.imageId) && localServices.All(l=>l.Name!= service.Name));
+			remoteServices.Any(service => string.IsNullOrWhiteSpace(service.RemoteReference.imageId) &&
+			                              localServices.All(l => l.Name != service.Name));
 
 		public IReadOnlyList<IBeamableService> AllLocalServices
 		{
