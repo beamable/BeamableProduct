@@ -600,7 +600,7 @@ namespace Beamable.Player
 		/// Exception thrown by a server will be cached here
 		/// </summary>
 		public Exception innerException;
-		
+
 		/// <summary>
 		/// The type of error that occured, if <see cref="isSuccess"/> is false.
 		/// </summary>
@@ -864,7 +864,7 @@ namespace Beamable.Player
 
 		public PlayerRegistrationError Error { get; }
 
-		public PlayerRegistrationException(PlayerRegistrationError error, Exception innerException=null)
+		public PlayerRegistrationException(PlayerRegistrationError error, Exception innerException = null)
 			: base($"The registration failed. error=[{error}]", innerException)
 		{
 			Error = error;
