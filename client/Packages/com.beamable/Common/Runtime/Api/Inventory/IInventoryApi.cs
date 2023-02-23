@@ -691,6 +691,7 @@ namespace Beamable.Common.Api.Inventory
 	public class Item
 	{
 		public string id;
+		public Optional<string> proxyId;
 		public List<ItemProperty> properties;
 		public long createdAt;
 		public long updatedAt;
