@@ -10,11 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
 
 ### Changed
+- Exception on using `BeamContext` outside playMode
 - The _config-defaults.txt_ file no longer controls the which CID/PID are used while in Editor. The _config-defaults.txt_ file will still control the CID/PID in a built game.
 - Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
 
 ### Removed
 - The Toolbox signin flow no longer allows for guest accounts.
+
+### Fixed
+- Fixed slow SDK instalation process.
+
+## [1.11.1]
+### Changed
+- Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
+
+### Fixed
+- `PlayerInventory` triggers `OnDataUpdated` events.
+- `PlayerInventory` item properties can be `null` without throwing a `NullReferenceException`.
+
 
 ## [1.11.0]
 ### Added
