@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Common.Models
 			Current = api.CurrentRealm;
 			OnElementChanged?.Invoke(Current);
 			
-			Elements = api.EditorAccount.RealmsInCurrentGame.ToList<ISearchableElement>();
+			Elements = api?.EditorAccount?.RealmsInCurrentGame?.ToList<ISearchableElement>() ?? new List<ISearchableElement>();
 		}
 
 		public bool RefreshOnStart => false;
