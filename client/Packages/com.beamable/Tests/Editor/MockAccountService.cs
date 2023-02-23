@@ -14,6 +14,7 @@ namespace Beamable.Editor.Tests
 
 		public AccountServiceInitResult InitResult { get; set; }
 
+		public void Clear(){}
 		public MockAccountService()
 		{
 			AccountInfo = new EditorAccountInfo
