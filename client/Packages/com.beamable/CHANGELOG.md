@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
 - `Beam.ChangePid` allows the game to change the assigned pid. The pid will reset when the game restarts.
 - `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
 
