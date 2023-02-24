@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
@@ -92,15 +93,17 @@ namespace Beamable.UI.Buss
 			{
 				return binding.PropertyType;
 			}
-
+		
 			return typeof(IBussProperty);
 		}
+	
+
 
 		public static IBussProperty GetDefaultValue(string key, Type specificType=null)
 		{
 			if (_bindings.TryGetValue(key, out var binding))
 			{
-				return binding.GetDefaultValue(specificType);
+				return binding.GetDefaultValue(specificType);//.CopyProperty();
 			}
 			return null;
 		}
@@ -134,6 +137,86 @@ namespace Beamable.UI.Buss
 			}
 
 			return style;
+		}
+
+		public bool TryGetFromVariable<T>(string initialVairableName, out T outputProperty) where T : class, IBussProperty
+		{
+			// this hashset keeps tracks of all the keys we've seen so that we don't go into an infinite loop.
+			var keyControl = new HashSet<string>();
+
+			bool TryInternal(string variableName, out T innerOutput)
+			{
+				innerOutput = default(T);
+				var found = false;
+				
+				if (keyControl.Contains(variableName))
+				{
+					Debug.LogWarning("Cyclical variable reference in BUSS properties.");
+					return false;
+				}
+
+				keyControl.Add(variableName);
+				if (_properties.TryGetValue(variableName, out var property))
+				{
+					if (property is VariableProperty variableProperty)
+					{
+						found = TryInternal(variableProperty.VariableName, out innerOutput);
+					}
+					else if (property is IComputedProperty<T> nestedComputedProperty)
+					{
+						found = true;
+						innerOutput = nestedComputedProperty.GetComputedValue(this);
+					}
+					else if (property is T typedProperty)
+					{
+						found = true;
+						innerOutput = typedProperty;
+					}
+				}
+
+				keyControl.Clear();
+				return found;
+			}
+
+			return TryInternal(initialVairableName, out outputProperty);
+		}
+
+		
+		public bool TryGetValue<T>(string key, out T outputProperty) where T : class, IBussProperty
+		{
+			outputProperty = default(T);
+			if (_properties.TryGetValue(key, out var property) && property != null)
+			{
+				if (property is VariableProperty variable)
+				{
+					return TryGetFromVariable<T>(variable.VariableName, out outputProperty);
+				}
+				else
+				{
+					switch (property.ValueType)
+					{
+						case BussPropertyValueType.Inherited:
+						// return GetFromStyle(style._inheritedFromStyle);
+						case BussPropertyValueType.Value:
+
+							if (property is IComputedProperty<T> computedProperty)
+							{
+								outputProperty = computedProperty.GetComputedValue(this);
+								return true;
+							}
+
+							outputProperty = property as T;
+							return true;
+						case BussPropertyValueType.Initial:
+							return false;
+		
+						default:
+							throw new InvalidOperationException("Unknown property value type");
+					}
+				}
+			}
+
+			return false;
 		}
 
 		// TODO: Disabled with BEAM-3130 due to incomplete implementation

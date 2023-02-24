@@ -139,6 +139,7 @@ namespace Beamable
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
+			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
@@ -153,6 +154,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<ISessionService, SessionService>();
 			DependencyBuilder.AddSingleton<CloudSavingService>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
+			DependencyBuilder.AddSingleton<IManifestResolver, DefaultManifestResolver>();
+			DependencyBuilder.AddSingleton<IContentCacheFactory, DefaultContentCacheFactory>();
 			DependencyBuilder.AddSingleton<ContentService>();
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddSingleton<IMailApi, MailService>();
@@ -248,6 +251,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
+			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));

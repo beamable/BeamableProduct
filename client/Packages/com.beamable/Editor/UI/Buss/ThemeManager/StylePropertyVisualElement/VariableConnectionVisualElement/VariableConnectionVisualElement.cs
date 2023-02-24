@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(_mainElement);
 
 			_button = new VisualElement { name = "button" };
-			_button.RegisterCallback<MouseDownEvent>(_model.OnButtonClick);
+			_button.RegisterCallback<MouseDownEvent>(_model.OnLinkButtonClicked);
 			_mainElement.Add(_button);
 
 			_dropdown = new DropdownVisualElement { name = "dropdown" };
@@ -45,7 +45,7 @@ namespace Beamable.Editor.UI.Components
 
 		protected override void OnDestroy()
 		{
-			_button.UnregisterCallback<MouseDownEvent>(_model.OnButtonClick);
+			_button.UnregisterCallback<MouseDownEvent>(_model.OnLinkButtonClicked);
 		}
 
 		public override void Refresh()

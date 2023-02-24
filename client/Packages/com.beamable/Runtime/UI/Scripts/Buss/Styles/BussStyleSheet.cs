@@ -170,7 +170,7 @@ namespace Beamable.UI.Buss
 		[SerializeField] private bool _showAll;
 
 		[SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
-		[SerializeField] protected List<BussPropertyProvider> _cachedProperties = new List<BussPropertyProvider>();
+		// [SerializeField] protected List<BussPropertyProvider> _cachedProperties = new List<BussPropertyProvider>();
 		public List<BussPropertyProvider> Properties => _properties;
 
 		public bool Folded => _folded;
@@ -180,59 +180,7 @@ namespace Beamable.UI.Buss
 		{
 			return _properties.Find(prop => prop.Key == key) != null;
 		}
-
-		public bool TryGetCachedProperty(string key, out IBussProperty property)
-		{
-			BussPropertyProvider provider = _cachedProperties.Find(prop => prop.Key == key);
-			property = provider?.GetProperty();
-			return property != null;
-		}
-
-		public bool CacheProperty(string key, IBussProperty property)
-		{
-			if (TryGetCachedProperty(key, out _))
-			{
-				return false;
-			}
-
-			BussPropertyProvider provider = BussPropertyProvider.Create(key, property.CopyProperty());
-			_cachedProperties.Add(provider);
-
-			CleanupCachedProperties();
-
-			return true;
-		}
-
-		public void RemoveCachedProperty(string key)
-		{
-			var cachedProperty = _cachedProperties.Find(prop => prop.Key == key);
-			_cachedProperties.Remove(cachedProperty);
-
-			CleanupCachedProperties();
-		}
-
-		private void CleanupCachedProperties()
-		{
-			var indexesToRemove = new List<int>();
-
-			for (int index = 0; index < _cachedProperties.Count; index++)
-			{
-				BussPropertyProvider cachedProperty = _cachedProperties[index];
-				if (cachedProperty.Key == String.Empty)
-				{
-					indexesToRemove.Add(index);
-				}
-			}
-
-			for (int index = _cachedProperties.Count - 1; index >= 0; index--)
-			{
-				if (indexesToRemove.Contains(index))
-				{
-					_cachedProperties.RemoveAt(index);
-				}
-			}
-		}
-
+		
 		public void SetFolded(bool value)
 		{
 			_folded = value;
@@ -253,24 +201,39 @@ namespace Beamable.UI.Buss
 		[SerializeField, SerializableValueImplements(typeof(IBussProperty)), FormerlySerializedAs("property")]
 		private SerializableValueObject _property;
 
+		[SerializeField, SerializableValueImplements(typeof(IBussProperty))]
+		private SerializableValueObject _initialValue;
+
+		
 		public string Key => _key;
 
 		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
 		public bool HasVariableReference => GetProperty() is VariableProperty;
+		public bool IsComputedReference => GetProperty() is IComputedProperty;
 
 		public BussPropertyValueType ValueType => GetProperty().ValueType;
+		private Action<IBussProperty> writeEffects;
 
-		public static BussPropertyProvider Create(string key, IBussProperty property, bool forceSerialization = false)
+		public static BussPropertyProvider Create(string key, 
+		                                          IBussProperty property,
+		                                          bool forceSerialization = false,
+		                                          
+		                                          // the writeEfects action will be triggered when the sub BussPropertyProvider's Set method is used.
+		                                          Action<IBussProperty> writeEffects = null)
 		{
 			var propertyProvider = new SerializableValueObject();
 			propertyProvider.Set(property);
 
+			var initial = new SerializableValueObject();
+			initial.Set(property);
+			initial.ForceSerialization();
+			
 			if (forceSerialization)
 			{
 				propertyProvider.ForceSerialization();
 			}
 
-			return new BussPropertyProvider { _key = key, _property = propertyProvider };
+			return new BussPropertyProvider { _key = key, _property = propertyProvider, writeEffects = writeEffects, _initialValue = initial};
 		}
 
 		public IBussProperty GetProperty()
@@ -281,11 +244,20 @@ namespace Beamable.UI.Buss
 		public void SetProperty(IBussProperty bussProperty)
 		{
 			_property.Set(bussProperty);
+			writeEffects?.Invoke(bussProperty);
 		}
+
+		public IBussProperty GetInitial()
+		{
+			return _initialValue?.Get<IBussProperty>()?.CopyProperty() ?? new VariableProperty();
+		}
+
+		public Type GetInitialPropertyType() => GetInitial()?.GetType();
 
 		public bool IsPropertyOfType(Type type)
 		{
-			return type.IsInstanceOfType(GetProperty());
+			return type.IsInstanceOfType(GetInitial());
 		}
+
 	}
 }

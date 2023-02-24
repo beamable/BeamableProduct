@@ -17,6 +17,10 @@ namespace Beamable.UI.Sdf
 
 		public void Set(object newValue)
 		{
+			if (newValue != null)
+			{
+				_type = newValue.GetType().AssemblyQualifiedName;
+			}
 			_value = newValue;
 		}
 

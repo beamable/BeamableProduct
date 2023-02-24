@@ -53,6 +53,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             {
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
+	                
                 .AddMessageHandler(
                    MessageMatcher
                       .WithReqId(1)
@@ -828,6 +829,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
+        [TimeoutWithTeardown(2000)]
         public async Task HandleConnectionClose_Cleanly()
         {
 
@@ -881,6 +883,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
+        [TimeoutWithTeardown(2000)]
         public async Task HandleConnectionDrop()
         {
 
@@ -1131,7 +1134,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var initializationTask = ms.Start<SimpleMicroservice>(new TestArgs());
 
             var tasks = new List<Task>();
-            await Task.Delay(10);
+            await Task.Delay(1000);
             Assert.IsTrue(eventProvided);
             var sends = 0;
             for (var i = 0; i < eventCount; i++)

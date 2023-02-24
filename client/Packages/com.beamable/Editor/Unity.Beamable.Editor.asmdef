@@ -7,15 +7,16 @@
         "Beamable.Pooling",
         "Beamable.JsonSerializable",
         "Beamable.SmallerJSON",
+        "Beamable.Coroutines",
         "Unity.Addressables.Editor",
         "Unity.TextMeshPro",
         "Unity.Beamable",
         "Unity.Beamable.Runtime.Common",
         "Unity.EditorCoroutines.Editor",
         "Beamable.UnityUIExtensions",
-        "Beamable.ConsoleCommands",
-        "Beamable.Coroutines"
+        "Beamable.ConsoleCommands"
     ],
+    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -24,7 +25,5 @@
     "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+    "defineConstraints": []
 }

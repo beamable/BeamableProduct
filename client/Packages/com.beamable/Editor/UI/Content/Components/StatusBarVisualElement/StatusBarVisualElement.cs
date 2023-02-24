@@ -1,3 +1,4 @@
+using Beamable.Content;
 using Beamable.Editor.Content.Models;
 using System;
 using System.Collections.Generic;
@@ -34,7 +35,7 @@ namespace Beamable.Editor.Content.Components
 		private Button _validationSwitchBtn, _modificationSwitchBtn;
 
 		private VisualElement _statusIcon;
-		private Label _statusDespLabel, _updateDateLabel;
+		private Label _statusDespLabel, _updateDateLabel, _remoteModeWarningLabel;
 		private Button _statusDespBtn1, _statusDespBtn2, _statusDespBtn3, _statusDespBtn4;
 		private CountVisualElement _countElement1, _countElement2, _countElement3, _countElement4;
 
@@ -72,6 +73,8 @@ namespace Beamable.Editor.Content.Components
 			_countElement3 = Root.Q<CountVisualElement>("count3");
 			_countElement4 = Root.Q<CountVisualElement>("count4");
 
+			_remoteModeWarningLabel = Root.Q<Label>("remoteModeWarning");
+
 
 			Model.OnItemEnriched += Model_OnItemEnriched;
 			Model.OnContentDeleted += Model_OnItemEnriched;
@@ -92,7 +95,7 @@ namespace Beamable.Editor.Content.Components
 			RefreshStatus();
 		}
 
-		private void RefreshStatus()
+		public void RefreshStatus()
 		{
 			_statusIcon.RemoveFromClassList(_statusClassName);
 
@@ -112,6 +115,20 @@ namespace Beamable.Editor.Content.Components
 			{
 				_updateDateLabel.text = "Content unpublished";
 			}
+
+			var isLocalMode = ContentConfiguration.Instance.EnableLocalContentInEditor;
+
+			_remoteModeWarningLabel.text = isLocalMode
+				? "[Local Mode]"
+				: "[REMOTE MODE]";
+			_remoteModeWarningLabel.tooltip = isLocalMode
+				? "Runtime content from the Unity Editor will use your local content"
+				: "Runtime content will be fetched from your remote realm, making your local changes appear to have no effect.";
+			_remoteModeWarningLabel.EnableInClassList("remote", !isLocalMode);
+			_remoteModeWarningLabel.RegisterCallback<MouseDownEvent>(evt =>
+			{
+				SettingsService.OpenProjectSettings($"Project/Beamable/Content");
+			});
 
 			if (anyInvalid || anyCreated || anyModified || anyDeleted)
 			{

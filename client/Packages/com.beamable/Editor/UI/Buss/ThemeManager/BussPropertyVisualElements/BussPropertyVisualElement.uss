@@ -64,3 +64,30 @@ VertexColorBussPropertyVisualElement DropdownVisualElement #mainContainer #butto
 VertexColorBussPropertyVisualElement DropdownVisualElement #mainContainer #value {
     font-size: 10px;
 }
+
+ComputedBussPropertyVisualElement > DropdownVisualElement {
+    padding-top: 4px;
+}
+
+ComputedBussPropertyVisualElement StylePropertyVisualElement #root {
+    margin-left: 0px;
+}
+ComputedBussPropertyVisualElement .output-row {
+    margin-bottom: 8px;
+}
+ComputedBussPropertyVisualElement .output-row Label{
+    flex-grow: 0;
+    position: absolute;
+    right: 100%;
+    margin-top: 2px;
+    margin-right: 4px;
+    -unity-font-style: bold;
+}
+ComputedBussPropertyVisualElement StylePropertyVisualElement #root #propertyLabel {
+    flex-grow: 0;
+    position: absolute;
+    right: 100%;
+    margin-top: 8px;
+    margin-right: 4px;
+    width: auto;
+}

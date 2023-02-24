@@ -1,12 +1,8 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:client/Assets/Beamable/Editor/content/game_types/CoOp.asset.meta
-guid: d191f4f47da68ac4aa02088b743f8e4e
-========
 guid: cb1ea8d1f28083e468592724c2f38355
->>>>>>>> acf649928e41ec74b32dda3e654e0f43eb3097d7:client/Assets/BeamSemiAutomatedTester/Resources/Tests/Inventory/Inventory.asset.meta
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 0
+  mainObjectFileID: 11400000
   userData: 
   assetBundleName: 
   assetBundleVariant: 

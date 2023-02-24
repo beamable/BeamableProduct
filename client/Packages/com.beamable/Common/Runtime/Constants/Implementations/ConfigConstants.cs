@@ -8,7 +8,7 @@
 			{
 				public const string BASE_PATH = Directories.BEAMABLE_PACKAGE_EDITOR + "/Config";
 				public const string BASE_UI_PATH = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Config";
-				
+
 				public const string ALIAS_KEY = "alias";
 				public const string PID_KEY = "pid";
 				public const string CID_KEY = "cid";

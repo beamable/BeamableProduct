@@ -31,6 +31,8 @@ namespace Beamable.Content
 	/// </summary>
 	public class ManifestSubscription : PlatformSubscribable<ClientManifest, ClientManifest>
 	{
+		private readonly IDependencyProvider _provider;
+
 		/// <summary>
 		/// Every content manifest has an ID. Usually, a game will only have a single content manifest called "global", but it is possible to add more.
 		/// </summary>
@@ -52,6 +54,7 @@ namespace Beamable.Content
 		public ManifestSubscription(IDependencyProvider provider,
 									string manifestID) : base(provider, "content")
 		{
+			_provider = provider;
 			ManifestID = manifestID;
 		}
 
@@ -123,19 +126,7 @@ namespace Beamable.Content
 
 		protected override Promise<ClientManifest> ExecuteRequest(IBeamableRequester requester, string url)
 		{
-			return requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
-			{
-				// TODO: Put "global" as a constant value somewhere. Currently it lives in a different asm, and its too much trouble.
-				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global"))
-				{
-					return new ClientManifest
-					{
-						entries = new List<ClientContentInfo>()
-					};
-				}
-
-				throw ex;
-			});
+			return _provider.GetService<IManifestResolver>().ResolveManifest(requester, url, this);
 		}
 
 		protected override void OnRefresh(ClientManifest data)
@@ -165,6 +156,8 @@ namespace Beamable.Content
 		IHasPlatformSubscribers<ManifestSubscription, ClientManifest, ClientManifest>
 	{
 		private readonly IDependencyProvider _provider;
+		private readonly ContentParameterProvider _config;
+		private readonly IContentCacheFactory _cacheFactory;
 
 		/// <summary>
 		/// The default content manifest ID controls which manifest the <see cref="ContentService"/> will use.
@@ -266,11 +259,15 @@ namespace Beamable.Content
 							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config, OfflineCache offlineCache)
 		{
 			_provider = provider;
+			_config = config;
+			_cacheFactory = provider.GetService<IContentCacheFactory>();
 			CurrentDefaultManifestID = config.manifestID;
 			FilesystemAccessor = filesystemAccessor;
 			_connectivityService = _provider.GetService<IConnectivityService>();
 			_offlineCache = offlineCache;
 
+			// Subscribable = _provider.GetService<IManifestSubscriptionFactory>()
+			//                         .CreateSubscription(CurrentDefaultManifestID);
 			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
 			{
@@ -380,6 +377,7 @@ namespace Beamable.Content
 		}
 
 #if UNITY_EDITOR
+		[Obsolete("Do not use.")]
 		public static ContentServiceTestScope AllowInTests()
 		{
 			_testScopeEnabled = true;
@@ -425,17 +423,13 @@ namespace Beamable.Content
 #endif
 			ContentCache rawCache;
 
+			var determinedManifestID = DetermineManifestID(manifestID);
 			if (!_contentCaches.TryGetValue(contentType, out rawCache))
 			{
-				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
-				var constructor = cacheType.GetConstructor(new[]
-					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService), typeof(CoroutineService)});
-				rawCache = (ContentCache)constructor.Invoke(new[] { InternalRequester, (object)FilesystemAccessor, this, Platform.CoroutineService });
-
+				rawCache = _cacheFactory.CreateCache(this, determinedManifestID, contentType);
 				_contentCaches.Add(contentType, rawCache);
 			}
 
-			var determinedManifestID = DetermineManifestID(manifestID);
 			return GetManifestWithID(determinedManifestID).FlatMap(manifest =>
 			{
 				if (!_connectivityService.HasConnectivity)

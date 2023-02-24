@@ -138,7 +138,7 @@ namespace Beamable.UI.Buss
 			{
 				get;
 			}
-
+			
 			/// <summary>
 			/// When true, an element can inherit this property from the element's parent.
 			/// </summary>
@@ -163,6 +163,7 @@ namespace Beamable.UI.Buss
 			{
 				get;
 			}
+			public Type[] PropertyTypes { get; }
 			
 			public Type[] DefaultValueTypes { get; }
 
@@ -177,6 +178,21 @@ namespace Beamable.UI.Buss
 				Key = key;
 				DefaultValues = new T[]{defaultValue};
 				DefaultValueTypes = new Type[] {defaultValue.GetType()};
+
+				if (DefaultValueTypes.Contains(typeof(T)))
+				{
+					PropertyTypes = DefaultValueTypes;
+				}
+				else
+				{
+					PropertyTypes = new Type[DefaultValueTypes.Length + 1];
+					for (var i = 0; i < DefaultValueTypes.Length; i++)
+					{
+						PropertyTypes[i] = DefaultValueTypes[0];
+					}
+
+					PropertyTypes[DefaultValueTypes.Length] = typeof(T);
+				}
 				_bindings[key] = this;
 				Inheritable = inheritable;
 			}
@@ -245,31 +261,12 @@ namespace Beamable.UI.Buss
 
 			public T GetFromStyle(BussStyle style, bool useDefaultIfNotFound=true)
 			{
-				if (style._properties.TryGetValue(Key, out var property) && property != null)
+				if (!style.TryGetValue<T>(Key, out var styleProperty))
 				{
-					if (property is VariableProperty variable)
-					{
-						return GetFromVariable(style, variable.VariableName);
-					}
-					else
-					{
-						switch (property.ValueType)
-						{
-							case BussPropertyValueType.Inherited:
-							// return GetFromStyle(style._inheritedFromStyle);
-							case BussPropertyValueType.Value:
-								return property as T;
-							case BussPropertyValueType.Initial:
-								return DefaultValue;
-
-							default:
-								throw new InvalidOperationException("Unknown property value type");
-						}
-						// return (T)property;
-					}
+					styleProperty = useDefaultIfNotFound ? DefaultValue : null;
 				}
 
-				return useDefaultIfNotFound ? DefaultValue : null;
+				return styleProperty;
 			}
 
 			private T GetFromPseudoStyle(BussPseudoStyle style)
@@ -291,28 +288,12 @@ namespace Beamable.UI.Buss
 
 			private T GetFromVariable(BussStyle style, string variableName)
 			{
-				if (_keyControler.Contains(variableName))
+				if (!style.TryGetFromVariable<T>(variableName, out var variableProperty))
 				{
-					Debug.LogWarning("Cyclical variable reference in BUSS properties.");
-					return DefaultValue;
+					variableProperty = DefaultValue;
 				}
 
-				_keyControler.Add(variableName);
-				var result = DefaultValue;
-				if (style._properties.TryGetValue(variableName, out var property))
-				{
-					if (property is VariableProperty variableProperty)
-					{
-						result = GetFromVariable(style, variableProperty.VariableName);
-					}
-					else
-					{
-						result = (property as T) ?? DefaultValue;
-					}
-				}
-
-				_keyControler.Clear();
-				return result;
+				return variableProperty;
 			}
 
 			public void Set(BussStyle style, T property)
