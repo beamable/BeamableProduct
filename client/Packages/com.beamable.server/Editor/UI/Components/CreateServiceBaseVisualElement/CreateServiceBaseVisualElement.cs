@@ -144,7 +144,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var remoteServices =
 				MicroservicesDataModel.Instance.remoteServices.Where(model => !string.IsNullOrWhiteSpace(model.RemoteReference.imageId));
 
-			if(remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)))
+			if (remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)))
 			{
 				return "There is already a working remote service with same name.";
 			}

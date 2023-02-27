@@ -38,7 +38,7 @@ namespace Beamable.Editor.UI.Model
 				.Where(service =>
 					{
 						if (string.IsNullOrWhiteSpace(service.RemoteReference.imageId) &&
-						    !localServices.Any(l => l.Descriptor.Name.Equals(service.Descriptor.Name)))
+							!localServices.Any(l => l.Descriptor.Name.Equals(service.Descriptor.Name)))
 						{
 							return true;
 						}
@@ -50,7 +50,7 @@ namespace Beamable.Editor.UI.Model
 
 		public bool HasAnyBrokenRemoteService =>
 			remoteServices.Any(service => string.IsNullOrWhiteSpace(service.RemoteReference.imageId) &&
-			                              localServices.All(l => l.Name != service.Name));
+										  localServices.All(l => l.Name != service.Name));
 
 		public IReadOnlyList<IBeamableService> AllLocalServices
 		{
