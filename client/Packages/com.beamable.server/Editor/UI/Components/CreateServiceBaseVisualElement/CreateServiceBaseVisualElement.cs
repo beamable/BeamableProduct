@@ -137,12 +137,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private string IsNameUnique(string txt)
 		{
 			var localServices = MicroservicesDataModel.Instance.AllLocalServices;
-			var remoteServices = MicroservicesDataModel.Instance.AllRemoteOnlyServices;
+			if (localServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)))
+			{
+				return "Service name must be unique.";
+			}
+			var remoteServices =
+				MicroservicesDataModel.Instance.remoteServices.Where(model => !string.IsNullOrWhiteSpace(model.RemoteReference.imageId));
 
-			return localServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)) ||
-				   remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase))
-				? "Service name must be unique"
-				: null;
+			if(remoteServices.Any(x => string.Equals(x.Name, txt, StringComparison.CurrentCultureIgnoreCase)))
+			{
+				return "There is already a working remote service with same name.";
+			}
+
+			return null; // all looks good
 		}
 	}
 }

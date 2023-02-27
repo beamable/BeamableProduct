@@ -30,7 +30,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (_microserviceModel == null) return;
 
-			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
 		}
 
@@ -53,9 +52,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 
-			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
-			_microserviceModel.OnDockerLoginRequired += LoginToDocker;
-
 			UpdateLocalStatus();
 			UpdateRemoteStatusIcon("remoteEnabled");
 			UpdateModel();
@@ -66,11 +62,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.QueryVisualElements();
 
 			_microserviceModel = (RemoteMicroserviceModel)Model;
-		}
-
-		private void LoginToDocker(Promise<Unit> onLogin)
-		{
-			DockerLoginVisualElement.ShowUtility().Then(onLogin.CompleteSuccess).Error(onLogin.CompleteError);
 		}
 
 		private void HandleLastImageIdChanged(string newId)
