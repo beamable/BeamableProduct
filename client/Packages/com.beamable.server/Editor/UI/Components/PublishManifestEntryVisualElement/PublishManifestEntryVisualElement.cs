@@ -166,6 +166,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (!string.IsNullOrWhiteSpace(additionalTooltip))
 				tooltip += $"\n\nOn/Off state is in fixed state due to:\n{additionalTooltip}";
 			_enableColumn.tooltip = tooltip;
+			EnableState.tooltip = tooltip;
 			
 			if (Model is ManifestEntryModel && !isSilentUpdate)
 				OnEnableStateChanged?.Invoke(Model);
