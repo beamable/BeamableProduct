@@ -912,10 +912,10 @@ namespace Beamable.Editor.Content
 			}
 
 			var sortProperties = !ContentConfiguration.Instance.EnablePropertyOrderDependenceForContentChecksum;
-			
+
 			using (var md5 = MD5.Create())
 			{
-				var json = ClientContentSerializer.SerializeProperties(content, new ContentSerializerOptions() { SortProperties = true});
+				var json = ClientContentSerializer.SerializeProperties(content, new ContentSerializerOptions() { SortProperties = true });
 				var bytes = Encoding.ASCII.GetBytes(json);
 				var hash = md5.ComputeHash(bytes);
 				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();

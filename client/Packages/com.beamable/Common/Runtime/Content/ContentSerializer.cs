@@ -156,7 +156,7 @@ namespace Beamable.Common.Content
 					 * We can't use the JsonUtility.ToJson because we can't override certain types,
 					 *  like optionals, addressables, links or refs.
 					 */
-					var fields = GetFieldInfos(argType,  options);
+					var fields = GetFieldInfos(argType, options);
 					var dict = new ArrayDict();
 					foreach (var field in fields)
 					{
@@ -491,10 +491,10 @@ namespace Beamable.Common.Content
 			var notIgnoredFields = serializableFields.Where(field => field.GetCustomAttribute<IgnoreContentFieldAttribute>() == null);
 
 			var ll = notIgnoredFields.Select(CreateFieldWrapper);
-			
-			if (options!= null && options.SortProperties)
+
+			if (options != null && options.SortProperties)
 				ll = ll.OrderBy(n => n.SerializedName);
-			
+
 			return ll.ToList();
 		}
 
@@ -817,7 +817,7 @@ namespace Beamable.Common.Content
 			return instance;
 		}
 	}
-	
+
 	public class ContentSerializerOptions
 	{
 		public bool SortProperties { get; set; }
