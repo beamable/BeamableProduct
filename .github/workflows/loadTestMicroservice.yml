@@ -33,4 +33,4 @@ jobs:
       - name: Run Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
         run: |
-          standalone-microservice.dll
+          dotnet standalone-microservice.dll
