@@ -92,7 +92,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		private void SetView(bool isInit = true) // we don't want to destroy & recreate whole view every time docker is disabled
-
 		{
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_scrollView = Root.Q<ScrollView>();
