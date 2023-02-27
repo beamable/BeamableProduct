@@ -26,9 +26,9 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("manifestId", "set the manifest to use, 'global' by default"),
+		AddOption(new ConfigurableOption("manifest-id", "Set the manifest to use, 'global' by default"),
 			(args, s) => args.ManifestId = s);
-		AddOption(new ConfigurableOptionFlag("printOutput", "Print content to console"),
+		AddOption(new ConfigurableOptionFlag("print-output", "Print content to console"),
 			(args, b) => args.printOutput = b);
 	}
 }

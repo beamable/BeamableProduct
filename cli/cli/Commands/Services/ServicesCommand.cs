@@ -24,7 +24,7 @@ public class ServicesCommand : AppCommand<ServicesCommandArgs>
 	private BeamoLocalSystem _localBeamo;
 
 	public ServicesCommand()
-		: base("services", "Initialize a new beamable project in the current directory.")
+		: base("services", "Commands that allow interacting with microservices in Beamable project")
 	{
 	}
 
