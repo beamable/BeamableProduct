@@ -22,3 +22,6 @@ jobs:
           working-directory: ./cli/cli
           run: |
             ./install.sh
+        - name: Check CLI Install
+          run: |
+            beam --version
