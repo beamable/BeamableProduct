@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
+
+### Changed
+- Exception on using `BeamContext` outside playMode
+
+### Fixed
+- Fixed slow SDK instalation process.
+
+## [1.11.1]
+### Changed
+- Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
+
+### Fixed
+- `PlayerInventory` triggers `OnDataUpdated` events.
+- `PlayerInventory` item properties can be `null` without throwing a `NullReferenceException`.
+
+## [1.11.0]
+### Added
 - `PlayerInventory` supports storing player's inventory in offline mode
 - `PlayerInventory` supports `UpdateDelayed` method
 - `IFederatedLogin<T>` interface type available for Microservices
@@ -14,12 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `BeamContext.Presence` layer to handle requesting/changing player's presence status
 - `BeamContext.Social` now contains an event for players changing their presence status
 - `PlayerAccounts` supports external identity auth.
+- `BeamContext.Default.Instance` returns a `Promise<BeamContext>` that returns the default context.
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
-- `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
 - Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
 - Update banner in Toolbox will link to changelog instead of blog post.
+- Refactored `BeamContext` initialization logic.
 
 ### Fixed
 - `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
@@ -27,9 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue with logging in and realm switching while being on an archived realm.
 - Duplicate content is now displayed immediately in `Content Manager`
 - Update banner in Toolbox will update both `com.beamable` and `com.beamable.server` package. 
-
-### Removed
-- `connectivityRoute` option in `config-defaults` no longer has any effect. All connectivity checks happen as part of the heart beat cycle every 5 seconds.
+- Fixed issues with wrong content status and checksum on domain reload.
+- `FilePathSelectorAttribute` no longer accesses `Application` in constructor.
 
 ## [1.10.3]
 ### Changed
