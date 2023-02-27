@@ -96,7 +96,7 @@
 
     <Reference Include="Beamable.Common">
 
-      <HintPath>.\lib\Beamable.Common.dll</HintPath>
+      <HintPath>.\lib\Unity.Beamable.Runtime.Common.dll</HintPath>
 
     </Reference>
 

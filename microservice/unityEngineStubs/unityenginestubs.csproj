@@ -4,12 +4,14 @@
       <DefineConstants>BEAMABLE_MICROSERVICE</DefineConstants>
 
       <PackageId>Beamable.UnityEngine</PackageId>
-      <Version>0.0.0</Version>
+      <OutputType>Library</OutputType>
+      <AssemblyName>Beamable.Tools</AssemblyName>
       <Authors>Beamable Team</Authors>
       <Company>Beamable</Company>
-
-      <TargetFramework>net6.0</TargetFramework>
+      <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+      <PackageOutputPath>./nupkg</PackageOutputPath>
       <AssemblyName>UnityEngine</AssemblyName>
+      <TargetFrameworks>net6.0;netstandard2.1</TargetFrameworks>
    </PropertyGroup>
    <ItemGroup>
      <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />

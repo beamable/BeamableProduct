@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Exception on using `BeamContext` outside playMode
+- `Beamable.Common` assembly name changed to `Unity.Beamable.Runtime.Common` to align with assembly definition file.
 
 ### Fixed
 - Fixed slow SDK instalation process.

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 - Improved `MicroserviceWindow` performance by optimizing Docker checks
 
+## Added
+- `Beamable.Common` and `UnityEngineStubs` now published as separate packages on Nuget.
+
 ## [1.11.1]
 ### Fixed
 - `InventoryView` is serializable.

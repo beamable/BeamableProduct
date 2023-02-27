@@ -7,8 +7,8 @@
         <HiddenObjPath>../../../Temp/beamable.core/obj</HiddenObjPath>
         <BaseOutputPath>$(HiddenBinPath)</BaseOutputPath>
         <BaseIntermediateOutputPath>$(HiddenObjPath)</BaseIntermediateOutputPath>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>
 
     </PropertyGroup>
 </Project>
