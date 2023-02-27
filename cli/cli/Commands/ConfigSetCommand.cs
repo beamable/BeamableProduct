@@ -13,7 +13,7 @@ public class ConfigSetCommand : AppCommand<ConfigSetCommandArgs>
 	private ConfigService _configService;
 
 	public ConfigSetCommand()
-		: base("set", "set a config value")
+		: base("set", "Set a config value")
 	{
 	}
 

@@ -161,7 +161,7 @@ public partial class BeamoLocalSystem
 					comments = httpSdComments,
 				};
 			}).ToList();
-			
+
 			foreach (var local in locals)
 			{
 				var index = remoteManifest.manifest.FindIndex(reference => reference.serviceName == local.serviceName);

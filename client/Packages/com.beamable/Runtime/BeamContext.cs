@@ -334,7 +334,7 @@ namespace Beamable
 
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(_behaviour, PlayerCode);
-			
+
 			await InitProcedure(silent: true);
 
 			// before we broadcast the event; we'll ask the accounts to update if they exist...
@@ -383,6 +383,13 @@ namespace Beamable
 							IDependencyBuilder builder)
 		{
 #if UNITY_EDITOR
+			if (!UnityEditor.EditorApplication.isPlaying)
+			{
+				_initPromise = new Promise();
+				var exception = new Exception("BeamContext is meant to use only in play mode, not edit mode.");
+				_initPromise.CompleteError(exception);
+				return;
+			}
 			if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
 			{
 				// if the context is inside the editor, and something is trying to 
@@ -570,7 +577,7 @@ namespace Beamable
 		}
 
 
-		private async Promise InitProcedure(bool silent=false)
+		private async Promise InitProcedure(bool silent = false)
 		{
 
 			#region load token from storage
@@ -587,7 +594,7 @@ namespace Beamable
 			var hasOfflineToken = AccessToken?.Token == Constants.Commons.OFFLINE;
 			var needsToken = hasNoToken || hasOfflineToken;
 			#endregion
-			
+
 			if (!hasInternet)
 			{
 				await SetupWithoutConnection();
@@ -629,7 +636,7 @@ namespace Beamable
 				var user = await _authService.GetUser();
 				AuthorizedUser.Value = user;
 			}
-			
+
 			async Promise SetupNewSession()
 			{
 				var adId = await AdvertisingIdentifier.GetIdentifier();
@@ -663,7 +670,7 @@ namespace Beamable
 				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
 				OnReloadUser?.Invoke();
 			}
-			
+
 			async Promise SetupWithoutConnection()
 			{
 				if (needsToken)
@@ -681,13 +688,13 @@ namespace Beamable
 					{
 						var dbid = Random.Range(int.MinValue, 0);
 						_offlineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me",
-						                        new User
-						                        {
-							                        id = dbid,
-							                        scopes = new List<string>(),
-							                        thirdPartyAppAssociations = new List<string>(),
-							                        deviceIds = new List<string>()
-						                        }, Requester.AccessToken, true);
+												new User
+												{
+													id = dbid,
+													scopes = new List<string>(),
+													thirdPartyAppAssociations = new List<string>(),
+													deviceIds = new List<string>()
+												}, Requester.AccessToken, true);
 						_offlineCache.Merge("stats", Requester.AccessToken, new Dictionary<long, Dictionary<string, string>>
 						{
 							[dbid] = new Dictionary<string, string>()
@@ -705,7 +712,8 @@ namespace Beamable
 				{
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
-				} else if (AccessToken.IsExpired)
+				}
+				else if (AccessToken.IsExpired)
 				{
 					var rsp = await _authService.LoginRefreshToken(AccessToken.RefreshToken);
 					await SaveToken(rsp);
@@ -721,7 +729,7 @@ namespace Beamable
 			}
 		}
 
-		
+
 
 		/// <summary>
 		/// Create or retrieve a <see cref="BeamContext"/> for the given <see cref="PlayerCode"/>. There is only one instance of a context per <see cref="PlayerCode"/>.

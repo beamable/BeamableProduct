@@ -898,7 +898,7 @@ namespace Beamable.Editor.Content
 		[Serializable]
 		public class MapOfValidationChecksums : SerializableDictionaryStringToSomething<ValidationChecksum>
 		{
-			
+
 		}
 
 		private static MapOfValidationChecksums _checksumTable = new MapOfValidationChecksums();
