@@ -1,0 +1,24 @@
+name: Sync Wiki
+
+on:
+  push:
+    branches:
+      - 'feature/beam-3376-2'
+
+jobs:
+  setup:
+    timeout-minutes: 10
+      runs-on: ubuntu-latest
+      concurrency:
+        group: generate-${{ github.head_ref }}
+        cancel-in-progress: true
+      steps:
+        - uses: actions/checkout@v2
+        - name: Setup .NET Core SDK
+          uses: actions/setup-dotnet@v1.7.2
+          with:
+            dotnet-version: 6.0.x
+        - name: Build and Install BEAM CLI 
+          working-directory: ./cli/cli
+          run: |
+            ./install.sh
