@@ -18,6 +18,9 @@ jobs:
         uses: actions/setup-dotnet@v1.7.2
         with:
           dotnet-version: 6.0.x
+      - name: Install Dotnet Counters
+        run: |
+          dotnet tool install --global dotnet-counters
       - name: Build and Install BEAM CLI 
         working-directory: ./cli/cli
         run: |
@@ -34,7 +37,13 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
         run: |
           cat .env
-      - name: Run Microservice
+      - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
         run: |
-          dotnet standalone-microservice.dll
+          timeout 30 dotnet-counters collect --refresh-interval 3 --format csv -- standalone-microservice || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+      - name: Save Profiler Data 
+        uses: actions/upload-artifact@v3
+        with:
+          name: profiler
+          path: |
+            ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0/counter.csv

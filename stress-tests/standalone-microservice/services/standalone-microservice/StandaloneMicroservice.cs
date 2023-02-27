@@ -2,10 +2,10 @@ using Beamable.Server;
 
 namespace Beamable.standalone_microservice
 {
-	[Microservice("standalone_microservice")]
+	[Microservice("standalone-microservice")]
 	public class StandaloneMicroservice : Microservice
 	{
-		[ClientCallable]
+		[Callable]
 		public int Add(int a, int b)
 		{
 			return a + b;

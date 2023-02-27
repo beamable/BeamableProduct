@@ -11,6 +11,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 {
 	public string output;
 	public bool includePrefix = true;
+	public int instanceCount = 1;
 }
 
 public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
@@ -23,6 +24,7 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 	{
 		AddArgument(new Argument<string>("output", "Where to output the .env file"), (args, i) => args.output = i);
 		AddOption(new Option<bool>("--include-prefix", () => true, "if true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
+		AddOption(new Option<int>("--instance-count", () => 1, "how many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);
 	}
 
 	public override async Task Handle(GenerateEnvFileCommandArgs args)
@@ -42,7 +44,7 @@ HOST={host}
 CID={cid}
 PID={pid}
 NAME_PREFIX={prefix}
-BEAM_INSTANCE_COUNT=1
+BEAM_INSTANCE_COUNT={args.instanceCount}
 ";
 
 		var path = Path.Combine(args.output, ".env");

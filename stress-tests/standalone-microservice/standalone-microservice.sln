@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{1C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "standalone-microservice", "services\standalone-microservice\standalone-microservice.csproj", "{1C037444-300A-4A6C-B55E-F454E74C19A4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StressTest", "services\StressTest\StressTest.csproj", "{A9933097-2EC1-428C-8978-8777AA9BD91D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +22,13 @@ Global
 		{1C037444-300A-4A6C-B55E-F454E74C19A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C037444-300A-4A6C-B55E-F454E74C19A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C037444-300A-4A6C-B55E-F454E74C19A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9933097-2EC1-428C-8978-8777AA9BD91D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9933097-2EC1-428C-8978-8777AA9BD91D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9933097-2EC1-428C-8978-8777AA9BD91D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9933097-2EC1-428C-8978-8777AA9BD91D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1C037444-300A-4A6C-B55E-F454E74C19A4} = {1C9B6584-9945-42B2-B1C3-26D429D10ECD}
+		{A9933097-2EC1-428C-8978-8777AA9BD91D} = {1C9B6584-9945-42B2-B1C3-26D429D10ECD}
 	EndGlobalSection
 EndGlobal
