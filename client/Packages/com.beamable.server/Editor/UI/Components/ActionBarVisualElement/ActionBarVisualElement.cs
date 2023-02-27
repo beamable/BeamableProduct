@@ -112,13 +112,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void UpdateButtonsState(int servicesAmount)
 		{
 			var canPublish = IsDockerActive && servicesAmount > 0 && HasPublishPermissions &&
-			                 !Model.HasAnyBrokenRemoteService;
+							 !Model.HasAnyBrokenRemoteService;
 
 			_startAll.SetEnabled(IsDockerActive && servicesAmount > 0);
 			_publish.SetEnabled(canPublish);
 			_dependencies.SetEnabled(CanHaveDependencies);
 			_createNew.SetEnabled(IsDockerActive);
-			
+
 			if (!canPublish)
 			{
 				_publish.tooltip = !IsDockerActive ? "Docker is not running." :

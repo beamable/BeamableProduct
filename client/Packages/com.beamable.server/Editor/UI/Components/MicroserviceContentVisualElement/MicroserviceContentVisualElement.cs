@@ -45,7 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
 			_servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
-			                    .Cast<ServiceBaseVisualElement>();
+								.Cast<ServiceBaseVisualElement>();
 
 		public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits> { }
 
@@ -53,7 +53,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -98,7 +99,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_servicesListElement = Root.Q<VisualElement>("listRoot");
 			_servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
 			_dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow
-			                      || !DockerCommand.DockerNotRunning;
+								  || !DockerCommand.DockerNotRunning;
 
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
@@ -143,12 +144,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void ShowDestroyedRemoteMicroservices()
 		{
-			var model = new AnnouncementModel() {Status = ToolboxAnnouncementStatus.DANGER, ActionText = "Fix it!", Action = FixDestroyedMicroservices};
+			var model = new AnnouncementModel() { Status = ToolboxAnnouncementStatus.DANGER, ActionText = "Fix it!", Action = FixDestroyedMicroservices };
 			model.SetTitle("Broken Remote Microservices");
 			var description = string.Format(BROKEN_REMOTE_SERVICES_MESSAGE, string.Join("\n\t- ",
-				                                Model.BrokenRemoteServicesNames));
+												Model.BrokenRemoteServicesNames));
 			model.SetDescription(description);
-			var element = new AnnouncementVisualElement() {AnnouncementModel = model};
+			var element = new AnnouncementVisualElement() { AnnouncementModel = model };
 			Root.Q<VisualElement>("announcementList").Add(element);
 			element.Refresh();
 		}
@@ -166,7 +167,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			foreach (var kvp in _modelToVisual)
 			{
 				kvp.Value.ChangeStartButtonState(true, Constants.Tooltips.Microservice.PLAY_MICROSERVICE,
-				                                 Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+												 Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
 			}
 		}
 
@@ -185,7 +186,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return null;
 			}
 
-			var serviceElement = new MicroserviceVisualElement {Model = service};
+			var serviceElement = new MicroserviceVisualElement { Model = service };
 			_modelToVisual[service] = serviceElement;
 			service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
@@ -207,7 +208,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (service != null)
 			{
-				var serviceElement = new RemoteMicroserviceVisualElement {Model = service};
+				var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
 
 				_modelToVisual[service] = serviceElement;
 				serviceElement.Refresh(_dockerHubIsRunning);
@@ -227,7 +228,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (mongoService != null)
 			{
-				var mongoServiceElement = new StorageObjectVisualElement {Model = mongoService};
+				var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
@@ -250,7 +251,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (mongoService != null)
 			{
-				var mongoServiceElement = new RemoteStorageObjectVisualElement {Model = mongoService};
+				var mongoServiceElement = new RemoteStorageObjectVisualElement { Model = mongoService };
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
@@ -354,8 +355,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{
 					var window = await BeamableAssistantWindow.Init();
 					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-					                                     BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-					                                     BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
+														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+														 BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
 				};
 			}
 			else
@@ -364,12 +365,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{
 					var window = await BeamableAssistantWindow.Init();
 					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-					                                     BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-					                                     BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
+														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+														 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
 				};
 			}
 
-			var element = new DockerAnnouncementVisualElement() {DockerAnnouncementModel = dockerAnnouncement};
+			var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
 			Root.Q<VisualElement>("announcementList").Add(element);
 			element.Refresh();
 		}
@@ -429,9 +430,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public void StopAllServices(bool showDialog = false,
-		                            string dialogTitle = "",
-		                            string dialogMessage = "",
-		                            string dialogConfirm = "")
+									string dialogTitle = "",
+									string dialogMessage = "",
+									string dialogConfirm = "")
 		{
 			var isAnyServiceStopped = false;
 			foreach (var service in _modelToVisual.Keys)
