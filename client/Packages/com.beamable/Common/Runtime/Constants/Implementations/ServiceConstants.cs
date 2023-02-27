@@ -31,7 +31,8 @@ namespace Beamable.Common
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";
 				public const string CANT_UPLOAD_CONTAINER_MESSAGE = "Can't upload container service=[{0}]";
 				public const string USING_REMOTE_SERVICE_MESSAGE = "Using remote service";
-				public const string BROKEN_REMOTE_SERVICES_MESSAGE = "Looks like there are broken microservices that will make impossible to do a <b>publish</b>. You need to recreate this services: \n\t-{0}\n\nAfter publish, there is no reason not to archive those microservices if they are not used. The reason that creating and publishing is required is that we do not allow publishing ServerManifest with broken microservices anymore.";
+				public const string BROKEN_REMOTE_SERVICES_MESSAGE = "Looks like there are microservices with blank image IDs. This may have occurred due to a past publish with archived microservices, but will make it impossible to publish now. You need to recreate these services: \n\t-{0}\n\nAfter publishing, you may archive any unused microservices. However, they must be published at least once to ensure a correct ServerManifest.";
+
 
 				public const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
 				public const string STORAGE_IMAGE_CLASS = "storageImage";
