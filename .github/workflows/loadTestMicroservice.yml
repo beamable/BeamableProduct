@@ -7,10 +7,10 @@ on:
 
 jobs:
   setup:
-    timeout-minutes: 10
+    timeout-minutes: 4
     runs-on: ubuntu-latest
     concurrency:
-      group: generate-${{ github.head_ref }}
+      group: stresstest-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v2
@@ -30,6 +30,10 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
           dotnet build
+      - name: Observe
+        working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
+        run: |
+          cat .env
       - name: Run Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
         run: |
