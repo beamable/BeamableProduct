@@ -1,7 +1,7 @@
 cd "${0%/*}"
 export lib_path="./microservice/lib"
 
-export docker_platform=${BEAMABLE_MICROSERVICE_ARCH-"linux/arm64"}
+export docker_platform=${BEAMABLE_MICROSERVICE_ARCH-"linux/amd64"}
 
 # build latest copy of shared library.
 # on windows, this won't work. We need a separate script for windows.
