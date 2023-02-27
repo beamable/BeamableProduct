@@ -38,6 +38,8 @@ fake-react/
 fake-svelte/
 loadtests/
 
+user-token.json
+
 # Microservice project files
 /microservice/bin/
 /microservice/obj

@@ -5,10 +5,10 @@
         <BeamableTool>beam</BeamableTool>
 
         <!-- When "true", this will open a website to the local swagger page for the running service -->
-        <OpenLocalSwaggerOnRun>true</OpenLocalSwaggerOnRun>
+        <OpenLocalSwaggerOnRun>false</OpenLocalSwaggerOnRun>
 
         <!-- When "true", this will auto-generate client code to any linked unity projects -->
-        <GenerateClientCode>true</GenerateClientCode>
+        <GenerateClientCode>false</GenerateClientCode>
     </PropertyGroup>
 
     <!-- Standard dotnet settings-->

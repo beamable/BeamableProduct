@@ -22,6 +22,15 @@ jobs:
         working-directory: ./cli/cli
         run: |
           ./install.sh
-      - name: Check CLI Install
+      - name: Login to BEAM CLI
+        working-directory: ./stress-tests/standalone-microservice
         run: |
-          beam --version
+          beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
+      - name: Build Microservice
+        working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
+        run: |
+          dotnet build
+      - name: Run Microservice
+        working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
+        run: |
+          standalone-microservice.dll
