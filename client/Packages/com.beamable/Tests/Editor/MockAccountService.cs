@@ -14,6 +14,12 @@ namespace Beamable.Editor.Tests
 
 		public AccountServiceInitResult InitResult { get; set; }
 
+		public Promise<bool> SwitchToConfigDefaults()
+		{ 
+			
+			throw new NotImplementedException();
+		}
+
 		public void Clear(){}
 		public MockAccountService()
 		{

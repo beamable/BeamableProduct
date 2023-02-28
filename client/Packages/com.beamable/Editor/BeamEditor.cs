@@ -638,11 +638,11 @@ namespace Beamable
 
 		public async Promise LoadConfig()
 		{
-			var service = ServiceScope.GetService<ConfigDefaultsService>();
-			await service.LoadFromDisk();
-			
-			EditorAccountService.SetRealm();
-			service.Alias
+			var needsLogout = await EditorAccountService.SwitchToConfigDefaults();
+			if (needsLogout)
+			{
+				Logout(false);
+			}
 		}
 		
 		/// <summary>

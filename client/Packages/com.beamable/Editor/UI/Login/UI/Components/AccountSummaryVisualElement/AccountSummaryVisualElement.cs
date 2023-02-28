@@ -74,6 +74,7 @@ namespace Beamable.Editor.Login.UI.Components
 				{
 					Context.LoadConfig().Then(_ =>
 					{
+						Manager.Initialize(Model);
 						EditorDebouncer.Debounce("load-defaults-reset", () =>
 						{
 							loadConfigDefaults.EnableInClassList("writing", false);
