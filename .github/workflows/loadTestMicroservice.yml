@@ -41,11 +41,9 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
-          dotnet-counters collect --refresh-interval 3 --format json -- standalone-microservice &
+          dotnet-counters collect --refresh-interval 3 --format json --output ../../../../reports/counter.json -- standalone-microservice &
           cd ../../../..
           dotnet run --project ./StressTest
-          echo "ps"
-          ps
           echo "jobs"
           jobs -p
           echo "kill"
@@ -57,5 +55,4 @@ jobs:
           if-no-files-found: error
           retention-days: 15
           path: |
-            ./stress-tests/standalone-microservice/services/StressTest/reports
-            ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0/counter.csv
+            ./stress-tests/standalone-microservice/services/reports
