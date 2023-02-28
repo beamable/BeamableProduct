@@ -48,6 +48,8 @@ jobs:
       - name: Kill Background Microservice 
         continue-on-error: true
         run: |
+          jobs
+          jobs -p
           kill $(jobs -p)
           fg
       - name: Save Profiler Data 
