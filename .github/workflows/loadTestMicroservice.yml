@@ -40,7 +40,7 @@ jobs:
       - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
         run: |
-          dotnet-counters collect --refresh-interval 3 --format csv -- standalone-microservice &
+          dotnet-counters collect --refresh-interval 3 --format json -- standalone-microservice &
       - name: Run Loadtest
         working-directory: ./stress-tests/standalone-microservice/services/StressTest
         run: |
@@ -49,6 +49,8 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: profiler
+          if-no-files-found: error
+          retention-days: 15
           path: |
             ./stress-tests/standalone-microservice/services/StressTest/reports
             ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0/counter.csv
