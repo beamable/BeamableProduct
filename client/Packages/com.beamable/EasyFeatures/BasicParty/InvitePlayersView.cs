@@ -41,10 +41,10 @@ namespace Beamable.EasyFeatures.BasicParty
 			List<long> friends = new List<long>(friendsList.Count);
 			for (int i = 0; i < friendsList.Count; i++)
 			{
-				if (Context.Party.PartyMembers.Any(member => member.playerId.Equals(friendsList[i].playerId)))
+				if (Context.Party.PartyMembers.Any(member => member.playerId.Equals(friendsList[i].PlayerId)))
 					continue;
 
-				friends.Add(friendsList[i].playerId);
+				friends.Add(friendsList[i].PlayerId);
 			}
 
 			await PartyList.Setup(friends, false, OnPlayerInvited, null, null, null);

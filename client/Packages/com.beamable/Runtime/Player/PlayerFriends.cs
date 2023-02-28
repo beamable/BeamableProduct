@@ -9,6 +9,7 @@ using Beamable.Content.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -89,7 +90,7 @@ namespace Beamable.Player
 		{
 			// TODO: [TD000007] Use information from the notification instead of requesting player presence
 			var presence = await _presenceApi.GetPlayerPresence(notification.friendId);
-			var player = Friends.FirstOrDefault(friend => friend.playerId == notification.friendId);
+			var player = Friends.FirstOrDefault(friend => friend.PlayerId == notification.friendId);
 			if (player != null)
 			{
 				player.Presence = presence;
@@ -125,10 +126,7 @@ namespace Beamable.Player
 			foreach (var friend in _socialList.friends)
 			{
 				var currentStatus = statuses.playersStatus.FirstOrDefault(status => status.playerId.ToString() == friend.playerId);
-				friends.Add(new PlayerFriend(this, currentStatus, player => FriendPresenceChanged?.Invoke(player))
-				{
-					playerId = long.Parse(friend.playerId)
-				});
+				friends.Add(new PlayerFriend(this, long.Parse(friend.playerId), currentStatus, player => FriendPresenceChanged?.Invoke(player)));
 			}
 
 			return friends;
@@ -139,7 +137,7 @@ namespace Beamable.Player
 			var blocked = new List<BlockedPlayer>(_socialList.blocked.Count);
 			foreach (var block in _socialList.blocked)
 			{
-				blocked.Add(new BlockedPlayer(this) { playerId = long.Parse(block.playerId) });
+				blocked.Add(new BlockedPlayer(this, long.Parse(block.playerId)));
 			}
 
 			return Promise<List<BlockedPlayer>>.Successful(blocked);
@@ -151,7 +149,7 @@ namespace Beamable.Player
 			foreach (var invite in _socialList.invites)
 			{
 				if (invite.Direction != FriendInviteDirection.Outgoing) continue;
-				invites.Add(new SentFriendInvite(this) { invitedPlayerId = invite.playerId });
+				invites.Add(new SentFriendInvite(this, invite.playerId));
 			}
 			return Promise<List<SentFriendInvite>>.Successful(invites);
 		}
@@ -166,7 +164,7 @@ namespace Beamable.Player
 
 				if (!invites.ContainsKey(invite.playerId))
 				{
-					invites.Add(invite.playerId, new ReceivedFriendInvite(this) { invitingPlayerId = invite.playerId });
+					invites.Add(invite.playerId, new ReceivedFriendInvite(this, invite.playerId));
 				}
 			}
 
@@ -174,7 +172,7 @@ namespace Beamable.Player
 			{
 				if (!invites.TryGetValue(mail.senderGamerTag, out var receivedInvite))
 				{
-					receivedInvite = new ReceivedFriendInvite(this) { invitingPlayerId = mail.senderGamerTag, };
+					receivedInvite = new ReceivedFriendInvite(this, mail.senderGamerTag);
 				}
 
 				receivedInvite.mailId = mail.id;
@@ -245,7 +243,7 @@ namespace Beamable.Player
 		/// <param name="playerId">the gamerTag of the player to accept friendship for</param>
 		public async Promise AcceptInviteFrom(long playerId)
 		{
-			var invite = ReceivedInvites.FirstOrDefault(i => i.invitingPlayerId == playerId);
+			var invite = ReceivedInvites.FirstOrDefault(i => i.PlayerId == playerId);
 			if (invite == null)
 			{
 				throw new Exception("No invite from " + playerId);
@@ -342,7 +340,14 @@ namespace Beamable.Player
 		}
 	}
 
-
+	public interface IPlayerId
+	{
+		/// <summary>
+		/// The gamerTag of a player
+		/// </summary>
+		long PlayerId { get; }
+	}
+	
 	[Serializable]
 	public class PlayerFriendList : ObservableReadonlyList<PlayerFriend>
 	{
@@ -353,12 +358,15 @@ namespace Beamable.Player
 	/// a friend of the player
 	/// </summary>
 	[Serializable]
-	public class PlayerFriend
+	public class PlayerFriend : IPlayerId
 	{
+		[SerializeField]
+		private long playerId;
+
 		/// <summary>
-		/// the gamerTag of the friend
+		/// The gamerTag of the friend
 		/// </summary>
-		public long playerId;
+		public long PlayerId => playerId;
 
 		/// <summary>
 		/// The current <see cref="PlayerPresence"/> status of the player.
@@ -377,9 +385,10 @@ namespace Beamable.Player
 
 		private readonly PlayerSocial _sdk;
 
-		internal PlayerFriend(PlayerSocial sdk, PlayerPresence presenceStatus, Action<PlayerFriend> onPresenceUpdated)
+		internal PlayerFriend(PlayerSocial sdk, long playerId, PlayerPresence presenceStatus, Action<PlayerFriend> onPresenceUpdated)
 		{
 			_sdk = sdk;
+			this.playerId = playerId;
 			_presence = presenceStatus;
 			_onPresenceUpdated = onPresenceUpdated;
 		}
@@ -389,7 +398,7 @@ namespace Beamable.Player
 		/// </summary>
 		public Promise Block()
 		{
-			return _sdk.BlockPlayer(playerId);
+			return _sdk.BlockPlayer(PlayerId);
 		}
 
 		/// <summary>
@@ -397,14 +406,14 @@ namespace Beamable.Player
 		/// </summary>
 		public Promise Unfriend()
 		{
-			return _sdk.Unfriend(playerId);
+			return _sdk.Unfriend(PlayerId);
 		}
 
 
 		#region auto-generated-equality
 		protected bool Equals(PlayerFriend other)
 		{
-			return playerId == other.playerId && Equals(_presence, other._presence);
+			return PlayerId == other.PlayerId && Equals(_presence, other._presence);
 		}
 
 		public override bool Equals(object obj)
@@ -431,7 +440,7 @@ namespace Beamable.Player
 		{
 			unchecked
 			{
-				return (playerId.GetHashCode() * 397) ^ (_presence != null ? _presence.GetHashCode() : 0);
+				return (PlayerId.GetHashCode() * 397) ^ (_presence != null ? _presence.GetHashCode() : 0);
 			}
 		}
 		#endregion
@@ -447,17 +456,22 @@ namespace Beamable.Player
 	/// A player that the current player has blocked
 	/// </summary>
 	[Serializable]
-	public class BlockedPlayer
+	public class BlockedPlayer : IPlayerId
 	{
+		private readonly PlayerSocial _sdk;
+		
+		[SerializeField]
+		private long playerId;
+
 		/// <summary>
 		/// The gamerTag of the blocked player
 		/// </summary>
-		public long playerId;
-		private readonly PlayerSocial _sdk;
+		public long PlayerId => playerId;
 
-		internal BlockedPlayer(PlayerSocial sdk)
+		internal BlockedPlayer(PlayerSocial sdk, long playerId)
 		{
 			_sdk = sdk;
+			this.playerId = playerId;
 		}
 
 		/// <summary>
@@ -465,13 +479,13 @@ namespace Beamable.Player
 		/// </summary>
 		public Promise Unblock()
 		{
-			return _sdk.UnblockPlayer(playerId);
+			return _sdk.UnblockPlayer(PlayerId);
 		}
 
 		#region auto-generated-equality
 		protected bool Equals(BlockedPlayer other)
 		{
-			return playerId == other.playerId;
+			return PlayerId == other.PlayerId;
 		}
 
 		public override bool Equals(object obj)
@@ -496,7 +510,7 @@ namespace Beamable.Player
 
 		public override int GetHashCode()
 		{
-			return playerId.GetHashCode();
+			return PlayerId.GetHashCode();
 		}
 		#endregion
 	}
@@ -511,12 +525,12 @@ namespace Beamable.Player
 	/// A friend invite that the current player has sent to another player
 	/// </summary>
 	[Serializable]
-	public class SentFriendInvite
+	public class SentFriendInvite : IPlayerId
 	{
 		#region auto-generated-equality
 		protected bool Equals(SentFriendInvite other)
 		{
-			return invitedPlayerId == other.invitedPlayerId;
+			return PlayerId == other.PlayerId;
 		}
 
 		public override bool Equals(object obj)
@@ -541,20 +555,24 @@ namespace Beamable.Player
 
 		public override int GetHashCode()
 		{
-			return invitedPlayerId.GetHashCode();
+			return PlayerId.GetHashCode();
 		}
 		#endregion
+
+		private readonly PlayerSocial _sdk;
+		
+		[SerializeField]
+		private long playerId;
 
 		/// <summary>
 		/// The id of the player that this player invited
 		/// </summary>
-		public long invitedPlayerId;
+		public long PlayerId => playerId;
 
-		private readonly PlayerSocial _sdk;
-
-		internal SentFriendInvite(PlayerSocial sdk)
+		internal SentFriendInvite(PlayerSocial sdk, long playerId)
 		{
 			_sdk = sdk;
+			this.playerId = playerId;
 		}
 
 		/// <summary>
@@ -563,7 +581,7 @@ namespace Beamable.Player
 		/// </summary>
 		public Promise Cancel()
 		{
-			return _sdk.CancelInvite(invitedPlayerId);
+			return _sdk.CancelInvite(PlayerId);
 		}
 	}
 
@@ -578,12 +596,12 @@ namespace Beamable.Player
 	/// Use the <see cref="AcceptInvite"/> method to accept the invite, or the <see cref="BlockSender"/> method to reject.
 	/// </summary>
 	[Serializable]
-	public class ReceivedFriendInvite
+	public class ReceivedFriendInvite : IPlayerId
 	{
 		#region autogenerated-equality-members
 		protected bool Equals(ReceivedFriendInvite other)
 		{
-			return invitingPlayerId == other.invitingPlayerId && mailId == other.mailId;
+			return PlayerId == other.PlayerId && mailId == other.mailId;
 		}
 
 		public override bool Equals(object obj)
@@ -610,15 +628,10 @@ namespace Beamable.Player
 		{
 			unchecked
 			{
-				return (invitingPlayerId.GetHashCode() * 397) ^ mailId.GetHashCode();
+				return (PlayerId.GetHashCode() * 397) ^ mailId.GetHashCode();
 			}
 		}
 		#endregion
-
-		/// <summary>
-		/// The id of the player that invited this player
-		/// </summary>
-		public long invitingPlayerId;
 
 		/// <summary>
 		/// The id of the mail that was issued to notify the player of the invite
@@ -626,10 +639,19 @@ namespace Beamable.Player
 		public long mailId;
 
 		private readonly PlayerSocial _sdk;
+		
+		[SerializeField]
+		private long playerId;
 
-		internal ReceivedFriendInvite(PlayerSocial sdk)
+		/// <summary>
+		/// The id of the player that invited this player
+		/// </summary>
+		public long PlayerId => playerId;
+
+		internal ReceivedFriendInvite(PlayerSocial sdk, long playerId)
 		{
 			_sdk = sdk;
+			this.playerId = playerId;
 		}
 
 		/// <summary>
@@ -637,7 +659,7 @@ namespace Beamable.Player
 		/// </summary>
 		public Promise AcceptInvite()
 		{
-			return _sdk.AcceptInviteFrom(invitingPlayerId);
+			return _sdk.AcceptInviteFrom(PlayerId);
 		}
 
 		/// <summary>
@@ -645,7 +667,7 @@ namespace Beamable.Player
 		/// </summary>
 		public Promise BlockSender()
 		{
-			return _sdk.BlockPlayer(invitingPlayerId);
+			return _sdk.BlockPlayer(PlayerId);
 		}
 	}
 

@@ -1,0 +1,20 @@
+{
+    "name": "Beamable.EasyFeatures.BasicAccountManagement",
+    "references": [
+        "Unity.Beamable",
+        "Unity.Beamable.Editor",
+        "Unity.Beamable.Runtime.Common",
+        "Beamable.Platform",
+        "Unity.TextMeshPro",
+        "Unity.Beamable.EasyFeatures.Components"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
