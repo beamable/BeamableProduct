@@ -46,8 +46,9 @@ jobs:
         run: |
           dotnet run
       - name: Kill Background Microservice 
+        continue-on-error: true
         run: |
-          jobs -p | grep -o -E '\s\d+\s' | xargs kill
+          kill $(jobs -p)
           fg
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
