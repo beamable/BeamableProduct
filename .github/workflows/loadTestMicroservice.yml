@@ -38,25 +38,13 @@ jobs:
         run: |
           dotnet build
       - name: Run Microservice (with profiler)
-        working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
+        working-directory: ./stress-tests/standalone-microservice/services/
         run: |
-          dotnet-counters collect --refresh-interval 3 --format json -- standalone-microservice &
-      - name: Run Loadtest
-        working-directory: ./stress-tests/standalone-microservice/services/StressTest
-        run: |
-          dotnet run
-      - name: Jobs1
-        continue-on-error: true
-        run: |
+          dotnet-counters collect --refresh-interval 3 --format json -- ./standalone-microservice/bin/Debug/net6.0/standalone-microservice &
+          dotnet run ./StressTest
           jobs
-      - name: Jobs2
-        continue-on-error: true
-        run: |
           jobs -p
-      - name: Kill Background Microservice 
-        continue-on-error: true
-        run: |
-          timeout 1 fg || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+          fg
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
         with:
