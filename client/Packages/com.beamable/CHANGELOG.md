@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
-- Added posibility to disable property order dependence for content checksum.
+- posibility to disable property order dependence for content checksum.
+- `Beam.ChangePid` allows the game to change the assigned pid. The pid will reset when the game restarts.
+- `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
 
 ### Changed
 - Exception on using `BeamContext` outside playMode
+- The _config-defaults.txt_ file no longer controls the which CID/PID are used while in Editor. The _config-defaults.txt_ file will still control the CID/PID in a built game.
+- Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
+- Exception on using `BeamContext` outside playMode
 - `Beamable.Common` assembly name changed to `Unity.Beamable.Runtime.Common` to align with assembly definition file.
+
+### Removed
+- The Toolbox signin flow no longer allows for guest accounts.
 
 ### Fixed
 - Fixed slow SDK instalation process.
@@ -23,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `PlayerInventory` triggers `OnDataUpdated` events.
 - `PlayerInventory` item properties can be `null` without throwing a `NullReferenceException`.
+
 
 ## [1.11.0]
 ### Added
