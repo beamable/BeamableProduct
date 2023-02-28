@@ -8,7 +8,6 @@ using cli.Content;
 using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
-using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
@@ -22,19 +21,19 @@ namespace cli;
 
 public class App
 {
-	public static LoggingLevelSwitch LogLevel { get; set; }
+	public static LoggingLevelSwitch LogLevel { get; set; } = null!;
 
 	public IDependencyBuilder Commands { get; set; }
-	public IDependencyProviderScope CommandProvider { get; set; }
+	public IDependencyProviderScope CommandProvider { get; set; } = null!;
 
-	private Action<IDependencyBuilder> _serviceConfigurator;
+	private Action<IDependencyBuilder>? _serviceConfigurator;
 
 	public App()
 	{
 		Commands = new DependencyBuilder();
 	}
 
-	public bool IsBuilt => CommandProvider != null;
+	public bool IsBuilt => CommandProvider != null!;
 
 	private static void ConfigureLogging()
 	{
@@ -208,7 +207,7 @@ public class App
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseExceptionHandler((ex, ctx) =>
+		commandLineBuilder.UseExceptionHandler((ex, _) =>
 		{
 			switch (ex)
 			{
