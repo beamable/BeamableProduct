@@ -40,7 +40,9 @@ jobs:
       - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
-          dotnet-counters collect --refresh-interval 3 --format json -- ./standalone-microservice/bin/Debug/net6.0/standalone-microservice &
+          cd ./standalone-microservice/bin/Debug/net6.0
+          dotnet-counters collect --refresh-interval 3 --format json -- standalone-microservice &
+          cd ../../../..
           dotnet run --project ./StressTest
           jobs
           jobs -p
