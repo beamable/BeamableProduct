@@ -8,6 +8,7 @@ namespace cli.Dotnet;
 public class ShareCodeCommandArgs : CommandArgs
 {
 	public string dllPath;
+	public string[] dependencyPrefixBlackList;
 
 }
 public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
@@ -19,6 +20,14 @@ public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("source", "The .dll filepath for the built code"), (arg, i) => arg.dllPath = i);
+		AddOption(new Option<string>("--dep-prefix-blacklist", () =>
+
+			 "System"
+		, "A list of namespace prefixes to ignore when copying dependencies"), (arg, i) =>
+		{
+			var entries = i.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+			arg.dependencyPrefixBlackList = entries;
+		});
 	}
 
 	public override Task Handle(ShareCodeCommandArgs args)
@@ -50,6 +59,8 @@ public class ShareCodeCommand : AppCommand<ShareCodeCommandArgs>
 
 				var dllPath = dlls[i];
 				var dllName = Path.GetFileName(dllPath);
+
+				if (args.dependencyPrefixBlackList.Any(dllName.StartsWith)) continue;
 				if (dllName.StartsWith("System")) continue;
 
 				var outputPath = Path.GetRelativePath(absoluteDir, dllPath);

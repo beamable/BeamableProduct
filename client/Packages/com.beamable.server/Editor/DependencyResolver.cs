@@ -355,7 +355,7 @@ namespace Beamable.Server
 				return false; // TODO: XXX hacky and gross, but we *DO* want the Microservice type to get considered...
 			}
 
-			return ns.StartsWith("Beamable.Common") || ns.StartsWith("Beamable.Server");
+			return ns.StartsWith("Unity.Beamable") || ns.StartsWith("Beamable.Common") || ns.StartsWith("Beamable.Server");
 		}
 
 		private static bool IsStubbedType(Type t)

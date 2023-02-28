@@ -388,6 +388,11 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public static Promise<bool> CheckDockerAppRunning()
 		{
+#if UNITY_2021_3_OR_NEWER
+			bool Contains(string one, string two) => one.Contains(two, StringComparison.InvariantCultureIgnoreCase);
+#else
+			bool Contains(string one, string two) => one.ToLower().Contains(two.ToLower());
+#endif
 #if UNITY_EDITOR_WIN
 			const string procName = "docker desktop";
 #else
@@ -398,6 +403,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				return DockerCheckTask;
 			}
 
+
 			bool dockerNotRunning = DockerNotRunning;
 			var dockerDesktopId = DockerDesktopProcessId;
 			var task = new Task<bool>(() =>
@@ -407,7 +413,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					try
 					{
 						var process = Process.GetProcessById(dockerDesktopId);
-						if (process.ProcessName.Contains(procName))
+						if (Contains(process.ProcessName, procName))
 						{
 							dockerNotRunning = false;
 							return dockerNotRunning;
@@ -423,7 +429,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					try
 					{
-						if (procList[i].ProcessName.Contains(procName))
+						if (Contains(procList[i].ProcessName, procName))
 						{
 							dockerDesktopId = procList[i].Id;
 							dockerNotRunning = false;
