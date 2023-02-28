@@ -45,6 +45,10 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/StressTest
         run: |
           dotnet run
+      - name: Kill Background Microservice 
+        run: |
+          jobs -p | grep -o -E '\s\d+\s' | xargs kill
+          fg
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
         with:
