@@ -14,44 +14,44 @@ namespace Beamable.Editor
 	{
 		public int callbackOrder { get; }
 
-        public async void OnPreprocessBuild(BuildReport report)
-        {
-	        var messages = new List<string>();
-	        if (!CheckForConfigDefaultsAlignment())
-	        {
-		        messages.Add("Runtime Cid/Pid don't match Editor Cid/Pid.");
-	        }
+		public async void OnPreprocessBuild(BuildReport report)
+		{
+			var messages = new List<string>();
+			if (!CheckForConfigDefaultsAlignment())
+			{
+				messages.Add("Runtime Cid/Pid don't match Editor Cid/Pid.");
+			}
 
-	        var hasLocalContentChanges = await ContentIO.HasLocalChanges();
-	        if (hasLocalContentChanges)
-	        {
-		        messages.Add("Local Beamable Content has non published changes. ");
-	        }
+			var hasLocalContentChanges = await ContentIO.HasLocalChanges();
+			if (hasLocalContentChanges)
+			{
+				messages.Add("Local Beamable Content has non published changes. ");
+			}
 
-	        if (messages.Count > 0)
-	        {
-		        // EditorUtility.Dis
-		        var title = messages.Count == 1 ? "Beamable Warning" : $"{messages.Count} Beamable Warnings";
-		        if (!EditorUtility.DisplayDialog(title, string.Join("\n\n", messages), "Continue Build",
-		                                         "Abort Build"))
-		        {
-			        throw new BuildFailedException("Aborted build due to Beamable checks");
-		        }
-	        }
+			if (messages.Count > 0)
+			{
+				// EditorUtility.Dis
+				var title = messages.Count == 1 ? "Beamable Warning" : $"{messages.Count} Beamable Warnings";
+				if (!EditorUtility.DisplayDialog(title, string.Join("\n\n", messages), "Continue Build",
+												 "Abort Build"))
+				{
+					throw new BuildFailedException("Aborted build due to Beamable checks");
+				}
+			}
 
-            if (ContentConfiguration.Instance.BakeContentOnBuild)
-            {
-                await ContentIO.BakeContent(skipCheck:true);
-            }
+			if (ContentConfiguration.Instance.BakeContentOnBuild)
+			{
+				await ContentIO.BakeContent(skipCheck: true);
+			}
 			if (CoreConfiguration.Instance.PreventCodeStripping)
-            {
+			{
 				BeamableLinker.GenerateLinkFile();
-            }
+			}
 			if (CoreConfiguration.Instance.PreventAddressableCodeStripping)
 			{
 				BeamableLinker.GenerateAddressablesLinkFile();
 			}
-        }
+		}
 
 		/// <summary>
 		/// it is possible that the developer may have config-defaults set to cid/pid 1,
@@ -67,7 +67,7 @@ namespace Beamable.Editor
 		private static bool CheckForConfigDefaultsAlignment()
 		{
 
-			ConfigDatabase.Init(forceReload:true);
+			ConfigDatabase.Init(forceReload: true);
 			if (!ConfigDatabase.TryGetString("cid", out var cid, allowSessionOverrides: false) || string.IsNullOrEmpty(cid))
 			{
 				var error = $@"BEAMABLE ERROR: No CID was detected!
@@ -78,7 +78,7 @@ popup, click the 'Save Config-Defaults' button.";
 				Debug.LogError(error);
 				throw new BuildFailedException(error);
 			}
-			
+
 			if (!ConfigDatabase.TryGetString("pid", out var pid, allowSessionOverrides: false) || string.IsNullOrEmpty(pid))
 			{
 				var error = $@"BEAMABLE ERROR: No PID was detected!
