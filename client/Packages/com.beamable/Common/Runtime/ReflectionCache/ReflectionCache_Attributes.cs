@@ -181,7 +181,7 @@ namespace Beamable.Common.Reflection
 			if (TargetsDeclaredMember && (foundInTypesWithAttributes != null || foundInBaseTypes != null))
 			{
 				Debug.Assert(true, "Attributes targeting members of classes and structs must specify either a base class/struct or " +
-				                   "an attribute over the classes/structs whose members we must check for the attribute of interest.");
+								   "an attribute over the classes/structs whose members we must check for the attribute of interest.");
 			}
 		}
 	}

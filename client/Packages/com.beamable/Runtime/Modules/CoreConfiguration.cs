@@ -108,7 +108,7 @@ namespace Beamable
 
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
-		
+
 		public void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects

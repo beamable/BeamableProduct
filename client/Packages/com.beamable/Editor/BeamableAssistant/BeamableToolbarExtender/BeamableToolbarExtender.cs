@@ -96,10 +96,10 @@ namespace Beamable.Editor.ToolbarExtender
 			var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
 			var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
 			var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
-			
+
 			_leftButtons.Clear();
 			_rightButtons.Clear();
-			
+
 			for (int i = 0; i < toolbarButtons.Count; i++)
 			{
 				if (toolbarButtons[i].GetButtonSide(api) == BeamableToolbarButton.Side.Left)
@@ -111,7 +111,7 @@ namespace Beamable.Editor.ToolbarExtender
 					_rightButtons.Add(toolbarButtons[i]);
 				}
 			}
-			
+
 			_leftButtons.Sort((b1, b2) =>
 			{
 				var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
