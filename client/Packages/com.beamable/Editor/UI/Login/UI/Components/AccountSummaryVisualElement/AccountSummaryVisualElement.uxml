@@ -72,6 +72,12 @@
                                                  tooltip="Set the values in 'Assets/Beamable/Resources/config-default.txt' to your current state."
             />
 
+            <beamable:GenericButtonVisualElement name="revertConfigToDefaults"
+                                                 text="Load Config-Defaults"
+                                                 type="Link"
+                                                 tooltip="Set your current CID/PID to the values stored in 'Assets/Beamable/Resources/config-defaults.txt'"
+            />
+
             <engine:VisualElement name="actionBtn">
               <beamable:GenericButtonVisualElement name="logout" text="Log out" type ="Cancel"/>
 <!--                <beamable:PrimaryButtonVisualElement name="signIn" text="Sign In"/>-->

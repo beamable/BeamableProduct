@@ -93,6 +93,13 @@ namespace Beamable.Editor
 
 			return new AccountServiceInitResult{ hasCid = false, account = account};
 		}
+
+		public async Promise SwitchToConfigDefaults()
+		{
+			await ConfigDefaultsService.LoadFromDisk();
+			
+			cid.Set(ConfigDefaultsService.Cid);
+		}
 		
 		private bool GetAccountForCid(string cid, out EditorAccountInfo account)
 		{

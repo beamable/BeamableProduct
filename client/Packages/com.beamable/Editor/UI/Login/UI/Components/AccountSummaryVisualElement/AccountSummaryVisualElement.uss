@@ -35,9 +35,11 @@
     left: 1000000px;
 }
 
+#revertConfigToDefaults,
 #commitConfigDefaults {
     margin-top: 8px;
 }
+#revertConfigToDefaults.writing,
 #commitConfigDefaults.writing {
     opacity: .5;
 }

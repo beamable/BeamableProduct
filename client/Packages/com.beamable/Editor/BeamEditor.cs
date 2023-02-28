@@ -636,6 +636,15 @@ namespace Beamable
 			                 .SaveConfig(alias, cid, pid);
 		}
 
+		public async Promise LoadConfig()
+		{
+			var service = ServiceScope.GetService<ConfigDefaultsService>();
+			await service.LoadFromDisk();
+			
+			EditorAccountService.SetRealm();
+			service.Alias
+		}
+		
 		/// <summary>
 		/// Save the current toolbox CID/PID data in the config-defaults.txt file.
 		/// </summary>
