@@ -21,11 +21,6 @@ namespace Beamable.Editor.Tests.Toolbox
 {
 	public class ToolboxPortalTests : EditorTest
 	{
-		protected override void Configure(IDependencyBuilder builder)
-		{
-			builder.ReplaceSingleton<IWebsiteHook, MockWebsiteHook>();
-		}
-
 		// A Test behaves as an ordinary method
 		[UnityTest]
 		public IEnumerator PortalButtonTest()

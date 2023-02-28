@@ -60,7 +60,6 @@ namespace Beamable.Editor.Login.UI
 		}
 
 		private NewCustomerVisualElement _newCustomerVisualElement;
-		private NewUserVisualElement _newUserVisualElement;
 
 		public static LoginWindow Show(params Type[] dockLocations)
 		{
@@ -202,7 +201,6 @@ namespace Beamable.Editor.Login.UI
             debugPanel.Add(new Button(() => LoginManager.GotoLegalCopy()) {text = "legal"});
             debugPanel.Add(new Button(() => LoginManager.GotoForgotPassword()) {text = "forgot"});
             debugPanel.Add(new Button(() => LoginManager.GotoNewCustomer()) {text = "new customer"});
-            debugPanel.Add(new Button(() => LoginManager.GotoNewUser()) {text = "new user"});
             debugPanel.Add(new Button(() => LoginManager.GotoNoRole()) {text = "no role"});
             debugPanel.Add(new Button(() => LoginManager.GotoSummary()) {text = "summary"});
 #else

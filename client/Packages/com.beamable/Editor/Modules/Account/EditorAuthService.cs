@@ -3,16 +3,64 @@ using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.Rendering;
 
 namespace Beamable.Editor.Modules.Account
 {
 	public interface IEditorAuthApi : IAuthService
 	{
 		Promise<EditorUser> GetUserForEditor();
+		Promise<TokenResponse> CreateEditorUser();
+	}
+
+	public class BeamableRequestFactory : IPlatformRequesterFactory
+	{
+		private readonly IDependencyProviderScope _provider;
+
+		public BeamableRequestFactory(IDependencyProviderScope provider)
+		{
+			_provider = provider;
+		}
+
+		private IPlatformRequester CreateInstance()
+		{
+			if (!_provider.TryGetServiceDescriptor<IPlatformRequester>(out var descriptor))
+			{
+				throw new Exception("There was no Dependency Injection factory for the IPlatformRequester");
+			}
+			var instance = (IPlatformRequester)descriptor.Factory?.Invoke(_provider);
+			return instance;
+		}
+		
+		public IPlatformRequester Create(string cid)
+		{
+			var instance = CreateInstance();
+			instance.Cid = cid;
+			instance.Pid = null;
+
+			return instance;
+		}
+	
+		public IPlatformRequester Create(string cid, string pid)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public class EditorAuthServiceFactory
+	{
+		private readonly IPlatformRequesterFactory _requesterFactory;
+
+		public EditorAuthServiceFactory(IPlatformRequesterFactory requesterFactory)
+		{
+			_requesterFactory = requesterFactory;
+		}
+
+		public IEditorAuthApi CreateCidScopedAuthService(string cid) =>
+			new EditorAuthService(_requesterFactory.Create(cid));
 	}
 
 	public class EditorAuthService : AuthService, IEditorAuthApi
@@ -27,9 +75,31 @@ namespace Beamable.Editor.Modules.Account
 		}
 
 		// This API call will only work if made by editor code.
-		public Promise<EditorUser> GetUserForEditor()
+		public async Promise<EditorUser> GetUserForEditor()
 		{
-			return Requester.Request<EditorUser>(Method.GET, $"{ACCOUNT_URL}/admin/me", useCache: true);
+			try
+			{
+				return await Requester.Request<EditorUser>(Method.GET, $"{ACCOUNT_URL}/admin/me", useCache: true);
+			}
+			catch (PlatformRequesterException ex) when (ex.Status == 403)
+			{
+				var vanilla = await GetUser();
+				return new EditorUser(vanilla);
+			}
+		}
+
+		public Promise<TokenResponse> CreateEditorUser()
+		{
+			var req = new CreateUserRequest { grant_type = "guest" , customerScoped = true};
+			return Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, false);
+		}
+		
+		
+		[Serializable]
+		private class CreateUserRequest
+		{
+			public string grant_type;
+			public bool customerScoped;
 		}
 	}
 

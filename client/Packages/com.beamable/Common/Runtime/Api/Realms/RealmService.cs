@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using Beamable.Common.Runtime;
 using System;
 using System.Collections.Generic;
@@ -74,9 +75,14 @@ namespace Beamable.Common.Api.Realms
 
 		private List<RealmView> ProcessProjects(List<ProjectViewDTO> projects)
 		{
+			return ProcessProjects(_requester.Cid, projects);
+		}
+
+		public static List<RealmView> ProcessProjects(string cid, List<ProjectViewDTO> projects)
+		{
 			var map = projects.Select(p => new RealmView
 			{
-				Cid = _requester.Cid,
+				Cid = cid,
 				Pid = p.pid,
 				ProjectName = p.projectName,
 				Archived = p.archived,
@@ -109,6 +115,7 @@ namespace Beamable.Common.Api.Realms
 				while (toExplore.Count > 0)
 				{
 					var curr = toExplore.Dequeue();
+					curr.GamePid = rootPid;
 					if (visited.Contains(curr))
 					{
 						continue; // we've already seen this node. Don't do anything. This is a safety measure, it should never happen, but it COULD given malformed data from the server.
@@ -170,6 +177,12 @@ namespace Beamable.Common.Api.Realms
 	}
 
 	[Serializable]
+	public class OptionalRealmView : Optional<RealmView>
+	{
+		
+	}
+
+	[Serializable]
 	public class RealmView : ISearchableElement
 	{
 		private const string PRODUCTION_DROPDOWN_CLASS_NAME = "production";
@@ -186,6 +199,7 @@ namespace Beamable.Common.Api.Realms
 
 		public bool IsProduction => Depth == 0;
 		public bool IsStaging => Depth == 1;
+		public string GamePid;
 
 		public override bool Equals(object obj)
 		{
