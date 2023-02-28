@@ -41,7 +41,7 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           dotnet-counters collect --refresh-interval 3 --format json -- ./standalone-microservice/bin/Debug/net6.0/standalone-microservice &
-          dotnet run ./StressTest
+          dotnet run --project ./StressTest
           jobs
           jobs -p
           fg
