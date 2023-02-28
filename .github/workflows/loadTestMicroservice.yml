@@ -44,9 +44,12 @@ jobs:
           dotnet-counters collect --refresh-interval 3 --format json -- standalone-microservice &
           cd ../../../..
           dotnet run --project ./StressTest
-          jobs
+          echo "ps"
+          ps
+          echo "jobs"
           jobs -p
-          fg
+          echo "kill"
+          kill $(jobs -p)
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
         with:
