@@ -21,19 +21,19 @@ namespace cli;
 
 public class App
 {
-	public static LoggingLevelSwitch LogLevel { get; set; } = null!;
+	public static LoggingLevelSwitch LogLevel { get; set; }
 
 	public IDependencyBuilder Commands { get; set; }
-	public IDependencyProviderScope CommandProvider { get; set; } = null!;
+	public IDependencyProviderScope CommandProvider { get; set; }
 
-	private Action<IDependencyBuilder>? _serviceConfigurator;
+	private Action<IDependencyBuilder> _serviceConfigurator;
 
 	public App()
 	{
 		Commands = new DependencyBuilder();
 	}
 
-	public bool IsBuilt => CommandProvider != null!;
+	public bool IsBuilt => CommandProvider != null;
 
 	private static void ConfigureLogging()
 	{
@@ -80,7 +80,7 @@ public class App
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	public virtual void Configure(Action<IDependencyBuilder>? serviceConfigurator = null, Action<IDependencyBuilder>? commandConfigurator = null)
+	public virtual void Configure(Action<IDependencyBuilder> serviceConfigurator = null, Action<IDependencyBuilder> commandConfigurator = null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");

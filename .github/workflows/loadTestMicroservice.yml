@@ -40,7 +40,7 @@ jobs:
       - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
         run: |
-          dotnet-counters collect --refresh-interval 3 --format json --output ../../../../StressTest/reports -- standalone-microservice &
+          dotnet-counters collect --refresh-interval 3 --format csv -- standalone-microservice &
       - name: Run Loadtest
         working-directory: ./stress-tests/standalone-microservice/services/StressTest
         run: |
@@ -53,3 +53,4 @@ jobs:
           retention-days: 15
           path: |
             ./stress-tests/standalone-microservice/services/StressTest/reports
+            ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0/counter.csv
