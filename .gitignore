@@ -40,6 +40,10 @@ loadtests/
 
 user-token.json
 
+/stress-tests/standalone-microservice/services/StressTest/bin/
+/stress-tests/standalone-microservice/services/StressTest/obj/
+/stress-tests/standalone-microservice/services/StressTest/.idea/
+
 # Microservice project files
 /microservice/bin/
 /microservice/obj
