@@ -33,17 +33,22 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
           dotnet build
-      - name: Observe
-        working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
+      - name: Build Loadtest
+        working-directory: ./stress-tests/standalone-microservice/services/StressTest
         run: |
-          cat .env
+          dotnet build
       - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0
         run: |
-          timeout 30 dotnet-counters collect --refresh-interval 3 --format csv -- standalone-microservice || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+          dotnet-counters collect --refresh-interval 3 --format csv -- standalone-microservice &
+      - name: Run Loadtest
+        working-directory: ./stress-tests/standalone-microservice/services/StressTest
+        run: |
+          dotnet run
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
         with:
           name: profiler
           path: |
+            ./stress-tests/standalone-microservice/services/StressTest/reports
             ./stress-tests/standalone-microservice/services/standalone-microservice/bin/Debug/net6.0/counter.csv
