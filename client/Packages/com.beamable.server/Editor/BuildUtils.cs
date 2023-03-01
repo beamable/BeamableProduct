@@ -20,6 +20,9 @@ namespace Beamable.Server.Editor
 				FileUtils.CopyDlls(descriptor, dependencies);
 				FileUtils.CopySingleFiles(descriptor, dependencies);
 
+				IMicroserviceBuildHook buildHook = BeamEditorContext.Default.ServiceScope.GetService<IMicroserviceBuildHook>();
+				buildHook?.Execute();
+ 
 				var programFilePath = Path.Combine(descriptor.BuildPath, "Program.cs");
 				var csProjFilePath = Path.Combine(descriptor.BuildPath, $"{descriptor.ImageName}.csproj");
 				var dockerfilePath = Path.Combine(descriptor.BuildPath, "Dockerfile");
