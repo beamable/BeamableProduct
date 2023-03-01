@@ -15,6 +15,7 @@ namespace Beamable.Editor.UI.Common.Models
 		List<ISearchableElement> Elements { get; set; }
 
 		void Initialize();
+		bool RefreshOnStart { get; }
 		Promise<List<ISearchableElement>> RefreshAvailable();
 	}
 }

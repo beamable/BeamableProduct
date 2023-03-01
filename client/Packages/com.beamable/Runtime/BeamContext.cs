@@ -383,6 +383,13 @@ namespace Beamable
 							IDependencyBuilder builder)
 		{
 #if UNITY_EDITOR
+			if (!UnityEditor.EditorApplication.isPlaying)
+			{
+				_initPromise = new Promise();
+				var exception = new Exception("BeamContext is meant to use only in play mode, not edit mode.");
+				_initPromise.CompleteError(exception);
+				return;
+			}
 			if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
 			{
 				// if the context is inside the editor, and something is trying to 
