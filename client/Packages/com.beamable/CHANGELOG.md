@@ -4,10 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.12.0]
 ### Added
 - Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
-- posibility to disable property order dependence for content checksum.
+- Possibility to disable property order dependence for content checksum.
 - `Beam.ChangePid` allows the game to change the assigned pid. The pid will reset when the game restarts.
 - `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
 - `PlayerInventory` has explicit methods for getting Items and Currencies with string references.
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Toolbox signin flow no longer allows for guest accounts.
 
 ### Fixed
-- Fixed slow SDK instalation process.
+- Fixed slow SDK installation process.
 
 ## [1.11.1]
 ### Changed
