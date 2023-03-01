@@ -353,7 +353,7 @@ namespace Beamable.Common.Dependencies
 		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate = true) where TNew : TExisting;
 
 		IDependencyBuilder ReplaceSingleton<TExisting>(TExisting nextInstance);
-		
+
 		/// <summary>
 		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
 		/// </summary>

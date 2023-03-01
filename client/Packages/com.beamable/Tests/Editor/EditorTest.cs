@@ -41,7 +41,7 @@ namespace Beamable.Editor.Tests
 			Configure(builder);
 
 			Context = BeamEditorContext.Instantiate("test", builder);
-			
+
 			Context.Requester.Token = new AccessToken(new AccessTokenStorage(), "000", "111", "token", "refreshToken", 420);
 
 			yield return Context.InitializePromise.ToYielder();
