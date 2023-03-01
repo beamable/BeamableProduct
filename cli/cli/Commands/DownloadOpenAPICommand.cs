@@ -17,18 +17,18 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 {
 	private SwaggerService _swaggerService;
 
-	public DownloadOpenAPICommand() : base("download", "download the Beamable Open API specs")
+	public DownloadOpenAPICommand() : base("download", "Download the Beamable Open API specs")
 	{
 	}
 
 	public override void Configure()
 	{
 		AddOption(new Option<string>("--output", () => null,
-				"when null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path."),
+				"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
 			(args, val) => args.OutputPath = val);
 
 		AddOption(new Option<string>("--filter", () => null,
-				"a string to filter which open apis to generate. An empty string matches everything"),
+				"Filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
 	}
 

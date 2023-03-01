@@ -43,6 +43,8 @@ namespace Beamable.Editor.UI.Common.Models
 			ContentPublisher.OnContentPublished += () => RefreshAvailable();
 		}
 
+		public bool RefreshOnStart => true;
+
 		public Promise<List<ISearchableElement>> RefreshAvailable()
 		{
 			var api = BeamEditorContext.Default;

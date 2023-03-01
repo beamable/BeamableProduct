@@ -1,8 +1,0 @@
-{
-    "cid": "",
-    "alias": "",
-    "pid": "",
-    "platform": "https://dev.api.beamable.com",
-    "socket": "https://dev.api.beamable.com",
-    "containerPrefix": ""
-}
