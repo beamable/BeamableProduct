@@ -1,6 +1,8 @@
+using Beamable.Theme.Palettes;
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor.CodeGen
@@ -76,10 +78,15 @@ command=/usr/sbin/sshd -D
 			   $@"RUN {string.Join(" && \\\n", multiline.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Select(x => $"echo \"{x}\" >> {fileName}"))}";
 		}
 
-		// string GetCustomFileAdditions()
-		// {
-		// 	
-		// }
+		string GetCustomFileAdditions()
+		{
+			var sb = new StringBuilder();
+			foreach (var copy in _buildContext.FileAdditions)
+			{
+				sb.Append($"\nCOPY {copy.containerPath} {copy.containerPath}\n");
+			}
+			return sb.ToString();
+		}
 
 		string GetDebugLayer()
 		{
@@ -150,6 +157,7 @@ FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
 RUN dotnet --version
 WORKDIR /subapp
 
+{GetCustomFileAdditions()}
 COPY {Descriptor.ImageName}.csproj .
 RUN cp /src/baseImageDocs.xml .
 
@@ -183,6 +191,7 @@ COPY {Descriptor.ImageName}.csproj .
 
 #RUN dotnet restore
 COPY . .
+
 RUN dotnet publish -c {ReleaseMode()} -o /subapp
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 
@@ -193,7 +202,7 @@ FROM {(DebuggingEnabled
 {GetDebugLayer()}
 
 WORKDIR /subapp
-
+{GetCustomFileAdditions()}
 EXPOSE {HEALTH_PORT}
 COPY --from=build-env /subapp .
 COPY --from=build-env /app/baseImageDocs.xml .
