@@ -402,7 +402,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				return DockerCheckTask;
 			}
-			
+
 
 			bool dockerNotRunning = DockerNotRunning;
 			var dockerDesktopId = DockerDesktopProcessId;
@@ -413,7 +413,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					try
 					{
 						var process = Process.GetProcessById(dockerDesktopId);
-						if (Contains(process.ProcessName,procName))
+						if (Contains(process.ProcessName, procName))
 						{
 							dockerNotRunning = false;
 							return dockerNotRunning;
@@ -429,7 +429,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					try
 					{
-						if (Contains(procList[i].ProcessName,procName))
+						if (Contains(procList[i].ProcessName, procName))
 						{
 							dockerDesktopId = procList[i].Id;
 							dockerNotRunning = false;

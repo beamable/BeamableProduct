@@ -2,14 +2,16 @@
 
     <PropertyGroup>
         <PackageId>Beamable.Common</PackageId>
-        <Version>0.0.0</Version>
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
 
         <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES</DefineConstants>
-        <TargetFramework>net6.0</TargetFramework>
-        <AssemblyName>Beamable.Common</AssemblyName>
+        <AssemblyName>Unity.Beamable.Runtime.Common</AssemblyName>
 
+        <OutputType>Library</OutputType>
+        <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
+        <TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>

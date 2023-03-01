@@ -24,6 +24,14 @@ using Debug = UnityEngine.Debug;
 namespace Beamable.Api
 {
 
+	public interface IPlatformRequesterErrorHandler
+	{
+		Promise<T> HandleError<T>(Exception ex,
+		                          string contentType,
+		                          byte[] body,
+		                          SDKRequesterOptions<T> opts);
+	}
+	
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -58,6 +66,8 @@ namespace Beamable.Api
 		private string _requestTimeoutMs = null;
 		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
 
+		public IPlatformRequesterErrorHandler ErrorHandler { get; set; }
+		
 		public string RequestTimeoutMs
 		{
 			get => _requestTimeoutMs;
@@ -366,6 +376,10 @@ namespace Beamable.Api
 				return await MakeRequest(contentType, body, opts);
 			}
 
+			if (ErrorHandler != null)
+			{
+				return await ErrorHandler.HandleError(error, contentType, body, opts);
+			}
 			throw error;
 		}
 
