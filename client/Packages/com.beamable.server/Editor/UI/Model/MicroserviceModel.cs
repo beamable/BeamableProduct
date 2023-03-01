@@ -1,12 +1,16 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Editor.UI.Components;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
+using SharedRuntime;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -145,6 +149,18 @@ namespace Beamable.Editor.UI.Model
 			var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Requester.Token.RefreshToken}";
 			Application.OpenURL(url);
 		}
+		
+		private void PrintOpenAPi()
+		{
+			var de = BeamEditorContext.Default;
+			var endpoint = MicroserviceClientHelper.CreateUrl(de.Requester.Cid, de.Requester.Pid, ServiceDescriptor.Name, "admin/Docs");
+			de.Requester.Request(Method.GET, endpoint, null, true, s => s).Then(s =>
+			{
+				var OpenApi = new OpenApiMicroserviceDescriptor(s);
+				var success = OpenApi.Build();
+
+			}).Error(Debug.LogException); 
+		}
 		public void EnrichWithRemoteReference(ServiceReference remoteReference)
 		{
 			RemoteReference = remoteReference;
@@ -173,6 +189,7 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenDocs(), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/Print openAPI", _=>PrintOpenAPi());
 			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
 			{
 				BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);

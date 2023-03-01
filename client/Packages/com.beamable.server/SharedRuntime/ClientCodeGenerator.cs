@@ -21,7 +21,7 @@ namespace Beamable.Server.Generator
 		private const string MicroserviceClients_TypeName = "MicroserviceClients";
 		private const string MicroserviceClient_TypeName = "MicroserviceClient";
 
-		public MicroserviceDescriptor Descriptor { get; }
+		public IDescriptor Descriptor => _descriptor;
 
 		/// <summary>
 		/// Define the compile unit to use for code generation.
@@ -43,6 +43,7 @@ namespace Beamable.Server.Generator
 		private string TargetExtensionClassName => $"ExtensionsFor{Descriptor.Name}Client";
 
 		private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
+		private readonly IDescriptor _descriptor;
 
 		public const string PARAMETER_STRING = "Parameter";
 		public const string CLIENT_NAMESPACE = "Beamable.Server.Clients";
@@ -50,12 +51,12 @@ namespace Beamable.Server.Generator
 		private string ExtensionClassToFind => $"public class {TargetExtensionClassName}";
 		private string ExtensionClassToReplace => $"public static class {TargetExtensionClassName}";
 
-		public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
+		public static string GetTargetParameterClassName(IDescriptor descriptor) =>
 			$"MicroserviceParameters{descriptor.Name}Client";
 
 		public static string GetParameterClassName(Type parameterType) => $"{PARAMETER_STRING}{parameterType.GetTypeString().Replace(".", "_")}";
 
-		public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
+		public static Type GetDataWrapperTypeForParameter(IDescriptor descriptor, Type parameterType)
 		{
 			var name =
 				$"{CLIENT_NAMESPACE}.{GetTargetParameterClassName(descriptor)}+{GetParameterClassName(parameterType)}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
@@ -66,10 +67,10 @@ namespace Beamable.Server.Generator
 		/// <summary>
 		/// Define the class.
 		/// </summary>
-		/// <param name="serviceObject"></param>
-		public ClientCodeGenerator(MicroserviceDescriptor descriptor)
+		/// <param name="descriptor"></param>
+		public ClientCodeGenerator(IDescriptor descriptor)
 		{
-			Descriptor = descriptor;
+			_descriptor = descriptor;
 			targetUnit = new CodeCompileUnit();
 			CodeNamespace samples = new CodeNamespace(CLIENT_NAMESPACE);
 

@@ -1,6 +1,8 @@
 using Beamable.Config;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Beamable.Server
@@ -37,14 +39,15 @@ namespace Beamable.Server
 			SetValues(values);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static string GetServicePrefix(string serviceName)
 		{
 #if !UNITY_EDITOR
-			return ""; // if we aren't in the editor, never ever use a service prefix.
+			return string.Empty; // if we aren't in the editor, never ever use a service prefix.
 #else
-         var prefix = "";
-         GetValues().TryGetValue(serviceName, out prefix);
-         return prefix;
+		if (GetValues().TryGetValue(serviceName, out string prefix))
+				return prefix;
+         return string.Empty;
 #endif
 		}
 
