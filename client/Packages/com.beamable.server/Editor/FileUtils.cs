@@ -80,6 +80,26 @@ namespace Beamable.Server.Editor
 			}
 		}
 
+		public static void CopyFile(MicroserviceDescriptor descriptor, string srcPath, string containerPath=null)
+		{
+			var targetRelative = srcPath.Substring(Application.dataPath.Length - "Assets/".Length);
+			var targetFull = descriptor.BuildPath + targetRelative;
+
+			if (containerPath != null)
+			{
+				targetFull = containerPath;
+			}
+			
+			MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying file to " + targetFull);
+
+			var targetDir = Path.GetDirectoryName(targetFull);
+			Directory.CreateDirectory(targetDir);
+
+			// to avoid any file issues, we load the file into memory
+			var src = File.ReadAllText(srcPath);
+			File.WriteAllText(targetFull, src);
+		}
+
 		public static void CopySingleFiles(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
 		{
 			// copy over the single files...

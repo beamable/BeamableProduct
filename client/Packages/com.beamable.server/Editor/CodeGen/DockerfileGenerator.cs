@@ -11,6 +11,7 @@ namespace Beamable.Server.Editor.CodeGen
 		public bool Watch { get; }
 		public MicroserviceConfigurationEntry Config { get; }
 
+		private readonly MicroserviceBuildContext _buildContext;
 		private bool DebuggingEnabled = true;
 		public const string DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE = "mcr.microsoft.com/dotnet/runtime:6.0";
 		public const string DOTNET_RUNTIME_IMAGE = "mcr.microsoft.com/dotnet/runtime:6.0-alpine";
@@ -24,12 +25,13 @@ namespace Beamable.Server.Editor.CodeGen
 		public static string BASE_TAG => BeamableEnvironment.BeamServiceTag;
 #endif
 
-		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
+		public DockerfileGenerator(MicroserviceBuildContext buildContext, bool includeDebugTools, bool watch)
 		{
+			_buildContext = buildContext;
 			DebuggingEnabled = includeDebugTools;
-			Descriptor = descriptor;
+			Descriptor = buildContext.Descriptor;
 			Watch = watch;
-			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
+			Config = MicroserviceConfiguration.Instance.GetEntry(Descriptor.Name);
 		}
 
 		string GetOpenSshConfigString()
@@ -73,6 +75,11 @@ command=/usr/sbin/sshd -D
 			return
 			   $@"RUN {string.Join(" && \\\n", multiline.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Select(x => $"echo \"{x}\" >> {fileName}"))}";
 		}
+
+		// string GetCustomFileAdditions()
+		// {
+		// 	
+		// }
 
 		string GetDebugLayer()
 		{

@@ -20,14 +20,20 @@ namespace Beamable.Server.Editor
 				FileUtils.CopyDlls(descriptor, dependencies);
 				FileUtils.CopySingleFiles(descriptor, dependencies);
 
-				IMicroserviceBuildHook buildHook = BeamEditorContext.Default.ServiceScope.GetService<IMicroserviceBuildHook>();
-				buildHook?.Execute();
- 
+				var hookType = descriptor.GetMicroserviceBuildHookType();
+				var scope = BeamEditorContext.Default.ServiceScope;
+				var buildCtx = new MicroserviceBuildContext {Descriptor = descriptor, Provider = scope};
+				if (scope.CanBuildService(hookType))
+				{
+					var hook = scope.GetService(hookType) as IMicroserviceBuildHook;
+					hook?.Execute(buildCtx);
+				}
+
 				var programFilePath = Path.Combine(descriptor.BuildPath, "Program.cs");
 				var csProjFilePath = Path.Combine(descriptor.BuildPath, $"{descriptor.ImageName}.csproj");
 				var dockerfilePath = Path.Combine(descriptor.BuildPath, "Dockerfile");
 				(new ProgramCodeGenerator(descriptor)).GenerateCSharpCode(programFilePath);
-				(new DockerfileGenerator(descriptor, includeDebugTools, watch)).Generate(dockerfilePath);
+				(new DockerfileGenerator(buildCtx, includeDebugTools, watch)).Generate(dockerfilePath);
 				(new ProjectGenerator(descriptor, dependencies)).Generate(csProjFilePath);
 			}
 			catch (Exception ex)
