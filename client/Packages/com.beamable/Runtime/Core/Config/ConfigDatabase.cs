@@ -19,7 +19,7 @@ namespace Beamable.Config
 		/// When true, calling this method will force reload the values from disk.
 		/// Session overrides remain.
 		/// </param>
-		public static void Init(bool forceReload=false)
+		public static void Init(bool forceReload = false)
 		{
 			var alreadyInitialized = database != null && database.Count > 0;
 
@@ -41,7 +41,7 @@ namespace Beamable.Config
 
 			return configFileName;
 		}
-		
+
 		public static TextAsset GetConfigAsset()
 		{
 			return Resources.Load<TextAsset>(GetConfigFileName());
@@ -105,7 +105,7 @@ namespace Beamable.Config
 			}
 		}
 
-		public static bool TryGetString(string name, out string value, bool allowSessionOverrides=true)
+		public static bool TryGetString(string name, out string value, bool allowSessionOverrides = true)
 		{
 			name = name.Trim();
 			if (ConfigDatabase.database.ContainsKey(name))
@@ -243,7 +243,7 @@ namespace Beamable.Config
 			if (asset == null)
 			{
 				return "{}"; // empty json.
-				// throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
+							 // throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
 			}
 
 			return asset.text;

@@ -19,7 +19,7 @@ namespace Beamable.Editor.Login.UI.Model
 
 		public event Action<string> OnError;
 		public event Action OnErrorCleared;
-		
+
 		public CustomerView CurrentCustomer { get; private set; }
 
 		public EditorUser CurrentUser { get; private set; }
@@ -91,19 +91,20 @@ namespace Beamable.Editor.Login.UI.Model
 			StartedWithUser = b.Requester.Token != null;
 
 			Customer.Clear();
-			
+
 			CurrentCustomer = b.CurrentCustomer;
 			if (b.HasCustomer && !string.IsNullOrEmpty(b.CurrentCustomer.Alias))
 			{
 				Customer.SetCidPid(b.CurrentCustomer.Alias, CurrentRealm?.Pid);
-			} else
+			}
+			else
 			{
 				var configService = b.ServiceScope.GetService<ConfigDefaultsService>();
 				var maybeAlias = configService.Alias;
 				var maybePid = configService.Pid;
 				Customer.SetCidPid(maybeAlias.Value, maybePid.Value);
 			}
-			
+
 
 			b.OnUserChange += OnUserChanged;
 			b.OnRealmChange += SetRealm;

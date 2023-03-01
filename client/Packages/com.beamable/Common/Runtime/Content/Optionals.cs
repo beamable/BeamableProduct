@@ -40,7 +40,7 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	
+
 	[DebuggerDisplay("{HasValue ? (Value?.ToString()) : \"no value\"}")]
 	public class Optional<T> : Optional
 	{
@@ -92,7 +92,7 @@ namespace Beamable.Common.Content
 			if (!HasValue) throw exFactory?.Invoke() ?? new ArgumentException("Optional value does not exist, but it was forced.");
 			return Value;
 		}
-		
+
 		public T GetOrElse(T otherwise) => GetOrElse(() => otherwise);
 
 		public T GetOrElse(Func<T> otherwise)
@@ -286,7 +286,7 @@ namespace Beamable.Common.Content
 			Value = value;
 			HasValue = true;
 		}
-		
+
 		public string GetNonEmptyOrElse(Func<string> otherwise)
 		{
 			if (HasNonEmptyValue) return Value;
@@ -310,13 +310,13 @@ namespace Beamable.Common.Content
 		{
 			HasValue = false;
 		}
-		
+
 		public ReadonlyOptionalString(string value)
 		{
 			HasValue = true;
 			Value = value;
 		}
-		
+
 		public override void SetValue(object value)
 		{
 			throw new InvalidOperationException("Cannot write to a readonly string");

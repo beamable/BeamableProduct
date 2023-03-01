@@ -179,7 +179,7 @@ namespace Beamable.Common.Api.Realms
 	[Serializable]
 	public class OptionalRealmView : Optional<RealmView>
 	{
-		
+
 	}
 
 	[Serializable]
