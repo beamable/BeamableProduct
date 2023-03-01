@@ -159,7 +159,7 @@ namespace Beamable.Server.Editor
 
 			var tasks = new List<Task>(LatestCodeHandles.Count);
 
-			for (int  i = 0;  i < LatestCodeHandles.Count;  i++)
+			for (int i = 0; i < LatestCodeHandles.Count; i++)
 			{
 				var index = i;
 				var beamServiceCodeHandle = LatestCodeHandles[index];
@@ -168,7 +168,7 @@ namespace Beamable.Server.Editor
 				{
 					var path = beamServiceCodeHandle.CodeDirectory;
 					var files = Directory.GetFiles(path)
-					                     .Where(file => !file.EndsWith(".meta"));
+										 .Where(file => !file.EndsWith(".meta"));
 					if (MicroserviceConfiguration.Instance.EnableHotModuleReload)
 					{
 						files = files.Where(file => !file.EndsWith(".cs")).ToArray();

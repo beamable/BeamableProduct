@@ -82,7 +82,7 @@ namespace Beamable.Editor.Login.UI.Components
 					});
 				}, .1f);
 			};
-			
+
 			var resetPasswordButton = Root.Q<GenericButtonVisualElement>("resetPassword");
 			resetPasswordButton.OnClick += Manager.GotoForgotPassword;
 
