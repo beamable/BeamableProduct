@@ -14,7 +14,9 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			BeamContext Context { get; set; }
 			string Email { get; }
 			bool IsEmailValid(string email, out string errorMessage);
+			bool IsPasswordValid(string password, out string errorMessage);
 			bool IsPasswordValid(string password, string confirmation, out string errorMessage);
+			bool IsResetCodeValid(string code, out string errorMessage);
 		}
 
 		private const string SEND_TEXT = "Send code to email";
@@ -58,8 +60,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
-			EmailInput.Clear();
+			CodeInput.Setup((string input, out string errormessage) => System.IsResetCodeValid(input, out errormessage));
+			EmailInput.Setup((string input, out string errorMessage) => System.IsEmailValid(input, out errorMessage));
 			EmailInput.text = System.Email;
+			PasswordInput.Setup((string input, out string errorMessage) => System.IsPasswordValid(input, out errorMessage));
+			ConfirmPasswordInput.Setup((string input, out string errorMessage) => System.IsPasswordValid(PasswordInput.text, input, out errorMessage));
 			SetCodeSentState(false);
 			
 			FeatureControl.SetBackAction(GoBack);
@@ -104,12 +109,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private async void SendCode()
 		{
-			if (!System.IsEmailValid(EmailInput.text, out string errorMessage))
+			if (!EmailInput.IsValid())
 			{
-				EmailInput.SetInvalidState(errorMessage);
 				return;
 			}
-			EmailInput.SetValidState();
 			
 			FeatureControl.SetLoadingOverlay(true);
 			_passwordResetOperation = await System.Context.Accounts.ResetPassword();
@@ -139,29 +142,19 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private async void ChangePassword()
 		{
-			string password = PasswordInput.text;
-			string confirmation = ConfirmPasswordInput.text;
-			if (!System.IsPasswordValid(password, confirmation, out string errorMessage))
+			if (!CodeInput.IsValid() || !PasswordInput.IsValid() || !ConfirmPasswordInput.IsValid())
 			{
-				PasswordInput.SetInvalidState();
-				ConfirmPasswordInput.SetInvalidState(errorMessage);
 				return;
 			}
-			PasswordInput.SetValidState();
-			ConfirmPasswordInput.SetValidState();
 
-			if (string.IsNullOrWhiteSpace(CodeInput.text))
-			{
-				CodeInput.SetInvalidState("Please enter a password reset code");
-				return;
-			}
-			CodeInput.SetValidState();
+			string code = CodeInput.text;
+			string password = PasswordInput.text;
 			
 			FeatureControl.SetLoadingOverlay(true);
 			
 			try
 			{
-				var confirm = await _passwordResetOperation.Confirm(CodeInput.text, password);
+				var confirm = await _passwordResetOperation.Confirm(code, password);
 				if (confirm.isSuccess)
 				{
 					FeatureControl.OpenSignInView();

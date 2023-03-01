@@ -18,6 +18,10 @@ namespace Beamable.EasyFeatures.Components
 		public BussElement MainBussElement;
 		public ErrorMessageText ErrorText;
 
+		private ValidatorDelegate _validator;
+
+		public delegate bool ValidatorDelegate(string input, out string errorMessage);
+
 		public string text
 		{
 			get => InputField.text;
@@ -34,10 +38,49 @@ namespace Beamable.EasyFeatures.Components
 		{
 			ShowHideContentButton.gameObject.SetActive(AllowShowHideContent);
 			EyeIconElement.gameObject.SetActive(AllowShowHideContent);
-			
+
 			ShowHideContentButton.onClick.ReplaceOrAddListener(OnShowHidePressed);
-			
+			InputField.onEndEdit.ReplaceOrAddListener(input => Validate(input));
+
 			UpdateContentVisibility();
+		}
+
+		/// <summary>
+		/// Clears the input field and sets validator function. This method is not necessary if validator is not needed.
+		/// </summary>
+		/// <param name="validator">The function which will validate the content on each <see cref="TMP_InputField.onEndEdit"/> event.
+		/// This validator is also used in <see cref="IsValid"/> method.</param>
+		public void Setup(ValidatorDelegate validator)
+		{
+			Clear();
+			_validator = validator;
+		}
+
+		/// <summary>
+		/// Checks if the content is valid and sets proper state. The content is considered valid also when there is no provided validator.
+		/// </summary>
+		/// <returns>True if content is valid, false otherwise.</returns>
+		public bool IsValid() => Validate(InputField.text);
+
+		private bool Validate(string input)
+		{
+			if (_validator == null)
+			{
+				SetNormalState();
+				return true;
+			}
+
+			var isValid = _validator(input, out string errorMessage);
+			if (isValid)
+			{
+				SetValidState();
+			}
+			else
+			{
+				SetInvalidState(errorMessage);
+			}
+
+			return isValid;
 		}
 
 		private void OnShowHidePressed() => UpdateContentVisibility(true);
@@ -51,7 +94,7 @@ namespace Beamable.EasyFeatures.Components
 					: TMP_InputField.InputType.Password;
 				InputField.ForceLabelUpdate();
 			}
-			
+
 			EyeIconElement.SetClass(OFF_CLASS, InputField.inputType == TMP_InputField.InputType.Password);
 		}
 

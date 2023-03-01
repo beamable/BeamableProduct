@@ -158,6 +158,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			return true;
 		}
 
+		public bool IsPasswordValid(string password, out string errorMessage)
+		{
+			return IsPasswordValid(password, password, out errorMessage);
+		}
+
 		public bool IsPasswordValid(string password, string confirmation, out string errorMessage)
 		{
 			if (string.IsNullOrWhiteSpace(password))
@@ -169,6 +174,18 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			if (confirmation != password)
 			{
 				errorMessage = "Passwords don't match";
+				return false;
+			}
+
+			errorMessage = "";
+			return true;
+		}
+
+		public bool IsResetCodeValid(string code, out string errorMessage)
+		{
+			if (string.IsNullOrWhiteSpace(code))
+			{
+				errorMessage = "Please provide a reset code";
 				return false;
 			}
 

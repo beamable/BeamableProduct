@@ -13,6 +13,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			BeamContext Context { get; set; }
 			string Email { get; }
 			bool IsEmailValid(string email, out string errorMessage);
+			bool IsPasswordValid(string password, out string errorMessage);
 			bool IsPasswordValid(string password, string confirmation, out string errorMessage);
 		}
 		
@@ -46,10 +47,10 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
-			EmailInput.Clear();
+			EmailInput.Setup((string input, out string errorMessage) => System.IsEmailValid(input, out errorMessage));
 			EmailInput.text = System.Email;
-			PasswordInput.Clear();
-			ConfirmPasswordInput.Clear();
+			PasswordInput.Setup((string input, out string errorMessage) => System.IsPasswordValid(input, out errorMessage));
+			ConfirmPasswordInput.Setup((string input, out string errorMessage) => System.IsPasswordValid(PasswordInput.text, input, out errorMessage));
 			
 			FeatureControl.SetBackAction(GoBack);
 			FeatureControl.SetHomeAction(OpenAccountsView);
@@ -74,26 +75,14 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private async void OnSignUpPressed()
 		{
+			if (!EmailInput.IsValid() || !PasswordInput.IsValid() || !ConfirmPasswordInput.IsValid())
+			{
+				return;
+			}
+			
 			string email = EmailInput.text;
 			string password = PasswordInput.text;
-			string confirmation = ConfirmPasswordInput.text;
 
-			if (!System.IsEmailValid(email, out string emailError))
-			{
-				EmailInput.SetInvalidState(emailError);
-				return;
-			}
-			EmailInput.SetValidState();
-
-			if (!System.IsPasswordValid(password, confirmation, out string passwordError))
-			{
-				PasswordInput.SetInvalidState();
-				ConfirmPasswordInput.SetInvalidState(passwordError);
-				return;
-			}
-			PasswordInput.SetValidState();
-			ConfirmPasswordInput.SetValidState();
-			
 			FeatureControl.SetLoadingOverlay(true);
 			var result = await System.Context.Accounts.AddEmail(email, password);
 			if (result.isSuccess)

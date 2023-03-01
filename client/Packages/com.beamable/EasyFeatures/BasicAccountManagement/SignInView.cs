@@ -1,6 +1,5 @@
 ﻿using Beamable.EasyFeatures.Components;
 using Beamable.Player;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,6 +11,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			BeamContext Context { get; set; }
 			bool IsEmailValid(string email, out string errorMessage);
+			bool IsPasswordValid(string password, out string errorMessage);
 		}
 		
 		public AccountManagementFeatureControl FeatureControl;
@@ -45,8 +45,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 			
-			EmailInput.Clear();
-			PasswordInput.Clear();
+			EmailInput.Setup((string input, out string error) => System.IsEmailValid(input, out error));
+			PasswordInput.Setup((string input, out string error) => System.IsPasswordValid(input, out error));
 			
 			PasswordInput.gameObject.SetActive(false);
 			ForgotPasswordButton.transform.parent.gameObject.SetActive(false);
@@ -63,9 +63,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 
 		private async void OnNextButtonPressed()
 		{
-			if (System.IsEmailValid(EmailInput.text, out string error))
+			if (EmailInput.IsValid())
 			{
-				EmailInput.SetValidState();
 				FeatureControl.SetLoadingOverlay(true);
 				if (await System.Context.Accounts.IsEmailAvailable(EmailInput.text))
 				{
@@ -79,32 +78,19 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 					SignInButton.gameObject.SetActive(true);
 				}
 			}
-			else
-			{
-				EmailInput.SetInvalidState(error);
-			}
 			
 			FeatureControl.SetLoadingOverlay(false);
 		}
 		
 		private async void OnSignInPressed()
 		{
+			if (!EmailInput.IsValid() || !PasswordInput.IsValid())
+			{
+				return;
+			}
+			
 			string email = EmailInput.text;
 			string password = PasswordInput.text;
-
-			if (string.IsNullOrWhiteSpace(email) || !System.IsEmailValid(EmailInput.text, out _))
-			{
-				EmailInput.SetInvalidState("Please provide a valid email address");
-				return;
-			}
-			EmailInput.SetValidState();
-
-			if (string.IsNullOrWhiteSpace(password))
-			{
-				PasswordInput.SetInvalidState("Please provide a password");
-				return;
-			}
-			PasswordInput.SetValidState();
 
 			FeatureControl.SetLoadingOverlay(true);
 			var result = await System.Context.Accounts.RecoverAccountWithEmail(email, password);
