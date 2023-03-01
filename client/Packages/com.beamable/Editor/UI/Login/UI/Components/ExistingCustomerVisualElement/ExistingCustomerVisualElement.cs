@@ -21,7 +21,6 @@ namespace Beamable.Editor.Login.UI.Components
 		private TextField _emailTextField;
 		private TextField _passwordTextField;
 		private Label _errorText;
-		private GenericButtonVisualElement _newUserButton;
 		private GenericButtonVisualElement _forgotPasswordButton;
 		private FormConstraint[] _constraints;
 
@@ -47,11 +46,8 @@ namespace Beamable.Editor.Login.UI.Components
 				Model.Customer.SetExistingCustomerData(_cidTextField.value, _emailTextField.value, null);
 				Manager.GotoForgotPassword();
 			};
-
-
-			_newUserButton = Root.Q<GenericButtonVisualElement>("createNewLink");
-			_newUserButton.OnClick += Manager.GotoNewUser;
-
+			
+			
 			_continueButton = Root.Q<PrimaryButtonVisualElement>("signIn");
 			_continueButton.Button.clickable.clicked += HandleContinueClicked;
 			_continueButton.tooltip = "Enter all Data";

@@ -13,7 +13,6 @@ namespace Beamable.Editor.Toolbox.Models
 {
 	public interface IToolboxViewService
 	{
-		event Action<List<RealmView>> OnAvailableRealmsChanged;
 		event Action<RealmView> OnRealmChanged;
 		event Action<IWidgetSource> OnWidgetSourceChanged;
 		event Action OnQueryChanged;
@@ -35,7 +34,6 @@ namespace Beamable.Editor.Toolbox.Models
 		void SetQuery(string filter);
 		void SetQuery(ToolboxQuery query);
 		IEnumerable<Widget> GetFilteredWidgets();
-		Promise<List<RealmView>> RefreshAvailableRealms();
 		void Destroy();
 		void SetQueryTag(WidgetTags tags, bool shouldHaveTag);
 		void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation);
@@ -45,7 +43,6 @@ namespace Beamable.Editor.Toolbox.Models
 	public class ToolboxViewService : IToolboxViewService
 	{
 		const string FILTER_TEXT_KEY = "ToolboxViewFilterText";
-		public event Action<List<RealmView>> OnAvailableRealmsChanged;
 		public event Action<RealmView> OnRealmChanged;
 		public event Action<IWidgetSource> OnWidgetSourceChanged;
 		public event Action OnQueryChanged;
@@ -134,25 +131,8 @@ namespace Beamable.Editor.Toolbox.Models
 			}
 		}
 
-		public Promise<List<RealmView>> RefreshAvailableRealms()
-		{
-			return BeamEditorContext.Default.ServiceScope.GetService<RealmsService>().GetRealms().Then(realms =>
-			{
-				Realms = realms;
-				OnAvailableRealmsChanged?.Invoke(realms);
-			});
-		}
-
 		public void Initialize()
 		{
-			RefreshAvailableRealms().Error(exception =>
-			{
-				if (exception is RequesterException)
-				{
-					RefreshAvailableRealms().Error(Debug.LogException);
-				}
-			});
-
 			var api = BeamEditorContext.Default;
 			api.OnRealmChange += HandleRealmChanged;
 			CurrentUser = api.CurrentUser;
@@ -169,7 +149,7 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public void Destroy()
 		{
-			OnAvailableRealmsChanged = null;
+			// OnAvailableRealmsChanged = null;
 			var api = BeamEditorContext.Default;
 			api.OnRealmChange -= HandleRealmChanged;
 		}

@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 #pragma warning disable CS0618
 
@@ -39,6 +40,8 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	
+	[DebuggerDisplay("{HasValue ? (Value?.ToString()) : \"no value\"}")]
 	public class Optional<T> : Optional
 	{
 		public static implicit operator T(Optional<T> option) => option?.HasValue == true ? (T)option.Value : default(T);
@@ -62,7 +65,7 @@ namespace Beamable.Common.Content
 			HasValue = true;
 		}
 
-		public void Set(T value)
+		public virtual void Set(T value)
 		{
 			Value = value;
 			HasValue = true;
@@ -89,7 +92,7 @@ namespace Beamable.Common.Content
 			if (!HasValue) throw exFactory?.Invoke() ?? new ArgumentException("Optional value does not exist, but it was forced.");
 			return Value;
 		}
-
+		
 		public T GetOrElse(T otherwise) => GetOrElse(() => otherwise);
 
 		public T GetOrElse(Func<T> otherwise)
@@ -98,9 +101,31 @@ namespace Beamable.Common.Content
 			return otherwise();
 		}
 
+		public TResultOptional Map<TResult, TResultOptional>(Func<T, TResult> func, bool allowNull = false)
+			where TResultOptional : Optional<TResult>, new()
+			// where TResult
+		{
+			var result = new TResultOptional();
+			if (HasValue)
+			{
+				var resultVal = func(Value);
+				if (allowNull || resultVal != null)
+				{
+					result.Set(resultVal);
+				}
+			}
+			return result;
+		}
+
 		public Optional<T> DoIfExists(Action<T> callback)
 		{
 			if (HasValue) callback(Value);
+			return this;
+		}
+
+		public Optional<T> DoIfNotExists(Action callback)
+		{
+			if (!HasValue) callback();
 			return this;
 		}
 	}
@@ -129,6 +154,7 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	[DebuggerDisplay("{HasValue ? Value.ToString() : \"no value\"}")]
 	public class OptionalValue<T> : Optional<T> where T : struct
 	{
 		public static implicit operator T?(OptionalValue<T> option) => option?.HasValue == true ? (T?)option.Value : null;
@@ -259,6 +285,51 @@ namespace Beamable.Common.Content
 		{
 			Value = value;
 			HasValue = true;
+		}
+		
+		public string GetNonEmptyOrElse(Func<string> otherwise)
+		{
+			if (HasNonEmptyValue) return Value;
+			return otherwise();
+		}
+
+
+		public bool HasNonEmptyValue => HasValue && !string.IsNullOrEmpty(Value);
+	}
+
+	[System.Serializable]
+	public class ReadonlyOptionalString : OptionalString
+	{
+		public ReadonlyOptionalString(OptionalString source)
+		{
+			HasValue = source.HasValue;
+			Value = source.Value;
+		}
+
+		public ReadonlyOptionalString()
+		{
+			HasValue = false;
+		}
+		
+		public ReadonlyOptionalString(string value)
+		{
+			HasValue = true;
+			Value = value;
+		}
+		
+		public override void SetValue(object value)
+		{
+			throw new InvalidOperationException("Cannot write to a readonly string");
+		}
+
+		public override void Clear()
+		{
+			throw new InvalidOperationException("Cannot write to a readonly string");
+		}
+
+		public override void Set(string value)
+		{
+			throw new InvalidOperationException("Cannot write to a readonly string");
 		}
 	}
 

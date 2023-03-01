@@ -65,11 +65,19 @@ namespace Beamable.Editor.UI.Components
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_root = Root.Q<VisualElement>("elementsList");
 
-			_loadingIndicator.SetPromise(Model.RefreshAvailable(), _mainContent);
+			if (Model.RefreshOnStart)
+			{
+				_loadingIndicator.SetPromise(Model.RefreshAvailable(), _mainContent);
+			}
+			else
+			{
+				_loadingIndicator.SetPromise(Promise.Success);
+			}
+
 			_refreshButton.clickable.clicked += () =>
-				{
-					_loadingIndicator.SetPromise(Model.RefreshAvailable(), _mainContent);
-				};
+			{
+				_loadingIndicator.SetPromise(Model.RefreshAvailable(), _mainContent);
+			};
 
 			_selectedElement = Model.Current;
 			Model.OnAvailableElementsChanged -= OnUpdated;

@@ -19,6 +19,11 @@ namespace Beamable.Api
 		void DeleteToken();
 	}
 
+	public interface IPlatformRequesterFactory
+	{
+		IPlatformRequester Create(string cid);
+		IPlatformRequester Create(string cid, string pid);
+	}
 
 
 }

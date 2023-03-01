@@ -59,7 +59,7 @@ namespace Beamable.Common.Api.Realms
 			AliasHelper.ValidateAlias(alias);
 
 			var url = $"/basic/realms/customer/alias/available?alias={alias}";
-			var res = await _httpRequester.Request<AliasResolveResponse>(Method.GET, url);
+			var res = await _httpRequester.Request<AliasResolveResponse>(Method.GET, url, includeAuthHeader:false);
 			return res;
 		}
 

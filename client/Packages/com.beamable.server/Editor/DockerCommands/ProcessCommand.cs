@@ -380,44 +380,76 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		private static Promise<bool> DockerCheckTask;
+		static int DockerDesktopProcessId
+		{
+			get => SessionState.GetInt("DockerDesktopProcessId", int.MinValue);
+			set => SessionState.SetInt("DockerDesktopProcessId", value);
+		}
+
 		public static Promise<bool> CheckDockerAppRunning()
 		{
+#if UNITY_2021_3_OR_NEWER
+			bool Contains(string one, string two) => one.Contains(two, StringComparison.InvariantCultureIgnoreCase);
+#else
+			bool Contains(string one, string two) => one.ToLower().Contains(two.ToLower());
+#endif
+#if UNITY_EDITOR_WIN
+			const string procName = "docker desktop";
+#else
+			const string procName = "docker";
+#endif
 			if (DockerCheckTask != null && !DockerCheckTask.IsCompleted)
 			{
 				return DockerCheckTask;
 			}
 
+
 			bool dockerNotRunning = DockerNotRunning;
+			var dockerDesktopId = DockerDesktopProcessId;
 			var task = new Task<bool>(() =>
 			{
+				if (dockerDesktopId > int.MinValue)
+				{
+					try
+					{
+						var process = Process.GetProcessById(dockerDesktopId);
+						if (Contains(process.ProcessName, procName))
+						{
+							dockerNotRunning = false;
+							return dockerNotRunning;
+						}
+					}
+					catch
+					{
+						//
+					}
+				}
 				var procList = Process.GetProcesses();
 				for (int i = 0; i < procList.Length; i++)
 				{
 					try
 					{
-#if UNITY_EDITOR_WIN
-						const string procName = "docker desktop";
-#else
-						const string procName = "docker";
-#endif
-						if (procList[i].ProcessName.ToLower().Contains(procName))
+						if (Contains(procList[i].ProcessName, procName))
 						{
+							dockerDesktopId = procList[i].Id;
 							dockerNotRunning = false;
-							return false;
+							return dockerNotRunning;
 						}
 					}
 					catch
 					{
+						//
 					}
 				}
 
 				dockerNotRunning = true;
-				return true;
+				return dockerNotRunning;
 			});
 			task.Start();
 			DockerCheckTask = task.ToPromise();
 			DockerCheckTask.Then(_ =>
 			{
+				DockerDesktopProcessId = dockerDesktopId;
 				DockerNotRunning = dockerNotRunning;
 			});
 

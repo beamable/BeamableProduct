@@ -33,6 +33,9 @@ namespace Beamable.Content
         public OptionalInt EditorDownloadBatchSize;
 #endif
 
+		[Tooltip("When enabled, content checksum will be calculated based on default object property order.")]
+		public bool EnablePropertyOrderDependenceForContentChecksum = true;
+
 		[Tooltip("When enabled, any content requests for the editor manifest will be resolved using your on-disk Scriptable Object content items, and any content from another manifest will be fetched from the remote realm. When disabled, all content is fetched from the remote realm.")]
 		public bool EnableLocalContentInEditor = false;
 

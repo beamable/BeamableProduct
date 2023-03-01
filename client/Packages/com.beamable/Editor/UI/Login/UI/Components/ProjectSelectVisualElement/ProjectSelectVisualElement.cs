@@ -35,30 +35,13 @@ namespace Beamable.Editor.Login.UI.Components
 			_gameConstraint = FormConstraint.Logical("Select a game", () => _selected == null);
 			primaryButton.AddGateKeeper(_gameConstraint);
 			_gameConstraint.Check();
-
-
 			_projectListView = Root.Q<VisualElement>("realmList");
 
-			var loadingBlocker = Root.Q<LoadingIndicatorVisualElement>();
-			var gamesPromise = Model.ResetGames();
-			var promise = new Promise<Unit>();
-
-			loadingBlocker.SetPromise(promise, _projectListView, primaryButton);
-			gamesPromise.Then(games =>
-			{
-				if (games == null || games.Count != 1)
-				{
-					promise.CompleteSuccess(PromiseBase.Unit);
-					return;
-				};
-
-				var onlyGame = games[0];
-				loadingBlocker.SetText($"Signing into {onlyGame.ProjectName}");
-				PickGame(onlyGame);
-			});
-
 			SetGamesList(Model.Games);
-			Model.OnGamesUpdated += SetGamesList;
+			if (Model.Games.Count == 1)
+			{
+				PickGame(Model.Games[0]);
+			}
 		}
 
 		private void PrimaryButton_OnClicked()
@@ -70,7 +53,6 @@ namespace Beamable.Editor.Login.UI.Components
 		{
 			Model.Customer.SetPid(realm.Pid);
 			Model.SetGame(realm.FindRoot());
-			// SetGame(b.ProductionRealm);
 			Manager.AttemptProjectSelect(Model, realm);
 		}
 

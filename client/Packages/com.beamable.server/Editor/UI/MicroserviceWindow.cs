@@ -15,7 +15,6 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
-using System;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -73,14 +72,13 @@ namespace Beamable.Editor.Microservice.UI
 
 		async Promise<bool> PerformCheck()
 		{
-			var result = await new CheckDockerCommand().StartAsync();
+			var result = await CheckDockerCommand.PerformCheck();
 
 			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
 			{
 				var midResult = await DockerCommand.CheckDockerAppRunning();
 				result |= midResult;
 			}
-
 			return result;
 		}
 
