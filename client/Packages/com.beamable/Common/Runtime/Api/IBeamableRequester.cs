@@ -65,6 +65,11 @@ namespace Beamable.Common.Api
 		public bool useConnectivityPreCheck;
 
 		/// <summary>
+		/// When true, the requester should not send any scope headers on the request.
+		/// </summary>
+		public bool disableScopeHeaders;
+
+		/// <summary>
 		/// A function that takes a JSON string and should output the response of the method. 
 		/// </summary>
 		public Func<string, T> parser;
@@ -81,6 +86,7 @@ namespace Beamable.Common.Api
 			includeAuthHeader = clone.includeAuthHeader;
 			useConnectivityPreCheck = clone.useConnectivityPreCheck;
 			parser = clone.parser;
+			disableScopeHeaders = clone.disableScopeHeaders;
 		}
 	}
 

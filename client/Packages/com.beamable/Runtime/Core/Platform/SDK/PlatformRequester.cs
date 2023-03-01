@@ -465,7 +465,11 @@ namespace Beamable.Api
 			UnityWebRequest request = BuildWebRequest(contentType, body, opts);
 			request.SetRequestHeader("Accept", GetAcceptHeader());
 
-			AddCidPidHeaders(request);
+			if (!opts.disableScopeHeaders)
+			{
+				AddCidPidHeaders(request);
+			}
+			
 			AddVersionHeaders(request);
 			AddAuthHeader(request, opts);
 			AddShardHeader(request);

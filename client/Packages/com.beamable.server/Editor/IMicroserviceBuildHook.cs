@@ -41,6 +41,12 @@ namespace Beamable.Server.Editor
 		/// <param name="srcPath">The source path should be relative to your Unity project. For example, a valid path may be "Assets/test.txt" </param>
 		/// <param name="containerPath">The container path is where the file will be placed in the Docker image. It should also include the copied filename. For example, a valid path may be "mydata/test.txt" </param>
 		void AddFile(string srcPath, string containerPath);
+
+		/// <summary>
+		/// Commiting a file assumes that a file is already present in the docker build context.
+		/// </summary>
+		/// <param name="containerPath">The container path is where the file will be placed in the Docker image. It should also include the copied filename. For example, a valid path may be "mydata/test.txt" </param>
+		void CommitFile(string containerPath);
 	}
 	
 	public class MicroserviceBuildContext : IMicroserviceBuildContext
@@ -52,17 +58,20 @@ namespace Beamable.Server.Editor
 		
 		public void AddFile(string srcPath, string containerPath)
 		{
+			FileUtils.CopyFile(Descriptor, srcPath, containerPath);
+			CommitFile(containerPath);
+		}
+
+		public void CommitFile(string containerPath)
+		{
 			FileAdditions.Add(new FileAddition
 			{
-				srcPath = srcPath,
 				containerPath = containerPath
 			});
-			FileUtils.CopyFile(Descriptor, srcPath, containerPath);
 		}
 
 		public class FileAddition
 		{
-			public string srcPath;
 			public string containerPath;
 		}
 	}
