@@ -26,9 +26,9 @@ namespace Beamable.Common.Api.Realms
 
 	public class AliasService : IAliasService
 	{
-		private readonly IBeamableRequester _httpRequester;
+		private readonly IRequester _httpRequester;
 
-		public AliasService(IBeamableRequester httpRequester)
+		public AliasService(IRequester httpRequester)
 		{
 			_httpRequester = httpRequester;
 		}
@@ -59,7 +59,11 @@ namespace Beamable.Common.Api.Realms
 			AliasHelper.ValidateAlias(alias);
 
 			var url = $"/basic/realms/customer/alias/available?alias={alias}";
-			var res = await _httpRequester.Request<AliasResolveResponse>(Method.GET, url, includeAuthHeader:false);
+			var res = await _httpRequester.BeamableRequest<AliasResolveResponse>(
+				new SDKRequesterOptions<AliasResolveResponse>
+				{
+					includeAuthHeader = false, method = Method.GET, uri = url, disableScopeHeaders = true
+				});
 			return res;
 		}
 
