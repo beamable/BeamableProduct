@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - posibility to disable property order dependence for content checksum.
 - `Beam.ChangePid` allows the game to change the assigned pid. The pid will reset when the game restarts.
 - `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
+- `PlayerInventory` has explicit methods for getting Items and Currencies with string references.
+- `PlayerInventory` has load methods for Items and Currencies that retrieve data and call `Refresh()`.
 
 ### Changed
 - Exception on using `BeamContext` outside playMode
@@ -31,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `PlayerInventory` triggers `OnDataUpdated` events.
 - `PlayerInventory` item properties can be `null` without throwing a `NullReferenceException`.
-
 
 ## [1.11.0]
 ### Added
