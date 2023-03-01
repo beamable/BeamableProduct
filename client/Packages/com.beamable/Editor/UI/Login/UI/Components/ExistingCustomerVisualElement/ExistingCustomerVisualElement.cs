@@ -46,8 +46,8 @@ namespace Beamable.Editor.Login.UI.Components
 				Model.Customer.SetExistingCustomerData(_cidTextField.value, _emailTextField.value, null);
 				Manager.GotoForgotPassword();
 			};
-			
-			
+
+
 			_continueButton = Root.Q<PrimaryButtonVisualElement>("signIn");
 			_continueButton.Button.clickable.clicked += HandleContinueClicked;
 			_continueButton.tooltip = "Enter all Data";

@@ -359,7 +359,7 @@ namespace Beamable
 		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
 		{
 			await StopAllContexts();
-			ConfigDatabase.SetString("pid", pid, persist:false); // setting persist to false means the new pid won't be stored in player prefs.
+			ConfigDatabase.SetString("pid", pid, persist: false); // setting persist to false means the new pid won't be stored in player prefs.
 			await ResetToScene(sceneQualifier);
 		}
 

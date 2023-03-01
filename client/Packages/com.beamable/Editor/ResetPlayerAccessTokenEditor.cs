@@ -28,7 +28,7 @@ namespace Beamable.Editor
 				}
 
 				EditorGUILayout.LabelField("Runtime (the token used when you enter playmode)");
-				
+
 				Prefix = EditorGUILayout.TextField("PlayerCode", Prefix);
 				if (GUILayout.Button("Cancel"))
 				{
