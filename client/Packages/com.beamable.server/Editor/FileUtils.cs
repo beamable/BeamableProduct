@@ -83,7 +83,7 @@ namespace Beamable.Server.Editor
 		public static void CopyFile(MicroserviceDescriptor descriptor, string srcPath, string containerPath)
 		{
 
-			containerPath = Path.Join(descriptor.BuildPath, containerPath);
+			containerPath = Path.Combine(descriptor.BuildPath, containerPath);
 			MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying file to " + containerPath);
 
 			
