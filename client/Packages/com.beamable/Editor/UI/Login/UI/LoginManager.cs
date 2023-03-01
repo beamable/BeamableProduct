@@ -86,7 +86,7 @@ namespace Beamable.Editor.Login.UI
 			{
 				return _projectSelectVisualElement;
 			}
-			
+
 			// at this point, we don't actually want to be at a log in flow at all.
 			OnComplete?.CompleteSuccess(PromiseBase.Unit);
 			return _accountSummaryVisualElement;
@@ -105,12 +105,12 @@ namespace Beamable.Editor.Login.UI
 		public Promise<LoginManagerResult> Logout(LoginModel model)
 		{
 			var b = BeamEditorContext.Default;
-			b.Logout(clearRealmPid:false);
+			b.Logout(clearRealmPid: false);
 			model.Customer.SetUserInfo(0, null);
 			AssumePage(model);
 			return Promise<LoginManagerResult>.Successful(LoginManagerResult.Pass);
 		}
-		
+
 
 		public Promise<LoginManagerResult> SendPasswordResetCode(LoginModel model)
 		{
@@ -158,7 +158,7 @@ namespace Beamable.Editor.Login.UI
 															  .On(err => err.Status == 500 && err.Error.message == model.Customer.CidOrAlias, CID_TAKEN_ERROR)
 															  );
 		}
-		
+
 		public Promise<LoginManagerResult> AttemptLoginExistingCustomer(LoginModel model)
 		{
 			var b = BeamEditorContext.Default;

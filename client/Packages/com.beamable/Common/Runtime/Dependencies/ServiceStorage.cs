@@ -48,7 +48,7 @@ namespace Beamable.Common.Dependencies
 
 			return builder;
 		}
-		
+
 		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder)
 			where TStorageLayer : IStorageLayer
 		{
@@ -186,7 +186,7 @@ namespace Beamable.Common.Dependencies
 			return $"singleton_{typeof(T).Name}_ctx_{_context.UserId}_provider_{_scopeName.DependencyProviderName}";
 		}
 	}
-	
+
 	public class GlobalServiceStorage<TStorageLayer> : ServiceStorage<TStorageLayer>
 		where TStorageLayer : IStorageLayer
 	{
