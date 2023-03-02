@@ -94,14 +94,14 @@ namespace SharedRuntime
 			var description = post["summary"] as string;
 			Type responseType = GetResponseType(post);
 			name = name.Replace("/", string.Empty);
-			name = $"{char.ToUpperInvariant(name[0])}{name[1..]}";
+			name = $"{char.ToUpperInvariant(name[0])}{name.Substring(1)}";
 			var arguments = GetArgumentsList(post);
 
 			return new MicroserviceEndPointInfo()
 			{
 				description = description,
 				callableAttribute =
-					new CallableAttribute(pathnameOverride: name.StartsWith("/") ? name[1..] : name,
+					new CallableAttribute(pathnameOverride: name.StartsWith("/") ? name.Substring(1) : name,
 					                      requireAuthenticatedUser: true),
 				returnType = responseType,
 				methodName = name,
