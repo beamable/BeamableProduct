@@ -5,6 +5,7 @@ using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace SharedRuntime
 {
@@ -12,16 +13,22 @@ namespace SharedRuntime
 	{
 		public string name;
 		public Type type;
+
+		public override string ToString() => $"{type.FullName} {name}";
 	}
+
 	public class MicroserviceEndPointInfo
 	{
 		public CallableAttribute callableAttribute;
 		public string methodName;
 		public Type returnType;
 		public IList<MicroserviceArgument> arguments;
+		public string description;
 	}
+
 	public class OpenApiMicroserviceDescriptor : IDescriptor
 	{
+		private readonly Type[] _types;
 		private readonly string _openApi;
 		private List<MicroserviceEndPointInfo> _methods;
 		public string Name { get; set; }
@@ -36,6 +43,14 @@ namespace SharedRuntime
 		public OpenApiMicroserviceDescriptor(string openApi)
 		{
 			_openApi = openApi;
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+			var types = new List<Type>();
+			foreach (var assembly in assemblies)
+			{
+				types.AddRange(assembly.GetTypes());
+			}
+
+			_types = types.ToArray();
 		}
 
 		public bool Build()
@@ -46,33 +61,41 @@ namespace SharedRuntime
 				if (array["info"] is ArrayDict info)
 				{
 					Name = info["title"] as string;
-					try
-					{
-						// Type = Type.GetType($"Beamable.Microservices.{Name}");
-					}
-					catch
-					{
-					}
 					var paths = array["paths"] as ArrayDict;
 					var endPoints = paths.Keys.ToList();
-					BeamableLogger.Log(Name + " with endpoints:\n\t-" + string.Join("\n\t-",endPoints));
-					
+
 					_methods = new List<MicroserviceEndPointInfo>(endPoints.Count);
 					foreach (string key in endPoints)
 					{
-						var endPoint = paths[key] as ArrayDict;
-						var post = endPoint["post"] as ArrayDict;
-						var response =
-							(ArrayDict)((ArrayDict)((ArrayDict)((ArrayDict)((ArrayDict)post["responses"])["200"])["content"])[
-								"application/json"])["schema"];
-						var responseTypeString = response["title"] as string;
-						var responseType = Type.GetType(responseTypeString);
+						if (paths[key] is not ArrayDict endPoint)
+							continue;
+						if (endPoint["post"] is not ArrayDict post)
+							continue;
+
+						var description = post["summary"] as string;
+						Type responseType = GetResponseType(post);
 						var name = key.Replace("/", string.Empty);
 						name = $"{char.ToUpperInvariant(name[0])}{name[1..]}";
+						var arguments = GetArgumentsList(post);
 
-						var methodInfo = new MicroserviceEndPointInfo() {callableAttribute = new CallableAttribute(pathnameOverride:key,requireAuthenticatedUser:true), returnType = responseType, methodName = name};
+						var methodInfo = new MicroserviceEndPointInfo()
+						{
+							description = description,
+							callableAttribute =
+								new CallableAttribute(pathnameOverride: key, requireAuthenticatedUser: true),
+							returnType = responseType,
+							methodName = name,
+							arguments = arguments
+						};
 						_methods.Add(methodInfo);
 					}
+
+					BeamableLogger.Log(Name + $" with {_methods.Count} endpoints:\n\t-" +
+					                   string.Join(
+						                   "\n\t-",
+						                   _methods.Select(pointInfo =>
+							                                   $"{pointInfo.methodName}({string.Join(", ", pointInfo.arguments)}) -> {pointInfo.returnType?.FullName}"
+						                   )));
 				}
 			}
 			catch (Exception e)
@@ -80,7 +103,57 @@ namespace SharedRuntime
 				BeamableLogger.LogException(e);
 				return false;
 			}
+
 			return true;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private IList<MicroserviceArgument> GetArgumentsList(ArrayDict post)
+		{
+			var result = new List<MicroserviceArgument>();
+			var argContent = post.JsonPath("requestBody.content") as ArrayDict;
+			if (argContent == null || argContent.Count == 0)
+				return result;
+			var properties = argContent.JsonPath("application/json.schema.properties") as ArrayDict;
+			foreach (string property in properties.Keys)
+			{
+				var type = ReadType((ArrayDict)properties[property]);
+				result.Add(new MicroserviceArgument(){name=property,type = type});
+			}
+			return result;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private Type GetResponseType(ArrayDict post)
+		{
+			var schema = post.JsonPath("responses.200.content.application/json.schema") as ArrayDict;
+			var responseType = ReadType(schema);
+			return responseType;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private Type ReadType(ArrayDict schema)
+		{
+			var typeString = schema["title"] as string;
+			if (string.IsNullOrWhiteSpace(typeString))
+			{
+				typeString = schema["$ref"] as string;
+				typeString = typeString?.Replace("#/components/schemas/", string.Empty);
+			}
+			var type = schema["type"] as string;
+			if (type != null && type.Equals("array"))
+			{
+				typeString = typeString.Replace("System.Array_", string.Empty);
+				typeString = $"{typeString}[]";
+			}
+			var responseType = string.IsNullOrWhiteSpace(typeString)
+				? typeof(void)
+				: Type.GetType(typeString);
+			if (responseType == null)
+			{
+				responseType = _types.FirstOrDefault(type1 => type1.FullName.Equals(typeString));
+			}
+			return responseType;
 		}
 	}
 }
