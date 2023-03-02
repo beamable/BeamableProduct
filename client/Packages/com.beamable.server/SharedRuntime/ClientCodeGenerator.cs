@@ -32,7 +32,7 @@ namespace Beamable.Server.Generator
 		/// The only class in the compile unit. This class contains 2 fields,
 		/// 3 properties, a constructor, an entry point, and 1 simple method.
 		/// </summary>
-		private CodeTypeDeclaration targetClass;
+		protected CodeTypeDeclaration targetClass;
 
 		private CodeTypeDeclaration parameterClass;
 
@@ -97,7 +97,7 @@ namespace Beamable.Server.Generator
 			parameterClass.TypeAttributes = TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.Serializable;
 			// parameterClass.BaseTypes.Add();
 
-			targetClass.Comments.Add(new CodeCommentStatement($"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary", true));
+			targetClass.Comments.Add(new CodeCommentStatement($"<summary> A generated client for <see cref=\"{GetFullName()}\"/> </summary", true));
 
 			extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);
 			extensionClass.IsClass = true;
@@ -155,8 +155,19 @@ namespace Beamable.Server.Generator
 			samples.Types.Add(extensionClass);
 			targetUnit.Namespaces.Add(samples);
 
+			HashSet<Type> allParameterTypes = AddMethods();
+
+			foreach (var parameterType in allParameterTypes)
+			{
+				AddParameterClass(parameterType);
+			}
+
+		}
+
+		protected virtual HashSet<Type> AddMethods()
+		{
 			// need to scan and get methods.
-			var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+			var allMethods = Descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			var allParameterTypes = new HashSet<Type>();
 			foreach (var method in allMethods)
 			{
@@ -173,17 +184,13 @@ namespace Beamable.Server.Generator
 				};
 				_callableMethods.Add(callable);
 
-				AddCallableMethod(callable, allParameterTypes);
+				AddCallableMethod(callable, ref allParameterTypes);
 			}
 
-			foreach (var parameterType in allParameterTypes)
-			{
-				AddParameterClass(parameterType);
-			}
-
+			return allParameterTypes;
 		}
 
-		void AddFederatedLoginInterfaces()
+		protected virtual void AddFederatedLoginInterfaces()
 		{
 			var interfaces = Descriptor.Type.GetInterfaces();
 			foreach (var type in interfaces)
@@ -198,7 +205,7 @@ namespace Beamable.Server.Generator
 			}
 		}
 
-		void AddFederatedInventoryInterfaces()
+		protected virtual void AddFederatedInventoryInterfaces()
 		{
 			var interfaces = Descriptor.Type.GetInterfaces();
 			foreach (var type in interfaces)
@@ -243,7 +250,7 @@ namespace Beamable.Server.Generator
 			parameterClass.Members.Add(wrapper);
 		}
 
-		void AddCallableMethod(CallableMethodInfo info, HashSet<Type> parameterTypes)
+		void AddCallableMethod(CallableMethodInfo info, ref HashSet<Type> parameterTypes)
 		{
 			// Declaring a ToString method
 			CodeMemberMethod genMethod = new CodeMemberMethod();
@@ -286,7 +293,7 @@ namespace Beamable.Server.Generator
 			genMethod.Comments.Add(new CodeCommentStatement("<summary>", true));
 			genMethod.Comments.Add(new CodeCommentStatement($"Call the {info.MethodInfo.Name} method on the {Descriptor.Name} microservice", true));
 
-			genMethod.Comments.Add(new CodeCommentStatement($"<see cref=\"{Descriptor.Type.FullName}.{info.MethodInfo.Name}\"/>", true));
+			genMethod.Comments.Add(new CodeCommentStatement($"<see cref=\"{GetFullName()}.{info.MethodInfo.Name}\"/>", true));
 			genMethod.Comments.Add(new CodeCommentStatement("</summary>", true));
 
 			// the return type needs to be wrapped up inside a Promise.
@@ -360,6 +367,11 @@ namespace Beamable.Server.Generator
 			//returnStatement.ex
 			genMethod.Statements.Add(returnStatement);
 			targetClass.Members.Add(genMethod);
+		}
+
+		protected string GetFullName()
+		{
+			return Descriptor.Type != null ? Descriptor.Type.FullName : $"Beamable.Microservices.{Descriptor.Name}";
 		}
 
 		public string GetCSharpCodeString()
