@@ -46,7 +46,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				watch = false;
 			}
-			
+
 			_descriptor = descriptor;
 			_availableArchitectures = availableArchitectures;
 			_pull = pull;
