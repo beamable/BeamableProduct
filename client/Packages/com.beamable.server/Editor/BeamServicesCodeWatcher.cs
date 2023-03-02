@@ -161,21 +161,30 @@ namespace Beamable.Server.Editor
 			LatestCodeHandles.Sort((h1, h2) => string.Compare(h1.ServiceName, h2.ServiceName, StringComparison.Ordinal));
 
 			var tasks = new List<Task>(LatestCodeHandles.Count);
-			tasks.AddRange(LatestCodeHandles.Select((beamServiceCodeHandle, index) => Task.Factory.StartNew(() =>
+
+			for (int  i = 0;  i < LatestCodeHandles.Count;  i++)
 			{
-				var path = beamServiceCodeHandle.CodeDirectory;
-				var files = Directory.GetFiles(path)
-									 .Where(file => !file.EndsWith(".meta"));
-				if (MicroserviceConfiguration.Instance.EnableHotModuleReload)
+				var index = i;
+				var beamServiceCodeHandle = LatestCodeHandles[index];
+
+				tasks.Add(Task.Factory.StartNew(() =>
 				{
-					files = files.Where(file => !file.EndsWith(".cs")).ToArray();
-				}
-				var filesBytes = files.SelectMany(File.ReadAllBytes).ToArray();
-				var md5 = MD5.Create();
-				var checksum = md5.ComputeHash(filesBytes);
-				beamServiceCodeHandle.Checksum = BitConverter.ToString(checksum).Replace("-", string.Empty);
-				LatestCodeHandles[index] = beamServiceCodeHandle;
-			})));
+					var path = beamServiceCodeHandle.CodeDirectory;
+					var files = Directory.GetFiles(path)
+					                     .Where(file => !file.EndsWith(".meta"));
+					if (MicroserviceConfiguration.Instance.EnableHotModuleReload)
+					{
+						files = files.Where(file => !file.EndsWith(".cs")).ToArray();
+					}
+
+					var filesBytes = files.SelectMany(File.ReadAllBytes).ToArray();
+					var md5 = MD5.Create();
+					var checksum = md5.ComputeHash(filesBytes);
+					beamServiceCodeHandle.Checksum = BitConverter.ToString(checksum).Replace("-", string.Empty);
+					LatestCodeHandles[index] = beamServiceCodeHandle;
+				}));
+			}
+
 			CheckSumCalculation = Task.WhenAll(tasks);
 			CachedStorageAsmNames = GetStorageAsmNames();
 		}

@@ -4,25 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.12.0]
 ### Added
 - Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
-- posibility to disable property order dependence for content checksum.
+- Possibility to disable property order dependence for content checksum.
 - `Beam.ChangePid` allows the game to change the assigned pid. The pid will reset when the game restarts.
 - `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
+- `PlayerInventory` has explicit methods for getting Items and Currencies with string references.
+- `PlayerInventory` has load methods for Items and Currencies that retrieve data and call `Refresh()`.
+- `SDKRequesterOptions<T>` has a field called `disableScopeHeaders` that will prevent CID/PID headers from being sent.
 
 ### Changed
 - Exception on using `BeamContext` outside playMode
 - The _config-defaults.txt_ file no longer controls the which CID/PID are used while in Editor. The _config-defaults.txt_ file will still control the CID/PID in a built game.
 - Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
-- Exception on using `BeamContext` outside playMode
 - `Beamable.Common` assembly name changed to `Unity.Beamable.Runtime.Common` to align with assembly definition file.
 
 ### Removed
 - The Toolbox signin flow no longer allows for guest accounts.
 
 ### Fixed
-- Fixed slow SDK instalation process.
+- Fixed slow SDK installation process.
 
 ## [1.11.1]
 ### Changed
@@ -32,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PlayerInventory` triggers `OnDataUpdated` events.
 - `PlayerInventory` item properties can be `null` without throwing a `NullReferenceException`.
 
+### Issues
+- All content will appear as modified. This is because the content checksum algorithm changed to use alphabetical field ordering.
 
 ## [1.11.0]
 ### Added
