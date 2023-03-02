@@ -71,9 +71,9 @@ namespace SharedRuntime
 					{
 						if(key.StartsWith("/admin/")) // TODO Configure that maybe?
 							continue;
-						if (paths[key] is not ArrayDict endPoint)
-							continue;
-						if (endPoint["post"] is not ArrayDict post)
+						var endPoint = (ArrayDict)paths[key];
+						var post = (ArrayDict) endPoint?["post"];
+						if (post == null)
 							continue;
 						var methodInfo = ReadEndPointInfo(post, key);
 						_methods.Add(methodInfo);
