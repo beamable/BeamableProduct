@@ -22,7 +22,7 @@ namespace SharedRuntime
 		public CallableAttribute callableAttribute;
 		public string methodName;
 		public Type returnType;
-		public IList<MicroserviceArgument> arguments;
+		public IList<MicroserviceArgument> parameters;
 		public string description;
 	}
 
@@ -39,6 +39,7 @@ namespace SharedRuntime
 		public ServiceType ServiceType => ServiceType.MicroService;
 		public bool HasValidationError { get; }
 		public bool HasValidationWarning { get; }
+		public List<MicroserviceEndPointInfo> Methods => _methods;
 
 		public OpenApiMicroserviceDescriptor(string openApi)
 		{
@@ -49,11 +50,11 @@ namespace SharedRuntime
 			{
 				types.AddRange(assembly.GetTypes());
 			}
-
 			_types = types.ToArray();
+			HasValidationError = HasValidationWarning = Build();
 		}
 
-		public bool Build()
+		bool Build()
 		{
 			try
 			{
@@ -61,41 +62,22 @@ namespace SharedRuntime
 				if (array["info"] is ArrayDict info)
 				{
 					Name = info["title"] as string;
+					// Type = TryFindServiceType();
 					var paths = array["paths"] as ArrayDict;
 					var endPoints = paths.Keys.ToList();
 
 					_methods = new List<MicroserviceEndPointInfo>(endPoints.Count);
 					foreach (string key in endPoints)
 					{
+						if(key.StartsWith("/admin/")) // TODO Configure that maybe?
+							continue;
 						if (paths[key] is not ArrayDict endPoint)
 							continue;
 						if (endPoint["post"] is not ArrayDict post)
 							continue;
-
-						var description = post["summary"] as string;
-						Type responseType = GetResponseType(post);
-						var name = key.Replace("/", string.Empty);
-						name = $"{char.ToUpperInvariant(name[0])}{name[1..]}";
-						var arguments = GetArgumentsList(post);
-
-						var methodInfo = new MicroserviceEndPointInfo()
-						{
-							description = description,
-							callableAttribute =
-								new CallableAttribute(pathnameOverride: key, requireAuthenticatedUser: true),
-							returnType = responseType,
-							methodName = name,
-							arguments = arguments
-						};
+						var methodInfo = ReadEndPointInfo(post, key);
 						_methods.Add(methodInfo);
 					}
-
-					BeamableLogger.Log(Name + $" with {_methods.Count} endpoints:\n\t-" +
-					                   string.Join(
-						                   "\n\t-",
-						                   _methods.Select(pointInfo =>
-							                                   $"{pointInfo.methodName}({string.Join(", ", pointInfo.arguments)}) -> {pointInfo.returnType?.FullName}"
-						                   )));
 				}
 			}
 			catch (Exception e)
@@ -105,6 +87,26 @@ namespace SharedRuntime
 			}
 
 			return true;
+		}
+
+		private MicroserviceEndPointInfo ReadEndPointInfo(ArrayDict post, string name)
+		{
+			var description = post["summary"] as string;
+			Type responseType = GetResponseType(post);
+			name = name.Replace("/", string.Empty);
+			name = $"{char.ToUpperInvariant(name[0])}{name[1..]}";
+			var arguments = GetArgumentsList(post);
+
+			return new MicroserviceEndPointInfo()
+			{
+				description = description,
+				callableAttribute =
+					new CallableAttribute(pathnameOverride: name.StartsWith("/") ? name[1..] : name,
+					                      requireAuthenticatedUser: true),
+				returnType = responseType,
+				methodName = name,
+				parameters = arguments
+			};
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -154,6 +156,24 @@ namespace SharedRuntime
 				responseType = _types.FirstOrDefault(type1 => type1.FullName.Equals(typeString));
 			}
 			return responseType;
+		}
+
+		private Type TryFindServiceType()
+		{
+			foreach (var type in _types)
+				if (typeof(Microservice).IsAssignableFrom(type) &&
+				    type.Name != null && type.Name.Equals(Name))
+					return type;
+
+			return null;
+		}
+
+		public string GetFullName()
+		{
+			var type = TryFindServiceType();
+			if (type != null)
+				return type.FullName;
+			return $"Beamable.Microservices.{Name}";
 		}
 	}
 }
