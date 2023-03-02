@@ -13,8 +13,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			BeamContext Context { get; set; }
 
-			/// <inheritdoc cref="AccountManagementPlayerSystem.GetAccountViewData"/>
-			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(bool includeAuthMethods, bool includePresence, long playerId = -1);
+			/// <inheritdoc cref="AccountManagementPlayerSystem.GetOverridenAccountData"/>
+			Promise<AccountSlotPresenter.ViewData> GetOverridenAccountData(bool includeAuthMethods, bool isOnline, long playerId = -1);
 			int AuthenticatedAccountsCount();
 			/// <inheritdoc cref="AccountManagementPlayerSystem.GetLinkedEmailAddress"/>
 			string GetLinkedEmailAddress(long playerId);
@@ -86,7 +86,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			// setup current account
 			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData
 			{
-				Height = 150, Index = 0, ViewData = await System.GetAccountViewData(true, true)
+				Height = 150, Index = 0, ViewData = await System.GetOverridenAccountData(true, true)
 			};
 			
 			AccountPresenter.Setup(data, OpenAccountInfoView, null);
@@ -102,7 +102,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 					if (account.GamerTag == System.Context.PlayerId)
 						continue;
 
-					accountsViewData.Add(await System.GetAccountViewData(true, true, account.GamerTag));
+					accountsViewData.Add(await System.GetOverridenAccountData(true, false, account.GamerTag));
 				}
 				
 				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected);
@@ -111,10 +111,15 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.SetLoadingOverlay(false);
 		}
 
-		private void OnOtherAccountSelected(long playerId)
+		private void OnDisable()
+		{
+			_selectedOtherAccountId = -1;
+		}
+
+		private void OnOtherAccountSelected(bool selected, long playerId)
 		{
 			_selectedOtherAccountId = playerId;
-			LoadGameButton.interactable = true;
+			LoadGameButton.interactable = selected;
 		}
 
 		private void OnSwitchAccount()

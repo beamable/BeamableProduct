@@ -84,7 +84,7 @@ namespace Beamable.EasyFeatures.Components
 			CancelButton.onClick.ReplaceOrAddListener(() => onCancelPressed?.Invoke(item.ViewData.PlayerId));
 		}
 		
-		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<long> onEntrySelected)
+		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<bool, long> onToggleSwitched)
 		{
 			SetViewData(item.ViewData);
 			
@@ -95,9 +95,7 @@ namespace Beamable.EasyFeatures.Components
 			MainToggle.onValueChanged.ReplaceOrAddListener(selected =>
 			{
 				ToggleBussElement.SetClass(SELECTED_CLASS, selected);
-				
-				if (selected)
-					onEntrySelected?.Invoke(item.ViewData.PlayerId);
+				onToggleSwitched?.Invoke(selected, item.ViewData.PlayerId);
 			});
 			AcceptCancelButtons.SetActive(false);
 		}

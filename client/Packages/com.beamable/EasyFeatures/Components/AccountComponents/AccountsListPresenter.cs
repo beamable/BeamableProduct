@@ -20,6 +20,7 @@ namespace Beamable.EasyFeatures.Components
 		protected Action<long> onEntryPressed;
 		protected Action<long> onAcceptPressed;
 		protected Action<long> onCancelPressed;
+		protected Action<bool, long> onToggleSwitched;
 		protected string buttonText;
 
 		private bool isAcceptCancelVariant;
@@ -50,15 +51,13 @@ namespace Beamable.EasyFeatures.Components
 			SetupInternal(viewData);
 		}
 
-		public void SetupToggles(List<AccountSlotPresenter.ViewData> viewData, ToggleGroup group, Action<long> onToggleSelected = null)
+		public void SetupToggles(List<AccountSlotPresenter.ViewData> viewData, ToggleGroup group, Action<bool, long> onToggleSwitched = null)
 		{
 			isAcceptCancelVariant = false;
 			isToggleList = true;
 			toggleGroup = group;
 
-			onAcceptPressed = null;
-			onCancelPressed = null;
-			onEntryPressed = onToggleSelected;
+			this.onToggleSwitched = onToggleSwitched;
 			
 			SetupInternal(viewData);
 		}
@@ -110,7 +109,7 @@ namespace Beamable.EasyFeatures.Components
 
 			if (isToggleList)
 			{
-				spawned.SetupAsToggle(data, toggleGroup, onEntryPressed);
+				spawned.SetupAsToggle(data, toggleGroup, onToggleSwitched);
 			}
 			else if (isAcceptCancelVariant)
 			{

@@ -61,6 +61,20 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		}
 
 		/// <summary>
+		/// Gets account view data for a given player with overriden online status. Default playerId will return current user's view data.
+		/// </summary>
+		/// <param name="isOnline">Online status to be set.</param>
+		public async Promise<AccountSlotPresenter.ViewData> GetOverridenAccountData(
+			bool includeAuthMethods,
+			bool isOnline,
+			long playerId = -1)
+		{
+			var viewData = await GetAccountViewData(includeAuthMethods, true, playerId);
+			viewData.Presence.online = isOnline;
+			return viewData;
+		}
+
+		/// <summary>
 		/// Gets account view data for a given player. Default playerId will return current user's view data.
 		/// </summary>
 		public async Promise<AccountSlotPresenter.ViewData> GetAccountViewData(
