@@ -22,7 +22,7 @@ namespace Beamable.Server.Editor
 
 				var hookType = descriptor.GetMicroserviceBuildHookType();
 				var scope = BeamEditorContext.Default.ServiceScope;
-				var buildCtx = new MicroserviceBuildContext {Descriptor = descriptor, Provider = scope};
+				var buildCtx = new MicroserviceBuildContext { Descriptor = descriptor, Provider = scope };
 				if (scope.CanBuildService(hookType))
 				{
 					var hook = scope.GetService(hookType) as IMicroserviceBuildHook;

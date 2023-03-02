@@ -63,10 +63,10 @@ namespace Beamable.Common.Dependencies
 					$"Cannot create new instance of {typeof(T).Name} because it was not registered.");
 			}
 
-			return (T) descriptor.Factory?.Invoke(scope);
+			return (T)descriptor.Factory?.Invoke(scope);
 		}
 	}
-	
+
 	/// <summary>
 	/// The <see cref="IDependencyProviderScope"/> is a <see cref="IDependencyProvider"/>
 	/// But has more access methods and lifecycle controls.
