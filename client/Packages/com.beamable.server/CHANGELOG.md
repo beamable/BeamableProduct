@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Microservice Manager window shows error if there are missing `imageId` fields in the latest Microservice deployment
+- Microservices installed in the _/Packages_ directory will not use Hot Module Reload or generate clients if the package is only available in the PackageCache.
 
 ## [1.11.1]
 ### Fixed
