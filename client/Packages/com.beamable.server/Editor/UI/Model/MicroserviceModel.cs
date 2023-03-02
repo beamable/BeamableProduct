@@ -6,6 +6,7 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
+using Beamable.Server.Generator;
 using SharedRuntime;
 using System;
 using System.Collections.Generic;
@@ -157,7 +158,7 @@ namespace Beamable.Editor.UI.Model
 			de.Requester.Request(Method.GET, endpoint, null, true, s => s).Then(s =>
 			{
 				var OpenApi = new OpenApiMicroserviceDescriptor(s);
-				var success = OpenApi.Build();
+				Debug.Log(new OpenApiCodeGenerator(OpenApi).GetCSharpCodeString());
 
 			}).Error(Debug.LogException); 
 		}
@@ -197,6 +198,11 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/Regenerate {_serviceDescriptor.Name}Client.cs from OpenApi",
+			                              pos =>
+			                              {
+				                              BeamServicesCodeWatcher.GenerateClientSourceCodeFromOpenApi(_serviceDescriptor);
+			                              }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 			evt.menu.BeamableAppendAction("Build", pos => Build());

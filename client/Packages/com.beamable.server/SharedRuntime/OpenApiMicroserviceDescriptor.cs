@@ -51,7 +51,7 @@ namespace SharedRuntime
 				types.AddRange(assembly.GetTypes());
 			}
 			_types = types.ToArray();
-			HasValidationError = HasValidationWarning = Build();
+			HasValidationError = HasValidationWarning = !Build();
 		}
 
 		bool Build()
@@ -62,7 +62,7 @@ namespace SharedRuntime
 				if (array["info"] is ArrayDict info)
 				{
 					Name = info["title"] as string;
-					// Type = TryFindServiceType();
+					Type = TryFindServiceType();
 					var paths = array["paths"] as ArrayDict;
 					var endPoints = paths.Keys.ToList();
 
