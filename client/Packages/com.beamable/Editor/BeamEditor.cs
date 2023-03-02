@@ -76,7 +76,7 @@ namespace Beamable
 																   null,
 																   provider.GetService<OfflineCache>())
 			{
-				
+
 				RequestTimeoutMs = $"{30 * 1000}",
 				ErrorHandler = provider.CanBuildService<IPlatformRequesterErrorHandler>() ? provider.GetService<IPlatformRequesterErrorHandler>() : null
 			}
@@ -119,7 +119,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, EditorFilesystemAccessor>();
 			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
-		
+
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 	}
@@ -212,7 +212,7 @@ namespace Beamable
 				ConfigDatabase.Init();
 			}
 			catch (FileNotFoundException)
-			{ 
+			{
 				// if the file doesn't exist, then the config database will be empty. 
 				// and in the editor case, this is valid. 
 			}
@@ -326,7 +326,7 @@ namespace Beamable
 
 			async void InitDefaultContext()
 			{
- 				await BeamEditorContext.Default.InitializePromise;
+				await BeamEditorContext.Default.InitializePromise;
 
 #if BEAMABLE_DEVELOPER
 				Debug.Log($"Initialized Default Editor Context [{BeamEditorContext.Default.PlayerCode}] - " +
@@ -516,7 +516,7 @@ namespace Beamable
 
 			// TODO: Handle faulty API
 			// TODO: Handle offline?
-			
+
 			async Promise Initialize()
 			{
 				var configService = ServiceScope.GetService<ConfigDefaultsService>();
@@ -527,7 +527,7 @@ namespace Beamable
 					Requester.DeleteToken(); // not signed in... 
 					return;
 				}
-				
+
 				var requester = ServiceScope.GetService<PlatformRequester>();
 				var cid = requester.Cid = EditorAccountService.Cid.GetOrThrow();
 
@@ -540,10 +540,10 @@ namespace Beamable
 					account.realmPid.Set(configService.Pid.Value);
 					requester.Pid = configService.Pid.Value;
 				}
-				
+
 				requester.Host = BeamableEnvironment.ApiUrl;
 				ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
-				
+
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
 				requester.Token = accessToken;
@@ -577,7 +577,7 @@ namespace Beamable
 			var token = new AccessToken(accessTokenStorage, cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 
 			await ApplyToken(cid, token);
-			
+
 			return PromiseBase.Unit;
 		}
 
@@ -590,14 +590,14 @@ namespace Beamable
 
 			OnUserChange?.Invoke(CurrentUser);
 		}
-		
+
 		[Obsolete("this method is no longer supported, and will be removed in a future release")]
 		public Promise Login(string email, string password, string pid = null)
 		{
 			Debug.LogWarning("The " + nameof(Login) + " method is no longer supported. It will not do anything.");
 			return Promise.Success;
 		}
-		
+
 		[Obsolete("this method is no longer supported, and will be removed in a future release")]
 		public async Promise Relogin()
 		{
@@ -615,7 +615,7 @@ namespace Beamable
 			Debug.LogWarning("The " + nameof(Login) + " method is no longer supported. It will not do anything.");
 			return Promise.Success;
 		}
-		
+
 		/// <summary>
 		/// Erase the toolbox's authorization. 
 		/// </summary>
@@ -632,8 +632,8 @@ namespace Beamable
 		public static void WriteConfig(string alias, string pid, string host = null, string cid = "")
 		{
 			BeamEditorContext.Default.ServiceScope
-			                 .GetService<ConfigDefaultsService>()
-			                 .SaveConfig(alias, cid, pid);
+							 .GetService<ConfigDefaultsService>()
+							 .SaveConfig(alias, cid, pid);
 		}
 
 		public async Promise LoadConfig()
@@ -644,7 +644,7 @@ namespace Beamable
 				Logout(false);
 			}
 		}
-		
+
 		/// <summary>
 		/// Save the current toolbox CID/PID data in the config-defaults.txt file.
 		/// </summary>
@@ -656,7 +656,7 @@ namespace Beamable
 			WriteConfig(alias, pid, cid: cid);
 			EditorAccountService.ApplyConfigValuesToRuntime();
 		}
-		
+
 		[Obsolete]
 		public void SaveConfig(string alias, string pid, string host = null, string cid = "")
 		{
@@ -697,7 +697,7 @@ namespace Beamable
 					$"Hubspot registration event failed. type=[{hubspotError?.GetType()}] message=[{hubspotError?.Message}]");
 			}
 		}
-		
+
 		public async Promise CreateCustomer(string alias, string gameName, string email, string password)
 		{
 			var customerResponse = await AuthService.RegisterCustomer(email, password, gameName, alias, alias);
@@ -780,7 +780,7 @@ namespace Beamable
 			await RefreshRealmSecret();
 			return RealmSecret;
 		}
-		
+
 		public async Promise RefreshRealmSecret()
 		{
 			try
@@ -805,15 +805,15 @@ namespace Beamable
 			EditorAccountService.SetRealm(EditorAccount, game, realmPid);
 			Requester.Cid = EditorAccount.cid;
 			Requester.Pid = realmPid;
-			
+
 			await ContentIO.FetchManifest();
 			ContentDatabase.RecalculateIndex();
 			await RefreshRealmSecret();
-			
+
 			EditorAccountService.WriteUnsetConfigValues();
 			OnRealmChange?.Invoke(CurrentRealm);
 		}
-		
+
 
 		#endregion
 
@@ -885,7 +885,7 @@ namespace Beamable
 		public string cid;
 		public string alias;
 		public string pid;
-		
+
 		[Obsolete("This will be removed in a future version of Beamable. Use " + nameof(BeamableEnvironment) + "." + nameof(BeamableEnvironment.ApiUrl) + " instead.")]
 		public string platform;
 		[Obsolete("This will be removed in a future version of Beamable. Use " + nameof(BeamableEnvironment) + "." + nameof(BeamableEnvironment.SocketUrl) + " instead.")]

@@ -20,7 +20,7 @@ namespace Beamable.Editor
 	public interface IAccountService
 	{
 		EditorAccountInfo Account { get; }
-		
+
 		Promise<AccountServiceInitResult> TryInit();
 		Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken);
 		void Logout(bool clearRealmPid);
@@ -31,11 +31,11 @@ namespace Beamable.Editor
 		Promise<bool> SwitchToConfigDefaults();
 		void Clear();
 	}
-	
+
 	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 
-		
+
 		public EditorAccountInfo Account
 		{
 			get
@@ -50,7 +50,7 @@ namespace Beamable.Editor
 		public OptionalString cid = new OptionalString();
 
 		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(cid);
-		
+
 		public List<EditorAccountInfo> editorAccounts = new List<EditorAccountInfo>();
 
 		private StorageHandle<AccountService> _saveHandle;
@@ -60,7 +60,7 @@ namespace Beamable.Editor
 		{
 			_scope = scope;
 		}
-		
+
 		/// <summary>
 		/// Loads data from the config-defaults file and combines it with
 		/// local state to create a CID/PID for the toolbox.
@@ -84,16 +84,16 @@ namespace Beamable.Editor
 					cid.Clear();
 				}
 			}
-			
+
 			if (cid.HasValue)
 			{
 				GetAccountForCid(cid.Value, out account);
 				WriteUnsetConfigValues();
-				
-				return new AccountServiceInitResult{ hasCid = true, account = account};
+
+				return new AccountServiceInitResult { hasCid = true, account = account };
 			}
 
-			return new AccountServiceInitResult{ hasCid = false, account = account};
+			return new AccountServiceInitResult { hasCid = false, account = account };
 		}
 
 		public async Promise<bool> SwitchToConfigDefaults()
@@ -118,7 +118,7 @@ namespace Beamable.Editor
 			await Login(ConfigDefaultsService.Cid, existingToken);
 			return false;
 		}
-		
+
 		private bool GetAccountForCid(string cid, out EditorAccountInfo account)
 		{
 			account = editorAccounts.FirstOrDefault(a => a.cid == cid);
@@ -138,7 +138,7 @@ namespace Beamable.Editor
 			editorAccounts?.Clear();
 			_saveHandle?.Save();
 		}
-		
+
 		public async Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken)
 		{
 			var requester = _scope.InstantiateService<IPlatformRequester>();
@@ -147,9 +147,9 @@ namespace Beamable.Editor
 			var api = new RealmsApi(requester);
 			GetAccountForCid(nextCid, out var account);
 			cid.Set(nextCid);
-			
+
 			var authService = new EditorAuthService(requester);
-			
+
 			var editorUser = await authService.GetUserForEditor();
 			account.user = editorUser;
 
@@ -168,7 +168,7 @@ namespace Beamable.Editor
 			return account;
 		}
 
-		
+
 		public void Logout(bool clearRealmPid)
 		{
 			Requester.DeleteToken();
@@ -216,10 +216,10 @@ namespace Beamable.Editor
 					return cid.Value;
 				}
 
-				
+
 				return null;
 			});
-			
+
 			var nextPid = ConfigDefaultsService.Pid.GetNonEmptyOrElse(() =>
 			{
 				if (GetAccountForCid(nextCid, out var account))
@@ -244,16 +244,16 @@ namespace Beamable.Editor
 
 				return null;
 			});
-			
+
 
 			if (needsWrite)
 			{
 				ConfigDefaultsService.SaveConfig(nextAlias, nextCid, nextPid);
 			}
 		}
-		
-	
-		
+
+
+
 		public void ReceiveStorageHandle(StorageHandle<AccountService> handle)
 		{
 			_saveHandle = handle;
@@ -261,16 +261,16 @@ namespace Beamable.Editor
 
 		public void OnBeforeSaveState()
 		{
-				// WriteUnsetConfigValues();
+			// WriteUnsetConfigValues();
 		}
 
 		public void OnAfterLoadState()
 		{
-				foreach (var account in editorAccounts)
-				{
-					account.Refresh();
-				}
-				ApplyConfigValuesToRuntime();
+			foreach (var account in editorAccounts)
+			{
+				account.Refresh();
+			}
+			ApplyConfigValuesToRuntime();
 		}
 
 		public void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid)
@@ -301,16 +301,16 @@ namespace Beamable.Editor
 
 		public List<RealmView> RealmsInCurrentGame =>
 			CustomerRealms?.Where(r => r.GamePid == CurrentGame?.Value?.Pid)?.ToList() ?? new List<RealmView>();
-		
+
 		public OptionalRealmView CurrentRealm =>
 			realmPid.Map<RealmView, OptionalRealmView>(pid => CustomerRealms?.FirstOrDefault(r => r.Pid == pid));
-		
+
 		public OptionalRealmView CurrentGame =>
 			gamePid.Map<RealmView, OptionalRealmView>(pid => CustomerRealms?.FirstOrDefault(r => r.Pid == pid));
-		
+
 		public EditorAccountInfo()
 		{
-			
+
 		}
 
 		public EditorAccountInfo(string cid)
@@ -319,7 +319,7 @@ namespace Beamable.Editor
 		}
 
 
-		public void SetCustomerViewResponse(CustomerViewResponse customer=null)
+		public void SetCustomerViewResponse(CustomerViewResponse customer = null)
 		{
 			if (customer != null)
 			{
@@ -333,11 +333,11 @@ namespace Beamable.Editor
 				}
 				customerViewResponse = customer;
 			}
-			
+
 			Refresh();
 		}
-		
-		
+
+
 		public void Refresh()
 		{
 			var projects = new List<ProjectViewDTO>();

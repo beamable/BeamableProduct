@@ -27,11 +27,11 @@ namespace Beamable.Api
 	public interface IPlatformRequesterErrorHandler
 	{
 		Promise<T> HandleError<T>(Exception ex,
-		                          string contentType,
-		                          byte[] body,
-		                          SDKRequesterOptions<T> opts);
+								  string contentType,
+								  byte[] body,
+								  SDKRequesterOptions<T> opts);
 	}
-	
+
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -67,7 +67,7 @@ namespace Beamable.Api
 		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
 
 		public IPlatformRequesterErrorHandler ErrorHandler { get; set; }
-		
+
 		public string RequestTimeoutMs
 		{
 			get => _requestTimeoutMs;
@@ -469,7 +469,7 @@ namespace Beamable.Api
 			{
 				AddCidPidHeaders(request);
 			}
-			
+
 			AddVersionHeaders(request);
 			AddAuthHeader(request, opts);
 			AddShardHeader(request);

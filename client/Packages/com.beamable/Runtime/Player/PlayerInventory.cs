@@ -495,7 +495,7 @@ namespace Beamable.Player
 		/// This method will is similar to <see cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>, however it will make sure that the
 		/// <see cref="PlayerItemGroup"/> has been refreshed before completing the resulting promise.
 		/// <returns> A <see cref="Promise"/> containing the updated <see cref="PlayerItemGroup"/></returns>
-		public async Promise<PlayerItemGroup> LoadItems(ItemRef itemRef=null)
+		public async Promise<PlayerItemGroup> LoadItems(ItemRef itemRef = null)
 		{
 			var items = GetItems(itemRef);
 			await items.Refresh();
@@ -504,7 +504,7 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="LoadItems(Beamable.Common.Inventory.ItemRef)"/>
 		public Promise<PlayerItemGroup> LoadItems(string itemRef) => LoadItems(new ItemRef(itemRef));
-		
+
 		/// <summary>
 		/// Get a category of <see cref="PlayerCurrency"/> for a given type.
 		/// If you have subtypes of <see cref="CurrencyRef"/>,
@@ -533,13 +533,13 @@ namespace Beamable.Player
 		/// This method will is similar to <see cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>, however it will make sure that the
 		/// <see cref="PlayerCurrencyGroup"/> has been refreshed before completing the resulting promise.
 		/// <returns> A <see cref="Promise"/> containing the updated <see cref="PlayerCurrencyGroup"/></returns>
-		public async Promise<PlayerCurrencyGroup> LoadCurrencies(CurrencyRef currencyRef=null)
+		public async Promise<PlayerCurrencyGroup> LoadCurrencies(CurrencyRef currencyRef = null)
 		{
 			var currencies = GetCurrencies(currencyRef);
 			await currencies.Refresh();
 			return currencies;
 		}
-		
+
 		/// <inheritdoc cref="LoadCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
 		public Promise<PlayerCurrencyGroup> LoadCurrencies(string currencyRef) => LoadCurrencies(new CurrencyRef(currencyRef));
 

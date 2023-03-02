@@ -24,26 +24,26 @@ namespace Beamable.Editor
 		/// A readonly optional string for the CID in the config-defaults file.
 		/// </summary>
 		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(_cid);
-		
+
 		/// <summary>
 		/// A readonly optional string for the PID in the config-defaults file.
 		/// </summary>
-		public ReadonlyOptionalString Pid => new ReadonlyOptionalString(_pid); 
-		
+		public ReadonlyOptionalString Pid => new ReadonlyOptionalString(_pid);
+
 		/// <summary>
 		/// A readonly optional string for the Alias in the config-defaults file.
 		/// </summary>
 		public ReadonlyOptionalString Alias => new ReadonlyOptionalString(_alias);
-		
+
 		public ConfigDefaultsService(AliasService aliasService)
 		{
 			_aliasService = aliasService;
 		}
-		
-		
+
+
 		public void SaveConfig(string alias, string cid, string pid)
 		{
-			
+
 			// var configService = ServiceScope.GetService<ConfigDefaultsService>();
 			AliasHelper.ValidateAlias(alias);
 			AliasHelper.ValidateCid(cid);
@@ -95,7 +95,7 @@ namespace Beamable.Editor
 				}
 
 				File.WriteAllText(path, asJson);
-				
+
 
 				AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
 				try
@@ -110,7 +110,7 @@ namespace Beamable.Editor
 				AssetDatabase.Refresh();
 			}
 		}
-		
+
 		/// <summary>
 		/// This will read the config-defaults file and store the values in the
 		/// <see cref="Alias"/>, <see cref="Cid"/>, and <see cref="Pid"/> fields.
@@ -124,11 +124,11 @@ namespace Beamable.Editor
 			{
 				return;
 			}
-			
+
 			_alias = LoadConfigStringFromDisk(Constants.Features.Config.ALIAS_KEY);
 			_cid = LoadConfigStringFromDisk(Constants.Features.Config.CID_KEY);
 			_pid = LoadConfigStringFromDisk(Constants.Features.Config.PID_KEY);
-			
+
 			// check that the alias is valid
 			try
 			{
@@ -138,7 +138,7 @@ namespace Beamable.Editor
 					aliasResolve.Alias.DoIfExists(_alias.Set);
 					aliasResolve.Cid.DoIfExists(_cid.Set);
 				}
-				
+
 				_alias.DoIfExists(AliasHelper.ValidateAlias);
 			}
 			catch
@@ -156,7 +156,7 @@ namespace Beamable.Editor
 					cidResolve.Alias.DoIfExists(_alias.Set);
 					cidResolve.Cid.DoIfExists(_cid.Set);
 				}
-				
+
 				_cid.DoIfExists(AliasHelper.ValidateCid);
 			}
 			catch
@@ -174,7 +174,7 @@ namespace Beamable.Editor
 		/// <returns></returns>
 		private static OptionalString LoadConfigStringFromDisk(string key)
 		{
-			if (ConfigDatabase.TryGetString(key, out var value, allowSessionOverrides:false) && !string.IsNullOrWhiteSpace(value))
+			if (ConfigDatabase.TryGetString(key, out var value, allowSessionOverrides: false) && !string.IsNullOrWhiteSpace(value))
 			{
 				return new OptionalString(value);
 			}
@@ -183,7 +183,7 @@ namespace Beamable.Editor
 				return new OptionalString();
 			}
 		}
-		
-		
+
+
 	}
 }

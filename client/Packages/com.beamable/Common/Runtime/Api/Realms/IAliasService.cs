@@ -62,7 +62,10 @@ namespace Beamable.Common.Api.Realms
 			var res = await _httpRequester.BeamableRequest<AliasResolveResponse>(
 				new SDKRequesterOptions<AliasResolveResponse>
 				{
-					includeAuthHeader = false, method = Method.GET, uri = url, disableScopeHeaders = true
+					includeAuthHeader = false,
+					method = Method.GET,
+					uri = url,
+					disableScopeHeaders = true
 				});
 			return res;
 		}

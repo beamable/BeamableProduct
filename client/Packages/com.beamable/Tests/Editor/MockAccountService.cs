@@ -15,12 +15,12 @@ namespace Beamable.Editor.Tests
 		public AccountServiceInitResult InitResult { get; set; }
 
 		public Promise<bool> SwitchToConfigDefaults()
-		{ 
-			
+		{
+
 			throw new NotImplementedException();
 		}
 
-		public void Clear(){}
+		public void Clear() { }
 		public MockAccountService()
 		{
 			AccountInfo = new EditorAccountInfo
@@ -29,7 +29,8 @@ namespace Beamable.Editor.Tests
 			};
 			InitResult = new AccountServiceInitResult
 			{
-				hasCid = true, account = AccountInfo
+				hasCid = true,
+				account = AccountInfo
 			};
 			AccountInfo.SetCustomerViewResponse(new CustomerViewResponse
 			{
@@ -63,11 +64,11 @@ namespace Beamable.Editor.Tests
 
 		public void Logout(bool clearRealmPid)
 		{
-			
+
 		}
 
 		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(AccountInfo.cid);
-		
+
 		public void ApplyConfigValuesToRuntime()
 		{
 		}
@@ -79,7 +80,7 @@ namespace Beamable.Editor.Tests
 
 		public void WriteUnsetConfigValues()
 		{
-			
+
 		}
 	}
 }

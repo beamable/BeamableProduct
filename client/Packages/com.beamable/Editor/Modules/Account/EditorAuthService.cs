@@ -34,7 +34,7 @@ namespace Beamable.Editor.Modules.Account
 			var instance = (IPlatformRequester)descriptor.Factory?.Invoke(_provider);
 			return instance;
 		}
-		
+
 		public IPlatformRequester Create(string cid)
 		{
 			var instance = CreateInstance();
@@ -43,7 +43,7 @@ namespace Beamable.Editor.Modules.Account
 
 			return instance;
 		}
-	
+
 		public IPlatformRequester Create(string cid, string pid)
 		{
 			throw new NotImplementedException();
@@ -90,11 +90,11 @@ namespace Beamable.Editor.Modules.Account
 
 		public Promise<TokenResponse> CreateEditorUser()
 		{
-			var req = new CreateUserRequest { grant_type = "guest" , customerScoped = true};
+			var req = new CreateUserRequest { grant_type = "guest", customerScoped = true };
 			return Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, false);
 		}
-		
-		
+
+
 		[Serializable]
 		private class CreateUserRequest
 		{
