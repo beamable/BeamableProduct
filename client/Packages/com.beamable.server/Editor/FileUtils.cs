@@ -86,7 +86,7 @@ namespace Beamable.Server.Editor
 			containerPath = Path.Combine(descriptor.BuildPath, containerPath);
 			MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying file to " + containerPath);
 
-			
+
 			var targetDir = Path.GetDirectoryName(containerPath);
 			Directory.CreateDirectory(targetDir);
 
