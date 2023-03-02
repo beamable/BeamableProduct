@@ -170,9 +170,8 @@ namespace SharedRuntime
 
 		public string GetFullName()
 		{
-			var type = TryFindServiceType();
-			if (type != null)
-				return type.FullName;
+			if (Type != null)
+				return Type.FullName;
 			return $"Beamable.Microservices.{Name}";
 		}
 	}
