@@ -1,6 +1,7 @@
 using Beamable.Common;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.PackageManager;
@@ -63,6 +64,29 @@ namespace Beamable.Editor.Environment
 		{
 			var _ = ServerPackageMeta;
 			var __ = CheckForPendingUpdates();
+		}
+		
+		/// <summary>
+		/// When using Unity Packages, the package can be installed locally, or through the Unity package cache.
+		/// When the package is installed locally, the package files actually exist in the /Packages/com.package/ folder.
+		/// However, when the package is installed through the cache, the files do not exist there. Unity's own asset calls
+		/// still use /Package/com.package/ style paths, but they are redirected and proxied.
+		///
+		/// This method will check for the presence of the package.json file in the given package id.
+		/// 
+		/// </summary>
+		/// <param name="file">Any file path, but if it isn't pointing the /Packages folder, this method isn't recommened. </param>
+		/// <returns>
+		/// True if the given <see cref="file"/> exists locally, False if the package is not installed, or is installed through the cache.
+		/// </returns>
+		public static bool DoesFileExistLocally(string file)
+		{
+			if (!File.Exists(file)) return false;
+			
+			// if the path is relative to the /Library/PackageCache folder, then this file doesn't _really_ exist in the same way we think it does.
+			var relativePath = Path.GetRelativePath(System.Environment.CurrentDirectory, file);
+			var isInPackageCache = relativePath.StartsWith("Library/PackageCache");
+			return !isInPackageCache;
 		}
 
 		private static async Promise CheckForPendingUpdates()
