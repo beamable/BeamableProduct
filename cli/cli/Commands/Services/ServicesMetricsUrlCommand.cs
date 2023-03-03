@@ -15,18 +15,16 @@ public class ServicesMetricsUrlCommandArgs : LoginCommandArgs
 
 public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArgs>
 {
-	public static readonly Option<string> METRIC_NAME_OPTION_ID = new("--metric", "'cpu' or 'memory'");
+	public static readonly Option<string> METRIC_NAME_OPTION_ID = new("--metric", "Set to 'cpu' or 'memory'");
 
-	private readonly BeamoLocalSystem _localBeamo;
-	private readonly BeamoService _remoteBeamo;
+	private BeamoLocalSystem _localBeamo;
+	private BeamoService _remoteBeamo;
 
 
-	public ServicesMetricsUrlCommand(BeamoLocalSystem localBeamo, BeamoService remoteBeamo) :
+	public ServicesMetricsUrlCommand() :
 		base("service-metrics",
-			"Gets the URL that we can use to see the metrics for our services.")
+			"Gets the URL that we can use to see the metrics for our services")
 	{
-		_localBeamo = localBeamo;
-		_remoteBeamo = remoteBeamo;
 	}
 
 	public override void Configure()
@@ -38,6 +36,8 @@ public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArg
 
 	public override async Task Handle(ServicesMetricsUrlCommandArgs args)
 	{
+		_localBeamo = args.BeamoLocalSystem;
+		_remoteBeamo = args.BeamoService;
 		// Make sure we are up-to-date with the remote manifest
 		var currentRemoteManifest = await _remoteBeamo.GetCurrentManifest();
 		// Only allow selecting from services we know are enabled remotely (serviceName maps to Beamo Ids)

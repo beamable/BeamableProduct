@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Runtime;
 using System;
@@ -19,27 +20,26 @@ namespace Beamable.Editor.UI.Common.Models
 
 		public void Initialize()
 		{
-			RefreshAvailable();
-
 			var api = BeamEditorContext.Default;
 			api.OnRealmChange -= HandleRealmChanged;
 			api.OnRealmChange += HandleRealmChanged;
 			Current = api.CurrentRealm;
 			OnElementChanged?.Invoke(Current);
+
+			Elements = api?.EditorAccount?.RealmsInCurrentGame?.ToList<ISearchableElement>() ?? new List<ISearchableElement>();
 		}
 
-		public Promise<List<ISearchableElement>> RefreshAvailable()
+		public bool RefreshOnStart => false;
+
+		public async Promise<List<ISearchableElement>> RefreshAvailable()
 		{
 			var api = BeamEditorContext.Default;
 			Current = api.CurrentRealm;
 
-			return api.ServiceScope.GetService<RealmsService>().GetRealms()
-					  .Map(realms => realms.ToList<ISearchableElement>())
-					  .Then(realms =>
-					  {
-						  Elements = realms.ToList<ISearchableElement>();
-						  OnAvailableElementsChanged?.Invoke(Elements);
-					  });
+			await api.EditorAccount.UpdateRealms(api.Requester);
+			Elements = api.EditorAccount.RealmsInCurrentGame.ToList<ISearchableElement>();
+			OnAvailableElementsChanged?.Invoke(Elements);
+			return Elements;
 		}
 
 		private void HandleRealmChanged(RealmView realm)

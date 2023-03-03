@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.Environment;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.CodeGen;
 using System;
@@ -41,6 +42,11 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public BuildImageCommand(MicroserviceDescriptor descriptor, List<string> availableArchitectures, bool includeDebugTools, bool watch, bool pull = true, CPUArchitectureContext cpuContext = CPUArchitectureContext.LOCAL)
 		{
+			if (watch && !descriptor.IsSourceCodeAvailableLocally())
+			{
+				watch = false;
+			}
+			
 			_descriptor = descriptor;
 			_availableArchitectures = availableArchitectures;
 			_pull = pull;

@@ -18,39 +18,37 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 {
-	private readonly IAppContext _ctx;
-	private readonly BeamoLocalSystem _localBeamo;
+	private IAppContext _ctx;
+	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
 
-	public ServicesDeployCommand(IAppContext ctx, BeamoLocalSystem localBeamo, BeamoService remoteRemoteBeamo) :
+	public ServicesDeployCommand() :
 		base("deploy",
-			"Deploys services, either locally or remotely (to the current realm).")
+			"Deploys services, either locally or remotely (to the current realm)")
 	{
-		_ctx = ctx;
-		_localBeamo = localBeamo;
-		_remoteBeamo = remoteRemoteBeamo;
+
 	}
 
 	public override void Configure()
 	{
 		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services." +
-												"If '--remote' option is set, these are the ids that'll become enabled by Beam-O once it receives the updated manifest.")
+												"If '--remote' option is set, these are the ids that'll become enabled by Beam-O once it receives the updated manifest")
 		{
 			AllowMultipleArgumentsPerToken = true
 		},
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 
-		AddOption(new Option<bool>("--remote", () => false, $"If this option is set, we publish the manifest instead."),
+		AddOption(new Option<bool>("--remote", () => false, $"If this option is set, we publish the manifest instead"),
 			(args, i) => args.Remote = i);
 
-		AddOption(new Option<string>("--from-file", () => null, $"If this option is set to a valid path to a ServiceManifest JSON, deploys that instead. Only works if --remote flag is set."),
+		AddOption(new Option<string>("--from-file", () => null, $"If this option is set to a valid path to a ServiceManifest JSON, deploys that instead. Only works if --remote flag is set"),
 			(args, i) => args.FromJsonFile = i);
 
-		AddOption(new Option<string>("--comment", () => "", $"Requires --remote flag. Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal."),
+		AddOption(new Option<string>("--comment", () => "", $"Requires --remote flag. Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),
 			(args, i) => args.RemoteComment = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Requires --remote flag. Any number of 'BeamoId::Comment' strings. " +
-																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal.")
+																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
 		{
 			AllowMultipleArgumentsPerToken = true
 		},
@@ -59,6 +57,9 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
 	{
+		_ctx = args.AppContext;
+		_localBeamo = args.BeamoLocalSystem;
+		_remoteBeamo = args.BeamoService;
 		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 		await _localBeamo.StartListeningToDocker();
 

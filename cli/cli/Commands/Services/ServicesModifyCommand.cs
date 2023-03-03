@@ -23,13 +23,12 @@ public class ServicesModifyCommandArgs : LoginCommandArgs
 public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 {
 
-	private readonly BeamoLocalSystem _localBeamo;
+	private BeamoLocalSystem _localBeamo;
 
-	public ServicesModifyCommand(BeamoLocalSystem localBeamo) :
+	public ServicesModifyCommand() :
 		base("modify",
-			"Modifies a new service into the local manifest.")
+			"Modifies a new service into the local manifest")
 	{
-		_localBeamo = localBeamo;
 	}
 
 	public override void Configure()
@@ -68,6 +67,8 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 
 	public override async Task Handle(ServicesModifyCommandArgs args)
 	{
+		_localBeamo = args.BeamoLocalSystem;
+
 		// Handle Beamo Id Option 
 		var existingBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToList();
 		{
@@ -100,12 +101,6 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 				// Handle Dockerfile path
 				if (!EnsureLocalDockerfilePath(ref httpArgs, localProtocol.RelativeDockerfilePath))
 					return;
-
-				// Log Level
-				EnsureLocalLogLevel(ref httpArgs, Enum.Parse<LogEventLevel>(localProtocol.LogLevel));
-
-				// Health Check
-				EnsureLocalHealthEndpointAndPort(ref httpArgs, new string[2] { localProtocol.HealthCheckEndpoint, localProtocol.HealthCheckInternalPort });
 
 				// Hot Reloading
 				EnsureLocalHotReloadingConfig(ref httpArgs,

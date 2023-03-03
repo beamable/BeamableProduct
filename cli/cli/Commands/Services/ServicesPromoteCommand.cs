@@ -15,21 +15,18 @@ public class ServicesPromoteCommandArgs : LoginCommandArgs
 
 public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 {
-	public static readonly Option<string> SOURCE_PID_OPTION = new("--sourcePid", "The PID for the realm from which you wish to pull the manifest from. " +
-																				 "\nThe current realm you are signed into will be updated to match the manifest in the given realm.");
+	public static readonly Option<string> SOURCE_PID_OPTION = new("--source-pid", "The PID for the realm from which you wish to pull the manifest from. " +
+																				 "\nThe current realm you are signed into will be updated to match the manifest in the given realm");
 
-	private readonly IAppContext _ctx;
-	private readonly IRealmsApi _realms;
-	private readonly BeamoService _remoteBeamo;
+	private IAppContext _ctx;
+	private IRealmsApi _realms;
+	private BeamoService _remoteBeamo;
 
 
-	public ServicesPromoteCommand(IAppContext ctx, IRealmsApi realms, BeamoService remoteBeamo) :
+	public ServicesPromoteCommand() :
 		base("promote",
-			"Promotes the manifest from the given 'sourcePid' to your current realm.")
+			"Promotes the manifest from the given 'sourcePid' to your current realm")
 	{
-		_ctx = ctx;
-		_realms = realms;
-		_remoteBeamo = remoteBeamo;
 	}
 
 	public override void Configure()
@@ -39,6 +36,10 @@ public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 
 	public override async Task Handle(ServicesPromoteCommandArgs args)
 	{
+
+		_ctx = args.AppContext;
+		_realms = args.RealmsApi;
+		_remoteBeamo = args.BeamoService;
 		// Make sure we are up-to-date with the remote manifest
 		var realms = await _realms.GetRealms(_ctx.Pid);
 		var possiblePids = realms.Select(r => r.Pid);

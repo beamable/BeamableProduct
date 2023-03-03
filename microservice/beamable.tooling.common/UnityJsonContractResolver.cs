@@ -20,7 +20,8 @@ namespace Beamable.Server.Common
 				new StringToSomethingDictionaryConverter<int>(),
 				new StringToSomethingDictionaryConverter<long>(),
 				new StringToSomethingDictionaryConverter<CurrencyPropertyList>(),
-
+				new StringToSomethingDictionaryConverter<List<FederatedItemProxy>>(),
+				
 				// THIS MUST BE LAST, because it is hacky, and falls back onto other converts as its _normal_ behaviour. If its not last, then other converts can run twice, which causes newtonsoft to explode.
 				new UnitySerializationCallbackInvoker(),
 
@@ -82,17 +83,27 @@ namespace Beamable.Server.Common
 
 		    SerializableDictionaryStringToSomething<T> HandleObjectVariant()
 		    {
-			    var keysAndValues = serializer.Deserialize<KeysAndValues>(reader);
-			    if (keysAndValues.keys.Length != keysAndValues.values.Length)
+			    try
 			    {
-				    BeamableLogger.LogWarning($"Deserializing dictionary but keys and values were different values. keyCount=[{keysAndValues.keys.Length}] valueCount=[{keysAndValues.values.Length}]");
-			    }
-			    for (var i = 0; i < keysAndValues.keys.Length && i < keysAndValues.values.Length; i++)
-			    {
-				    instance[keysAndValues.keys[i]] = keysAndValues.values[i];
-			    }
+				    var keysAndValues = serializer.Deserialize<KeysAndValues>(reader);
+				    if (keysAndValues.keys.Length != keysAndValues.values.Length)
+				    {
+					    BeamableLogger.LogWarning(
+						    $"Deserializing dictionary but keys and values were different values. keyCount=[{keysAndValues.keys.Length}] valueCount=[{keysAndValues.values.Length}]");
+				    }
 
-			    return instance;
+				    for (var i = 0; i < keysAndValues.keys.Length && i < keysAndValues.values.Length; i++)
+				    {
+					    instance[keysAndValues.keys[i]] = keysAndValues.values[i];
+				    }
+
+				    return instance;
+			    }
+			    catch (Exception ex)
+			    {
+				    BeamableLogger.LogError($"Failed to deserialize map type type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+				    throw;
+			    }
 		    }
 
 		    return reader.TokenType == JsonToken.StartArray
@@ -108,8 +119,8 @@ namespace Beamable.Server.Common
 
 	    public class KeysAndValues
 	    {
-		    public string[] keys;
-		    public T[] values;
+		    public string[] keys = Array.Empty<string>();
+		    public T[] values = Array.Empty<T>();
 	    }
     }
 

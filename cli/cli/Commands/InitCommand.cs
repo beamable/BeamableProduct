@@ -12,22 +12,18 @@ public class InitCommandArgs : LoginCommandArgs
 }
 public class InitCommand : AppCommand<InitCommandArgs>
 {
-	private readonly IAppContext _ctx;
-	private readonly ConfigService _configService;
 	private readonly LoginCommand _loginCommand;
 	private readonly ConfigCommand _configCommand;
-	private readonly IRealmsApi _realmsApi;
-	private readonly IAliasService _aliasService;
+	private IRealmsApi _realmsApi;
+	private IAliasService _aliasService;
+	private IAppContext _ctx;
+	private ConfigService _configService;
 
-	public InitCommand(IAppContext ctx, ConfigService configService, LoginCommand loginCommand, ConfigCommand configCommand, IRealmsApi realmsApi, IAliasService aliasService)
-		: base("init", "Initialize a new beamable project in the current directory.")
+	public InitCommand(LoginCommand loginCommand, ConfigCommand configCommand)
+		: base("init", "Initialize a new Beamable project in the current directory")
 	{
-		_ctx = ctx;
-		_configService = configService;
 		_loginCommand = loginCommand;
 		_configCommand = configCommand;
-		_realmsApi = realmsApi;
-		_aliasService = aliasService;
 	}
 
 	public override void Configure()
@@ -41,6 +37,11 @@ public class InitCommand : AppCommand<InitCommandArgs>
 
 	public override async Task Handle(InitCommandArgs args)
 	{
+		_ctx = args.AppContext;
+		_configService = args.ConfigService;
+		_aliasService = args.AliasService;
+		_realmsApi = args.RealmsApi;
+
 		AnsiConsole.Write(
 			new FigletText("Beam")
 				.LeftAligned()
@@ -60,7 +61,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		await GetPidAndAuth(args, cid, host);
 
 		AnsiConsole.MarkupLine("Success! :thumbs up: Here are your connection details");
-		await _configCommand.Handle(new ConfigCommandArgs());
+		await _configCommand.Handle(args.Create<ConfigCommandArgs>());
 	}
 
 	private async Task GetPidAndAuth(InitCommandArgs args, string cid, string host)

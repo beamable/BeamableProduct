@@ -17,9 +17,10 @@ public static class Constants
 
 	public const string CONFIG_CID = "cid";
 	public const string CONFIG_PID = "pid";
+	public const string CONFIG_DIR = "dir";
 	public const string CONFIG_PLATFORM = "host";
-	public const string CONFIG_ACCESS_TOKEN = "access_token";
-	public const string CONFIG_REFRESH_TOKEN = "refresh_token";
+	public const string CONFIG_ACCESS_TOKEN = "access-token";
+	public const string CONFIG_REFRESH_TOKEN = "refresh-token";
 	public const string CONFIG_HEADER = "header";
 
 

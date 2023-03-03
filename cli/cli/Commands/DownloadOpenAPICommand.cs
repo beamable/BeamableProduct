@@ -15,26 +15,26 @@ public class DownloadOpenAPICommandArgs : CommandArgs
 
 public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 {
-	private readonly SwaggerService _swaggerService;
+	private SwaggerService _swaggerService;
 
-	public DownloadOpenAPICommand(SwaggerService swaggerService) : base("download", "download the Beamable Open API specs")
+	public DownloadOpenAPICommand() : base("download", "Download the Beamable Open API specs")
 	{
-		_swaggerService = swaggerService;
 	}
 
 	public override void Configure()
 	{
 		AddOption(new Option<string>("--output", () => null,
-				"when null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path."),
+				"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
 			(args, val) => args.OutputPath = val);
 
 		AddOption(new Option<string>("--filter", () => null,
-				"a string to filter which open apis to generate. An empty string matches everything"),
+				"Filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
 	}
 
 	public override async Task Handle(DownloadOpenAPICommandArgs args)
 	{
+		_swaggerService = args.SwaggerService;
 		// TODO: download the files to a folder...
 		var filter = BeamableApiFilter.Parse(args.Filter);
 

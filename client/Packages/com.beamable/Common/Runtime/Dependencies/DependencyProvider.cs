@@ -53,13 +53,26 @@ namespace Beamable.Common.Dependencies
 		IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null);
 	}
 
+	public static class IDependencyProviderScopeExtensions
+	{
+		public static T InstantiateService<T>(this IDependencyProviderScope scope)
+		{
+			if (!scope.TryGetServiceDescriptor<T>(out var descriptor))
+			{
+				throw new InvalidOperationException(
+					$"Cannot create new instance of {typeof(T).Name} because it was not registered.");
+			}
+
+			return (T)descriptor.Factory?.Invoke(scope);
+		}
+	}
+
 	/// <summary>
 	/// The <see cref="IDependencyProviderScope"/> is a <see cref="IDependencyProvider"/>
 	/// But has more access methods and lifecycle controls.
 	/// </summary>
 	public interface IDependencyProviderScope : IDependencyProvider
 	{
-
 		/// <summary>
 		/// Give some type, try to find the service <see cref="DependencyLifetime"/> for the type.
 		/// If the service isn't registered, then the method will return false.
@@ -68,6 +81,15 @@ namespace Beamable.Common.Dependencies
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
 		bool TryGetServiceLifetime<T>(out DependencyLifetime lifetime);
+
+		/// <summary>
+		/// Given some type, try to find the service <see cref="ServiceDescriptor"/> for the type.
+		/// If the service isn't registered, then the method will return false and <see cref="descriptor"/> will be null.
+		/// </summary>
+		/// <param name="descriptor"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		bool TryGetServiceDescriptor<T>(out ServiceDescriptor descriptor);
 
 		/// <summary>
 		/// Disposing a <see cref="IDependencyProviderScope"/> will call <see cref="IBeamableDisposable.OnDispose"/>
@@ -110,6 +132,12 @@ namespace Beamable.Common.Dependencies
 		bool IsDisposed { get; }
 
 		/// <summary>
+		/// By default, returns true.
+		/// Returns false after <see cref="Dispose"/> is started.
+		/// </summary>
+		bool IsActive { get; }
+
+		/// <summary>
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as transient
 		/// </summary>
 		IEnumerable<ServiceDescriptor> TransientServices { get; }
@@ -123,6 +151,13 @@ namespace Beamable.Common.Dependencies
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as singleton
 		/// </summary>
 		IEnumerable<ServiceDescriptor> SingletonServices { get; }
+
+		/// <summary>
+		/// If <see cref="IDependencyProvider.Fork"/> had been called on this instance, then there would be children.
+		/// If you want to disassociate the parent/child relationship, use this function.
+		/// </summary>
+		/// <param name="child"></param>
+		void RemoveChild(IDependencyProviderScope child);
 	}
 
 	public class DependencyProvider : IDependencyProviderScope
@@ -138,6 +173,8 @@ namespace Beamable.Common.Dependencies
 		private bool _isDestroying;
 
 		public bool IsDisposed => _destroyed;
+		public bool IsActive => !_isDestroying && !_destroyed;
+
 		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
 		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
 		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
@@ -151,13 +188,53 @@ namespace Beamable.Common.Dependencies
 
 		public Guid Id = Guid.NewGuid();
 
-		public DependencyProvider(DependencyBuilder builder)
+		private BuildOptions _options;
+
+		public DependencyProvider(DependencyBuilder builder, BuildOptions options = null)
 		{
-			Transients = builder.TransientServices.ToDictionary(s => s.Interface);
-			Scoped = builder.ScopedServices.ToDictionary(s => s.Interface);
-			Singletons = builder.SingletonServices.ToDictionary(s => s.Interface);
+			if (options == null)
+			{
+				options = new BuildOptions();
+			}
+
+			_options = options;
+			Transients = new Dictionary<Type, ServiceDescriptor>();
+			foreach (var desc in builder.TransientServices)
+			{
+				Transients.Add(desc.Interface, desc);
+			}
+
+			Scoped = new Dictionary<Type, ServiceDescriptor>();
+			foreach (var desc in builder.ScopedServices)
+			{
+				Scoped.Add(desc.Interface, desc);
+			}
+
+			Singletons = new Dictionary<Type, ServiceDescriptor>();
+			foreach (var desc in builder.SingletonServices)
+			{
+				Singletons.Add(desc.Interface, desc);
+			}
 		}
 
+		public bool TryGetServiceDescriptor<T>(out ServiceDescriptor descriptor)
+		{
+			descriptor = null;
+			if (Transients.TryGetValue(typeof(T), out descriptor))
+			{
+				return true;
+			}
+			if (Scoped.TryGetValue(typeof(T), out descriptor))
+			{
+				return true;
+			}
+			if (Singletons.TryGetValue(typeof(T), out descriptor))
+			{
+				return true;
+			}
+
+			return false;
+		}
 
 		public bool TryGetServiceLifetime<T>(out DependencyLifetime lifetime)
 		{
@@ -211,6 +288,7 @@ namespace Beamable.Common.Dependencies
 			if (_destroyed) throw new Exception("Provider scope has been destroyed and can no longer be accessed.");
 
 			if (t == typeof(IDependencyProvider)) return this;
+			if (t == typeof(IDependencyProviderScope)) return this;
 
 			if (Transients.TryGetValue(t, out var descriptor))
 			{
@@ -248,20 +326,23 @@ namespace Beamable.Common.Dependencies
 			throw new Exception($"Service not found {t.Name}");
 		}
 
+		List<Promise<Unit>> disposalPromises = new List<Promise<Unit>>();
+		List<Promise<Unit>> childRemovalPromises = new List<Promise<Unit>>();
+
 		// ReSharper disable Unity.PerformanceAnalysis
 		public async Promise Dispose()
 		{
 			if (_isDestroying || _destroyed) return; // don't dispose twice!
 			_isDestroying = true;
-			var disposalPromises = new List<Promise<Unit>>();
 
-			// remove from parent.
+			disposalPromises.Clear();
+			childRemovalPromises.Clear();
 
-			var childRemovalPromises = new List<Promise<Unit>>();
+
 			lock (_children)
 			{
-
-				foreach (var child in _children)
+				var childrenClone = new List<IDependencyProviderScope>(_children);
+				foreach (var child in childrenClone)
 				{
 					if (child != null)
 					{
@@ -293,6 +374,20 @@ namespace Beamable.Common.Dependencies
 				}
 			}
 
+			void ClearServices(Dictionary<Type, ServiceDescriptor> descriptors)
+			{
+				foreach (var kvp in descriptors)
+				{
+					// clear factories...
+					kvp.Value.Factory = null;
+					kvp.Value.Implementation = null;
+					kvp.Value.Interface = null;
+				}
+				descriptors.Clear();
+			}
+
+
+
 			DisposeServices(SingletonCache.Values.Distinct());
 			DisposeServices(ScopeCache.Values.Distinct());
 
@@ -300,16 +395,47 @@ namespace Beamable.Common.Dependencies
 
 			SingletonCache.Clear();
 			ScopeCache.Clear();
+
+			if (!_options.allowHydration)
+			{
+				// remove from parent.
+				Parent?.RemoveChild(this);
+
+				ClearServices(Singletons);
+				ClearServices(Transients);
+				ClearServices(Scoped);
+				Singletons = null;
+				Transients = null;
+				Scoped = null;
+
+				SingletonCache = null;
+				ScopeCache = null;
+			}
+
 			_destroyed = true;
 		}
 
 		public void Hydrate(IDependencyProviderScope other)
 		{
+			if (!_options.allowHydration) throw new InvalidOperationException("Cannot rehydrate scope.");
+
 			_destroyed = other.IsDisposed;
 			_isDestroying = false;
-			Transients = other.TransientServices.ToDictionary(desc => desc.Interface);
-			Scoped = other.ScopedServices.ToDictionary(desc => desc.Interface);
-			Singletons = other.SingletonServices.ToDictionary(desc => desc.Interface);
+			Transients = new Dictionary<Type, ServiceDescriptor>();
+			foreach (var desc in other.TransientServices)
+			{
+				Transients.Add(desc.Interface, desc);
+			}
+			Scoped = new Dictionary<Type, ServiceDescriptor>();
+			foreach (var desc in other.ScopedServices)
+			{
+				Scoped.Add(desc.Interface, desc);
+			}
+			Singletons = new Dictionary<Type, ServiceDescriptor>();
+			foreach (var desc in other.SingletonServices)
+			{
+				Singletons.Add(desc.Interface, desc);
+			}
 			SingletonCache.Clear();
 			ScopeCache.Clear();
 
@@ -332,26 +458,35 @@ namespace Beamable.Common.Dependencies
 			}
 		}
 
+		public void RemoveChild(IDependencyProviderScope child)
+		{
+			lock (_children)
+			{
+				_childToConfigurator[child] = null;
+				_childToConfigurator.Remove(child);
+				_children.Remove(child);
+			}
+		}
+
+		void AddDescriptors(List<ServiceDescriptor> target,
+			Dictionary<Type, ServiceDescriptor> source,
+			Func<IDependencyProvider, ServiceDescriptor, object> factory)
+		{
+			foreach (var kvp in source)
+			{
+				target.Add(new ServiceDescriptor
+				{
+					Implementation = kvp.Value.Implementation,
+					Interface = kvp.Value.Interface,
+					Factory = p => factory(p, kvp.Value)
+				});
+			}
+		}
 
 		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null)
 		{
 			var builder = new DependencyBuilder();
 			// populate all of the existing services we have in this scope.
-
-			void AddDescriptors(List<ServiceDescriptor> target,
-								Dictionary<Type, ServiceDescriptor> source,
-								Func<IDependencyProvider, ServiceDescriptor, object> factory)
-			{
-				foreach (var kvp in source)
-				{
-					target.Add(new ServiceDescriptor
-					{
-						Implementation = kvp.Value.Implementation,
-						Interface = kvp.Value.Interface,
-						Factory = p => factory(p, kvp.Value)
-					});
-				}
-			}
 
 			// transients are stupid, and I should probably delete them.
 			AddDescriptors(builder.TransientServices, Transients, (nextProvider, desc) => desc.Factory(nextProvider));
@@ -365,7 +500,7 @@ namespace Beamable.Common.Dependencies
 
 			configure?.Invoke(builder);
 
-			var provider = new DependencyProvider(builder) { Parent = this };
+			var provider = new DependencyProvider(builder, _options) { Parent = this };
 			lock (_children)
 			{
 				_children.Add(provider);

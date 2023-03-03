@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using Beamable.Common.Runtime;
 using System;
 using System.Collections.Generic;
@@ -74,9 +75,14 @@ namespace Beamable.Common.Api.Realms
 
 		private List<RealmView> ProcessProjects(List<ProjectViewDTO> projects)
 		{
+			return ProcessProjects(_requester.Cid, projects);
+		}
+
+		public static List<RealmView> ProcessProjects(string cid, List<ProjectViewDTO> projects)
+		{
 			var map = projects.Select(p => new RealmView
 			{
-				Cid = _requester.Cid,
+				Cid = cid,
 				Pid = p.pid,
 				ProjectName = p.projectName,
 				Archived = p.archived,
@@ -109,6 +115,7 @@ namespace Beamable.Common.Api.Realms
 				while (toExplore.Count > 0)
 				{
 					var curr = toExplore.Dequeue();
+					curr.GamePid = rootPid;
 					if (visited.Contains(curr))
 					{
 						continue; // we've already seen this node. Don't do anything. This is a safety measure, it should never happen, but it COULD given malformed data from the server.
@@ -132,27 +139,31 @@ namespace Beamable.Common.Api.Realms
 			return GetRealms(pid);
 		}
 
-		public Promise<List<RealmView>> GetRealms(string pid)
+		public async Promise<List<RealmView>> GetRealms(string pid)
 		{
 			if (string.IsNullOrEmpty(pid))
 			{
-				return Promise<List<RealmView>>.Successful(new List<RealmView>());
+				return new List<RealmView>();
 			}
 
 			// TODO: Consider using helper methods here to do the parent/child stuff, and the bfs-depth-find stuff
-			return _requester
-				   .Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true)
-				   .Map(resp => ProcessProjects(resp.projects))
-				   .Recover(ex =>
-				   {
-					   if (ex is RequesterException err && (err.Status == 403 || err.Status == 404))
-					   {
-						   return new List<RealmView>(); // empty set.
-					   }
+			try
+			{
+				var response = await _requester.Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true);
+				return ProcessProjects(response.projects);
+			}
+			catch (Exception ex)
+			{
+				if (ex is RequesterException err)
+				{
+					if (err.Status == 403 || err.Status == 404)
+					{
+						return new List<RealmView>(); // empty set.   
+					}
+				}
 
-					   throw ex;
-				   });
-
+				throw;
+			}
 		}
 	}
 
@@ -163,6 +174,12 @@ namespace Beamable.Common.Api.Realms
 		public string Alias;
 		public string DisplayName;
 		public List<RealmView> Projects;
+	}
+
+	[Serializable]
+	public class OptionalRealmView : Optional<RealmView>
+	{
+
 	}
 
 	[Serializable]
@@ -182,6 +199,7 @@ namespace Beamable.Common.Api.Realms
 
 		public bool IsProduction => Depth == 0;
 		public bool IsStaging => Depth == 1;
+		public string GamePid;
 
 		public override bool Equals(object obj)
 		{

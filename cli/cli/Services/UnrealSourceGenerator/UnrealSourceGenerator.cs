@@ -449,7 +449,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				var enumDecl = new UnrealEnumDeclaration
 				{
-					UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = namedOpenApiSchema.Schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
+					UnrealTypeName = schemaUnrealType,
+					NamespacedTypeName = schemaNamespacedType,
+					EnumValues = namedOpenApiSchema.Schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
 				};
 
 				enumTypes.Add(enumDecl);
@@ -620,7 +622,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 					// If this is a field that will require BeamJsonUtils for deserialization --- add it to the list of includes of this type.
 					if (unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) || unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
-					    UNREAL_ALL_SEMTYPES.Contains(unrealType))
+						UNREAL_ALL_SEMTYPES.Contains(unrealType))
 					{
 						// We only need this include if we have any array, wrapper or optional types --- since this is a template it's worth not including it to keep compile times as small as we can have them.
 						serializableTypeDeclaration.JsonUtilsInclude = string.IsNullOrEmpty(serializableTypeDeclaration.JsonUtilsInclude)
@@ -630,7 +632,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 					// Decide if we need to add the default value helper in order to parse primitive numeric types
 					if (unrealType.StartsWith(UNREAL_BYTE) || unrealType.StartsWith(UNREAL_SHORT) || unrealType.StartsWith(UNREAL_INT) || unrealType.StartsWith(UNREAL_LONG) ||
-					    unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE))
+						unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE))
 					{
 						serializableTypeDeclaration.DefaultValueHelpersInclude = string.IsNullOrEmpty(serializableTypeDeclaration.DefaultValueHelpersInclude)
 							? "#include \"Misc/DefaultValueHelper.h\""
@@ -1051,11 +1053,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							var writer = new OpenApiJsonWriter(sw);
 							bodySchema.SerializeAsV3WithoutReference(writer);
 							Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-							                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-							                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-							                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-							                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
-							                  $"\n{sw.ToString()}");
+											  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+											  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+											  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+											  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+											  $"\n{sw.ToString()}");
 						}
 						else if (response.Content.TryGetValue("text/plain", out jsonResponse))
 						{

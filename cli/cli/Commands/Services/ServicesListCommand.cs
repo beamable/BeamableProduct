@@ -14,30 +14,31 @@ public class ServicesListCommandArgs : LoginCommandArgs
 
 public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 {
-	private readonly IAppContext _ctx;
-	private readonly BeamoLocalSystem _localBeamo;
+	private IAppContext _ctx;
+	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
 
-	public ServicesListCommand(IAppContext ctx, BeamoLocalSystem localBeamo, BeamoService remoteRemoteBeamo) :
+	public ServicesListCommand() :
 		base("ps",
-			"Lists the current local or remote service manifest and status (as summary table or json).")
+			"Lists the current local or remote service manifest and status (as summary table or json)")
 	{
-		_ctx = ctx;
-		_localBeamo = localBeamo;
-		_remoteBeamo = remoteRemoteBeamo;
+
 	}
 
 	public override void Configure()
 	{
-		AddOption(new Option<bool>("--remote", "Makes it so that we output the current realm's remote manifest, instead of the local one."),
+		AddOption(new Option<bool>("--remote", "Makes it so that we output the current realm's remote manifest, instead of the local one"),
 			(args, i) => args.Remote = i);
 
-		AddOption(new Option<bool>("--json", "Outputs as json instead of summary table."),
+		AddOption(new Option<bool>("--json", "Outputs as json instead of summary table"),
 			(args, i) => args.AsJson = i);
 	}
 
 	public override async Task Handle(ServicesListCommandArgs args)
 	{
+		_ctx = args.AppContext;
+		_localBeamo = args.BeamoLocalSystem;
+		_remoteBeamo = args.BeamoService;
 		// //await _remoteBeamo.GetMetricsUrl("test", "cpu");
 		// var templates = await _remoteBeamo.Promote(_ctx.Pid);
 		// Console.WriteLine($"{string.Join("", JsonConvert.SerializeObject(templates))}");

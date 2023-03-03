@@ -1,6 +1,8 @@
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using UnityEngine;
 
 namespace Beamable.Common.Api.Auth
 {
@@ -30,10 +32,11 @@ namespace Beamable.Common.Api.Auth
 			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
 		}
 
-		public virtual Promise<User> GetUser(TokenResponse token)
+		public virtual async Promise<User> GetUser(TokenResponse token)
 		{
 			var tokenizedRequester = _requester.WithAccessToken(token);
-			return tokenizedRequester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
+			var user = await tokenizedRequester.Request<User>(Method.GET, $"{ACCOUNT_URL}/me", useCache: true);
+			return user;
 		}
 
 		public Promise<bool> IsEmailAvailable(string email)
@@ -234,6 +237,59 @@ namespace Beamable.Common.Api.Auth
 															  useCache: true);
 		}
 
+		public Promise<ExternalLoginResponse> LoginExternalIdentity(
+			string externalToken,
+			string providerService,
+			string providerNamespace,
+			ChallengeSolution challengeSolution = null,
+			bool mergeGamerTagToAccount = true)
+		{
+			ExternalAuthenticationRequest body;
+
+			if (challengeSolution == null)
+			{
+				body = new ExternalAuthenticationRequest
+				{
+					grant_type = "external",
+					external_token = externalToken,
+					provider_service = providerService,
+					provider_namespace = providerNamespace,
+				};
+			}
+			else
+			{
+				body = new ChallengedExternalAuthenticationRequest
+				{
+					grant_type = "external",
+					external_token = externalToken,
+					provider_service = providerService,
+					provider_namespace = providerNamespace,
+					challenge_solution = challengeSolution
+
+				};
+			}
+			return Requester.Request<ExternalLoginResponse>(
+				Method.POST, TOKEN_URL, body, includeAuthHeader: mergeGamerTagToAccount, parser: json =>
+				{
+					var res = new ExternalLoginResponse();
+
+					var authResult = JsonUtility.FromJson<ExternalAuthenticationResponse>(json);
+
+					if (authResult?.challenge?.Length > 0)
+					{
+						// the response object is requesting a further challenge to be made.
+						res.challenge.Set(authResult);
+					}
+					else
+					{
+						var tokenResult = JsonUtility.FromJson<TokenResponse>(json);
+						res.tokenResponse.Set(tokenResult);
+					}
+
+					return res;
+				});
+		}
+
 		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
 																	  string providerService,
 																	  string providerNamespace = "",
@@ -389,6 +445,7 @@ namespace Beamable.Common.Api.Auth
 	[Serializable]
 	public class User
 	{
+
 		/// <summary>
 		/// The unique id of the player, sometimes called a "dbid".
 		/// </summary>
@@ -425,6 +482,11 @@ namespace Beamable.Common.Api.Auth
 		/// If the player has associated any device Ids with their account, those will appear here.
 		/// </summary>
 		public List<string> deviceIds;
+
+		/// <summary>
+		/// If the player has associated any external identities with their account, they will appear here.
+		/// </summary>
+		public List<ExternalIdentity> external;
 
 		/// <summary>
 		/// Check if the player has registered an email address with their account.
@@ -466,6 +528,33 @@ namespace Beamable.Common.Api.Auth
 		{
 			return scopes.Contains(scope) || scopes.Contains("*");
 		}
+
+		/// <summary>
+		/// The broadcast checksum is used by the various Player Centric SDKs to determine if an object has changed
+		/// since the previous update event.
+		/// </summary>
+		/// <returns></returns>
+		public int GetBroadcastChecksum()
+		{
+			unchecked
+			{
+				var hashCode = id.GetHashCode();
+				hashCode = (hashCode * 397) ^ (email != null ? email.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (language != null ? language.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (scopes != null ? scopes.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (thirdPartyAppAssociations != null ? thirdPartyAppAssociations.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (deviceIds != null ? deviceIds.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ (external != null ? external.GetHashCode() : 0);
+				return hashCode;
+			}
+		}
+
+	}
+
+	[Serializable]
+	public class OptionalTokenResponse : Optional<TokenResponse>
+	{
+
 	}
 
 	/// <summary>
@@ -652,6 +741,14 @@ namespace Beamable.Common.Api.Auth
 		}
 	}
 
+	[Serializable]
+	public class ExternalIdentity
+	{
+		public string providerNamespace;
+		public string providerService;
+		public string userId;
+	}
+
 	/// <summary>
 	/// Class representing a solution for challenge given by a server. It needs to be send as a part of
 	/// <see cref="ChallengedAttachExternalIdentityRequest"/> or <see cref="ChallengedExternalAuthenticationRequest"/>.
@@ -689,6 +786,13 @@ namespace Beamable.Common.Api.Auth
 	}
 
 	[Serializable]
+	public class ExternalLoginResponse
+	{
+		public OptionalExternalAuthenticationResponse challenge = new OptionalExternalAuthenticationResponse();
+		public OptionalTokenResponse tokenResponse = new OptionalTokenResponse();
+	}
+
+	[Serializable]
 	public class DetachExternalIdentityRequest
 	{
 		public string provider_service;
@@ -715,6 +819,12 @@ namespace Beamable.Common.Api.Auth
 	public class ChallengedExternalAuthenticationRequest : ExternalAuthenticationRequest
 	{
 		public ChallengeSolution challenge_solution;
+	}
+
+	[Serializable]
+	public class OptionalExternalAuthenticationResponse : Optional<ExternalAuthenticationResponse>
+	{
+
 	}
 
 	[Serializable]

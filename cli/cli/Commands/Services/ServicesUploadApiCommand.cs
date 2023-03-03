@@ -13,14 +13,12 @@ public class ServicesUploadApiCommandArgs : LoginCommandArgs
 
 public class ServicesUploadApiCommand : AppCommand<ServicesUploadApiCommandArgs>
 {
-	private readonly BeamoService _remoteBeamo;
+	private BeamoService _remoteBeamo;
 
-
-	public ServicesUploadApiCommand(BeamoService remoteBeamo) :
+	public ServicesUploadApiCommand() :
 		base("upload-api",
-			"Gets the URL that we upload docker images into when deploying services remotely for this realm.")
+			"Gets the URL that we upload docker images into when deploying services remotely for this realm")
 	{
-		_remoteBeamo = remoteBeamo;
 	}
 
 	public override void Configure()
@@ -29,6 +27,8 @@ public class ServicesUploadApiCommand : AppCommand<ServicesUploadApiCommandArgs>
 
 	public override async Task Handle(ServicesUploadApiCommandArgs args)
 	{
+		_remoteBeamo = args.BeamoService;
+
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>

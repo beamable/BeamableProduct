@@ -6,11 +6,10 @@ namespace cli;
 
 public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
 {
-	private readonly BeamoService _beamoService;
+	private BeamoService _beamoService;
 
-	public ServicesManifestsCommand(BeamoService beamoService) : base("manifests", "outputs manifests json to console")
+	public ServicesManifestsCommand() : base("manifests", "Outputs manifests json to console")
 	{
-		_beamoService = beamoService;
 	}
 	public override void Configure()
 	{
@@ -20,6 +19,8 @@ public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
 
 	public override async Task Handle(ServicesManifestsArgs args)
 	{
+		_beamoService = args.BeamoService;
+
 		var response = await AnsiConsole.Status()
 										.Spinner(Spinner.Known.Default)
 										.StartAsync("Sending Request...", async ctx =>

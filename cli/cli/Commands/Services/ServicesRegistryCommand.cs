@@ -13,14 +13,13 @@ public class ServicesRegistryCommandArgs : LoginCommandArgs
 
 public class ServicesRegistryCommand : AppCommand<ServicesRegistryCommandArgs>
 {
-	private readonly BeamoService _remoteBeamo;
+	private BeamoService _remoteBeamo;
 
 
-	public ServicesRegistryCommand(BeamoService remoteBeamo) :
+	public ServicesRegistryCommand() :
 		base("registry",
-			"Gets the docker registry URL that we upload docker images into when deploying services remotely for this realm.")
+			"Gets the docker registry URL that we upload docker images into when deploying services remotely for this realm")
 	{
-		_remoteBeamo = remoteBeamo;
 	}
 
 	public override void Configure()
@@ -29,6 +28,8 @@ public class ServicesRegistryCommand : AppCommand<ServicesRegistryCommandArgs>
 
 	public override async Task Handle(ServicesRegistryCommandArgs args)
 	{
+		_remoteBeamo = args.BeamoService;
+
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>

@@ -13,14 +13,13 @@ public class ServicesTemplatesCommandArgs : LoginCommandArgs
 
 public class ServicesTemplatesCommand : AppCommand<ServicesTemplatesCommandArgs>
 {
-	private readonly BeamoService _remoteBeamo;
+	private BeamoService _remoteBeamo;
 
 
-	public ServicesTemplatesCommand(BeamoService remoteBeamo) :
+	public ServicesTemplatesCommand() :
 		base("templates",
-			"Gets all the template types available in this realm.")
+			"Gets all the template types available in this realm")
 	{
-		_remoteBeamo = remoteBeamo;
 	}
 
 	public override void Configure()
@@ -29,6 +28,7 @@ public class ServicesTemplatesCommand : AppCommand<ServicesTemplatesCommandArgs>
 
 	public override async Task Handle(ServicesTemplatesCommandArgs args)
 	{
+		_remoteBeamo = args.BeamoService;
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>

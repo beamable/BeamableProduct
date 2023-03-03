@@ -24,7 +24,6 @@ namespace Beamable.Common.Dependencies
 			{
 				var wrapper = provider.GetService<StorageWrapper<T>>();
 				wrapper.Storage.Apply(wrapper.Service);
-
 				return wrapper.Service;
 			});
 			builder.AddScoped<StorageWrapper<T>>(
@@ -46,7 +45,40 @@ namespace Beamable.Common.Dependencies
 			{
 				builder.AddScoped<ScopedServiceStorage<TStorageLayer>>();
 			}
-			
+
+			return builder;
+		}
+
+		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder)
+			where TStorageLayer : IStorageLayer
+		{
+			builder.AddSingleton<T>(provider =>
+			{
+				var wrapper = provider.GetService<StorageWrapper<T>>();
+				wrapper.Storage.Apply(wrapper.Service);
+
+				return wrapper.Service;
+			});
+			builder.AddSingleton<StorageWrapper<T>>(
+				provider =>
+				{
+					var instance = DependencyBuilder.Instantiate<T>(provider);
+					var storage = provider.GetService<GlobalServiceStorage<TStorageLayer>>();
+					var wrapper = new StorageWrapper<T>(storage, instance);
+					if (instance is IStorageHandler<T> handler)
+					{
+						var handle = new StorageHandle<T>(wrapper);
+						handler.ReceiveStorageHandle(handle);
+					}
+
+					return wrapper;
+				});
+
+			if (!builder.Has<GlobalServiceStorage<TStorageLayer>>())
+			{
+				builder.AddSingleton<GlobalServiceStorage<TStorageLayer>>();
+			}
+
 			return builder;
 		}
 	}
@@ -55,7 +87,7 @@ namespace Beamable.Common.Dependencies
 	{
 		void ReceiveStorageHandle(StorageHandle<T> handle);
 	}
-	
+
 	public class StorageHandle<T>
 	{
 		private readonly StorageWrapper<T> _wrapper;
@@ -64,7 +96,7 @@ namespace Beamable.Common.Dependencies
 		{
 			_wrapper = wrapper;
 		}
-		
+
 		/// <summary>
 		/// manually save the content so that when this service is reloaded next time, it will have the latest data.
 		/// </summary>
@@ -81,7 +113,7 @@ namespace Beamable.Common.Dependencies
 			_wrapper.Storage.Apply(_wrapper.Service);
 		}
 	}
-	
+
 	public class StorageWrapper<T> : IBeamableDisposable
 	{
 		public IServiceStorage Storage { get; }
@@ -155,18 +187,31 @@ namespace Beamable.Common.Dependencies
 		}
 	}
 
+	public class GlobalServiceStorage<TStorageLayer> : ServiceStorage<TStorageLayer>
+		where TStorageLayer : IStorageLayer
+	{
+
+		public GlobalServiceStorage(TStorageLayer storageLayer) : base(storageLayer)
+		{
+		}
+		protected override string GetKey<T>()
+		{
+			return $"singleton_{typeof(T).Name}_global";
+		}
+	}
+
 	public abstract class ServiceStorage<TStorageLayer> : IServiceStorage
 		where TStorageLayer : IStorageLayer
 	{
 		private readonly TStorageLayer _storageLayer;
 
-		protected ServiceStorage( TStorageLayer storageLayer)
+		protected ServiceStorage(TStorageLayer storageLayer)
 		{
 			_storageLayer = storageLayer;
 		}
 
 		protected abstract string GetKey<T>();
-		
+
 		public void Save<T>(T service)
 		{
 			if (service is IServiceStorable storable)
@@ -179,6 +224,7 @@ namespace Beamable.Common.Dependencies
 		public void Apply<T>(T service)
 		{
 			_storageLayer.Apply<T>(GetKey<T>(), service);
+			var storageService = service as IServiceStorable;
 			if (service is IServiceStorable storable)
 			{
 				storable.OnAfterLoadState();
