@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Beamable.EasyFeatures.Components
 {
-	public class SetStatusPopup : SlidingPopup
+	public class SetStatusPopup : SlidingOverlay
 	{
 		public SetStatusButton StatusButtonPrefab;
 		public Transform ButtonsRoot;
