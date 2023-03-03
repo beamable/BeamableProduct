@@ -1315,7 +1315,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				nonOverridenUnrealType = $"UOneOf{str}*";
 				return UNREAL_TYPES_OVERRIDES.ContainsKey(nonOverridenUnrealType)
 					? UNREAL_TYPES_OVERRIDES[nonOverridenUnrealType]
-					: throw new Exception("Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE");
+					: throw new Exception($"Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE with this as the key={nonOverridenUnrealType}");
 			}
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId):
 			{
