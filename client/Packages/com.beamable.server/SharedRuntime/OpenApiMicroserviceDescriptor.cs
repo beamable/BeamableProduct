@@ -1,13 +1,11 @@
 ﻿using Beamable.Common;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Server;
-using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace SharedRuntime
+namespace Beamable.Server.Editor
 {
 	public class MicroserviceArgument
 	{

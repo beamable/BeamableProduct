@@ -45,9 +45,9 @@ namespace Beamable.Server
 #if !UNITY_EDITOR
 			return string.Empty; // if we aren't in the editor, never ever use a service prefix.
 #else
-		if (GetValues().TryGetValue(serviceName, out string prefix))
+			if (GetValues().TryGetValue(serviceName, out string prefix))
 				return prefix;
-         return string.Empty;
+			return string.Empty;
 #endif
 		}
 

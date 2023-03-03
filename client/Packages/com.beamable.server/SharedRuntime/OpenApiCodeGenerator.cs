@@ -1,19 +1,9 @@
 ﻿using Beamable.Common;
-using Beamable.Common.Api.Auth;
-using Beamable.Common.Dependencies;
-using Beamable.Server;
 using Beamable.Server.Editor;
-using SharedRuntime;
 using System;
 using System.CodeDom;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Beamable.Server.Generator
 {
@@ -24,8 +14,12 @@ namespace Beamable.Server.Generator
 		/// Define the class.
 		/// </summary>
 		/// <param name="descriptor"></param>
-		public OpenApiCodeGenerator(OpenApiMicroserviceDescriptor descriptor) : base(descriptor)
-		{ }
+		public OpenApiCodeGenerator(string openApiString) : base(new OpenApiMicroserviceDescriptor(openApiString))
+		{
+			HasValidationError = ((OpenApiMicroserviceDescriptor)Descriptor).HasValidationError;
+		}
+
+		public bool HasValidationError { get; }
 
 		protected override void AddFederatedLoginInterfaces()
 		{
@@ -106,17 +100,6 @@ namespace Beamable.Server.Generator
 			{
 				resultType = resultType.GetGenericArguments()[0];
 			}
-
-			// TODO
-			// var isAsync = null != info.MethodInfo.GetCustomAttribute<AsyncStateMachineAttribute>();
-			// if (isAsync)
-			// {
-			// 	if (typeof(Task).IsAssignableFrom(resultType) && resultType.IsGenericType)
-			// 	{
-			// 		// oh, its an async call...
-			// 		resultType = resultType.GetGenericArguments()[0];
-			// 	}
-			// }
 
 			var genericPromiseType = promiseType.MakeGenericType(resultType);
 			genMethod.ReturnType = new CodeTypeReference(genericPromiseType);

@@ -6,8 +6,6 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Generator;
-using SharedRuntime;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,10 +17,8 @@ using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 
 using static Beamable.Common.Constants.Features.Archive;
@@ -186,6 +182,11 @@ namespace Beamable.Editor.UI.Model
 					BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
 				});
 			}
+			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs from OpenApi",
+			                              pos =>
+			                              {
+				                              BeamServicesCodeWatcher.GenerateClientSourceCodeFromOpenApi(_serviceDescriptor);
+			                              }, IsRunning);
 
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
