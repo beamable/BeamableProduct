@@ -78,7 +78,7 @@ public struct UnrealCsvRowTypeDeclaration
 		processDictionary.Add(nameof(_headerFieldsContent), _headerFieldsContent);
 		processDictionary.Add(nameof(_includesForProperties), _includesForProperties);
 	}
-	
+
 
 	public const string CSV_ROW_TYPE_HEADER =
 		$@"
@@ -183,6 +183,12 @@ public:
 ";
 }
 
+public struct PolymorphicWrappedData
+{
+	public string UnrealType;
+	public string ExpectedTypeValue;
+}
+
 public struct UnrealJsonSerializableTypeDeclaration
 {
 	public string NamespacedTypeName;
@@ -191,6 +197,8 @@ public struct UnrealJsonSerializableTypeDeclaration
 	public string JsonUtilsInclude;
 	public string DefaultValueHelpersInclude;
 	public ResponseBodyType IsResponseBodyType;
+	public List<PolymorphicWrappedData> PolymorphicWrappedTypes;
+	public bool IsPolymorphicWrapper => PolymorphicWrappedTypes?.Count > 0;
 
 	private string _responseBodyIncludes;
 	private string _inheritResponseBodyInterface;
@@ -205,6 +213,9 @@ public struct UnrealJsonSerializableTypeDeclaration
 	private string _makeAssignments;
 	private string _breakParams;
 	private string _breakAssignments;
+
+	private string _declarePolyWrapperGetType;
+	private string _definePolyWrapperGetType;
 
 	public void IntoProcessMap(Dictionary<string, string> processDictionary)
 	{
@@ -254,24 +265,83 @@ public struct UnrealJsonSerializableTypeDeclaration
 			return decl;
 		}));
 
-		var propertySerialization = string.Join("\n\t", _uPropertySerialize.Select(ud =>
+		string propertySerialization, propertyDeserialization;
+		if (!IsPolymorphicWrapper)
 		{
-			ud.IntoProcessMap(processDictionary);
+			propertySerialization = string.Join("\n\t", _uPropertySerialize.Select(ud =>
+			{
+				ud.IntoProcessMap(processDictionary);
 
-			var decl = ud.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
-			processDictionary.Clear();
-			return decl;
-		}));
+				var decl = ud.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+				processDictionary.Clear();
+				return decl;
+			}));
+			propertyDeserialization = string.Join("\n\t", _uPropertyDeserialize.Select(ud =>
+			{
+				ud.IntoProcessMap(processDictionary);
 
-		var propertyDeserialization = string.Join("\n\t", _uPropertyDeserialize.Select(ud =>
+				var decl = ud.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+				processDictionary.Clear();
+				return decl;
+			}));
+			_declarePolyWrapperGetType = "";
+			_definePolyWrapperGetType = "";
+		}
+		else
 		{
-			ud.IntoProcessMap(processDictionary);
+			propertySerialization = "const auto Type = GetCurrentType();\n\t";
+			propertyDeserialization = "const auto Type = Bag->GetStringField(\"type\");\n\t";
 
-			var decl = ud.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
-			processDictionary.Clear();
-			return decl;
-		}));
+			_declarePolyWrapperGetType = "FString GetCurrentType() const;";
 
+			/*
+			 * Used to generate this:
+			 checkf((ContentReference && !TextReference && !BinaryReference) ||
+			  		(!ContentReference && TextReference && !BinaryReference) ||
+			  		(!ContentReference && !TextReference && BinaryReference), TEXT(""You should always only have one of these set. Set the others as nullptr.""))
+			 */
+			var check = "checkf(";
+			var checkAppend = ") || \n\t\t";
+			var checkEnd = @"), TEXT(""You should always only have one of these set. Set the others as nullptr.""))";
+
+			/*
+			 * Used to generate this:
+			 	if (ContentReference) return TEXT(""content"");
+			 	if (TextReference) return TEXT(""text"");
+			 	if (BinaryReference) return TEXT(""binary"");
+			 */
+			var body = "\t";
+
+			for (var i = 0; i < PolymorphicWrappedTypes.Count; i++)
+			{
+				var propData = UPropertyDeclarations[i];
+				var polyData = PolymorphicWrappedTypes[i];
+
+				propertySerialization += $"if (Type.Equals(TEXT(\"{polyData.ExpectedTypeValue}\")))\n\t\t";
+				propertySerialization += $"UBeamJsonUtils::SerializeUObject({propData.PropertyName}, Serializer);\n\t";
+
+				propertyDeserialization += $"if (Type.Equals(TEXT(\"{polyData.ExpectedTypeValue}\")))\n\t\t";
+				propertyDeserialization += $"UBeamJsonUtils::DeserializeUObject(TEXT(\"\"), Bag, {propData.PropertyName}, OuterOwner);\n\t";
+
+				var checkPart = $"({propData.PropertyName}";
+				for (var i2 = 0; i2 < PolymorphicWrappedTypes.Count; i2++)
+				{
+					if (i == i2) continue;
+					var propData2 = UPropertyDeclarations[i2];
+					checkPart += $" && !{propData2.PropertyName}";
+				}
+
+				check += checkPart + (i == PolymorphicWrappedTypes.Count - 1 ? checkEnd : checkAppend);
+				body += $"if ({propData.PropertyName}) return TEXT(\"{polyData.ExpectedTypeValue}\");\n\t";
+			}
+
+			_definePolyWrapperGetType = $"FString U{NamespacedTypeName}::GetCurrentType() const\n";
+			_definePolyWrapperGetType += "{\n\t";
+			_definePolyWrapperGetType += check + "\n\n";
+			_definePolyWrapperGetType += body + "\n";
+			_definePolyWrapperGetType += "\treturn TEXT(\"\");";
+			_definePolyWrapperGetType += "\n}";
+		}
 
 		var makeSb = new StringBuilder(1024);
 		var makeOptionalParamNamesSb = new StringBuilder(1024);
@@ -344,6 +414,8 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 		processDictionary.Add(nameof(_makeAssignments), _makeAssignments);
 		processDictionary.Add(nameof(_breakParams), _breakParams);
 		processDictionary.Add(nameof(_breakAssignments), _breakAssignments);
+		processDictionary.Add(nameof(_declarePolyWrapperGetType), _declarePolyWrapperGetType);
+		processDictionary.Add(nameof(_definePolyWrapperGetType), _definePolyWrapperGetType);
 
 		processDictionary.Add(nameof(BREAK_UTILITY_DECLARATION), UPropertyDeclarations.Count != 0 ? BREAK_UTILITY_DECLARATION.ProcessReplacement(processDictionary) : "");
 		processDictionary.Add(nameof(BREAK_UTILITY_DEFINITION), UPropertyDeclarations.Count != 0 ? BREAK_UTILITY_DEFINITION.ProcessReplacement(processDictionary) : "");
@@ -373,6 +445,7 @@ public:
 	virtual void BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const override;
 	virtual void BeamSerializeProperties(TUnrealPrettyJsonSerializer& Serializer) const override;
 	virtual void BeamDeserializeProperties(const TSharedPtr<FJsonObject>& Bag) override;
+	₢{nameof(_declarePolyWrapperGetType)}₢
 }};";
 
 	public const string JSON_SERIALIZABLE_TYPE_CPP =
@@ -383,7 +456,7 @@ public:
 
 ₢{nameof(_defineResponseBodyInterface)}₢
 
-void U₢{nameof(NamespacedTypeName)}₢ ::BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const
+void U₢{nameof(NamespacedTypeName)}₢::BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const
 {{
 	₢{nameof(_uPropertySerialize)}₢
 }}
@@ -393,10 +466,14 @@ void U₢{nameof(NamespacedTypeName)}₢::BeamSerializeProperties(TUnrealPrettyJ
 	₢{nameof(_uPropertySerialize)}₢		
 }}
 
-void U₢{nameof(NamespacedTypeName)}₢ ::BeamDeserializeProperties(const TSharedPtr<FJsonObject>& Bag)
+void U₢{nameof(NamespacedTypeName)}₢::BeamDeserializeProperties(const TSharedPtr<FJsonObject>& Bag)
 {{
 	₢{nameof(_uPropertyDeserialize)}₢
-}}";
+}}
+
+₢{nameof(_definePolyWrapperGetType)}₢
+
+";
 
 	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"
 #pragma once
