@@ -8,7 +8,7 @@ namespace Beamable.Server.Editor
 	{
 		void Execute(IMicroserviceBuildContext ctx);
 	}
-	
+
 	/// <summary>
 	/// If this interface is implemented for a Microservice type, and it is registered in the Beamable
 	/// Dependency Injection system, then when the Microservice is building, this implementation will be
@@ -19,7 +19,7 @@ namespace Beamable.Server.Editor
 	public interface IMicroserviceBuildHook<T> : IMicroserviceBuildHook
 		where T : Microservice
 	{
-		
+
 	}
 
 	public interface IMicroserviceBuildContext
@@ -28,12 +28,12 @@ namespace Beamable.Server.Editor
 		/// The <see cref="MicroserviceDescriptor"/> being built.
 		/// </summary>
 		MicroserviceDescriptor Descriptor { get; }
-		
+
 		/// <summary>
 		/// A <see cref="IDependencyProvider"/> being used for the build.
 		/// </summary>
 		IDependencyProvider Provider { get; }
-		
+
 		/// <summary>
 		/// Adding a file will add a file from your local Unity project into the final Microservice
 		/// docker image. 
@@ -48,14 +48,14 @@ namespace Beamable.Server.Editor
 		/// <param name="containerPath">The container path is where the file will be placed in the Docker image. It should also include the copied filename. For example, a valid path may be "mydata/test.txt" </param>
 		void CommitFile(string containerPath);
 	}
-	
+
 	public class MicroserviceBuildContext : IMicroserviceBuildContext
 	{
 		public MicroserviceDescriptor Descriptor { get; set; }
 		public IDependencyProvider Provider { get; set; }
 
 		public List<FileAddition> FileAdditions { get; set; } = new List<FileAddition>();
-		
+
 		public void AddFile(string srcPath, string containerPath)
 		{
 			FileUtils.CopyFile(Descriptor, srcPath, containerPath);

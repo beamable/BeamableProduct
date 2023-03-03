@@ -120,10 +120,10 @@ namespace Beamable.Editor.UI.Components
 			var content = new SearchabledDropdownVisualElement("Switching Realm");
 			content.Model = Model;
 			Model.Initialize();
-			
+
 			var wnd = BeamablePopupWindow.ShowDropdown("Select Realm", popupWindowRect, new Vector2(200, 300), content);
 
-			
+
 			content.OnElementSelected += (realm) =>
 			{
 				var beamable = BeamEditorContext.Default;

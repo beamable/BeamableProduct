@@ -150,18 +150,7 @@ namespace Beamable.Editor.UI.Model
 			var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Requester.Token.RefreshToken}";
 			Application.OpenURL(url);
 		}
-		
-		private void PrintOpenAPi()
-		{
-			var de = BeamEditorContext.Default;
-			var endpoint = MicroserviceClientHelper.CreateUrl(de.Requester.Cid, de.Requester.Pid, ServiceDescriptor.Name, "admin/Docs");
-			de.Requester.Request(Method.GET, endpoint, null, true, s => s).Then(s =>
-			{
-				var OpenApi = new OpenApiMicroserviceDescriptor(s);
-				Debug.Log(new OpenApiCodeGenerator(OpenApi).GetCSharpCodeString());
 
-			}).Error(Debug.LogException); 
-		}
 		public void EnrichWithRemoteReference(ServiceReference remoteReference)
 		{
 			RemoteReference = remoteReference;
@@ -190,11 +179,14 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenDocs(), IsRunning);
-			evt.menu.BeamableAppendAction($"{localCategory}/Print openAPI", _=>PrintOpenAPi());
-			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
+			if (_serviceDescriptor.IsSourceCodeAvailableLocally())
 			{
-				BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
-			});
+				evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
+				{
+					BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
+				});
+			}
+
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
