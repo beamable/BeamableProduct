@@ -140,7 +140,7 @@ namespace Beamable.Purchasing
 
 				if (err is NoConnectivityException)
 				{
-					_fail?.Invoke(new ErrorCode(0, GameSystem.GAME_CLIENT, err.Message)); // networ error code
+					_fail?.Invoke(new ErrorCode(0, GameSystem.GAME_CLIENT, err.Message)); // network error code
 				}
 				else
 					_fail?.Invoke(err as ErrorCode);
