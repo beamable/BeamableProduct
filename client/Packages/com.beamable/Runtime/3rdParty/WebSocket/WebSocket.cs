@@ -41,8 +41,9 @@ namespace Beamable.Endel
 		{
 			get { return false; }
 		}
-		
-		public WaitForUpdate(CoroutineService coroutineService) {
+
+		public WaitForUpdate(CoroutineService coroutineService)
+		{
 			_coroutineService = coroutineService;
 		}
 
@@ -428,7 +429,7 @@ namespace Beamable.Endel
 					this.headers = headers;
 				}
 
-				subprotocols = new List<string> {subprotocol};
+				subprotocols = new List<string> { subprotocol };
 
 				string protocol = uri.Scheme;
 				if (!protocol.Equals("ws") && !protocol.Equals("wss"))
@@ -537,12 +538,12 @@ namespace Beamable.Endel
 
 				// m_Socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
 				return SendMessage(sendTextQueue, WebSocketMessageType.Text,
-				                   new ArraySegment<byte>(encoded, 0, encoded.Length));
+								   new ArraySegment<byte>(encoded, 0, encoded.Length));
 			}
 
 			private async Task SendMessage(List<ArraySegment<byte>> queue,
-			                               WebSocketMessageType messageType,
-			                               ArraySegment<byte> buffer)
+										   WebSocketMessageType messageType,
+										   ArraySegment<byte> buffer)
 			{
 				// Return control to the calling method immediately.
 				// await Task.Yield ();
@@ -574,7 +575,7 @@ namespace Beamable.Endel
 					{
 						// If we couldn't obtain exclusive access to the socket in one second, something is wrong.
 						await m_Socket.CloseAsync(WebSocketCloseStatus.InternalServerError, string.Empty,
-						                          m_CancellationToken);
+												  m_CancellationToken);
 						return;
 					}
 
