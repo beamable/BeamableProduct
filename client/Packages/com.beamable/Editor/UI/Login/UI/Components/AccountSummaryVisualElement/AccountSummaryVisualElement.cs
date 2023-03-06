@@ -65,7 +65,7 @@ namespace Beamable.Editor.Login.UI.Components
 					}, .3f);
 				}, .1f);
 			};
-
+/*
 			var loadConfigDefaults = Root.Q<GenericButtonVisualElement>("revertConfigToDefaults");
 			loadConfigDefaults.OnClick += () =>
 			{
@@ -82,7 +82,7 @@ namespace Beamable.Editor.Login.UI.Components
 					});
 				}, .1f);
 			};
-
+*/
 			var resetPasswordButton = Root.Q<GenericButtonVisualElement>("resetPassword");
 			resetPasswordButton.OnClick += Manager.GotoForgotPassword;
 
