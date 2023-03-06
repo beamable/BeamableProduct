@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed slow SDK installation process.
+- Fixed Error Code for `NoConnectivityException` at `UnityBeamablePurchaser` on StartPurchase.
 
 ## [1.11.1]
 ### Changed
