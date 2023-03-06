@@ -275,7 +275,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SlideAxis: {x: 1, y: 0}
   Transform: {fileID: 6760291878765282290}
-  VisibleAnchoredPosition: {x: -110, y: 0}
+  VisibleAnchoredPosition: {x: -120, y: 0}
   HiddenAnchoredPosition: {x: 0, y: 0}
   SlideSpeed: 20
 --- !u!1 &1614934883941637522
@@ -2013,6 +2013,7 @@ GameObject:
   - component: {fileID: 6009744039709407700}
   - component: {fileID: 2615042140443040527}
   - component: {fileID: 6483106400570864862}
+  - component: {fileID: 1818079605052656907}
   m_Layer: 0
   m_Name: DeleteButton
   m_TagString: Untagged
@@ -2037,8 +2038,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 100, y: 0}
-  m_SizeDelta: {x: 100, y: -20}
+  m_AnchoredPosition: {x: 120, y: 0}
+  m_SizeDelta: {x: 121, y: 0}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &2584578502603410004
 CanvasRenderer:
@@ -2124,22 +2125,22 @@ MonoBehaviour:
   nineSliceSource: 0
   mode: 1
   colorRect:
-    BottomLeftColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
-    BottomRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
-    TopLeftColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
-    TopRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
+    BottomLeftColor: {r: 1, g: 0.39607847, b: 0.42352945, a: 1}
+    BottomRightColor: {r: 1, g: 0.39607847, b: 0.42352945, a: 1}
+    TopLeftColor: {r: 1, g: 0.39607847, b: 0.42352945, a: 1}
+    TopRightColor: {r: 1, g: 0.39607847, b: 0.42352945, a: 1}
     _drawerMode: 1
-  threshold: 0
-  rounding: 40
+  threshold: -2
+  rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
-  outlineWidth: 0
+  outlineWidth: 2
   outlineColor:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.7725491, g: 0.73333335, b: 0.9058824, a: 1}
+    BottomRightColor: {r: 0.7725491, g: 0.73333335, b: 0.9058824, a: 1}
+    TopLeftColor: {r: 0.7725491, g: 0.73333335, b: 0.9058824, a: 1}
+    TopRightColor: {r: 0.7725491, g: 0.73333335, b: 0.9058824, a: 1}
     _drawerMode: 1
   shadowColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -2167,7 +2168,7 @@ MonoBehaviour:
   _id: 
   _classes:
   - button
-  - primary
+  - delete
   _inlineStyle:
     _folded: 0
     _showAll: 0
@@ -2187,6 +2188,18 @@ MonoBehaviour:
     pivot: {x: 0.5, y: 0.5}
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 1}
+--- !u!225 &1818079605052656907
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7367995557764807520}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 1
 --- !u!1 &7520013545467534045
 GameObject:
   m_ObjectHideFlags: 0
@@ -2280,10 +2293,10 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 26.75
+  m_fontSize: 32
   m_fontSizeBase: 32
   m_fontWeight: 400
-  m_enableAutoSizing: 1
+  m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
