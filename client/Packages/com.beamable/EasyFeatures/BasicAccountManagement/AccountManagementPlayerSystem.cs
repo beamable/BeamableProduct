@@ -131,12 +131,6 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			return data;
 		}
 
-		public int AuthenticatedAccountsCount()
-		{
-			return Context.Accounts.Count(acc => acc.HasEmail ||
-			                                     (acc.ThirdParties != null && acc.ThirdParties.Length > 0));
-		}
-
 		/// <summary>
 		/// Gets a linked email address for a given player or an empty string if there's no linked email.
 		/// </summary>
