@@ -1,6 +1,7 @@
 using Beamable.Api;
 using Beamable.Api.Payments;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
@@ -136,7 +137,13 @@ namespace Beamable.Purchasing
 			}).Error(err =>
 			{
 				Debug.LogError($"There was an exception making the begin purchase request: {err}");
-				_fail?.Invoke(err as ErrorCode);
+
+				if (err is NoConnectivityException)
+				{
+					_fail?.Invoke(new ErrorCode(0, GameSystem.GAME_CLIENT, err.Message)); // networ error code
+				}
+				else
+					_fail?.Invoke(err as ErrorCode);
 			});
 
 			return result;
