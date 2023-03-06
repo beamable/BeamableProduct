@@ -80,7 +80,7 @@ namespace Beamable.Connection
 			return _onConnectPromise;
 		}
 
-		public static WebSocket CreateWebSocket(string address, IAccessToken token, CoroutineService coroutineService)
+		private static WebSocket CreateWebSocket(string address, IAccessToken token, CoroutineService coroutineService)
 		{
 			var subprotocols = new List<string>();
 			var headers = new Dictionary<string, string>
