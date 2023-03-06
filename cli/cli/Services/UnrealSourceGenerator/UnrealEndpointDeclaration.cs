@@ -21,10 +21,10 @@ public struct UnrealEndpointDeclaration
 	public string ResponseBodyUnrealType;
 	public string ResponseBodyNamespacedType;
 	public string ResponseBodyNonPtrUnrealType;
-	
-	
+
+
 	private string _responseBodyIncludeStatement;
-	
+
 	private string _capitalizedEndpointVerb;
 	private string _buildBodyImpl;
 	private string _buildRouteImpl;
@@ -73,7 +73,7 @@ public struct UnrealEndpointDeclaration
 
 		// Handle getting the include statement for the response body
 		_responseBodyIncludeStatement = UnrealSourceGenerator.GetIncludeStatementForUnrealType(ResponseBodyUnrealType);
-		
+
 		// Handle Capitalizing the Verb so it matches UE's expected value
 		_capitalizedEndpointVerb = EndpointVerb.ToUpper();
 		// Handle BuildBody code generation
@@ -197,8 +197,8 @@ public struct UnrealEndpointDeclaration
 							if (tp.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 							{
 								return $"// Assumes the object is constructed and have the new request take ownership of the memory for it\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
+									   $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
+									   $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
 							}
 
 							return $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};";
@@ -222,7 +222,7 @@ public struct UnrealEndpointDeclaration
 		helperDict.Add(nameof(SubsystemNamespacedEndpointName), SubsystemNamespacedEndpointName);
 
 		helperDict.Add(nameof(_responseBodyIncludeStatement), _responseBodyIncludeStatement);
-		
+
 		helperDict.Add(nameof(NamespacedOwnerServiceName), NamespacedOwnerServiceName);
 		helperDict.Add(nameof(EndpointVerb), EndpointVerb);
 		helperDict.Add(nameof(EndpointPath), EndpointPath);
@@ -254,7 +254,7 @@ public struct UnrealEndpointDeclaration
 				return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *{routeParameterDeclaration.PropertyName});";
 			case UnrealSourceGenerator.UNREAL_BYTE or UnrealSourceGenerator.UNREAL_SHORT or UnrealSourceGenerator.UNREAL_INT or UnrealSourceGenerator.UNREAL_LONG:
 				return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *FString::FromInt({routeParameterDeclaration.PropertyName}));";
-			
+
 			default:
 			{
 				// We handle the enum case that we can't pattern match here
@@ -326,7 +326,7 @@ public struct UnrealEndpointDeclaration
 				}
 				else if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(q.NonOptionalTypeName))
 				{
-					if(isOptional)
+					if (isOptional)
 						queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}.Val));\n\t");
 					else
 						queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}));\n\t");
@@ -791,7 +791,7 @@ public:
 
 #undef LOCTEXT_NAMESPACE
 ";
-	
+
 	public const string BEAM_FLOW_BP_NODE_CPP = $@"
 
 #include ""BeamFlow/ApiRequest/AutoGen/₢{nameof(NamespacedOwnerServiceName)}₢/K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢.h""
@@ -863,6 +863,6 @@ FString UK2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢::Get
 
 #undef LOCTEXT_NAMESPACE
 ";
-	
-	
+
+
 }
