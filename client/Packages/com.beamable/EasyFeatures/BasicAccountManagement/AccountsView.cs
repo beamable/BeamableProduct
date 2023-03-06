@@ -105,10 +105,24 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 					accountsViewData.Add(await System.GetOverridenAccountData(true, false, account.GamerTag));
 				}
 				
-				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected);
+				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected, RemoveAccount);
 			}
 			
 			FeatureControl.SetLoadingOverlay(false);
+		}
+
+		private async void RemoveAccount(long playerId)
+		{
+			var account = System.Context.Accounts.FirstOrDefault(acc => acc.GamerTag == playerId);
+			if (account != null)
+			{
+				await account.Remove();
+				FeatureControl.OpenAccountsView();
+			}
+			else
+			{
+				Debug.LogError($"Account with ID '{playerId}' does not exist on this device!");
+			}
 		}
 
 		private void OnDisable()

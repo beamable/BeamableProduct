@@ -277,7 +277,6 @@ MonoBehaviour:
   Transform: {fileID: 6760291878765282290}
   VisibleAnchoredPosition: {x: -110, y: 0}
   HiddenAnchoredPosition: {x: 0, y: 0}
-  MaxOffset: 110
   SlideSpeed: 20
 --- !u!1 &1614934883941637522
 GameObject:
@@ -896,6 +895,7 @@ MonoBehaviour:
   AcceptButton: {fileID: 7536175394272834796}
   CancelButton: {fileID: 108917478726887833}
   DeleteButton: {fileID: 6009744039709407700}
+  SlidingPanel: {fileID: 5792713645494121301}
   PresenceDotBussElement: {fileID: 3399331131346813487}
   LinkedAuthsRoot: {fileID: 8487177617972539532}
   AuthMethodButtonPrefab: {fileID: 1222007225013202443, guid: 9c2053615e4b49944adc84bffb3cb296,
@@ -2616,17 +2616,17 @@ MonoBehaviour:
     TopLeftColor: {r: 0.17254902, g: 0.121568635, b: 0.37254903, a: 1}
     TopRightColor: {r: 0.17254902, g: 0.121568635, b: 0.37254903, a: 1}
     _drawerMode: 1
-  threshold: 0
-  rounding: 0
+  threshold: -3
+  rounding: 20
   secondaryTexture: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
-  outlineWidth: 0
+  outlineWidth: 3
   outlineColor:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
+    BottomRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
+    TopLeftColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
+    TopRightColor: {r: 0.49411765, g: 0.42745098, b: 0.7882353, a: 1}
     _drawerMode: 1
   shadowColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}

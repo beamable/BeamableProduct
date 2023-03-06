@@ -31,6 +31,7 @@ namespace Beamable.EasyFeatures.Components
 		public Button AcceptButton;
 		public Button CancelButton;
 		public Button DeleteButton;
+		public SlidingPanel SlidingPanel;
 		public BussElement PresenceDotBussElement;
 		public Transform LinkedAuthsRoot;
 		public AuthMethodButton AuthMethodButtonPrefab;
@@ -41,8 +42,8 @@ namespace Beamable.EasyFeatures.Components
 		public float OfflineAlpha = 0.5f;
 		public CanvasGroup CanvasGroup;
 		
-		private Button Button;
-		private Toggle Toggle;
+		private Button _button;
+		private Toggle _toggle;
 		
 		public struct ViewData
 		{
@@ -63,7 +64,7 @@ namespace Beamable.EasyFeatures.Components
 			public float Height { get; set; }
 		}
 
-		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onConfirmPressed, string buttonText = "Confirm")
+		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onConfirmPressed, string buttonText = "Confirm", Action<long> deleteAction = null)
 		{
 			SetViewData(item.ViewData);
 
@@ -71,11 +72,13 @@ namespace Beamable.EasyFeatures.Components
 			ConfirmButton.gameObject.SetActive(onConfirmPressed != null);
 			ConfirmButtonText.text = buttonText;
 			AcceptCancelButtons.SetActive(false);
+			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(item.ViewData.PlayerId));
+			SlidingPanel.enabled = deleteAction != null;
 
 			InitButton(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 		}
 
-		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onCancelPressed, Action<long> onAcceptPressed)
+		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onCancelPressed, Action<long> onAcceptPressed, Action<long> deleteAction = null)
 		{
 			SetViewData(item.ViewData);
 			
@@ -83,16 +86,20 @@ namespace Beamable.EasyFeatures.Components
 			AcceptCancelButtons.SetActive(true);
 			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptPressed?.Invoke(item.ViewData.PlayerId));
 			CancelButton.onClick.ReplaceOrAddListener(() => onCancelPressed?.Invoke(item.ViewData.PlayerId));
+			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(item.ViewData.PlayerId));
+			SlidingPanel.enabled = deleteAction != null;
 			
 			InitButton(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 		}
 		
-		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<bool, long> onToggleSwitched)
+		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<bool, long> onToggleSwitched, Action<long> deleteAction = null)
 		{
 			SetViewData(item.ViewData);
 			
 			ConfirmButton.gameObject.SetActive(false);
 			AcceptCancelButtons.SetActive(false);
+			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(item.ViewData.PlayerId));
+			SlidingPanel.enabled = deleteAction != null;
 			
 			InitToggle(group, selected =>
 			{
@@ -103,25 +110,25 @@ namespace Beamable.EasyFeatures.Components
 		
 		private void InitButton(UnityAction onPressedAction)
 		{
-			Button = MainButton.gameObject.GetComponent<Button>();
-			if (Button == null)
+			_button = MainButton.gameObject.GetComponent<Button>();
+			if (_button == null)
 			{
-				Button = MainButton.gameObject.AddComponent<Button>();				
+				_button = MainButton.gameObject.AddComponent<Button>();				
 			}
-			Button.targetGraphic = BackgroundImage;
-			Button.onClick.ReplaceOrAddListener(onPressedAction);
+			_button.targetGraphic = BackgroundImage;
+			_button.onClick.ReplaceOrAddListener(onPressedAction);
 		}
 		
 		private void InitToggle(ToggleGroup group, UnityAction<bool> onPressedAction)
 		{
-			Toggle = MainButton.gameObject.GetComponent<Toggle>();
-			if (Toggle == null)
+			_toggle = MainButton.gameObject.GetComponent<Toggle>();
+			if (_toggle == null)
 			{
-				Toggle = MainButton.gameObject.AddComponent<Toggle>();	
+				_toggle = MainButton.gameObject.AddComponent<Toggle>();	
 			}
-			Toggle.targetGraphic = BackgroundImage;
-			Toggle.group = group;
-			Toggle.onValueChanged.ReplaceOrAddListener(onPressedAction);
+			_toggle.targetGraphic = BackgroundImage;
+			_toggle.group = group;
+			_toggle.onValueChanged.ReplaceOrAddListener(onPressedAction);
 		}
 
 		private void SetViewData(ViewData viewData)
