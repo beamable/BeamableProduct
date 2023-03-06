@@ -3,7 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
-using NativeWebSocket;
+using Beamable.Endel.NativeWebSocket;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -34,7 +34,7 @@ namespace Beamable.Connection
 		public Promise Connect(string address, AccessToken token)
 		{
 			string uri = $"{address}/connect";
-			_webSocket = CreateWebSocket(uri, token);
+			_webSocket = CreateWebSocket(uri, token, _coroutineService);
 			SetUpEventCallbacks();
 			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
 			// is closed.
@@ -80,14 +80,14 @@ namespace Beamable.Connection
 			return _onConnectPromise;
 		}
 
-		private static WebSocket CreateWebSocket(string address, IAccessToken token)
+		private static WebSocket CreateWebSocket(string address, IAccessToken token, CoroutineService coroutineService)
 		{
 			var subprotocols = new List<string>();
 			var headers = new Dictionary<string, string>
 			{
 				{"Authorization", $"Bearer {token.Token}"}
 			};
-			return new WebSocket(address, subprotocols, headers);
+			return new WebSocket(address, subprotocols, headers, coroutineService);
 		}
 
 		private void SetUpEventCallbacks()

@@ -1,3 +1,16 @@
-﻿{
-	"name": "Beamable.Endel.NativeWebsocket"
+{
+    "name": "Beamable.Endel.NativeWebsocket",
+    "rootNamespace": "",
+    "references": [
+        "Beamable.Coroutines"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
