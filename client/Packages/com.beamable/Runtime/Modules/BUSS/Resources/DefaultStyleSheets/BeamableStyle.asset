@@ -2502,7 +2502,7 @@ MonoBehaviour:
       _property:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        _json: '{"_valueType":0,"_floatValue":2.0}'
+        _json: '{"_valueType":0,"_floatValue":3.0}'
       _initialValue:
         _type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null

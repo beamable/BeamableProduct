@@ -72,8 +72,7 @@ namespace Beamable.EasyFeatures.Components
 			ConfirmButton.gameObject.SetActive(onConfirmPressed != null);
 			ConfirmButtonText.text = buttonText;
 			AcceptCancelButtons.SetActive(false);
-			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(item.ViewData.PlayerId));
-			SlidingPanel.enabled = deleteAction != null;
+			SetupDeleteAction(item.ViewData.PlayerId, deleteAction);
 
 			InitButton(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 		}
@@ -86,8 +85,7 @@ namespace Beamable.EasyFeatures.Components
 			AcceptCancelButtons.SetActive(true);
 			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptPressed?.Invoke(item.ViewData.PlayerId));
 			CancelButton.onClick.ReplaceOrAddListener(() => onCancelPressed?.Invoke(item.ViewData.PlayerId));
-			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(item.ViewData.PlayerId));
-			SlidingPanel.enabled = deleteAction != null;
+			SetupDeleteAction(item.ViewData.PlayerId, deleteAction);
 			
 			InitButton(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 		}
@@ -98,8 +96,7 @@ namespace Beamable.EasyFeatures.Components
 			
 			ConfirmButton.gameObject.SetActive(false);
 			AcceptCancelButtons.SetActive(false);
-			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(item.ViewData.PlayerId));
-			SlidingPanel.enabled = deleteAction != null;
+			SetupDeleteAction(item.ViewData.PlayerId, deleteAction);
 			
 			InitToggle(group, selected =>
 			{
@@ -129,6 +126,34 @@ namespace Beamable.EasyFeatures.Components
 			_toggle.targetGraphic = BackgroundImage;
 			_toggle.group = group;
 			_toggle.onValueChanged.ReplaceOrAddListener(onPressedAction);
+		}
+
+		private void SetupDeleteAction(long playerId, Action<long> deleteAction)
+		{
+			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(playerId));
+			DeleteButton.gameObject.SetActive(false);
+			SlidingPanel.enabled = deleteAction != null;
+
+			void ShowDeleteButton()
+			{
+				if (deleteAction != null)
+				{
+					DeleteButton.gameObject.SetActive(true);
+				}
+			}
+
+			void HideDeleteButton()
+			{
+				if (deleteAction != null)
+				{
+					DeleteButton.gameObject.SetActive(false);
+				}
+			}
+
+			SlidingPanel.OnDragStarted -= ShowDeleteButton;
+			SlidingPanel.OnDragStarted += ShowDeleteButton;
+			SlidingPanel.OnHidden -= HideDeleteButton;
+			SlidingPanel.OnHidden += HideDeleteButton;
 		}
 
 		private void SetViewData(ViewData viewData)

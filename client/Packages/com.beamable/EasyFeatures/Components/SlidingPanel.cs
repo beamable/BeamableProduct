@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 namespace Beamable.EasyFeatures.Components
 {
-	public class SlidingPanel : CustomOverlay, IDragHandler, IEndDragHandler
+	public class SlidingPanel : CustomOverlay, IBeginDragHandler, IDragHandler, IEndDragHandler
 	{
 		private enum SlidingMode
 		{
@@ -29,8 +29,14 @@ namespace Beamable.EasyFeatures.Components
 		[Tooltip("This size has to be smaller than Unfolded Size Delta")]
 		public Vector2 FoldedSizeDelta;
 
+		public event Action OnDragStarted;
 		public event Action OnHidden;
 
+		public void OnBeginDrag(PointerEventData eventData)
+		{
+			OnDragStarted?.Invoke();
+		}
+		
 		public void OnDrag(PointerEventData eventData)
 		{
 			switch (Mode)
@@ -54,26 +60,9 @@ namespace Beamable.EasyFeatures.Components
 				
 				case SlidingMode.SizeBased:
 					Vector2 newSize = Transform.sizeDelta + eventData.delta * SlideAxis;
-					
-					// Clamp X
-					if (newSize.x < FoldedSizeDelta.x)
-					{
-						newSize.x = FoldedSizeDelta.x;
-					}
-					else if (newSize.x > UnfoldedSizeDelta.x)
-					{
-						newSize.x = UnfoldedSizeDelta.x;
-					}
 
-					// Clamp Y
-					if (newSize.y < FoldedSizeDelta.y)
-					{
-						newSize.y = FoldedSizeDelta.y;
-					}
-					else if (newSize.y > UnfoldedSizeDelta.y)
-					{
-						newSize.y = UnfoldedSizeDelta.y;
-					}
+					newSize.x = Mathf.Clamp(newSize.x, FoldedSizeDelta.x, UnfoldedSizeDelta.x);
+					newSize.y = Mathf.Clamp(newSize.y, FoldedSizeDelta.y, UnfoldedSizeDelta.y);
 					
 					Transform.sizeDelta = newSize;
 					
@@ -104,24 +93,32 @@ namespace Beamable.EasyFeatures.Components
 				       Vector2.Distance(Transform.anchoredPosition, HiddenAnchoredPosition);
 			}
 			
-			return Vector2.Distance(Transform.sizeDelta, UnfoldedSizeDelta) <
+			return Vector2.Distance(Transform.sizeDelta, UnfoldedSizeDelta) >
 			       Vector2.Distance(Transform.sizeDelta, FoldedSizeDelta);
 		}
-			
 
-		public bool IsHidden() => Vector2.Distance(Transform.anchoredPosition, HiddenAnchoredPosition) <= 1;
+
+		public bool IsHidden()
+		{
+			if (Mode == SlidingMode.PositionBased)
+			{
+				return Vector2.Distance(Transform.anchoredPosition, HiddenAnchoredPosition) <= 1;
+			}
+
+			return Vector2.Distance(Transform.sizeDelta, UnfoldedSizeDelta) <= 1;
+		}
 		
 		protected void SlideIn()
 		{
 			StopAllCoroutines();
-			Vector2 targetVector = Mode == SlidingMode.PositionBased ? VisibleAnchoredPosition : UnfoldedSizeDelta;
+			Vector2 targetVector = Mode == SlidingMode.PositionBased ? VisibleAnchoredPosition : FoldedSizeDelta;
 			StartCoroutine(SlidePopup(targetVector));
 		}
 
 		protected void SlideOut()
 		{
 			StopAllCoroutines();
-			Vector2 targetVector = Mode == SlidingMode.PositionBased ? HiddenAnchoredPosition : FoldedSizeDelta;
+			Vector2 targetVector = Mode == SlidingMode.PositionBased ? HiddenAnchoredPosition : UnfoldedSizeDelta;
 			StartCoroutine(SlidePopup(targetVector, OnHidden));
 		}
 
