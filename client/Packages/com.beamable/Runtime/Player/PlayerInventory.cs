@@ -221,7 +221,10 @@ namespace Beamable.Player
 				filteredScopes = filteredScopes.Where(scope => _requestCounter.GetExact(scope).Count > 0).ToArray();
 
 				if (filteredScopes.Length == 0) return; // if there are no scopes, there is nothing to download. But actually, the API treats an empty scope as "everything", which is extra bad for us.
-
+				if (_userContext.UserId == 0)
+				{
+					throw new Exception($"Call to {nameof(PlayerInventory)} with empty UserID- BeamContext is not ready yet, search OnReady for more information.");
+				}
 				var result = await DownloadInventoryData(filteredScopes);
 
 				if (result.isOffline)

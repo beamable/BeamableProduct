@@ -65,7 +65,7 @@ namespace Beamable.Editor.Environment
 			var _ = ServerPackageMeta;
 			var __ = CheckForPendingUpdates();
 		}
-		
+
 		/// <summary>
 		/// When using Unity Packages, the package can be installed locally, or through the Unity package cache.
 		/// When the package is installed locally, the package files actually exist in the /Packages/com.package/ folder.
@@ -82,13 +82,13 @@ namespace Beamable.Editor.Environment
 		public static bool DoesFileExistLocally(string file)
 		{
 			if (!File.Exists(file)) return false;
-			
+
 			// if the path is relative to the /Library/PackageCache folder, then this file doesn't _really_ exist in the same way we think it does.
 			var relativePath = GetRelativePath(System.Environment.CurrentDirectory, file);
 			var isInPackageCache = relativePath.StartsWith("Library/PackageCache");
 			return !isInPackageCache;
 		}
-		
+
 		/// <summary>
 		/// In NetCore 2.0, there is a system function for this, but Unity 2019 & 2020 don't support it. So here is
 		/// a shim from https://stackoverflow.com/questions/275689/how-to-get-relative-path-from-absolute-path
@@ -127,7 +127,7 @@ namespace Beamable.Editor.Environment
 		{
 			// Append a slash only if the path is a directory and does not have a slash.
 			if (!Path.HasExtension(path) &&
-			    !path.EndsWith(Path.DirectorySeparatorChar.ToString()))
+				!path.EndsWith(Path.DirectorySeparatorChar.ToString()))
 			{
 				return path + Path.DirectorySeparatorChar;
 			}
