@@ -1,4 +1,6 @@
+using Beamable.Common;
 using Beamable.Common.Api.Inventory;
+using System.Collections.Generic;
 
 namespace Beamable.Server.Api.Inventory
 {
@@ -16,6 +18,13 @@ namespace Beamable.Server.Api.Inventory
 	/// </summary>
 	public interface IMicroserviceInventoryApi : IInventoryApi
 	{
-		/* put server-side only methods here */
+		/// <summary>
+		/// Send multiple currencies to different user.
+		/// </summary>
+		/// <param name="currencies">A dictionary where the keys are content IDs of the currency, and the values are the amount of currency to send</param>
+		/// <param name="recipientPlayer">Target user identifier.</param>
+		/// <param name="transaction">An inventory transaction ID. Leave this argument empty.</param>
+		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
+		Promise<Unit> SendCurrency(Dictionary<string, long> currencies, long recipientPlayer, string transaction = null);
 	}
 }

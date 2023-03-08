@@ -1,9 +1,8 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server.Api.Inventory
 {
@@ -32,6 +31,18 @@ namespace Beamable.Server.Api.Inventory
             return view;
          });
       }
+      
+      public Promise<Unit> SendCurrency(Dictionary<string, long> currencies, long recipientPlayer, string transaction = null)
+      {
+	      var bodyRequest = new ArrayDict
+	      {
+		      { nameof(transaction), transaction},
+		      { nameof(recipientPlayer), recipientPlayer},
+		      { nameof(currencies), currencies}
+	      };
+	      var url = $"{SERVICE_OBJECT}/{UserContext.UserId}/transfer";
 
+	      return Requester.Request<Unit>(Method.PUT, url, bodyRequest);
+      }
    }
 }
