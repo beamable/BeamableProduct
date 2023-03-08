@@ -17,6 +17,7 @@ namespace Beamable.Console
 	public class ConsoleFlow : MonoBehaviour
 	{
 		public static ConsoleFlow Instance;
+		static readonly WaitForSeconds WaitForSeconds = new WaitForSeconds(0.2f);
 
 		// plrCode goes to a dictionary of command->callback.
 		private readonly Dictionary<string, Dictionary<string, ConsoleCommand>> ConsoleCommandsByName =
@@ -208,8 +209,12 @@ namespace Beamable.Console
 			// Hacky method to prevent NullReferenceException in UnityEngine.UI.InputField.GenerateCaret
 			// Delay prevents the user from interacting with the console before all UI components are configured
 			// Sadly, Unity won't fix this problem
-			await Task.Delay(100);
+			ctx.CoroutineService.StartCoroutine(DelayedInitEnd());
+		}
 
+		private IEnumerator DelayedInitEnd()
+		{
+			yield return WaitForSeconds;
 			_isInitialized = true;
 			Log("Console ready");
 		}
