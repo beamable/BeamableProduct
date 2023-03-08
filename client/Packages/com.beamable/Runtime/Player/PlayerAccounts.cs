@@ -597,6 +597,11 @@ namespace Beamable.Player
 	public class RegistrationResult
 	{
 		/// <summary>
+		/// Exception thrown by a server will be cached here
+		/// </summary>
+		public Exception innerException;
+
+		/// <summary>
 		/// The type of error that occured, if <see cref="isSuccess"/> is false.
 		/// </summary>
 		public PlayerRegistrationError error;
@@ -626,7 +631,7 @@ namespace Beamable.Player
 					return _account;
 				}
 
-				throw new PlayerRegistrationException(error);
+				throw new PlayerRegistrationException(error, innerException);
 			}
 			set => _account = value;
 		}
@@ -859,8 +864,8 @@ namespace Beamable.Player
 
 		public PlayerRegistrationError Error { get; }
 
-		public PlayerRegistrationException(PlayerRegistrationError error)
-			: base($"The registration failed. error=[{error}]")
+		public PlayerRegistrationException(PlayerRegistrationError error, Exception innerException = null)
+			: base($"The registration failed. error=[{error}]", innerException)
 		{
 			Error = error;
 		}
@@ -1500,8 +1505,9 @@ namespace Beamable.Player
 				account.Update(user);
 				account.TryTriggerUpdate();
 			}
-			catch (PlatformRequesterException)
+			catch (PlatformRequesterException ex)
 			{
+				res.innerException = ex;
 				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
 				return res;
 			}

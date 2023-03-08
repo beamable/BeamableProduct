@@ -352,6 +352,8 @@ namespace Beamable.Common.Dependencies
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate = true) where TNew : TExisting;
 
+		IDependencyBuilder ReplaceSingleton<TExisting>(TExisting nextInstance);
+
 		/// <summary>
 		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
 		/// </summary>
@@ -540,6 +542,8 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddSingleton<T>() => AddSingleton<T, T>();
 
+		public IDependencyBuilder ReplaceSingleton<TExisting>(TExisting nextInstance) =>
+			ReplaceSingleton<TExisting, TExisting>(() => nextInstance);
 		public IDependencyBuilder ReplaceSingleton<TExisting, TNew>(bool autoCreate = true)
 			where TNew : TExisting =>
 			ReplaceSingleton<TExisting, TNew>(Instantiate<TNew>, autoCreate);

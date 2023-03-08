@@ -9,10 +9,8 @@ using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 
 using static Beamable.Common.Constants;
@@ -63,8 +61,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
 		bool IsDockerActive => !(DockerCommand.DockerNotInstalled ||
 								 (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow && DockerCommand.DockerNotRunning));
-		bool CanHaveDependencies => IsDockerActive && MicroservicesDataModel.Instance.localServices.Count(x => !x.IsArchived) > 0 &&
-									MicroservicesDataModel.Instance.localStorages.Count(x => !x.IsArchived) > 0;
+		bool CanHaveDependencies => IsDockerActive && Model.localServices.Count(x => !x.IsArchived) > 0 &&
+									Model.localStorages.Count(x => !x.IsArchived) > 0;
+
+		MicroservicesDataModel Model => MicroservicesDataModel.Instance;
 
 		public override void Refresh()
 		{
@@ -103,7 +103,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = Tooltips.Microservice.DOCUMENT;
 
-			UpdateButtonsState(MicroservicesDataModel.Instance.AllLocalServices.Count(x => !x.IsArchived));
+			UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
 
 			Context.OnRealmChange += _ => Refresh();
 			Context.OnUserChange += _ => Refresh();
@@ -111,10 +111,21 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void UpdateButtonsState(int servicesAmount)
 		{
+			var canPublish = IsDockerActive && servicesAmount > 0 && HasPublishPermissions &&
+							 !Model.HasAnyBrokenRemoteService;
+
 			_startAll.SetEnabled(IsDockerActive && servicesAmount > 0);
-			_publish.SetEnabled(IsDockerActive && servicesAmount > 0 && HasPublishPermissions);
+			_publish.SetEnabled(canPublish);
 			_dependencies.SetEnabled(CanHaveDependencies);
 			_createNew.SetEnabled(IsDockerActive);
+
+			if (!canPublish)
+			{
+				_publish.tooltip = !IsDockerActive ? "Docker is not running." :
+					servicesAmount == 0 ? "Nothing to publish." :
+					!HasPublishPermissions ? "Require publish permission." :
+					Model.HasAnyBrokenRemoteService ? "There are broken remote services." : string.Empty;
+			}
 		}
 
 		private void HandleCreateNewButton(Rect visualElementBounds)
@@ -134,7 +145,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandlePlayButton(Rect visualElementBounds)
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
-			var services = MicroservicesDataModel.Instance.AllLocalServices.Where(x => !x.IsArchived).ToList();
+			var services = Model.AllLocalServices.Where(x => !x.IsArchived).ToList();
 			var content = new ServicesDropdownVisualElement(services);
 			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(200, 50 + services.Count * 24), content);
 			content.Refresh();

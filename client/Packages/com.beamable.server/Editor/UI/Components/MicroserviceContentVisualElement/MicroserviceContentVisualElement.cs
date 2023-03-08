@@ -5,7 +5,6 @@ using Beamable.Editor.Assistant;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -16,10 +15,8 @@ using UnityEditor;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 
 namespace Beamable.Editor.Microservice.UI.Components
@@ -38,7 +35,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private ScrollView _scrollView;
 		private VisualElement _servicesListElement;
 
-		private readonly Dictionary<ServiceModelBase, ServiceBaseVisualElement> _modelToVisual = new Dictionary<ServiceModelBase, ServiceBaseVisualElement>();
+		private readonly Dictionary<ServiceModelBase, ServiceBaseVisualElement> _modelToVisual =
+			new Dictionary<ServiceModelBase, ServiceBaseVisualElement>();
+
 		private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
 		private MicroserviceActionPrompt _actionPrompt;
 		private bool _dockerHubIsRunning;
@@ -46,16 +45,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
 			_servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
-				.Cast<ServiceBaseVisualElement>();
+								.Cast<ServiceBaseVisualElement>();
 
-		public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits>
-		{
-		}
+		public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits> { }
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
+			{
+				name = "custom-text",
+				defaultValue = "nada"
+			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -69,9 +69,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-		public MicroserviceContentVisualElement() : base(nameof(MicroserviceContentVisualElement))
-		{
-		}
+		public MicroserviceContentVisualElement() : base(nameof(MicroserviceContentVisualElement)) { }
 
 		public MicroservicesDataModel Model { get; set; }
 
@@ -123,28 +121,53 @@ namespace Beamable.Editor.Microservice.UI.Components
 				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
 				_modelToVisual.Clear();
 				SetupServicesStatus();
+				if (Model.HasAnyBrokenRemoteService)
+				{
+					ShowDestroyedRemoteMicroservices();
+				}
 			}
 
 			CheckLoginStatus();
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
-			EditorApplication.delayCall +=
+			BeamEditorContext.Default.Dispatcher.Schedule(
 				() =>
 				{
-					if (_dockerStatusPromise != null && !_dockerStatusPromise.IsCompleted)
-						return;
+					if (_dockerStatusPromise == null || _dockerStatusPromise.IsCompleted)
+					{
+						var command = new GetDockerLocalStatus();
+						_dockerStatusPromise = command.StartAsync();
+					}
+				});
+		}
 
-					var command = new GetDockerLocalStatus();
-					_dockerStatusPromise = command.StartAsync();
-				};
+		private void ShowDestroyedRemoteMicroservices()
+		{
+			var model = new AnnouncementModel() { Status = ToolboxAnnouncementStatus.DANGER, ActionText = "Fix it!", Action = FixDestroyedMicroservices };
+			model.SetTitle("Broken Remote Microservices");
+			var description = string.Format(BROKEN_REMOTE_SERVICES_MESSAGE, string.Join("\n\t- ",
+												Model.BrokenRemoteServicesNames));
+			model.SetDescription(description);
+			var element = new AnnouncementVisualElement() { AnnouncementModel = model };
+			Root.Q<VisualElement>("announcementList").Add(element);
+			element.Refresh();
+		}
+
+		private void FixDestroyedMicroservices()
+		{
+			foreach (string brokenRemoteService in Model.BrokenRemoteServicesNames)
+				MicroserviceEditor.CreateNewServiceFile(ServiceType.MicroService, brokenRemoteService);
+			foreach (string brokenRemoteService in Model.BrokenRemoteServicesNames)
+				BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>().MicroserviceCreated(brokenRemoteService);
 		}
 
 		private void CheckLoginStatus()
 		{
 			foreach (var kvp in _modelToVisual)
 			{
-				kvp.Value.ChangeStartButtonState(true, Constants.Tooltips.Microservice.PLAY_MICROSERVICE, Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
+				kvp.Value.ChangeStartButtonState(true, Constants.Tooltips.Microservice.PLAY_MICROSERVICE,
+												 Constants.Tooltips.Microservice.PLAY_NOT_LOGGED_IN);
 			}
 		}
 
@@ -217,7 +240,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				mongoService.OnSortChanged += SortStorages;
 
 				return mongoServiceElement;
-
 			}
 
 			return null;
@@ -239,7 +261,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				mongoService.OnSortChanged += SortStorages;
 
 				return mongoServiceElement;
-
 			}
 
 			return null;
@@ -262,73 +283,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_servicesCreateElements[serviceType].Refresh(() => onClose?.Invoke());
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
-		}
-
-		public void SetAllMicroserviceSelectedStatus(bool selected)
-		{
-			foreach (var microservice in Model.AllLocalServices)
-			{
-				microservice.IsSelected = selected;
-			}
-		}
-
-		public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
-		{
-			var children = new List<LoadingBarUpdater>();
-			var dependencyStorages = new List<string>();
-
-			foreach (var microservice in Model.Services)
-			{
-				if (!microservice.IsSelected)
-					continue;
-
-				if (microservice.Dependencies.Count > 0)
-				{
-					foreach (MongoStorageModel dependencyService in microservice.Dependencies)
-					{
-						dependencyStorages.Add(dependencyService.Name);
-
-						void OnDependencyRunFinished(bool isFinished)
-						{
-							if (isFinished)
-							{
-								if (microservice.IsRunning)
-									microservice.BuildAndRestart();
-								else
-									microservice.BuildAndStart();
-							}
-
-							dependencyService.Builder.OnStartingFinished -= OnDependencyRunFinished;
-						};
-
-						dependencyService.Builder.OnStartingFinished += OnDependencyRunFinished;
-						dependencyService.Start();
-					}
-
-				}
-				else
-				{
-					if (microservice.IsRunning)
-						microservice.BuildAndRestart();
-					else
-						microservice.BuildAndStart();
-				}
-
-				var element = _modelToVisual[microservice];
-				var subLoader = element.Q<LoadingBarElement>();
-				children.Add(subLoader.Updater);
-			}
-
-			foreach (var storage in Model.Storages)
-			{
-				if (!storage.IsSelected)
-					continue;
-
-				if (!storage.IsRunning && !dependencyStorages.Contains(storage.Name))
-					storage.Start();
-			}
-
-			var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
 		}
 
 		public void SortServices(ServiceType serviceType)
@@ -403,7 +357,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
 														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
 														 BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
-
 				};
 			}
 			else
@@ -415,8 +368,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
 														 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
 				};
-
 			}
+
 			var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
 			Root.Q<VisualElement>("announcementList").Add(element);
 			element.Refresh();
@@ -438,9 +391,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 					continue;
 
 				var serviceType = Model.GetModelServiceType(serviceStatus.Key);
-				var isArchived = serviceType == ServiceType.MicroService ?
-					MicroserviceConfiguration.Instance.GetEntry(serviceStatus.Key).Archived :
-					MicroserviceConfiguration.Instance.GetStorageEntry(serviceStatus.Key).Archived;
+				var isArchived = serviceType == ServiceType.MicroService
+					? MicroserviceConfiguration.Instance.GetEntry(serviceStatus.Key).Archived
+					: MicroserviceConfiguration.Instance.GetStorageEntry(serviceStatus.Key).Archived;
 				if (!ShouldDisplayService(serviceType, isArchived))
 					continue;
 
@@ -476,7 +429,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-		public void StopAllServices(bool showDialog = false, string dialogTitle = "", string dialogMessage = "", string dialogConfirm = "")
+		public void StopAllServices(bool showDialog = false,
+									string dialogTitle = "",
+									string dialogMessage = "",
+									string dialogConfirm = "")
 		{
 			var isAnyServiceStopped = false;
 			foreach (var service in _modelToVisual.Keys)
