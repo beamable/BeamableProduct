@@ -504,6 +504,7 @@ namespace Beamable.Common.Api.Inventory
 					itemView.properties = properties;
 					itemView.createdAt = item.createdAt;
 					itemView.updatedAt = item.updatedAt;
+					itemView.contentId = itemGroup.id;
 
 					return itemView;
 				});
@@ -781,5 +782,6 @@ namespace Beamable.Common.Api.Inventory
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
 		public long createdAt;
 		public long updatedAt;
+		public string contentId;
 	}
 }
