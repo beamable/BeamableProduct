@@ -66,24 +66,24 @@ namespace Beamable.Editor.Login.UI.Components
 				}, .1f);
 			};
 
-/*
-			var loadConfigDefaults = Root.Q<GenericButtonVisualElement>("revertConfigToDefaults");
-			loadConfigDefaults.OnClick += () =>
-			{
-				loadConfigDefaults.EnableInClassList("writing", true);
-				EditorDebouncer.Debounce("load-defaults", () =>
-				{
-					Context.LoadConfig().Then(_ =>
-					{
-						Manager.Initialize(Model);
-						EditorDebouncer.Debounce("load-defaults-reset", () =>
+			/*
+						var loadConfigDefaults = Root.Q<GenericButtonVisualElement>("revertConfigToDefaults");
+						loadConfigDefaults.OnClick += () =>
 						{
-							loadConfigDefaults.EnableInClassList("writing", false);
-						}, .3f);
-					});
-				}, .1f);
-			};
-*/
+							loadConfigDefaults.EnableInClassList("writing", true);
+							EditorDebouncer.Debounce("load-defaults", () =>
+							{
+								Context.LoadConfig().Then(_ =>
+								{
+									Manager.Initialize(Model);
+									EditorDebouncer.Debounce("load-defaults-reset", () =>
+									{
+										loadConfigDefaults.EnableInClassList("writing", false);
+									}, .3f);
+								});
+							}, .1f);
+						};
+			*/
 
 			var resetPasswordButton = Root.Q<GenericButtonVisualElement>("resetPassword");
 			resetPasswordButton.OnClick += Manager.GotoForgotPassword;
