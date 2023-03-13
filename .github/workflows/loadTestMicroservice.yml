@@ -57,10 +57,22 @@ jobs:
           path: |
             ./stress-tests/standalone-microservice/services/reports
       - name: Check Dotnet Counters
+        id: checkCounters
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
           beam profile check-counters ./counter.json
       - name: Check NBomber
+        id: checkNbomber
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          beam profile check-nbomber ./report.csv --p95-limit 9000
+          beam profile check-nbomber ./report.csv --p95-limit 3000
+      - name: Post to a Slack channel
+        if: steps.checkNbomber.outcome != 'success' || steps.checkCounters.outcome != 'success'
+        id: slack
+        uses: slackapi/slack-github-action@v1.21.0
+        continue-on-error: true
+        with:
+          channel-id: C0409CMRKA9
+          slack-message: "Automated C#MS smoke tests failed!"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
