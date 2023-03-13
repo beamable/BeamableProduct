@@ -39,7 +39,7 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 
 			if (failCount > args.failLimit)
 			{
-				warnings.Add($"fails above limit. fails=[{failCount}]");
+				warnings.Add($"fails above limit. fails=[{failCount}] limit=[{args.failLimit}]");
 			}
 			
 			if (!double.TryParse(line["95_percent"], out var p95))
@@ -49,7 +49,7 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 
 			if (p95 > args.p95Limit)
 			{
-				warnings.Add($"p95 above limit. fails=[{p95}]");
+				warnings.Add($"p95 above limit. p95=[{p95}] limit=[{args.p95Limit}]");
 			}
 			
 		}
