@@ -211,12 +211,16 @@ public class App
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseExceptionHandler((ex, _) =>
+		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 			switch (ex)
 			{
 				case CliException cliException:
 					Console.Error.WriteLine(cliException.Message);
+					if (cliException.UseNonZeroExitCode)
+					{
+						context.ExitCode = 1;
+					}
 					break;
 				default:
 					Console.Error.WriteLine(ex.Message);

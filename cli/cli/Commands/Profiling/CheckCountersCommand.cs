@@ -71,7 +71,7 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 
 		if (warnings.Count > 0)
 		{
-			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())));
+			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())), true);
 		}
 
 		BeamableLogger.Log("No issues found.");
