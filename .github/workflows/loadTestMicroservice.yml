@@ -1,9 +1,9 @@
 name: Perf Test Microservices
 
 on:
-  push:
+  pull_request:
     branches:
-      - 'feature/beam-3376-2'
+      - 'main'
 
 jobs:
   runPerfTest:
