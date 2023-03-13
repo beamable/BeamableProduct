@@ -74,6 +74,6 @@ jobs:
         uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: C0409CMRKA9
-          slack-message: "Automated C#MS smoke tests failed!"
+          slack-message: "Automated C#MS smoke tests failed! https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
