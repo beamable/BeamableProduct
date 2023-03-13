@@ -77,3 +77,6 @@ jobs:
           slack-message: "Automated C#MS smoke tests failed! https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Fail if checks failed
+        if: steps.checkNbomber.outcome != 'success' || steps.checkCounters.outcome != 'success'
+        run: exit 1
