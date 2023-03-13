@@ -6,7 +6,7 @@ on:
       - 'feature/beam-3376-2'
 
 jobs:
-  setup:
+  runPerfTest:
     timeout-minutes: 4
     runs-on: ubuntu-latest
     concurrency:
@@ -63,4 +63,4 @@ jobs:
       - name: Check NBomber
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          beam profile check-nbomber ./report.csv
+          beam profile check-nbomber ./report.csv --p95-limit 9000
