@@ -1,4 +1,4 @@
-name: Sync Wiki
+name: Perf Test Microservices
 
 on:
   push:
@@ -56,3 +56,11 @@ jobs:
           retention-days: 15
           path: |
             ./stress-tests/standalone-microservice/services/reports
+      - name: Check Dotnet Counters
+        working-directory: ./stress-tests/standalone-microservice/services/reports
+        run: |
+          beam profile check-counters ./counter.json
+      - name: Check NBomber
+        working-directory: ./stress-tests/standalone-microservice/services/reports
+        run: |
+          beam profile check-nbomber ./report.csv

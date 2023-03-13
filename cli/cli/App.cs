@@ -136,6 +136,10 @@ public class App
 		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
 
+		Commands.AddRootCommand<ProfilingCommand, ProfilingCommandArgs>();
+		Commands.AddCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();
+		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
+		
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
 		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
