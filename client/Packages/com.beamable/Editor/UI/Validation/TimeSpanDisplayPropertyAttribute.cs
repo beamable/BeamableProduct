@@ -29,24 +29,35 @@ namespace Beamable.Editor.UI.Validation
 
 			var labelRect = new Rect(position.x, position.y + 5, position.width,
 									 EditorGUIUtility.singleLineHeight);
+
+			GUIContent content = new GUIContent();
+			var style = EditorStyles.miniLabel;
+			var indentedRect = EditorGUI.IndentedRect(labelRect);
+			
 			if (MustBeTimeSpanDuration.TryParseTimeSpan(prop.stringValue, out var span, out var readable))
 			{
-				var style = EditorStyles.miniLabel;
-				var content = new GUIContent("~" + readable);
+				content.text = "~" + readable;
 				content.tooltip = $"This will cycle about every {readable}, or {span.ToString("c")}";
-				EditorGUI.LabelField(labelRect, new GUIContent(" "), content, style);
+
+				indentedRect.width = 0;
+				indentedRect.height = 0;
 			}
 			else
 			{
-				var indentedRect = EditorGUI.IndentedRect(labelRect);
+				style.fixedHeight = 0;
+
+			
 				indentedRect.width = indentedRect.width - EditorGUIUtility.labelWidth;
 				indentedRect.x += EditorGUIUtility.labelWidth + 1;
-				if (GUI.Button(indentedRect, "Enter a valid ISO 8601 Period Code"))
-				{
-					Application.OpenURL("https://en.wikipedia.org/wiki/ISO_8601#Durations");
-				}
+				
 			}
-
+			
+			EditorGUI.LabelField(labelRect, new GUIContent(" "), content, style);
+			
+			if (GUI.Button(indentedRect, "Enter a valid ISO 8601 Period Code"))
+			{
+				Application.OpenURL("https://en.wikipedia.org/wiki/ISO_8601#Durations");
+			}
 		}
 	}
 }
