@@ -61,7 +61,7 @@ jobs:
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          beam profile check-counters ./counter.json
+          beam profile check-counters ./counter.json --cpu-limit 15
       - name: Check NBomber
         id: checkNbomber
         continue-on-error: true
