@@ -33,7 +33,7 @@ namespace Beamable.Editor.UI.Validation
 			GUIContent content = new GUIContent();
 			var style = EditorStyles.miniLabel;
 			var indentedRect = EditorGUI.IndentedRect(labelRect);
-			
+
 			if (MustBeTimeSpanDuration.TryParseTimeSpan(prop.stringValue, out var span, out var readable))
 			{
 				content.text = "~" + readable;
@@ -46,14 +46,14 @@ namespace Beamable.Editor.UI.Validation
 			{
 				style.fixedHeight = 0;
 
-			
+
 				indentedRect.width = indentedRect.width - EditorGUIUtility.labelWidth;
 				indentedRect.x += EditorGUIUtility.labelWidth + 1;
-				
+
 			}
-			
+
 			EditorGUI.LabelField(labelRect, new GUIContent(" "), content, style);
-			
+
 			if (GUI.Button(indentedRect, "Enter a valid ISO 8601 Period Code"))
 			{
 				Application.OpenURL("https://en.wikipedia.org/wiki/ISO_8601#Durations");
