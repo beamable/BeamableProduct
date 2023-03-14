@@ -82,6 +82,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(provider => provider.GetService<IPlatformRequester>() as IBeamableRequester);
 			DependencyBuilder.AddSingleton<IRequester>(provider => provider.GetService<IPlatformRequester>());
 			DependencyBuilder.AddSingleton<IEditorAuthApi>(provider => new EditorAuthService(provider.GetService<IPlatformRequester>()));
+			DependencyBuilder.AddSingleton<IAuthApi>(provider => provider.GetService<IEditorAuthApi>());
 			DependencyBuilder.AddSingleton<IContentIO>(provider => provider.GetService<ContentIO>());
 			DependencyBuilder.AddSingleton<ContentIO>();
 			DependencyBuilder.AddSingleton(provider => new ContentPublisher(provider.GetService<IPlatformRequester>(), provider.GetService<ContentIO>()));
