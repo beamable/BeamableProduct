@@ -25,6 +25,6 @@ namespace Beamable.Server.Api.Inventory
 		/// <param name="recipientPlayer">Target user identifier.</param>
 		/// <param name="transaction">An inventory transaction ID. Leave this argument empty.</param>
 		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
-		Promise<Unit> SendCurrency(Dictionary<string, long> currencies, long recipientPlayer, string transaction = null);
+		Promise SendCurrency(Dictionary<string, long> currencies, long recipientPlayer, string transaction = null);
 	}
 }

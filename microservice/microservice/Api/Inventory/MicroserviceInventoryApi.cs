@@ -32,7 +32,7 @@ namespace Beamable.Server.Api.Inventory
          });
       }
       
-      public Promise<Unit> SendCurrency(Dictionary<string, long> currencies, long recipientPlayer, string transaction = null)
+      public async Promise SendCurrency(Dictionary<string, long> currencies, long recipientPlayer, string transaction = null)
       {
 	      var bodyRequest = new ArrayDict
 	      {
@@ -42,7 +42,7 @@ namespace Beamable.Server.Api.Inventory
 	      };
 	      var url = $"{SERVICE_OBJECT}/{UserContext.UserId}/transfer";
 
-	      return Requester.Request<Unit>(Method.PUT, url, bodyRequest);
+	      await Requester.Request<Unit>(Method.PUT, url, bodyRequest);
       }
    }
 }
