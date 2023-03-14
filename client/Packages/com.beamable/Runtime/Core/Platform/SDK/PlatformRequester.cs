@@ -9,6 +9,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Pooling;
 using Beamable.Common.Spew;
 using Beamable.Serialization;
@@ -32,6 +33,12 @@ namespace Beamable.Api
 								  SDKRequesterOptions<T> opts);
 	}
 
+	public interface IPlatformRequesterHostResolver
+	{
+		string Host { get; }
+		PackageVersion PackageVersion { get; }
+	}
+
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -45,6 +52,7 @@ namespace Beamable.Api
 	/// </summary>
 	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester
 	{
+		private readonly IDependencyProvider _provider;
 		private const string ACCEPT_HEADER = "application/json";
 
 		private readonly PackageVersion _beamableVersion;
@@ -61,7 +69,29 @@ namespace Beamable.Api
 		public string Shard { get; set; }
 		public string Language { get; set; }
 		public string TimeOverride { get; set; }
-		public IAuthApi AuthService { private get; set; }
+
+		private IAuthApi _authService;
+
+		public IAuthApi AuthService
+		{
+			private get
+			{
+				if (_authService == null)
+				{
+					if (_provider == null)
+					{
+						Debug.LogError("PlatformRequester does not have an authService, nor does it have a provider to get one."); // expect a null reference.
+					}
+					_authService = _provider.GetService<IAuthApi>();
+				}
+
+				return _authService;
+			}
+			set
+			{
+				_authService = value;
+			}
+		}
 
 		private string _requestTimeoutMs = null;
 		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
@@ -87,6 +117,17 @@ namespace Beamable.Api
 
 		private readonly OfflineCache _offlineCache;
 
+		public PlatformRequester(IDependencyProvider provider)
+		{
+			var resolver = provider.GetService<IPlatformRequesterHostResolver>();
+			_provider = provider;
+			Host = resolver.Host;
+			_beamableVersion = resolver.PackageVersion;
+			accessTokenStorage = provider.GetService<AccessTokenStorage>();
+			_connectivityService = provider.GetService<IConnectivityService>();
+			_offlineCache = provider.GetService<OfflineCache>();
+		}
+		
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
@@ -96,19 +137,25 @@ namespace Beamable.Api
 			_offlineCache = offlineCache;
 		}
 
+		public PlatformRequester RemoveConnectivityChecks()
+		{
+			_connectivityService = null;
+			return this;
+		}
+
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService, _offlineCache)
-			{
-				Cid = Cid,
-				Pid = Pid,
-				Shard = Shard,
-				Language = Language,
-				TimeOverride = TimeOverride,
-				AuthService = AuthService,
-				Token = new AccessToken(accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
-				  token.expires_in)
-			};
+			var requester = _provider == null
+				? new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService,
+				                        _offlineCache)
+				: new PlatformRequester(_provider);
+			requester.Cid = Cid;
+			requester.Pid = Pid;
+			requester.Shard = Shard;
+			requester.TimeOverride = TimeOverride;
+			requester.AuthService = AuthService;
+			requester.Token = new AccessToken(accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
+			                                  token.expires_in);
 			return requester;
 		}
 

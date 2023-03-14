@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- add `contentId` field to `ItemView`
+- `ItemView` has new `contentId` field
+
+### Fixed
+- Editor no longer throws "Failed to refresh account" messages.
 
 ## [1.12.0]
 ### Added
