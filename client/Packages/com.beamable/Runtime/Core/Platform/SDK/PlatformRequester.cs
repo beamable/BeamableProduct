@@ -145,10 +145,17 @@ namespace Beamable.Api
 
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = _provider == null
-				? new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService,
-				                        _offlineCache)
-				: new PlatformRequester(_provider);
+			PlatformRequester CreateInstance()
+			{
+				if (_provider == null)
+				{
+					return new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService,
+					                             _offlineCache);
+				}
+				return new PlatformRequester(_provider);
+			}
+
+			var requester = CreateInstance();
 			requester.Cid = Cid;
 			requester.Pid = Pid;
 			requester.Shard = Shard;

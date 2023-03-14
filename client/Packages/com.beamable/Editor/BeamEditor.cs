@@ -103,7 +103,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<EnvironmentService>();
-			DependencyBuilder.AddSingleton<IConnectivityService>(() => null); // TODO: We should come up with an actual editor connectivity checker... 
+			DependencyBuilder.AddSingleton<IConnectivityService>(() => null); // TODO: We should come up with an actual editor connectivity checker... https://disruptorbeam.atlassian.net/browse/BEAM-3487
 
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
