@@ -17,9 +17,9 @@ namespace Beamable.Editor
 		public async void OnPreprocessBuild(BuildReport report)
 		{
 			var messages = new List<string>();
-			if (!CheckForConfigDefaultsAlignment())
+			if (!CheckForConfigDefaultsAlignment(out var message))
 			{
-				messages.Add("Runtime Cid/Pid don't match Editor Cid/Pid.");
+				messages.Add(message);
 			}
 
 			var hasLocalContentChanges = await ContentIO.HasLocalChanges();
@@ -64,9 +64,9 @@ namespace Beamable.Editor
 		/// <returns>
 		/// True if the cid/pids are the same
 		/// </returns>
-		private static bool CheckForConfigDefaultsAlignment()
+		private static bool CheckForConfigDefaultsAlignment(out string warningMessage)
 		{
-
+			warningMessage = string.Empty;
 			ConfigDatabase.Init(forceReload: true);
 			if (!ConfigDatabase.TryGetString("cid", out var cid, allowSessionOverrides: false) || string.IsNullOrEmpty(cid))
 			{
@@ -98,7 +98,7 @@ popup, click the 'Save Config-Defaults' button.";
 
 			if (!cidsMatch || !pidsMatch)
 			{
-				var warningMessage = $@"BEAMABLE WARNING: CID/PID Mismatch Detected!
+				warningMessage = $@"BEAMABLE WARNING: CID/PID Mismatch Detected!
 The editor environment is using a cid=[{runtimeCid}] and pid=[{runtimePid}]. These values are assigned in Toolbox.
 However, the built target will use a cid=[{cid}] and pid=[{pid}]. These values are assigned in the config-defaults.txt file.
 These values do not match. This means that you are building the game
