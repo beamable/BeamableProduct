@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - add `contentId` field to `ItemView`
 
+### Changed
+- changed functions names in third party Websocket library so now they should not conflict when user is using other libraries that depends on that library
+
+
 ## [1.12.0]
 ### Added
 - Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
