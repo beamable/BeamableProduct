@@ -215,19 +215,19 @@ namespace Beamable.Endel
 
 	    /* WebSocket JSLIB functions */
 	    [DllImport ("__Internal")]
-	    public static extern int WebSocketConnect (int instanceId);
+	    public static extern int BeamableWebSocketConnect (int instanceId);
 
 	    [DllImport ("__Internal")]
-	    public static extern int WebSocketClose (int instanceId, int code, string reason);
+	    public static extern int BeamableWebSocketClose (int instanceId, int code, string reason);
 
 	    [DllImport ("__Internal")]
-	    public static extern int WebSocketSend (int instanceId, byte[] dataPtr, int dataLength);
+	    public static extern int BeamableWebSocketSend (int instanceId, byte[] dataPtr, int dataLength);
 
 	    [DllImport ("__Internal")]
-	    public static extern int WebSocketSendText (int instanceId, string message);
+	    public static extern int BeamableWebSocketSendText (int instanceId, string message);
 
 	    [DllImport ("__Internal")]
-	    public static extern int WebSocketGetState (int instanceId);
+	    public static extern int BeamableWebSocketGetState (int instanceId);
 
 	    protected int instanceId;
 
@@ -243,7 +243,7 @@ namespace Beamable.Endel
 	        WebSocketFactory.Initialize ();
 	      }
 
-	      int instanceId = WebSocketFactory.WebSocketAllocate (url);
+	      int instanceId = WebSocketFactory.BeamableWebSocketAllocate (url);
 	      WebSocketFactory.instances.Add (instanceId, this);
 
 	      this.instanceId = instanceId;
@@ -254,10 +254,10 @@ namespace Beamable.Endel
 	        WebSocketFactory.Initialize ();
 	      }
 
-	      int instanceId = WebSocketFactory.WebSocketAllocate (url);
+	      int instanceId = WebSocketFactory.BeamableWebSocketAllocate (url);
 	      WebSocketFactory.instances.Add (instanceId, this);
 
-	      WebSocketFactory.WebSocketAddSubProtocol(instanceId, subprotocol);
+	      WebSocketFactory.BeamableWebSocketAddSubProtocol(instanceId, subprotocol);
 
 	      this.instanceId = instanceId;
 	    }
@@ -268,11 +268,11 @@ namespace Beamable.Endel
 	        WebSocketFactory.Initialize ();
 	      }
 
-	      int instanceId = WebSocketFactory.WebSocketAllocate (url);
+	      int instanceId = WebSocketFactory.BeamableWebSocketAllocate (url);
 	      WebSocketFactory.instances.Add (instanceId, this);
 
 	      foreach (string subprotocol in subprotocols) {
-	        WebSocketFactory.WebSocketAddSubProtocol(instanceId, subprotocol);
+	        WebSocketFactory.BeamableWebSocketAddSubProtocol(instanceId, subprotocol);
 	      }
 
 	      this.instanceId = instanceId;
@@ -287,7 +287,7 @@ namespace Beamable.Endel
 	    }
 
 	    public Task Connect () {
-	      int ret = WebSocketConnect (this.instanceId);
+	      int ret = BeamableWebSocketConnect (this.instanceId);
 
 	      if (ret < 0)
 	        throw WebSocketHelpers.GetErrorMessageFromCode (ret, null);
@@ -301,7 +301,7 @@ namespace Beamable.Endel
 		}
 
 	    public Task Close (WebSocketCloseCode code = WebSocketCloseCode.Normal, string reason = null) {
-	      int ret = WebSocketClose (this.instanceId, (int) code, reason);
+	      int ret = BeamableWebSocketClose (this.instanceId, (int) code, reason);
 
 	      if (ret < 0)
 	        throw WebSocketHelpers.GetErrorMessageFromCode (ret, null);
@@ -310,7 +310,7 @@ namespace Beamable.Endel
 	    }
 
 	    public Task Send (byte[] data) {
-	      int ret = WebSocketSend (this.instanceId, data, data.Length);
+	      int ret = BeamableWebSocketSend (this.instanceId, data, data.Length);
 
 	      if (ret < 0)
 	        throw WebSocketHelpers.GetErrorMessageFromCode (ret, null);
@@ -319,7 +319,7 @@ namespace Beamable.Endel
 	    }
 
 	    public Task SendText (string message) {
-	      int ret = WebSocketSendText (this.instanceId, message);
+	      int ret = BeamableWebSocketSendText (this.instanceId, message);
 
 	      if (ret < 0)
 	        throw WebSocketHelpers.GetErrorMessageFromCode (ret, null);
@@ -329,7 +329,7 @@ namespace Beamable.Endel
 
 	    public WebSocketState State {
 	      get {
-	        int state = WebSocketGetState (this.instanceId);
+	        int state = BeamableWebSocketGetState (this.instanceId);
 
 	        if (state < 0)
 	          throw WebSocketHelpers.GetErrorMessageFromCode (state, null);
@@ -748,25 +748,25 @@ namespace Beamable.Endel
 
 	    /* WebSocket JSLIB callback setters and other functions */
 	    [DllImport ("__Internal")]
-	    public static extern int WebSocketAllocate (string url);
+	    public static extern int BeamableWebSocketAllocate (string url);
 
 	    [DllImport ("__Internal")]
-	    public static extern int WebSocketAddSubProtocol (int instanceId, string subprotocol);
+	    public static extern int BeamableWebSocketAddSubProtocol (int instanceId, string subprotocol);
 
 	    [DllImport ("__Internal")]
-	    public static extern void WebSocketFree (int instanceId);
+	    public static extern void BeamableWebSocketFree (int instanceId);
 
 	    [DllImport ("__Internal")]
-	    public static extern void WebSocketSetOnOpen (OnOpenCallback callback);
+	    public static extern void BeamableWebSocketSetOnOpen (OnOpenCallback callback);
 
 	    [DllImport ("__Internal")]
-	    public static extern void WebSocketSetOnMessage (OnMessageCallback callback);
+	    public static extern void BeamableWebSocketSetOnMessage (OnMessageCallback callback);
 
 	    [DllImport ("__Internal")]
-	    public static extern void WebSocketSetOnError (OnErrorCallback callback);
+	    public static extern void BeamableWebSocketSetOnError (OnErrorCallback callback);
 
 	    [DllImport ("__Internal")]
-	    public static extern void WebSocketSetOnClose (OnCloseCallback callback);
+	    public static extern void BeamableWebSocketSetOnClose (OnCloseCallback callback);
 
 	    /* If callbacks was initialized and set */
 	    public static bool isInitialized = false;
@@ -776,10 +776,10 @@ namespace Beamable.Endel
 	     */
 	    public static void Initialize () {
 
-	      WebSocketSetOnOpen (DelegateOnOpenEvent);
-	      WebSocketSetOnMessage (DelegateOnMessageEvent);
-	      WebSocketSetOnError (DelegateOnErrorEvent);
-	      WebSocketSetOnClose (DelegateOnCloseEvent);
+	      BeamableWebSocketSetOnOpen (DelegateOnOpenEvent);
+	      BeamableWebSocketSetOnMessage (DelegateOnMessageEvent);
+	      BeamableWebSocketSetOnError (DelegateOnErrorEvent);
+	      BeamableWebSocketSetOnClose (DelegateOnCloseEvent);
 
 	      isInitialized = true;
 
@@ -793,7 +793,7 @@ namespace Beamable.Endel
 	    public static void HandleInstanceDestroy (int instanceId) {
 
 	      instances.Remove (instanceId);
-	      WebSocketFree (instanceId);
+	      BeamableWebSocketFree (instanceId);
 
 	    }
 
