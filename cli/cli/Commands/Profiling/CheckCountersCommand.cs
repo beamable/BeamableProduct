@@ -13,15 +13,15 @@ public class CheckCountersCommandArgs : CommandArgs
 
 public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 {
-	public CheckCountersCommand() : base("check-counters", "read the results of a dotnet-counters json file and determine if there are errors")
+	public CheckCountersCommand() : base("check-counters", "Read the results of a dotnet-counters json file and determine if there are errors")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("counters-file-path", "the path to the dotnet-counters output json file"), (args, i) => args.countersJsonFilePath = i);
-		AddOption(new Option<double>("--cpu-limit", () => 12, "the max cpu spike limit %"), (arg, i) => arg.cpuMaxLimitPercent = i);
-		AddOption(new Option<double>("--mem-limit", () => 160, "the max mem spike limit MB"), (arg, i) => arg.memMaxLimitMb = i);
+		AddArgument(new Argument<string>("counters-file-path", "The path to the dotnet-counters output json file"), (args, i) => args.countersJsonFilePath = i);
+		AddOption(new Option<double>("--cpu-limit", () => 12, "The max cpu spike limit %"), (arg, i) => arg.cpuMaxLimitPercent = i);
+		AddOption(new Option<double>("--mem-limit", () => 160, "The max mem spike limit MB"), (arg, i) => arg.memMaxLimitMb = i);
 	}
 
 	public override Task Handle(CheckCountersCommandArgs args)

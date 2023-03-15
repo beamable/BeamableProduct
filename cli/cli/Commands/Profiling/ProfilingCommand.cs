@@ -6,7 +6,7 @@ public class ProfilingCommandArgs : CommandArgs
 }
 public class ProfilingCommand : AppCommand<ProfilingCommandArgs>
 {
-	public ProfilingCommand() : base("profile", "commands for inspecting profiling reports")
+	public ProfilingCommand() : base("profile", "Commands for inspecting profiling reports")
 	{
 	}
 

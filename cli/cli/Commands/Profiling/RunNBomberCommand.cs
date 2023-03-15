@@ -18,16 +18,16 @@ public class RunNBomberCommandArgs : CommandArgs
 
 public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 {
-	public RunNBomberCommand() : base("run-nbomber", "runs an n-bomber stress test for a given microservice method. ")
+	public RunNBomberCommand() : base("run-nbomber", "Runs an n-bomber stress test for a given microservice method")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("service", "the name of the microservice to stress test"), (args, i) => args.service = i);
-		AddArgument(new Argument<string>("method", "the method name in the service to stress test"), (args, i) => args.method = i);
-		AddArgument(new Argument<string>("body", "the json body for each request"), (args, i) => args.jsonBody = i);
-		AddOption(new Option<bool>("--include-prefix", () => true, "if true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
+		AddArgument(new Argument<string>("service", "The name of the microservice to stress test"), (args, i) => args.service = i);
+		AddArgument(new Argument<string>("method", "The method name in the service to stress test"), (args, i) => args.method = i);
+		AddArgument(new Argument<string>("body", "The json body for each request"), (args, i) => args.jsonBody = i);
+		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
 		// AddOption(new Option<string>("--host", "if set, the stress test will use the given host instead of the default"), (args, i) => args.hostOverride = i);
 		// AddOption(new Option<string>("--cid", "if set, the stress test will use the given cid instead of the default"), (args, i) => args.cidOverride = i);
 		// AddOption(new Option<string>("--pid", "if set, the stress test will use the given cid instead of the default"), (args, i) => args.cidOverride = i);

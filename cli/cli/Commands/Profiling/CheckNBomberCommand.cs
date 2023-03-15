@@ -13,15 +13,15 @@ public class CheckNBomberCommandArgs : CommandArgs
 }
 public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 {
-	public CheckNBomberCommand() : base("check-nbomber", "read the results of a n-bomber .csv file and determine if there are errors")
+	public CheckNBomberCommand() : base("check-nbomber", "Read the results of a n-bomber .csv file and determine if there are errors")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("nbomber-file-path", "the path to the nbomber output csv file"), (args, i) => args.nBomberJsonFilePath = i);
-		AddOption(new Option<double>("--fail-limit", () => 0, "the max number of failed requests"), (arg, i) => arg.failLimit = i);
-		AddOption(new Option<double>("--p95-limit", () => 2500, "the max p95 in ms"), (arg, i) => arg.p95Limit = i);
+		AddArgument(new Argument<string>("nbomber-file-path", "The path to the nbomber output csv file"), (args, i) => args.nBomberJsonFilePath = i);
+		AddOption(new Option<double>("--fail-limit", () => 0, "The max number of failed requests"), (arg, i) => arg.failLimit = i);
+		AddOption(new Option<double>("--p95-limit", () => 2500, "The max p95 in ms"), (arg, i) => arg.p95Limit = i);
 	}
 
 	public override Task Handle(CheckNBomberCommandArgs args)
