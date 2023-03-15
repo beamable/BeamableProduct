@@ -25,6 +25,13 @@ namespace Beamable.Editor
 				{
 					BeamEditorContext.Default.EditorAccountService.Clear();
 					BeamEditorContext.Default.Requester.DeleteToken();
+					BeamEditorContext.Default.Requester.Token.SaveAsCustomerScoped();
+				}
+
+				if (GUILayout.Button("Corrupt Tokens"))
+				{
+					BeamEditorContext.Default.Requester.Token.CorruptAccessToken();
+					BeamEditorContext.Default.Requester.Token.SaveAsCustomerScoped();
 				}
 
 				EditorGUILayout.LabelField("Runtime (the token used when you enter playmode)");

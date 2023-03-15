@@ -3,6 +3,7 @@ using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using System;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -20,6 +21,11 @@ namespace Core.Platform.SDK
 	public class BeamableApiRequester : PlatformRequester, IDisposable, IBeamableApiRequester
 	{
 		private const string ACCEPT_HEADER = "application/vnd.beamable.v1+json";
+
+		public BeamableApiRequester(IDependencyProvider provider) : base(provider)
+		{
+
+		}
 
 		public BeamableApiRequester(string host,
 									PackageVersion beamableVersion,

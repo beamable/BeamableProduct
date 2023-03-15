@@ -623,7 +623,15 @@ namespace Beamable.Common.Dependencies
 			var values = new object[parameters.Length];
 			for (var i = 0; i < parameters.Length; i++)
 			{
-				values[i] = provider.GetService(parameters[i].ParameterType);
+				try
+				{
+					values[i] = provider.GetService(parameters[i].ParameterType);
+				}
+				catch (Exception ex)
+				{
+					BeamableLogger.LogError($"Could not create instance of type=[{type.FullName}] because parameter index=[{i}] name=[{parameters[i].Name}] of type=[{parameters[i].ParameterType}] could not instantiate due to message=[{ex.Message}]");
+					throw;
+				}
 			}
 
 			var instance = cons?.Invoke(values);
