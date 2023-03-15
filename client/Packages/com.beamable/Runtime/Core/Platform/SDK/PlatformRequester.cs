@@ -127,7 +127,7 @@ namespace Beamable.Api
 			_connectivityService = provider.GetService<IConnectivityService>();
 			_offlineCache = provider.GetService<OfflineCache>();
 		}
-		
+
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
@@ -150,7 +150,7 @@ namespace Beamable.Api
 				if (_provider == null)
 				{
 					return new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService,
-					                             _offlineCache);
+												 _offlineCache);
 				}
 				return new PlatformRequester(_provider);
 			}
@@ -162,7 +162,7 @@ namespace Beamable.Api
 			requester.TimeOverride = TimeOverride;
 			requester.AuthService = AuthService;
 			requester.Token = new AccessToken(accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
-			                                  token.expires_in);
+											  token.expires_in);
 			return requester;
 		}
 
