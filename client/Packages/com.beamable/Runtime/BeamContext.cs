@@ -481,23 +481,8 @@ namespace Beamable
 
 		protected virtual void RegisterServices(IDependencyBuilder builder)
 		{
-			builder.AddSingleton<PlatformRequester, PlatformRequester>(
-				provider => new PlatformRequester(
-					_environment.ApiUrl,
-					_environment.SdkVersion,
-					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>(),
-					provider.GetService<OfflineCache>()
-				)
-			);
-			builder.AddSingleton<IBeamableApiRequester>(
-				provider => new BeamableApiRequester(
-					_environment.ApiUrl,
-					_environment.SdkVersion,
-					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>(),
-					provider.GetService<OfflineCache>())
-			);
+			builder.AddSingleton<PlatformRequester>(provider => new PlatformRequester(provider));
+			builder.AddSingleton<IBeamableApiRequester>(provider => new BeamableApiRequester(provider));
 			builder.AddSingleton<IPlatformRequester>(provider => provider.GetService<PlatformRequester>());
 			builder.AddSingleton<IBeamableAPI>(provider => Api);
 			builder.AddSingleton<BeamContext>(this);

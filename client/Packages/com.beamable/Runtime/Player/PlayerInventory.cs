@@ -221,7 +221,10 @@ namespace Beamable.Player
 				filteredScopes = filteredScopes.Where(scope => _requestCounter.GetExact(scope).Count > 0).ToArray();
 
 				if (filteredScopes.Length == 0) return; // if there are no scopes, there is nothing to download. But actually, the API treats an empty scope as "everything", which is extra bad for us.
-
+				if (_userContext.UserId == 0)
+				{
+					throw new Exception($"Call to {nameof(PlayerInventory)} with empty UserID- BeamContext is not ready yet, search OnReady for more information.");
+				}
 				var result = await DownloadInventoryData(filteredScopes);
 
 				if (result.isOffline)
@@ -464,6 +467,9 @@ namespace Beamable.Player
 			return group[0];
 		}
 
+		/// <inheritdoc cref="GetCurrency(Beamable.Common.Inventory.CurrencyRef)"/>
+		public PlayerCurrency GetCurrency(string currencyRef) => GetCurrency(new CurrencyRef(currencyRef));
+
 		/// <summary>
 		/// Get a category of <see cref="PlayerItem"/> for a given type.
 		/// If you have subtypes of <see cref="ItemContent"/>,
@@ -485,6 +491,23 @@ namespace Beamable.Player
 			return itemGroup;
 		}
 
+		/// <inheritdoc cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>
+		public PlayerItemGroup GetItems(string itemRef) => GetItems(new ItemRef(itemRef));
+
+		/// <inheritdoc cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>
+		/// This method will is similar to <see cref="GetItems(Beamable.Common.Inventory.ItemRef)"/>, however it will make sure that the
+		/// <see cref="PlayerItemGroup"/> has been refreshed before completing the resulting promise.
+		/// <returns> A <see cref="Promise"/> containing the updated <see cref="PlayerItemGroup"/></returns>
+		public async Promise<PlayerItemGroup> LoadItems(ItemRef itemRef = null)
+		{
+			var items = GetItems(itemRef);
+			await items.Refresh();
+			return items;
+		}
+
+		/// <inheritdoc cref="LoadItems(Beamable.Common.Inventory.ItemRef)"/>
+		public Promise<PlayerItemGroup> LoadItems(string itemRef) => LoadItems(new ItemRef(itemRef));
+
 		/// <summary>
 		/// Get a category of <see cref="PlayerCurrency"/> for a given type.
 		/// If you have subtypes of <see cref="CurrencyRef"/>,
@@ -505,6 +528,23 @@ namespace Beamable.Player
 			_saveHandle?.Save();
 			return currencyGroup;
 		}
+
+		/// <inheritdoc cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
+		public PlayerCurrencyGroup GetCurrencies(string currencyRef) => GetCurrencies(new CurrencyRef(currencyRef));
+
+		/// <inheritdoc cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
+		/// This method will is similar to <see cref="GetCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>, however it will make sure that the
+		/// <see cref="PlayerCurrencyGroup"/> has been refreshed before completing the resulting promise.
+		/// <returns> A <see cref="Promise"/> containing the updated <see cref="PlayerCurrencyGroup"/></returns>
+		public async Promise<PlayerCurrencyGroup> LoadCurrencies(CurrencyRef currencyRef = null)
+		{
+			var currencies = GetCurrencies(currencyRef);
+			await currencies.Refresh();
+			return currencies;
+		}
+
+		/// <inheritdoc cref="LoadCurrencies(Beamable.Common.Inventory.CurrencyRef)"/>
+		public Promise<PlayerCurrencyGroup> LoadCurrencies(string currencyRef) => LoadCurrencies(new CurrencyRef(currencyRef));
 
 
 		/// <summary>

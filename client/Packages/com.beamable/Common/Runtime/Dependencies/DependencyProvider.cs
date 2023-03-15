@@ -53,13 +53,26 @@ namespace Beamable.Common.Dependencies
 		IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null);
 	}
 
+	public static class IDependencyProviderScopeExtensions
+	{
+		public static T InstantiateService<T>(this IDependencyProviderScope scope)
+		{
+			if (!scope.TryGetServiceDescriptor<T>(out var descriptor))
+			{
+				throw new InvalidOperationException(
+					$"Cannot create new instance of {typeof(T).Name} because it was not registered.");
+			}
+
+			return (T)descriptor.Factory?.Invoke(scope);
+		}
+	}
+
 	/// <summary>
 	/// The <see cref="IDependencyProviderScope"/> is a <see cref="IDependencyProvider"/>
 	/// But has more access methods and lifecycle controls.
 	/// </summary>
 	public interface IDependencyProviderScope : IDependencyProvider
 	{
-
 		/// <summary>
 		/// Give some type, try to find the service <see cref="DependencyLifetime"/> for the type.
 		/// If the service isn't registered, then the method will return false.
@@ -68,6 +81,15 @@ namespace Beamable.Common.Dependencies
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
 		bool TryGetServiceLifetime<T>(out DependencyLifetime lifetime);
+
+		/// <summary>
+		/// Given some type, try to find the service <see cref="ServiceDescriptor"/> for the type.
+		/// If the service isn't registered, then the method will return false and <see cref="descriptor"/> will be null.
+		/// </summary>
+		/// <param name="descriptor"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		bool TryGetServiceDescriptor<T>(out ServiceDescriptor descriptor);
 
 		/// <summary>
 		/// Disposing a <see cref="IDependencyProviderScope"/> will call <see cref="IBeamableDisposable.OnDispose"/>
@@ -195,6 +217,24 @@ namespace Beamable.Common.Dependencies
 			}
 		}
 
+		public bool TryGetServiceDescriptor<T>(out ServiceDescriptor descriptor)
+		{
+			descriptor = null;
+			if (Transients.TryGetValue(typeof(T), out descriptor))
+			{
+				return true;
+			}
+			if (Scoped.TryGetValue(typeof(T), out descriptor))
+			{
+				return true;
+			}
+			if (Singletons.TryGetValue(typeof(T), out descriptor))
+			{
+				return true;
+			}
+
+			return false;
+		}
 
 		public bool TryGetServiceLifetime<T>(out DependencyLifetime lifetime)
 		{

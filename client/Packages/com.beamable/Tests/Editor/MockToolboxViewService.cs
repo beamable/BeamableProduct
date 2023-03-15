@@ -26,7 +26,6 @@ namespace Beamable.Editor.Tests
 		private List<AnnouncementModelBase> _announcements = new List<AnnouncementModelBase>();
 		public IEnumerable<AnnouncementModelBase> Announcements { get; }
 
-		public event Action<List<RealmView>> OnAvailableRealmsChanged;
 		public event Action<RealmView> OnRealmChanged;
 		public event Action<IWidgetSource> OnWidgetSourceChanged;
 		public event Action OnQueryChanged;
@@ -48,7 +47,6 @@ namespace Beamable.Editor.Tests
 
 		public void Destroy()
 		{
-			OnAvailableRealmsChanged = null;
 			var api = BeamEditorContext.Default;
 			api.OnRealmChange -= HandleRealmChanged;
 		}
@@ -66,7 +64,7 @@ namespace Beamable.Editor.Tests
 
 		public void Initialize()
 		{
-			RefreshAvailableRealms();
+			// RefreshAvailableRealms();
 
 			var api = BeamEditorContext.Default;
 			api.OnRealmChange += API_OnRealmChanged;
@@ -85,16 +83,6 @@ namespace Beamable.Editor.Tests
 		public bool IsSpecificAnnouncementCurrentlyDisplaying(Type type)
 		{
 			return Announcements.Any(announcement => announcement.GetType() == type);
-		}
-
-		public Promise<List<RealmView>> RefreshAvailableRealms()
-		{
-			var api = BeamEditorContext.Default;
-			return api.ServiceScope.GetService<RealmsService>().GetRealms().Then(realms =>
-			{
-				Realms = realms;
-				OnAvailableRealmsChanged?.Invoke(realms);
-			}).Error(err => api.Logout());
 		}
 
 		public void AddAnnouncement(AnnouncementModelBase announcementModel)
