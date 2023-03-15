@@ -27,6 +27,7 @@ namespace Beamable.CurrencyHUD
 		private async void Start()
 		{
 			var ctx = BeamContext.InParent(this);
+			await ctx.OnReady;
 
 			ctx.Inventory.GetCurrency(content).OnAmountUpdated += amount =>
 			{

@@ -29,8 +29,8 @@ namespace Beamable.Editor.ToolbarExtender
 
 		private static BeamEditorContext _editorAPI;
 		private static List<BeamableAssistantMenuItem> _assistantMenuItems;
-		private static List<BeamableToolbarButton> _leftButtons;
-		private static List<BeamableToolbarButton> _rightButtons;
+		private static List<BeamableToolbarButton> _leftButtons = new List<BeamableToolbarButton>();
+		private static List<BeamableToolbarButton> _rightButtons = new List<BeamableToolbarButton>();
 
 		private static Texture _noHintsTexture;
 		private static Texture _hintsTexture;
@@ -97,14 +97,20 @@ namespace Beamable.Editor.ToolbarExtender
 			var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
 			var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
-			var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();
-			_leftButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Left)
-										.SelectMany(g => g)
-										.ToList();
+			_leftButtons.Clear();
+			_rightButtons.Clear();
 
-			_rightButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Right)
-										 .SelectMany(g => g)
-										 .ToList();
+			for (int i = 0; i < toolbarButtons.Count; i++)
+			{
+				if (toolbarButtons[i].GetButtonSide(api) == BeamableToolbarButton.Side.Left)
+				{
+					_leftButtons.Add(toolbarButtons[i]);
+				}
+				else
+				{
+					_rightButtons.Add(toolbarButtons[i]);
+				}
+			}
 
 			_leftButtons.Sort((b1, b2) =>
 			{
