@@ -33,6 +33,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public TMP_InputField EmailInputField;
 		public SetStatusButton StatusButton;
 		public SetStatusPopup SetStatusPopupPrefab;
+		public ThirdPartyLoginUI ThirdPartyLogin;
 
 		protected IDependencies System;
 
@@ -57,6 +58,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			{
 				return;
 			}
+			
+			ThirdPartyLogin.Setup(System.Context, OnEmailLoginPressed);
 			
 			SetStatusPopupPrefab.gameObject.SetActive(false);
 
@@ -86,6 +89,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			FeatureControl.SetHomeAction(OpenAccountsView);
 			ConfirmButton.onClick.ReplaceOrAddListener(OnConfirmPressed);
 			CancelButton.onClick.ReplaceOrAddListener(OpenAccountsView);
+		}
+
+		private void OnEmailLoginPressed()
+		{
+			FeatureControl.OpenSignInView();
 		}
 
 		private void SetupStatusButton(PlayerPresence status) => StatusButton.Setup(status, OpenStatusPopup);

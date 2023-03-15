@@ -25,6 +25,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public BeamInputField ConfirmPasswordInput;
 		public Button SignUpButton;
 		public Button SignInButton;
+		public ThirdPartyLoginUI ThirdPartyLogin;
 
 		protected IDependencies System;
 		
@@ -47,6 +48,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
+			ThirdPartyLogin.Setup(System.Context);
+			
 			EmailInput.Setup((string input, out string errorMessage) => System.IsEmailValid(input, out errorMessage));
 			EmailInput.text = System.Email;
 			PasswordInput.Setup((string input, out string errorMessage) => System.IsPasswordValid(input, out errorMessage));

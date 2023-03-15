@@ -173,13 +173,13 @@ namespace Beamable.EasyFeatures.Components
 			
 			// show linked auths icons
 			if (viewData.HasEmail)
-				Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupEmail(true, false, AuthIconSize);
+				Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupEmail(true, size: AuthIconSize);
 
 			if (viewData.ThirdParties != null)
 			{
 				foreach (var thirdParty in viewData.ThirdParties)
 				{
-					Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupThirdParty(thirdParty, true, false, AuthIconSize);
+					Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupThirdParty(thirdParty, true, size: AuthIconSize);
 				}
 			}
 			

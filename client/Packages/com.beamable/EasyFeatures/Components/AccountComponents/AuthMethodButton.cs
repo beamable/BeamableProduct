@@ -3,6 +3,7 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.Components
@@ -12,6 +13,7 @@ namespace Beamable.EasyFeatures.Components
 		public RectTransform RectTransform;
 		public BussElement IconBussElement;
 		public CanvasGroup Group;
+		public Button Button;
 
 		private static readonly Dictionary<AuthThirdParty, string> AuthMethodToBussClass =
 			new Dictionary<AuthThirdParty, string>
@@ -29,11 +31,14 @@ namespace Beamable.EasyFeatures.Components
 		private const string EMAIL_CLASS = "email";
 		private const string INACTIVE_CLASS = "inactive";
 
-		public void SetupEmail(bool isActive, bool interactable, float size = 0)
+		public void SetupEmail(bool isActive, UnityAction onButtonPress = null, float size = 0)
 		{
 			IconBussElement.SetClass(EMAIL_CLASS, true);
 			IconBussElement.SetClass(INACTIVE_CLASS, !isActive);
-			SetInteractable(interactable);
+			SetInteractable(onButtonPress != null);
+			
+			if (onButtonPress != null)
+				Button.onClick.ReplaceOrAddListener(onButtonPress);
 			
 			if (size > 0)
 			{
@@ -41,7 +46,7 @@ namespace Beamable.EasyFeatures.Components
 			}
 		}
 
-		public void SetupThirdParty(AuthThirdParty thirdParty, bool isActive, bool interactable, float size = 0)
+		public void SetupThirdParty(AuthThirdParty thirdParty, bool isActive, UnityAction onButtonPress = null, float size = 0)
 		{
 			if (!AuthMethodToBussClass.TryGetValue(thirdParty, out string bussClass))
 			{
@@ -50,7 +55,8 @@ namespace Beamable.EasyFeatures.Components
 			
 			IconBussElement.SetClass(bussClass, true);
 			IconBussElement.SetClass(INACTIVE_CLASS, !isActive);
-			SetInteractable(interactable);
+			SetInteractable(onButtonPress != null);
+			Button.onClick.ReplaceOrAddListener(onButtonPress);
 
 			if (size > 0)
 			{
