@@ -13,12 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AdminConsole works on webGL builds.
 - CurrencyHud no longer throws exceptions.
 - TournamentContent period field no longer loses focus. 
+- Switching environments will correctly sign out the current editor user.
 
 ### Changed
 - CID/PID warning at build time is more descriptive.
-
-### Changed
-- changed functions names in third party Websocket library so now they should not conflict when user is using other libraries that depends on that library
+- Functions names in third party Websocket library so now they should not conflict when user is using other libraries that depends on that library
 
 
 ## [1.12.0]
