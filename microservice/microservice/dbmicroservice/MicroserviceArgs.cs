@@ -35,6 +35,8 @@ namespace Beamable.Server
 		public int SendChunkSize { get; }
 		public int BeamInstanceCount { get; }
 		public int RequestCancellationTimeoutSeconds { get; }
+		public bool ForceStructuredLogs { get; }
+		public bool ForceUnstructuredLogs { get; }
 	}
 
 	public class MicroserviceArgs : IMicroserviceArgs
@@ -68,6 +70,8 @@ namespace Beamable.Server
 	   public int SendChunkSize { get; set; }
 	   public int BeamInstanceCount { get; set; }
 	   public int RequestCancellationTimeoutSeconds { get; set; }
+	   public bool ForceStructuredLogs { get; set; }
+	   public bool ForceUnstructuredLogs { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -104,7 +108,9 @@ namespace Beamable.Server
             RateLimitCPUOffset = args.RateLimitCPUOffset,
             BeamInstanceCount = args.BeamInstanceCount,
             RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
-            HealthPort = args.HealthPort
+            HealthPort = args.HealthPort,
+            ForceStructuredLogs = args.ForceStructuredLogs,
+            ForceUnstructuredLogs = args.ForceUnstructuredLogs
          };
          
          configurator?.Invoke(next);
@@ -144,6 +150,9 @@ namespace Beamable.Server
 		      return val;
 	      }
       }
+
+      public bool ForceStructuredLogs => (Environment.GetEnvironmentVariable("FORCE_STRUCTURED_LOGS")?.ToLowerInvariant() ?? "") == "true";
+      public bool ForceUnstructuredLogs => (Environment.GetEnvironmentVariable("FORCE_UNSTRUCTURED_LOGS")?.ToLowerInvariant() ?? "") == "true";
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
 
       public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";

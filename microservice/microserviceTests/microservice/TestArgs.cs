@@ -115,6 +115,7 @@ namespace microserviceTests.microservice
       public int SendChunkSize => 1024;
       public int BeamInstanceCount => 1;
       public int RequestCancellationTimeoutSeconds => 10;
-
+      public bool ForceStructuredLogs => false;
+      public bool ForceUnstructuredLogs => false;
    }
 }

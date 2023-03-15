@@ -38,6 +38,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Formatting.Display;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -64,6 +65,9 @@ namespace Beamable.Server
 			
             var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
 
+            var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+            
+            
             // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
             LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
 
@@ -91,9 +95,21 @@ namespace Beamable.Server
 		            .Destructure.ToMaximumDepth(args.LogMaxDepth)
 		            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
             }
+
+            var logger = logConfig;
+            if (inDocker || args.ForceStructuredLogs)
+            {
+	            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+            }
             
-            Log.Logger = logConfig
-               .WriteTo.Console(new MicroserviceLogFormatter())
+            if (!inDocker || args.ForceUnstructuredLogs)
+            {
+	            logger = logConfig.WriteTo.Console(
+		            new MessageTemplateTextFormatter(
+			            "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+            }
+            
+            Log.Logger = logger
                .CreateLogger();
 
             // use newtonsoft for JsonUtility
