@@ -33,17 +33,13 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
           dotnet build
-      - name: Build Loadtest
-        working-directory: ./stress-tests/standalone-microservice/services/StressTest
-        run: |
-          dotnet build
       - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
           dotnet-counters collect --refresh-interval 3 --format json --output ../../../../reports/counter.json -- standalone-microservice &
           cd ../../../..
-          dotnet run --project ./StressTest
+          beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false
           echo "jobs"
           jobs -p
           echo "kill"

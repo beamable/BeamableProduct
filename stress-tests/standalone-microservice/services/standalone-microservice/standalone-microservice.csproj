@@ -93,7 +93,6 @@
 
     <!-- Nuget references -->
     <ItemGroup>
-        <PackageReference Include="Beamable.Microservice.Runtime" Version="1.10.2" />
         <PackageReference Include="EmbedIO" Version="3.4.*" />
         <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
         <PackageReference Include="System.Threading.RateLimiting" Version="7.0.0" />
@@ -105,6 +104,13 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="3.1.*" />
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
         <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.*" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" />
+      <ProjectReference Include="..\..\..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />
+      <ProjectReference Include="..\..\..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
+      <ProjectReference Include="..\..\..\..\microservice\microservice\microservice.csproj" />
+      <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
 
 </Project>
