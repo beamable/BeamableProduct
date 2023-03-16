@@ -112,10 +112,12 @@ namespace Beamable.Server
 		private Type ReadType(ArrayDict schema)
 		{
 			var typeString = schema["title"] as string;
-			if (string.IsNullOrWhiteSpace(typeString))
+			var hasTypeString = !string.IsNullOrWhiteSpace(typeString);
+			if (!hasTypeString)
 			{
 				typeString = schema["$ref"] as string;
 				typeString = typeString?.Replace("#/components/schemas/", string.Empty);
+				hasTypeString = !string.IsNullOrWhiteSpace(typeString);
 			}
 			var type = schema["type"] as string;
 			if (type != null && type.Equals("array"))
@@ -123,22 +125,28 @@ namespace Beamable.Server
 				typeString = typeString.Replace("System.Array_", string.Empty);
 				typeString = $"{typeString}[]";
 			}
-			var responseType = string.IsNullOrWhiteSpace(typeString)
-				? typeof(void)
-				: Type.GetType(typeString);
+			var containsUnderscore = hasTypeString && typeString.Contains("_");
 
-			if (responseType == null && typeString.StartsWith("Beamable.Common.Promise_"))
+			if(containsUnderscore)
 			{
-				var trr = typeString.Replace("Beamable.Common.Promise_", string.Empty);
-				var genericType = Type.GetType(trr);
-				
-				responseType = typeof(Promise<>).MakeGenericType(genericType);
+				var typesStrings = typeString.Split('_');
+				if (typesStrings.Length == 2)
+				{
+					var genericType = GetType(typesStrings[0] + "`1");
+					var argumentType = GetType(typesStrings[1]);
+					var responseGenericType = genericType.MakeGenericType(argumentType);
+					return responseGenericType;
+				}
 			}
-			if (responseType == null)
-			{
-				responseType = _types.FirstOrDefault(type1 => type1.FullName.Equals(typeString));
-			}
+			var responseType = GetType(typeString);
 			return responseType;
+		}
+
+		private Type GetType(string type)
+		{
+			if (string.IsNullOrWhiteSpace(type)) return typeof(void);
+			var resultType = Type.GetType(type) ?? _types.FirstOrDefault(type1 => type1.FullName.Equals(type));
+			return resultType;
 		}
 
 		private Type TryFindServiceType()
