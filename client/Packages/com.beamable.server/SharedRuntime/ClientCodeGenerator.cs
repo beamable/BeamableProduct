@@ -32,7 +32,7 @@ namespace Beamable.Server.Generator
 		/// The only class in the compile unit. This class contains 2 fields,
 		/// 3 properties, a constructor, an entry point, and 1 simple method.
 		/// </summary>
-		protected CodeTypeDeclaration targetClass;
+		CodeTypeDeclaration targetClass;
 
 		private CodeTypeDeclaration parameterClass;
 
@@ -165,7 +165,7 @@ namespace Beamable.Server.Generator
 			}
 		}
 
-		protected HashSet<Type> AddMethods()
+		HashSet<Type> AddMethods()
 		{
 			// need to scan and get methods.
 			var allMethods = Descriptor.EndPoints;
@@ -178,7 +178,7 @@ namespace Beamable.Server.Generator
 			return allParameterTypes;
 		}
 
-		protected void AddFederatedLoginInterfaces()
+		void AddFederatedLoginInterfaces()
 		{
 			if (Descriptor.Type == null) return; // if we do not have it locally
 			var interfaces = Descriptor.Type.GetInterfaces();
@@ -194,7 +194,7 @@ namespace Beamable.Server.Generator
 			}
 		}
 
-		protected void AddFederatedInventoryInterfaces()
+		void AddFederatedInventoryInterfaces()
 		{
 			if (Descriptor.Type == null) return; // if we do not have it locally
 			var interfaces = Descriptor.Type.GetInterfaces();
@@ -339,7 +339,7 @@ namespace Beamable.Server.Generator
 			targetClass.Members.Add(genMethod);
 		}
 
-		protected string GetFullName()
+		string GetFullName()
 		{
 			return Descriptor.Type != null ? Descriptor.Type.FullName : $"Beamable.Microservices.{Descriptor.Name}";
 		}
