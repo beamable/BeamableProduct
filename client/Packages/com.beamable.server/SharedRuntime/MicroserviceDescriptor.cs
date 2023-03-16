@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Server.Generator;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +8,7 @@ using UnityEngine;
 namespace Beamable.Server.Editor
 {
 	[Serializable]
-	public class MicroserviceDescriptor : IDescriptor
+	public class MicroserviceDescriptor : IDescriptor, IMicroserviceApi
 	{
 		public const string ASSEMBLY_FOLDER_NAME = "_assemblyReferences";
 
@@ -21,6 +22,8 @@ namespace Beamable.Server.Editor
 		}
 		public string AttributePath { get; set; }
 		public Type Type { get; set; }
+		public List<MicroserviceEndPointInfo> EndPoints => ClientCodeGenerator.GenerateEndPoinListFromType(Type);
+
 		public List<ClientCallableDescriptor> Methods { get; set; }
 		public string CustomClientPath { get; set; }
 

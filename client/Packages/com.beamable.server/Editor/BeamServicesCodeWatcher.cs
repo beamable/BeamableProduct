@@ -559,11 +559,7 @@ namespace Beamable.Server.Editor
 			var endpoint = MicroserviceClientHelper.CreateUrl(de.Requester.Cid, de.Requester.Pid, service.Name, "admin/Docs");
 			de.Requester.Request(Method.GET, endpoint, null, true, s => s).Then(s =>
 			{
-				var apiCodeGenerator = new OpenApiCodeGenerator(s);
-				if (apiCodeGenerator.HasValidationError)
-				{
-					return;
-				}
+				var apiCodeGenerator = new ClientCodeGenerator(new OpenApiMicroserviceDescriptor(s));
 				var code = apiCodeGenerator.GetCSharpCodeString();
 				var generatorDesc = GetGeneratorDescriptor(service);
 				generatorDesc.CustomClientPath = service.CustomClientPath;

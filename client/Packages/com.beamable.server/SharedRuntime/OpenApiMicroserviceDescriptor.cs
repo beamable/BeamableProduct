@@ -1,43 +1,23 @@
 ﻿using Beamable.Common;
 using Beamable.Serialization.SmallerJSON;
+using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace Beamable.Server.Editor
+namespace Beamable.Server
 {
-	public class MicroserviceArgument
-	{
-		public string name;
-		public Type type;
-
-		public override string ToString() => $"{type.FullName} {name}";
-	}
-
-	public class MicroserviceEndPointInfo
-	{
-		public CallableAttribute callableAttribute;
-		public string methodName;
-		public Type returnType;
-		public IList<MicroserviceArgument> parameters;
-		public string description;
-	}
-
-	public class OpenApiMicroserviceDescriptor : IDescriptor
+	public class OpenApiMicroserviceDescriptor : IMicroserviceApi
 	{
 		private readonly Type[] _types;
 		private readonly string _openApi;
 		private List<MicroserviceEndPointInfo> _methods;
 		public string Name { get; set; }
-		public string AttributePath { get; set; }
 		public Type Type { get; set; }
-		public string ContainerName { get; set; }
-		public string ImageName { get; set; }
 		public ServiceType ServiceType => ServiceType.MicroService;
 		public bool HasValidationError { get; }
-		public bool HasValidationWarning { get; }
-		public List<MicroserviceEndPointInfo> Methods => _methods;
+		public List<MicroserviceEndPointInfo> EndPoints => _methods;
 
 		public OpenApiMicroserviceDescriptor(string openApi)
 		{
@@ -49,7 +29,7 @@ namespace Beamable.Server.Editor
 				types.AddRange(assembly.GetTypes());
 			}
 			_types = types.ToArray();
-			HasValidationError = HasValidationWarning = !Build();
+			HasValidationError = !Build();
 		}
 
 		bool Build()
@@ -149,6 +129,14 @@ namespace Beamable.Server.Editor
 			var responseType = string.IsNullOrWhiteSpace(typeString)
 				? typeof(void)
 				: Type.GetType(typeString);
+
+			if (responseType == null && typeString.StartsWith("Beamable.Common.Promise_"))
+			{
+				var trr = typeString.Replace("Beamable.Common.Promise_", string.Empty);
+				var genericType = Type.GetType(trr);
+				
+				responseType = typeof(Promise<>).MakeGenericType(genericType);
+			}
 			if (responseType == null)
 			{
 				responseType = _types.FirstOrDefault(type1 => type1.FullName.Equals(typeString));
