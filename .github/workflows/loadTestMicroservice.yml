@@ -73,7 +73,7 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Fail if checks failed
-        if: contains(steps.checkNbomber.outputs.log, 'No issues found.') != true || contains(steps.checkCounters.log,'No issues found.') != true
+        if: ${{!contains(steps.checkNbomber.outputs.log, 'No issues found.') || !contains(steps.checkCounters.log,'No issues found.')}}
         run: |
           echo \nbomber: ${{steps.checkNbomber.outputs.log}} \ncounters: ${{steps.checkCounters.outputs.log}}
           exit 1
