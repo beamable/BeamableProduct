@@ -70,11 +70,11 @@ jobs:
         uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: C0409CMRKA9
-          slack-message: "Automated C#MS smoke tests failed! \nnomber: {{steps.checkNbomber.output.nbomber_log}} \ncounters: {{steps.checkCounters.output.nbomber_log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
+          slack-message: "Automated C#MS smoke tests failed! \nnomber: {{steps.checkNbomber.outputs.nbomber_log}} \ncounters: {{steps.checkCounters.outputs.nbomber_log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Fail if checks failed
         if: steps.checkNbomber.outcome != 'success' || steps.checkCounters.outcome != 'success'
         run: |
-          echo \nnomber: {{steps.checkNbomber.output.nbomber_log}} \ncounters: {{steps.checkCounters.output.nbomber_log}}
+          echo \nnomber: {{steps.checkNbomber.outputs.nbomber_log}} \ncounters: {{steps.checkCounters.outputs.nbomber_log}}
           exit 1
