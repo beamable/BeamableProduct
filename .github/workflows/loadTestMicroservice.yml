@@ -57,23 +57,23 @@ jobs:
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          echo "counter_log='$(beam profile check-counters ./counter.json --cpu-limit 15)'" >> $GITHUB_OUTPUT
+          echo "log='$(beam profile check-counters ./counter.json --cpu-limit 15)'" >> $GITHUB_OUTPUT
       - name: Check NBomber
         id: checkNbomber
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          echo "nbomber_log='$(beam profile check-nbomber ./report.csv --p95-limit 90)'" >> $GITHUB_OUTPUT
+          echo "log='$(beam profile check-nbomber ./report.csv --p95-limit 90)'" >> $GITHUB_OUTPUT
       - name: Post to a Slack channel
         id: slack
         uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: C0409CMRKA9
-          slack-message: "Automated C#MS smoke tests failed! \nbomber: ${{steps.checkNbomber.outputs.nbomber_log}} \ncounters: ${{steps.checkCounters.outputs.nbomber_log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
+          slack-message: "Automated C#MS smoke tests failed! \nbomber: ${{steps.checkNbomber.outputs.log}} \ncounters: ${{steps.checkCounters.outputs.log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Fail if checks failed
-        if: steps.checkNbomber.outputs.nbomber_log != 'No issues found.' || steps.checkCounters.counter_log != 'No issues found.'
+        if: steps.checkNbomber.outputs.log != 'No issues found.' || steps.checkCounters.log != 'No issues found.'
         run: |
-          echo \nbomber: ${{steps.checkNbomber.outputs.nbomber_log}} \ncounters: ${{steps.checkCounters.outputs.nbomber_log}}
+          echo \nbomber: ${{steps.checkNbomber.outputs.log}} \ncounters: ${{steps.checkCounters.outputs.log}}
           exit 1
