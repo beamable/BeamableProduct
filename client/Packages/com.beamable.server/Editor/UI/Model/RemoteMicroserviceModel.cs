@@ -30,13 +30,13 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenRemoteDocs(); });
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenRemoteMetrics(); });
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenRemoteLogs(); });
-			
+#if BEAMABLE_ENABLE_OPENAPI_CLIENT_GEN
 			evt.menu.BeamableAppendAction($"{remoteCategory}/Regenerate {Descriptor.Name}Client.cs from OpenApi",
 			                              pos =>
 			                              {
 				                              BeamServicesCodeWatcher.GenerateClientSourceCodeFromOpenApi((MicroserviceDescriptor)Descriptor);
 			                              });
-
+#endif
 			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
 			{
 				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>

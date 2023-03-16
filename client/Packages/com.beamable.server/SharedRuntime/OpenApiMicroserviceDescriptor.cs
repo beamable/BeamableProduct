@@ -1,6 +1,5 @@
 ﻿using Beamable.Common;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,12 +11,10 @@ namespace Beamable.Server
 	{
 		private readonly Type[] _types;
 		private readonly string _openApi;
-		private List<MicroserviceEndPointInfo> _methods;
 		public string Name { get; set; }
 		public Type Type { get; set; }
-		public ServiceType ServiceType => ServiceType.MicroService;
 		public bool HasValidationError { get; }
-		public List<MicroserviceEndPointInfo> EndPoints => _methods;
+		public List<MicroserviceEndPointInfo> EndPoints { get; private set; }
 
 		public OpenApiMicroserviceDescriptor(string openApi)
 		{
@@ -44,7 +41,7 @@ namespace Beamable.Server
 					var paths = array["paths"] as ArrayDict;
 					var endPoints = paths.Keys.ToList();
 
-					_methods = new List<MicroserviceEndPointInfo>(endPoints.Count);
+					EndPoints = new List<MicroserviceEndPointInfo>(endPoints.Count);
 					foreach (string key in endPoints)
 					{
 						if(key.StartsWith("/admin/")) // TODO Configure that maybe?
@@ -54,7 +51,7 @@ namespace Beamable.Server
 						if (post == null)
 							continue;
 						var methodInfo = ReadEndPointInfo(post, key);
-						_methods.Add(methodInfo);
+						EndPoints.Add(methodInfo);
 					}
 				}
 			}

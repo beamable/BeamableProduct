@@ -182,20 +182,24 @@ namespace Beamable.Editor.UI.Model
 					BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
 				});
 			}
+#if BEAMABLE_ENABLE_OPENAPI_CLIENT_GEN
 			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs from OpenApi",
 			                              pos =>
 			                              {
 				                              BeamServicesCodeWatcher.GenerateClientSourceCodeFromOpenApi(_serviceDescriptor);
 			                              }, IsRunning);
-
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
+			
 			evt.menu.BeamableAppendAction($"{remoteCategory}/Regenerate {_serviceDescriptor.Name}Client.cs from OpenApi",
 			                              pos =>
 			                              {
 				                              BeamServicesCodeWatcher.GenerateClientSourceCodeFromOpenApi(_serviceDescriptor);
 			                              }, existsOnRemote);
+#endif
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
+			
+
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 			evt.menu.BeamableAppendAction("Build", pos => Build());
