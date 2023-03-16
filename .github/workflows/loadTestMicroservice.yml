@@ -57,22 +57,24 @@ jobs:
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          beam profile check-counters ./counter.json --cpu-limit 15
+          echo "counter_log=$(beam profile check-counters ./counter.json --cpu-limit 15)" >> $GITHUB_OUTPUT
       - name: Check NBomber
         id: checkNbomber
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          beam profile check-nbomber ./report.csv --p95-limit 9000
+          beam "nbomber_log=$(profile check-nbomber ./report.csv --p95-limit 90)" >> $GITHUB_OUTPUT
       - name: Post to a Slack channel
         if: steps.checkNbomber.outcome != 'success' || steps.checkCounters.outcome != 'success'
         id: slack
         uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: C0409CMRKA9
-          slack-message: "Automated C#MS smoke tests failed! https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
+          slack-message: "Automated C#MS smoke tests failed! \nnomber: {{steps.checkNbomber.output.nbomber_log}} \ncounters: {{steps.checkCounters.output.nbomber_log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Fail if checks failed
         if: steps.checkNbomber.outcome != 'success' || steps.checkCounters.outcome != 'success'
-        run: exit 1
+        run: |
+          echo \nnomber: {{steps.checkNbomber.output.nbomber_log}} \ncounters: {{steps.checkCounters.output.nbomber_log}}
+          exit 1

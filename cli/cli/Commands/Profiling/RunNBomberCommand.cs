@@ -30,9 +30,6 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 		AddArgument(new Argument<string>("body", "The json body for each request"), (args, i) => args.jsonBody = i);
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
 		AddOption(new Option<int>("--rps", () => 50, "The requested requests per second for the test"), (args, i) => args.rps = i);
-		// AddOption(new Option<string>("--host", "if set, the stress test will use the given host instead of the default"), (args, i) => args.hostOverride = i);
-		// AddOption(new Option<string>("--cid", "if set, the stress test will use the given cid instead of the default"), (args, i) => args.cidOverride = i);
-		// AddOption(new Option<string>("--pid", "if set, the stress test will use the given cid instead of the default"), (args, i) => args.cidOverride = i);
 	}
 
 	public override Task Handle(RunNBomberCommandArgs args)
