@@ -57,13 +57,13 @@ jobs:
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          echo "counter_log=$(beam profile check-counters ./counter.json --cpu-limit 15)" >> $GITHUB_OUTPUT
+          echo "counter_log=$(beam profile check-counters ./counter.json --cpu-limit 15)\n" >> $GITHUB_OUTPUT
       - name: Check NBomber
         id: checkNbomber
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          beam "nbomber_log=$(profile check-nbomber ./report.csv --p95-limit 90)" >> $GITHUB_OUTPUT
+          echo "nbomber_log=$(beam profile check-nbomber ./report.csv --p95-limit 90)\n" >> $GITHUB_OUTPUT
       - name: Post to a Slack channel
         if: steps.checkNbomber.outcome != 'success' || steps.checkCounters.outcome != 'success'
         id: slack
