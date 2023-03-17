@@ -26,6 +26,7 @@ using Beamable.Server.Api.Leaderboards;
 using Beamable.Server.Api.Mail;
 using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
+using Beamable.Server.Api.Push;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
@@ -232,6 +233,7 @@ namespace Beamable.Server
 			        .AddScoped<IMicroserviceRealmConfigService, RealmConfigService>()
 			        .AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
 			        .AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
+			        .AddScoped<IMicroservicePushApi, MicroservicePushApi>()
 			        .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
 			        .AddSingleton<MongoSerializationService>()
 			        .AddSingleton<IMongoSerializationService>(p => p.GetService<MongoSerializationService>())
@@ -335,6 +337,7 @@ namespace Beamable.Server
 			        Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
 			        Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
 			        Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
+			        Push = provider.GetRequiredService<IMicroservicePushApi>(),
 		        };
 		        return services;
 	        }
