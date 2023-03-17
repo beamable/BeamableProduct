@@ -16,6 +16,7 @@ namespace Beamable.Editor.Modules.EditorConfig
 		public const string BEAMABLE_DISABLE_DICT_PROPERTYDRAWERS = "BEAMABLE_NO_DICT_DRAWERS";
 		public const string BEAMABLE_DISABLE_LIST_PROPERTYDRAWERS = "BEAMABLE_NO_LIST_DRAWERS";
 		public const string BEAMABLE_DISABLE_DATE_STRING_PROPERTYDRAWERS = "BEAMABLE_NO_DATE_STRING_DRAWERS";
+		public const string BEAMABLE_DISABLE_CID_PID_WARNINGS_ON_BUILD = "BEAMABLE_NO_CID_PID_WARNINGS_ON_BUILD";
 
 		public const string BEAMABLE_DEVELOPER = "BEAMABLE_DEVELOPER";
 
@@ -33,6 +34,8 @@ namespace Beamable.Editor.Modules.EditorConfig
 			Advanced.DisableBeamableListPropertyDrawers = existing.Contains(BEAMABLE_DISABLE_LIST_PROPERTYDRAWERS);
 			Advanced.DisableContentRefPropertyDrawers = existing.Contains(BEAMABLE_DISABLE_CONTENT_REF_PROPERTYDRAWERS);
 			Advanced.DisableBeamableDateStringPropertyDrawers = existing.Contains(BEAMABLE_DISABLE_DATE_STRING_PROPERTYDRAWERS);
+			Advanced.DisableBeamableCidPidWarningsOnBuild =
+				existing.Contains(BEAMABLE_DISABLE_CID_PID_WARNINGS_ON_BUILD);
 		}
 
 
@@ -92,6 +95,7 @@ namespace Beamable.Editor.Modules.EditorConfig
 			{BEAMABLE_DISABLE_LIST_PROPERTYDRAWERS, Advanced.DisableBeamableListPropertyDrawers},
 			{BEAMABLE_DEVELOPER, Advanced.RunAsBeamableDeveloper},
 			{BEAMABLE_DISABLE_DATE_STRING_PROPERTYDRAWERS, Advanced.DisableBeamableDateStringPropertyDrawers},
+			{BEAMABLE_DISABLE_CID_PID_WARNINGS_ON_BUILD, Advanced.DisableBeamableCidPidWarningsOnBuild},
 		 };
 
 			foreach (var kvp in settings)
@@ -153,6 +157,9 @@ namespace Beamable.Editor.Modules.EditorConfig
 
 			[Tooltip("[Danger] Beamable provides a date-string custom property drawer. if you wish to disable the property drawer, use this property.")]
 			public bool DisableBeamableDateStringPropertyDrawers;
+
+			[Tooltip("[Danger] When you build the game but the config-default.txt CID/PID is different than the currently selected CID/PID in the Toolbox, then a warning will be displayed. This option disables that warning.")]
+			public bool DisableBeamableCidPidWarningsOnBuild;
 
 		}
 	}
