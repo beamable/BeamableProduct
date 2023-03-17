@@ -96,17 +96,23 @@ namespace Beamable.Server
             }
 
             var logger = logConfig;
-            if (inDocker || args.ForceStructuredLogs)
+            switch (args.LogOutputType)
             {
-	            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+	            case LogOutputType.DEFAULT when !inDocker:
+	            case LogOutputType.UNSTRUCTURED:
+		            logger = logConfig.WriteTo.Console(
+			            new MessageTemplateTextFormatter(
+				            "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+		            break;
+	            case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
+	            case LogOutputType.STRUCTURED:
+		            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+		            break;
+				default:
+					logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+					break;
             }
             
-            if (!inDocker || args.ForceUnstructuredLogs)
-            {
-	            logger = logConfig.WriteTo.Console(
-		            new MessageTemplateTextFormatter(
-			            "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
-            }
             
             Log.Logger = logger
                .CreateLogger();

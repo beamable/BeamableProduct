@@ -35,8 +35,12 @@ namespace Beamable.Server
 		public int SendChunkSize { get; }
 		public int BeamInstanceCount { get; }
 		public int RequestCancellationTimeoutSeconds { get; }
-		public bool ForceStructuredLogs { get; }
-		public bool ForceUnstructuredLogs { get; }
+		public LogOutputType LogOutputType { get; }
+	}
+
+	public enum LogOutputType
+	{
+		DEFAULT, STRUCTURED, UNSTRUCTURED
 	}
 
 	public class MicroserviceArgs : IMicroserviceArgs
@@ -70,8 +74,7 @@ namespace Beamable.Server
 	   public int SendChunkSize { get; set; }
 	   public int BeamInstanceCount { get; set; }
 	   public int RequestCancellationTimeoutSeconds { get; set; }
-	   public bool ForceStructuredLogs { get; set; }
-	   public bool ForceUnstructuredLogs { get; set; }
+	   public LogOutputType LogOutputType { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -109,8 +112,7 @@ namespace Beamable.Server
             BeamInstanceCount = args.BeamInstanceCount,
             RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
             HealthPort = args.HealthPort,
-            ForceStructuredLogs = args.ForceStructuredLogs,
-            ForceUnstructuredLogs = args.ForceUnstructuredLogs
+            LogOutputType = args.LogOutputType
          };
          
          configurator?.Invoke(next);
@@ -151,8 +153,22 @@ namespace Beamable.Server
 	      }
       }
 
-      public bool ForceStructuredLogs => (Environment.GetEnvironmentVariable("FORCE_STRUCTURED_LOGS")?.ToLowerInvariant() ?? "") == "true";
-      public bool ForceUnstructuredLogs => (Environment.GetEnvironmentVariable("FORCE_UNSTRUCTURED_LOGS")?.ToLowerInvariant() ?? "") == "true";
+      public LogOutputType LogOutputType
+      {
+	      get
+	      {
+		      var arg = Environment.GetEnvironmentVariable("LOG_TYPE")?.ToLowerInvariant();
+		      switch (arg)
+		      {
+			      case "structured":
+				      return LogOutputType.STRUCTURED;
+			      case "unstructured":
+				      return LogOutputType.UNSTRUCTURED;
+			      default:
+				      return LogOutputType.DEFAULT;
+		      }
+	      }
+      }
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
 
       public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
