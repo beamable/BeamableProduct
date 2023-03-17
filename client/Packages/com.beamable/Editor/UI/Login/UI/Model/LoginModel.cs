@@ -9,8 +9,6 @@ namespace Beamable.Editor.Login.UI.Model
 	public class LoginModel
 	{
 		public CustomerModel Customer { get; } = new CustomerModel();
-		//public CustomerModel LoadedCustomer { get; } = new CustomerModel();
-
 		public List<RealmView> Games { get; set; } = new List<RealmView>();
 
 		public bool StartedWithConfiguration { get; private set; } = false;
@@ -21,7 +19,6 @@ namespace Beamable.Editor.Login.UI.Model
 
 		public event Action<string> OnError;
 		public event Action OnErrorCleared;
-		public event Action<List<RealmView>> OnGamesUpdated;
 
 		public CustomerView CurrentCustomer { get; private set; }
 
@@ -48,18 +45,6 @@ namespace Beamable.Editor.Login.UI.Model
 			{
 				OnError?.Invoke(LastError);
 			}
-		}
-
-		public Promise<List<RealmView>> ResetGames()
-		{
-			var b = BeamEditorContext.Default;
-
-			return b.ServiceScope.GetService<RealmsService>().GetGames().Map(games =>
-			{
-				Games = games;
-				OnGamesUpdated?.Invoke(games);
-				return games;
-			});
 		}
 
 		public void Destroy()
@@ -94,9 +79,10 @@ namespace Beamable.Editor.Login.UI.Model
 			OnStateChanged?.Invoke(this);
 		}
 
-		public Promise<LoginModel> Initialize()
+		public async Promise<LoginModel> Initialize()
 		{
 			var b = BeamEditorContext.Default;
+			await b.InitializePromise;
 			SetUser(b.CurrentUser);
 			SetRealm(b.CurrentRealm);
 			SetGame(b.ProductionRealm);
@@ -105,19 +91,20 @@ namespace Beamable.Editor.Login.UI.Model
 			StartedWithUser = b.Requester.Token != null;
 
 			Customer.Clear();
-			if (StartedWithConfiguration)
-			{
-				if (b.HasCustomer && b.HasRealm)
-				{
-					Customer.SetCidPid(b.CurrentCustomer.Alias, b.CurrentRealm.Pid);
-				}
-				else
-				{
-					Customer.Clear();
-				}
-			}
 
 			CurrentCustomer = b.CurrentCustomer;
+			if (b.HasCustomer && !string.IsNullOrEmpty(b.CurrentCustomer.Alias))
+			{
+				Customer.SetCidPid(b.CurrentCustomer.Alias, CurrentRealm?.Pid);
+			}
+			else
+			{
+				var configService = b.ServiceScope.GetService<ConfigDefaultsService>();
+				var maybeAlias = configService.Alias;
+				var maybePid = configService.Pid;
+				Customer.SetCidPid(maybeAlias.Value, maybePid.Value);
+			}
+
 
 			b.OnUserChange += OnUserChanged;
 			b.OnRealmChange += SetRealm;
@@ -125,20 +112,17 @@ namespace Beamable.Editor.Login.UI.Model
 
 			if (b.HasCustomer)
 			{
-				b.ServiceScope.GetService<RealmsService>().GetGames().Then(games =>
-				{
-					Games = games;
-					OnGamesUpdated?.Invoke(games);
-				});
+				// TODO: 
+				Games = b.EditorAccount.CustomerGames;
 			}
 
 			if (b.HasToken && b.HasCustomer)
 			{
-				Customer.Role = b.CurrentUser.GetPermissionsForRealm(b.CurrentRealm.Pid).Role;
+				Customer.Role = b.CurrentUser.GetPermissionsForRealm(b.CurrentRealm?.Pid).Role;
 				Customer.SetUserInfo(b.CurrentUser.id, b.CurrentUser.email);
 			}
 
-			return Promise<LoginModel>.Successful(this);
+			return this;
 		}
 
 		private void OnUserChanged(EditorUser user)

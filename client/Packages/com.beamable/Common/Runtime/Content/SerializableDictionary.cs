@@ -7,7 +7,12 @@ using UnityEngine;
 
 namespace Beamable.Common.Content
 {
-	[Serializable] public class MapOfLong : SerializableDictionaryStringToLong { }
+	[Serializable]
+	public class MapOfLong : SerializableDictionaryStringToLong
+	{
+		public MapOfLong() { }
+		public MapOfLong(IDictionary<string, long> dict) : base(dict) { }
+	}
 	[Serializable] public class OptionalMapOfLong : Optional<MapOfLong> { }
 	[Serializable] public class MapOfInt : SerializableDictionaryStringToInt { }
 	[Serializable] public class OptionalMapOfInt : Optional<MapOfInt> { }

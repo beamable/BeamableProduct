@@ -504,6 +504,7 @@ namespace Beamable.Common.Api.Inventory
 					itemView.properties = properties;
 					itemView.createdAt = item.createdAt;
 					itemView.updatedAt = item.updatedAt;
+					itemView.contentId = itemGroup.id;
 
 					return itemView;
 				});
@@ -632,6 +633,7 @@ namespace Beamable.Common.Api.Inventory
 	public class CurrencyPropertyList : DisplayableList<CurrencyProperty>
 	{
 		public List<CurrencyProperty> Properties = new List<CurrencyProperty>();
+
 		public CurrencyPropertyList(List<CurrencyProperty> existing)
 		{
 			foreach (var elem in existing)
@@ -690,6 +692,7 @@ namespace Beamable.Common.Api.Inventory
 	public class Item
 	{
 		public string id;
+		public Optional<string> proxyId;
 		public List<ItemProperty> properties;
 		public long createdAt;
 		public long updatedAt;
@@ -745,6 +748,8 @@ namespace Beamable.Common.Api.Inventory
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+
+	[Serializable]
 	public class InventoryView
 	{
 		public Dictionary<string, long> currencies = new Dictionary<string, long>();
@@ -770,11 +775,13 @@ namespace Beamable.Common.Api.Inventory
 	/// ![img beamable-logo]
 	///
 	/// </summary>
+	[Serializable]
 	public class ItemView
 	{
 		public long id;
-		public Dictionary<string, string> properties;
+		public Dictionary<string, string> properties = new Dictionary<string, string>();
 		public long createdAt;
 		public long updatedAt;
+		public string contentId;
 	}
 }

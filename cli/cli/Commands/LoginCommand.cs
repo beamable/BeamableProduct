@@ -21,9 +21,9 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	private ConfigService _configService;
 	private IAuthApi _authApi;
 
-	public LoginCommand() : base("login", "save credentials to file")
+	public LoginCommand() : base("login", "Save credentials")
 	{
-		
+
 	}
 
 	public override void Configure()
@@ -42,7 +42,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		_authApi = args.AuthApi;
 		var username = GetUserName(args);
 		var password = GetPassword(args);
-		
+
 		BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
 		BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
 		var response = await _authApi.Login(username, password, false, args.customerScoped).ShowLoading("Authorizing...");
