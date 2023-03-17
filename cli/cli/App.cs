@@ -8,11 +8,12 @@ using cli.Content;
 using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
-using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Sinks.SpectreConsole;
+using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
@@ -43,9 +44,9 @@ public class App
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
-			.WriteTo.Console(LogLevel.MinimumLevel)
+			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}", LogLevel.MinimumLevel)
 			.CreateLogger();
-
+		
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
@@ -81,7 +82,7 @@ public class App
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	public virtual void Configure(Action<IDependencyBuilder>? serviceConfigurator = null, Action<IDependencyBuilder>? commandConfigurator = null)
+	public virtual void Configure(Action<IDependencyBuilder> serviceConfigurator = null, Action<IDependencyBuilder> commandConfigurator = null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
@@ -137,6 +138,11 @@ public class App
 		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
 
+		Commands.AddRootCommand<ProfilingCommand, ProfilingCommandArgs>();
+		Commands.AddCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();
+		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
+		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
+		
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
 		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
@@ -208,12 +214,23 @@ public class App
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseExceptionHandler((ex, ctx) =>
+		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 			switch (ex)
 			{
 				case CliException cliException:
-					Console.Error.WriteLine(cliException.Message);
+					if (cliException.ReportOnStdOut)
+					{
+						Console.WriteLine(cliException.Message);
+					}
+					else
+					{
+						Console.Error.WriteLine(cliException.Message);
+					}
+					if (cliException.UseNonZeroExitCode)
+					{
+						context.ExitCode = 1;
+					}
 					break;
 				default:
 					Console.Error.WriteLine(ex.Message);

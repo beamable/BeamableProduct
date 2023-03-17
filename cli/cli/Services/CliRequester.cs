@@ -119,7 +119,7 @@ public class CliRequester : IBeamableRequester
 		}); ;
 	}
 
-	private static HttpRequestMessage PrepareRequest(Method method, string? basePath, string uri, object body = null)
+	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
 	{
 		var address = uri.Contains("://") ? uri : $"{basePath}{uri}";
 		var request = new HttpRequestMessage(FromMethod(method), address);
@@ -142,7 +142,7 @@ public class CliRequester : IBeamableRequester
 		return request;
 	}
 
-	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, IAccessToken? token, bool customerScoped)
+	private static HttpClient GetClient(bool includeAuthHeader, string pid, string cid, IAccessToken token, bool customerScoped)
 	{
 		var client = new HttpClient();
 		client.DefaultRequestHeaders.Add("contentType", "application/json"); // confirm that it is required
