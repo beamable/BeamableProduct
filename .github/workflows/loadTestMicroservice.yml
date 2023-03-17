@@ -13,11 +13,15 @@ jobs:
       group: stresstest-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
+      - name: make-some-vars
+        id: xyz
+        run: |
+          echo "a='17:09:10 [[38;5;39mINFO[0m] No issues found.'" >> $GITHUB_OUTPUT
       - name: checking-expect-use
-        if: ${{contains('This is a message with No issues found.', 'No issues found.')}}
+        if: ${{contains(steps.xyz.outputs.a, 'No issues found.')}}
         run: echo okay
       - name: checking-expect-skip
-        if: ${{!contains('This is a message with No issues found.', 'No issues found.')}}
+        if: ${{!contains(steps.xyz.outputs.a, 'No issues found.')}}
         run: echo okay
       - name: checking-expect-use-2
         if: ${{!contains('Oh no there is an issue!', 'No issues found.') || !contains('Oh no there is a second issue!', 'No issues found.')}}
