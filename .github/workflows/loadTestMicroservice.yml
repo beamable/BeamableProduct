@@ -66,6 +66,7 @@ jobs:
           echo "log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_OUTPUT
       - name: Post to a Slack channel
         id: slack
+        if: ${{!contains(steps.checkNbomber.outputs.log, 'No issues found') || !contains(steps.checkCounters.outputs.log, 'No issues found')}}
         uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: C0409CMRKA9
