@@ -13,6 +13,18 @@ jobs:
       group: stresstest-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
+      - name: checking-expect-use
+        if: ${{contains('This is a message with No issues found.', 'No issues found.')}}
+        run: echo okay
+      - name: checking-expect-skip
+        if: ${{!contains('This is a message with No issues found.', 'No issues found.')}}
+        run: echo okay
+      - name: checking-expect-use-2
+        if: ${{!contains('Oh no there is an issue!', 'No issues found.') || !contains('Oh no there is a second issue!', 'No issues found.')}}
+        run: echo okay
+      - name: checking-expect-skip-2
+        if: ${{!contains('Okay, No issues found.', 'No issues found.') || !contains('Okay, No issues found.', 'No issues found.')}}
+        run: echo okay
       - uses: actions/checkout@v2
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v1.7.2
@@ -75,5 +87,5 @@ jobs:
       - name: Fail if checks failed
         if: ${{!contains(steps.checkNbomber.outputs.log, 'No issues found.') || !contains(steps.checkCounters.log,'No issues found.')}}
         run: |
-          echo \nbomber: ${{steps.checkNbomber.outputs.log}} \ncounters: ${{steps.checkCounters.outputs.log}}
+          echo bomber: ${{steps.checkNbomber.outputs.log}} counters: ${{steps.checkCounters.outputs.log}}
           exit 1
