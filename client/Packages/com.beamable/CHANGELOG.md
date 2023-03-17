@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `DisableBeamableCidPidWarningsOnBuild` option in _Project Settings/Beamable/Editor_ that will disable the CID/PID warning dialog on build.
+
 ## [1.12.1]
 ### Added
 - `ItemView` has new `contentId` field.
@@ -13,12 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AdminConsole works on webGL builds.
 - CurrencyHud no longer throws exceptions.
 - TournamentContent period field no longer loses focus. 
+- Switching environments will correctly sign out the current editor user.
 
 ### Changed
 - CID/PID warning at build time is more descriptive.
-
-### Changed
-- changed functions names in third party Websocket library so now they should not conflict when user is using other libraries that depends on that library
+- Functions names in third party Websocket library so now they should not conflict when user is using other libraries that depends on that library
 
 
 ## [1.12.0]
