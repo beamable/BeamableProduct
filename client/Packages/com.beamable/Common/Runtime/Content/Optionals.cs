@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
+
 #pragma warning disable CS0618
 
 namespace Beamable.Common.Content
@@ -250,7 +252,20 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLongArray : OptionalArray<long> { }
+	public class OptionalLongArray : OptionalArray<long>
+	{
+		public OptionalLongArray()
+		{
+			
+		}
+
+		public OptionalLongArray(IEnumerable<long> data)
+		{
+			Value = data.ToArray();
+			HasValue = true;
+		}
+		
+	}
 
 	[System.Serializable]
 	[Agnostic]

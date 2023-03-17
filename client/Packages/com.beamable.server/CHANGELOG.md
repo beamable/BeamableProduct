@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Standalone Microservices don't use structured JSON logs
 
+### Added
+- `IMicroserviceNotificationsApi` supports notifying entire player base with `NotifyGame` method.
+- `IMicroserviceNotificationsApi` supports notifying servers with `NotifyServer` method.
+
 ## [1.12.1]
 ### Added
 - `IMicroserviceBuildContext.AddDirectory` method allows to copy an entire directory of files into a build context.
