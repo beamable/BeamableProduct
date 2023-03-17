@@ -81,7 +81,7 @@ namespace Beamable.Purchasing.Steam
 				Debug.LogError(ex);
 			}
 
-			callback.OnSetupFailed(InitializationFailureReason.PurchasingUnavailable);
+			// callback.OnSetupFailed(InitializationFailureReason.PurchasingUnavailable);
 		}
 
 		public void OnTransactionAuthorized(SteamTransaction transaction)
